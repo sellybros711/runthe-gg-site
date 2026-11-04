@@ -14,6 +14,9 @@
  *
  * Each pack also carries a card (title, pitcher, team, year, hand, the
  * situation, real or proxy) for a screen that shows it without its pack.
+ * The card's setup is one or two short sentences from data/setups.json (keyed
+ * by pack id) that set up the moment for the vote. Setup only, never how it
+ * ended: test/packs.mjs holds every rotation pack to one, short and clean.
  *
  * Each pack carries a `v` for its URL (packs/<id>.json?v=N). It is bumped only
  * when the pack's bytes changed since the last schedule (the sha1 is kept
@@ -33,6 +36,7 @@ const args = process.argv.slice(2);
 const days = args.includes('--days') ? +args[args.indexOf('--days') + 1] : 400;
 const spec = JSON.parse(readFileSync(join(GAME, 'scenarios', 'scenarios.json'), 'utf8')).scenarios;
 const out = join(GAME, 'data', 'schedule.json');
+const setups = JSON.parse(readFileSync(join(GAME, 'data', 'setups.json'), 'utf8'));
 const old = existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : { packs: {} };
 
 const packs = {};
@@ -49,8 +53,9 @@ for (const s of spec) {
   const card = {
     title: sc.title, pitcher: sc.pitcher.name, team: sc.pitcher.team, year: sc.pitcher.year, throws: sc.pitcher.throws,
     situation: { inning: sc.situation.inning, half: sc.situation.half, outs: sc.situation.outs, bases: sc.situation.bases,
-      score: sc.situation.score }, resolution: sc.resolution,
+      score: sc.situation.score }, resolution: sc.resolution, setup: setups[s.id] || null,
   };
+  if (!card.setup) throw new Error('no setup for ' + s.id + ' in data/setups.json');
   packs[s.id] = { file, v, sha, card };
 }
 const rotation = spec.map(s => s.id);

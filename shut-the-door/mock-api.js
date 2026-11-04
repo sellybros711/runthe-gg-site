@@ -724,12 +724,11 @@ function voteShape(day) {
     if (day === today) return Object.assign(none, { candidates: [{ id: fx.id, title: fx.title, pitcher: fx.pitcher.name, year: fx.pitcher.year, situation: fx.situation }, cards[1]],
       winner: fx.id, votes: { a: 63, b: 48 }, why: 'voting is closed' });
     var mine = MY_VOTE || (VOTE_MODE === 'voted' ? ids[1] : null);
-    var done = !!(DAILY && DAILY.result);
     return Object.assign(none, {
       open: true, candidates: cards, myVote: mine,
       votes: mine ? { a: 41 + (mine === ids[0] ? 1 : 0), b: 56 + (mine === ids[1] ? 1 : 0) } : null,
-      canVote: !mine && signedIn() && done,
-      why: mine ? 'you voted' : !signedIn() ? 'sign in to vote' : !done ? 'finish today\'s daily to vote' : null,
+      canVote: !mine && signedIn(),
+      why: mine ? 'you voted' : !signedIn() ? 'sign in to vote' : null,
     });
   });
 }

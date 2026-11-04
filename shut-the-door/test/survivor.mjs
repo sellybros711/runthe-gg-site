@@ -63,7 +63,6 @@ const auth = {
     if (d !== tomorrow) why = 'voting is closed';
     else if (!S.user) why = 'sign in to vote';
     else if (mine) why = 'you voted';
-    else if (!S.outings[S.user + '|' + TODAY]) why = 'finish today\'s daily to vote';
     else can = true;
     return { day: d, open: d === tomorrow, candidates: c, myVote: mine, votes: w || mine ? tally() : null, winner: w, canVote: can, why };
   },
@@ -176,20 +175,25 @@ S.locks[TODAY] = M.candidates(sched, TODAY)[1];     // the vote went to B today
     && !!v.candidates[0].title && v.canVote === false && v.why === 'sign in to vote');
   signIn('v1');
   v = await api.vote();
-  check('signed in, before today\'s daily: no vote yet, and why', v.canVote === false && v.why === 'finish today\'s daily to vote' && v.votes === null);
+  // 164: a signed-in player votes from the home without playing today's daily
+  check('signed in, before today\'s daily: the vote is open, no tally yet', v.canVote === true && !v.why && v.votes === null);
   let cast = await api.castVote(v.candidates[1].id);
-  check('a cast before the daily is refused with the server\'s words', cast.error === 'finish today\'s daily to vote' && !cast.myVote);
+  check('a vote cast before the daily counts: my vote B, the tally shows', !cast.error && cast.myVote === v.candidates[1].id && cast.votes && cast.votes.b === 1);
   // play today's daily (B) to the end
   const sc = await api.getScenario(TODAY);
   const st = await playBest(api, await api.startOuting(sc.id, null, { mode: 'daily' }));
   const res = await api.finishOuting(st.outingId);
   check('today\'s daily is the vote\'s B, and it posts', sc.id === S.locks[TODAY] && res.account && res.account.taken === true);
   v = await api.vote();
-  check('after the daily, the vote is open to this player', v.canVote === true);
-  cast = await api.castVote(v.candidates[1].id);
-  check('the vote is cast: my vote B, the tally shows once you voted', !cast.error && cast.myVote === v.candidates[1].id && cast.votes && cast.votes.b === 1);
+  check('after the daily, the vote cast before it stands and no second is open', v.canVote === false && v.why === 'you voted' && v.myVote === v.candidates[1].id);
   const again = await api.castVote(v.candidates[0].id);
   check('one vote a player: the first stands', again.myVote === v.candidates[1].id && again.votes.a === 0);
+  signIn('v2');
+  v = await api.vote();
+  check('another player who has not played may vote too', v.canVote === true);
+  cast = await api.castVote(v.candidates[0].id);
+  check('their vote counts beside the first: A 1, B 1', !cast.error && cast.myVote === v.candidates[0].id && cast.votes.a === 1 && cast.votes.b === 1);
+  signIn('v1');
   S.up = false;
   const off = await api.vote();
   check('offline: the same two candidates, no vote possible', off.offline && off.candidates[1].id === v.candidates[1].id && off.canVote === false);

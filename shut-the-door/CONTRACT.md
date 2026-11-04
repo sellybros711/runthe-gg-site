@@ -1152,8 +1152,9 @@ played moves. The rule, and the server's copy of it, are in `modes.js` and
   is A. A played pack was offered, so nothing played in the last 13 days comes back. At least 4 of the
   30 are eligible each day, so the pairs vary. A pure function of the day: every device and the
   server agree without asking.
-- **Who votes**: signed in, once, after finishing today's daily (`shutdoor_outings` has today's row).
-  Not a device id: a device id is a string any script can mint, so it is no limit. Guests see the
+- **Who votes**: signed in, once, for tomorrow only, played today or not (164, 2026-11-04: from the
+  home without playing; 160 asked for today's daily first). Each candidate's card carries a `setup`
+  (data/setups.json): the moment in a sentence or two, never how it ended. Not a device id: a device id is a string any script can mint, so it is no limit. Guests see the
   candidates and the result.
 - **The lock**: voting for D closes when D begins (Eastern). The first read of D locks it, the same for
   every reader: more votes wins, no votes or a tie is A. A daily post from the epoch on must be for the
@@ -1166,7 +1167,7 @@ played moves. The rule, and the server's copy of it, are in `modes.js` and
  *  @returns {Promise<{day, open, candidates: Card[2], myVote: string|null, votes: {a, b}|null,
  *                     winner: string|null, canVote: boolean, why: string|null, offline: boolean}>}
  *  votes show once you voted or the day is locked. why is the server's reason when canVote is false:
- *  'sign in to vote', "finish today's daily to vote", 'you voted', 'voting is closed'. */
+ *  'sign in to vote', 'you voted', 'voting is closed'. */
 vote(day)
 
 /** Cast this player's one vote for tomorrow. The same shape, with error set when refused. */

@@ -312,6 +312,27 @@ for (const f of files) {
   check(`${c.id}: a scripted best-call outing is all green`, c.allGreen);
   check(`${c.id}: a scripted median outing lands at the 40th to 60th percentile`, c.median != null && c.median >= 40 && c.median <= 60, 'median ' + c.median);
 }
+/* the vote's setup lines (data/setups.json, copied onto each card by build_schedule.mjs): every
+   rotation pack has one, short, no dashes, and nothing that says or hints how it ended */
+{
+  const sched = JSON.parse(readFileSync(join(HERE, '..', 'data', 'schedule.json'), 'utf8'));
+  const setups = JSON.parse(readFileSync(join(HERE, '..', 'data', 'setups.json'), 'utf8'));
+  const SPOIL = /\b(comeback|came back|walk[- ]?off|blown|blows?|blew|held on|holds? on|hang on|hung on|rall(y|ied|ies)|won|wins|winning|lost|loses|losing|beat|beats|tied it|ties it|collapse\w*|miracle|heartbreak\w*|clinch\w*|champions?|celebrat\w*|famous|iconic|legendary|unforgettable|stunn\w*|shock\w*|escape\w*|survive\w*|homer\w*|home runs?|grand slam|gave up|give up|meltdown|choke\w*|implode\w*|history|record[- ]breaking|broke the record)\b/i;
+  // the two dashes and their entities, built from char codes so this file holds none itself
+  const DASH = new RegExp('[' + String.fromCharCode(0x2013, 0x2014) + ']|&' + '[mn]dash;|&#' + '821[12];');
+  const bad = [];
+  for (const id of sched.rotation) {
+    const s = sched.packs[id] && sched.packs[id].card && sched.packs[id].card.setup;
+    const why = !s ? 'missing' : s !== setups[id] ? 'card differs from setups.json (rebuild the schedule)'
+      : s.length > 140 ? s.length + ' chars' : DASH.test(s) ? 'a dash'
+      : SPOIL.test(s) ? 'spoiler word "' + s.match(SPOIL)[0] + '"' : null;
+    if (why) bad.push(id + ': ' + why);
+  }
+  check(`every rotation pack (${sched.rotation.length}) has a setup on its card, under 141 chars, no dashes, no spoiler words`, !bad.length, bad.join('; '));
+  const extra = Object.keys(setups).filter(id => !sched.rotation.includes(id));
+  check('setups.json holds only rotation packs', !extra.length, extra.join(', '));
+}
+
 console.log('\nband spread of the closer pool\'s calls, per scenario:');
 for (const c of rows) {
   const b = c.pool ? c.pool.bands : {};

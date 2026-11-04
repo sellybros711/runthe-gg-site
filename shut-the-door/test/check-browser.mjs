@@ -1716,6 +1716,11 @@ async function modes(w, h, full) {
   /* the vote, signed in */
   step(tag + ' 17 the vote', 300);
   ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockVote=open'));
+  /* the home's vote (164): signed in, before today's daily, the two are open, each with its setup; nothing opens */
+  await page.waitForSelector('#h-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });
+  const hv = await page.evaluate(() => [...document.querySelectorAll('#h-vote .vt-o')].map((b) => ({ s: (b.querySelector('.vt-s') || {}).textContent || '', c: getComputedStyle(b.querySelector('.vt-t b')).color })));
+  ok(hv.length === 2 && hv.every((c) => c.s.length > 20 && c.s.length <= 140) && await nothingOpen(page),
+    '17 the home votes before today\'s daily: two open choices with their setups, nothing opened (' + hv.map((c) => c.s).join(' | ') + ')');
   await dailyDone(page);
   await page.click('#d-see');
   await page.waitForSelector('#r-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });

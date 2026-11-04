@@ -660,8 +660,16 @@ function renderHomeState() {
     take.textContent = d && d.pitchNo > 0 ? 'back to the mound · pitch ' + (d.pitchNo + 1) : 'take the mound';
   }
   renderStreak();
+  homeVote();
   if (MU) MU.homeRow($('h-surv')).then(placePill);
   placePill();
+}
+
+/* The vote for tomorrow on the home (164): played today or not, signed in. The result's block, drawn
+   quiet so the result menu's row stays the result's. A block the player reads when they choose;
+   nothing opens. Hidden before the vote's first day, as on the result. */
+function homeVote() {
+  if (MU) MU.voteBlock($('h-vote'), { quiet: true }); else $('h-vote').hidden = true;
 }
 
 /* the home's stadium: the stills, one after another, slowly. CSS does the pan and the fade (transform
@@ -2733,6 +2741,7 @@ function boot() {
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
       if (document.body.dataset.screen === 's-result' && S.result) renderModes();
       if (document.body.dataset.screen === 's-home' && tab === 'surv' && MU) MU.showSurvivor();
+      if (document.body.dataset.screen === 's-home') homeVote();
       if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
     });
   } catch (e) {}
