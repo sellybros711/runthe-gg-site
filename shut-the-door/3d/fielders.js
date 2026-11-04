@@ -283,6 +283,13 @@ export class Crew {
       clips[a.name] = c;
     }
     this.clips = clips;
+    // (each run in step with the others: a jog's left foot lands at 0.14 of its cycle, a run's and a sprint's at
+    // 0.23, so a jog and a run laid over each other at the same share of their cycles had their feet down a
+    // tenth of a cycle apart, 34 degrees: through the change from one to the other neither foot was planted
+    // and the stride smeared. Each is read at its own share, its touchdowns (the mean of the two feet's) on
+    // the run's: off, the share of a cycle it is read ahead)
+    const td = (c) => ((c.lock.l.td + c.lock.r.td - 0.5) / 2 + 1) % 1;
+    for (const k of ['sprint', 'run', 'jog']) if (clips[k] && clips[k].lock) clips[k].off = clips.run && clips.run.lock ? td(clips[k]) - td(clips.run) : 0;
     // a stride (two steps) in field feet, at this body's size
     const rs = new THREE.Vector3().setFromMatrixScale(this.t.world[this.t.index.Root]).x;   // the root bone's frame
     const sc = rs * HEIGHT_M / this.t.modelH;
@@ -302,17 +309,40 @@ export class Crew {
     return { w, stride };
   }
 
-  /** A body's phase through its stride at each moment (radians), from its speed along the plan: a
-      table over the play, so the phase advances with the distance at the stride its speed calls for. */
+  /** How much of the run's capture his legs take (0..1) at speed v (ft/s) and acceleration acc (ft/s^2).
+      Under LEG_V a stride shortens with the speed, as a player's does: the legs a share sqrt(v / LEG_V) of the
+      way from his set to the capture's stride, and (phaseTable) the stride's phase turning over at the
+      speed that share of a stride covers, so the planted foot stays put. (Before, the capture came in on
+      smooth(v / 6.5) while the phase ran at the whole stride's rate: at 3 ft/s the legs were less than half
+      a stride and the feet slid along the grass with him.) Driving hard, speeding up or braking, his steps
+      are shorter and quicker: up to LEG_DRIVE shorter at LEG_ACC. */
+  legShare(v, acc = 0) {
+    const sp = v >= LEG_V ? 1 : Math.sqrt(Math.max(0, v) / LEG_V);
+    return sp * (1 - LEG_DRIVE * clamp(Math.abs(acc) / LEG_ACC, 0, 1));
+  }
+
+  /** A body's stride over the play, from its speed (speedAt, a pure function of the play's time): at each
+      moment its phase (radians: the phase advances with the distance, at the stride its speed calls for,
+      shortened to the share legShare gives the legs), that share, and his acceleration (ft/s^2, the speed's
+      change over ACC_H either side, so it never steps in a frame). One table over the play. */
   phaseTable(speedAt, t0, t1, trot) {
-    const dt = 1 / 60, n = Math.ceil((t1 - t0) / dt) + 2, out = new Float32Array(n);
+    const dt = 1 / 60, n = Math.ceil((t1 - t0) / dt) + 2, out = new Float32Array(n), legs = new Float32Array(n), acc = new Float32Array(n);
+    const v = new Float64Array(n + 2 * ACC_N);
+    for (let i = 0; i < v.length; i++) v[i] = speedAt(t0 + (i - ACC_N) * dt);
     let ph = 0;
     for (let i = 0; i < n; i++) {
+      const vi = v[i + ACC_N];
+      acc[i] = (v[i + 2 * ACC_N] - v[i]) / (2 * ACC_N * dt);
+      legs[i] = this.legShare(vi, acc[i]);
       out[i] = ph;
-      const v = speedAt(t0 + i * dt);
-      if (this.clips) ph += 2 * Math.PI * v * dt / this.runMix(v, trot).stride;
+      if (this.clips) ph += 2 * Math.PI * vi * dt / (this.runMix(vi, trot).stride * Math.max(legs[i], LEG_MIN));
     }
-    return { t0, dt, out, at: (t) => { const x = clamp((t - t0) / dt, 0, n - 1.001), i = Math.floor(x); return out[i] + (out[i + 1] - out[i]) * (x - i); } };
+    // (seconds since he last set off from a standstill, and to his next standstill: Figure.transition)
+    const since = new Float32Array(n), until = new Float32Array(n);
+    for (let i = 0, last = -1e9; i < n; i++) { if (v[i + ACC_N] < STILL_V) last = i; since[i] = (i - last) * dt; }
+    for (let i = n - 1, next = 1e9; i >= 0; i--) { if (v[i + ACC_N] < STILL_V) next = i; until[i] = (next - i) * dt; }
+    const read = (T) => (t) => { const x = clamp((t - t0) / dt, 0, n - 1.001), i = Math.floor(x); return T[i] + (T[i + 1] - T[i]) * (x - i); };
+    return { t0, dt, out, at: read(out), legs: read(legs), acc: read(acc), since: read(since), until: read(until) };
   }
 
   /** A new body on its own skeleton (hidden until placed). */
@@ -408,6 +438,19 @@ const _qf = new THREE.Quaternion();
     A leg takes its miss in while its foot is in the air (moving at over a fifth of its fastest, and up
     a third of its lift), the pelvis while both are (or evenly, a clip with no flight). */
 const LOOP_N = 64, LOCK_IN = 3, LOCK_OUT = 16;
+// the stride by speed and drive (Crew.legShare): the whole capture's stride from LEG_V ft/s; driving
+// (speeding up or braking at LEG_ACC ft/s^2 and over) steps LEG_DRIVE shorter and so quicker; never under
+// LEG_MIN of a stride for the phase (a body barely moving turns his stride over slowly, never fast)
+const LEG_V = 6.5, LEG_DRIVE = 0.3, LEG_ACC = 25, LEG_MIN = 0.12;
+// his acceleration read over ACC_N frames either side (phaseTable)
+const ACC_N = 6;
+// the lean with it: a share of the angle a body leans to push (or brake) at that rate, tan = acc / g, in
+// the trunk (forward pushing, back braking)
+const LEAN_PUSH = 0.5, LEAN_BRAKE = 0.35, G_FT = 32.17;
+// a start or stop clip gives way to the cycle over its last TRANS_OUT seconds (Figure.transition)
+const TRANS_OUT = 0.25;
+// standing still: under this speed (ft/s)
+const STILL_V = 0.3;
 // (the runner's foot lock: how fast the held point may follow the capture's own foot, and how far it may be
 // off it, field feet a second and feet; under the skate's 4 m/s, check-jolt.mjs)
 const LOCK_SLIP = 3.3, LOCK_OFF = 2.0;
@@ -593,7 +636,10 @@ export class Figure {
   }
 
   /** The pose. spec (all optional):
-      run      { phase (radians), amp 0..1 }      the stride, its size from the speed
+      run      { phase (radians), amp 0..1 }      the stride, its size from the speed (amp * 26 ft/s), and
+               from the phase table (Crew.phaseTable): legs (the stride's share, Crew.legShare), acc (ft/s^2,
+               his lean into it), since and until (seconds since he set off, to standing: a start or stop
+               clip, Figure.transition)
       crouch   0..1    knees and hips bent (ready 0.35, fielding a grounder 1)
       wide     0..1    feet apart (fielding)
       lean     radians the trunk forward
@@ -700,6 +746,18 @@ export class Figure {
     }
     // ---- the clips over the standing pose: the run by speed, a little idle life, the throw's trunk and arms
     const layered = clips ? this.layerClips(sp, aRun, useThrowClip) : false;
+    // ---- the lean of a push or a brake (run.acc, ft/s^2): into a start, his trunk forward; pulling up, back.
+    // Over the clips (the capture runs upright at its own speed and would take a lean laid under it away),
+    // given up to a slide, a dive, a set to field a ball and a throw's own trunk
+    const ac = sp.run ? sp.run.acc || 0 : 0;
+    if (ac) {
+      const k = (1 - clamp(sp.slide || 0, 0, 1)) * (1 - clamp(sp.settle || 0, 0, 1)) * (1 - clamp((sp.throwW || 0) * 2, 0, 1)) * (1 - clamp(sp.dive || 0, 0, 1));
+      const ln = Math.atan(ac / G_FT) * (ac > 0 ? LEAN_PUSH : LEAN_BRAKE) * k;
+      if (Math.abs(ln) > 1e-4) {
+        if (!layered) root.updateMatrixWorld(true);
+        rotX(B.spine_01, ln * 0.4); rotX(B.spine_02, ln * 0.35); rotX(B.spine_03, ln * 0.25);
+      }
+    }
     // ---- on the ground: where the soles are in this pose (the lowest foot at its bind height)
     // (layerClips brings the matrices up to date itself when it lays anything on)
     if (!layered) root.updateMatrixWorld(true);
@@ -738,7 +796,7 @@ export class Figure {
         for (const name of ['jog', 'run', 'sprint']) {
           const m = R.w[name], L = clips[name] && clips[name].lock;
           if (!(m > 0.001) || !L) continue;
-          const x = R.u * LOOP_N, i = Math.min(LOOP_N - 1, Math.floor(x));
+          const x = (R.uk ? R.uk[name] : R.u) * LOOP_N, i = Math.min(LOOP_N - 1, Math.floor(x));
           w += m * (L[s].w[i] + (L[s].w[i + 1] - L[s].w[i]) * (x - i)); ws += m;
         }
         w = ws > 0 ? (w / ws) * kr : 0;
@@ -815,17 +873,22 @@ export class Figure {
     for (let i = 0; i < n; i++) qp[i].copy(L[i].quaternion);
     const pel = this.bones.pelvis, pelP = pel.position.clone();
     // (settle: the stride gives way to a set pose, getting down to field a ball)
-    const runW = smooth(aRun * 4) * (1 - (sp.slide || 0)) * (1 - clamp(sp.settle || 0, 0, 1));
+    // the legs and pelvis by the stride's share (Crew.legShare: run.legs from the phase table, else from the
+    // speed); the trunk, arms and head as they were, smooth(v / 6.5)
+    const v = aRun * 26, keep = (1 - (sp.slide || 0)) * (1 - clamp(sp.settle || 0, 0, 1));
+    const legW = (sp.run.legs ?? this.crew.legShare(v)) * keep, runW = smooth(aRun * 4) * keep;
     let any = false;
-    if (runW > 0.001) {
-      // the mix of runs at this speed, each at the same share of its cycle
-      const v = aRun * 26, mix = this.crew.runMix(v, sp.run.trot);
-      const u = ((sp.run.phase / (2 * Math.PI)) % 1 + 1) % 1;
-      this.runAt = { u, w: mix.w, runW };
+    if (runW > 0.001 || legW > 0.001) {
+      // the mix of runs at this speed, each at its own share of its cycle (its touchdowns on the run's, c.off)
+      const mix = this.crew.runMix(v, sp.run.trot);
+      const u = ((sp.run.phase / (2 * Math.PI)) % 1 + 1) % 1, uk = {};
+      for (const k of ['jog', 'run', 'sprint']) { const o = (C[k] && C[k].off) || 0; uk[k] = o ? (u + o + 1) % 1 : u; }
+      // (runW: the share a runner's planted foot is held by, Figure.pose footLock: by speed, not drive)
+      this.runAt = { u, uk, w: mix.w, runW: this.crew.legShare(v) * keep };
       let wsum = 0;
       const pos = V(), pa = V();
       for (const k of ['jog', 'run', 'sprint']) {
-        const w = mix.w[k], c = C[k];
+        const w = mix.w[k], c = C[k], u = uk[k];
         if (!(w > 0.001) || !c) continue;
         for (let i = 0; i < n; i++) qb[i].copy(qp[i]);
         this.sample(c, u * c.period, qb, pa);
@@ -850,11 +913,13 @@ export class Figure {
         pos.lerp(pa, wsum === 0 ? 1 : k2);
         wsum += w;
       }
+      // a start or a stop clip over the cycle, where there is one (transition)
+      this.transition(sp, qa, pos);
       // (a scoop on the run: the stride goes on under him, his trunk and arms bent down to the ball, the
       // run giving them up by sp.bend)
       const bend = clamp(sp.bend || 0, 0, 1);
-      for (let i = 0; i < n; i++) L[i].quaternion.copy(qp[i]).slerp(qa[i], UPPER.has(L[i].name) ? runW * (1 - bend) : runW);
-      pel.position.copy(pelP).addScaledVector(pos, runW);
+      for (let i = 0; i < n; i++) L[i].quaternion.copy(qp[i]).slerp(qa[i], UPPER.has(L[i].name) ? runW * (1 - bend) : legW);
+      pel.position.copy(pelP).addScaledVector(pos, legW);
       any = true;
     }
     // standing: a little of the idle's life on the trunk, arms and head (its feet wander, so not those).
@@ -878,6 +943,28 @@ export class Figure {
     }
     if (any) this.root.updateMatrixWorld(true);
     return any;
+  }
+
+  /** A start or a stop clip over the run's cycle (qa, pos: the cycle's pose and pelvis offset, changed in
+      place). None is in fielder.glb yet: this is where they go. A clip named 'start' (Mixamo's Standing Run
+      Forward or Start Running, in place, 30 fps) is laid over the first of a run from a standstill, by
+      sp.run.since (seconds since he set off, inplay.js from the phase table), and one named 'stop' (Run To
+      Stop, in place) over the end of a run that pulls up, by sp.run.until (seconds to standing). Each is
+      played over its own length from his first or last stride and given up over TRANS_OUT, in step with the
+      cycle's touchdowns because both are timed to the plan's speed, not the clip's. Without them the cycle
+      itself starts and stops, shortened by legShare. */
+  transition(sp, qa, pos) {
+    const C = this.crew.clips, r = sp.run, L = this.list, n = L.length;
+    for (const [key, t] of [['start', r.since], ['stop', r.until]]) {
+      const c = C[key];
+      if (!c || t == null || !(t >= 0) || t > c.dur) continue;
+      const w = 1 - smooth((t - (c.dur - TRANS_OUT)) / TRANS_OUT), qc = this.qc, pc = V();
+      if (!(w > 0.001)) continue;
+      for (let i = 0; i < n; i++) qc[i].copy(qa[i]);
+      this.sample(c, key === 'start' ? t : c.dur - t, qc, pc);
+      for (let i = 0; i < n; i++) qa[i].slerp(qc[i], w);
+      if (c.p0) pos.lerp(pc.sub(c.p0), w);
+    }
   }
 
   /** An umpire's call (pose's spec.signal), in the model frame (+x his left, +y up, +z the way he faces).
