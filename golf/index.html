@@ -4270,11 +4270,15 @@ const PX_TOKEN=["......kkkkkk......", "....kkddddddkk....", "...kddhhhhhhddk..."
 function pxIconSVG(rows, sz, color, style){
   const mono=!color;
   const pal=color?{m:color,d:pxShadeHex(color,0.62),h:pxLiteHex(color,0.5),k:'#2a2412',w:'#f2f5f7',b:'#3a6fb0',r:'#d0433a',y:'#F1D04A',g:'#2fa564'}:null;
-  let cells='', dk='', lt='';
+  // A coloured icon is one <path> per colour, never one <rect> per pixel: the Tour Pass track draws over a hundred of
+  // these and at ~250 rects each they were 30,000 nodes, seconds of layout on a phone. Same squares, same colours.
+  let cells='', dk='', lt=''; const byCol=color?{}:null, order=[];
   for(let y=0;y<rows.length;y++){const row=rows[y];for(let x=0;x<row.length;x++){const ch=row[x];if(ch==='.')continue;
-    if(mono){ const c=`M${x} ${y}h1.04v1.04h-1.04z`; cells+=c; if(ch==='d') dk+=c; else if(ch==='h') lt+=c; }
-    else cells+=`<rect x="${x}" y="${y}" width="1.04" height="1.04" fill="${pal[ch]||'#f0f'}"/>`;}}
-  const body=mono?`<path d="${cells}"/>${dk?`<path d="${dk}" fill="#000" opacity=".3"/>`:''}${lt?`<path d="${lt}" fill="#fff" opacity=".42"/>`:''}`:cells;
+    const c=`M${x} ${y}h1.04v1.04h-1.04z`;
+    if(mono){ cells+=c; if(ch==='d') dk+=c; else if(ch==='h') lt+=c; }
+    else { const f=pal[ch]||'#f0f'; if(byCol[f]===undefined){ byCol[f]=''; order.push(f); } byCol[f]+=c; }}}
+  const body=mono?`<path d="${cells}"/>${dk?`<path d="${dk}" fill="#000" opacity=".3"/>`:''}${lt?`<path d="${lt}" fill="#fff" opacity=".42"/>`:''}`
+    :order.map(f=>`<path d="${byCol[f]}" fill="${f}"/>`).join('');
   return `<svg class="ic" viewBox="0 0 18 18" width="${sz}" height="${sz}"${mono?' fill="currentColor"':''} shape-rendering="crispEdges" aria-hidden="true" focusable="false"${style?` style="${style}"`:''}>${body}</svg>`;
 }
 const PX_EMBLEM={"wheel":["wheel","#d0433a"],"pumpkin":["pumpkin","#e8801f"],"turkey":["turkey","#9a5f2e"],"leaf":["leaf","#d8843a"],"heart":["heart","#d0433a"],"palette":["palette","#d6a45a"],"bandage":["bandage","#e3ae78"],"flagUS":["flagUS","#d0433a"],"flagEU":["flagEU","#3a6fb0"],"faceCry":["faceCry","#F7C948"],"faceDevil":["faceDevil","#8b5cf6"],"faceSalute":["faceSalute","#F7C948"],"facePlead":["facePlead","#F7C948"],"faceCalm":["faceCalm","#F7C948"],"faceCold":["faceCold","#5bb8f0"],"faceGrimace":["faceGrimace","#F7C948"],"faceSweat":["faceSweat","#F7C948"],"skull":["skull","#e8ebf0"],"eyes":["eyes","#f2f5f7"],"handsUp":["handsUp","#F7C948"],"flex":["flex","#F7C948"],"popcorn":["popcorn","#d0433a"],"giftBox":["gift","#d0433a"],"starGold":["star","#F1D04A"]};
@@ -5438,9 +5442,14 @@ function seededShuffle(arr,seed){const r=mulberry32((seed^0x9e3779b9)>>>0);const
 // so everyone must share the same day key at the same instant; per-user local time would split players onto
 // different courses/boards. America/New_York handles EST/EDT automatically.
 const TZ_DAILY='America/New_York';
+// One formatter, made once: building an Intl.DateTimeFormat is the slow part, and the Tour Pass asks for today's key
+// hundreds of times a draw (every tier's reward reads the season, which reads the day). Today's key is kept a second.
+let _tzFmt=null, _tzNow=0, _tzNowAt=0;
 function _tzKey(d){ try{
-    const s=new Intl.DateTimeFormat('en-CA',{timeZone:TZ_DAILY,year:'numeric',month:'2-digit',day:'2-digit'}).format(d||new Date());
-    const p=s.split('-'); return (+p[0])*10000+(+p[1])*100+(+p[2]);
+    if(!d){ const t=Date.now(), g=t-_tzNowAt; if(_tzNow && g>=0 && g<1000) return _tzNow; }   // a clock set back is a new answer
+    if(!_tzFmt) _tzFmt=new Intl.DateTimeFormat('en-CA',{timeZone:TZ_DAILY,year:'numeric',month:'2-digit',day:'2-digit'});
+    const s=_tzFmt.format(d||new Date());
+    const p=s.split('-'), k=(+p[0])*10000+(+p[1])*100+(+p[2]); if(!d){ _tzNow=k; _tzNowAt=Date.now(); } return k;
   }catch(e){ const x=d||new Date(); return x.getUTCFullYear()*10000+(x.getUTCMonth()+1)*100+x.getUTCDate(); } }
 function todayKey(){return _tzKey();}
 // per-account storage key: daily completion + streak are tied to the signed-in user, not the
@@ -15869,7 +15878,8 @@ function ftFitHome(root){
     shrink(64); if(gap()>=0) return;
     root.classList.add('ft-tighter');
   }catch(e){} };
-  fit();
+  // under an open sheet the home is covered: measure it on the next frame, not in the middle of building the sheet
+  if(S.overlay) requestAnimationFrame(()=>fit()); else fit();
   // the web fonts and the Putt Putt chips can land after the first look, and an in-app browser's bars slide in
   // and out: watch the doors and the tee themselves, so the fit always answers to the final layout. One fit
   // per frame; a fit that settles on the same layout changes no size, so it cannot wake the observer again.
@@ -15880,7 +15890,12 @@ function ftFitHome(root){
   window.removeEventListener('resize', ftFitHome._on); ftFitHome._on=soon;
   window.addEventListener('resize', soon, {passive:true});
 }
-function ftSafeB(){ try{ const p=document.createElement('div'); p.style.cssText='position:fixed;visibility:hidden;height:env(safe-area-inset-bottom,0px)'; document.body.appendChild(p); const h=p.offsetHeight; p.remove(); return h||0; }catch(e){ return 0; } }
+// Measured once and on a resize or rotation: measuring forces a layout of the whole page, and the home asked on every draw.
+let _ftSafeB=null;
+function ftSafeB(){ if(_ftSafeB!==null) return _ftSafeB;
+  try{ const p=document.createElement('div'); p.style.cssText='position:fixed;visibility:hidden;height:env(safe-area-inset-bottom,0px)'; document.body.appendChild(p); const h=p.offsetHeight; p.remove(); _ftSafeB=h||0; }catch(e){ _ftSafeB=0; }
+  return _ftSafeB; }
+try{ const z=()=>{ _ftSafeB=null; }; window.addEventListener('resize', z, {passive:true}); window.addEventListener('orientationchange', z, {passive:true}); }catch(e){}
 function ftHearts(lives,max){ lives=lives|0; max=max||9; const nh=Math.ceil(Math.max(max,lives)/3); let o='';
   for(let i=0;i<nh;i++){ const k=Math.max(0,Math.min(3,lives-i*3)); o+=`<span class="ft-heart" style="opacity:${k?0.45+0.55*k/3:0.3}">♥</span>`; }
   return o+`<span class="ft-hn">${lives}/${max}</span>`; }
@@ -23251,23 +23266,160 @@ function g3dOn(){
 const G3M_BUDGET=90;
 const G3M_BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 function g3dMenuOn(){ try{ return g3dOn() && typeof RTT_G3D.pic==='function'; }catch(e){ return false; } }
-let _g3mSpent=0, _g3mN=0; const _g3mQ=[], _g3mIds=new Map();
+let _g3mSpent=0, _g3mN=0; const _g3mQ=[], _g3mIds=new Map(), _g3mDone=new Map();
 function g3dPic(look,part){
   if(!g3dMenuOn()) return null;
   try{
+    const k0=part+'|'+JSON.stringify(look);
+    if(_g3mDone.has(k0)) return _g3mDone.get(k0);   // drawn by the worker (null: it has no 3D picture, today's art shows)
     if(RTT_G3D.cached(look,part)) return RTT_G3D.pic(look,part);
-    if(_g3mSpent<G3M_BUDGET){ if(!_g3mSpent) setTimeout(()=>{ _g3mSpent=0; },0);
+    // drawn here and now only when there is no worker yet (a full figure, the golfer a screen is about) or none at all
+    if(_g3mSpent<G3M_BUDGET && ((part==='fig'&&_g3wState!==2)||_g3wState<0)){ if(!_g3mSpent) setTimeout(()=>{ _g3mSpent=0; },0);
       const t=performance.now(), r=RTT_G3D.pic(look,part); _g3mSpent+=Math.max(1,performance.now()-t); return r; }
     const k=part+'|'+JSON.stringify(look); let id=_g3mIds.get(k);
-    if(!id){ id='g'+(++_g3mN); _g3mIds.set(k,id); _g3mQ.push([look,part,id]); if(_g3mQ.length===1) g3dDrain(); }
+    if(!id){ id='g'+(++_g3mN); _g3mIds.set(k,id); _g3mQ.push([look,part,id]); setTimeout(g3dDrain,0); }
     return {url:G3M_BLANK,pend:id};
   }catch(e){ return null; }
 }
-function g3dDrain(){ const idle=window.requestIdleCallback||(f=>setTimeout(()=>f({timeRemaining:()=>12}),40));
-  idle(dl=>{ while(_g3mQ.length&&dl.timeRemaining()>8){ const [look,part,id]=_g3mQ.shift(); _g3mIds.delete(part+'|'+JSON.stringify(look));
-      let r=null; try{ r=RTT_G3D.pic(look,part); }catch(e){}
-      document.querySelectorAll('img[data-g3d="'+id+'"]').forEach(im=>{ im.removeAttribute('data-g3d'); if(r) im.src=r.url; }); }
-    if(_g3mQ.length) g3dDrain(); }); }
+/* The queue is drawn NEAREST THE SCREEN FIRST, one picture per idle slice, and only while a picture waiting is on the
+   screen or within G3M_AHEAD of it. The rest wait for a scroll to bring them near (the owner, 2026-11-04: a 200 row
+   leaderboard or the shop's apparel drew every picture at once, seconds of drawing that froze the page). A picture whose
+   blank is no longer on the page (the screen moved on) leaves the queue, so asking for it again draws it fresh. */
+let _g3mBusy=false;
+function g3dAhead(){ return Math.round((window.innerHeight||800)*1.5); }
+// The queued pictures near the screen, nearest first (at most n): one pass over the page's waiting blanks per call.
+function g3dNearest(n){
+  const vh=window.innerHeight||800, ahead=g3dAhead(), d={}, live=new Set();
+  document.querySelectorAll('img[data-g3d]').forEach(im=>{ const k=im.getAttribute('data-g3d'); live.add(k);
+    const r=im.getBoundingClientRect(); if(!r.width&&!r.height) return;   // a hidden tab waits
+    const x=r.bottom<0?-r.bottom:(r.top>vh?r.top-vh:0); if(d[k]===undefined||x<d[k]) d[k]=x; });
+  for(let i=_g3mQ.length-1;i>=0;i--){ const q=_g3mQ[i];
+    if(!live.has(q[2])){ _g3mIds.delete(q[1]+'|'+JSON.stringify(q[0])); _g3mQ.splice(i,1); } }
+  return _g3mQ.filter(q=>d[q[2]]!==undefined && d[q[2]]<=ahead).sort((a,b)=>d[a[2]]-d[b[2]]).slice(0,n||1);
+}
+function g3dDrain(){
+  if(_g3wState===0) g3wStart();
+  if(_g3wState===1) return;                                  // the worker is starting: it drains when ready
+  if(_g3wState===2){ g3wPump(); return; }
+  if(_g3mBusy||!_g3mQ.length) return; _g3mBusy=true;
+  const idle=window.requestIdleCallback||(f=>setTimeout(()=>f({timeRemaining:()=>12}),40));
+  const step=dl=>{
+    const q=g3dNearest(1)[0]; if(!q){ _g3mBusy=false; return; }   // nothing near the screen: a scroll wakes it
+    _g3mQ.splice(_g3mQ.indexOf(q),1); const [look,part,id]=q; _g3mIds.delete(part+'|'+JSON.stringify(look));
+    let r=null; try{ r=RTT_G3D.pic(look,part); }catch(e){}
+    g3dFill(id,r);
+    if(_g3mQ.length) idle(step); else _g3mBusy=false; };
+  idle(step); }
+/* THE 3D PICTURES IN A WORKER. golfer3d.js draws on the CPU, 25 to 200 ms a picture, and on the page that time is
+   a frozen screen. So the page builds a worker that holds the same drawing code: PXHD cut from this page's own
+   script (as scripts/setlist/extract_pxhd.mjs does), every page global golfer3d.js and its helpers read, copied
+   by value, then golfer3d.js itself. Nothing is generated ahead of time, so the worker cannot drift from the page.
+   Anything it cannot copy, or any picture it fails, is drawn on the page instead, as before. */
+function g3wSource(g3src){
+  const scripts=[...document.scripts].filter(s=>!s.src).map(s=>s.textContent);
+  const main=scripts.find(t=>t.indexOf('var PXHD=(function(){')>=0); if(!main) throw new Error('no PXHD');
+  const a=main.indexOf('var PXHD=(function(){'), r=main.indexOf('return { render, renderMap, ramp, mix, Sprite, skinRamp, hairRamp, lum };',a), e=main.indexOf('})();',r);
+  if(r<0||e<0) throw new Error('PXHD end');
+  const pxhd=main.slice(a,e+5);
+  // the page's top-level names (a declaration at the start of a line, the page's own style)
+  const tops=new Set(); scripts.forEach(t=>{ const re=/^(?:const|let|var|function|async function)\s+([A-Za-z_$][\w$]*)/gm; let m; while((m=re.exec(t))) tops.add(m[1]); });
+  tops.delete('PXHD'); ['S','document','window','LS','sb'].forEach(n=>tops.delete(n));
+  const idsOf=src=>{ const out=new Set(), re=/[A-Za-z_$][\w$]*/g; let m; src=src.replace(/\/\/[^\n]*/g,''); while((m=re.exec(src))) if(tops.has(m[0])) out.add(m[0]); return out; };
+  const glob=n=>(0,eval)(n);
+  const decl=new Map(), todo=[...idsOf(g3src)], skipped=[];
+  const fnSrc=f=>{ let s=Function.prototype.toString.call(f); if(/\[native code\]/.test(s)) throw new Error('native');
+    if(!/^(async\s+)?(function\b|\(|[A-Za-z_$][\w$]*\s*=>|class\b)/.test(s)) s='function '+s; return s; };
+  const toSrc=(v,seen,deps)=>{
+    if(v===null) return 'null'; const t=typeof v;
+    if(t==='undefined') return 'undefined'; if(t==='number') return Number.isFinite(v)?String(v):(Number.isNaN(v)?'NaN':(v>0?'Infinity':'-Infinity'));
+    if(t==='string'||t==='boolean') return JSON.stringify(v);
+    if(t==='function'){ const s=fnSrc(v); idsOf(s).forEach(x=>deps.add(x)); return '('+s+')'; }
+    if(t!=='object') throw new Error('type '+t);
+    if(seen.has(v)) throw new Error('cycle'); seen.add(v);
+    try{
+      if(Array.isArray(v)) return '['+v.map(x=>toSrc(x,seen,deps)).join(',')+']';
+      if(v instanceof Map) return 'new Map('+toSrc([...v.entries()],seen,deps)+')';
+      if(v instanceof Set) return 'new Set('+toSrc([...v],seen,deps)+')';
+      if(v instanceof RegExp) return v.toString();
+      const pr=Object.getPrototypeOf(v); if(pr!==Object.prototype&&pr!==null) throw new Error('class');
+      return '{'+Object.keys(v).map(k=>JSON.stringify(k)+':'+toSrc(v[k],seen,deps)).join(',')+'}';
+    } finally{ seen.delete(v); }
+  };
+  while(todo.length){ const n=todo.pop(); if(decl.has(n)) continue;
+    let v; try{ v=glob(n); }catch(e){ skipped.push(n); decl.set(n,null); continue; }
+    const deps=new Set(); let src; try{ src=toSrc(v,new Set(),deps); }catch(e){ skipped.push(n+':'+e.message); decl.set(n,null); continue; }
+    decl.set(n,src); deps.forEach(d=>{ if(!decl.has(d)) todo.push(d); }); }
+  let body='';
+  decl.forEach((src,n)=>{ if(src!=null) body+='var '+n+'='+src+';\n'; });
+  return {pxhd, body, skipped, n:decl.size, bytes:body.length};
+}
+function g3wBoot(g3url,g3src){
+  const o=g3wSource(g3src);
+  const pre=`self.window=self;
+var __cvs=new Map(), __cvn=0;
+self.document={createElement:function(){ return new OffscreenCanvas(1,1); }};
+OffscreenCanvas.prototype.toDataURL=function(){ const k='g3w:'+(++__cvn); __cvs.set(k,this); return k; };
+${o.pxhd}
+${o.body}
+importScripts(${JSON.stringify(g3url)});
+self.onmessage=async function(ev){ const m=ev.data; try{
+    const r=self.RTT_G3D&&self.RTT_G3D.pic(m.look,m.part);
+    if(!r){ postMessage({id:m.id,none:1}); return; }
+    const cv=__cvs.get(r.url); if(!cv) throw new Error('no canvas');
+    const blob=await cv.convertToBlob({type:'image/png'});
+    postMessage({id:m.id,blob,w:r.w,h:r.h});
+  }catch(e){ postMessage({id:m.id,err:String(e&&e.message||e)}); } };
+postMessage({ready:!!(self.RTT_G3D&&self.RTT_G3D.pic)});`;
+  const url=URL.createObjectURL(new Blob([pre],{type:'text/javascript'}));
+  return new Worker(url);
+}
+
+// a picture arriving fades in, so a list filling as you scroll reads as smooth, not as pop-in
+function g3dFill(id,r){
+  document.querySelectorAll('img[data-g3d="'+id+'"]').forEach(im=>{ im.removeAttribute('data-g3d'); if(r){ im.classList.add('g3in'); im.src=r.url; } }); }
+let _g3w=null, _g3wState=0, _g3wFly=new Map();             // state 0 not started · 1 starting · 2 ready · -1 none (draw on the page)
+function g3wStart(){
+  if(_g3wState) return; _g3wState=1;
+  try{
+    if(typeof Worker!=='function'||typeof OffscreenCanvas!=='function'||!OffscreenCanvas.prototype.convertToBlob) throw new Error('unsupported');
+    if(!document.getElementById('g3in-css')){ const st=document.createElement('style'); st.id='g3in-css';
+      st.textContent='img.g3in{animation:g3in .24s ease-out both}@keyframes g3in{from{opacity:0}}@media (prefers-reduced-motion:reduce){img.g3in{animation:none}}'; document.head.appendChild(st); }
+    const tag=[...document.scripts].find(x=>/golfer3d\.js/.test(x.src)); if(!tag) throw new Error('no golfer3d.js');
+    const g3url=new URL(tag.src, location.href).href;
+    fetch(g3url).then(r=>{ if(!r.ok) throw new Error('fetch '+r.status); return r.text(); }).then(src=>{
+      if(_g3wState!==1) return;
+      const w=g3wBoot(g3url,src); _g3w=w;
+      const giveUp=setTimeout(()=>{ if(_g3wState===1) g3wDead('slow'); }, 20000);
+      w.onerror=()=>g3wDead('error');
+      w.onmessage=ev=>{ const m=ev.data||{};
+        if('ready' in m){ clearTimeout(giveUp); if(m.ready){ _g3wState=2; g3dDrain(); } else g3wDead('no RTT_G3D'); return; }
+        const job=_g3wFly.get(m.id); _g3wFly.delete(m.id); if(!job) return;
+        const k=job[1]+'|'+JSON.stringify(job[0]); _g3mIds.delete(k);
+        if(m.err){ _g3mQ.push([job[0],job[1],m.id,1]); }   // the worker could not draw it: the page draws it
+        else { const r=m.none?null:{url:URL.createObjectURL(m.blob),w:m.w,h:m.h};
+          if(_g3mDone.size>800) _g3mDone.clear(); _g3mDone.set(k,r); g3dFill(m.id,r); }
+        g3dDrain(); };
+    }).catch(()=>g3wDead('fetch'));
+  }catch(e){ g3wDead(e&&e.message); }
+}
+function g3wDead(why){
+  if(_g3wState<0) return; _g3wState=-1; try{ _g3w&&_g3w.terminate(); }catch(e){} _g3w=null;
+  _g3wFly.forEach((job,id)=>_g3mQ.push([job[0],job[1],id])); _g3wFly.clear();
+  try{ track('g3d_worker_off',{why:String(why||'')}); }catch(e){}
+  g3dDrain(); }
+// two at a time, nearest the screen first, so a scroll re-orders what is drawn next
+function g3wPump(){
+  const room=2-_g3wFly.size; if(room<=0||!_g3mQ.length) return;
+  for(const q of g3dNearest(room)){
+    _g3mQ.splice(_g3mQ.indexOf(q),1);
+    if(q[3]){ // failed in the worker once: drawn on the page, in an idle slice
+      const idle=window.requestIdleCallback||(f=>setTimeout(f,40));
+      idle(()=>{ let r=null; try{ r=RTT_G3D.pic(q[0],q[1]); }catch(e){} _g3mIds.delete(q[1]+'|'+JSON.stringify(q[0])); g3dFill(q[2],r); g3dDrain(); }); continue; }
+    _g3wFly.set(q[2],q); try{ _g3w.postMessage({id:q[2],look:q[0],part:q[1]}); }catch(e){ g3wDead('post'); return; } } }
+// started while the page is idle a few seconds after it opens, so the first list already has it
+try{ setTimeout(()=>{ const idle=window.requestIdleCallback||(f=>setTimeout(f,0)); idle(()=>{ try{ if(g3dMenuOn()) g3wStart(); }catch(e){} }); }, 4000); }catch(e){}
+try{ const wake=()=>{ if(_g3mQ.length && (_g3wState===2 || !_g3mBusy)) g3dDrain(); };
+  document.addEventListener('scroll', wake, {capture:true, passive:true}); window.addEventListener('resize', wake, {passive:true}); }catch(e){}
 function g3dSrc(g){ return `src="${g.url}"${g.pend?` data-g3d="${g.pend}"`:''}`; }
 function g3dTile(g){ return `<span class="sthumb"><img ${g3dSrc(g)} style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
 // an item drawn alone: on the default golfer, so a tile is the item and not the player's own look
