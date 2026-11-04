@@ -3534,7 +3534,7 @@
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
       "v": "25",
-      "sha": "9754be25f783706c"
+      "sha": "4d44b0d2ffc65111"
     },
     "shade-data.js": {
       "v": "5",
@@ -3616,7 +3616,7 @@
     },
     "inplay-plan.js": {
       "v": "25",
-      "sha": "9754be25f783706c"
+      "sha": "4d44b0d2ffc65111"
     }
   },
   "shut-the-door/3d/stands.js": {
@@ -3670,7 +3670,7 @@
     },
     "inplay-plan.js": {
       "v": "25",
-      "sha": "9754be25f783706c"
+      "sha": "4d44b0d2ffc65111"
     },
     "field.js": {
       "v": "10",

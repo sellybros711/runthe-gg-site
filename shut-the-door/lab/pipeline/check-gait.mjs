@@ -16,8 +16,16 @@
  *           Held to none: the drawn run is the plan's to the inch wherever the play is decided.
  *   kink    his acceleration changing by more than KINK ft/s^2 from one frame to the next while he runs (a
  *           push or a brake that comes in or goes in a frame)
- *   brake   a pull up harder than BRAKE ft/s^2 (a dead stop)
- *   push    a start harder than PUSH ft/s^2
+ *   brake   a pull up harder than BRAKE ft/s^2 at its hardest (a dead stop: sprint to standing in a stride)
+ *   push    a start harder than PUSH ft/s^2 at its hardest (one and a half times what a sprinter's first step
+ *           gives)
+ *
+ * A drawn ramp's hardest push or brake is about one and a half times the straight ramp's even one (the same
+ * change of speed in the same time, eased in and out), so a mild pull up can be harder at its peak than as
+ * planned; what it loses is the step (and a ramp already hard as planned stays as planned, inplay-plan.js
+ * HARD_PUSH, HARD_BRAKE). Every 20th case, 2026-11-04 (100,848 runs), main to this: the largest change in a
+ * frame, median 16.3 to 3.3 ft/s^2; runs with a kink 98,047 to 11,905; peak push median 19.0 to 27.3 ft/s^2;
+ * dead stops 875 to 566.
  *
  * A run that ends at full speed with nothing after it (inplay.js carries the body on and slows it) is not
  * counted at its end. Plays with each are held to CEILING, a ceiling that only comes down. The straight ramps
@@ -32,15 +40,15 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +proce
 const SHOW = arg('--show', 0);
 const all = [...inplayCases()];
 const SEL = selection({ heldStride: 1, total: all.length });
-export const FPS = 60, KINK = 8, BRAKE = 45, PUSH = 40, MOVED_FT = 0.01;
-// measured on every case, 2026-11-04 (main had, drawn straight: kink in nearly every play, brake in the plays
-// with a STOP_S pull up, push in none). A ceiling that only comes down
+export const FPS = 60, KINK = 8, BRAKE = 90, PUSH = 45, MOVED_FT = 0.01;
+// measured on every case, 2026-11-04 (165,935 plays). Main before it, drawn straight: kink fielder 165,935
+// (every play), kink runner 165,935, kink umpire 36,477, brake fielder 4,866, brake runner 10,133, push 0,
+// moved 0. A ceiling that only comes down
 const CEILING = {
-  'brake fielder': 35870,
-  'brake runner': 10133,
-  'kink fielder': 83440,
+  'brake fielder': 3857,
+  'brake runner': 6849,
+  'kink fielder': 81432,
   'kink runner': 102480,
-  'push fielder': 4196,
 };
 
 const dt = 1 / FPS;

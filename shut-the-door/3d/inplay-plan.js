@@ -241,6 +241,12 @@ function drawRuns(tr, moments) {
     // the end of it: drawn smooth he went into it a foot a second and more faster than planned, in the same
     // place, and a head that had been just under a check-jolt.mjs limit went over it. As planned)
     if (!(be > 0) && al >= 1 - 1e-6) la = 0;
+    // (a ramp already hard as planned stays as planned: drawn, a ramp's hardest push or brake is about one and a
+    // half times the straight ramp's even one, so a pull up of 60 ft/s^2 went over 90, a dead stop in a stride,
+    // check-gait.mjs brake)
+    const top = g.total / g.T / (1 - al / 2 - be / 2);
+    if (la && top / (al * g.T) > HARD_PUSH) la = 0;
+    if (lb && top / (be * g.T) > HARD_BRAKE) lb = 0;
     // (each ramp's own stretch, and again once the other ramp's choice gives it more or less room)
     for (let i = 0; i < 2; i++) {
       if (la && inside(g.t0, g.t0 + g.T * al * la)) la = 0;
@@ -260,6 +266,8 @@ const STOP_S = 0.3;
 // legs can brake: a dead stop in one stride. The same time to the same spot, the plan's own STOP_S stop
 // kept for the plan's timing)
 const STOP_DRAWN = 0.6;
+// a ramp harder than these as planned (ft/s^2) is drawn as planned (drawRuns)
+const HARD_PUSH = 30, HARD_BRAKE = 60;
 
 /** A run at full speed that ends standing (Track.settle, Track.stopAtEnd): its top speed rises to fit the
     stop into the same time, by no more than a sixth. The plan's over STOP_S (al, be), the drawn one over
@@ -594,6 +602,9 @@ function drawAll(p) {
     drawRuns(tr, [r.arrive, r.outAt, r.scoreAt, r.firstAt, r.slide, r.slide != null ? r.slide - 0.6 : null, tr.stopAt].filter(num).map((t) => t * k));
     tr.drawn = true;
   }
+  // (a runner close behind another, the batter taking second behind a man thrown out there: drawn, one's push
+  // or pull up put him a step past the other where the plan has him a step behind. Both as planned)
+  for (let k = 0, q; k < 8 && (q = passing(p)); k++) { q.back.track.drawn = false; q.front.track.drawn = false; }
   for (const tr of Object.values(p.umps || {})) if (tr && tr.legs) { drawRuns(tr, tr.acts.map((a) => a.t).filter(num)); tr.drawn = true; }
 }
 
@@ -2234,17 +2245,11 @@ function outcomeOf(ctx) {
 }
 
 /** Does the plan show what the engine decided? A list of problems (empty: it does). */
-export function verify(pr, plan) {
-  const bad = [];
-  const o = plan.outcome, ip = pr.inPlay || {};
-  const label = ip.result;
-  const hit = HITS[label] || 0;
-  const moves = pr.runnerMoves || [];
-  const batterOut = moves.some((m) => m.from === 0 && m.to === -1) || !moves.some((m) => m.from === 0);
-  // no runner passes the runner ahead of him (MLB rule 5.09(b)(9)): along the base paths, while both
-  // are still running (not yet out, not yet across the plate), the one behind stays behind
-  // (followed along in time: only the leg he is on or the next, so home plate as base 0 and as
-  // base 4 never confuse the two)
+/** The first runner who passes the runner ahead of him (MLB rule 5.09(b)(9)), or null: along the base paths,
+    while both are still running (not yet out, not yet across the plate), the one behind stays behind
+    (followed along in time: only the leg he is on or the next, so home plate as base 0 and as base 4 never
+    confuse the two). { back, front, t } */
+export function passing(plan) {
   const prog = (q, prev) => {
     let best = { d: Infinity, p: prev };
     for (let k = Math.floor(prev); k <= Math.min(3, Math.floor(prev) + 1); k++) {
@@ -2257,15 +2262,28 @@ export function verify(pr, plan) {
   };
   const live = (r, t) => !(r.out && r.outAt != null && t >= r.outAt) && !(r.scoreAt != null && t >= r.scoreAt - 0.05);
   const rs = plan.runners.slice().sort((a, b) => a.from - b.from);
-  passing: for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+  for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
     const back = rs[i], front = rs[j];
     let pb = back.from, pf = front.from;
-    for (let t = 0; t <= plan.dur + 2; t += 0.05) {
+    for (let t = 0; t <= (plan.dur ?? 14) + 2; t += 0.05) {
       pb = prog(back.track.at(t), pb); pf = prog(front.track.at(t), pf);
       if (!live(back, t) || !live(front, t)) continue;
-      if (pb > pf + 0.02) { bad.push(`the runner from ${back.from} passes the runner from ${front.from} at ${t.toFixed(2)} s`); break passing; }
+      if (pb > pf + 0.02) return { back, front, t };
     }
   }
+  return null;
+}
+
+export function verify(pr, plan) {
+  const bad = [];
+  const o = plan.outcome, ip = pr.inPlay || {};
+  const label = ip.result;
+  const hit = HITS[label] || 0;
+  const moves = pr.runnerMoves || [];
+  const batterOut = moves.some((m) => m.from === 0 && m.to === -1) || !moves.some((m) => m.from === 0);
+  // no runner passes the runner ahead of him (MLB rule 5.09(b)(9)): passing()
+  const pass = passing(plan);
+  if (pass) bad.push(`the runner from ${pass.back.from} passes the runner from ${pass.front.from} at ${pass.t.toFixed(2)} s`);
   // the base umpires call what the plan shows: an out at first, second or third called out by that base's
   // umpire a beat after it, every safe call a runner safe on that bag, never a call against the play
   if (plan.umps) {

@@ -20,6 +20,7 @@ name: Shut The Door lab checks
 #   inplay   every case (it is pure: a minute and a half)                      check-inplay.mjs
 #   pitch    every pack, pitch, side and crossing, phone and desktop            check-pitch-path.mjs
 #   foul     every seeded foul on every pack and every shape's grid (pure)      check-foul.mjs
+#   gait     every case: each run's start and stop as drawn (pure)              check-gait.mjs
 #
 # Runs locally, unchanged (add --resume to pick up a killed run; lab/pipeline/checkpoint.mjs). No
 # secrets, no deploy.
@@ -73,6 +74,9 @@ jobs:
             browser: true
           - name: foul
             run: node shut-the-door/lab/pipeline/check-foul.mjs
+            browser: false
+          - name: gait
+            run: node shut-the-door/lab/pipeline/check-gait.mjs
             browser: false
     steps:
       - uses: actions/checkout@v4
