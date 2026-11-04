@@ -324,7 +324,7 @@ window.render = async function (t) {
     // the day's spot on the home: a real save situation, the same for everybody
     const sec = 0.2 + l * 0.6, pu = PE(PUSH * 0.6);
     wait = phone('home', sec, { push: pu, focus: ['sit'] });
-    flash = 0.3 * (1 - span(l, 0, 0.12));
+    // the opening shot: nothing came before it, so no cut flash
     callout('home', sec, ['title', 'sit', 'hpitcher'], { zoom: 1.6, cx: CO.cx, cy: CO.low, pop: pop(0.4, 0.75), push: pu, focus: ['sit'] });
     text = capAbove(l, 0.15, [['A real save situation.', ''], ['| Every day.', 'org']], { size: TALL ? 96 : 88, step: 0.07 });
   }
@@ -425,7 +425,7 @@ window.render = async function (t) {
       <div style="margin-top:${28 * K}px;opacity:${span(l, 0.9, 1.15)};transform:translateY(${(1 - out(span(l, 0.9, 1.2))) * 20}px)"><span class="pill" style="background:var(--org);color:#fff">runthe.gg/shut-the-door</span></div></div>`;
   }
 
-  $('text').innerHTML = text.replace(/class="w org"/g, 'class="w" style="color:var(--org)"');
+  $('text').innerHTML = text.replace(/class="w org" style="/g, 'class="w" style="color:var(--org);');
   $('flash').style.opacity = flash;
   $('scan').style.opacity = scan;
   $('tint').style.background = tint || 'transparent'; $('tint').style.opacity = tintA;

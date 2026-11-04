@@ -12,7 +12,7 @@ today's. The trailer shows one real spot; the copy says "a new real save situati
 | setting | pick | why |
 |---|---|---|
 | objective | Website traffic (landing page views if offered) | new players, not views |
-| creative | the 4:5 portrait video (`shut-the-door-lockout-trailer-x-4x5-v8.mp4`, 1080x1350) as a video website card | the card makes the whole video a link |
+| creative | the 4:5 portrait video (`shut-the-door-lockout-trailer-x-4x5-v9.mp4`, 1080x1350) as a video website card | the card makes the whole video a link |
 | destination | `https://runthe.gg/shut-the-door/?utm_source=x&utm_medium=paid&utm_campaign=std-lockout` | |
 | card headline | `Lock in. One real save a day.` | |
 | locations | United States, Canada, Dominican Republic, Puerto Rico | MLB's fan base |
