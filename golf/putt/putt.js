@@ -2151,9 +2151,64 @@ function tourDesc(n, host, tid){ var TR = tourOf(tid), W = worldOf(n, tid);
    '' for a world with no stops, which is built as it always was. */
 function stopOf(th, leg){ var LD = typeof window !== 'undefined' && window.RTT_PUTT_LAND, T = LD && LD.stops && LD.stops[th], s = ''; if (!T) return '';   // no window: the checks run this in node
   for (var i = 0; i < T.length; i++) if (leg >= T[i][0]) s = T[i][1]; return s; }
+/* EVERY HOLE ROLLS (the owner, 2026-11-02: "almost every hole should have some sort of slope element to it, including the ones
+   we've already built. It gives the game a lot more depth and feel"). A hole listed in ROLLS gets a roll in its carpet on top of
+   what it was built with: a gentle tilt across it, and a mound, a hollow or a tier where nothing else stands (roll()). The number
+   is the seed the search (roll-search.mjs) settled on: the first that kept the hole's par, its secret line and its fairness. */
+var ROLLS = {
+  'main:192':1, 'main:1':1, 'main:3':1, 'main:4':2, 'main:7':3, 'main:8':1, 'main:9':3, 'main:10':1, 'main:11':6, 'main:12':1, 'main:13':1, 'main:14':4, 'main:16':3,
+  'main:17':4, 'main:20':4, 'main:22':3, 'main:23':1, 'main:26':2, 'main:30':12, 'main:31':3, 'main:33':1, 'main:35':6, 
+  'main:38':2, 'main:40':12, 'main:41':2, 'main:42':1, 'main:44':1, 'main:45':1, 'main:47':1, 'main:48':3, 'main:51':1, 'main:52':1, 'main:53':1,
+  'main:56':5, 'main:58':1, 'main:60':1, 'main:61':1, 'main:62':1, 'main:64':1, 'main:66':1, 'main:67':1, 'main:68':1, 'main:69':1,
+  'main:71':1, 'main:73':1, 'main:74':1, 'main:75':2, 'main:76':1, 'main:77':5, 'main:79':5, 'main:80':1, 'main:82':5,
+  'main:84':5, 'main:85':1, 'main:86':1, 'main:88':1, 'main:89':1, 'main:91':1, 'main:92':2, 'main:94':1, 'main:96':1, 'main:97':4,
+  'main:98':2, 'main:99':1, 'main:101':1, 'main:103':1, 'main:104':1, 'main:105':1, 'main:106':3, 'main:107':1, 'main:109':1,
+  'main:113':1, 'main:115':8, 'main:117':1, 'main:120':1, 'main:121':2,
+  'main:122':1, 'main:123':1, 'main:124':3, 'main:125':1, 'main:127':2, 'main:128':1, 'main:129':1, 'main:130':1, 'main:131':2, 'main:132':1,
+  'main:133':4, 'main:134':4, 'main:135':2, 'main:136':1, 'main:138':1, 'main:139':1, 'main:140':1, 'main:141':1, 'main:142':1, 
+  'main:145':2, 'main:146':1, 'main:147':2, 'main:148':1, 'main:149':1, 'main:151':2, 'main:152':1, 'main:153':1, 'main:154':1, 'main:155':1,
+  'main:156':1, 'main:157':1, 'main:158':1, 'main:159':1, 'main:160':1, 'main:161':3, 'main:163':3, 'main:165':4, 'main:166':1,
+  'main:167':2, 'main:168':5, 'main:170':1, 'main:171':1, 'main:173':1, 'main:174':1, 'main:175':1, 'main:176':1,
+  'main:177':2, 'main:178':4, 'main:181':1, 'main:182':1, 'main:183':1, 'main:184':1, 'main:185':1, 'main:187':1, 'main:190':1,
+  'main:193':1, 'main:196':1, 'main:197':2, 'main:199':1, 'main:201':1, 'main:202':1, 'main:203':1, 'main:204':1,
+  'main:205':1, 'main:206':1, 'main:207':1, 'main:208':1, 'main:209':1, 'main:210':1, 'main:211':1, 'main:213':2, 'main:214':1,
+  'main:215':1, 'main:216':1
+};
+function roll(H, seed){
+  var r = mulberry(hstr('roll:' + seed)), rooms = (H.polys || [{ pts:H.poly }]).map(function(q){ return q.pts || q; });
+  var all = rooms.reduce(function(a, p){ return a.concat(p); }, []), xs = all.map(function(p){ return p[0]; }), ys = all.map(function(p){ return p[1]; });
+  var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+  var near = function(x, y, d){ return function(p){ return Math.hypot(p[0] - x, p[1] - y) < d; }; };
+  // somewhere a slope can go: on carpet, clear of the rails, the tee, the cup and every piece, with room for its own size
+  function clear(x, y, need){
+    var inRoom = rooms.some(function(p){ return inPoly(p, x, y); }); if (!inRoom) return false;
+    for (var k = 0; k < rooms.length; k++){ var P = rooms[k]; for (var i = 0; i < P.length; i++){ var a = P[i], c = P[(i + 1) % P.length]; if (segDist(x, y, a[0], a[1], c[0], c[1]) < Math.min(need, 1.6) + 0.4){
+      if (!rooms.some(function(Q, j){ return j !== k && inPoly(Q, (a[0] + c[0]) / 2, (a[1] + c[1]) / 2 + 0.3) ; })) return false; } } }
+    if (Math.hypot(x - H.tee[0], y - H.tee[1]) < need + 2.5 || Math.hypot(x - H.cup[0], y - H.cup[1]) < need + 2.2) return false;
+    var pts = [].concat(H.bumpers.map(function(b){ return [b.x, b.y, b.r]; }), (H.loops || []).map(function(L){ return [L.x, L.y, 2.5]; }), (H.ramps || []).map(function(R){ return [R.x, R.y, 3]; }),
+      (H.turns || []).map(function(u){ return [u.x, u.y, (u.r || 2) + 0.5]; }), (H.movers || []).map(function(m){ return m.k === 'spin' || m.k === 'blade' ? [m.x, m.y, (m.len || 2) + 0.6] : [(m.ax + m.bx) / 2, (m.ay + m.by) / 2, Math.hypot(m.bx - m.ax, m.by - m.ay) / 2 + 1.2]; }));
+    if (pts.some(function(q){ return Math.hypot(x - q[0], y - q[1]) < q[2] + need + 0.6; })) return false;
+    var rects = [].concat(H.blocks, H.zones.filter(function(z){ return z.t === 'rect'; }), H.bridges || [], H.ferries || [], H.belts || [], H.floats || [], H.climbs || [], H.secret || []);
+    if (rects.some(function(b){ var a0 = Math.min(b.x0, b.x1), a1 = Math.max(b.x0, b.x1), c0 = Math.min(b.y0, b.y1), c1 = Math.max(b.y0, b.y1); return x > a0 - need - 0.6 && x < a1 + need + 0.6 && y > c0 - need - 0.6 && y < c1 + need + 0.6; })) return false;
+    if (H.zones.some(function(z){ return z.t === 'circle' && Math.hypot(x - z.x, y - z.y) < z.r + need + 0.6; })) return false;
+    if ((H.rivers || []).length && near(x, y, need + 2)) { var rv = H.rivers.some(function(R){ return (R.pts || []).some(near(x, y, need + 2.5)); }); if (rv) return false; }
+    return true; }
+  // the tilt: a gentle fall across the hole, mostly side to side so it bends a putt rather than speeding or stalling it
+  var ang = (r() < 0.5 ? 0 : Math.PI) + (r() - 0.5) * 1.1, tg = 0.014 + r() * 0.018;
+  H.comps.push({ k:'plane', gx:Math.cos(ang) * tg, gy:Math.sin(ang) * tg * 0.6 });
+  // then one or two shapes in the open carpet: a mound or a hollow, or a tier across the hole
+  var want = 1 + (r() < 0.55 ? 1 : 0), placed = 0, tries = 0;
+  while (placed < want && tries++ < 200){ var x = x0 + r() * (x1 - x0), y = y0 + r() * (y1 - y0), kind = r();
+    if (kind < 0.25 && placed === 0){ var hw = (x1 - x0) / 2; if (!clear((x0 + x1) / 2, y, 1.6)) continue;
+      H.comps.push({ k:'ridge', x:(x0 + x1) / 2, y:y, nx:0, ny:r() < 0.5 ? 1 : -1, w:1.6 + r() * 1.4, a:0.22 + r() * 0.18 }); placed++; continue; }
+    var sz = 1.6 + r() * 1.6; if (!clear(x, y, sz)) continue;
+    H.comps.push({ k:'mound', x:x, y:y, s:sz, a:(r() < 0.6 ? 1 : -1) * (0.26 + r() * 0.22) }); placed++; }
+  // and the cup sits on a near level patch, as every pin does
+  H.flats.push({ x:H.cup[0], y:H.cup[1], s:1.4, keep:0.3 });
+}
 function buildLevel(n, tid, theme, name){
   var TR = tourOf(tid), L = TR.levels[n - 1], W = worldOf(n, tid), th = theme || W.theme, T = THEMES[th];
-  var H = L.f(T); H.par = L.par;
+  var H = L.f(T); H.par = L.par; var rk = ROLLS[TR.id + ':' + n]; if (rk != null) roll(H, rk);
   var Cx = courseFromH(H, TR.tag + n, hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), th, name || levelName(n, tid));
   if (TR.secret && SECRETS[n - 1]) Cx.scene = SECRETS[n - 1].scene;   // a secret hole stands in its own place
   // a tour hole knows its place in its world (1 to 18), so the land round it can change as you walk through the world
@@ -2176,7 +2231,7 @@ var RTT_PUTT = {
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
   simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
-  makeField:makeField, finishCourse:finishCourse, inPoly:inPoly, _spaceTrip:spaceTrip,
+  makeField:makeField, finishCourse:finishCourse, inPoly:inPoly, _spaceTrip:spaceTrip, ROLLS:ROLLS,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
   CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, TGT_R:TGT_R, TGT_KEEP:TGT_KEEP, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
 };
