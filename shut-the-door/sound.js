@@ -284,17 +284,21 @@
     try { if (document.hidden) ac.suspend(); else if (on) ac.resume(); } catch (e) {}
   });
 
+  function off() {}
   window.STD_SFX = {
     setOn: setOn,
     isOn: function () { return on; },
     /* for the browser check: the switch, and the master gain the speakers get */
     state: function () { return { on: on, started: !!ac, gain: master ? master.gain.value : 0, ctx: ac ? ac.state : 'none' }; },
-    pitch: run(pitch), pop: run(pop), crack: run(crack), miss: run(miss), thud: run(thud), snap: run(snap),
-    /* the crowd is off (the owner, 2026-11-03: "the crowd noise sounds like white noise, let's remove
-       it"). roar, groan, cheer and the bed stay callable and do nothing, so no caller changes. */
-    ump: run(say), roar: function () {}, groan: function () {}, cheer: function () {}, sting: run(sting),
-    tick: run(tick), chime: run(chime), tap: run(tap), tab: run(tab),
-    bed: function () {},
+    /* every sound is off (the owner, 2026-11-03: "the sound effects also sound childish ... can we
+       remove sound for now until we find a solution"). Real recorded CC0 clips will replace them.
+       Each call stays callable and does nothing, so no caller changes; the switch, the gain and
+       the phone's buzz work as before. The crowd went first ("sounds like white noise"). The
+       synthesized builders above stay for reference until the recordings land. */
+    pitch: off, pop: off, crack: off, miss: off, thud: off, snap: off,
+    ump: off, roar: off, groan: off, cheer: off, sting: off,
+    tick: off, chime: off, tap: off, tab: off,
+    bed: off,
     buzz: function (p) { if (!on || !canBuzz()) return; try { navigator.vibrate(p); } catch (e) {} },
   };
 })();
