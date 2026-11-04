@@ -259,13 +259,14 @@ check('practice is never stored', mem[C.OUTING_KEY] === before && pr.mode === 'p
 {
   for (const k of Object.keys(mem)) delete mem[k];
   signedIn = false;
-  // before: Chapman's day under rules 7. after: the first fixed day (before the vote, 2026-11-16)
-  // from the rollout on whose pack has two halves
-  const FROM = '2026-11-01', VOTE = '2026-11-16';
+  // before: Chapman's day under rules 7. after: the first day from the rollout on whose pack has
+  // two halves (from the vote's first day, the day's default, candidate A, since no server answers)
+  const FROM = '2026-11-01', M = require('../modes.js');
+  const packOf = d => (M.voteOpen(d) ? M.defaultPack(sched, d) : sched.days[d].pack);
   const days = Object.keys(sched.days).filter(d => sched.days[d].pack === 'std-2016-ws7-chapman');
   const before = days.find(d => d < FROM);
   const two = id => (JSON.parse(readFileSync(join(DATA, 'packs', id + '.json'), 'utf8')).scenario.halves || []).length > 1;
-  const after = Object.keys(sched.days).sort().find(d => d >= FROM && d < VOTE && two(sched.days[d].pack));
+  const after = Object.keys(sched.days).sort().find(d => d >= FROM && two(packOf(d)));
   const Q = freshApi();
   const s7 = await Q.getScenario(before);
   const o7 = await Q.startOuting(s7.id, null, { mode: 'daily' });
