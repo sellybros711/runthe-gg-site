@@ -286,7 +286,11 @@ export class InPlay {
     // (each over the whole of his motion: his track, and past it the fielder's glide or the runner's carry)
     // (and against the same motion as the plan times it, its straight ramps: Crew.phaseTable baseAt)
     const planned = (tr, f) => (t) => { tr.drawn = false; try { return f(t); } finally { tr.drawn = true; } };
-    for (let n = 1; n <= 9; n++) { const tr = plan.fielders[n], v = (t) => { const g = this.glideAt(tr, t); return g ? g.spd : tr.at(t).spd; }; tr.phase = this.crew.phaseTable(v, 0, T1, false, planned(tr, v)); }
+    // (a fielder's glide past his track's end strides as it always has, poseFielder: plainFrom)
+    for (let n = 1; n <= 9; n++) {
+      const tr = plan.fielders[n], v = (t) => { const g = this.glideAt(tr, t); return g ? g.spd : tr.at(t).spd; }, b = (t) => tr.at(t).spd;
+      tr.phase = this.crew.phaseTable(v, 0, T1, false, planned(tr, b), { plainFrom: this.glideAt(tr, tr.free + 1e-3) ? tr.free : Infinity });
+    }
     // (and each fielder's facing as he watches the ball, turned at a person's speed: faceTable)
     while (this.faceNext()) { /* the ones prepare has not made yet */ }
     for (const r of plan.runners) { const v = (t) => this.runnerAt(r, t).spd; r.phase = this.crew.phaseTable(v, 0, T1, trot, planned(r.track, v), { shorten: false }); }
@@ -501,7 +505,12 @@ export class InPlay {
     const spd = st.spd;
     // (how much he is running: a set, getting down to a ball, gives way to his stride at speed)
     const moving = smooth((spd - 4) / 10);
-    const spec = { run: this.stride(tr.phase, s, st.run, CYCLE.fielder, spd), crouch: 0, lean: 0, idleT: s + n * 0.83, look: { x: ball.x, y: ball.y, z: ball.z }, lookW: spd > 6 ? 0.55 : 1 };
+    // (gliding on past his track's end, his stride as it always was: the clip's run stride over the distance, its
+    // legs by speed. It carries him into a ball picked up on the run, the fit pulling him to it, and any other
+    // stride there slid his planted feet, check-jolt.mjs skate fielder pickup. His lean back into it stays)
+    const sr = this.stride(tr.phase, s, st.run, CYCLE.fielder, spd);
+    if (glide && this.crew.clips) { sr.phase += 2 * Math.PI * glide / this.crew.clips.run.strideFt; sr.legs = undefined; sr.shorten = false; }
+    const spec = { run: sr, crouch: 0, lean: 0, idleT: s + n * 0.83, look: { x: ball.x, y: ball.y, z: ball.z }, lookW: spd > 6 ? 0.55 : 1 };
     // ready at the pitch, by position, standing tall once he is out of it (READY: the middle infielders low and
     // wide, weight forward, the glove out front; the corners lower, the glove down; the outfielders upright
     // and set; the pitcher and the catcher as they were). Before contact (the stills, s < 0) the infielders

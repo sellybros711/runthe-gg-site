@@ -334,7 +334,7 @@ export class Crew {
       phase the base's (a runner: his foot lock, Figure.pose footLock, holds his planted foot instead, and
       under it the shorter strides' new touchdowns were held and let go a frame off, check-jolt.mjs skate
       runner run). */
-  phaseTable(speedAt, t0, t1, trot, baseAt = speedAt, { shorten = true } = {}) {
+  phaseTable(speedAt, t0, t1, trot, baseAt = speedAt, { shorten = true, plainFrom = Infinity } = {}) {
     const dt = 1 / 60, n = Math.ceil((t1 - t0) / dt) + 2, out = new Float32Array(n), legs = new Float32Array(n), acc = new Float32Array(n);
     const v = new Float64Array(n + 2 * ACC_N);
     for (let i = 0; i < v.length; i++) v[i] = speedAt(t0 + (i - ACC_N) * dt);
@@ -349,12 +349,15 @@ export class Crew {
     // the base's step and the wanted step, each frame
     const base = new Float64Array(n), want = new Float64Array(n);
     for (let i = 0; i < n; i++) {
-      const vi = v[i + ACC_N], vb = baseAt === speedAt ? vi : baseAt(t0 + i * dt);
+      const t = t0 + i * dt, vi = v[i + ACC_N], vb = baseAt === speedAt ? vi : baseAt(t);
       acc[i] = a1[i + ACC_N];
-      legs[i] = shorten ? this.legShare(vi, acc[i]) : smooth(vi / LEG_V);
+      // (from plainFrom on, the stride as it always was: a fielder's glide past his track, inplay.js poseFielder;
+      // the braking's shorter steps given up over PLAIN_IN before it, never in a frame)
+      const plain = t >= plainFrom, kd = smooth((plainFrom - t) / PLAIN_IN);
+      legs[i] = shorten && !plain ? this.legShare(vi, acc[i] * kd) : smooth(vi / LEG_V);
       if (!this.clips) continue;
       base[i] = 2 * Math.PI * vb * dt / this.runMix(vb, trot).stride;
-      want[i] = shorten ? 2 * Math.PI * vi * dt / (this.runMix(vi, trot).stride * Math.max(legs[i], LEG_MIN)) : base[i];
+      want[i] = shorten && !plain ? 2 * Math.PI * vi * dt / (this.runMix(vi, trot).stride * Math.max(legs[i], LEG_MIN)) : base[i];
     }
     // each start or stop (a stretch of frames where they differ): its extra over the base, in whole cycles
     const step = new Float64Array(base);
@@ -472,16 +475,18 @@ const LOOP_N = 64, LOCK_IN = 3, LOCK_OUT = 16;
 // the stride by speed and braking (Crew.legShare): the whole capture's stride from LEG_V ft/s; braking at
 // LEG_ACC ft/s^2 and over, steps LEG_DRIVE shorter and so quicker; never under
 // LEG_MIN of a stride for the phase (a body barely moving turns his stride over slowly, never fast)
-const LEG_V = 6.5, LEG_DRIVE = 0.3, LEG_ACC = 25, LEG_MIN = 0.12;
+const LEG_V = 6.5, LEG_DRIVE = 0.2, LEG_ACC = 25, LEG_MIN = 0.12;
 // his acceleration, no more than ACC_MAX ft/s^2, eased over ACC_N frames either side (phaseTable)
 const ACC_N = 6, ACC_MAX = 30;
 // the lean with it: a share of the angle a body leans to push (or brake) at that rate, tan = acc / g, in
 // the trunk (forward pushing, back braking)
-const LEAN_PUSH = 0.5, LEAN_BRAKE = 0.35, G_FT = 32.17;
+// (a push at 0.5 of it threw a breaking fielder's head forward just over a head's speed, check-jolt.mjs pop fielder -)
+const LEAN_PUSH = 0.3, LEAN_BRAKE = 0.25, G_FT = 32.17;
 // a start or stop clip gives way to the cycle over its last TRANS_OUT seconds (Figure.transition)
 const TRANS_OUT = 0.25;
 // standing still: under this speed (ft/s)
 const STILL_V = 0.3;
+const PLAIN_IN = 0.3;
 // (the runner's foot lock: how fast the held point may follow the capture's own foot, and how far it may be
 // off it, field feet a second and feet; under the skate's 4 m/s, check-jolt.mjs)
 const LOCK_SLIP = 3.3, LOCK_OFF = 2.0;
@@ -782,7 +787,8 @@ export class Figure {
     // given up to a slide, a dive, a set to field a ball and a throw's own trunk
     const ac = sp.run ? sp.run.acc || 0 : 0;
     if (ac) {
-      const k = (1 - clamp(sp.slide || 0, 0, 1)) * (1 - clamp(sp.settle || 0, 0, 1)) * (1 - clamp((sp.throwW || 0) * 2, 0, 1)) * (1 - clamp(sp.dive || 0, 0, 1));
+      // (the throw's smoothly: given up to it at twice its weight, the throwing hand went at 50 m/s)
+      const k = (1 - clamp(sp.slide || 0, 0, 1)) * (1 - clamp(sp.settle || 0, 0, 1)) * (1 - smooth(sp.throwW || 0)) * (1 - clamp(sp.dive || 0, 0, 1));
       const ln = Math.atan(ac / G_FT) * (ac > 0 ? LEAN_PUSH : LEAN_BRAKE) * k;
       if (Math.abs(ln) > 1e-4) {
         if (!layered) root.updateMatrixWorld(true);
