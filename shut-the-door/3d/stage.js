@@ -81,17 +81,22 @@
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=8';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=10';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=11';
 import { People } from './people.js?v=43';
 import { Pitch, releaseOf } from './pitch.js?v=13';
 import { fromResult, motion } from './play.js?v=13';
 import { look } from './looks.js?v=6';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=44';
-import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=10';
-import { FirstPerson } from './firstperson.js?v=16';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=11';
+import { FirstPerson } from './firstperson.js?v=17';
 
 const C = () => window.STD_CONTRACT;
+/* the quality tiers (Stage.judgeTier): the pixel ratio's cap and the sun's shadow map, best first.
+   A pitch whose median frame ran over TIER_SLOW ms steps down one, under TIER_FAST up one. */
+const TIERS = [{ dpr: 2, shadow: 2048 }, { dpr: 1.5, shadow: 1024 }, { dpr: 1.2, shadow: 1024 }];
+const TIER_SLOW = 24, TIER_FAST = 13, TIER_KEY = 'std-3d-tier';
+const HIDDEN = [];
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
 const tint = (color) => { try { window.dispatchEvent(new CustomEvent('std-pitch-color', { detail: color })); } catch (e) { /* no page */ } };
 // the grid: a column is CELL_FT wide at the plate, and a cell is never under CELL_PX on screen
@@ -220,7 +225,9 @@ function factsFrom(scn, extra) {
 class Stage {
   constructor(canvas) {
     this.canvas = canvas;
-    this.renderer = makeRenderer(canvas, 2);
+    this.renderer = makeRenderer(canvas, TIERS[0].dpr);
+    this.tier = 0;
+    try { const k = +localStorage.getItem(TIER_KEY); this.tierNext = Number.isInteger(k) && k > 0 && k < TIERS.length ? k : 0; } catch (e) { this.tierNext = 0; }
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(10, 1, 0.05, 900);
     this.eye = pitcherEye(this.camera);
@@ -228,6 +235,9 @@ class Stage {
     this.cam0 = this.camera.clone();
     this.safe = null;
     this.park = buildPark(this.scene, this.renderer);
+    this.scene.traverse((o) => { if (o.isDirectionalLight && o.castShadow) this.sun = o; });
+    if (TEST()) this.tierNext = 0;
+    if (this.tierNext || Number.isFinite(window.STD_STAGE_TIER)) this.applyTier(true);
     this.is3d = true;
     this.cell = null;
     this.t = 0;
@@ -403,8 +413,45 @@ class Stage {
 
   render() {
     if (this.ghost && (this.ghost.on || this.ghost.busy())) { this.ghost.tick(); this.ghost.orient(this.camera, this.canvas.clientHeight); }
-    this.renderer.render(this.scene, this.camera);
+    // (a hidden branch of the scene draws nothing, but three.js still worked out every matrix in it on
+    // each draw: on the mound the ballpark and the thirteen hidden fielders, runners and umpires, their
+    // bones the most of the frame's JS. Skipped for this draw only, so a query between draws, or the
+    // first draw it is shown in, works them out as before)
+    if (!this.playing && this.tierNext !== this.tier) this.applyTier();
+    const off = HIDDEN;
+    for (const o of this.scene.children) if (!o.visible && o.matrixWorldAutoUpdate) { o.matrixWorldAutoUpdate = false; off.push(o); }
+    try { this.renderer.render(this.scene, this.camera); } finally { for (const o of off) o.matrixWorldAutoUpdate = true; off.length = 0; }
     if (this.fp) this.fp.render(this.camera);
+  }
+
+  /** THE QUALITY TIER (phones, the owner 2026-11-03: "the game lags on mobile"). Each pitch on the
+      real clock times its frames; at the set after it the tier steps down one when the frames ran
+      long, and up one when they ran well inside the budget (TIERS: the pixel ratio and the sun's
+      shadow map). A tier changes only at the set, never during a pitch, on a draw (render), so the new
+      canvas size, which clears it, is drawn in the same task. Tier 0 is the look as it was. The stepped test clock never
+      changes it; window.STD_STAGE_TIER forces one (a measurement). The tier is kept for the next visit. */
+  judgeTier(gaps) {
+    if (TEST() || !gaps || gaps.length < 12) return;
+    // (the median: the broadcast's first frame, or a hitch, is not the phone's pace. A steady 30 a
+    // second steps down too: a phone held to 30 by Low Power Mode cannot be told from one held there
+    // by its GPU, and the cheaper tier is what Low Power Mode asks for anyway)
+    const g = gaps.slice(3).sort((a, b) => a - b), med = g[g.length >> 1];
+    if (med > TIER_SLOW) this.tierNext = Math.min(TIERS.length - 1, this.tier + 1);
+    else if (med < TIER_FAST && this.tier > 0) this.tierNext = this.tier - 1;
+  }
+
+  applyTier(force) {
+    const want = Number.isFinite(window.STD_STAGE_TIER) ? Math.max(0, Math.min(TIERS.length - 1, window.STD_STAGE_TIER | 0)) : this.tierNext;
+    if (!force && want === this.tier) { this.tierNext = want; return false; }
+    this.tier = this.tierNext = want;
+    const T = TIERS[want];
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, T.dpr));
+    if (this.sun && this.sun.shadow.mapSize.x !== T.shadow) {
+      this.sun.shadow.mapSize.set(T.shadow, T.shadow);
+      if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; }
+    }
+    try { localStorage.setItem(TIER_KEY, String(want)); } catch (e) { /* no storage: this visit only */ }
+    return true;
   }
 
   /** The release meter is up (ui.js throwIt): the mound holds still, so the needle has the phone to
@@ -905,6 +952,7 @@ class Stage {
     };
     return new Promise((done) => {
       let prev = null, clock = 0, lastT = -1, raf = 0, finished = false, popped = false, called = false;
+      const gaps = [];   // (the frames' times, for the quality tier: judgeTier)
       // the end of the pitch: whatever has not fired fires, in order, and the promise always resolves
       // (broken: a frame threw, so the scene is left as it is)
       const finish = (broken) => {
@@ -931,6 +979,7 @@ class Stage {
             if (run) { this.inplay.end(this.camera); this.preview(); this.render(); }
           }
         } catch (e) { console.error('the end of the pitch failed', e); trace.error = String(e && e.message || e); }
+        this.judgeTier(gaps);
         this.dirty = true;
         const summary = { n: pr.n, result: pr.result, inPlay: !!run, land: landed, skipped: trace.skipped, seconds: Math.round(Math.max(0, Math.min(lastT, tEnd)) / speed * 1000) / 1000 };
         trace.summary = summary;
@@ -951,6 +1000,7 @@ class Stage {
       const frame = (now) => {
         // the play's clock: the time since the last frame, never more than MAX_STEP (a stall pauses the
         // play; on the wall clock it jumped it forward, a ball in play to its end)
+        if (prev != null && gaps.length < 600) gaps.push(now - prev);
         if (prev == null) prev = now;
         clock += Math.min(MAX_STEP, Math.max(0, (now - prev) / 1000));
         prev = now;
