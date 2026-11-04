@@ -19,6 +19,7 @@ name: Shut The Door lab checks
 #   catch    about 6,000 cases of 168,754                                      check-catch.mjs --sample 6000
 #   inplay   every case (it is pure: a minute and a half)                      check-inplay.mjs
 #   pitch    every pack, pitch, side and crossing, phone and desktop            check-pitch-path.mjs
+#   foul     every seeded foul on every pack and every shape's grid (pure)      check-foul.mjs
 #
 # Runs locally, unchanged (add --resume to pick up a killed run; lab/pipeline/checkpoint.mjs). No
 # secrets, no deploy.
@@ -70,6 +71,9 @@ jobs:
           - name: pitch-path
             run: node shut-the-door/lab/pipeline/check-pitch-path.mjs
             browser: true
+          - name: foul
+            run: node shut-the-door/lab/pipeline/check-foul.mjs
+            browser: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

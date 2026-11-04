@@ -15,6 +15,7 @@ import { FT } from './units.js?v=1';
 import { assetUrl } from './load.js?v=8';
 import { BASE, MOUND, WALL_H, wallDist } from './inplay-plan.js?v=24';
 import { MOUND_C } from './field.js?v=9';
+import { foulFront } from './foul.js?v=1';
 import { buildCrowd, crowdClub, crowdImpostor, LOD, FAN_VIS } from './crowd.js?v=1';
 import { clubNamed, battingClub } from './clubs.js?v=2';
 export { MOUND_C };
@@ -23,14 +24,10 @@ const W = (x, y, h = 0) => new THREE.Vector3(-x * FT, h * FT, y * FT);   // fiel
 const D2R = Math.PI / 180;
 
 /** Where the front of the stands is, at angle th (degrees from centre field, + toward right field):
-    the outfield wall in fair ground, then a low wall 45 ft off each foul line back to the backstop. */
+    the outfield wall in fair ground, then a low wall 45 ft off each foul line back to the backstop
+    (foul.js foulFront, which a foul ball's flight bounces off). */
 export function frontAt(th) {
-  const a = Math.abs(th);
-  if (a <= 45) return wallDist(th);
-  const line = 45 / Math.sin((a - 45) * D2R || 1e-3);
-  const d = Math.min(330, line);
-  const k = THREE.MathUtils.smoothstep(a, 100, 128);
-  return d + (56 - d) * k;
+  return Math.abs(th) <= 45 ? wallDist(th) : foulFront(th);
 }
 
 /* THE PARK'S PLAN (degrees th round from centre field, + toward right field; feet). A generic park, not

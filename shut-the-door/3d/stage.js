@@ -82,14 +82,14 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=8';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=11';
-import { People } from './people.js?v=43';
-import { Pitch, releaseOf } from './pitch.js?v=13';
-import { fromResult, motion } from './play.js?v=13';
+import { People } from './people.js?v=44';
+import { Pitch, releaseOf } from './pitch.js?v=14';
+import { fromResult, motion } from './play.js?v=14';
 import { look } from './looks.js?v=6';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=45';
-import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=11';
-import { FirstPerson } from './firstperson.js?v=17';
+import { InPlay } from './inplay.js?v=46';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=12';
+import { FirstPerson } from './firstperson.js?v=18';
 
 const C = () => window.STD_CONTRACT;
 /* the quality tiers (Stage.judgeTier): the pixel ratio's cap and the sun's shadow map, best first.

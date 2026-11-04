@@ -26,8 +26,8 @@
  * batted ball, launch and spray, its pitch and speed, a hitter of the pack in turn), each put at a
  * point of GRID in turn (the packs do not carry where a pitch crossed). And the grid itself: every
  * point of GRID (the zone and the chase round it, catcher's view) for a hitter of each side and each
- * of the three swings, as a grounder, a liner, a fly, a pop up, a foul pulled, a foul back, a foul
- * tip and a swing and a miss.
+ * of the three swings, as a grounder, a liner, a fly, a pop up, a foul in each of its four shapes
+ * (3d/foul.js: back, popped up behind, pulled, sliced), a foul tip and a swing and a miss.
  *
  * GAP: from the ball's surface to the bat's surface (0 is touching; under 0 the ball is into the
  * wood). Fails when:
@@ -45,6 +45,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { selection, openCheckpoint } from './checkpoint.mjs';
+import { foulLaunch } from '../../3d/foul.js';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -62,8 +63,14 @@ const GRID = GZ.flatMap((zn) => GX.map((x) => ({ x, zn })));
 // at negative degrees; the case turns it for a lefty)
 const KINDS = [
   ['in_play', 'ground', 92, -8, -15], ['in_play', 'line', 101, 14, 5], ['in_play', 'fly', 97, 32, 18], ['in_play', 'popup', 78, 58, -4],
-  ['foul', 'ground', 88, 6, -50], ['foul', 'popup', 72, 62, 0], ['foul_tip', null, null, null, null], ['swinging_strike', null, null, null, null],
+  ['foul', 'back'], ['foul', 'pop'], ['foul', 'pulled'], ['foul', 'sliced'], ['foul_tip', null, null, null, null], ['swinging_strike', null, null, null, null],
 ];
+// a grid foul in each of the scene's four shapes (3d/foul.js): the engine says only foul, and the scene
+// picks the shape from the drawn pitch's id, so each grid foul carries the first id that picks its shape
+function foulId(shape, x, bats) {
+  for (let k = 0; k < 500; k++) { const id = `grid:${shape}:${k}`; if (foulLaunch({ id, n: 1, x, bats }).shape === shape) return id; }
+  throw new Error(`no id picks a ${shape} foul`);
+}
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) { /* next */ } }
@@ -120,7 +127,7 @@ for (const [pi, file] of packs.entries()) {
     // a swing and a miss is measured through the whole swing: one in four of them (they are many)
     if (result === 'swinging_strike' && h % 4) continue;
     const at = GRID[h % GRID.length];
-    byHitter[n++ % bats.length].push({ src: 'pack', result, velo, type: ars[(h >>> 8) % ars.length].type, at, inPlay: result === 'in_play' || (result === 'foul' && la != null) ? { bb, ev, la, spray, result: 'out', text: 'out' } : null, id });
+    byHitter[n++ % bats.length].push({ src: 'pack', result, velo, type: ars[(h >>> 8) % ars.length].type, at, inPlay: result === 'in_play' ? { bb, ev, la, spray, result: 'out', text: 'out' } : null, id });
   }
   // the grid: the first hitter of each side and swing not yet covered by an earlier pack
   const lookOf = await page.evaluate((scn) => { const st = window.STD_STAGE.current; st.setScenario(scn); return st.facts.batters.map((b) => b.swing); }, scn);
@@ -129,6 +136,7 @@ for (const [pi, file] of packs.entries()) {
     if (covered.has(k)) return;
     covered.add(k);
     for (const at of GRID) for (const [result, bb, ev, la, spray] of KINDS) {
+      if (result === 'foul') { byHitter[bi].push({ src: 'grid', result, velo: ars[0].velo, type: ars[0].type, at, inPlay: null, id: foulId(bb, at.x, b.bats) }); continue; }
       byHitter[bi].push({ src: 'grid', result, velo: ars[0].velo, type: ars[0].type, at, inPlay: bb ? { bb, ev, la, spray: b.bats === 'L' ? -spray : spray, result: 'out', text: 'out' } : null, id: null });
     }
   });
