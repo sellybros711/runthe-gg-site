@@ -1751,7 +1751,7 @@ async function modes(w, h, full) {
   ({ ctx, page, errors } = await modesPage(w, h, '?mockVote=locked&mockEnt=pro'));
   await page.waitForSelector('#h-pick:not([hidden])', { timeout: 30000 });
   const pk = await page.textContent('#h-pick');
-  ok(/^picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
+  ok(/^Picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
   await page.click('#hm-arc');
   await page.waitForSelector('#hp-arc.on:not([hidden])');
   const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);

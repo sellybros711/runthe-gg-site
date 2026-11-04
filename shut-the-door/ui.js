@@ -2114,7 +2114,7 @@ function voteRow(v) {
   var b = $('r-vote-go'), on = !!(v && v.open && v.candidates && v.candidates.length === 2) && S.mode === 'daily';
   var was = !b.hidden;
   b.hidden = !on;
-  if (on) b.querySelector('span').textContent = v.myVote ? 'your vote is in' : v.canVote ? 'pick the next spot' : 'see the two spots';
+  if (on) b.querySelector('span').textContent = v.myVote ? 'Your vote is in' : v.canVote ? 'Pick the next spot' : 'See the two spots';
   if (was && !on && b.classList.contains('sel')) navSelect($('r-coach'));
 }
 function jumpToVote() {

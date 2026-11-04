@@ -38,14 +38,14 @@ var SAVE_LABEL = 'sign in to save your score';
 /* the occasion from a title: "game 2 · 2017 world series", or a regular season game's date */
 function occasion(title) {
   var m = /^(.*?)\s+at\s+(.*?),\s*(.*)$/i.exec(title || '');
-  if (m) return m[3].toLowerCase();
-  return String(title || '').toLowerCase().split(/,\s*/).join(' · ');
+  if (m) return m[3];
+  return String(title || '').split(/,\s*/).join(' · ');
 }
 /* the spot, short: "top 9, up 1" */
 function spot(sit) {
   if (!sit || sit.inning == null) return '';
   var m = sit.score ? sit.score.us - sit.score.them : null;
-  return (sit.half === 'bottom' ? 'bot ' : 'top ') + sit.inning + (m == null ? '' : m > 0 ? ', up ' + m : m < 0 ? ', down ' + -m : ', tied');
+  return (sit.half === 'bottom' ? 'Bottom ' : 'Top ') + sit.inning + (m == null ? '' : m > 0 ? ', up ' + m : m < 0 ? ', down ' + -m : ', tied');
 }
 /* one candidate in one line: the closer, then the occasion (it carries the year) and the spot, and
    the card's setup (data/setups.json: the moment, never how it ended) */
@@ -56,6 +56,7 @@ function chip(outcome) {
   var label = C.OUTCOME_LABEL[outcome];
   return label ? '<span class="oc ' + esc(outcome) + '">' + esc(label.toLowerCase()) + '</span>' : '';
 }
+function cap(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
 function num(n) { return n == null ? '-' : Number(n).toLocaleString('en-US'); }
 
 /* how long until the next Eastern day, when the next free Survivor run opens: "7h 12m" */
@@ -131,13 +132,13 @@ function drawVote(el, v, busy, opts) {
   }).join('');
   var foot;
   if (v.error) foot = '<p class="vt-say err">' + esc(v.error) + '.</p>';
-  else if (mine) foot = '<p class="vt-say ok"><b>your vote is in. it counts.</b> it locks at midnight eastern.</p>';
-  else if (v.canVote) foot = '<p class="vt-say">one vote. pick the spot you want tomorrow.</p>';
-  else if (!st.signedIn) foot = '<div class="vt-in"><p>sign in to vote.</p><button class="btn save-b" type="button" data-save>' +
-    (has('pending') && API().pending() ? SAVE_LABEL : 'sign in to vote') + '</button></div>';
-  else if (v.offline) foot = '<p class="vt-say">the vote didn\'t load. try again later.</p>';
-  else foot = '<p class="vt-say">' + esc(v.why || 'voting is closed') + '.</p>';
-  el.innerHTML = '<div class="r-sec-h"><h3>tomorrow\'s daily</h3><span>' + (mine ? 'the count so far' : 'you pick') + '</span></div>' +
+  else if (mine) foot = '<p class="vt-say ok"><b>Your vote is in. It counts.</b> It locks at midnight Eastern.</p>';
+  else if (v.canVote) foot = '<p class="vt-say">One vote. Pick the spot you want tomorrow.</p>';
+  else if (!st.signedIn) foot = '<div class="vt-in"><p>Sign in to vote.</p><button class="btn save-b" type="button" data-save>' +
+    (has('pending') && API().pending() ? SAVE_LABEL : 'Sign in to vote') + '</button></div>';
+  else if (v.offline) foot = '<p class="vt-say">The vote didn\'t load. Try again later.</p>';
+  else foot = '<p class="vt-say">' + esc(cap(v.why || 'voting is closed')) + '.</p>';
+  el.innerHTML = '<div class="r-sec-h"><h3>Tomorrow\'s daily</h3><span>' + (mine ? 'The count so far' : 'You pick') + '</span></div>' +
     '<div class="vt-opts">' + opts + '</div>' + foot;
   el.querySelectorAll('.vt-o:not([disabled])').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -159,13 +160,13 @@ function pickLine(el, scn) {
   if (!el) return;
   el.hidden = true;
   if (!scn || !scn.pick) return;
-  if (scn.pick === 'default') { el.hidden = false; el.textContent = 'the vote didn\'t load. first pick plays.'; return; }
+  if (scn.pick === 'default') { el.hidden = false; el.textContent = 'The vote didn\'t load. First pick plays.'; return; }
   if (!has('vote')) return;
   Promise.resolve().then(function () { return API().vote(scn.day); }).then(function (v) {
     if (!v || v.winner !== scn.id) return;
     el.hidden = false;
     var w = v.votes ? (v.candidates[0] && v.candidates[0].id === v.winner ? [v.votes.a, v.votes.b] : [v.votes.b, v.votes.a]) : null;
-    el.textContent = 'picked by your votes' + (w ? ' · ' + w[0] + '-' + w[1] : '');
+    el.textContent = 'Picked by your votes' + (w ? ' · ' + w[0] + '-' + w[1] : '');
   }, function () {});
 }
 
