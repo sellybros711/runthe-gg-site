@@ -315,7 +315,10 @@ export class Crew {
     // (the drive's shorter steps at a run, not in his last slow steps onto a spot: there the stride is the
     // speed's alone. Shortened there too, the runner's planted foot slid against his foot lock as he came
     // to a stop, check-jolt.mjs skate runner run)
-    return sp * (1 - LEG_DRIVE * clamp(-acc / LEG_ACC, 0, 1) * smooth((v - LEG_V) / LEG_V));
+    // (and not on a dead stop, a pull up harder than LEG_ACC: there the set he stops into takes the legs, and his
+    // steps shortened as well slid the planted foot, check-jolt.mjs skate fielder field)
+    const b = -acc, k = clamp(b / LEG_ACC, 0, 1) * (1 - smooth((b - LEG_ACC) / (ACC_MAX - LEG_ACC)));
+    return sp * (1 - LEG_DRIVE * k * smooth((v - LEG_V) / LEG_V));
   }
 
   /** A body's stride over the play: at each moment its phase (radians), the share of the capture's stride his
@@ -334,7 +337,7 @@ export class Crew {
       phase the base's (a runner: his foot lock, Figure.pose footLock, holds his planted foot instead, and
       under it the shorter strides' new touchdowns were held and let go a frame off, check-jolt.mjs skate
       runner run). */
-  phaseTable(speedAt, t0, t1, trot, baseAt = speedAt, { shorten = true, plainFrom = Infinity } = {}) {
+  phaseTable(speedAt, t0, t1, trot, baseAt = speedAt, { shorten = true, plainFrom = Infinity, plain = null } = {}) {
     const dt = 1 / 60, n = Math.ceil((t1 - t0) / dt) + 2, out = new Float32Array(n), legs = new Float32Array(n), acc = new Float32Array(n);
     const v = new Float64Array(n + 2 * ACC_N);
     for (let i = 0; i < v.length; i++) v[i] = speedAt(t0 + (i - ACC_N) * dt);
@@ -353,11 +356,12 @@ export class Crew {
       acc[i] = a1[i + ACC_N];
       // (from plainFrom on, the stride as it always was: a fielder's glide past his track, inplay.js poseFielder;
       // the braking's shorter steps given up over PLAIN_IN before it, never in a frame)
-      const plain = t >= plainFrom, kd = smooth((plainFrom - t) / PLAIN_IN);
-      legs[i] = shorten && !plain ? this.legShare(vi, acc[i] * kd) : smooth(vi / LEG_V);
+      // (and around the moments plain(t) gives a share of, 0 to 1: a fielder's takes, inplay.js phases)
+      const kp = plain ? clamp(plain(t), 0, 1) : 0, flat = t >= plainFrom || kp >= 1, kd = smooth((plainFrom - t) / PLAIN_IN);
+      legs[i] = shorten && !flat ? this.legShare(vi, acc[i] * kd) * (1 - kp) + smooth(vi / LEG_V) * kp : smooth(vi / LEG_V);
       if (!this.clips) continue;
       base[i] = 2 * Math.PI * vb * dt / this.runMix(vb, trot).stride;
-      want[i] = shorten && !plain ? 2 * Math.PI * vi * dt / (this.runMix(vi, trot).stride * Math.max(legs[i], LEG_MIN)) : base[i];
+      want[i] = shorten && !flat ? (2 * Math.PI * vi * dt / (this.runMix(vi, trot).stride * Math.max(legs[i], LEG_MIN))) * (1 - kp) + base[i] * kp : base[i];
     }
     // each start or stop (a stretch of frames where they differ): its extra over the base, in whole cycles
     const step = new Float64Array(base);

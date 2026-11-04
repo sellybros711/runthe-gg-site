@@ -49,6 +49,9 @@ const GLIDE_TAU = 0.32;
 // a runner's run that ends at full speed (through first) carries on over this long (an e^(-k/0.6) before),
 // and the batter peeling off after a catch slows to standing over STOP_PEEL (an e^(-k/0.3))
 const CARRY_S = 1.2, STOP_PEEL = 0.6;
+// around a fielder's take, his stride as it always was (phases): from PLAIN_PRE before to PLAIN_POST after it
+const PLAIN_PRE = 0.45, PLAIN_POST = 0.3, PLAIN_EASE = 0.15;
+const TAKE_KINDS = ['catch', 'drop', 'field', 'pickup', 'receive', 'catch_throw', 'tag'];
 // (the low plate camera is the close one, saved for a run scoring: it keeps the tighter room it had)
 const ROOM_PLATE_FT = 46;
 const roomOf = (cam) => (cam === 'plate' ? ROOM_PLATE_FT : ROOM_FT);
@@ -289,7 +292,12 @@ export class InPlay {
     // (a fielder's glide past his track's end strides as it always has, poseFielder: plainFrom)
     for (let n = 1; n <= 9; n++) {
       const tr = plan.fielders[n], v = (t) => { const g = this.glideAt(tr, t); return g ? g.spd : tr.at(t).spd; }, b = (t) => tr.at(t).spd;
-      tr.phase = this.crew.phaseTable(v, 0, T1, false, planned(tr, b), { plainFrom: this.glideAt(tr, tr.free + 1e-3) ? tr.free : Infinity });
+      // (and around each ball he takes or sets for, from PLAIN_PRE before it to PLAIN_POST after, his stride as it
+      // always was, eased in and out over PLAIN_EASE: a catch, a pickup, a set is posed as it always has been. Got
+      // down into from another point of a shortened stride, his planted foot slid, check-jolt.mjs skate fielder field)
+      const near = tr.acts.filter((a) => a.kind === 'set' || TAKE_KINDS.includes(a.kind)).map((a) => (a.kind === 'tag' ? a.tagAt ?? a.t : a.t));
+      const plain = near.length ? (t) => { let k = 0; for (const q of near) k = Math.max(k, ramp(t, q - PLAIN_PRE - PLAIN_EASE, q - PLAIN_PRE) * (1 - ramp(t, q + PLAIN_POST, q + PLAIN_POST + PLAIN_EASE))); return k; } : null;
+      tr.phase = this.crew.phaseTable(v, 0, T1, false, planned(tr, b), { plainFrom: this.glideAt(tr, tr.free + 1e-3) ? tr.free : Infinity, plain });
     }
     // (and each fielder's facing as he watches the ball, turned at a person's speed: faceTable)
     while (this.faceNext()) { /* the ones prepare has not made yet */ }
@@ -510,6 +518,10 @@ export class InPlay {
     // stride there slid his planted feet, check-jolt.mjs skate fielder pickup. His lean back into it stays)
     const sr = this.stride(tr.phase, s, st.run, CYCLE.fielder, spd);
     if (glide && this.crew.clips) { sr.phase += 2 * Math.PI * glide / this.crew.clips.run.strideFt; sr.legs = undefined; sr.shorten = false; }
+    // (his lean into a push or a pull up gives way over the 0.3 s before a ball he takes or sets for, and comes
+    // back after: he sets up for it upright. Leaning back into a set, his head went down with the crouch at
+    // more than a head's speed, check-jolt.mjs pop fielder set)
+    if (sr.acc) { let kq = 1; for (const a of acts) if (a.kind === 'set' || TAKES.includes(a.kind)) { const t = tookAt(a); kq = Math.min(kq, 1 - ramp(s, t - 0.6, t - 0.3) * (1 - ramp(s, t + 0.2, t + 0.5))); } sr.acc *= kq; }
     const spec = { run: sr, crouch: 0, lean: 0, idleT: s + n * 0.83, look: { x: ball.x, y: ball.y, z: ball.z }, lookW: spd > 6 ? 0.55 : 1 };
     // ready at the pitch, by position, standing tall once he is out of it (READY: the middle infielders low and
     // wide, weight forward, the glove out front; the corners lower, the glove down; the outfielders upright
