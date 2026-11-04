@@ -138,7 +138,7 @@ function drawVote(el, v, busy, opts) {
     (has('pending') && API().pending() ? SAVE_LABEL : 'Sign in to vote') + '</button></div>';
   else if (v.offline) foot = '<p class="vt-say">The vote didn\'t load. Try again later.</p>';
   else foot = '<p class="vt-say">' + esc(cap(v.why || 'voting is closed')) + '.</p>';
-  el.innerHTML = '<div class="r-sec-h"><h3>Tomorrow\'s daily</h3><span>' + (mine ? 'The count so far' : 'You pick') + '</span></div>' +
+  el.innerHTML = '<div class="r-sec-h"><h3>Tomorrow\'s situation</h3><span>' + (mine ? 'The count so far' : 'You pick') + '</span></div>' +
     '<div class="vt-opts">' + opts + '</div>' + foot;
   el.querySelectorAll('.vt-o:not([disabled])').forEach(function (b) {
     b.addEventListener('click', function () {
