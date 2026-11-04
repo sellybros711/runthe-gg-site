@@ -1252,7 +1252,7 @@ window.GA_ID='G-L29P5MRWKE';
   .hero .hr1{color:var(--oncard)}
   .hero .hr2{background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
   /* CS356d: big hero-style screen title (replaces the small pill headers on in-game screens) */
-  .scrhero{text-align:center; margin:6px 0 14px}
+  .scrhero{text-align:center; margin:8px 0 4px}
   .scrhero .sh-t{font-family:var(--display); font-weight:400; text-transform:uppercase; font-size:clamp(30px,8.5vw,46px); line-height:1.0; letter-spacing:.02em; background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent; filter:drop-shadow(0 3px 14px rgba(0,0,0,.45))}
   .scrhero .sh-s{font-family:var(--body); font-weight:700; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#7fd4c8; margin-top:7px}
   .herotag{font-family:var(--body); font-weight:800; letter-spacing:.3em; text-transform:uppercase; font-size:11px; color:var(--teal); opacity:.92; margin-bottom:8px}
@@ -12623,6 +12623,7 @@ function render(){
     if(S.overlay==='winter') overlayWinter(app);
     if(S.overlay==='arcadead') overlayArcadeAd(app);
     if(S.overlay==='purchased') overlayPurchased(app);
+    if(S.overlay==='puttpromo') overlayPuttPromo(app);
     if(S.overlay==='coinlog') overlayCoinLog(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='feedback') overlayFeedback(app);
@@ -12692,6 +12693,7 @@ function render(){
   if(passLevelPending() && !S.overlay && ['summary','dailyresult','h2hresult','careerend','circuitend'].indexOf(S.screen)>=0){
     setTimeout(()=>{ try{ flushPassLevel(); }catch(e){} }, 520);
   }
+  if(S.screen==='dailyresult' && S._puttPromoOwed){ try{ puttPromoArm(); }catch(e){} }
   // CS304: persistent bottom tab nav. Appended AFTER the screen dispatch so has-cupbar (set by the team-cup
   // screen) is known. Hidden on immersive live-play screens with their own bottom controls; an open
   // full-screen overlay (z-40) simply covers it (z-25).
@@ -23420,6 +23422,83 @@ function puttReopen(){ if(_puttReopened) return; _puttReopened=true;
 try{ document.addEventListener('DOMContentLoaded',()=>setTimeout(puttReopen,6000),{once:true}); }catch(e){}   // no answer from the accounts in time
 function openPutt(o){ if(!puttOn()) return; gadDrop(); try{ if(window.RTG_ADS){ RTG_ADS.dropSticky(); RTG_ADS.dropRails(); } }catch(e){} try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&(o.go||o.tour)?o:undefined); }
 function openPuttDaily(){ openPutt({go:'daily'}); }
+/* THE PUTT PUTT PROMO after the Daily 18 (the owner, 2026-11-03). About twice as many people play the Daily 18 as
+   the Putt Putt Daily Hole, so a fresh 18 finish offers today's hole, to keep them on the site and playing.
+   - Owed only by finishDailyRound on a real round: never practice, never a re-opened result.
+   - Once a day per device (putt_promo_day), and never when today's hole is already played or Putt Putt is off.
+   - It waits its turn: the course record celebration, the Tour Pass level-up and any sheet the player opens all
+     go first. If they leave the results screen first, the moment has passed and it is dropped.
+   It is our own house promo, not an ad network unit. */
+const PUTT_PROMO_KEY='putt_promo_day';
+function puttPromoSeen(){ try{ return localStorage.getItem(PUTT_PROMO_KEY)===String(todayKey()); }catch(e){ return false; } }
+function puttPromoHole(){
+  try{ if(!puttOn()) return null; const m=window.RTT_PUTT.summary(puttHost()), d=m&&m.daily; if(!d || d.done) return null;
+    const T=window.RTT_PUTT.THEMES||{}, key=Object.keys(T).find(k=>T[k]&&T[k].name===d.theme)||'clubhouse';
+    return { name:d.name||"Today's hole", theme:d.theme||'', kick:d.kick||'', key }; }catch(e){ return null; } }
+function puttPromoArm(){
+  if(S._puttPromoTimer) return;
+  if(puttPromoSeen() || !puttPromoHole()){ S._puttPromoOwed=false; return; }
+  let tries=0;
+  const tick=()=>{ S._puttPromoTimer=null; if(!S._puttPromoOwed) return;
+    if(S.screen!=='dailyresult'){ S._puttPromoOwed=false; return; }
+    const busy=!!S.overlay || passLevelPending() || !!document.querySelector('.celebrate') || document.body.classList.contains('pt-open');
+    if(busy){ if(++tries<120) S._puttPromoTimer=setTimeout(tick, 700); else S._puttPromoOwed=false; return; }
+    S._puttPromoOwed=false; const h=puttPromoHole(); if(!h || puttPromoSeen()) return;
+    S.puttPromo=h; S.overlay='puttpromo'; try{ localStorage.setItem(PUTT_PROMO_KEY, String(todayKey())); }catch(e){}
+    try{ track('putt_promo_show',{theme:h.key}); }catch(e){}
+    render(); };
+  S._puttPromoTimer=setTimeout(tick, 2400);   // a beat to see the score first
+}
+function overlayPuttPromo(screen){
+  const h=S.puttPromo; if(!h){ S.overlay=null; return; }
+  let art=''; try{ art=window.RTT_PUTT.cardArt(h.key); }catch(e){}
+  let coins=0; try{ coins=window.RTT_PUTT.COINS.daily||0; }catch(e){}
+  // the player's own golfer, putter in hand, as Putt Putt draws them (puttHost().figure): it is THEIR golfer on the green
+  let fig=''; try{ fig=pxFigureHTML(modeLook(S.look,'putt'), 104); }catch(e){}
+  const ov=$(`<div class="ov ppov" role="dialog" aria-modal="true" aria-label="Play mini golf with your golfer">
+    <style>
+      .ov.ppov{display:flex;flex-direction:column;background:rgba(4,14,10,.82);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+      .ov.ppov .ppw{margin:auto;width:100%;max-width:400px;border-radius:20px;overflow:hidden;text-align:center;
+        background:linear-gradient(175deg,#0f2a1d,#0a1d14);border:2px solid #ffd86b;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 18px 50px -12px #000,0 0 28px rgba(255,216,107,.22);
+        animation:ppIn .32s cubic-bezier(.2,1.3,.4,1) both}
+      @keyframes ppIn{from{transform:translateY(18px) scale(.94);opacity:0}to{transform:none;opacity:1}}
+      @media (prefers-reduced-motion:reduce){ .ov.ppov .ppw{animation:none} }
+      .ov.ppov .ppart{position:relative;height:150px;background:#123}
+      .ov.ppov .ppfig{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);z-index:2;line-height:0;filter:drop-shadow(0 4px 6px rgba(0,0,0,.55))}
+      .ov.ppov .ppart .gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 0;image-rendering:pixelated}
+      .ov.ppov .ppart::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,29,20,0) 45%,#0f2a1d)}
+      .ov.ppov .ppkick{display:inline-block;margin-top:-14px;position:relative;font:800 10.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;
+        color:#1d1405;background:#ffd86b;border-radius:999px;padding:6px 12px}
+      .ov.ppov .ppbody{padding:12px 20px 18px}
+      .ov.ppov .pphead{font-family:var(--display);font-size:clamp(28px,8.5vw,36px);line-height:1;color:#fff;margin:10px 0 6px;text-wrap:balance}
+      .ov.ppov .ppme{font-weight:800;color:#ffd86b;font-size:16px}
+      .ov.ppov .pphole{color:#cfe3d6;font-size:13px;margin-top:6px;opacity:.9}
+      .ov.ppov .pphole b{color:#fff}
+      .ov.ppov .ppsub{color:#cfe3d6;font-size:14.5px;line-height:1.45;margin:8px 0 4px}
+      .ov.ppov .ppgo{width:100%;margin:14px 0 0}
+      .ov.ppov .ppno{width:100%;margin:8px 0 0}
+    </style>
+    <div class="ppw">
+      <div class="ppart">${art}${fig?`<div class="ppfig">${fig}</div>`:''}</div>
+      <div class="ppkick">⛳ Mini golf · Putt Putt Tour</div>
+      <div class="ppbody">
+        <div class="pphead">Fancy some mini golf?</div>
+        <div class="ppme">With your own golfer</div>
+        <div class="ppsub">Take your golfer to today's mini golf hole. It's one hole.${coins?` Worth +${coinFmt(coins)} coins.`:''}</div>
+        <div class="pphole">Today's hole: <b>${esc(h.name)}</b>${h.theme?` · ${esc(h.theme)}`:''}</div>
+      </div>
+    </div>
+  </div>`);
+  const body=ov.querySelector('.ppbody');
+  const go=$(`<button class="btn goldfill ppgo">Play mini golf ▸</button>`);
+  go.onclick=()=>{ S.puttPromo=null; S.overlay=null; try{ track('putt_promo_go'); }catch(e){} render(); openPuttDaily(); };
+  const no=$(`<button class="btn ghost ppno">Not now</button>`);
+  no.onclick=()=>{ S.puttPromo=null; S.overlay=null; try{ track('putt_promo_skip'); }catch(e){} render(); };
+  body.appendChild(go); body.appendChild(no);
+  ov.addEventListener('click', e=>{ if(e.target===ov) no.onclick(); });
+  screen.appendChild(ov);
+  setTimeout(()=>{ try{ go.focus({preventScroll:true}); }catch(e){} }, 60);
+}
 // A LINK STRAIGHT INTO TODAY'S DAILY HOLE: /golf/?putt=daily (the home page's Putt Putt row). A visitor who is not signed
 // in plays it as a guest. If Putt Putt has not loaded, openPutt does nothing and the First Tee home stays, as with no link.
 // The param comes off the address at once, so a reload does not open it again. Once a page load only, after the page is up.
@@ -36050,6 +36129,7 @@ function finishDailyRound(){
   }
   const signedIn=sbSignedIn();
   const isLegend=!!S.dailyLegend;
+  S._puttPromoOwed=true;   // a real finish: offer today's Putt Putt hole once the results settle (puttPromoArm)
   // dev accounts get unlimited attempts, but only their FIRST 3 count for records (course records + the daily
   // board + the recorded best-of-day); attempts 4+ play freely and show a result but never touch the records.
   const rec=dailyAttemptRecords();
