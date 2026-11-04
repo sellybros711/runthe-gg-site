@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Film a trailer page frame by frame.
 
-   node scripts/marketing/trailer/render-html.mjs <page> --fmt reels|x --foot <dir> --out <file.mp4> [--music <wav>] [--fps 30] [--from s --to s]
+   node scripts/marketing/trailer/render-html.mjs <page> --fmt reels|x (x is 4:5, 1080x1350) --foot <dir> --out <file.mp4> [--music <wav>] [--fps 30] [--from s --to s]
 
    <page> is a path in this repo (scripts/marketing/trailer/commish/index.html). The page draws one frame
    for `await render(t)` and says how long it runs in `window.DURATION`; nothing on it moves by itself,
@@ -20,8 +20,8 @@ const args = process.argv.slice(2), opt = (f, d) => { const i = args.indexOf(f);
 const pageRel = args.find((a, i) => !a.startsWith('--') && !(args[i - 1] || '').startsWith('--'));
 const FMT = opt('--fmt', 'reels'), FOOT = path.resolve(opt('--foot', '.')), OUT = path.resolve(opt('--out', `trailer-${FMT}.mp4`));
 const FPS = +opt('--fps', 30), MUSIC = opt('--music', null);
-const SIZE = { reels: [1080, 1920], x: [1350, 1080] }[FMT];
-if (!pageRel || !SIZE) { console.error('usage: render-html.mjs <page> --fmt reels|x --foot <dir> --out <mp4>'); process.exit(1); }
+const SIZE = { reels: [1080, 1920], x: [1080, 1350] }[FMT];
+if (!pageRel || !SIZE) { console.error('usage: render-html.mjs <page> --fmt reels|x (x is 4:5, 1080x1350) --foot <dir> --out <mp4>'); process.exit(1); }
 
 const FONT_DIR = path.join(os.tmpdir(), 'clip-fonts');
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';

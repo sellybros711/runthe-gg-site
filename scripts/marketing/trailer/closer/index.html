@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <title>Shut The Door trailer</title>
 <!-- The Shut The Door trailer, drawn frame by frame: render(t) paints the frame at t, as commish/index.html
-     does. ?fmt=reels (1080x1920) or ?fmt=x (1350x1080). The footage is one real outing, Mariano Rivera in
+     does. ?fmt=reels (1080x1920) or ?fmt=x (1080x1350, 4:5). The footage is one real outing, Mariano Rivera in
      Game 6 of the 2009 ALCS (the daily of 2026-11-24), recorded with record.mjs (shots/std-closer.mjs) in
      highlights that resume the same saved outing: home, k2 (a strikeout), abs (a challenge overturned, and a
      strikeout), last (strike three looking, then the result). /foot/<clip>/f0001.jpg at 30 fps.
@@ -100,7 +100,7 @@ html,body{width:var(--W);height:var(--H);overflow:hidden;background:#000}
 </div>
 <script>
 const Q = new URLSearchParams(location.search), FMT = Q.get('fmt') || 'reels';
-const F = { reels: { W: 1080, H: 1920, k: 1 }, x: { W: 1350, H: 1080, k: 0.86 } }[FMT];
+const F = { reels: { W: 1080, H: 1920, k: 1 }, x: { W: 1080, H: 1350, k: 0.8 } }[FMT];
 const W = F.W, H = F.H, K = F.k, TALL = H > W, FPS = 30;
 document.documentElement.style.setProperty('--W', W + 'px');
 document.documentElement.style.setProperty('--H', H + 'px');
