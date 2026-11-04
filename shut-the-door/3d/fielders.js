@@ -777,7 +777,10 @@ export class Figure {
         const o = sp.plant[s];
         if (!o) continue;
         const side = s === 'l' ? 1 : -1;
-        const tgt = wpos(B[`foot_${s}`]).add(V((-o.x * c + o.y * sn) * k, (o.z || 0) * k, (o.x * sn + o.y * c) * k));
+        // (o.turn: the foot where it would be had he not turned by that much since, about the root, a pivot)
+        const tgt = wpos(B[`foot_${s}`]);
+        if (o.turn) tgt.applyAxisAngle(Y, o.turn);
+        tgt.add(V((-o.x * c + o.y * sn) * k, (o.z || 0) * k, (o.x * sn + o.y * c) * k));
         const pole = wpos(B[`calf_${s}`]).add(V(0.15 * side, 0, 1));
         twoBoneIK(B[`thigh_${s}`], B[`calf_${s}`], B[`foot_${s}`], tgt, pole, sp.plant.w);
         root.updateMatrixWorld(true);
