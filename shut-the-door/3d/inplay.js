@@ -51,7 +51,7 @@ const GLIDE_TAU = 0.32;
 const CARRY_S = 1.2, STOP_PEEL = 0.6;
 // around a fielder's take, his stride as it always was (phases): from PLAIN_PRE before to PLAIN_POST after it
 const PLAIN_PRE = 0.45, PLAIN_POST = 0.3, PLAIN_EASE = 0.15;
-const TAKE_KINDS = ['catch', 'drop', 'field', 'pickup', 'receive', 'catch_throw', 'tag'];
+const TAKE_KINDS = ['catch', 'drop', 'bobble', 'field', 'pickup', 'receive', 'catch_throw', 'tag'];
 // (the low plate camera is the close one, saved for a run scoring: it keeps the tighter room it had)
 const ROOM_PLATE_FT = 46;
 const roomOf = (cam) => (cam === 'plate' ? ROOM_PLATE_FT : ROOM_FT);
@@ -521,7 +521,7 @@ export class InPlay {
     // (his lean into a push or a pull up gives way over the 0.3 s before a ball he takes or sets for, and comes
     // back after: he sets up for it upright. Leaning back into a set, his head went down with the crouch at
     // more than a head's speed, check-jolt.mjs pop fielder set)
-    if (sr.acc) { let kq = 1; for (const a of acts) if (a.kind === 'set' || TAKES.includes(a.kind)) { const t = tookAt(a); kq = Math.min(kq, 1 - ramp(s, t - 0.6, t - 0.3) * (1 - ramp(s, t + 0.2, t + 0.5))); } sr.acc *= kq; }
+    if (sr.acc) { let kq = 1; for (const a of acts) if (a.kind === 'set' || a.kind === 'bobble' || TAKES.includes(a.kind)) { const t = tookAt(a); kq = Math.min(kq, 1 - ramp(s, t - 0.6, t - 0.3) * (1 - ramp(s, t + 0.2, t + 0.5))); } sr.acc *= kq; }
     const spec = { run: sr, crouch: 0, lean: 0, idleT: s + n * 0.83, look: { x: ball.x, y: ball.y, z: ball.z }, lookW: spd > 6 ? 0.55 : 1 };
     // ready at the pitch, by position, standing tall once he is out of it (READY: the middle infielders low and
     // wide, weight forward, the glove out front; the corners lower, the glove down; the outfielders upright

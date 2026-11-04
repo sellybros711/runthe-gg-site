@@ -3428,7 +3428,7 @@
     },
     "inplay.js": {
       "v": "47",
-      "sha": "e3432c2395bc2e22"
+      "sha": "3babb01838c970b6"
     },
     "preview.js": {
       "v": "12",
@@ -3534,7 +3534,7 @@
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
       "v": "25",
-      "sha": "4d44b0d2ffc65111"
+      "sha": "de50efe526e690df"
     },
     "shade-data.js": {
       "v": "5",
@@ -3616,7 +3616,7 @@
     },
     "inplay-plan.js": {
       "v": "25",
-      "sha": "4d44b0d2ffc65111"
+      "sha": "de50efe526e690df"
     }
   },
   "shut-the-door/3d/stands.js": {
@@ -3670,7 +3670,7 @@
     },
     "inplay-plan.js": {
       "v": "25",
-      "sha": "4d44b0d2ffc65111"
+      "sha": "de50efe526e690df"
     },
     "field.js": {
       "v": "10",
