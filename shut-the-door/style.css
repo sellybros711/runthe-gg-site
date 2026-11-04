@@ -1567,6 +1567,41 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   /* a 2 pitch dock is short: the two stops side by side, so the panel grows as little as it can */
   #m-dock:has(#m-arsenal[data-n="2"]) .relm.two .rm-steps { grid-template-columns: 1fr 1fr; }
 }
+/* A SHORT UPRIGHT PHONE (320x568, the QA audit 2026-11-02). The aim grid and the plate under it need
+   about 300 px of the height at the cell rule's frame, and the full dock and card left 234, so the
+   pitch buttons sat over the plate. Here the HUD packs tighter: slimmer gutters and rows, and THROW
+   stands beside the pitch buttons instead of under them, under the right thumb. */
+@media (orientation: portrait) and (max-height: 600px) {
+  #s-mound { --gut: 8px; --tap: 40px; }
+  #s-mound .mh-tl { gap: 6px; }
+  #s-mound .mh-tr { display: flex; flex-direction: column; gap: 6px; }
+  #s-mound .mh-bug { padding: 4px 10px 4px 8px; }
+  #s-mound .mh-bug .sb-teams { gap: 2px; }
+  #s-mound .mh-bug .sb-team { height: 21px; }
+  #s-mound .mh-card { padding: 4px 4px 4px 11px; }
+  #s-mound .bb-pit { padding: 0 0 3px; margin: 0 4px 3px 0; }
+  #s-mound .dock { display: grid; grid-template-columns: minmax(0, 1fr) 92px; column-gap: 6px; row-gap: 4px; }
+  #s-mound .dock > .runbar, #s-mound .dock > #m-meter { grid-column: 1 / -1; }
+  #s-mound .dock > .arsenal { grid-column: 1; }
+  #s-mound .dock > .pad { grid-column: 2; display: flex; flex-direction: column; gap: 4px; }
+  #s-mound .arsenal { gap: 3px; padding: 3px; border-radius: 13px; }
+  #s-mound .arsenal[data-n="3"] .pitch, #s-mound .arsenal[data-n="5"] .pitch, #s-mound .arsenal[data-n="5"] .pitch:nth-child(n+4) { grid-column: span 3; }
+  #s-mound .arsenal[data-n="3"] .pitch:last-child, #s-mound .arsenal[data-n="5"] .pitch:last-child { grid-column: span 6; }
+  #s-mound .pitch { min-height: 40px; padding: 2px 6px 2px 11px; row-gap: 2px; }
+  /* the number key picks a pitch from a keyboard; a phone this size has none, and the speed needs its room */
+  #s-mound .arsenal .pk { display: none; }
+  #s-mound .pitch { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "n n" "s v"; }
+  #s-mound .pt b { font-size: 13px; }
+  #s-mound .ps { font-size: 12px; }
+  /* the step line over the right of the dock, off the plate (it sat on it, centred) */
+  #s-mound .pad-say { left: auto; right: 0; transform: none; bottom: calc(100% + 6px); max-width: 46%; height: auto; min-height: 24px;
+    padding: 4px 10px; line-height: 14px; font-size: 12px; white-space: normal; text-align: right; border-radius: 12px; }
+  #s-mound .btn.throw { flex: 1 1 auto; height: auto; min-height: 40px; padding: 4px 6px; border-radius: 13px; }
+  #s-mound .btn.throw b { font-size: 22px; letter-spacing: .02em; }
+  #s-mound .pad.abs-live { flex-direction: column; gap: 4px; }
+  #s-mound .btn.abs-b { flex: 1 1 auto; height: auto; min-height: 40px; padding: 3px 6px; }
+  #s-mound .btn.abs-b b { font-size: 14px; }
+}
 
 /* ---- THE MODES AROUND THE DAILY (modes-ui.js, 2026-10-30): the save, the vote, Survivor ----
    Each is a block on a screen the player opened, never a popup. Ink and signal, the board's look. */
