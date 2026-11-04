@@ -18,10 +18,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=24';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=25';
 import { SHADE } from './shade-data.js?v=5';
-import { Crew } from './fielders.js?v=11';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=28';
+import { Crew } from './fielders.js?v=12';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=29';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=44';
 import { look } from './looks.js?v=6';
@@ -284,11 +284,13 @@ export class InPlay {
     A.phased = !!this.crew.clips;
     const T1 = plan.dur + 3, trot = plan.kind === 'hr';
     // (each over the whole of his motion: his track, and past it the fielder's glide or the runner's carry)
-    for (let n = 1; n <= 9; n++) { const tr = plan.fielders[n]; tr.phase = this.crew.phaseTable((t) => { const g = this.glideAt(tr, t); return g ? g.spd : tr.at(t).spd; }, 0, T1, false); }
+    // (and against the same motion as the plan times it, its straight ramps: Crew.phaseTable baseAt)
+    const planned = (tr, f) => (t) => { tr.drawn = false; try { return f(t); } finally { tr.drawn = true; } };
+    for (let n = 1; n <= 9; n++) { const tr = plan.fielders[n], v = (t) => { const g = this.glideAt(tr, t); return g ? g.spd : tr.at(t).spd; }; tr.phase = this.crew.phaseTable(v, 0, T1, false, planned(tr, v)); }
     // (and each fielder's facing as he watches the ball, turned at a person's speed: faceTable)
     while (this.faceNext()) { /* the ones prepare has not made yet */ }
-    for (const r of plan.runners) r.phase = this.crew.phaseTable((t) => this.runnerAt(r, t).spd, 0, T1, trot);
-    if (plan.umps) for (const k of [1, 2, 3]) { const tr = plan.umps[k]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); tr.face = this.umpFace(tr, T1); }
+    for (const r of plan.runners) { const v = (t) => this.runnerAt(r, t).spd; r.phase = this.crew.phaseTable(v, 0, T1, trot, planned(r.track, v), { shorten: false }); }
+    if (plan.umps) for (const k of [1, 2, 3]) { const tr = plan.umps[k]; const v = (t) => tr.at(t).spd; tr.phase = this.crew.phaseTable(v, 0, T1, false, planned(tr, v)); tr.face = this.umpFace(tr, T1); }
   }
 
   /** The play at plan time s (seconds after contact): everyone placed and posed, the ball, the cut. */
@@ -475,7 +477,7 @@ export class InPlay {
     const amp = clamp(spd / 26, 0, 1.1);
     if (!this.crew.clips || !tab) return { phase: 2 * Math.PI * run / cycle, amp };
     const until = tab.until(s);
-    return { phase: tab.at(s), amp, legs: tab.legs(s), acc: tab.acc(s), since: tab.since(s), until: until < 30 ? until : null };
+    return { phase: tab.at(s), amp, legs: tab.shorten ? tab.legs(s) : undefined, shorten: tab.shorten, acc: tab.acc(s), since: tab.since(s), until: until < 30 ? until : null };
   }
 
   poseFielder(n, f, s, ball, probe = null) {

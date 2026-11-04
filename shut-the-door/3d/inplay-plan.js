@@ -164,8 +164,8 @@ function runTime(d, v, a, fromRest, toRest) {
    choosing for each run how). Drawn straight, the push came in whole in the first frame and went in one frame at top
    speed (19 ft/s^2 to nothing for a fielder, 16 for a runner), and a pull up the same way round. A
    player's push is hardest in his first strides and fades as he nears top speed (the drive phase, then
-   upright). So a ramp is drawn as RAMP: the push rises over its first few hundredths of a second, then
-   fades in a straight line to nothing at top speed, over LAM (about 1.44) times the straight ramp's time.
+   upright). So a ramp is drawn as RAMP: the push eases in over its first quarter second or so, then
+   fades in a straight line to nothing at top speed, over LAM (about 1.31) times the straight ramp's time.
    Its speed gives up exactly the straight ramp's distance by then (the deficit, half the straight ramp's
    time at top speed), so from the end of the longer ramp on he is where the plan has him to the inch, and
    so at the end of every leg, where he arrives, catches, covers or is tagged at a bag. A pull up is the
@@ -187,11 +187,12 @@ function speedShare(tau, al, be) {
   const v = tau < al ? tau / al : tau > 1 - be ? (1 - tau) / be : 1;
   return v / A;
 }
-const RAMP_N = 200, RAMP_ON = 0.05;
+const RAMP_N = 200, RAMP_ON = 0.15;
 const RAMP = (() => {
-  // the push over u in [0, 1] of the longer ramp: rising over RAMP_ON, then straight down to nothing
+  // the push over u in [0, 1] of the longer ramp: eased in over RAMP_ON (a smooth step: a runner's push grows
+  // by no more than about 2 ft/s^2 from one frame to the next), then straight down to nothing
   const a = [], v = [0], p = [0];
-  for (let i = 0; i <= RAMP_N; i++) { const u = i / RAMP_N, on = 1 - (1 - Math.min(1, u / RAMP_ON)) ** 2; a.push(on * (1 - u)); }
+  for (let i = 0; i <= RAMP_N; i++) { const u = i / RAMP_N, x = Math.min(1, u / RAMP_ON), on = x * x * (3 - 2 * x); a.push(on * (1 - u)); }
   for (let i = 1; i <= RAMP_N; i++) v.push(v[i - 1] + (a[i - 1] + a[i]) / 2 / RAMP_N);
   const top = v[RAMP_N];
   for (let i = 0; i <= RAMP_N; i++) v[i] /= top;
@@ -236,6 +237,10 @@ function drawRuns(tr, moments) {
     if (g.dbe != null && inside(g.t0, g.t0 + g.T)) { g.dal = g.al; g.dbe = g.be; }
     const al = g.dal ?? g.al, be = g.dbe ?? g.be, room = (k) => (k >= 1 || k <= 0 ? 1 : Math.min(LAM, 1 / k));
     let la = al > 0 ? room(al + be) : 0, lb = be > 0 ? room(al + be) : 0;
+    // (a run speeding up all the way to its end, a sprint at a ball he only just reaches, a dive or a scoop at
+    // the end of it: drawn smooth he went into it a foot a second and more faster than planned, in the same
+    // place, and a head that had been just under a check-jolt.mjs limit went over it. As planned)
+    if (!(be > 0) && al >= 1 - 1e-6) la = 0;
     // (each ramp's own stretch, and again once the other ramp's choice gives it more or less room)
     for (let i = 0; i < 2; i++) {
       if (la && inside(g.t0, g.t0 + g.T * al * la)) la = 0;
