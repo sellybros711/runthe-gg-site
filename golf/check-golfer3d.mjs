@@ -245,6 +245,51 @@ ok('no menu picture has a magenta (unknown material) pixel', mn.magenta.length =
 ok('the closet tiles use the 3D pictures for a tester (hats, clubs, putters, the cape, balls, the scythe)', mn.tile === true);
 ok('the cape, the floatie, the scythe, the sword and a ball each show on the menu golfer', mn.same.length === 0, mn.same);
 
+head('6. THE WORKER DRAWS THE SAME PICTURES: every store item and hairstyle, pixel for pixel');
+// The menus draw their 3D pictures in a worker (g3wBoot in index.html), so a long list never freezes the page.
+// The worker holds copies of the page globals golfer3d.js reads. A global it failed to copy would not always
+// throw: a `typeof X !== 'undefined'` guard would quietly draw something else. So every picture is drawn both
+// ways and compared.
+const wk = await pg.evaluate(async () => {
+  const r = { n: 0, same: 0, diff: [], err: [], boot: '' };
+  const tag = [...document.scripts].find(x => /golfer3d\.js/.test(x.src)), g3url = new URL(tag.src, location.href).href;
+  const src = await (await fetch(g3url)).text();
+  let w; try { w = g3wBoot(g3url, src); } catch (e) { r.boot = 'build: ' + e.message; return r; }
+  const pend = new Map(); let rdy; const ready = new Promise(res => rdy = res);
+  w.onerror = e => rdy('error: ' + (e.message || 'worker'));
+  w.onmessage = ev => { const m = ev.data; if ('ready' in m) return rdy(m.ready ? true : 'no RTT_G3D'); const f = pend.get(m.id); pend.delete(m.id); f && f(m); };
+  const rd = await Promise.race([ready, new Promise(res => setTimeout(() => res('timeout'), 20000))]); if (rd !== true) { r.boot = String(rd); return r; }
+  let seq = 0; const ask = (look, part) => new Promise(res => { const id = 'k' + (++seq); pend.set(id, res); w.postMessage({ id, look, part }); });
+  const px = url => new Promise(res => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+    const x = c.getContext('2d'); x.drawImage(im, 0, 0); res({ w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data }); }; im.onerror = () => res(null); im.src = url; });
+  const jobs = [];
+  for (const h of ['cap', 'visor'].concat(Object.keys(PXG_HATS))) jobs.push(['hat', g3dItemLook({ cap: true, hatStyle: h }), h]);
+  for (const e of Object.keys(PXG_EYEWEAR)) jobs.push(['ew', g3dItemLook({ eyewear: e }), e]);
+  for (const c of Object.keys(PXG_CLUBS)) jobs.push(['club', g3dItemLook({ club: c }), c]);
+  for (const t of Object.keys(PXG_TOPS)) jobs.push(['top', g3dItemLook({ top: t }), t]);
+  for (const t of Object.keys(PXG_LEGS)) jobs.push(['leg', g3dItemLook({ leg: t }), t]);
+  for (const t of Object.keys(PXG_BALL)) jobs.push(['ball', g3dItemLook({ ball: t }), t]);
+  for (const t of Object.keys(PXPAT_BY)) jobs.push(['shirt', g3dItemLook({ shirtPat: t }), 'pattern ' + t]);
+  for (const o of allShirts().slice(0, 12)) jobs.push(['shirt', g3dItemLook({ polo: o.id, shirtPat: 'none' }), 'shirt ' + o.id]);
+  for (const o of PANTS) jobs.push(['pants', g3dItemLook({ pants: o.id }), 'trousers ' + o.id]);
+  for (const c of Object.keys(PXG_CLEATS)) jobs.push(['shoe', g3dItemLook({ cleats: c }), c]);
+  for (const b of Object.keys(BODY_SKINS)) jobs.push(['fig', Object.assign({}, DEFLOOK, { body: b }), 'body ' + b]);
+  const hairs = Object.keys(PXG_HAIR), tops = Object.keys(PXG_TOPS);
+  hairs.forEach((h, i) => { const L = Object.assign({}, DEFLOOK, { hairStyle: h, cap: i % 2 === 0, top: i % 3 === 1 ? tops[i % tops.length] : '', lefty: i % 2 === 1 }); jobs.push(['fig', L, h]); jobs.push(['chip', L, h]); });
+  for (const [part, L, id] of jobs) { r.n++;
+    const m = await ask(L, part); let p = null; try { p = RTT_G3D.pic(L, part); } catch (e) {}
+    if (m.err) { r.err.push(part + ':' + id + ' ' + m.err); continue; }
+    if (!!m.none !== !p) { r.diff.push(part + ':' + id + ' drawn on one side only'); continue; }
+    if (!p) { r.same++; continue; }
+    const A = await px(URL.createObjectURL(m.blob)), B = await px(p.url);
+    if (!A || !B || A.w !== B.w || A.h !== B.h) { r.diff.push(part + ':' + id + ' size'); continue; }
+    let n = 0; for (let i = 0; i < A.d.length; i++) if (A.d[i] !== B.d[i]) n++;
+    if (n) r.diff.push(part + ':' + id + ' ' + n + ' bytes'); else r.same++; }
+  w.terminate(); return r; });
+ok('the worker starts with golfer3d.js and the page globals it reads', wk.boot === '', wk.boot);
+ok(`every picture the worker draws matches the page's own, pixel for pixel (${wk.same} of ${wk.n})`, wk.n > 50 && wk.same === wk.n, wk.diff.slice(0, 4));
+ok('the worker throws on no picture', wk.err.length === 0, wk.err.slice(0, 4));
+
 ok('no page errors', errs.length === 0, errs.slice(0, 3));
 await b.close();
 console.log(bad ? `\n${bad} failed` : '\nall good');
