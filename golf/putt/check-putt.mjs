@@ -1301,7 +1301,10 @@ if (!args.includes('--no-browser')){
       sbUser = { id:'cld' }; localStorage.removeItem('bag_ppt_v1@cld'); openPutt();
       for (let t = 0; t < 100 && document.querySelectorAll('.pp-lv:not(.lock)').length < 30; t++) await new Promise(r => setTimeout(r, 50));
       const open = document.querySelectorAll('.pp-lv:not(.lock)').length, local = JSON.parse(localStorage.getItem('bag_ppt_v1@cld') || '{}');
-      // a stale copy pushed from another device is refused, merged and sent again, so nothing is lost on either side
+      // a stale copy pushed from another device is refused, merged and sent again, so nothing is lost on either side.
+      // The page sends its merged record up once it opens: wait for that to land, or the server copy edited below is the
+      // one that upload then replaces, and the test races the page instead of testing the merge.
+      for (let t = 0; t < 100 && !(calls.includes('ps_save_put') && store.tour.progress !== 30); t++) await new Promise(r => setTimeout(r, 50));
       store.tour.payload.tours.main.ace = { 7:1 }; store.tour.progress += 1; window.RTT_PUTT._lose();
       for (let t = 0; t < 60 && !(store.tour.payload.tours.main.lv >= 30 && JSON.parse(localStorage.getItem('bag_ppt_v1@cld')).tours.main.ace[7]); t++) await new Promise(r => setTimeout(r, 50));
       const after = JSON.parse(localStorage.getItem('bag_ppt_v1@cld')), srv = store.tour; window.RTT_PUTT.close(); sb = sb0;
