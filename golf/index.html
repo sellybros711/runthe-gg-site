@@ -12512,6 +12512,8 @@ var careerEscape={
   qschool:  {label:'Skip Q-School ▸', sub:'Keep the status you finished on and start the season',
              ok:()=>!!S.offseason, go:()=>{ S.pendingQ=null; S.qs=null; finishOffseason(); }}
 };
+const KEEP_UNDER_SHEET=['title','protour','putthub','me'];
+let _scrKeep=null;
 function render(){
   // Re-entrancy guard: some async loaders (lbLoad/crLoad/dbLoad) call render() to refresh, and when
   // Supabase isn't available they do so SYNCHRONOUSLY from inside a screen fn, which would re-enter
@@ -12546,8 +12548,15 @@ function render(){
   // Only on a same-view rebuild: a real navigation scrolls to top anyway, and holding a tall old
   // page there would just delay the new (shorter) one settling. Skipped while the draft-spin
   // reservation owns min-height (reveal() sets it for its own reason).
+  // THE SCREEN UNDER A SHEET IS KEPT (the owner, 2026-11-04: long sheets froze). While a sheet is open over a hub
+  // (KEEP_UNDER_SHEET), a render rebuilds the sheet only: the hub built by the render that showed it stays as it
+  // was, because the sheet covers it and rebuilding it cost ~0.3 s of a phone's time on every tap inside the
+  // sheet. The hub is rebuilt in full as soon as the sheet closes or the screen changes, so it is never stale on
+  // show. Only hubs, whose screen fns arm no timers a sheet would stop.
+  const keep=!!(S.overlay && !S.authPending && _scrKeep && _scrKeep.screen===S.screen && KEEP_UNDER_SHEET.indexOf(S.screen)>=0
+    && _scrKeep.card.parentNode===app);
   let heldH=0;
-  if(sameView && !app.style.minHeight){
+  if(!keep && sameView && !app.style.minHeight){
     const h=app.offsetHeight;
     if(h>0){ heldH=h; app.style.minHeight=h+'px'; }
   }
@@ -12566,14 +12575,17 @@ function render(){
   // Clearing vnew on a same-view rebuild means the recreated DOM shows its final state instead of replaying.
   if(newView){ app.classList.add('vnew'); clearTimeout(_vnewT); _vnewT=setTimeout(()=>{ try{ app.classList.remove('vnew'); }catch(e){} }, 420); }
   else if(app.classList.contains('vnew')){ app.classList.remove('vnew'); clearTimeout(_vnewT); }
+  let card, screen;
+  if(keep){ app.querySelectorAll(':scope > [data-ovn]').forEach(n=>n.remove()); card=_scrKeep.card; screen=_scrKeep.screen_el; }
+  else {
   app.innerHTML='';
   // opaque status-bar mask (mounted once on <body>, persists across renders) so scrolling content
   // never smears under the translucent iOS status bar.
   if(!document.getElementById('topmask')){ const tm=document.createElement('div'); tm.id='topmask'; tm.className='topmask'; document.body.appendChild(tm); }
   const ftm=ftOn(), ftc=ftClosetOn(); document.body.classList.toggle('ftmode', ftm); document.body.classList.toggle('ftcloset', ftc);
   if(!ftm && !ftc) app.appendChild(header());
-  const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen scr-${S.screen}${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
+  card=$(`<main class="card"></main>`);
+  screen=$(`<div class="screen scr-${S.screen}${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   // CS483/483c: the season-summary + off-season are focused, one-screen action pages, skip the footer link
@@ -12588,6 +12600,8 @@ function render(){
     app.appendChild($(`<div style="position:fixed;left:0;right:0;margin:0 auto;width:max-content;bottom:calc(26px + var(--botnav-space,0px));z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px"><span class="authspin"></span>Finishing Google sign-in…</div>`));
   }
   RT=screen;
+  }
+  const _ovBefore=new Set(app.children);   // what the sheet adds to #app is marked, so a kept screen can drop it next time
   // overlays attach to #app (top level), NOT the screen, the screen lives inside .card
   // (z-index:1) which sits BELOW .head (z-index:2), so an overlay nested there would render
   // under the header. At app level its z-index:40 covers the whole page cleanly.
@@ -12640,6 +12654,7 @@ function render(){
     if(S.overlay==='terms') overlayTerms(app);
     if(S.overlay==='menu') overlayMenu(app);
     try{ seasonDecorPost(); }catch(e){}
+    [...app.children].forEach(n=>{ if(!_ovBefore.has(n)) n.setAttribute('data-ovn',''); });
   }catch(err){
     console.error('[RunTheTour] overlay render failed:', S.overlay, err);
     try{ track('screen_render_error',{overlay:S.overlay,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -12648,6 +12663,7 @@ function render(){
     const errCard=$(`<div role="status" aria-live="polite" title="Tap to dismiss" style="position:fixed;left:0;right:0;margin:0 auto;width:max-content;max-width:90vw;bottom:calc(26px + var(--botnav-space,0px));z-index:45;cursor:pointer;background:#0a1626;color:var(--oncard);border:1px solid #E14A33;border-radius:10px;padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
       <b style="color:#E14A33">That popup broke, so we closed it.</b>
       <div class="small muted" style="margin-top:3px;word-break:break-word">${esc(broken)}: ${esc((err&&err.message)||String(err))}</div></div>`);
+    errCard.setAttribute('data-ovn','');
     errCard.addEventListener('click',()=>errCard.remove());   // tap-to-dismiss...
     setTimeout(()=>errCard.remove(), 6000);                    // ...and auto-clear so it never lingers over the UI
     app.appendChild(errCard);
@@ -12656,6 +12672,8 @@ function render(){
   // blank with no error shown anywhere, this catch turns that into a recoverable "Back to Title"
   // card instead (showing the real error message so a recurrence is diagnosable straight from a
   // screenshot, not just from analytics we might never see).
+  if(keep){ if(!S.overlay) setTimeout(render,0); }   // the sheet closed itself while drawing: rebuild the screen under it
+  else {
   HV_FULL=null;   // the full-screen tracer is the round screen's to claim, per render (see hvFullFrame)
   try{
     ({title:scrTitle,protour:scrProTour,putthub:scrPuttHub,me:scrMe,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,qschool:scrQSchool,entry:scrEntry,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
@@ -12694,6 +12712,8 @@ function render(){
       fb.appendChild(sk);
     }
     screen.appendChild(fb);
+  }
+  _scrKeep={screen:S.screen, card, screen_el:screen};
   }
   try{ document.body.classList.toggle('hvfull', !!HV_FULL); }catch(e){}
   try{ seasonDecorPost(); }catch(e){}   // again, now the screen exists: two hidden things live on screens
