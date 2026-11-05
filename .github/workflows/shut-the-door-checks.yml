@@ -21,7 +21,8 @@ name: Shut The Door checks
 #              159_shut_the_door_boards.sql (the board end to end) twice and its test; then
 #              160_shut_the_door_vote_survivor.sql (the vote, Survivor, the archive, Pro) twice and its test; then
 #              161_shut_the_door_full_close.sql (rules 8's two new spots) twice and its test; then
-#              163_shut_the_door_vote_nov5.sql (the vote from 2026-11-05) twice and its test
+#              163_shut_the_door_vote_nov5.sql (the vote from 2026-11-05) twice and its test; then
+#              164_shut_the_door_vote_anytime.sql (the vote without playing today) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -149,3 +150,9 @@ jobs:
           $P -f supabase/163_shut_the_door_vote_nov5.sql
           $P -f supabase/163_shut_the_door_vote_nov5.sql
           $P -f supabase/test/shut_the_door_vote_nov5_test.sql
+      - name: 164 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/164_shut_the_door_vote_anytime.sql
+          $P -f supabase/164_shut_the_door_vote_anytime.sql
+          $P -f supabase/test/shut_the_door_vote_anytime_test.sql

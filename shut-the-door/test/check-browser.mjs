@@ -1716,6 +1716,11 @@ async function modes(w, h, full) {
   /* the vote, signed in */
   step(tag + ' 17 the vote', 300);
   ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockVote=open'));
+  /* the home's vote (164): signed in, before today's daily, the two are open, each with its setup; nothing opens */
+  await page.waitForSelector('#h-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });
+  const hv = await page.evaluate(() => [...document.querySelectorAll('#h-vote .vt-o')].map((b) => ({ s: (b.querySelector('.vt-s') || {}).textContent || '', c: getComputedStyle(b.querySelector('.vt-t b')).color })));
+  ok(hv.length === 2 && hv.every((c) => c.s.length > 20 && c.s.length <= 140) && await nothingOpen(page),
+    '17 the home votes before today\'s daily: two open choices with their setups, nothing opened (' + hv.map((c) => c.s).join(' | ') + ')');
   await dailyDone(page);
   await page.click('#d-see');
   await page.waitForSelector('#r-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });
@@ -1724,7 +1729,7 @@ async function modes(w, h, full) {
   const hp = await page.evaluate(() => { const b = document.getElementById('b-profile'), p = b.querySelector('svg.plate'); return { pill: b.classList.contains('pill'), plate: !!p, t: p && p.querySelector('text') ? p.querySelector('text').textContent : '', h: b.getBoundingClientRect().height }; });
   ok(!hp.pill && hp.plate && hp.t === 'MO' && hp.h >= 38, '17 signed in, the header shows your plate with your initials (' + JSON.stringify(hp) + ')');
   const vt = await page.evaluate(() => [...document.querySelectorAll('#r-vote .vt-o')].map((b) => ({ name: b.querySelector('.vt-t b').textContent, meta: b.querySelector('.vt-t span').textContent, h: b.getBoundingClientRect().height })));
-  ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(top|bot) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
+  ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(Top|Bottom) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
   /* the menu's row to the vote (the owner, 2026-10-30): only while it is open; it scrolls, nothing opens */
   const vrow = await page.evaluate(() => { const b = document.getElementById('r-vote-go'); return { on: !b.hidden, t: b.textContent, h: b.getBoundingClientRect().height }; });
   ok(vrow.on && /vote for tomorrow/.test(vrow.t) && vrow.h >= 38, '17 the result\'s menu has a row to the vote while it is open: "' + vrow.t + '"');
@@ -1736,7 +1741,7 @@ async function modes(w, h, full) {
   await page.click('#r-vote .vt-o >> nth=0');
   await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 30000 });
   const vd = await page.evaluate(() => ({ on: document.querySelectorAll('#r-vote .vt-o.on').length, n: document.querySelectorAll('#r-vote .vt-n').length, say: document.querySelector('#r-vote .vt-say').textContent }));
-  ok(vd.on === 1 && vd.n === 2 && /it counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
+  ok(vd.on === 1 && vd.n === 2 && /It counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
   await shotM(page, 'vote-cast');
   ok(errors.length === 0, '17 the vote: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
@@ -1746,7 +1751,7 @@ async function modes(w, h, full) {
   ({ ctx, page, errors } = await modesPage(w, h, '?mockVote=locked&mockEnt=pro'));
   await page.waitForSelector('#h-pick:not([hidden])', { timeout: 30000 });
   const pk = await page.textContent('#h-pick');
-  ok(/^picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
+  ok(/^Picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
   await page.click('#hm-arc');
   await page.waitForSelector('#hp-arc.on:not([hidden])');
   const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);

@@ -38,23 +38,25 @@ var SAVE_LABEL = 'sign in to save your score';
 /* the occasion from a title: "game 2 · 2017 world series", or a regular season game's date */
 function occasion(title) {
   var m = /^(.*?)\s+at\s+(.*?),\s*(.*)$/i.exec(title || '');
-  if (m) return m[3].toLowerCase();
-  return String(title || '').toLowerCase().split(/,\s*/).join(' · ');
+  if (m) return m[3];
+  return String(title || '').split(/,\s*/).join(' · ');
 }
 /* the spot, short: "top 9, up 1" */
 function spot(sit) {
   if (!sit || sit.inning == null) return '';
   var m = sit.score ? sit.score.us - sit.score.them : null;
-  return (sit.half === 'bottom' ? 'bot ' : 'top ') + sit.inning + (m == null ? '' : m > 0 ? ', up ' + m : m < 0 ? ', down ' + -m : ', tied');
+  return (sit.half === 'bottom' ? 'Bottom ' : 'Top ') + sit.inning + (m == null ? '' : m > 0 ? ', up ' + m : m < 0 ? ', down ' + -m : ', tied');
 }
-/* one candidate in one line: the closer, then the occasion (it carries the year) and the spot */
+/* one candidate in one line: the closer, then the occasion (it carries the year) and the spot, and
+   the card's setup (data/setups.json: the moment, never how it ended) */
 function cardLine(c) {
-  return { name: c.pitcher || '', meta: [occasion(c.title), spot(c.situation)].filter(Boolean).join(' · ') };
+  return { name: c.pitcher || '', meta: [occasion(c.title), spot(c.situation)].filter(Boolean).join(' · '), setup: c.setup || '' };
 }
 function chip(outcome) {
   var label = C.OUTCOME_LABEL[outcome];
   return label ? '<span class="oc ' + esc(outcome) + '">' + esc(label.toLowerCase()) + '</span>' : '';
 }
+function cap(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
 function num(n) { return n == null ? '-' : Number(n).toLocaleString('en-US'); }
 
 /* how long until the next Eastern day, when the next free Survivor run opens: "7h 12m" */
@@ -97,20 +99,23 @@ function saveBlock(el, opts) {
 
 /* ---- 2. the vote for tomorrow ---------------------------------------------------------------
    From VOTE.EPOCH on. Before it vote() has no candidates and the block stays hidden. A signed-in
-   player who finished today picks one of two; then the block says the vote is in and shows the
-   count. Signed out: the two, and the same sign-in button. */
-var voteSeq = 0;
-function voteBlock(el) {
+   player picks one of two, played today or not (164); then the block says the vote is in and shows
+   the count. Signed out: the two, and the same sign-in button. The result and the home each carry
+   one; each block keeps its own request count, so one never drops the other's answer. opts.quiet
+   (the home's) leaves ctx.onVote, the result menu's row, alone. */
+function voteBlock(el, opts) {
   if (!el || !has('vote')) { if (el) el.hidden = true; return Promise.resolve(null); }
-  var my = ++voteSeq;
+  opts = opts || {};
+  var my = el.stdVoteSeq = (el.stdVoteSeq || 0) + 1;
   return Promise.resolve().then(function () { return API().vote(); }).then(function (v) {
-    if (my !== voteSeq) return v;
-    drawVote(el, v);
+    if (my !== el.stdVoteSeq) return v;
+    drawVote(el, v, false, opts);
     return v;
-  }, function () { if (my === voteSeq) { el.hidden = true; if (ctx.onVote) ctx.onVote(null); } return null; });
+  }, function () { if (my === el.stdVoteSeq) { el.hidden = true; if (ctx.onVote && !opts.quiet) ctx.onVote(null); } return null; });
 }
-function drawVote(el, v, busy) {
-  if (ctx.onVote) ctx.onVote(v);
+function drawVote(el, v, busy, opts) {
+  opts = opts || {};
+  if (ctx.onVote && !opts.quiet) ctx.onVote(v);
   if (!v || !v.candidates || v.candidates.length !== 2) { el.hidden = true; el.innerHTML = ''; return; }
   el.hidden = false;
   var st = authState(), mine = v.myVote, tot = v.votes ? (v.votes.a || 0) + (v.votes.b || 0) : 0;
@@ -120,28 +125,29 @@ function drawVote(el, v, busy) {
     return '<button class="vt-o' + (on ? ' on' : '') + (mine ? ' done' : '') + '" type="button" data-id="' + esc(c.id) + '"' +
       (v.canVote && !busy ? '' : ' disabled') + ' aria-pressed="' + on + '">' +
       (v.votes ? '<i class="vt-bar" style="width:' + share + '%" aria-hidden="true"></i>' : '') +
-      '<span class="vt-t"><b>' + esc(L.name) + (on ? '<em class="vt-me">your vote</em>' : '') + '</b><span>' + esc(L.meta) + '</span></span>' +
+      '<span class="vt-t"><b>' + esc(L.name) + (on ? '<em class="vt-me">your vote</em>' : '') + '</b><span>' + esc(L.meta) + '</span>' +
+      (L.setup ? '<span class="vt-s">' + esc(L.setup) + '</span>' : '') + '</span>' +
       (n != null ? '<span class="vt-n"><b>' + esc(n) + '</b>' + (n === 1 ? 'vote' : 'votes') + '</span>' : '') +
       '</button>';
   }).join('');
   var foot;
   if (v.error) foot = '<p class="vt-say err">' + esc(v.error) + '.</p>';
-  else if (mine) foot = '<p class="vt-say ok"><b>your vote is in. it counts.</b> it locks at midnight eastern.</p>';
-  else if (v.canVote) foot = '<p class="vt-say">one vote. pick the spot you want tomorrow.</p>';
-  else if (!st.signedIn) foot = '<div class="vt-in"><p>sign in to vote.</p><button class="btn save-b" type="button" data-save>' +
-    (has('pending') && API().pending() ? SAVE_LABEL : 'sign in to vote') + '</button></div>';
-  else if (v.offline) foot = '<p class="vt-say">the vote didn\'t load. try again later.</p>';
-  else foot = '<p class="vt-say">' + esc(v.why || 'voting is closed') + '.</p>';
-  el.innerHTML = '<div class="r-sec-h"><h3>tomorrow\'s daily</h3><span>' + (mine ? 'the count so far' : 'you pick') + '</span></div>' +
+  else if (mine) foot = '<p class="vt-say ok"><b>Your vote is in. It counts.</b> It locks at midnight Eastern.</p>';
+  else if (v.canVote) foot = '<p class="vt-say">One vote. Pick the spot you want tomorrow.</p>';
+  else if (!st.signedIn) foot = '<div class="vt-in"><p>Sign in to vote.</p><button class="btn save-b" type="button" data-save>' +
+    (has('pending') && API().pending() ? SAVE_LABEL : 'Sign in to vote') + '</button></div>';
+  else if (v.offline) foot = '<p class="vt-say">The vote didn\'t load. Try again later.</p>';
+  else foot = '<p class="vt-say">' + esc(cap(v.why || 'voting is closed')) + '.</p>';
+  el.innerHTML = '<div class="r-sec-h"><h3>Tomorrow\'s situation</h3><span>' + (mine ? 'The count so far' : 'You pick') + '</span></div>' +
     '<div class="vt-opts">' + opts + '</div>' + foot;
   el.querySelectorAll('.vt-o:not([disabled])').forEach(function (b) {
     b.addEventListener('click', function () {
       var id = b.getAttribute('data-id');
-      drawVote(el, v, true);
-      var my = ++voteSeq;
+      drawVote(el, v, true, opts);
+      var my = el.stdVoteSeq = (el.stdVoteSeq || 0) + 1;
       Promise.resolve().then(function () { return API().castVote(id); }).then(function (nv) {
-        if (my === voteSeq) drawVote(el, nv);
-      }, function () { if (my === voteSeq) drawVote(el, Object.assign({}, v, { error: 'that vote didn\'t go. try again' })); });
+        if (my === el.stdVoteSeq) drawVote(el, nv, false, opts);
+      }, function () { if (my === el.stdVoteSeq) drawVote(el, Object.assign({}, v, { error: 'that vote didn\'t go. try again' }), false, opts); });
     });
   });
   var s = el.querySelector('[data-save]');
@@ -154,13 +160,13 @@ function pickLine(el, scn) {
   if (!el) return;
   el.hidden = true;
   if (!scn || !scn.pick) return;
-  if (scn.pick === 'default') { el.hidden = false; el.textContent = 'the vote didn\'t load. first pick plays.'; return; }
+  if (scn.pick === 'default') { el.hidden = false; el.textContent = 'The vote didn\'t load. First pick plays.'; return; }
   if (!has('vote')) return;
   Promise.resolve().then(function () { return API().vote(scn.day); }).then(function (v) {
     if (!v || v.winner !== scn.id) return;
     el.hidden = false;
     var w = v.votes ? (v.candidates[0] && v.candidates[0].id === v.winner ? [v.votes.a, v.votes.b] : [v.votes.b, v.votes.a]) : null;
-    el.textContent = 'picked by your votes' + (w ? ' · ' + w[0] + '-' + w[1] : '');
+    el.textContent = 'Picked by your votes' + (w ? ' · ' + w[0] + '-' + w[1] : '');
   }, function () {});
 }
 
