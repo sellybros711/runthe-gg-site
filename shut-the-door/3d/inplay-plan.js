@@ -155,7 +155,24 @@ function runTime(d, v, a, fromRest, toRest) {
   return k === 2 ? 2 * Math.sqrt(d / a) : Math.sqrt(2 * d / a);
 }
 
-/** The share of a leg covered at share tau of its time: ramps of share al (start) and be (end). */
+/* The plan times every run as a straight ramp of constant acceleration (share al of the leg from rest to
+   top speed, be from top speed to rest): runTime(), along() and speedShare(), and every moment of the plan
+   (who gets where first, each throw, tag, catch and out, the cut) is worked out on them and stays exactly
+   as it was.
+
+   The run as drawn (Track.drawn, set once the plan is made: Track.at then reads legDrawn, drawRuns
+   choosing for each run how). Drawn straight, the push came in whole in the first frame and went in one frame at top
+   speed (19 ft/s^2 to nothing for a fielder, 16 for a runner), and a pull up the same way round. A
+   player's push is hardest in his first strides and fades as he nears top speed (the drive phase, then
+   upright). So a ramp is drawn as RAMP: the push eases in over its first quarter second or so, then
+   fades in a straight line to nothing at top speed, over LAM (about 1.31) times the straight ramp's time.
+   Its speed gives up exactly the straight ramp's distance by then (the deficit, half the straight ramp's
+   time at top speed), so from the end of the longer ramp on he is where the plan has him to the inch, and
+   so at the end of every leg, where he arrives, catches, covers or is tagged at a bag. A pull up is the
+   same curve run backwards: it eases off top speed, brakes hardest in its last steps and settles. A leg
+   with no room for the longer ramps (the two meet) takes in less of it: the mix with the smooth step
+   SMOOTH (the same deficit in the straight ramp's own time) by how much room there is, all of SMOOTH where
+   the ramps meet (a run that never reaches top speed). */
 function along(tau, al, be) {
   tau = clamp(tau, 0, 1);
   const A = 1 - al / 2 - be / 2;
@@ -170,10 +187,106 @@ function speedShare(tau, al, be) {
   const v = tau < al ? tau / al : tau > 1 - be ? (1 - tau) / be : 1;
   return v / A;
 }
+const RAMP_N = 200, RAMP_ON = 0.15;
+const RAMP = (() => {
+  // the push over u in [0, 1] of the longer ramp: eased in over RAMP_ON (a smooth step: a runner's push grows
+  // by no more than about 2 ft/s^2 from one frame to the next), then straight down to nothing
+  const a = [], v = [0], p = [0];
+  for (let i = 0; i <= RAMP_N; i++) { const u = i / RAMP_N, x = Math.min(1, u / RAMP_ON), on = x * x * (3 - 2 * x); a.push(on * (1 - u)); }
+  for (let i = 1; i <= RAMP_N; i++) v.push(v[i - 1] + (a[i - 1] + a[i]) / 2 / RAMP_N);
+  const top = v[RAMP_N];
+  for (let i = 0; i <= RAMP_N; i++) v[i] /= top;
+  for (let i = 1; i <= RAMP_N; i++) p.push(p[i - 1] + (v[i - 1] + v[i]) / 2 / RAMP_N);
+  // (its deficit: the share of top speed's distance it gives up over its own time)
+  return { v, p, def: 1 - p[RAMP_N] };
+})();
+export const LAM = 1 / (2 * RAMP.def);
+const tab = (T, u) => { const x = clamp(u, 0, 1) * RAMP_N, i = Math.min(RAMP_N - 1, Math.floor(x)); return T[i] + (T[i + 1] - T[i]) * (x - i); };
+const SMOOTH = { v: (u) => u * u * (3 - 2 * u), p: (u) => u * u * u - u * u * u * u / 2 };
+/** A drawn ramp of the straight ramp's share r, lam (1 to LAM) times as long: speed (share of top) and
+    distance (top speed times the leg's time) at x, the share of the leg from the ramp's rest end. */
+function rampAt(x, r, lam) {
+  const R = r * lam, u = clamp(x / R, 0, 1);
+  // (the mix that keeps the deficit r/2 in R: all RAMP at LAM, all SMOOTH at 1)
+  const m = lam <= 1 ? 0 : (0.5 - 0.5 / lam) / (0.5 - RAMP.def);
+  return { v: (1 - m) * SMOOTH.v(u) + m * tab(RAMP.v, u), s: R * ((1 - m) * SMOOTH.p(u) + m * tab(RAMP.p, u)) };
+}
+/** A leg as drawn: tau its share of time, al and be its straight ramp shares, la and lb how long each ramp
+    is drawn (times its straight ramp: 1 to LAM drawn smooth, 0 drawn straight, as the plan has it). Distance
+    (a share of the leg) and speed (top speed times its share of the straight ramp leg's average). */
+function legDrawn(tau, al, be, la, lb) {
+  tau = clamp(tau, 0, 1);
+  const A = 1 - al / 2 - be / 2;
+  let s, v = 1;
+  if (al > 0 && tau < al * Math.max(1, la)) {
+    if (la) { const q = rampAt(tau, al, la); s = q.s; v = q.v; } else { s = 0.5 * tau * tau / al; v = tau / al; }
+  } else if (be > 0 && tau > 1 - be * Math.max(1, lb)) {
+    const r = 1 - tau;
+    if (lb) { const q = rampAt(r, be, lb); s = A - q.s; v = q.v; } else { s = A - 0.5 * r * r / be; v = r / be; }
+  } else s = tau - al / 2;
+  return { f: clamp(s / A, 0, 1), v: v / A };
+}
+/** How each run of a track is drawn (Track.at once drawn): its pull up (the plan's, or STOP_DRAWN's) and how
+    long each ramp is drawn. A body's own moments (times he catches, throws, takes a throw, covers, reaches,
+    tags; a runner's arrival, out, run and slide) stay exactly where the plan has him: a ramp with one of them
+    inside it is drawn straight, as planned, and so is a run with one inside it whose drawn pull up is longer
+    than the plan's (its top speed rises for it, so he is somewhere else all along it). */
+function drawRuns(tr, moments) {
+  const inside = (a, b) => moments.some((t) => t > a + 1e-3 && t < b - 1e-3);
+  for (const g of new Set(tr.legs.map((l) => l.g))) {
+    if (g.dbe != null && inside(g.t0, g.t0 + g.T)) { g.dal = g.al; g.dbe = g.be; }
+    const al = g.dal ?? g.al, be = g.dbe ?? g.be, room = (k) => (k >= 1 || k <= 0 ? 1 : Math.min(LAM, 1 / k));
+    let la = al > 0 ? room(al + be) : 0, lb = be > 0 ? room(al + be) : 0;
+    // (a run speeding up all the way to its end, a sprint at a ball he only just reaches, a dive or a scoop at
+    // the end of it: drawn smooth he went into it a foot a second and more faster than planned, in the same
+    // place, and a head that had been just under a check-jolt.mjs limit went over it. As planned)
+    if (!(be > 0) && al >= 1 - 1e-6) la = 0;
+    // (a ramp already hard as planned stays as planned: drawn, a ramp's hardest push or brake is about one and a
+    // half times the straight ramp's even one, so a pull up of 60 ft/s^2 went over 90, a dead stop in a stride,
+    // check-gait.mjs brake)
+    const top = g.total / g.T / (1 - al / 2 - be / 2);
+    if (la && top / (al * g.T) > HARD_PUSH) la = 0;
+    if (lb && top / (be * g.T) > HARD_BRAKE) lb = 0;
+    // (each ramp's own stretch, and again once the other ramp's choice gives it more or less room)
+    for (let i = 0; i < 2; i++) {
+      if (la && inside(g.t0, g.t0 + g.T * al * la)) la = 0;
+      if (lb && inside(g.t0 + g.T * (1 - be * lb), g.t0 + g.T)) lb = 0;
+      if (la && !lb && be > 0) la = Math.min(LAM, (1 - be) / al);
+      if (lb && !la && al > 0) lb = Math.min(LAM, (1 - al) / be);
+    }
+    g.la = la; g.lb = lb;
+  }
+}
 
 /** A figure's path: legs of movement and the actions on it. Pure functions of s. */
 // a run at full speed pulled up short of a wait pulls up over this long (seconds, Track.settle)
 const STOP_S = 0.3;
+// (and as drawn, over this long as a straight ramp, so about LAM times it, the hardest braking in its last
+// steps. At STOP_S it was a sprint to standing in a third of a second, 70 to 95 ft/s^2, three times what
+// legs can brake: a dead stop in one stride. The same time to the same spot, the plan's own STOP_S stop
+// kept for the plan's timing)
+const STOP_DRAWN = 0.6;
+// a ramp harder than these as planned (ft/s^2) is drawn as planned (drawRuns)
+const HARD_PUSH = 30, HARD_BRAKE = 60;
+
+/** A run at full speed that ends standing (Track.settle, Track.stopAtEnd): its top speed rises to fit the
+    stop into the same time, by no more than a sixth. The plan's over STOP_S (al, be), the drawn one over
+    STOP_DRAWN (dal, dbe), each its own straight ramp shares. (A run that was speeding up the whole way, a
+    sprint from rest to a ball he only just reaches, has no room for a stop after it: the ramps overlapped, so
+    he reached the spot at nine tenths of the leg and stood there with his stride going at full speed, then
+    stopped in a frame, his body snapping from the way he ran to the ball, the bobble's skate and pop,
+    check-jolt.mjs. Then it speeds up and pulls up inside the leg, a rise and a stop, the same top speed, the
+    same time and spot) */
+function pullUp(g) {
+  const shares = (S) => {
+    let al = g.al, be = Math.min(S / g.T, 2 * (1 - al / 2) * (1 - 1 / 1.15));
+    if (al + be > 1) { be = Math.min(S / g.T, 0.5); al = Math.min(al, 1 - be); }
+    return [al, be];
+  };
+  const [dal, dbe] = shares(STOP_DRAWN);
+  [g.al, g.be] = shares(STOP_S);
+  g.dal = dal; g.dbe = dbe;
+}
 
 export class Track {
   constructor(at, opts = {}) {
@@ -230,14 +343,7 @@ export class Track {
     for (let i = 0; i < groups.length - 1; i++) {
       const g = groups[i], nx = groups[i + 1];
       if (g.be > 0 || (nx.t0 < g.t0 + g.T + 0.02 && nx.al === 0)) continue;
-      // (its top speed rises to fit the stop into the same time, by no more than a sixth)
-      g.be = Math.min(STOP_S / g.T, 2 * (1 - g.al / 2) * (1 - 1 / 1.15));
-      // (a run that was speeding up the whole way, a sprint from rest to a ball he only just reaches, has no
-      // room for a stop after it: the ramps overlapped, so he reached the spot at nine tenths of the leg and
-      // stood there with his stride going at full speed, then stopped in a frame, his body snapping from the
-      // way he ran to the ball, the bobble's skate and pop, check-jolt.mjs. Then it speeds up and pulls up
-      // inside the leg, a rise and a stop, the same top speed, the same time and spot)
-      if (g.al + g.be > 1) { g.be = Math.min(STOP_S / g.T, 0.5); g.al = Math.min(g.al, 1 - g.be); }
+      pullUp(g);
     }
   }
   /** His last run ends standing where it ends, in the same time to the same spot: a pull up (or the
@@ -247,8 +353,7 @@ export class Track {
   stopAtEnd() {
     const groups = [...new Set(this.legs.map((l) => l.g))], g = groups[groups.length - 1];
     if (!g || g.be > 0 || g.total < 1) return;
-    g.be = Math.min(STOP_S / g.T, 2 * (1 - g.al / 2) * (1 - 1 / 1.15));
-    if (g.al + g.be > 1) { g.be = Math.min(STOP_S / g.T, 0.5); g.al = Math.min(g.al, 1 - g.be); }
+    pullUp(g);
   }
   /** Stay where he is until t (whatever comes next starts no sooner). */
   hold(t) { const e = this.end; if (t > this.free) this.run(t, [{ x: e.x + 0.02, y: e.y }], { v: 1 }); }
@@ -259,12 +364,14 @@ export class Track {
     const groups = new Set();
     for (const l of this.legs) {
       if (s < l.t0) break;
-      const g = l.g, tau = (s - g.t0) / g.T, f = along(tau, g.al, g.be);
+      // (as planned, a straight ramp; once the plan is made, as drawn: drawRuns)
+      const g = l.g, tau = (s - g.t0) / g.T, dr = this.drawn && g.la != null, al = dr ? g.dal ?? g.al : g.al, be = dr ? g.dbe ?? g.be : g.be;
+      const D = dr ? legDrawn(tau, al, be, g.la, g.lb) : null, f = D ? D.f : along(tau, al, be);
       if (!groups.has(g)) { groups.add(g); run += g.total * f; }
       if (f >= l.f0 - 1e-9 && (f <= l.f1 + 1e-9 || s >= l.t1)) {
         const k = l.f1 > l.f0 ? clamp((f - l.f0) / (l.f1 - l.f0), 0, 1) : 1;
         pos = lerp(l.a, l.b, k);
-        if (tau < 1) { spd = g.total / g.T * speedShare(tau, g.al, g.be); head = Math.atan2(l.b.x - l.a.x, l.b.y - l.a.y); }
+        if (tau < 1) { spd = g.total / g.T * (D ? D.v : speedShare(tau, al, be)); head = Math.atan2(l.b.x - l.a.x, l.b.y - l.a.y); }
         else { spd = 0; head = Math.atan2(l.b.x - l.a.x, l.b.y - l.a.y); }
       } else if (s >= l.t1) { pos = l.b; head = Math.atan2(l.b.x - l.a.x, l.b.y - l.a.y); }
     }
@@ -472,7 +579,33 @@ export function planPlay(pr, o = {}) {
   p.ballAt = (s) => ballAt(p, s);
   p.outcome = outcomeOf(ctx);
   p.umps = planUmps(p, 0.35);
+  drawAll(p);
   return p;
+}
+
+/** The plan made: every body's track is read as drawn from here on (Track.drawn, drawRuns), each kept to
+    the plan at his own moments. */
+function drawAll(p) {
+  const num = (t) => typeof t === 'number' && isFinite(t) && t < 100;
+  const of = (n) => {
+    const m = [];
+    for (const a of p.fielders[n].acts) m.push(a.t, a.tagAt);
+    for (const sg of p.segs || []) if (sg.kind === 'throw') { if (sg.from === n) m.push(sg.t0); if (sg.to === n) m.push(sg.t1 - 0.1, sg.t1); }
+    return m.filter(num);
+  };
+  for (const [n, tr] of Object.entries(p.fielders || {})) if (tr && tr.legs) { drawRuns(tr, of(+n)); tr.drawn = true; }
+  for (const r of p.runners || []) {
+    const tr = r.track;
+    if (!tr || !tr.legs) continue;
+    // (a runner kept behind the one ahead runs on a slower clock, planRunners: his moments on his track's own)
+    const k = tr.slow ?? 1;
+    drawRuns(tr, [r.arrive, r.outAt, r.scoreAt, r.firstAt, r.slide, r.slide != null ? r.slide - 0.6 : null, tr.stopAt].filter(num).map((t) => t * k));
+    tr.drawn = true;
+  }
+  // (a runner close behind another, the batter taking second behind a man thrown out there: drawn, one's push
+  // or pull up put him a step past the other where the plan has him a step behind. Both as planned)
+  for (let k = 0, q; k < 8 && (q = passing(p)); k++) { q.back.track.drawn = false; q.front.track.drawn = false; }
+  for (const tr of Object.values(p.umps || {})) if (tr && tr.legs) { drawRuns(tr, tr.acts.map((a) => a.t).filter(num)); tr.drawn = true; }
 }
 
 /* ------------------------------------------------------------------ the base umpires */
@@ -656,6 +789,7 @@ export function planSteal(pr, o = {}) {
   p.ballAt = (s) => ballAt(p, s);
   p.outcome = outcomeOf(ctx);
   p.umps = planUmps(p, 0.1);
+  drawAll(p);
   return p;
 }
 
@@ -743,6 +877,7 @@ export function planPickoff(po, o = {}) {
   p.ballAt = (s) => ballAt(p, s);
   p.outcome = outcomeOf(ctx);
   p.umps = planUmps(p, 0.1);
+  drawAll(p);
   return p;
 }
 
@@ -1610,6 +1745,7 @@ function planRunners(ctx) {
       for (; k > 0.5 && passes(back, order.slice(0, i), pr); k -= 0.04) {
         const kk = k - 0.04;
         back.track.at = (t) => { const q = at0(t * kk); return { ...q, spd: q.spd * kk }; };
+        back.track.slow = kk;
       }
       const f = back.track.at === at0 ? 1 : 1 / Math.max(0.5, k);
       for (const key of ['arrive', 'scoreAt', 'firstAt']) if (back[key] != null && !(back.out && key === 'arrive' && back.outAt != null)) back[key] *= f;
@@ -2109,17 +2245,11 @@ function outcomeOf(ctx) {
 }
 
 /** Does the plan show what the engine decided? A list of problems (empty: it does). */
-export function verify(pr, plan) {
-  const bad = [];
-  const o = plan.outcome, ip = pr.inPlay || {};
-  const label = ip.result;
-  const hit = HITS[label] || 0;
-  const moves = pr.runnerMoves || [];
-  const batterOut = moves.some((m) => m.from === 0 && m.to === -1) || !moves.some((m) => m.from === 0);
-  // no runner passes the runner ahead of him (MLB rule 5.09(b)(9)): along the base paths, while both
-  // are still running (not yet out, not yet across the plate), the one behind stays behind
-  // (followed along in time: only the leg he is on or the next, so home plate as base 0 and as
-  // base 4 never confuse the two)
+/** The first runner who passes the runner ahead of him (MLB rule 5.09(b)(9)), or null: along the base paths,
+    while both are still running (not yet out, not yet across the plate), the one behind stays behind
+    (followed along in time: only the leg he is on or the next, so home plate as base 0 and as base 4 never
+    confuse the two). { back, front, t } */
+export function passing(plan) {
   const prog = (q, prev) => {
     let best = { d: Infinity, p: prev };
     for (let k = Math.floor(prev); k <= Math.min(3, Math.floor(prev) + 1); k++) {
@@ -2132,15 +2262,28 @@ export function verify(pr, plan) {
   };
   const live = (r, t) => !(r.out && r.outAt != null && t >= r.outAt) && !(r.scoreAt != null && t >= r.scoreAt - 0.05);
   const rs = plan.runners.slice().sort((a, b) => a.from - b.from);
-  passing: for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+  for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
     const back = rs[i], front = rs[j];
     let pb = back.from, pf = front.from;
-    for (let t = 0; t <= plan.dur + 2; t += 0.05) {
+    for (let t = 0; t <= (plan.dur ?? 14) + 2; t += 0.05) {
       pb = prog(back.track.at(t), pb); pf = prog(front.track.at(t), pf);
       if (!live(back, t) || !live(front, t)) continue;
-      if (pb > pf + 0.02) { bad.push(`the runner from ${back.from} passes the runner from ${front.from} at ${t.toFixed(2)} s`); break passing; }
+      if (pb > pf + 0.02) return { back, front, t };
     }
   }
+  return null;
+}
+
+export function verify(pr, plan) {
+  const bad = [];
+  const o = plan.outcome, ip = pr.inPlay || {};
+  const label = ip.result;
+  const hit = HITS[label] || 0;
+  const moves = pr.runnerMoves || [];
+  const batterOut = moves.some((m) => m.from === 0 && m.to === -1) || !moves.some((m) => m.from === 0);
+  // no runner passes the runner ahead of him (MLB rule 5.09(b)(9)): passing()
+  const pass = passing(plan);
+  if (pass) bad.push(`the runner from ${pass.back.from} passes the runner from ${pass.front.from} at ${pass.t.toFixed(2)} s`);
   // the base umpires call what the plan shows: an out at first, second or third called out by that base's
   // umpire a beat after it, every safe call a runner safe on that bag, never a call against the play
   if (plan.umps) {

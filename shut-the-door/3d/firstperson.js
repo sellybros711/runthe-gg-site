@@ -42,7 +42,7 @@
  */
 import * as THREE from 'three';
 import { smooth, clamp01 } from './units.js?v=1';
-import { spline, reducedMotion, SUN } from './park.js?v=11';
+import { spline, reducedMotion, SUN } from './park.js?v=15';
 import { baseball } from './gear3d.js?v=4';
 import { look, hash } from './looks.js?v=6';
 import { LOOKS } from './looks-data.js?v=2';
