@@ -26,6 +26,17 @@ const M = P.M;
 const args = process.argv.slice(2);
 const QUICK = args.includes('--quick');
 const DAYS = +(args[args.indexOf('--days') + 1] || 21) || 21;
+/* ONE PART AT A TIME, FOR CI (the owner, 2026-11-05). The whole file took 30 to 45 minutes in one job, and a runner that
+   died in it (it happens: "the hosted runner lost communication") threw all of it away. CI runs it as three jobs, at
+   once, so a dead runner costs only its own part and a re-run of the failed job runs only that part:
+     --part node    sections 1 to 5c (the module in node: physics, greens, every hole, dailies, gyms, rooms)
+     --part rooms   section 6's rooms: every gatekeeper's room and every tap kind's gyms, on a phone and a desktop
+     --part page    the rest of section 6 (the page in a browser)
+   No --part runs all of it, as it always has. Each part prints its own "all good" or "N FAILED". */
+const PART = args.indexOf('--part') >= 0 ? args[args.indexOf('--part') + 1] : 'all';
+if (!['all', 'node', 'rooms', 'page'].includes(PART)){ console.log('unknown --part ' + PART + ' (node, rooms or page)'); process.exit(2); }
+const RUN_NODE = PART === 'all' || PART === 'node', RUN_ROOMS = PART === 'all' || PART === 'rooms', RUN_PAGE = PART === 'all' || PART === 'page';
+if (PART !== 'all') console.log('check-putt: --part ' + PART + ' only');
 
 let fails = 0;
 const ok = m => console.log('  ok  ', m);
@@ -33,6 +44,7 @@ const fail = m => { fails++; console.log('  FAIL', m); };
 const claim = (c, m) => c ? ok(m) : fail(m);
 const head = s => console.log('\n' + s);
 
+if (RUN_NODE){   // ---- sections 1 to 5c (not indented, to keep this split a small diff); the block ends above section 6
 /* ============================================================================ 1. THE PHYSICS */
 head('1. THE PHYSICS');
 const flat = (stimp, comps) => P.finishCourse({ bounds:[-60, -60, 60, 60], comps:comps || [], stimp, cup:[0, -58], cupR:P.CUP_R, matFn:() => M.GREEN });
@@ -506,7 +518,8 @@ head('5c. THE TRICK SHOT ROOMS, PROVEN');
    the testers, that the greens are built off the page's REAL hvGeom for every course in the
    rotation, and that a putt struck through the screen moves the ball. Served from a throwaway
    static server so the relative script path resolves exactly as it does on the site. */
-if (!args.includes('--no-browser')){
+}   // end of sections 1 to 5c (RUN_NODE)
+if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
   let chromium = null;
   try { ({ chromium } = await import('playwright')); } catch (e) {}
   if (!chromium){
@@ -528,6 +541,7 @@ if (!args.includes('--no-browser')){
     await pg.waitForFunction(() => window.RTT_PUTT && typeof puttOn === 'function', null, { timeout:30000 });
     // the mode opens on the 3D world (home()); the map checks below ask for the map first, and the world has its own section
     await pg.evaluate(() => { window.RTT_PUTT_MAPFIRST = true; });
+    if (RUN_PAGE){   // ---- the page, part one (not indented, as above); the rooms follow it
     claim(await pg.evaluate(() => !document.querySelector('.pt-ov')), 'loading the module draws nothing');
     // A PLAIN SCRIPT'S TOP LEVEL FUNCTION IS A GLOBAL. hole3d.js once declared render() unwrapped and
     // replaced the game's own screen painter, so every tap on the site threw and nothing responded,
@@ -930,6 +944,8 @@ if (!args.includes('--no-browser')){
     claim(gk.openAfter && gk.playedStaysOpen, `solved, the hole opens; a hole already played is never taken away (${JSON.stringify([gk.openAfter, gk.playedStaysOpen])})`);
     claim(gk.fixed && gk.cnt.coins > 2900 && gk.cnt.coins < 3350 && gk.cnt.haul > 450 && gk.cnt.haul < 750 && gk.cnt.item > 120 && gk.cnt.item < 290 && gk.cnt.pack > 40 && gk.cnt.pack < 130, `a chest's roll is fixed, and over 4,000 chests the odds come out near 78/15/5/2 (${JSON.stringify(gk.cnt)})`);
     claim(gk.fallback && gk.fallback.coins === 1200 && gk.packMsg && gk.packMsg.coins === 0 && /pack/.test(gk.packMsg.msg), `a lucky pack that cannot land is a big haul instead (${JSON.stringify([gk.fallback, gk.packMsg])})`);
+    }   // end of the page, part one
+    if (RUN_ROOMS){   // ---- the rooms, each in its own browser context
     /* NOTHING COVERS THE BOARD (the owner, 2026-10-17, of a phone screenshot of The Cargo Hold with the civilian's
        bubble over the grid: "text should not be covering the game like this"). On a phone (390 x 844, touch) and a
        desktop (1440 x 900), in the gatekeeper's room of EVERY KIND on the page (a step kind's and a tap kind's): out on
@@ -1092,6 +1108,8 @@ if (!args.includes('--no-browser')){
       claim(tp.plain && tp.warm, `${gid}: after two restarts the civilian's plainer line is in the panel, after five the warmer one (${JSON.stringify([tp.plain, tp.warm])})`);
       claim(tp.left && tp.reentered && tp.won && tp.paid === tp.pay && tp.badge && tp.packs.length === 1 && tp.packs[0] === (tp.keeper ? 'tour' : 'base'), `${gid}: out through Leave and in again, its proof tapped tile by tile opens the vault: ${tp.paid} of ${tp.pay} coins, ${JSON.stringify(tp.packs)} and the badge`);
       claim(tp.kept && tp.paidAgain === 0, `${gid}: opened again it shows solved, and the vault never pays twice (${JSON.stringify([tp.kept, tp.paidAgain])})`); }
+    }   // end of the rooms
+    if (RUN_PAGE){   // ---- the page, part two
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.
@@ -1729,6 +1747,7 @@ if (!args.includes('--no-browser')){
       claim(!none.on && none.why === 'no MediaRecorder' && none.strokes === 2 && none.sunk && none.card && !none.row && none.now === null,
         `with no MediaRecorder the hole plays and ends the same, and the card has no share row (${JSON.stringify({ on:none.on, strokes:none.strokes, card:none.card, row:none.row })})`); }
     // end of the clips check
+    }   // end of the page, part two
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }
