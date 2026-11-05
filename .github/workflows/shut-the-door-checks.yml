@@ -22,7 +22,8 @@ name: Shut The Door checks
 #              160_shut_the_door_vote_survivor.sql (the vote, Survivor, the archive, Pro) twice and its test; then
 #              161_shut_the_door_full_close.sql (rules 8's two new spots) twice and its test; then
 #              163_shut_the_door_vote_nov5.sql (the vote from 2026-11-05) twice and its test; then
-#              164_shut_the_door_vote_anytime.sql (the vote without playing today) twice and its test
+#              164_shut_the_door_vote_anytime.sql (the vote without playing today) twice and its test; then
+#              165_shut_the_door_ump_voices.sql (the voice of the ump) twice and its test, over a storage stub
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -77,6 +78,8 @@ jobs:
         run: node shut-the-door/test/clip.mjs
       - name: The release meter on the page keeps the same e and q
         run: node shut-the-door/test/meter.mjs
+      - name: The voice of the ump on the page matches 165 (script, consent, types, limits, the call map)
+        run: node shut-the-door/test/voices.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
@@ -87,7 +90,7 @@ jobs:
         run: node scripts/check-dashes.mjs shut-the-door
       - name: The copy rules, on the files that hold player copy
         run: |
-          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js; do
+          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js shut-the-door/voices.js; do
             node scripts/check-copy.mjs "$f"
           done
 
@@ -158,3 +161,10 @@ jobs:
           $P -f supabase/164_shut_the_door_vote_anytime.sql
           $P -f supabase/164_shut_the_door_vote_anytime.sql
           $P -f supabase/test/shut_the_door_vote_anytime_test.sql
+      - name: 165 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/test/storage_base.sql
+          $P -f supabase/165_shut_the_door_ump_voices.sql
+          $P -f supabase/165_shut_the_door_ump_voices.sql
+          $P -f supabase/test/shut_the_door_ump_voices_test.sql

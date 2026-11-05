@@ -286,9 +286,10 @@ function moment(pr, st) {
   } else if (r === 'called_strike') SFX.ump('strike');
   else if (r === 'ball') SFX.ump(pr.paOver ? 'ball4' : 'ball');
   else if (r === 'swinging_strike') SFX.roar(0.3);
+  else if (r === 'foul') SFX.ump('foul');
   else if (r === 'in_play' && pr.inPlay) {
     if (HIT_RES[pr.inPlay.result] || pr.runs) { SFX.groan(pr.inPlay.result === 'home_run' || pr.runs ? 1.5 : 1); SFX.buzz(30); }
-    else SFX.roar(pr.halfOver ? 1.1 : 0.55);
+    else { SFX.ump('out'); SFX.roar(pr.halfOver ? 1.1 : 0.55); }
   }
   SFX.bed(leverage(st));
 }
@@ -941,7 +942,9 @@ function enterMound() {
   setPitcher();
   setBatter(true);
   renderHud(S.outing);
-  if (S.outing.pitchNo === 0) pbp('', batterAt(S.outing.batterIndex).name + ' leads off.');
+  if (S.outing.pitchNo === 0) { pbp('', batterAt(S.outing.batterIndex).name + ' leads off.'); if (SFX) SFX.ump('play'); }
+  /* the voice of the ump: a few approved clips, fetched a beat after the mound is up (voices.js) */
+  if (window.STD_VOICES) window.STD_VOICES.preload();
   else pbp(isTied(S.outing) ? 'tied' : '', 'pitch ' + (S.outing.pitchNo + 1) + '. ' + batterAt(S.outing.batterIndex).name + ' up.');
   updateThrow();
   if (DEBUG) { $('m-dbg').hidden = false; $('m-dbg').textContent = 'seed ' + S.outing.seed + ' · ' + S.outing.mode; }
@@ -1645,7 +1648,7 @@ function fire(call) {
       renderHud(pr.halfOver ? halfEndState(res.state, pr.halfOver) : res.state);
       moment(pr, res.state);
       var sl = stealText(pr.steal);
-      if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); }
+      if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); if (SFX) SFX.ump(pr.steal.result === 'out' ? 'out' : 'safe'); }
     });
     var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: pitchSounds(pr), field: hudRunners } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
@@ -1789,6 +1792,7 @@ function pickoffIt() {
     var t = pickoffText(ev, res.state);
     pbp(t.tag, t.rest);
     if (ev.out) baseOut(ev.base);
+    if (SFX) SFX.ump(ev.out ? 'out' : 'safe');
     if (ev.halfOver && S.outing.status === 'live') {
       renderHud(halfEndState(S.outing, ev.halfOver));
       return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { return halfBreak(ev.halfOver); }).then(function () { settle(); nextHalf(ev.halfOver); });
@@ -1915,6 +1919,8 @@ function absReplay(pr, batter) {
   void box.offsetWidth;
   box.classList.add('show');
   sound('pop');
+  /* the umpire: a ball the challenge turned into a strike, else time for the review */
+  if (SFX) SFX.ump(ch.overturned && pr.abs.strike ? 'overturn' : 'time');
   return new Promise(function (res) {
     var done = false, t = 0;
     var end = function () {
