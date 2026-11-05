@@ -2628,7 +2628,7 @@ function compareCard(r, rv, runs, st) {
     row('Runs', runs == null ? none : cell('<b>' + esc(runs) + '</b>', rv.runs != null && runs < rv.runs),
       rv.runs == null ? none : cell('<b>' + esc(rv.runs) + '</b>', runs != null && rv.runs < runs)) +
     row('Pitches', cell('<b>' + esc(r.pitches) + '</b>', hp != null && r.pitches < hp),
-      hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(cap(rv.pitchesNote || 'not on record')), false, 'note'));
+      hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(rv.pitchesNote || 'Not on record'), false, 'note'));
   var log = st && st.log;
   AB.list = PG ? PG.atBats(log, S.scn, r.strip) : [];
   AB.pick = {};
