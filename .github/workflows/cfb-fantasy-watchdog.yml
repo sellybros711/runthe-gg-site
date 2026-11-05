@@ -1,0 +1,78 @@
+name: College fantasy watchdog
+
+# THE COLLEGE WEEK OPENS MONDAY, AND THIS IS WHAT MAKES SURE. cfb-fantasy-pool.yml builds the
+# week at 11am Eastern Monday, once, on GitHub's cron, which is best effort: the NFL job has seen
+# a run delayed by four hours and firings dropped outright. A missed build leaves the pointer on
+# the locked week, so the front page door and the results screen card both go quiet, and the
+# week can lock with nobody able to enter.
+#
+# SO THIS ASKS EVERY HOUR ON MONDAY FROM NOON EASTERN, THEN EVERY TWO HOURS UNTIL THURSDAY
+# AFTERNOON: is the week about to be played the one now.json points at? If not, it dispatches
+# the build with write and catchup on. Catch up builds only a week that is not live yet, and it
+# reads the pointer from main at run time, so a build that lands while this one is queued is
+# never rebuilt: a price never moves once somebody has drafted against it. From Tuesday on, a
+# week still not open also opens the issue "College Fantasy Challenge: the week did not open",
+# which emails the owner.
+#
+# NEVER BEFORE MONDAY NOON. On Sunday the week just played has no game left to kick off, so the
+# next week already reads as "about to be played", and a build then would price it before the
+# Saturday box scores and Monday's betting lines are in.
+#
+# ON A NORMAL WEEK IT DOES NOTHING. The Monday build has already moved the pointer, the two
+# answers agree, and the run ends green in a few seconds.
+
+on:
+  schedule:
+    - cron: '7 17-23 * * 1'     # Monday hourly from noon Eastern (EST; 1pm in EDT)
+    - cron: '7 */2 * * 2,3'     # all of Tuesday and Wednesday
+    - cron: '7 0-20/2 * * 4'    # Thursday until early afternoon Eastern
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: write
+  issues: write
+
+concurrency:
+  group: cfb-fantasy-watchdog
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Is the right week open
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # 2 is the season over: there is no next week, and nothing to watch. Any other failure
+          # (ESPN unreachable above all) fails this run on purpose, so it shows red rather than
+          # quietly reading as an off week.
+          set +e
+          OUT=$(node cfb/build/fantasy/next-week.mjs)
+          RC=$?
+          set -e
+          if [ "$RC" = "2" ]; then echo "no week to build: $OUT"; exit 0; fi
+          if [ "$RC" != "0" ]; then echo "::error::could not work out the next week: $OUT"; exit 1; fi
+          WANT=$(echo "$OUT" | head -1 | awk '{print $1" "$2}')
+          LIVE=$(node -e 'const n=require("./cfb/data/fantasy/now.json");console.log(n.season+" "+n.week)')
+          echo "this week: $WANT, live: $LIVE"
+          if [ "$WANT" = "$LIVE" ]; then
+            echo "the week is open."
+            exit 0
+          fi
+          echo "::warning::$WANT is not open yet. Dispatching the build."
+          gh workflow run cfb-fantasy-pool.yml --ref main -f write=true -f catchup=true
+          DOW=$(TZ=America/New_York date +%u)   # 1 Monday, 2 Tuesday, 3 Wednesday, 4 Thursday
+          if [ "$DOW" -ge 2 ]; then
+            TITLE="College Fantasy Challenge: the week did not open"
+            BODY="The watchdog found $WANT still not open (live: $LIVE) and dispatched the build again. Run: $RUN_URL"
+            NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+            if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "$BODY"; else gh issue create --title "$TITLE" --body "$BODY"; fi
+          fi
