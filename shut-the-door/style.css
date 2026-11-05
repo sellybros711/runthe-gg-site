@@ -1399,13 +1399,17 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 /* the button: ink glass with a data blue edge, beside THROW, as tall as it */
 .pad.abs-live { display: flex; gap: 8px; }
 .pad.abs-live .btn.throw { flex: 1 1 auto; min-width: 0; width: auto; }
-.btn.abs-b { position: relative; flex: 0 0 42%; height: 54px; min-height: 54px; margin: 0; padding: 4px 10px; border-radius: 14px; overflow: hidden;
+.btn.abs-b { position: relative; flex: 0 0 42%; height: 54px; min-height: 54px; margin: 0; padding: 4px 8px; border-radius: 14px; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; line-height: 1;
   background: rgba(11, 15, 23, .93); color: #fff; border: 1.5px solid var(--data); box-shadow: 0 3px 0 #1c3db8, 0 8px 24px rgba(0, 0, 0, .3);
   font-family: var(--sans); font-weight: 700; text-transform: uppercase;
   animation: ab-in .22s ease-out; }
 .btn.abs-b[hidden] { display: none; }
-.btn.abs-b b { font-size: 22px; letter-spacing: .04em; }
+/* the label fits its button on one line at every size (QA, 2026-11-05: an iPhone read "HALLENG", 142 px of
+   label in 132 of room, clipped at both ends). Sized by measurement with Inter loaded: 9 capitals at
+   .02em run 6.27em, so each size below is the largest whole px that clears its room with a margin.
+   test/check-browser.mjs step 16 holds it at the phone, short, sideways and desk sizes. */
+.btn.abs-b b { font-size: 18px; letter-spacing: .02em; white-space: nowrap; }
 .ab-dots { display: flex; gap: 5px; }
 .ab-dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .45); }
 .ab-dots i.on { background: #8fb0ff; border-color: #8fb0ff; }
@@ -1494,6 +1498,9 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .ar-zone { align-self: center; width: auto; height: min(46%, 150px); aspect-ratio: 1; flex: 0 1 auto; min-height: 0; }
   .ar-txt { align-items: center; max-width: 100%; }
   .ar-v { align-self: center; }
+  /* the narrow dock: the challenge label at 13 px fits its 88 px of room (81.5 px) */
+  .btn.abs-b { padding: 4px 6px; }
+  .btn.abs-b b { font-size: 13px; }
 }
 /* a phone on its side is short: two columns of pitches */
 @media (orientation: landscape) and (max-height: 520px) {
@@ -1515,7 +1522,6 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .btn.throw { height: 48px; min-height: 48px; padding: 3px 12px; gap: 1px; }
   .btn.throw b { font-size: 24px; }
   .btn.abs-b { height: 48px; min-height: 48px; gap: 4px; }
-  .btn.abs-b b { font-size: 18px; }
   .absr { gap: 8px; padding: 10px 10px 12px; }
   .ar-v { font-size: 16.8px; }
   .bb-nm { font-size: 14.4px; }
@@ -1545,8 +1551,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   #m-arsenal[data-n] .ps { font-size: 16px; }
   .btn.throw { height: 60px; min-height: 60px; }
   .btn.throw b { font-size: 32px; }
-  .btn.abs-b { height: 60px; min-height: 60px; }
-  .btn.abs-b b { font-size: 24px; }
+  .btn.abs-b { height: 60px; min-height: 60px; padding: 4px 6px; }
+  .btn.abs-b b { font-size: 17px; }
   .ar-k { font-size: 14px; }
   .ar-d { font-size: 16px; }
   .ar-d b { font-size: 16px; }
@@ -1601,8 +1607,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   #s-mound .btn.throw { flex: 1 1 auto; height: auto; min-height: 40px; padding: 4px 6px; border-radius: 13px; }
   #s-mound .btn.throw b { font-size: 22px; letter-spacing: .02em; }
   #s-mound .pad.abs-live { flex-direction: column; gap: 4px; }
-  #s-mound .btn.abs-b { flex: 1 1 auto; height: auto; min-height: 40px; padding: 3px 6px; }
-  #s-mound .btn.abs-b b { font-size: 14px; }
+  #s-mound .btn.abs-b { flex: 1 1 auto; height: auto; min-height: 40px; padding: 3px 4px; }
+  #s-mound .btn.abs-b b { font-size: 12px; }
 }
 
 /* ---- THE MODES AROUND THE DAILY (modes-ui.js, 2026-10-30): the save, the vote, Survivor ----
