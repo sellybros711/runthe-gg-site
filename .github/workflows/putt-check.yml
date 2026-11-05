@@ -45,11 +45,12 @@ concurrency:
 jobs:
   # check-putt.mjs in three parts, run at once (the owner, 2026-11-05). In one job it took 30 to 45 minutes, and a
   # runner that died in it lost the lot. Now a dead runner costs only its part, and "Re-run failed jobs" runs only that
-  # part. Each part has a time limit, so a hang fails with its log kept instead of running until the runner is lost.
+  # part. Each part has a time limit (35 minutes: the rooms part took 18.5 on its first CI run), so a hang fails with
+  # its log kept instead of running until the runner is lost.
   part:
     name: check (${{ matrix.part }})
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
