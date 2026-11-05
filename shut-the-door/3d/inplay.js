@@ -494,7 +494,10 @@ export class InPlay {
   stride(tab, s, run, cycle, spd) {
     const amp = clamp(spd / 26, 0, 1.1);
     if (!this.crew.clips || !tab) return { phase: 2 * Math.PI * run / cycle, amp };
-    const until = tab.until(s);
+    // (seconds to standing only while it counts down: at the frame he sets off, the table jumps from 0 to the next
+    // stop, and read between its frames that is a blip of the stop clip)
+    let until = tab.until(s);
+    if (until < 30 && Math.abs((tab.until(s - 0.05) - tab.until(s + 0.05)) - 0.1) > 0.03) until = 99;
     return { phase: tab.at(s), amp, legs: tab.shorten ? tab.legs(s) : undefined, shorten: tab.shorten, acc: tab.acc(s), since: tab.since(s), until: until < 30 ? until : null };
   }
 
@@ -523,6 +526,9 @@ export class InPlay {
     // legs by speed. It carries him into a ball picked up on the run, the fit pulling him to it, and any other
     // stride there slid his planted feet, check-jolt.mjs skate fielder pickup. His lean back into it stays)
     const sr = this.stride(tr.phase, s, st.run, CYCLE.fielder, spd);
+    // (the braking steps of the stop clip are for a fielder who simply pulls up: one with a moment of his own just
+    // before, at or just after his stop (a take, a throw, a set) has the pose that moment asks, check-jolt.mjs)
+    if (sr.until != null && acts.some((a) => a.t > s - 2.5 && a.t < s + sr.until + 2.5)) sr.until = null;
     if (glide && this.crew.clips) { sr.phase += 2 * Math.PI * glide / this.crew.clips.run.strideFt; sr.legs = undefined; sr.shorten = false; }
     // (his lean into a push or a pull up gives way over the 0.3 s before a ball he takes or sets for, and comes
     // back after: he sets up for it upright. Leaning back into a set, his head went down with the crouch at

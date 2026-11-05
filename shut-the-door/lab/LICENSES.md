@@ -129,14 +129,22 @@ commercial. They do not let the raw files be redistributed on their own. So:
 | `run` (fielder) | Fast Run (1-17, 30 fps) | the same, between a jog and a sprint | as above, blended by speed |
 | `jog` (fielder) | Jog Forward (1-26, 30 fps) | starting off, backing up a play, the home run trot | as above |
 | `idle` (fielder) | Baseball Milling Idle, the second download (121-201, 30 fps) | a little life on the trunk, arms and head of a standing fielder | at 45% over the standing pose, never on the legs (its feet wander) |
+| `stop` (fielder) | Run To Stop (1-36, a 30 fps file, every frame) | the braking steps when a runner or fielder pulls up (`fielders.js` `transition`, over the last 0.8 s before he stands, in step with the plan's pull up) | in place (the pelvis keeps its height and sway, not its travel along the ground); played at up to 1.2 times its speed to fit the plan's pull up |
+| `slide` (fielder) | Running Slide (1-56, 30 fps) | a runner's slide into a bag, in place of the posed one (`inplay.js` `poseRunner`, `fielders.js` `layerClips`); the clip's feet reach the dirt 0.3 s before the plan's slide, its get up is not used | in place, cut before the get up; laid over the run by the slide's own weight, as the posed slide was |
+| `leap` (fielder) | Goalkeeper Catch (55-125, 30 fps) | the legs and trunk of an outfielder's leap at the wall (the leap over the fence, and a catch of a ball above 6.8 ft), at the clip's apex (`inplay.js` `poseFielder`) | in place; only the apex of the jump, played at its own speed; the arms stay the glove's reach or the raised arms (no hand IK on the clip) |
 
 The catcher's crouch, reach, framing and block, the umpire's slot stance and his foul and hit
 batsman signals, the hit batter's flinch, the swing's kinetic chain, planted feet and collar bones
 are procedural (`people.js`, `motion.js`) laid over those clips.
 
-Mixamo has no fielding clips (its baseball set is batting only), so fielding a grounder, the
-catch (two bone IK puts the glove's pocket on the ball), taking a throw, the tag, the dive, the leap
-at the wall and the slide are procedural (`3d/fielders.js`), laid over the runs and the idle.
+Mixamo has no fielding set (its baseball clips are batting only), so fielding a grounder, the
+catch (two bone IK puts the glove's pocket on the ball), taking a throw, the tag and the dive are
+procedural (`3d/fielders.js`), laid over the runs and the idle. The slide and the leap at the wall
+have a Mixamo clip under the posing (rows above), and the posed version stays as the fallback.
+
+The other 2026-11-05 downloads are in the owner's folder and not used (Turn To Running, Running
+Backward, Left and Right Strafe, Goalkeeper Sidestep and Sidestep 2, Baseball Step In and Step Out):
+nothing in them ships.
 
 ### Motion: Carnegie Mellon University motion capture (the throw)
 

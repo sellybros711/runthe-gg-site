@@ -259,6 +259,7 @@ export class Crew {
     const LOOP = { sprint: 16 / 30, run: 16 / 30, jog: 25 / 30 };
     const clips = {};
     for (const a of gltf.animations) {
+      if (SKIPCLIPS.includes(a.name)) continue;
       const tracks = [];
       for (const tr of a.tracks) {
         const [node, prop] = tr.name.split('.');
@@ -487,10 +488,11 @@ const ACC_N = 6, ACC_MAX = 30;
 // (a push at 0.5 of it threw a breaking fielder's head forward just over a head's speed, check-jolt.mjs pop fielder -)
 const LEAN_PUSH = 0.3, LEAN_BRAKE = 0.25, G_FT = 32.17;
 // a start or stop clip gives way to the cycle over its last TRANS_OUT seconds (Figure.transition)
+let SKIPCLIPS = ['slide','leap'];
 const TRANS_OUT = 0.25;
 // the braking steps of Run To Stop are played over the last STOP_SPAN seconds before he stands (the plan's pull up
 // is 0.6 s where it can be), the clip's own length when that is shorter
-const STOP_SPAN = 0.8;
+const STOP_SPAN = 0.8, STOP_OUT = 0.2;
 // the pose layers of a clip held over the run (slide, leap): a leap lays only the legs and trunk (the arms are his
 // glove's reach or his raised arms)
 const LEAP_BONES = new Set(['pelvis', 'spine_01', 'spine_02', 'spine_03', ...['l', 'r'].flatMap((s) => ['thigh', 'calf', 'foot', 'ball'].map((b) => `${b}_${s}`))]);
@@ -838,7 +840,7 @@ export class Figure {
       this.locks.ph = ph;
       // (it gives way as the stride does: to a slide as the slide comes in, never cut in a frame, a held foot let
       // go at the first frame of a slide at 70 m/s)
-      const c = Math.cos(this.yaw), sn = Math.sin(this.yaw), k = FT / this.scale, kr = smooth((R.runW - 0.5) / 0.3) * (1 - clamp(sp.slide || 0, 0, 1));
+      const c = Math.cos(this.yaw), sn = Math.sin(this.yaw), k = FT / this.scale, kr = smooth((R.runW - 0.5) / 0.3) * (1 - clamp(sp.slide || 0, 0, 1)) * (1 - (this.stopW || 0));
       for (const s of ['l', 'r']) {
         let w = 0, ws = 0;
         for (const name of ['jog', 'run', 'sprint']) {
@@ -1016,6 +1018,7 @@ export class Figure {
       itself starts and stops, shortened by legShare. */
   transition(sp, qa, pos) {
     const C = this.crew.clips, r = sp.run, L = this.list, n = L.length;
+    this.stopW = 0;
     for (const [key, t] of [['start', r.since], ['stop', r.until]]) {
       const c = C[key];
       if (!c || t == null || !(t >= 0) || t > c.dur) continue;
@@ -1023,11 +1026,14 @@ export class Figure {
       const span = key === 'stop' ? Math.min(c.dur, STOP_SPAN) : c.dur;
       if (t > span) continue;
       const tc = t * (c.dur / span);
-      const w = 1 - smooth((tc - (c.dur - TRANS_OUT)) / TRANS_OUT), qc = this.qc, pc = V();
+      // (a stop gives itself up to the standing pose as he stands, over STOP_OUT: standing, until is 0 and stays 0, and
+      // when he sets off it jumps to the next stop, so a weight of 1 there was cut in a frame)
+      const w = (1 - smooth((tc - (c.dur - TRANS_OUT)) / TRANS_OUT)) * (key === 'stop' ? smooth(t / STOP_OUT) : 1), qc = this.qc, pc = V();
       if (!(w > 0.001)) continue;
       for (let i = 0; i < n; i++) qc[i].copy(qa[i]);
       this.sample(c, key === 'start' ? tc : c.dur - tc, qc, pc);
       for (let i = 0; i < n; i++) qa[i].slerp(qc[i], w);
+      if (key === 'stop') this.stopW = w;
       if (c.p0) pos.lerp(pc.sub(c.p0), w);
     }
   }
