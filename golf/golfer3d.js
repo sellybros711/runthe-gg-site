@@ -1656,6 +1656,15 @@
       for(const k of [-1.55,0,1.55]){ let prev=Q(5.9,1.75,k*1.05);                                          // three claws, curling down off the toe
         for(let j=0;j<5;j++){ const c=Q(6.3+0.72*j,1.75-0.075*j*j-0.05*j,k*(1.05+0.06*j)), r=0.78*(1-0.16*j);
           push(ellipsoid(c,AXs,[r*1.15,r,r],X(j<1?P.F:j<2?P.f:P.c),{gloss:3,noCast:j>0?1:0})); prev=c; } } },
+    // Wobble Boots (Jellara's world prize): a boot of pink jelly with a shine on it, on a thick lime jelly sole, a pink band at the ankle
+    ppwobbleboots(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.6,0.6),AXs,[5.9,0.9,3.5],X(P.s),{gloss:2}));                                          // the lime jelly sole
+      push(ellipsoid(Q(3.9,1.9),AXs,[2.9,1.45,3.15],X(P.W),{gloss:3}));                                        // the jelly toe
+      push(ellipsoid(Q(0.9,2.5),AXs,[3.4,2.05,3.05],X(P.W),{gloss:3}));
+      push(ellipsoid(Q(-0.2,4.8),AXs,[3.75,3.0,3.8],X(P.W),{gloss:3}));                                        // the boot, up over the trouser hem
+      push(ellipsoid(Q(2.6,3.3,-1.6*s),AXs,[1.2,0.7,0.6],X(P.f),{gloss:3,noCast:1}));                           // its shine
+      push(ellipsoid(Q(-0.2,6.6),AXs,[3.9,0.7,3.95],X(P.b),{gloss:2,cut:l=>Math.hypot(l[0],l[2])>0.78}));   // the ankle band
+      push(ellipsoid(Q(-0.2,7.3),AXs,[3.1,0.5,3.15],X('#14302c'),{noCast:1})); },
     // Mars Boots (Red Planet's world prize): a padded white surface boot on a thick rust tread, a blue band at the ankle
     ppmarsboots(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
       push(ellipsoid(Q(1.6,0.55),AXs,[5.8,0.8,3.4],X(P.s),{gloss:0}));                                         // the rust tread
@@ -1727,6 +1736,9 @@
     pplavarock(push,sc0,sax,sr,P,ank){ const S=seeds(7,5); push(ellipsoid(sc0,sax,sr,'shoe',{paint:magma(P,S,0.2,0.08),gloss:1}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45,{dt:1,gloss:0})); push(over(sc0,sax,sr.map(v=>v*1.01),'x:'+P.y,l=>l[1]>=-0.45&&l[1]<-0.25,{dt:1,gloss:0}));
       push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'shoe',{paint:magma(P,seeds(6,9),0.2,0.08),gloss:1})); },
+    ppwobbleboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:3,bias:.15}));
+      push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45)); push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'x:'+P.W,{gloss:3}));
+      push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },
     ppmarsboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:2,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45)); push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'x:'+P.W,{gloss:2}));
       push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },
@@ -1772,6 +1784,9 @@
     // the Prism Ball: clear crystal cut in facets, each a shade of violet, cyan or white, a bright edge between them
     ppprism:{ f:(p,P)=>{ const q=[Math.round(p[0]*2.2),Math.round(p[1]*2.2),Math.round(p[2]*2.2)], k=((q[0]*7+q[1]*3+q[2]*5)%4+4)%4;
       const e=Math.abs(p[0]*2.2-q[0])+Math.abs(p[1]*2.2-q[1])+Math.abs(p[2]*2.2-q[2]); if(e>1.2) return {c:P.W,gloss:3}; return {c:k===0?P.C:k===1?P.b:k===2?P.h:P.s,gloss:3}; } },
+    // the Jelly Ball: a ball of clear pink jelly, a lime swirl through it and a bright shine
+    ppjelly:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]+0.4,p[2]-0.75)<0.22) return {c:P.W,gloss:3}; const w=Math.sin(p[1]*5+Math.atan2(p[2],p[0])*2);
+      return {c:w>0.7?P.h:w>0.3?P.C:w>-0.6?P.b:P.s,gloss:3}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};

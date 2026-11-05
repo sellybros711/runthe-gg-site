@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -156,6 +156,11 @@ var KIT = {
   crystara:{ g:['#9fd8e8', '#b4e6f2', '#88c6dc', 0.18], gpat:'crysGlass', p:['#eef8ff', '#ffffff', '#d8ecf8'], paved:true, tree:[], leaves:['#c8b4ff', '#9ff0ff', '#e8dcff'], bark:'#5a4a8a', dens:0.001,
     low:['rockcrys', 'rockcrys', 'rockice'], brk:'crate', haz:'slow', hazC:['#c8b4ec', '#a894d8'], waterC:['#0e0820', '#3a2a60'], bogC:['#c8b4ec', '#a894d8'], lm:['crysSpire', 'crysPrism', 'crysGeode'], wall:['#eef8ff', '#7a86c8'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'ponytail', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the crystal surveyor' },
+  // Jellara: lime jelly ground with its wobble, the goo sea showing through where the jelly breaks off, a pink jelly path,
+  // no trees, gloop for the bog, the goo for the water, crates to break
+  jellara:{ g:['#9be86a', '#b0f07e', '#86d858', 0.18], gpat:'jelLime', p:['#ffd0ec', '#ffe4f4', '#ffb8e0'], paved:true, tree:[], leaves:['#ff8ad0', '#9be86a', '#ffb030'], bark:'#227068', dens:0.001,
+    low:['rockjel', 'rockjel', 'bush'], brk:'crate', haz:'slow', hazC:['#c8f0a0', '#a8d880'], waterC:['#3fd0b0', '#8af0d8'], bogC:['#c8f0a0', '#a8d880'], lm:['jelDome', 'jelBean', 'jelWobbler'], wall:['#ffb8e0', '#c8508a'],
+    npc:{ skin:'tan', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'ponytail', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the goo keeper' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -783,8 +788,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
-var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
+var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
+var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -803,7 +808,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -821,11 +826,12 @@ var SECRET_SAY = {
   mars:'The colony found a cave under the ice. The way in is on this trail.',
   saturn:'There\'s a storm room somewhere on this trail. The eye of it is calm.',
   crystara:'The crystal sings on this trail. Something hollow is under it.',
+  jellara:'Something big wobbles under this trail. There is a way in, if you can find it.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -999,6 +1005,9 @@ BUILD.rockice = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#dceaf6', '#a8c4e8',
 // Crystara's low crystals: a little cluster of violet and cyan points
 BUILD.rockcrys = function(B, t, i){ box(B, t.x, t.y, 2.2, 2.2, 1.7, function(dx, dy, tt){ for (var k = 0; k < 3; k++){ var a = hash(i, k, 61) * 6.283, ox = Math.cos(a) * 0.45 * (k ? 1 : 0), oy = Math.sin(a) * 0.45 * (k ? 1 : 0), hh = 1.6 - k * 0.35;
     var r = 0.38 * (1 - tt / hh); if (tt < hh && Math.abs(dx - ox) + Math.abs(dy - oy) < r) return (dx - ox) + (dy - oy) < 0 ? '#ffffff' : k === 1 ? '#9ff0ff' : '#b894f0'; } return null; }); };
+// Jellara's low jelly: a little wobbling blob of pink and lime jelly with its shine
+BUILD.rockjel = function(B, t, i){ box(B, t.x, t.y, 2.2, 2.2, 1.3, function(dx, dy, tt){ var lime = hash(i, 3, 62) < 0.5, r = 0.9 * Math.sqrt(Math.max(0, 1 - tt / 1.2)) + 0.05, d = Math.hypot(dx, dy);
+    if (d > r) return null; return dx + dy < -r * 0.5 && tt > 0.5 ? '#ffffff' : lime ? (d > r - 0.15 ? '#78c84a' : '#9be86a') : (d > r - 0.15 ? '#e070b8' : '#ff8ad0'); }); };
 BUILD.rockbasalt = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#3a2420', '#2a1814', '#6a3a2a'], i); };
 BUILD.rocksnow = function(B, t, i){ rockAt(B, t.x, t.y, 1.2, ['#7a8494', '#5e6878', '#ffffff'], i); };
 BUILD.bushsnow = function(B, t, i){ bushAt(B, t.x, t.y, 1.1, ['#1f4f3e', '#ffffff', '#2a6450']); };
@@ -1297,6 +1306,7 @@ var LIFE = {
   mars:{ fly:['drone', 1], mote:['dust', 40] },
   saturn:{ fly:['drone', 2], mote:[['snow', 30], ['spark', 12]] },
   crystara:{ fly:['drone', 1], mote:[['spark', 40], ['snow', 10]] },
+  jellara:{ fly:['drone', 1], mote:[['petal', 20], ['spark', 14]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -3801,6 +3811,36 @@ BUILD.crysGeode = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, d
   if (d > R) return null; if (dy > R * 0.1 && tt > R * 0.35 && d < R - 0.35) return null; if (d > R - 0.35) return ((dx * 3 | 0) + (tt * 3 | 0)) % 2 ? '#6a6478' : '#5a5468';
   return hash(dx * 4 | 0, dy * 4 | 0, tt * 4 | 0) > 0.6 ? '#ffffff' : (d < R * 0.5 ? '#c8a8ff' : '#8a5ad8'); }); };
 LMSIZE.crysSpire = [4, 4, 9]; LMSIZE.crysPrism = [5, 3, 3]; LMSIZE.crysGeode = [5, 4, 3.4];
+/* ---- Jellara's stops on the walk, the same places its holes stand in (land.js): along the goo shore, over the domes, past
+   the jelly falls, through the bean grove and at the core. No trees: the walk is a pink jelly path over lime jelly, and where
+   the jelly breaks off the teal goo shows through. */
+// an opening in the jelly, where the goo shows: teal with pink bubbles, a pink rim of jelly round the gap
+function jelGap(c){ var o = vn(c.ti * 0.016, c.tj * 0.016, 125); if (o < 0.66) return null; if (o < 0.685) return '#ffb8e0'; if (o < 0.7) return '#227068';
+  var st = hash(c.ti, c.tj, 126); return st > 0.985 ? '#ffd0ec' : st > 0.97 ? '#ff9ad8' : '#3fd0b0'; }
+GPAT.jelLime = function(c){ var gp = jelGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 121), w = Math.sin(c.ti * 0.09 + Math.sin(c.tj * 0.07) * 2);
+  if (w > 0.94) return '#d8fca8'; return a > 0.72 ? '#c0f58a' : a < 0.28 ? '#78c84a' : '#9be86a'; };
+GPAT.jelPink = function(c){ var gp = jelGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 123), w = Math.sin(c.ti * 0.09 + Math.sin(c.tj * 0.07) * 2);
+  if (w > 0.94) return '#ffe0f4'; return a > 0.7 ? '#ffc8ec' : a < 0.3 ? '#e070b8' : '#ff9ad8'; };
+KIT['jellara~shore'] = kitFrom(KIT.jellara, { nlm:3, lm:['jelBean', 'jelWobbler', 'jelBean'] });
+KIT['jellara~domes'] = kitFrom(KIT.jellara, { nlm:5, lm:['jelDome', 'jelDome', 'jelBean', 'jelDome', 'jelDome'] });
+KIT['jellara~falls'] = kitFrom(KIT.jellara, { g:['#ff9ad8', '#ffc8ec', '#e070b8', 0.15], gpat:'jelPink', nlm:3, lm:['jelWobbler', 'jelDome', 'jelWobbler'] });
+KIT['jellara~beans'] = kitFrom(KIT.jellara, { nlm:4, low:['rockjel', 'rockjel', 'rockjel'], lm:['jelBean', 'jelBean', 'jelDome', 'jelBean'] });
+KIT['jellara~core'] = kitFrom(KIT.jellara, { g:['#ff9ad8', '#ffc8ec', '#e070b8', 0.15], gpat:'jelPink', nlm:3, lm:['jelBean', 'jelDome', 'jelBean'] });
+LIFE_AS['jellara~shore'] = { fly:['drone', 1], mote:[['petal', 20], ['spark', 14]] };
+LIFE_AS['jellara~domes'] = { mote:[['spark', 30], ['petal', 16]] };
+LIFE_AS['jellara~falls'] = { fly:['drone', 2], mote:['petal', 30] };
+LIFE_AS['jellara~beans'] = { mote:[['spark', 24], ['firefly', 14]] };
+LIFE_AS['jellara~core'] = { mote:[['spark', 60]] };
+// a dome of clear pink jelly with a jelly bean set inside it, a shine across its top
+BUILD.jelDome = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2 - 0.3, d = Math.hypot(dx, dy * t.w / t.d, tt * R / t.h);
+  if (d > R) return null; if (d > R - 0.3) return dx + dy < -R * 0.3 && tt > t.h * 0.45 ? '#ffffff' : '#ff8ad0'; if (Math.hypot(dx, dy, tt - t.h * 0.3) < R * 0.3) return '#ffb030'; return null; }); };
+// a giant jelly bean standing on end, orange, a white shine down one side
+BUILD.jelBean = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, r = (t.w / 2 - 0.4) * Math.sqrt(Math.max(0, 1 - Math.pow(2 * u - 1, 2))) * (1 - 0.15 * Math.sin(u * 3.1)) + 0.05, d = Math.hypot(dx, dy);
+  if (d > r) return null; return d > r - 0.18 && dx + dy < 0 ? '#ffffff' : u > 0.5 ? '#ffb030' : '#ff9020'; }); };
+// a wobbler: a stack of three jelly blobs, lime on pink on lime, each a little smaller than the one under it
+BUILD.jelWobbler = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var k = Math.min(2, (tt / (t.h / 3)) | 0), zc = (k + 0.5) * t.h / 3, R = (t.w / 2 - 0.3) * (1 - k * 0.22);
+  var d = Math.hypot(dx, dy, (tt - zc) * 1.5); if (d > R) return null; return dx + dy < -R * 0.4 && tt > zc ? '#ffffff' : k === 1 ? '#ff5fb8' : '#9be86a'; }); };
+LMSIZE.jelDome = [6, 5, 4]; LMSIZE.jelBean = [4, 4, 7]; LMSIZE.jelWobbler = [4, 4, 5];
 // @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

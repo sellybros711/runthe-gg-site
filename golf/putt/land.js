@@ -5162,6 +5162,87 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ gfloor:['#c4a8f0', '#e0c8ff', '#a888e0', 0.1, function(c, R){ var d1 = (c.ti + c.tj) & 15, d2 = (c.ti - c.tj + 4096) & 15; if (d1 === 0 || d2 === 0) return R('#f4e8ff'); var b = blot(c, 0.2, 99); return R(b > 0.66 ? '#e0c8ff' : b < 0.3 ? '#a888e0' : '#c4a8f0'); }],
         gwall:['#8a5ad8', '#c8a8ff', '#5a3aa8', 0.16, function(c, R){ var z = c.z || 0, h = hash(c.ti, (z * 4) | 0, 91), k = ((c.ti >> 2) + ((z * 2) | 0)) % 5;
           if (z > 5.6) return R('#ffffff'); if (h > 0.9) return R('#ffffff'); return R(['#ff8ad8', '#ffd34d', '#9ff0ff', '#c8a8ff', '#8a5ad8'][k]); }] } }; };
+  /* ---------------- JELLARA IS A JOURNEY. Out along the goo shore, the course laid on lime jelly with jelly beans standing
+     about it (1 to 4), over the domes, round hills of clear pink jelly that wobble (5 to 8), past the jelly falls, where pink
+     jelly pours down a cliff into the goo (9 to 12), through the bean grove, giant jelly beans standing on end (13 to 16), and
+     at last to the core, a great glowing heart of jelly (17 and 18). Past the jelly's edge is the goo sea: teal, with pink
+     bubbles rising in it, the ground easing gently down into it, never a cliff. A pink ringed moon hangs in a minty sky. */
+  STOPS.jellara = [[1, 'shore'], [5, 'domes'], [9, 'falls'], [13, 'beans'], [17, 'core']];
+  (function(){ BUILD.jellara = function(L){ var s = L.stop; return s === 'core' ? jelCore(L) : s === 'beans' ? jelBeans(L) : s === 'falls' ? jelFalls(L) : s === 'domes' ? jelDomes(L) : jelShore(L); }; })();
+
+  function jelEdge(L, x, y){ return 4.4 + fbm(x * 0.09, y * 0.09, L.seed + 91) * 3; }
+  // the paint: lime jelly with a soft wobble in its shade, a bright rim at its edge and a darker underside, and the goo beyond,
+  // teal with pink bubbles
+  function jelMats(pink){ var dk = pink ? ['#ff9ad8', '#ffc8ec', '#e070b8', '#ffffff', '#ffe0f4'] : ['#9be86a', '#c0f58a', '#78c84a', '#f4ffe0', '#d8fca8'];
+    return { jfloor:[dk[0], dk[1], dk[2], 0.12, function(c, R){ if (c.rim === 1) return R(dk[3]); if (c.rim === 2) return R('#227068');
+        var b = blot(c, 0.2, 105), w = Math.sin(c.ti * 0.09 + Math.sin(c.tj * 0.07) * 2); if (w > 0.92) return R(dk[4]); return R(b > 0.68 ? dk[1] : b < 0.25 ? dk[2] : dk[0]); }],
+      jgoo:['#3fd0b0', '#6ae0c4', '#2aa890', 0.06, function(c, R){ var st = hash(c.ti, c.tj, 106), n = blot(c, 0.06, 108);
+        if (st > 0.993) return R('#ffd0ec'); if (st > 0.985) return R('#ff9ad8'); return R(n > 0.7 ? '#6ae0c4' : n < 0.3 ? '#2aa890' : '#3fd0b0'); }] }; }
+  function jelBase(L, o){ var seed = L.seed;
+    function fall(x, y){ var c = L.clearAt(x, y), e = jelEdge(L, x, y); return sm(e, e + 3, c); }
+    return {
+      h:function(x, y){ var f = fall(x, y); return (fbm(x * 0.1, y * 0.1, seed) - 0.45) * 0.35 * (1 - f) * sm(1.3, 4, L.clearAt(x, y)) - 1.2 * f; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = jelEdge(L, x, y);
+        if (c < e + 0.5) return ['jfloor', { rim:c > e - 0.35 ? 1 : c > e ? 2 : 0 }];
+        return ['jgoo', {}]; },
+      fill:{ on:['jfloor'], trees:o.beans == null ? 0.12 : o.beans, lows:0.12,
+        // a jelly bean standing on end, pink, lime, orange or violet, a shine down one side
+        tree:function(B, x, y, i){ var zb = B.gz(x, y), hh = 0.9 + hash(i, seed, 91) * 1.2, cols = ['#ff5fb8', '#9be86a', '#ffb030', '#b894f0'], col = cols[(hash(i, seed, 92) * 4) | 0];
+          B.solid(x - 0.6, y - 0.6, zb - 0.1, x + 0.6, y + 0.6, zb + hh, function(px, py, pz){ var u = (pz - zb) / hh, r = 0.5 * Math.sqrt(Math.max(0, 1 - Math.pow(2 * u - 1, 2))) + 0.05;
+            if (Math.hypot(px - x, py - y) > r) return null; return (px - x) + (py - y) < -r * 0.4 ? '#ffffff' : col; }); },
+        low:function(B, x, y, i){ rockAt(B, x, y, 0.2 + hash(i, seed, 93) * 0.3, o.pink ? ['#ffb8e0', '#ffffff'] : ['#c0f58a', '#f4ffe0']); } },
+      // the sky: mint, with soft pink clouds and a pink ringed moon
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#7ad8c8'); g.addColorStop(1, '#c8f5e8'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        for (var i = 0; i < 6; i++){ var cx = hash(i, 1, seed) * V.W, cy = top * (0.2 + hash(i, 2, seed) * 0.5), cr = Math.max(4, V.W * (0.03 + hash(i, 3, seed) * 0.04));
+          ctx.fillStyle = 'rgba(255,200,236,0.55)'; ctx.beginPath(); ctx.ellipse(cx, cy, cr * 2, cr * 0.7, 0, 0, 6.283); ctx.fill(); }
+        var mx = V.W * 0.78, my = top * 0.4, mr = Math.min(top * 0.22, V.W * 0.06); if (mr > 2){
+          ctx.fillStyle = '#ffe0f4'; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,95,184,0.8)'; ctx.lineWidth = Math.max(1, mr * 0.18); ctx.beginPath(); ctx.ellipse(mx, my, mr * 1.8, mr * 0.45, -0.3, 0, 6.283); ctx.stroke(); }
+        if (o.glow){ var gg = ctx.createLinearGradient(0, 0, 0, top); gg.addColorStop(0, 'rgba(255,95,184,0)'); gg.addColorStop(1, 'rgba(255,95,184,0.25)'); ctx.fillStyle = gg; ctx.fillRect(0, 0, V.W, top); } },
+      bg:o.bg || '#2aa890', gain:2, mats:jelMats(!!o.pink) }; }
+  // a dome of clear pink jelly, a highlight across its top and a bean set inside it
+  function jelDomeAt(B, X, Y, R){ var zb = B.gz(X, Y); if (B.light) B.light(X, Y, zb + R * 0.8, '#ff9ad8');
+    B.solid(X - R, Y - R, zb - 0.1, X + R, Y + R, zb + R * 0.9, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy, t / 0.9);
+      if (d > R) return null; if (d > R - 0.25) return dx + dy < -R * 0.3 && t > R * 0.4 ? '#ffffff' : '#ff8ad0'; if (Math.hypot(dx, dy, t - R * 0.25) < R * 0.25) return '#ffb030'; return null; }); }
+  // a fall of pink jelly pouring off a lip of lime jelly into a pool of goo
+  function jelFallAt(B, X, Y, H){ var zb = B.gz(X, Y); if (B.light) B.light(X, Y + 1, zb + 1, '#ff9ad8');
+    B.solid(X - 2.4, Y - 1.2, zb - 0.2, X + 2.4, Y + 1.6, zb + H, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+      if (dy < -0.4) return Math.abs(dx) < 2.2 ? (t > H - 0.4 ? '#c0f58a' : '#78c84a') : null;
+      if (Math.abs(dx) < 1.4 && dy < 0.4 + (H - t) * 0.12) return Math.sin(t * 3 + dx * 2) > 0.5 ? '#ffd0ec' : '#ff5fb8';
+      if (t < 0.25 && Math.hypot(dx, dy - 0.8) < 1.8) return hash(px * 4 | 0, py * 4 | 0, 7) > 0.8 ? '#ffd0ec' : '#3fd0b0'; return null; }); }
+  // a giant jelly bean standing on end
+  function jelBeanAt(B, X, Y, H, col){ var zb = B.gz(X, Y), R = H * 0.28; if (B.light) B.light(X, Y, zb + H * 0.5, col);
+    B.solid(X - R, Y - R, zb - 0.1, X + R, Y + R, zb + H, function(px, py, pz){ var u = (pz - zb) / H, r = R * Math.sqrt(Math.max(0, 1 - Math.pow(2 * u - 1, 2))) * (1 - 0.15 * Math.sin(u * 3.1)) + 0.04;
+      var d = Math.hypot(px - X, py - Y); if (d > r) return null; return d > r - 0.15 && (px - X) + (py - Y) < 0 ? '#ffffff' : col; }); }
+
+  // 1. THE GOO SHORE (and every Jellara hole with no place): lime jelly, beans standing all round
+  function jelShore(L){ var O = jelBase(L, { beans:0.26 }); O.build = function(){}; return O; }
+  // 2. THE DOMES: round hills of clear pink jelly behind and beside the hole
+  function jelDomes(L){ var O = jelBase(L, { beans:0.08 }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(2, function(x, y){ return L.north(x, y) * 0.5 + L.side(x) * 1.6 + hash(x | 0, y | 0, L.seed + 33 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ jelDomeAt(B, q.x, q.y, 2.2 + (k % 3) * 0.6); }); }; return O; }
+  // 3. THE JELLY FALLS: pink jelly pouring off a lip into the goo, behind the hole
+  function jelFalls(L){ var O = jelBase(L, { beans:0.08, pink:true }), pr = [], i;
+    for (i = 0; i < 2; i++){ var q = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.9 + hash(x | 0, y | 0, L.seed + 43 + i) * 2; }); if (q) pr.push(q); }
+    O.build = function(B){ pr.forEach(function(q, k){ jelFallAt(B, q.x, q.y, 3.2 + k * 0.8); }); }; return O; }
+  // 4. THE BEAN GROVE: giant jelly beans standing on end round the hole
+  function jelBeans(L){ var O = jelBase(L, { beans:0.18 }), gs = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(1.6, function(x, y){ return L.north(x, y) * 0.6 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 53 + i) * 2; }); if (q) gs.push(q); }
+    O.build = function(B){ gs.forEach(function(q, k){ jelBeanAt(B, q.x, q.y, 4 + (k % 3), ['#ff5fb8', '#ffb030', '#b894f0', '#9be86a'][k % 4]); }); }; return O; }
+  // 5. THE CORE: the great heart of jelly the planet wobbles round, standing behind the hole, glowing
+  function jelCore(L){ var O = jelBase(L, { beans:0.06, pink:true, glow:true }), hq = L.spot(2.6, function(x, y){ return L.north(x, y) * 1.2; });
+    O.build = function(B){ if (hq){ jelDomeAt(B, hq.x, hq.y, 4.2); jelBeanAt(B, hq.x - 3.4, hq.y + 0.6, 4, '#ffb030'); jelBeanAt(B, hq.x + 3.4, hq.y + 0.4, 4.6, '#b894f0'); if (B.light) B.light(hq.x, hq.y + 2, B.gz(hq.x, hq.y) + 3, '#ffffff'); } }; return O; }
+
+  // the Wobble Dome: inside a great dome of clear jelly, its walls pink and wobbling, beans set in them
+  BUILD['s-wobble'] = function(L){ var R0 = room(L, { floor:'wfloor', wall:'wwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ if (B.light){ B.light(L.cx, L.cy, 6.5, '#ffffff'); B.light(L.cx - 4, L.cy - 4, 4, '#ff9ad8'); B.light(L.cx + 4, L.cy - 4, 4, '#9be86a'); }
+        byWall(L, 6, 87, 2.6).forEach(function(q, k){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 3.8, ['#ff5fb8', '#ffb030', '#9be86a', '#b894f0'][k % 4]); }); },
+      bg:'#14302c', gain:2,
+      mats:{ wfloor:['#9be86a', '#c0f58a', '#78c84a', 0.1, function(c, R){ var w = Math.sin(c.ti * 0.09 + Math.sin(c.tj * 0.07) * 2); if (w > 0.9) return R('#d8fca8'); var b = blot(c, 0.2, 109); return R(b > 0.66 ? '#c0f58a' : b < 0.3 ? '#78c84a' : '#9be86a'); }],
+        wwall:['#ff8ad0', '#ffc8ec', '#e070b8', 0.16, function(c, R){ var z = c.z || 0, h = hash(c.ti, (z * 4) | 0, 101), w = Math.sin(c.ti * 0.2 + z * 1.4);
+          if (z > 5.6) return R('#ffffff'); if (h > 0.93) return R(['#ffb030', '#9be86a', '#b894f0'][(h * 100 | 0) % 3]); return R(w > 0.5 ? '#ffc8ec' : w > -0.3 ? '#ff8ad0' : '#e070b8'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
