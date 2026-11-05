@@ -1706,7 +1706,7 @@ export class People {
   wireBall() {
     const pt = this.pitch, m = this.m, b = this.batter;
     if (!pt || !b) return;
-    if (m.batter === 'swing' && ['play', 'back', 'pulled'].includes(m.ball)) {
+    if (m.batter === 'swing' && ['play', 'back', 'pulled', 'tip'].includes(m.ball)) {
       pt.setAfter(m.ball, pt.f.T + (b.meetBall ?? m.contactShift), { inPlay: this.play && this.play.inPlay, lefty: b.lefty, foul: m.foul });
     } else if (m.ball === 'hbp') {
       // where his hip is, in the catcher's view feet the flight uses

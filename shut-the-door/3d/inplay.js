@@ -18,12 +18,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=28';
+import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=29';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=14';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=33';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=34';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=45';
+import { kitFor } from './people.js?v=46';
 import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 
@@ -235,7 +235,10 @@ export class InPlay {
     const steal = pr.result !== 'in_play' && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
     // (and a pickoff throw between pitches: pr is { pickoff, basesBefore }, stage.js pickoff)
     const po = pr.pickoff && pr.result == null ? pr.pickoff : null;
-    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), ...(o.align || this.align(b, o.sit)) });
+    // (a foul, followed: its flight as foul.js has it, pitch.js setAfter; o.foul from the stage)
+    const foul = !po && !steal && pr.result === 'foul' && pitch.after && pitch.after.foul ? pitch.after.foul : null;
+    const plan = foul ? planFoul(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), shape: pitch.m && pitch.m.foul ? pitch.m.foul.shape : null, spray: pitch.m && pitch.m.foul ? pitch.m.foul.spray : 0, at: (s) => pitch.afterAt(s), hit: foul.hits.length ? foul.hits[0].t : null, ...(o.align || this.align(b, o.sit)) })
+      : po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), ...(o.align || this.align(b, o.sit)) });
     this.active = { pr, plan, pitch, hooks: o.hooks || {}, fired: 0, cam: null, fov0: null };
     this.ball = pitch.ball;
     this.ballScale0 = this.ball.scale.x;
@@ -247,6 +250,8 @@ export class InPlay {
     // (and a bag a runner is out, scores or pulls in safe at, from 1.6 s before, when another moment comes
     // within a second of it at a bag across the diamond: one high shot holds the two together)
     this.active.steal = steal || !!po;
+    // (a foul: the hitter stays in his box with his bat, the set's catcher behind the plate)
+    this.active.foul = !!foul;
     // (a steal: home and the bag he steals, the throw down and the tag in the high home's one shot; a
     // pickoff: the rubber and the bag)
     if (po) this.active.infield = [{ x: 0, y: 60.5, t1: 99 }, { ...BASE[po.base], t1: 99 }];
@@ -257,7 +262,7 @@ export class InPlay {
     ] : [];
     // the set's catcher is posed for the pitch (his rise after contact ends in a crouch half undone):
     // in the broadcast a fielder in his place stands, watches and plays
-    this.active.usesCatcher = true;
+    this.active.usesCatcher = !foul;
     plan.runners.forEach((r, i) => {
       r.fig = this.runnerFigs[i] || null;
       // a close play at second, third or home: he slides in (a throw gets there within half a second
@@ -276,7 +281,7 @@ export class InPlay {
     return {
       plan,
       // (a steal has no ball landing: the play by play waits for nothing but its call)
-      land: steal || po ? null : { s: landS, real: realAt(plan.edit, landS), how: oc.ball, fair: true },
+      land: steal || po || foul ? null : { s: landS, real: realAt(plan.edit, landS), how: oc.ball, fair: true },
       steal,
       realDur: plan.realDur,
       resolveReal: realAt(plan.edit, plan.resolveAt),
@@ -323,8 +328,8 @@ export class InPlay {
     // catcher is in the play, the set's catcher (a fielder takes his)
     const pp = this.people, pt = A.pitch;
     // (a steal: the hitter is still in the box, bat in hand)
-    pp.batter.root.visible = !broadcast || !!A.steal;
-    if (pp.batter.bat && broadcast && !A.steal) {
+    pp.batter.root.visible = !broadcast || !!A.steal || !!A.foul;
+    if (pp.batter.bat && broadcast && !A.steal && !A.foul) {
       // he let go of the bat on his way: it lies in the dirt by the box
       const side = this.facts.batter.bats === 'L' ? 1 : -1;
       pp.batter.bat.position.copy(P(side * 3.6, 1.8, 0.11));
@@ -338,7 +343,8 @@ export class InPlay {
     // television the camera shoots over the net and its cables are lost in the distance, so the
     // broadcast leaves them out. From up there the net read as a grey arc across the bottom third.)
     if (!this.netPoles) this.netPoles = [...this.scene.getObjectsByProperty('name', 'netPole'), ...this.scene.getObjectsByProperty('name', 'backstopNet')];
-    for (const o of this.netPoles) o.visible = !broadcast;
+    // (a foul seen from the side, back into the net: the net is what it hits, and from there it hides nothing)
+    for (const o of this.netPoles) o.visible = !broadcast || (!!A.foul && piece.cam === 'wide');
     // the sun's shadow map covers the plate only: in the broadcast it is not drawn again each frame
     this.renderer.shadowMap.autoUpdate = !broadcast;
     // ---- the ball

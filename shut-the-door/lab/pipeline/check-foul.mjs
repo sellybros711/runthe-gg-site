@@ -30,7 +30,8 @@
  *     LEFT ft from the plate nor landed (on the ground, the seats, the dugout)
  * and, over the seeded fouls, when the shapes do not mix (any shape under MIX of them), when a pick
  * is not the same twice, or when a foul would start the ball in play broadcast (only in_play or a
- * steal safe or out stages one, stage.js playOnce: no fielder chases a foul).
+ * steal safe or out stages one, stage.js playOnce: no fielder chases a foul; a foul has its own short
+ * follow of the ball, inplay-plan.js planFoul, where the field stands and watches, held by check-camera).
  */
 import { createRequire } from 'node:module';
 import { readdirSync, readFileSync } from 'node:fs';
