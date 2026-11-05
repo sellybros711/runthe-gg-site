@@ -73,6 +73,8 @@ jobs:
         run: node shut-the-door/test/survivor.mjs
       - name: The lesson
         run: node shut-the-door/test/lesson.mjs
+      - name: A pitch's clip link round-trips and plays the pitch the outing threw
+        run: node shut-the-door/test/clip.mjs
       - name: The release meter on the page keeps the same e and q
         run: node shut-the-door/test/meter.mjs
       - name: Stored results replay
