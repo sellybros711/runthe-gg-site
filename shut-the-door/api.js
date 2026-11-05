@@ -53,6 +53,7 @@
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
   const M = NODE ? require('./modes.js') : window.STD_MODES;
   const CL = () => (NODE ? require('./clip.js') : window.STD_CLIP);
+  const PG = () => (NODE ? require('./postgame.js') : window.STD_POSTGAME);
 
   const API_VERSION = 1;
   const SCHEDULE_V = 20;
@@ -310,12 +311,32 @@
       rec.result = res;
       save(rec);
     }
+    withStats(rec);
     if (o.mode === 'archive') return finishArchive(rec);
     if (o.mode === 'daily' && !rec.submitted) {
       if (!rec.posting) rec.posting = post(rec).finally(() => { rec.posting = null; });
       await rec.posting;
     }
+    // never waited on: the result shows at once, and a failure only leaves the board's line off
+    if (o.mode === 'daily' && rec.submitted && !rec.statsPosted && !rec.statsPosting) {
+      rec.statsPosting = postStats(rec).catch(() => {}).finally(() => { rec.statsPosting = null; });
+    }
     return clone(rec.result);
+  }
+
+  /* THE BOX LINE (postgame.js, supabase/166): the outing's counts off the engine's own log and
+     result. A result kept before 166 gets them on its next read. */
+  function withStats(rec) {
+    if (rec.result && !rec.result.stats) rec.result.stats = PG().summary(rec.o.log, rec.result);
+    return rec.result && rec.result.stats;
+  }
+  /* The kept outing's box line on the board, once. Only the outing the server keeps: a post that
+     lost the race (another device's outing counts) sends none. The server keeps the first. */
+  async function postStats(rec) {
+    const s = withStats(rec);
+    if (!s || !signedInUser() || (rec.result.account && rec.result.account.taken === false)) return;
+    const r = await ask('submitStats', { day: rec.day, stats: s });
+    if (r && !r.error) rec.statsPosted = true;
   }
 
   /* One post of a finished daily, signed in. The server keeps the first post for (user, day). */
@@ -569,11 +590,12 @@
       rec.result = res;
       const run = readRun() || { day: rec.day, run: rec.survivor.run, entries: [], live: null, posted: 0 };
       if (run.run === rec.survivor.run && run.entries.length === rec.survivor.index) {
-        run.entries.push({ scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, outcome: res.outcome, pitches: res.pitches, score: res.score });
+        run.entries.push({ scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, outcome: res.outcome, pitches: res.pitches, score: res.score, stats: withStats(rec) });
         run.live = null;
         writeRun(run);
       }
     }
+    withStats(rec);
     const run = readRun();
     const posted = await postRun(run);
     const sum = run ? runSummary(run) : { saves: 0, over: true };
@@ -589,6 +611,8 @@
       const i = run.posted || 0, e = run.entries[i];
       const r = await ask('survivorPost', { day: run.day, run: run.run, index: i, scenarioId: e.scenarioId, calls: e.calls, outcome: e.outcome, pitches: e.pitches, score: e.score });
       if (!r || r.error || !r.data) return false;
+      // the box line beside it (166): a refusal or an old page's entry without one leaves no line
+      if (e.stats) await ask('survivorStats', { day: run.day, run: run.run, index: i, stats: e.stats });
       run.posted = i + 1;
       writeRun(run);
     }

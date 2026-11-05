@@ -59,9 +59,18 @@ run against a scratch Postgres; the order of files each needs is in the matching
 
 - ESPN is the only source. The week locks at the first slate kickoff. There is no results file:
   points live only in `cfb_fantasy_results`.
-- **The results screen offers it only while entries are open.** From the pointer's lock to the
-  next week's, to somebody with no lineup in (this browser's record, and signed in,
+- **The results screen offers it only while entries are open.** From the week opening to its
+  lock, to somebody with no lineup in (this browser's record, and signed in,
   `PS_CFB_AUTH.fantasyMyEntry`, which reads `cfb_fantasy_my_entry`). An inline card, never a sheet.
   `fantasyPromoPaint()` holds the rule, and every `show('s-over')` calls it.
 - **`fantasyMyEntry` is in `auth.js` and needs `auth.js`'s version moved with it.** Three pages load
   `/cfb/auth.js`, so the `?v=` moves on all of them in one commit.
+- **The week opens Monday, and the watchdog makes sure.** `cfb-fantasy-pool.yml` builds it at 11am
+  Eastern. `cfb-fantasy-watchdog.yml` asks from Monday noon to Thursday whether the week is open,
+  dispatches a catch up if not, and opens an issue from Tuesday. Never before Monday noon: on
+  Sunday the next week already reads as next.
+- **A scheduled or catch up build never rebuilds a live week**, because a price never moves once
+  somebody has drafted. The guard reads the pointer from `origin/main`, not the checkout: a
+  dispatched run checks out the commit main was on when it was queued.
+- **`next-week.mjs` is the week, and an unreadable scoreboard fails it.** ESPN answers null rather
+  than throwing, which `nextWeek` alone reads as the season over, or as a later week.
