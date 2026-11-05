@@ -86,10 +86,11 @@ import { People } from './people.js?v=45';
 import { Pitch, releaseOf } from './pitch.js?v=14';
 import { fromResult, motion } from './play.js?v=14';
 import { look } from './looks.js?v=6';
-import { P } from './units.js?v=1';
+import { P, smooth } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=53';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=12';
 import { FirstPerson } from './firstperson.js?v=23';
+import * as IDLE from './idle.js?v=1';
 
 const C = () => window.STD_CONTRACT;
 /* the quality tiers (Stage.judgeTier): the pixel ratio's cap and the sun's shadow map, best first.
@@ -200,6 +201,9 @@ const TEST = () => window.STD_STAGE_TEST;
 const MAX_STEP = 0.1;
 // the browser check's finer samples of the swing (keepSub in play): poses between frames, and the span round the result
 const SUB = 4, SUB_PRE = 0.3, SUB_POST = 0.2;
+// life at the set (idle.js): drawn every IDLE_MS at most (25 a second), IDLE_SLOW_MS on the cheapest tier
+const IDLE_MS = 40, IDLE_SLOW_MS = 66;
+const IDLE_ROLES = ['batter', 'catcher', 'umpire'];
 // a foul is seen foul when the umpire starts his signal: 0.6 s after contact (people.js umpireMove)
 const FOUL_SIGNAL = 0.6;
 
@@ -242,6 +246,8 @@ class Stage {
     this.cell = null;
     this.t = 0;
     this.ready = this.init();
+    // the life at the set stops on a hidden page and comes back with it
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) this.idleRun(); });
   }
 
   async init() {
@@ -274,6 +280,7 @@ class Stage {
     this.draw();
     this.applyGhost();
     this.breathe();
+    this.idleRun();
     return this;
   }
 
@@ -310,6 +317,7 @@ class Stage {
     if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) {
       if (this.dirty && this.loaded) { this.dirty = false; this.preview(); this.breathe(); }
       this.layout();
+      this.idleRun();
       return;
     }
     this.batterId = b.id;
@@ -318,7 +326,7 @@ class Stage {
     this.eye.setSide(b.bats);
     if (this.facts) this.applyBatter();
     this.layout();
-    if (this.loaded) this.breathe();
+    if (this.loaded) { this.breathe(); this.idleRun(); }
   }
 
   applyBatter() {
@@ -366,7 +374,8 @@ class Stage {
     const step = (ms) => {
       this.animId = 0;
       if (!this.ghost || this.playing || !this.ghost.busy()) { if (this.ghost && !this.playing) this.soon(); return; }
-      if (ms - last >= 32) { last = ms; this.render(); }
+      // (while the life at the set runs, its loop draws the indicator too: one capped rate, not two)
+      if (ms - last >= 32) { last = ms; if (!this.idleId) this.render(); }
       this.animId = requestAnimationFrame(step);
     };
     this.animId = requestAnimationFrame(step);
@@ -388,6 +397,7 @@ class Stage {
     const play = { call: { type: this.facts.pitcher.arsenal[0].type, cell, at }, actual: { x: tg.x, z }, velo: null, batter: 'take', result: 'ball', inPlay: null };
     this.setPitch(play);
     this.pose(0);
+    this.idleSet();
     if (this.loaded) this.soon();
   }
 
@@ -405,6 +415,8 @@ class Stage {
 
   pose(t) {
     this.t = t;
+    // any pose but the set's own ends the life at the set (idleSet starts it again)
+    if (this.idle) this.idle.on = false;
     this.eye.update(t);
     if (this.pitch) this.pitch.update(t, this.camera);
     if (this.people && this.people.batter && this.people.batter.chain) this.people.update(t, 0);
@@ -412,6 +424,7 @@ class Stage {
   }
 
   render() {
+    this.idleApply();
     if (this.ghost && (this.ghost.on || this.ghost.busy())) { this.ghost.tick(); this.ghost.orient(this.camera, this.canvas.clientHeight); }
     // (a hidden branch of the scene draws nothing, but three.js still worked out every matrix in it on
     // each draw: on the mound the ballpark and the thirteen hidden fielders, runners and umpires, their
@@ -420,6 +433,7 @@ class Stage {
     if (!this.playing && this.tierNext !== this.tier) this.applyTier();
     const off = HIDDEN;
     for (const o of this.scene.children) if (!o.visible && o.matrixWorldAutoUpdate) { o.matrixWorldAutoUpdate = false; off.push(o); }
+    this.drawnAt = performance.now();
     try { this.renderer.render(this.scene, this.camera); } finally { for (const o of off) o.matrixWorldAutoUpdate = true; off.length = 0; }
     if (this.fp) this.fp.render(this.camera);
   }
@@ -460,9 +474,10 @@ class Stage {
       the indicator settle as before. */
   hush(on) {
     this.hushed = !!on;
-    if (!on) { this.animate(); return; }
+    if (!on) { this.animate(); this.idleRun(); return; }
     if (this.animId) { cancelAnimationFrame(this.animId); this.animId = 0; }
     if (this.breathId) { cancelAnimationFrame(this.breathId); this.breathId = 0; }
+    if (this.idleId) { cancelAnimationFrame(this.idleId); this.idleId = 0; }
   }
 
   /** His breath as a set comes up (a new hitter, or the set after a pitch): one breath and a pump of
@@ -480,12 +495,83 @@ class Stage {
         if (!this.fp.hold) this.fp.clock += last ? Math.min(0.1, (ms - last) / 1000) : 0;
         last = ms;
         this.fp.pose(this.t);
-        this.render();
+        if (!this.idleId) this.render();
         if (!this.fp.breathing()) return;
       }
       this.breathId = requestAnimationFrame(step);
     };
     this.breathId = requestAnimationFrame(step);
+  }
+
+  /** LIFE AT THE SET (idle.js): the batter, the catcher and the umpire breathe, sway, waggle and
+      work the mitt while the pitch is picked and aimed. idleSet takes the set's pose as it is (after
+      preview, or a layout's pose of it); idleRun draws it every IDLE_MS at most (IDLE_SLOW_MS on the
+      cheapest tier), only on a shown canvas and page, never while a pitch plays or the meter runs
+      (hush), never under reduced motion, and never under the checks' stepped clock unless they ask
+      (STD_STAGE_TEST.idle). Each draw puts the set's pose back value for value and lays the life on
+      it (idleApply). A new set (a new hitter, or the next pitch) starts the life from nothing and
+      eases it in; the pitch freezes it where it was drawn and eases it out over the first IDLE.OUT
+      seconds of the delivery, at most half the time to the release (play, idleLay), so the release,
+      the swing and every frame after are exactly as without it. */
+  idleOk() { return !!this.loaded && !reducedMotion() && window.STD_STAGE_IDLE !== false && (!TEST() || !!TEST().idle); }
+
+  idleSet() {
+    if (!this.people || !this.facts || !this.facts.batter || !this.idleOk()) { if (this.idle) this.idle.on = false; return; }
+    const key = this.facts.batter.id + ':' + (this.lastN || 0);
+    const I = this.idle || (this.idle = { clock: 0, key: null, on: false, snaps: null, seeds: null, laid: -1 });
+    if (I.key !== key) { I.key = key; I.clock = 0; I.seeds = Object.fromEntries(IDLE_ROLES.map((r) => [r, IDLE.seedFor(r, key)])); }
+    I.snaps = IDLE_ROLES.map((r) => (this.people[r] ? IDLE.snapshot(this.people[r]) : null));
+    I.on = true;
+    I.laid = -1;
+  }
+
+  idleApply() {
+    const I = this.idle;
+    if (!I || !I.on || this.playing || this.dirty || I.laid === I.clock) return;
+    for (const sn of I.snaps) if (sn) IDLE.restore(sn);
+    const A = IDLE.ampAt(I.clock);
+    if (A > 0) IDLE_ROLES.forEach((r, i) => { if (I.snaps[i]) IDLE.apply(this.people[r], r, I.seeds[r], I.clock, A); });
+    I.laid = I.clock;
+  }
+
+  idleLift() {
+    const I = this.idle;
+    if (!I || !I.on || this.playing || I.laid < 0) return;
+    for (const sn of I.snaps) if (sn) IDLE.restore(sn);
+    I.laid = -1;
+  }
+
+  idleRun() {
+    if (this.idleId || !this.idle || !this.idle.on || !this.idleOk()) return;
+    let last = 0;
+    const step = (ms) => {
+      this.idleId = 0;
+      const I = this.idle;
+      if (!I || !I.on || this.playing || this.hushed || this.dirty || !this.canvas.clientWidth || document.hidden || !this.idleOk()) return;
+      const gap = this.tier >= TIERS.length - 1 ? IDLE_SLOW_MS : IDLE_MS;
+      if (!last || ms - last >= gap - 2) {
+        I.clock += last ? Math.min(0.1, (ms - last) / 1000) : 0;
+        last = ms;
+        // (the indicator's and his breath's own draws carry the life too: no second draw for it)
+        if (ms - (this.drawnAt || 0) >= gap - 2) this.render();
+      }
+      this.idleId = requestAnimationFrame(step);
+    };
+    this.idleId = requestAnimationFrame(step);
+  }
+
+  /** The life as it was last drawn, for the pitch to ease out of (null: none on screen). */
+  idleFreeze() {
+    const I = this.idle;
+    if (this.idleId) { cancelAnimationFrame(this.idleId); this.idleId = 0; }
+    if (!I || !I.on || I.laid < 0 || !this.idleOk()) return null;
+    const A = IDLE.ampAt(I.laid);
+    return A > 0 ? { clock: I.laid, A, seeds: I.seeds } : null;
+  }
+
+  idleLay(life, k) {
+    if (!(k > 0)) return;
+    for (const r of IDLE_ROLES) if (this.people[r]) IDLE.apply(this.people[r], r, life.seeds[r], life.clock, life.A * k);
   }
 
   /** The broadcast's cut is not his view: his glove and arm go while it is on (the park is drawn only
@@ -570,7 +656,7 @@ class Stage {
       // leaves his body at the plan's last frame while his bat stays where the set put it: the bat
       // went through his head at every set after a layout (the owner, 2026-10-30). Pose the set
       // again; a pitch in the air poses itself every frame
-      if (this.pitch && this.loaded && !this.playing) this.pose(this.t);
+      if (this.pitch && this.loaded && !this.playing) { const set = this.idle && this.idle.on; this.pose(this.t); if (set) this.idleSet(); }
       else this.fp.pose(this.t);
     }
     if (this.loaded) this.soon();
@@ -580,6 +666,7 @@ class Stage {
   draw() {
     if (!this.loaded) return;
     if (this.dirty && this.facts && this.facts.batter) { this.dirty = false; this.preview(); this.breathe(); } else this.soon();
+    this.idleRun();
   }
 
   /** A plate point (catcher's view x in feet, zn normalised to this hitter) on the canvas, in CSS px. */
@@ -607,6 +694,8 @@ class Stage {
   /** Where each figure lands on the canvas in CSS px, from its skinned vertices, for the framing
       and the browser check: the batter (with his helmet), his bat, the catcher and the umpire. */
   figureBoxes(samples = 4000) {
+    // measured on the set's own pose, never the life laid over it (the next draw lays it again)
+    this.idleLift();
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight, v = new THREE.Vector3();
     const box = (objs) => {
       const b = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
@@ -882,8 +971,11 @@ class Stage {
     tint(null);
     if (this.ghost) this.ghost.release();
     const play = fromResult(pr, this.facts.batter);
+    // the life at the set, frozen where it was drawn, eases out over the delivery's start (idleOut)
+    const life = this.idleFreeze();
     this.setPitch(play);
     const pt = this.pitch, m = this.m;
+    const lifeOut = life ? Math.min(IDLE.OUT, 0.5 * pt.tRel) : 0;
     const speed = opts.quick ? 1.8 : 1;
     const resultAt = pt.after ? pt.tRel + pt.after.t0 : pt.tCatch;
     const inPlay = pr.result === 'in_play';
@@ -1021,6 +1113,7 @@ class Stage {
         if (run && ts <= resultAt) this.inplay.prepare(this.camera.aspect);
         keepSub(ts);
         this.pose(ts);
+        if (life && ts < lifeOut) this.idleLay(life, 1 - smooth(ts / lifeOut));
         if (run && ts > resultAt) { this.inplay.update(ts - resultAt, this.camera); this.firstPersonCut(); }
         if (!TEST() || trace.frames % (TEST().renderEvery || 1) === 0) this.render();
         trace.frames++;
