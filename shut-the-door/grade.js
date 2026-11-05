@@ -909,7 +909,9 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
   // rules 4 (THE CALL): a take is called where it crossed, so each cell's takes split by the
   // umpire's chance over where in that cell this aim's miss puts the ball
   const cm = ctx.rules >= ABS_RULES ? this.callMass(type, ctx.fatigue, target, off ? a0 : null) : null;
-  const hm = ctx.rules >= HBP_RULES ? this.hbpMass(type, ctx.fatigue, target, off ? a0 : null, this.batsOf(st)) : null;
+  // rules 11: the reach's mass, worked out only when a row this call can land in holds a hit by pitch
+  let hm = null;
+  const hmOf = () => hm || (hm = this.hbpMass(type, ctx.fatigue, target, off ? a0 : null, this.batsOf(st)));
   const out = new Float64Array(KEYS.length);
   for (let a = 0; a < 25; a++) {
     const w = ker[base + a];
@@ -928,7 +930,8 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
     if (rt) { const m = w * row[KEY_ERROR] / 1000 * (1 - rt.keep); out[KEY_ERROR] -= m; out[rt.out] += m; }
     // rules 11 (contract.js THE REACH): the hit by pitch share keeps only the mass that reaches him;
     // the rest is a take where it crossed, a strike by the umpire's chance there, else a ball
-    if (hm && row[KEY_HBP]) {
+    if (ctx.rules >= HBP_RULES && row[KEY_HBP]) {
+      hmOf();
       const h = row[KEY_HBP] / 1000, hit = Math.min(w, hm.hit[a]), ps = Math.min(w - hit, hm.strike[a]);
       out[KEY_HBP] -= h * (w - hit);
       out[1] += h * ps;
@@ -958,17 +961,29 @@ Model.prototype.hbpMass = function (type, f, target, at, bats) {
   const tail = (d) => 1 - R.normCdf((d - px) / sig);   // P(inside >= d)
   const cm = this.callMass(type, f, target, at);
   const hit = new Float64Array(25), strike = new Float64Array(25);
-  const step = CALL_STEP_IN / 12;
-  for (const [lo, hi, mid, row] of g.zs) {
-    const wz = R.normCdf((hi - p.zn) / sz) - R.normCdf((lo - p.zn) / sz);
-    if (wz < 1e-12) continue;
-    const reach = K.hbpReach(mid);
-    hit[row * 5 + col] += wz * tail(reach);
-    for (let d0 = edge; d0 < reach - 1e-9; d0 += step) {
-      const d1 = Math.min(reach, d0 + step), wx = tail(d0) - tail(d1);
-      if (wx < 1e-12) continue;
-      strike[row * 5 + col] += wz * wx * K.calledStrikeP(K.zoneDist(s * (d0 + d1) / 2, mid, this.zoneFt));
-    }
+  // the strips across, from the drawn edge to the umpire's last bin (6.25 inches off), and the
+  // normal's tail at each, once: past that bin his chance is its floor, one strip to the reach
+  const step = CALL_STEP_IN / 12, last = edge - K.UMPIRE.D[0] / 12;
+  if (tail(edge) > 1e-12) {
+    const B = [], T = [];
+    for (let d = edge; d < last - 1e-9; d += step) { B.push(d); T.push(tail(d)); }
+    B.push(last); T.push(tail(last));
+    // the umpire's chance at each whole strip's middle, by height strip (the same for every aim)
+    if (!this._hbpP) this._hbpP = g.zs.map(z => B.slice(0, -1).map((b, k) => K.calledStrikeP(K.zoneDist((b + B[k + 1]) / 2, z[2], this.zoneFt))));
+    g.zs.forEach(([lo, hi, mid, row], j) => {
+      const wz = R.normCdf((hi - p.zn) / sz) - R.normCdf((lo - p.zn) / sz);
+      if (wz < 1e-12) return;
+      const reach = K.hbpReach(mid), tR = tail(reach), c = row * 5 + col, Pj = this._hbpP[j];
+      hit[c] += wz * tR;
+      let sm = 0;
+      for (let k = 0; k + 1 < B.length && B[k] < reach - 1e-9; k++) {
+        const whole = B[k + 1] <= reach, wx = T[k] - (whole ? T[k + 1] : tR);
+        if (wx < 1e-12) continue;
+        sm += wx * (whole ? Pj[k] : K.calledStrikeP(K.zoneDist((B[k] + reach) / 2, mid, this.zoneFt)));
+      }
+      if (last < reach) sm += (T[T.length - 1] - tR) * K.UMPIRE.P[0];
+      strike[c] += wz * sm;
+    });
   }
   for (let a = 0; a < 25; a++) if (a % 5 !== col) strike[a] = cm[a];
   m = { hit, strike };
