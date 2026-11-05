@@ -5,10 +5,15 @@
  *
  * The rows are shutdoor_board(day, limit)'s (supabase/153_shut_the_door.sql),
  * read through STD_AUTH.board(): {rank, username, outcome, pitches, score,
- * percentile, pitched_like, strip, mine, players}. The top rows, and the
- * caller's own row wherever it is. Every number on this screen is one of
- * those fields: the rank, the total, the pitches and the score. Nothing is
- * worked out here.
+ * percentile, pitched_like, strip, mine, players, plate, initials, stats}. The
+ * top rows, and the caller's own row wherever it is. Every number on this
+ * screen is one of those fields: the rank, the total, the pitches, the score
+ * and the stat line (stats, supabase/166: the outing's box line, read off the
+ * engine's log by the page that played it). Nothing is worked out here.
+ *
+ * NO SPOILERS. The stat line under each name shows once you have played today
+ * (ctx.played()). Before that the rows show as they always have, and the home's
+ * top 3 (peek) never shows a line at all.
  *
  * Signed out the board still reads (the call is public), with one quiet line
  * and a sign in button under it. No modal, no sheet that opens by itself.
@@ -87,10 +92,21 @@ function plateOf(r) {
   var PL = window.STD_PLATE;
   return PL ? PL.svg(r.plate || null, PL.initials(r.username === 'Closer' ? '' : r.username, r.initials), { cls: 'bp' }) : '';
 }
-function rowHTML(r) {
+/* the stat line under a name (postgame.js line): "18 P · 12 S · 2 K · 1 H · 0 R", or nothing for a
+   row posted before 166 */
+function statLine(st, on) {
+  var PG = window.STD_POSTGAME, t = on && PG && st ? PG.line(st) : '';
+  return t ? '<small class="bst">' + esc(t) + '</small>' : '';
+}
+/* the name with the line under it; extra is the row's tags (you, live) */
+function nameHTML(r, on, extra) {
+  return '<span class="nm">' + plateOf(r) + '<span class="nmc"><span class="nm1"><i class="un">' + esc(r.username) + '</i>' + (extra || '') + '</span>' +
+    statLine(r.stats, on) + '</span></span>';
+}
+function rowHTML(r, on) {
   return '<li class="' + (r.mine ? 'mine' : '') + (r.rank <= 3 ? ' top' : '') + '">' +
     '<span class="rk">' + esc(r.rank) + '</span>' +
-    '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + '</span>' +
+    nameHTML(r, on, r.mine ? '<em>you</em>' : '') +
     chip(r.outcome) +
     '<span class="n">' + esc(r.pitches) + '</span>' +
     '<span class="n sc">' + esc(r.score) + '</span></li>';
@@ -104,14 +120,16 @@ function renderList(rows) {
     return;
   }
   /* the top rows, then a gap and your own row when it sits below them */
-  var html = '', prev = 0;
+  var html = '', prev = 0, on = !!ctx.played();
   rows.forEach(function (r) {
     if (prev && r.rank > prev + 1) html += '<li class="gap" aria-hidden="true"><span>···</span></li>';
-    html += rowHTML(r);
+    html += rowHTML(r, on);
     prev = r.rank;
   });
   var n = rows[0].players;
+  var held = !on && rows.some(function (r) { return r.stats; });
   el.innerHTML = '<div class="bd-lh"><b>top closers</b><span class="bd-n">' + esc(n) + ' ' + (n === 1 ? 'closer' : 'closers') + ' today</span></div>' +
+    (held ? '<p class="bd-hold">Stat lines show once you\'ve played today.</p>' : '') +
     '<div class="bd-cols-h" aria-hidden="true"><span>#</span><span>closer</span><span>result</span><span>p</span><span>score</span></div>' +
     '<ol class="bd-rows">' + html + '</ol>';
 }
@@ -199,6 +217,7 @@ var api = {
   load: load,
   peek: peek,
   chip: chip,
+  nameHTML: nameHTML,
 };
 window.STD_BOARD = api;
 })();

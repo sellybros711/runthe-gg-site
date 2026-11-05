@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=78">
+<link rel="stylesheet" href="style.css?v=79">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -362,8 +362,11 @@ setTimeout(function () {
  <div class="r-main">
   <!-- the vote for tomorrow's daily, after the daily, from the vote's first day (modes-ui.js) -->
   <section class="r-tile r-vote" id="r-vote" aria-live="polite" hidden></section>
+  <!-- after the outing only (postgame.js): the box line, the grade mix, then every at bat's K-Zone -->
   <section class="r-tile r-pbp">
-    <div class="r-sec-h"><h3>you vs the real game</h3><span>pitch by pitch</span><div class="legend" id="r-legend"></div></div>
+    <div class="r-sec-h"><h3>Your outing</h3><span>The box line, then every at bat</span></div>
+    <div class="r-box" id="r-box"></div>
+    <div class="r-mix" id="r-mix"></div>
     <div class="cmp" id="r-reveal"></div>
   </section>
   <div class="r-row2">
@@ -529,18 +532,19 @@ setTimeout(function () {
 <script src="share.js?v=2"></script>
 <script src="card.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=9"></script>
+<script src="auth.js?v=10"></script>
 <script src="voices.js?v=1"></script>
-<script src="api.js?v=31"></script>
-<script src="mock-api.js?v=17"></script>
+<script src="postgame.js?v=1"></script>
+<script src="api.js?v=32"></script>
+<script src="mock-api.js?v=18"></script>
 <script src="coach.js?v=2"></script>
-<script src="board.js?v=7"></script>
-<script src="modes-ui.js?v=10"></script>
+<script src="board.js?v=8"></script>
+<script src="modes-ui.js?v=11"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=3"></script>
 <script src="clip.js?v=1"></script>
 <script src="clip-ui.js?v=1"></script>
-<script src="ui.js?v=72"></script>
+<script src="ui.js?v=73"></script>
 <script type="module" src="3d/boot.js?v=97"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 <script type="module">import { CLUBS, battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_CLUBS = CLUBS; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>

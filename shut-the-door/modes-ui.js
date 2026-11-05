@@ -200,7 +200,7 @@ function showSurvivor() {
   $('sv-list').innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=2" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
   var stP = has('survivorState') ? Promise.resolve().then(function () { return API().survivorState(); }).catch(function () { return null; }) : Promise.resolve(null);
   stP.then(function (s) { if (my === SV.seq) { SV.state = s; drawRun(s); } });
-  loadBoard(my);
+  loadBoard(my, stP);
 }
 function drawRun(s) {
   var el = $('sv-you'), st = authState();
@@ -228,9 +228,14 @@ function drawRun(s) {
   var si = $('sv-in');
   if (si) si.addEventListener('click', function () { if (ctx.signIn) ctx.signIn(); });
 }
-function loadBoard(my) {
+/* the stat line under each name (supabase/166, the run's box lines added up) shows only once you
+   have finished a spot of today's run: the spots are everyone's, so before that it would spoil them */
+function svPlayed() { var s = SV.state; return !!(s && s.entries && s.entries.length); }
+function loadBoard(my, wait) {
   var p = has('survivorBoard') ? Promise.resolve().then(function () { return API().survivorBoard(null, 50); }).catch(function () { return null; }) : Promise.resolve(null);
-  p.then(function (rows) {
+  Promise.all([p, wait ? wait.catch(function () {}) : null]).then(function (got) {
+    var rows = got[0], on = svPlayed();
+    var B = window.STD_BOARD;
     if (my !== SV.seq) return;
     var el = $('sv-list');
     if (!Array.isArray(rows)) {
@@ -247,7 +252,8 @@ function loadBoard(my) {
     rows.forEach(function (r) {
       if (prev && r.rank > prev + 1) html += '<li class="gap" aria-hidden="true"><span>···</span></li>';
       html += '<li class="' + (r.mine ? 'mine' : '') + (r.rank <= 3 ? ' top' : '') + '"><span class="rk">' + esc(r.rank) + '</span>' +
-        '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + (r.over ? '' : '<em class="live">live</em>') + '</span>' +
+        (B && B.nameHTML ? B.nameHTML(r, on, (r.mine ? '<em>you</em>' : '') + (r.over ? '' : '<em class="live">live</em>'))
+          : '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + (r.over ? '' : '<em class="live">live</em>') + '</span>') +
         '<span class="n sv-sv">' + esc(r.saves) + '</span><span class="n sc">' + esc(num(r.points)) + '</span></li>';
       prev = r.rank;
     });

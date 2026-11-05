@@ -58,6 +58,14 @@ var BOARD_NAMES = ['paintsblack', 'highcheese', 'backdoorslider', 'ninthinning',
    ?mockPlates=none unlocks nothing */
 var MOCK_PLATES = ['dodgers', null, 'yankees', 'giants', null, 'redsox', 'brewers'];
 var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'giants'], initials: null };
+/* the stat line (supabase/166), FICTIONAL and valid by postgame.js: a box line of the row's own
+   pitches. Every ninth row has none, as a row posted before 166 */
+function mockStats(rk, pitches, outcome) {
+  if (rk % 9 === 4) return null;
+  var s = Math.round(pitches * (0.58 + (rk % 5) * 0.03)), pa = 5 + rk % 2;
+  var k = rk % 3, bb = rk % 4 === 0 ? 1 : 0, h = outcome === 'door_shut' ? rk % 2 : 1 + rk % 2;
+  return { v: 1, p: pitches, s: s, b: pitches - s, k: k, bb: bb, h: h, r: { door_shut: 0, tie_held: 1 }[outcome] != null ? { door_shut: 0, tie_held: 1 }[outcome] : 2, hbp: 0, pa: pa, fps: Math.min(pa, 2 + rk % 3) };
+}
 function mockBoard(day, limit) {
   var mode = (/[?&]mockBoard=([^&]*)/.exec(location.search) || [])[1] || 'full';
   if (mode === 'fail') return Promise.resolve(null);
@@ -79,6 +87,7 @@ function mockBoard(day, limit) {
       outcome: outcome, pitches: pitches, score: score, percentile: Math.round((1 - f) * 100), pitched_like: null,
       strip: strip, mine: rk === mine, players: players,
       plate: rk === mine ? mockPlates.plate : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
+      stats: mockStats(rk === mine ? 1 : rk, pitches, outcome),
     });
   }
   return Promise.resolve(rows);
@@ -820,6 +829,12 @@ function survivorFinished(o, res) {
   return { run: o.surv.run, index: o.surv.index, saves: sum.saves, over: sum.over, posted: signedIn() };
 }
 function survivorClaim() { return Promise.resolve(signedIn() ? { posted: false } : null); }
+/* a run's line: its spots' fictional box lines added up (postgame.js sum) */
+function mockRun(spots, rk) {
+  var PG = window.STD_POSTGAME, list = [];
+  for (var i = 0; i < spots; i++) list.push(mockStats(1 + ((rk + i) % 8), 10 + ((rk + i * 3) % 9), i < spots - 1 ? 'door_shut' : 'walk_off'));
+  return PG ? PG.sum(list.filter(Boolean)) : null;
+}
 /* the Survivor board, FICTIONAL: made up handles, run 0 of each */
 function survivorBoard(day, limit) {
   var mode = QS.get('mockSurvBoard') || 'full';
@@ -829,11 +844,11 @@ function survivorBoard(day, limit) {
   var players = 96, lim = Math.max(1, Math.min(100, limit || 50)), rows = [];
   var at = mine ? Math.max(1, 31 - mine.saves * 6) : 0;
   for (var rk = 1, k = 0; rk <= players; rk++) {
-    if (rk === at) { rows.push({ rank: rk, username: 'mockplayer', saves: mine.saves, points: mine.points, over: mine.over, mine: true, players: players, plate: mockPlates.plate, initials: null }); continue; }
+    if (rk === at) { rows.push({ rank: rk, username: 'mockplayer', saves: mine.saves, points: mine.points, over: mine.over, mine: true, players: players, plate: mockPlates.plate, initials: null, stats: mockRun(r.entries.length || 1, 1) }); continue; }
     if (rk > lim) continue;
     k++;
     var saves = Math.max(0, 9 - Math.floor(rk / 6)), pts = saves * 410 + 380 - (rk % 6) * 37;
-    rows.push({ rank: rk, username: BOARD_NAMES[k % BOARD_NAMES.length] + (k > BOARD_NAMES.length ? k : ''), saves: saves, points: pts, over: rk % 7 !== 3, mine: false, players: players, plate: MOCK_PLATES[rk % MOCK_PLATES.length], initials: null });
+    rows.push({ rank: rk, username: BOARD_NAMES[k % BOARD_NAMES.length] + (k > BOARD_NAMES.length ? k : ''), saves: saves, points: pts, over: rk % 7 !== 3, mine: false, players: players, plate: MOCK_PLATES[rk % MOCK_PLATES.length], initials: null, stats: rk % 9 === 4 ? null : mockRun(saves + 1, rk) });
   }
   return Promise.resolve(rows);
 }

@@ -2326,8 +2326,9 @@ function renderResult() {
   $('r-kr').innerHTML = runs != null ? '<b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') : '';
   $('r-npitch').textContent = r.pitches + (r.pitches === 1 ? ' pitch' : ' pitches');
   $('r-strip').innerHTML = stripHTML(r.strip, true);
-  var WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
-  $('r-legend').innerHTML = C.BANDS.map(function (b) { return '<span><i class="sq ' + b.band + '"></i>' + WORD[b.band] + '</span>'; }).join('');
+  /* the box line and the grade mix (postgame.js): the engine's counts, after the outing only */
+  $('r-box').innerHTML = PG && st ? boxHTML(PG.box(st.log, r)) : '';
+  $('r-mix').innerHTML = mixHTML(r.strip);
   $('r-pct').innerHTML = p + '<sup>' + ordSuffix(p) + '</sup>';
   $('r-kpct').setAttribute('aria-label', p + ordSuffix(p) + ' of closers');
   $('r-pctline').innerHTML = 'better than <b>' + esc(p) + '%</b> of the closer pool in this spot.';
@@ -2464,54 +2465,154 @@ function vsText(r, rv, runs) {
   return p ? 'your result: ' + p.mine + '. real result: ' + p.real + '.' : null;
 }
 
-/* Your plate appearances from the outing's log: one per batter, in order, each with its pitches.
-   The word is the play by play's tag on the pitch that ended it; each pitch keeps its own tag. */
+/* ---- after the outing: the box line, the grade mix, the at bats (postgame.js) ------------------
+   The owner (2026-11-05): "You should be able to see the K-Zone for each at bat when you're done."
+   Every number here is the engine's: the box line and the at bats are read off the outing's log
+   (postgame.js), the bands are the strip's. Nothing here shows before the outing is over. */
+var PG = window.STD_POSTGAME;
 /* a pitch can be clipped when the clip module and the API's clip calls are on the page */
 function CLIPS() { return !!(window.STD_CLIP_UI && API.clipSpec && API.clip); }
-function myPAs(log, strip) {
-  var out = [], start = 0, bi = 0, runs = 0;
-  (log || []).forEach(function (pr, i) {
-    runs += pr.runs || 0;
-    if (!pr.paOver && i < log.length - 1) return;
-    var b = batterAt(bi);
-    var calls = log.slice(start, i + 1).map(function (q, j) {
-      return { n: start + j + 1, type: q.call && q.call.type, velo: q.velo, count: q.countBefore, tag: playText(q, b).tag, band: strip && strip[start + j], clip: CLIPS() };
-    });
-    out.push({ batter: b.name, bats: b.bats, word: playText(pr, b).tag, pitches: i - start + 1, runs: runs, calls: calls });
-    start = i + 1; runs = 0;
-    if (pr.paOver) bi++;
-  });
-  return out;
-}
 /* a pitch type's chip takes ink text on a light colour */
 function lightColor(hex) {
   var m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return false;
   var v = parseInt(m[1], 16), r = v >> 16 & 255, g = v >> 8 & 255, b = v & 255;
   return (0.299 * r + 0.587 * g + 0.114 * b) > 150;
 }
-/* the card is narrow: the two long strike tags get their short form (the title keeps the long one) */
-var CARD_TAG = { 'swinging strike': 'swinging', 'called strike': 'called' };
 var BAND_WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
-function pitchCard(c) {
-  var col = TYPE_COLORS[c.type] || '#64748b', nm = typeName(c.type);
-  var v = c.velo != null && isFinite(c.velo) ? Math.round(c.velo) : null;
-  var cnt = c.count ? c.count.b + '-' + c.count.s : '';
-  var meta = [v, cnt].filter(function (x) { return x != null && x !== ''; }).join(' · ');
-  var title = 'pitch ' + c.n + ': ' + nm + (v != null ? ', ' + v + ' mph' : '') + (cnt ? ', ' + cnt : '') + ', ' + c.tag + (c.band ? ', ' + BAND_WORD[c.band] : '');
-  /* CLIPS (clip-ui.js): the card is the Clip action, behind a tap only */
-  var clip = c.clip ? ' data-clip="' + c.n + '" type="button" aria-label="' + esc('Clip ' + title) + '"' : '';
-  var tg = c.clip ? 'button' : 'span';
-  return '<' + tg + ' class="pc' + (c.clip ? ' clp' : '') + '" title="' + esc(title) + '"' + clip + '><b class="n">' + c.n + '</b>' +
-    '<span class="ty' + (lightColor(col) ? ' lt' : '') + '" style="--tc:' + col + '">' + esc(c.type) + '</span>' +
-    '<span class="m">' + esc(meta) + '</span><span class="m">' + esc(CARD_TAG[c.tag] || c.tag) + '</span>' +
-    (c.clip ? '<span class="cl"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip</span>' : '') +
-    '<i class="bd ' + esc(c.band || '') + '"></i></' + tg + '>';
+function cap(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
+function typeCol(t) { return TYPE_COLORS[t] || '#64748b'; }
+
+/* the box line: ten tiles, each the engine's count */
+function boxHTML(b) {
+  var pc = function (v) { return v == null ? '-' : v + '%'; };
+  var tiles = [['Pitches', b.p], ['Strikes', b.s], ['Balls', b.b], ['Strike %', pc(b.strikePct)], ['First-pitch strike', pc(b.fpsPct)],
+    ['K', b.k], ['BB', b.bb], ['H', b.h], ['R', b.r], ['HBP', b.hbp]];
+  return '<dl class="bx">' + tiles.map(function (t) { return '<div><dt>' + esc(t[0]) + '</dt><dd>' + esc(t[1]) + '</dd></div>'; }).join('') + '</dl>';
+}
+/* the grade mix: the strip's bands counted, one bar and four counts */
+function mixHTML(strip) {
+  var n = (strip || []).length, cnt = {};
+  (strip || []).forEach(function (b) { cnt[b] = (cnt[b] || 0) + 1; });
+  if (!n) return '';
+  var bar = C.BANDS.map(function (b) { var c = cnt[b.band] || 0; return c ? '<i class="' + b.band + '" style="flex:' + c + '"></i>' : ''; }).join('');
+  var keys = C.BANDS.map(function (b) {
+    return '<span class="' + ((cnt[b.band] || 0) ? '' : 'z') + '"><i class="sq ' + b.band + '"></i>' + cap(BAND_WORD[b.band]) + ' <b>' + (cnt[b.band] || 0) + '</b></span>';
+  }).join('');
+  return '<p class="mx-h"><b>Your calls, graded</b><span>' + plural(n, 'pitch', 'pitches') + '</span></p>' +
+    '<div class="mx-bar" role="img" aria-label="' + esc(C.BANDS.map(function (b) { return (cnt[b.band] || 0) + ' ' + BAND_WORD[b.band]; }).join(', ')) + '">' + bar + '</div>' +
+    '<div class="mx-k">' + keys + '</div>';
 }
 
-/* Two columns, you and the real game. The outcome, runs and pitches, then one row per batter faced
-   in the real order, with your pitches between his name and the two results. A batter one side
-   never faced is a quiet dash. Only an unambiguous edge is marked: the better outcome, fewer runs,
-   fewer pitches. A plate appearance is never judged. */
+/* ---- the K-Zone: one per at bat ------------------------------------------------------------
+   The box is the aim grid's 5x5 (the zone its middle three), PITCHER'S VIEW: postgame.js point()
+   mirrors the catcher's view data the way aim.js and screenCol() do. Each pitch sits where it
+   crossed (the engine's actual, after the release's miss), numbered in order, filled in its type's
+   colour, its shape the result's. A pitch past the box sits on its edge. */
+var KZ = 100;
+function markSVG(kind, x, y, r, col, n) {
+  var lt = lightColor(col), ink = lt ? '#0b0f17' : '#ffffff', sh = '';
+  if (kind === 'ball') sh = '<circle class="m-ball" cx="' + x + '" cy="' + y + '" r="' + (r - 1) + '" style="stroke:' + col + '"/>';
+  else if (kind === 'hbp') sh = '<rect class="m-hbp" x="' + (x - r + 1) + '" y="' + (y - r + 1) + '" width="' + (2 * r - 2) + '" height="' + (2 * r - 2) + '" rx="2" style="stroke:' + col + '"/>';
+  else if (kind === 'inplay') sh = '<path class="m-ip" d="M' + x + ' ' + (y - r - 1.5) + 'L' + (x + r + 1.5) + ' ' + y + 'L' + x + ' ' + (y + r + 1.5) + 'L' + (x - r - 1.5) + ' ' + y + 'Z" style="fill:' + col + '"/>';
+  else {
+    sh = '<circle class="m-fill" cx="' + x + '" cy="' + y + '" r="' + r + '" style="fill:' + col + '"/>';
+    if (kind === 'swing') sh += '<circle class="m-ring" cx="' + x + '" cy="' + y + '" r="' + (r + 2.4) + '"/>';
+    if (kind === 'foul') sh += '<circle class="m-ring dash" cx="' + x + '" cy="' + y + '" r="' + (r + 2.4) + '"/>';
+  }
+  var hollow = kind === 'ball' || kind === 'hbp';
+  return sh + (n != null ? '<text x="' + x + '" y="' + (y + 0.4) + '" style="fill:' + (hollow ? 'currentColor' : ink) + '">' + n + '</text>' : '');
+}
+function kzoneSVG(ab) {
+  var g = '';
+  for (var i = 1; i < 5; i++) {
+    var t = i * 20, inner = i === 2 || i === 3;
+    g += '<line class="' + (inner ? 'kz-in' : 'kz-out') + '" x1="' + (inner ? 20 : 0) + '" y1="' + t + '" x2="' + (inner ? 80 : KZ) + '" y2="' + t + '"/>' +
+      '<line class="' + (inner ? 'kz-in' : 'kz-out') + '" x1="' + t + '" y1="' + (inner ? 20 : 0) + '" x2="' + t + '" y2="' + (inner ? 80 : KZ) + '"/>';
+  }
+  var dots = ab.pitches.map(function (p) {
+    if (!p.at) return '';
+    var x = Math.max(5, Math.min(95, p.at[0] * KZ)).toFixed(1), y = Math.max(5, Math.min(95, p.at[1] * KZ)).toFixed(1);
+    return '<g class="kd ' + p.kind + '" data-pick="' + p.n + '">' + markSVG(p.kind, +x, +y, 5.6, typeCol(p.type), p.k) + '</g>';
+  }).join('');
+  /* inside and away, by the side he bats from: a right-handed hitter stands on the right of the pitcher's view */
+  var L = ab.bats === 'L', left = L ? 'Inside' : 'Away', right = L ? 'Away' : 'Inside';
+  return '<div class="kz"><svg viewBox="-2 -2 104 104" role="img" aria-label="' + esc('The zone for ' + (ab.name || 'this at bat') + ', from the mound') + '">' +
+    '<rect class="kz-bg" x="0" y="0" width="100" height="100" rx="6"/><rect class="kz-zone" x="20" y="20" width="60" height="60" rx="1.5"/>' + g + dots + '</svg>' +
+    (ab.bats === 'L' || ab.bats === 'R' ? '<p class="kz-side"><span>' + left + '</span><span>' + right + '</span></p>' : '') + '</div>';
+}
+/* the legend, once over the at bats */
+function kzLegend() {
+  var it = [['called', 'Called strike'], ['swing', 'Swinging strike'], ['foul', 'Foul'], ['ball', 'Ball'], ['inplay', 'In play'], ['hbp', 'Hit by pitch']];
+  return '<div class="kz-key">' + it.map(function (k) {
+    return '<span><svg viewBox="0 0 20 20" aria-hidden="true">' + markSVG(k[0], 10, 10, 5.6, 'var(--dim)', null) + '</svg>' + k[1] + '</span>';
+  }).join('') + '<span class="kz-note">Filled in the pitch\'s colour. From the mound.</span></div>';
+}
+/* one pitch's row: the detail is the row (tap it to light it on the zone), the Clip its own button */
+function pitchRow(p, clip, sel) {
+  var col = typeCol(p.type), v = p.velo != null && isFinite(p.velo) ? Math.round(p.velo) : null;
+  var cnt = p.count ? p.count.b + '-' + p.count.s : '';
+  var title = 'Pitch ' + p.n + ': ' + typeName(p.type) + (v != null ? ', ' + v + ' mph' : '') + (cnt ? ', ' + cnt : '') + ', ' + p.word.toLowerCase() + (p.band ? ', ' + BAND_WORD[p.band] : '');
+  return '<div class="pc' + (sel ? ' on' : '') + '" data-n="' + p.n + '">' +
+    '<button class="pc-pick" type="button" data-pick="' + p.n + '" aria-pressed="' + (sel ? 'true' : 'false') + '" aria-label="' + esc(title) + '">' +
+    '<b class="n">' + p.k + '</b><span class="ty' + (lightColor(col) ? ' lt' : '') + '" style="--tc:' + col + '">' + esc(p.type) + '</span>' +
+    '<span class="m">' + esc([v != null ? v : null, cnt].filter(function (x) { return x != null && x !== ''; }).join(' · ')) + '</span>' +
+    '<span class="w">' + esc(p.word) + '</span><i class="bd ' + esc(p.band || '') + '" aria-hidden="true"></i></button>' +
+    (clip ? '<button class="pc-clip" type="button" data-clip="' + p.n + '" aria-label="' + esc('Clip ' + title) + '"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip</button>' : '') +
+    '</div>';
+}
+/* the picked pitch, beside the zone */
+function pitchDetail(ab, p) {
+  if (!p) return '';
+  var v = p.velo != null && isFinite(p.velo) ? Math.round(p.velo) + ' mph' : '';
+  var where = p.cell != null && M && M.cellWords ? cap(M.cellWords(p.cell, ab.bats)) : '';
+  return '<p class="dt-n">Pitch ' + p.k + ' of ' + ab.pitches.length + (p.count ? ' · ' + p.count.b + '-' + p.count.s : '') + '</p>' +
+    '<p class="dt-t"><i style="background:' + typeCol(p.type) + '"></i>' + esc(cap(typeName(p.type))) + (v ? ' <span>' + esc(v) + '</span>' : '') + '</p>' +
+    '<p class="dt-r">' + esc(p.word) + (p.challenged ? ' <em>Challenged</em>' : '') + '</p>' +
+    (where ? '<p class="dt-w">' + esc(where) + '</p>' : '') +
+    (p.band ? '<p class="dt-b ' + esc(p.band) + '"><i class="sq ' + esc(p.band) + '"></i>' + esc(cap(BAND_WORD[p.band])) + '</p>' : '');
+}
+/* the at bats as the result shows them, kept so a tap can redraw one card */
+var AB = { list: [], pick: {} };
+function abCard(ab, real, i, col, bat) {
+  var clip = CLIPS(), last = ab ? ab.pitches[ab.pitches.length - 1] : null;
+  var pick = ab ? (AB.pick[i] != null ? AB.pick[i] : last && last.n) : null;
+  var cur = ab ? ab.pitches.filter(function (p) { return p.n === pick; })[0] : null;
+  var name = ab ? ab.name : real.batter;
+  var endCls = ab ? ({ K: 'k', BB: 'bb', HBP: 'bb', '1B': 'hit', '2B': 'hit', '3B': 'hit', HR: 'hit', E: 'hit' }[ab.code] || 'out') : 'none';
+  var head = '<header class="ab-h"><span class="ab-i">AB ' + (i + 1) + '</span><b class="nm">' + esc(name) + '</b>' +
+    (ab && ab.bats ? '<small>Bats ' + esc(ab.bats) + '</small>' : '') +
+    (ab ? '<span class="ab-end ' + endCls + '" title="' + esc(ab.word) + '">' + esc(ab.code || '-') + '</span>' : '') + '</header>';
+  var vs = '<div class="ab-vs"><span class="v you"><i>You</i>' + (ab ? esc(ab.word) + '<small>' + plural(ab.pitches.length, 'pitch', 'pitches') + '</small>' : '<b class="none">-</b><small>You never faced him</small>') + '</span>' +
+    '<span class="v real"><i>' + esc(col) + '</i>' + (real ? esc(cap(real.result)) + (real.pitches != null ? '<small>' + plural(real.pitches, 'pitch', 'pitches') + '</small>' : '') : '<b class="none">-</b>') + '</span></div>';
+  if (!ab) return '<article class="cmp-bat ab never"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head + vs + '</article>';
+  return '<article class="cmp-bat ab" data-ab="' + i + '"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head +
+    '<div class="ab-body">' + kzoneSVG(ab).replace('data-pick="' + pick + '"', 'data-pick="' + pick + '" data-on="1"') +
+    '<div class="ab-dt" aria-live="polite">' + pitchDetail(ab, cur) + '</div></div>' +
+    '<div class="ab-list">' + ab.pitches.map(function (p) { return pitchRow(p, clip, p.n === pick); }).join('') + '</div>' + vs + '</article>';
+}
+/* a tap on a pitch (its row or its mark): light it and show its detail. Nothing else moves */
+function pickPitch(card, n) {
+  var i = +card.getAttribute('data-ab'), ab = AB.list[i];
+  if (!ab) return;
+  var p = ab.pitches.filter(function (x) { return x.n === n; })[0];
+  if (!p) return;
+  AB.pick[i] = n;
+  card.querySelector('.ab-dt').innerHTML = pitchDetail(ab, p);
+  card.querySelectorAll('.pc').forEach(function (r) {
+    var on = +r.getAttribute('data-n') === n;
+    r.classList.toggle('on', on);
+    r.querySelector('.pc-pick').setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  card.querySelectorAll('.kd').forEach(function (g) {
+    var on = +g.getAttribute('data-pick') === n;
+    if (on) { g.setAttribute('data-on', '1'); g.parentNode.appendChild(g); } else g.removeAttribute('data-on');
+  });
+}
+
+/* You and the real game: the outcome, runs and pitches side by side, then one card per batter
+   faced in the real order: his K-Zone, your pitches, and the two results. A batter one side never
+   faced is a quiet dash. Only an unambiguous edge is marked: the better outcome, fewer runs, fewer
+   pitches. A plate appearance is never judged. */
 function compareCard(r, rv, runs, st) {
   var none = '<span class="v none">-</span>';
   var cell = function (html, win, cls) { return '<span class="v' + (cls ? ' ' + cls : '') + (win ? ' win' : '') + '">' + html + '</span>'; };
@@ -2520,30 +2621,24 @@ function compareCard(r, rv, runs, st) {
   var hp = typeof rv.pitches === 'number' ? rv.pitches : null;
   var col = realCol();
   var rows =
-    row('result', cell('<b class="o ' + esc(r.outcome) + '">' + esc((C.OUTCOME_LABEL[r.outcome] || '').toLowerCase()) + '</b>', mineO > hisO),
-      rv.outcome ? cell('<b class="o ' + esc(rv.outcome) + '">' + esc((C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase()) + '</b>', hisO > mineO) : none) +
-    row('runs', runs == null ? none : cell('<b>' + esc(runs) + '</b>', rv.runs != null && runs < rv.runs),
+    row('Result', cell('<b class="o ' + esc(r.outcome) + '">' + esc(C.OUTCOME_LABEL[r.outcome] || '') + '</b>', mineO > hisO),
+      rv.outcome ? cell('<b class="o ' + esc(rv.outcome) + '">' + esc(C.OUTCOME_LABEL[rv.outcome] || '') + '</b>', hisO > mineO) : none) +
+    row('Runs', runs == null ? none : cell('<b>' + esc(runs) + '</b>', rv.runs != null && runs < rv.runs),
       rv.runs == null ? none : cell('<b>' + esc(rv.runs) + '</b>', runs != null && rv.runs < runs)) +
-    row('pitches', cell('<b>' + esc(r.pitches) + '</b>', hp != null && r.pitches < hp),
-      hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(rv.pitchesNote || 'not on record'), false, 'note'));
-  var mine = myPAs(st && st.log, r.strip), real = rv.plateAppearances || [];
-  var n = Math.max(mine.length, real.length), bats = '';
+    row('Pitches', cell('<b>' + esc(r.pitches) + '</b>', hp != null && r.pitches < hp),
+      hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(cap(rv.pitchesNote || 'not on record')), false, 'note'));
+  var log = st && st.log;
+  AB.list = PG ? PG.atBats(log, S.scn, r.strip) : [];
+  AB.pick = {};
+  var real = rv.plateAppearances || [];
+  var n = Math.max(AB.list.length, real.length), bats = '';
   var bat = (clubsOf(S.scn).them || {}).pri || '';
-  for (var i = 0; i < n; i++) {
-    var a = mine[i], b = real[i], name = a ? a.batter : b.batter;
-    var side = function (pa, word, cls, lbl) {
-      if (!pa) return '<span class="v none ' + cls + '"><i>' + lbl + '</i>-</span>';
-      return '<span class="v ' + cls + '"><i>' + lbl + '</i>' + esc(word) + (pa.pitches != null ? '<small>' + plural(pa.pitches, 'pitch', 'pitches') + '</small>' : '') + '</span>';
-    };
-    var bats1 = a ? a.bats : null;
-    bats += '<div class="cmp-bat"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' +
-      '<span class="ab-who"><span class="i">AB ' + (i + 1) + '</span><b class="nm">' + esc(name) + '</b>' + (bats1 ? '<small>bats ' + esc(bats1) + '</small>' : a ? '' : '<small>you never faced him</small>') + '</span>' +
-      (a ? '<span class="ab-trk">' + a.calls.map(pitchCard).join('') + '</span>' : '<span class="ab-trk empty"></span>') +
-      side(a, a && a.word, 'you', 'you') + side(b, b && b.result, 'real', col) + '</div>';
-  }
-  return '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">you</span><span class="who him">' + esc(col) + '</span></div>' +
-    rows + bats +
-    (rv.summary ? '<p class="cmp-sum"><b>what happened</b> ' + esc(rv.summary) + '.</p>' : '');
+  for (var i = 0; i < n; i++) bats += abCard(AB.list[i], real[i], i, col, bat);
+  return '<div class="cmp-top"><p class="cmp-t">You vs the real game</p>' +
+    '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">You</span><span class="who him">' + esc(col) + '</span></div>' +
+    rows + '</div>' +
+    (rv.summary ? '<p class="cmp-sum"><b>What happened</b> ' + esc(rv.summary) + '.</p>' : '') +
+    '<p class="ab-t">At bat by at bat</p>' + kzLegend() + '<div class="ab-grid">' + bats + '</div>';
 }
 
 /* Your score on the real distribution of the closer pool's outings in this
@@ -2751,9 +2846,12 @@ function initClips() {
     home: function () { renderHomeState(); show('s-home'); drawHero(); },
     playDaily: function () { dailyBack(); renderHomeState(); show('s-home'); takeMound(); },
   });
-  /* the Clip on each of your pitches in you vs the real game: behind a tap only */
+  /* a pitch in an at bat: a tap on its row or its mark shows its detail; the Clip on each of your
+     pitches plays it again. Both behind a tap only */
   $('r-reveal').addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('.pc[data-clip]');
+    var pk = e.target.closest && e.target.closest('[data-pick]');
+    if (pk) { var card = pk.closest('.ab[data-ab]'); if (card) pickPitch(card, +pk.getAttribute('data-pick')); return; }
+    var b = e.target.closest && e.target.closest('[data-clip]');
     if (!b) return;
     var st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
     if (!st || !st.outingId) return;
