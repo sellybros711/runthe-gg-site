@@ -350,12 +350,13 @@
    * which must not sell the week to somebody already in it from another device. The same
    * function the mode asks (`fantasy_my_entry`). true, false, or null for signed out, an
    * error or no answer in four seconds: null is no opinion, and the card then goes on the
-   * browser's own record. */
-  async function fantasyMyEntry(season, week) {
+   * browser's own record. `prefix` is the competition's, as PS_FANTASY_PREFIX is in the
+   * mode: 'fantasy_' for the NFL (the default) and 'cfb_fantasy_' for the college game. */
+  async function fantasyMyEntry(season, week, prefix) {
     if (!sb || !session) return null;
     try {
       const r = await Promise.race([
-        sb.rpc('fantasy_my_entry', { p_season: season, p_week: week }),
+        sb.rpc((prefix || 'fantasy_') + 'my_entry', { p_season: season, p_week: week }),
         new Promise((res) => setTimeout(() => res(null), 4000)),
       ]);
       if (r && !r.error && Array.isArray(r.data)) return r.data.length > 0;
