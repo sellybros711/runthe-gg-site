@@ -346,13 +346,33 @@
     return [];
   }
 
+  /* WHETHER THIS ACCOUNT HAS A LINEUP IN FOR A WEEK, for the results screen's Fantasy card,
+   * which must not sell the week to somebody already in it from another device. The same
+   * function the mode asks (`fantasy_my_entry`). true, false, or null for signed out, an
+   * error or no answer in four seconds: null is no opinion, and the card then goes on the
+   * browser's own record. `prefix` is the competition's, as PS_FANTASY_PREFIX is in the
+   * mode: 'fantasy_' for the NFL (the default) and 'cfb_fantasy_' for the college game. */
+  async function fantasyMyEntry(season, week, prefix) {
+    if (!sb || !session) return null;
+    try {
+      const r = await Promise.race([
+        sb.rpc((prefix || 'fantasy_') + 'my_entry', { p_season: season, p_week: week }),
+        new Promise((res) => setTimeout(() => res(null), 4000)),
+      ]);
+      if (r && !r.error && Array.isArray(r.data)) return r.data.length > 0;
+    } catch (e) {}
+    return null;
+  }
+
   window.PS_AUTH = {
     /* 2: `fantasyWins`, the weeks this account placed in.
-       3: `premiumPlans`, and billingPortal takes a scope. */
+       3: `premiumPlans`, and billingPortal takes a scope.
+       `fantasyMyEntry` rides on 3: the page asks for it only if it is there. */
     API_VERSION: 3,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
     premiumProducts, premiumUnlocks, premiumPlans, billingPortal, fantasyWins,
+    fantasyMyEntry,
   };
 })();
