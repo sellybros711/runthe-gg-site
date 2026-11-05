@@ -18,15 +18,18 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=26';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=28';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=12';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=30';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=32';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=44';
 import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 
+// (the broadcast camera follows a body as the plan times it, its straight ramps, not as drawn: easing a start or
+// a stop moves a body a little, and a camera that tracks it whipped and jerked a little more, check-camera.mjs)
+const planAt = (tr, s) => { const d = tr.drawn; tr.drawn = false; try { return tr.at(s); } finally { tr.drawn = d; } };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const smooth = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
 const ramp = (s, a, b) => smooth((s - a) / (b - a));
@@ -51,6 +54,9 @@ const GLIDE_TAU = 0.32;
 const CARRY_S = 1.2, STOP_PEEL = 0.6;
 // around a fielder's take, his stride as it always was (phases): from PLAIN_PRE before to PLAIN_POST after it
 const PLAIN_PRE = 0.45, PLAIN_POST = 0.3, PLAIN_EASE = 0.15;
+// (a pickup this soon after his bobble is posed on his own stride, not the plain one: the plain one, with the bobble's
+// short shuffle drawn eased, skated his foot, check-jolt.mjs skate fielder bobble)
+const QUICK_PICKUP = 1.5;
 const TAKE_KINDS = ['catch', 'drop', 'bobble', 'field', 'pickup', 'receive', 'catch_throw', 'tag'];
 // (the low plate camera is the close one, saved for a run scoring: it keeps the tighter room it had)
 const ROOM_PLATE_FT = 46;
@@ -295,7 +301,7 @@ export class InPlay {
       // (and around each ball he takes or sets for, from PLAIN_PRE before it to PLAIN_POST after, his stride as it
       // always was, eased in and out over PLAIN_EASE: a catch, a pickup, a set is posed as it always has been. Got
       // down into from another point of a shortened stride, his planted foot slid, check-jolt.mjs skate fielder field)
-      const near = tr.acts.filter((a) => a.kind === 'set' || TAKE_KINDS.includes(a.kind)).map((a) => (a.kind === 'tag' ? a.tagAt ?? a.t : a.t));
+      const near = tr.acts.filter((a, k) => (a.kind === 'set' || TAKE_KINDS.includes(a.kind)) && !(a.kind === 'pickup' && tr.acts[k - 1] && tr.acts[k - 1].kind === 'bobble' && a.t - tr.acts[k - 1].t < QUICK_PICKUP)).map((a) => (a.kind === 'tag' ? a.tagAt ?? a.t : a.t));
       const plain = near.length ? (t) => { let k = 0; for (const q of near) k = Math.max(k, ramp(t, q - PLAIN_PRE - PLAIN_EASE, q - PLAIN_PRE) * (1 - ramp(t, q + PLAIN_POST, q + PLAIN_POST + PLAIN_EASE))); return k; } : null;
       tr.phase = this.crew.phaseTable(v, 0, T1, false, planned(tr, b), { plainFrom: this.glideAt(tr, tr.free + 1e-3) ? tr.free : Infinity, plain });
     }
@@ -1572,7 +1578,7 @@ export class InPlay {
     const ball = plan.ballAt(s);
     // (the man with the ball while he has it, the pivot man above all; then the man it goes to)
     const by = (ball.by && plan.fielders[ball.by] ? ball.by : null) || this.focusFielder(s);
-    const fp = by ? plan.fielders[by].at(s) : null;
+    const fp = by ? planAt(plan.fielders[by], s) : null;
     const pts = [{ x: ball.x, y: ball.y, z: ball.z }];
     // (a long throw in the air: the man taking it comes in with its target, for the last of it)
     // (sliding out from about its release, and in again for its last half second, by a weight: on and
@@ -1603,7 +1609,7 @@ export class InPlay {
       // (a moment shown before this shot began is the shot before's: it does not pull this one about)
       if (tq == null || s < tq - 0.85 || s > tq + 0.45 + FO || (this.shotStart != null && tq < this.shotStart - 0.05)) continue;
       if (r.batter && r.out && plan.kind === 'air_out') continue;   // (the catch is his out: the ball's shot has it)
-      const q = r.track.at(s), bag = BASE[r.out ? r.outBase : Math.min(4, r.to)] || BASE[4];
+      const q = planAt(r.track, s), bag = BASE[r.out ? r.outBase : Math.min(4, r.to)] || BASE[4];
       groups.push({ w: fade(tq), tq, rank: r.out ? 3 : r.scoreAt != null ? 2 : r.batter ? 1.5 : 1, q, bag });
     }
     groups.sort((a, b) => b.rank - a.rank || a.tq - b.tq);
@@ -1623,7 +1629,7 @@ export class InPlay {
     const lead = ca && plan.runners.filter((r) => !r.batter && r.to > r.from).sort((a, b) => b.from - a.from)[0];
     if (lead && s > ca.s - 0.2 && s < ca.s + 1.55 && !(this.shotStart != null && ca.s + 0.3 < this.shotStart - 0.05)) for (const r of [lead]) {
       const w = clamp((s - (ca.s - 0.2)) / 0.3, 0, 1) * clamp((ca.s + 1.55 - s) / 0.3, 0, 1);
-      const q = r.track.at(s), bag = BASE[r.from];
+      const q = planAt(r.track, s), bag = BASE[r.from];
       keys.push(near({ x: q.x, y: q.y, z: 0 }, w), near({ x: q.x, y: q.y, z: 6 }, w), near({ x: bag.x, y: bag.y, z: 0 }, w));
       keyRaw.push({ p: { x: q.x, y: q.y, z: 0 }, w }, { p: { x: q.x, y: q.y, z: 6 }, w }, { p: { x: bag.x, y: bag.y, z: 0 }, w });
       far.x += (q.x + bag.x) / 2 * w; far.y += (q.y + bag.y) / 2 * w; far.w = Math.max(far.w, w); far.n += w;
@@ -1662,7 +1668,7 @@ export class InPlay {
         if (plan.kind === 'hr' && w) {
           const u = { x: Math.sin(spray * D2R), y: Math.cos(spray * D2R) };
           pts.push({ x: u.x * (w.h - 25), y: u.y * (w.h - 25), z: 0 }, { x: u.x * w.h, y: u.y * w.h, z: 10 });
-          for (const n of OF) { const f = plan.fielders[n]; if (f.acts.some((a) => a.kind === 'leap_miss')) { const q2 = f.at(s); pts.push({ x: q2.x, y: q2.y, z: 0 }); } }
+          for (const n of OF) { const f = plan.fielders[n]; if (f.acts.some((a) => a.kind === 'leap_miss')) { const q2 = planAt(f, s); pts.push({ x: q2.x, y: q2.y, z: 0 }); } }
         } else if (q && s < (plan.flight.tLand ?? 9) + 0.5) pts.push({ x: q.x, y: q.y, z: 0 });
       }
       // an infield play: the bags it throws to are in the frame from contact (a broadcast's high home holds
@@ -1710,7 +1716,7 @@ export class InPlay {
       for (const r of plan.runners) {
         // a runner near his deciding moment, or near the ball (the batter pulling into his base above
         // all), until a moment after he is out or scores
-        const q = r.track.at(s), tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.arrive;
+        const q = planAt(r.track, s), tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.arrive;
         const end = r.out ? (r.outAt ?? 0) + 0.4 : r.scoreAt != null ? r.scoreAt + 0.3 : Infinity;
         const soon = tq != null ? ramp(tq - 1.0, tq - 0.6) * (1 - ramp(tq + 0.4, tq + 0.7)) : 0;
         const by = 1 - clamp((Math.hypot(q.x - ball.x, q.y - ball.y) - 80) / 30, 0, 1);
@@ -1760,7 +1766,7 @@ export class InPlay {
       pts.length = 0;
       pts.push({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 6 });
       const coming = [];
-      for (const r of home) { const q = r.track.at(s); if (Math.hypot(q.x, q.y) < 70) coming.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }); }
+      for (const r of home) { const q = planAt(r.track, s); if (Math.hypot(q.x, q.y) < 70) coming.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }); }
       pts.push(...coming);
       // (near the plate in the air too, not only over the ground: a towering fly 60 ft out and 400 ft up
       // is not the plate camera's, and holding it tilted the low camera up off the run, check-frame.mjs)

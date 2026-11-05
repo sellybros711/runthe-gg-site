@@ -231,13 +231,10 @@ function legDrawn(tau, al, be, la, lb) {
     tags; a runner's arrival, out, run and slide) stay exactly where the plan has him: a ramp with one of them
     inside it is drawn straight, as planned, and so is a run with one inside it whose drawn pull up is longer
     than the plan's (its top speed rises for it, so he is somewhere else all along it). */
-function drawRuns(tr, moments, takes = []) {
-  // (and a pickup after his bobble, when he only shuffles to it, slower than SHUFFLE on average: that ramp, from
-  // TAKE_LEAD before the pickup, is as planned; drawn smooth it slid his set feet, check-jolt.mjs skate fielder
-  // bobble. Held to the slow shuffles, since every ramp into a pickup as planned put a kink back in the run)
-  const inside = (a, b, slow) => moments.some((t) => t > a + 1e-3 && t < b - 1e-3) || (slow && takes.some((t) => t > a + 1e-3 && t - TAKE_LEAD < b - 1e-3));
+function drawRuns(tr, moments) {
+  const inside = (a, b) => moments.some((t) => t > a + 1e-3 && t < b - 1e-3);
   for (const g of new Set(tr.legs.map((l) => l.g))) {
-    if (g.dbe != null && inside(g.t0, g.t0 + g.T, g.total / g.T < SHUFFLE)) { g.dal = g.al; g.dbe = g.be; }
+    if (g.dbe != null && inside(g.t0, g.t0 + g.T)) { g.dal = g.al; g.dbe = g.be; }
     const al = g.dal ?? g.al, be = g.dbe ?? g.be, room = (k) => (k >= 1 || k <= 0 ? 1 : Math.min(LAM, 1 / k));
     let la = al > 0 ? room(al + be) : 0, lb = be > 0 ? room(al + be) : 0;
     // (a run speeding up all the way to its end, a sprint at a ball he only just reaches, a dive or a scoop at
@@ -252,8 +249,8 @@ function drawRuns(tr, moments, takes = []) {
     if (lb && top / (be * g.T) > HARD_BRAKE) lb = 0;
     // (each ramp's own stretch, and again once the other ramp's choice gives it more or less room)
     for (let i = 0; i < 2; i++) {
-      if (la && inside(g.t0, g.t0 + g.T * al * la, g.total / g.T < SHUFFLE)) la = 0;
-      if (lb && inside(g.t0 + g.T * (1 - be * lb), g.t0 + g.T, g.total / g.T < SHUFFLE)) lb = 0;
+      if (la && inside(g.t0, g.t0 + g.T * al * la)) la = 0;
+      if (lb && inside(g.t0 + g.T * (1 - be * lb), g.t0 + g.T)) lb = 0;
       if (la && !lb && be > 0) la = Math.min(LAM, (1 - be) / al);
       if (lb && !la && al > 0) lb = Math.min(LAM, (1 - al) / be);
     }
@@ -271,8 +268,6 @@ const STOP_S = 0.3;
 const STOP_DRAWN = 0.6;
 // a ramp harder than these as planned (ft/s^2) is drawn as planned (drawRuns)
 const HARD_PUSH = 30, HARD_BRAKE = 60;
-// a fielder's slow shuffle (ft/s) into a pickup after his bobble, from this long before it, is drawn as planned (drawRuns)
-const TAKE_LEAD = 0.6, SHUFFLE = 4;
 
 /** A run at full speed that ends standing (Track.settle, Track.stopAtEnd): its top speed rises to fit the
     stop into the same time, by no more than a sixth. The plan's over STOP_S (al, be), the drawn one over
@@ -592,14 +587,13 @@ export function planPlay(pr, o = {}) {
     the plan at his own moments. */
 function drawAll(p) {
   const num = (t) => typeof t === 'number' && isFinite(t) && t < 100;
-    const takes = (n) => { const m = [], acts = p.fielders[n].acts; acts.forEach((a, k) => { if (a.kind === 'pickup' && acts[k - 1] && acts[k - 1].kind === 'bobble') m.push(a.t); }); return m.filter(num); };
   const of = (n) => {
     const m = [];
     for (const a of p.fielders[n].acts) m.push(a.t, a.tagAt);
     for (const sg of p.segs || []) if (sg.kind === 'throw') { if (sg.from === n) m.push(sg.t0); if (sg.to === n) m.push(sg.t1 - 0.1, sg.t1); }
     return m.filter(num);
   };
-  for (const [n, tr] of Object.entries(p.fielders || {})) if (tr && tr.legs) { drawRuns(tr, of(+n), takes(+n)); tr.drawn = true; }
+  for (const [n, tr] of Object.entries(p.fielders || {})) if (tr && tr.legs) { drawRuns(tr, of(+n)); tr.drawn = true; }
   for (const r of p.runners || []) {
     const tr = r.track;
     if (!tr || !tr.legs) continue;
