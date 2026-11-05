@@ -942,7 +942,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         document.querySelector('.pp-sheet [data-skip]').click(); await sleep(600); }
       const sst = JSON.parse(localStorage.getItem(K)); out.skipped = (sst.gsk || []).indexOf(keep[0].id) >= 0 && (sst.gym || []).indexOf(keep[0].id) < 0;
       out.skipPlays = window.RTT_PUTT._state().screen === 'play' && !window.RTT_PUTT._keeperBlocks(n);
-      window.RTT_PUTT.close(); localStorage.setItem(K, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem(K)), { cur:null })));
+      window.RTT_PUTT.close(); rec([]); openPutt(); await sleep(300);
       // chest odds: fixed for a key, and near the table over many chests
       const R = window.RTT_PUTT._chestRoll, cnt = { coins:0, haul:0, item:0, pack:0 }; out.fixed = R('main:7', 'ch0') === R('main:7', 'ch0');
       for (let i = 0; i < 4000; i++) cnt[R('main:' + (i % 270 + 1), 'ch' + i)]++; out.cnt = cnt;
