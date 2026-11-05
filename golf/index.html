@@ -62,10 +62,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=127"></script>
-<script defer src="putt/land.js?v=17"></script>
-<script defer src="putt/hole3d.js?v=20"></script>
-<script defer src="putt/trip3d.js?v=4"></script>
+<script defer src="putt/putt.js?v=128"></script>
+<script defer src="putt/land.js?v=18"></script>
+<script defer src="putt/hole3d.js?v=21"></script>
+<script defer src="putt/trip3d.js?v=5"></script>
 <script defer src="putt/gyms.js?v=4"></script>
 <script defer src="putt/gymkinds/push.js?v=2"></script>
 <script defer src="putt/gymkinds/trickshot.js?v=1"></script>
@@ -81,12 +81,13 @@
 <script defer src="putt/gymkinds/gravity.js?v=1"></script>
 <script defer src="putt/gymkinds/air.js?v=1"></script>
 <script defer src="putt/gymkinds/orbit.js?v=1"></script>
-<script defer src="putt/trail.js?v=50"></script>
-<script defer src="putt/mapland.js?v=9"></script>
+<script defer src="putt/gymkinds/tint.js?v=1"></script>
+<script defer src="putt/trail.js?v=51"></script>
+<script defer src="putt/mapland.js?v=10"></script>
 <!-- Share clips of a hole's putts from the card after it (reads putt.js, never changes it). -->
 <script defer src="putt/clips.js?v=2"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=26"></script>
+<script defer src="golfer3d.js?v=27"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11347,6 +11348,8 @@ const PP_REWARDS=[
  {cat:'cleats',id:'ppmarsboots',name:'Mars Boots',hist:'A Putt Putt world prize'},
  {cat:'ball',id:'ppsaturn',name:'Saturn Ball',hist:'A Putt Putt world prize',col:'#e8c88c',tracer:{g:'rgba(255,217,138,.55)',c:'#bfe6ff'}},
  {cat:'ew',id:'pptitangoggles',name:'Titan Goggles',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppprism',name:'Prism Ball',hist:'A Putt Putt world prize',col:'#9ff0ff',tracer:{g:'rgba(159,240,255,.55)',c:'#c8a8ff'}},
+ {cat:'ew',id:'ppcrystalspecs',name:'Crystal Specs',hist:'A Putt Putt world prize'},
  {cat:'putter',id:'pptusk',name:'Mammoth Tusk Putter',hist:'A Putt Putt world prize'},
  {cat:'ew',id:'ppsnowgoggles',name:'Snow Goggles',hist:'A Putt Putt world prize'},
  {cat:'hw',id:'pphallowscrown',name:'Hallows Crown',hist:'A Members Tour prize'},
@@ -12114,7 +12117,7 @@ Object.assign(COS_BOOST,{
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
   'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'hw:ppastrohelmet':{sht:2},
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
-  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}
+  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}, 'bl:ppprism':{sht:2}, 'ew:ppcrystalspecs':{acc:2}
 });
 // THE PRO SHOP LINE (PRO_LINE): the ladder's power for its rarity, a common 1 point and a rare 2, leaning on the stats gear
 // touches least (Bunker, Short Game, Accuracy, Scrambling). Its outerwear and legwear are style and carry none.
@@ -12204,7 +12207,7 @@ function cosmeticItems(cat){
   if(cat==='pants') return PANTS.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'no1cap',name:'World No.1 Cap',hw:1,hist:'Reach World No.1'}].concat(ppRewardItems('hw'),proLineItems('hw'));
-  if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}].concat(ppRewardItems('ew'));
+  if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Crystal Specs',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}].concat(ppRewardItems('ew'));
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
   if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'},{id:'scarecrow',name:'Scarecrow',body:1,hist:'Harvest Classic collection reward'}];
   if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}].concat(ppRewardItems('top'),proLineItems('top'));   // CS411
@@ -15385,9 +15388,9 @@ function replayTour(){
 const FT_SCREENS=['title','protour','putthub','me'];
 const FT_HUBS=['protour','putthub','me'];
 const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
-const FT_PLATE_V=4;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
+const FT_PLATE_V=5;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
 // the worlds that have a picture for the home's Putt Putt side. A world added without one shows the Clubhouse
-const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars','saturn'];
+const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars','saturn','crystara'];
 // THE FIRST TEE IS THE HOME, for everybody (live since 2026-10-18; the classic home and the PUTT_LIVE switch were
 // removed the same day, at the owner's call). It does not wait for putt.js: its Putt Putt side is drawn once the module
 // has run.
@@ -18317,6 +18320,8 @@ PXG_EW_PAL.ppaviatorgoggles={'#':'#181019','@':'#ffe08a','%':'#d9a441','&':'#8f6
 // Snow Goggles
 PXG_EYEWEAR.ppsnowgoggles=pxgRows([[12,15,'###############'],[13,14,'#@@@%%%%%%%%%%%&#'],[14,10,'#+=#@%PPPPPPffPfPPP%&#=+#'],[15,10,'#~+#@%QQQQQffQfQQQQ&&#+~#'],[16,10,'#~~#%&RRRRfRRRRRRRR&&#~~#'],[17,13,'#%&OOOOOO###OOOOO&#'],[18,14,'#&&&&&#...#&&&**#'],[19,15,'#####.....#####']]);
 PXG_EYEWEAR.pptitangoggles=PXG_EYEWEAR.ppsnowgoggles;
+PXG_EYEWEAR.ppcrystalspecs=PXG_EYEWEAR.pppixelshades;
+PXG_EW_PAL.ppcrystalspecs=Object.assign({},PXG_EW_PAL.pppixelshades,{'%':'#c8a8ff',Q:'#9ff0ff'});
 PXG_EW_PAL.pptitangoggles={'#':'#181019','@':'#fff2d0','%':'#e8c88c','&':'#b8905a','*':'#8a6a3a','+':'#ffd98a','=':'#fff2d0','~':'#a87a40',f:'#ffffff',P:'#ffd0a0',Q:'#ffa860',R:'#e8742a',O:'#a83a14'};
 PXG_EW_PAL.ppsnowgoggles={'#':'#181019','@':'#ffffff','%':'#e6eef8','&':'#b4c4da','*':'#8496b4','+':'#d8eefa','=':'#ffffff','~':'#94b8d4',f:'#ffffff',P:'#e4f4ff',Q:'#a6d8f6',R:'#8fa6f0',O:'#8a62dc'};
 // Phantom Mask
@@ -18340,6 +18345,8 @@ PXG_BALL.ppmars=pxgRows([[46,36,'oo'],[47,35,'oWWo'],[48,34,'ohCdCo'],[49,34,'oC
 PXG_BALL_PAL.ppmars={o:'#4a160a',C:'#c8562a',h:'#e8865a',d:'#7a2a14',s:'#3a0e06',W:'#fff6ee',T:'#e8ebf0'};
 PXG_BALL.ppsaturn=pxgRows([[46,36,'oo'],[47,35,'ohCo'],[48,34,'ohCCCo'],[49,34,'obbbbo'],[50,32,'RRoCCCCoRR'],[51,34,'obbsbo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.ppsaturn={o:'#5a4220',C:'#e8c88c',h:'#fff2d0',b:'#c8a060',s:'#a87a40',R:'#bfe6ff',W:'#ffffff',T:'#e8ebf0'};
+PXG_BALL.ppprism=pxgRows([[46,36,'oo'],[47,35,'oWCo'],[48,34,'oWCbbo'],[49,34,'ohCbbo'],[50,34,'ohhsCo'],[51,34,'oCssbo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppprism={o:'#3a2a6a',C:'#9ff0ff',h:'#c8a8ff',b:'#8ae0ff',s:'#8a5ad8',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL_PAL.ppdinoegg={o:'#4e5a2a',C:'#f2ecc4',h:'#fffbea',s:'#c8c690',g:'#5aae3a',d:'#2f6e2a',T:'#e8ebf0'};
 // Gold Nugget Ball
 PXG_BALL.ppnugget=pxgRows([[46,33,'*...oo'],[47,35,'oohCo'],[48,34,'ohwCCso'],[49,34,'oCCdCo'],[50,33,'ohCCswo'],[51,34,'osCddo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);

@@ -380,12 +380,34 @@
     } catch (e) { return { error: 'failed' }; }
   }
 
+  /* WHETHER THIS ACCOUNT HAS A LINEUP IN FOR A WEEK, for the results screen's Fantasy card,
+   * which must not sell the week to somebody already in it from another device. The same
+   * function the college Fantasy page asks (`cfb_fantasy_my_entry`, supabase/128_cfb_fantasy.sql).
+   * true, false, or null for signed out, an error or no answer in four seconds: null is no
+   * opinion, and the card then goes on the browser's own record. The shape matches
+   * football/auth.js, whose `fantasyMyEntry` takes the competition's prefix. This file is the
+   * college game's only, so the default is the college prefix. */
+  async function fantasyMyEntry(season, week, prefix) {
+    if (!sb || !session) return null;
+    try {
+      const r = await Promise.race([
+        sb.rpc((prefix || 'cfb_fantasy_') + 'my_entry', { p_season: season, p_week: week }),
+        new Promise((res) => setTimeout(() => res(null), 4000)),
+      ]);
+      if (r && !r.error && Array.isArray(r.data)) return r.data.length > 0;
+    } catch (e) {}
+    return null;
+  }
+
   window.PS_CFB_AUTH = {
-    /* 2: `premiumPlans`, and billingPortal takes a scope. */
-    API_VERSION: 2,
+    /* 2: `premiumPlans`, and billingPortal takes a scope.
+       3: `fantasyMyEntry`, which the results screen's Fantasy card asks for, and only if it
+       is here, so a browser holding the version before this one degrades to its own record. */
+    API_VERSION: 3,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
     premiumProducts, premiumUnlocks, premiumPlans, billingPortal,
+    fantasyMyEntry,
   };
 })();
