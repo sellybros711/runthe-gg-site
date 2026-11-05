@@ -21,6 +21,7 @@ name: Shut The Door lab checks
 #   pitch    every pack, pitch, side and crossing, phone and desktop            check-pitch-path.mjs
 #   foul     every seeded foul on every pack and every shape's grid (pure)      check-foul.mjs
 #   gait     every case: each run's start and stop as drawn (pure)              check-gait.mjs
+#   idle     the life at the set runs, is capped and hushed, and the pitch is exact  check-idle.mjs
 #
 # Runs locally, unchanged (add --resume to pick up a killed run; lab/pipeline/checkpoint.mjs). No
 # secrets, no deploy.
@@ -78,6 +79,9 @@ jobs:
           - name: gait
             run: node shut-the-door/lab/pipeline/check-gait.mjs
             browser: false
+          - name: idle
+            run: node shut-the-door/lab/pipeline/check-idle.mjs
+            browser: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
