@@ -20,10 +20,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=28';
 import { SHADE } from './shade-data.js?v=5';
-import { Crew } from './fielders.js?v=12';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=32';
+import { Crew } from './fielders.js?v=14';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=33';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=44';
+import { kitFor } from './people.js?v=45';
 import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 
@@ -494,7 +494,10 @@ export class InPlay {
   stride(tab, s, run, cycle, spd) {
     const amp = clamp(spd / 26, 0, 1.1);
     if (!this.crew.clips || !tab) return { phase: 2 * Math.PI * run / cycle, amp };
-    const until = tab.until(s);
+    // (seconds to standing only while it counts down: at the frame he sets off, the table jumps from 0 to the next
+    // stop, and read between its frames that is a blip of the stop clip)
+    let until = tab.until(s);
+    if (until < 30 && Math.abs((tab.until(s - 0.05) - tab.until(s + 0.05)) - 0.1) > 0.03) until = 99;
     return { phase: tab.at(s), amp, legs: tab.shorten ? tab.legs(s) : undefined, shorten: tab.shorten, acc: tab.acc(s), since: tab.since(s), until: until < 30 ? until : null };
   }
 
@@ -523,6 +526,9 @@ export class InPlay {
     // legs by speed. It carries him into a ball picked up on the run, the fit pulling him to it, and any other
     // stride there slid his planted feet, check-jolt.mjs skate fielder pickup. His lean back into it stays)
     const sr = this.stride(tr.phase, s, st.run, CYCLE.fielder, spd);
+    // (the braking steps of the stop clip are for a fielder who simply pulls up: one with a moment of his own just
+    // before, at or just after his stop (a take, a throw, a set) has the pose that moment asks, check-jolt.mjs)
+    if (sr.until != null && acts.some((a) => a.t > s - 2.5 && a.t < s + sr.until + 2.5)) sr.until = null;
     if (glide && this.crew.clips) { sr.phase += 2 * Math.PI * glide / this.crew.clips.run.strideFt; sr.legs = undefined; sr.shorten = false; }
     // (his lean into a push or a pull up gives way over the 0.3 s before a ball he takes or sets for, and comes
     // back after: he sets up for it upright. Leaning back into a set, his head went down with the crouch at
@@ -637,7 +643,13 @@ export class InPlay {
           }
           f.reaching = s < t + 0.02;
           // a high one at the wall: he goes up for it
-          if (a.wall || q.z > 6.8) lift = Math.max(lift, Math.max(0, q.z - 6.2) * 0.9 * bump(s, t - 0.3, t, t, t + 0.3));
+          if (a.wall || q.z > 6.8) {
+            const kl = bump(s, t - 0.3, t, t, t + 0.3);
+            lift = Math.max(lift, Math.max(0, q.z - 6.2) * 0.9 * kl);
+            // (the goalkeeper's leap, at its apex, over his legs and trunk as high as the catch is)
+            const kc = kl * clamp((q.z - 6.2) / 2, 0, 1);
+            if (kc > (spec.leapW || 0)) { spec.leapW = kc; spec.leapT = 1.3 + (s - t); }
+          }
           if (a.wall || q.z > 7) spec.armsUp = 0;
           // a shoestring catch (the ball under his knees, out of reach bent over): he lays out for it
           if (q.z < 2.4) {
@@ -761,7 +773,8 @@ export class InPlay {
       }
       if (a.kind === 'leap_miss') {
         const k = bump(s, t - 0.3, t - 0.02, t + 0.05, t + 0.4);
-        if (k > 0) { lift = Math.max(lift, 2.2 * k); spec.armsUp = k; faceYaw = turnTo(faceYaw, heading(st, a.at), k); }
+        // (the goalkeeper's leap at its apex, 1.3 s into the clip, over his legs and trunk; his arms stay up)
+        if (k > 0) { lift = Math.max(lift, 2.2 * k); spec.armsUp = k; spec.leapW = Math.max(spec.leapW || 0, k); spec.leapT = 1.3 + (s - t); faceYaw = turnTo(faceYaw, heading(st, a.at), k); }
       }
     }
     // a throw coming to him with no act of its own (the cutoff man taking a throw in): his glove
@@ -1207,7 +1220,8 @@ export class InPlay {
     // the slide: feet first over his last few strides, down a beat, then up
     if (r.slide != null) {
       const t = r.slide, k = bump(s, t - 0.5, t - 0.28, t + 0.55, t + 1.0);
-      if (k > 0) { spec.slide = k; spec.run.amp *= 1 - k; }
+      // (the clip's feet reach the dirt 0.53 s in: that is 0.3 s before the plan's slide, which the bump has full)
+      if (k > 0) { spec.slide = k; spec.slideT = s - (t - 0.83); spec.run.amp *= 1 - k; }
     }
     // (his run's heading at speed, the ball as he slows to a stop: blended by speed, so pulling up on a
     // bag with the ball behind him he turns to it, never a half turn in one frame)

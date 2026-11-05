@@ -19,7 +19,7 @@ export const ASSETS = {
   'bio.json': '3ce6273c86',
   'catcher.glb': '81c9aafc01',
   'env_256.hdr': 'b069d60e9b',
-  'fielder.glb': 'd58d54f7c5',
+  'fielder.glb': '260d3bd862',
   'fparm.glb': '8dd8eef3e7',
   'hero.webp': 'a8b96e3af7',
   'packs/index.json': 'e160e4ec92',

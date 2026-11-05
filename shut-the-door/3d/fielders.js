@@ -488,6 +488,12 @@ const ACC_N = 6, ACC_MAX = 30;
 const LEAN_PUSH = 0.3, LEAN_BRAKE = 0.25, G_FT = 32.17;
 // a start or stop clip gives way to the cycle over its last TRANS_OUT seconds (Figure.transition)
 const TRANS_OUT = 0.25;
+// the braking steps of Run To Stop are played over the last STOP_SPAN seconds before he stands (the plan's pull up
+// is 0.6 s where it can be), the clip's own length when that is shorter
+const STOP_SPAN = 0.8, STOP_OUT = 0.2;
+// the pose layers of a clip held over the run (slide, leap): a leap lays only the legs and trunk (the arms are his
+// glove's reach or his raised arms)
+const LEAP_BONES = new Set(['pelvis', 'spine_01', 'spine_02', 'spine_03', ...['l', 'r'].flatMap((s) => ['thigh', 'calf', 'foot', 'ball'].map((b) => `${b}_${s}`))]);
 // standing still: under this speed (ft/s)
 const STILL_V = 0.3;
 const PLAIN_IN = 0.3;
@@ -695,6 +701,7 @@ export class Figure {
       dive     0..1    the body laid out forward (the root pitched), arms out to the glove
       armsUp   0..1    a leap: arms straight up
       slide    0..1    feet first into a bag: legs out in front, the trunk laid back, the seat on the dirt
+               (slideT: seconds into Mixamo's Running Slide when the clip is there; leapW, leapT the same for a leap's legs and trunk)
       signal   { kind: 'out' | 'safe', k: 0..1 through it, w: 0..1 }  an umpire's call: out, the right fist up
                and a hammer down; safe, both arms swept out flat to the sides (laid over everything else)
       settle   0..1    the run's capture gives way to this pose (getting down to field a ball) */
@@ -804,7 +811,7 @@ export class Figure {
     if (!layered) root.updateMatrixWorld(true);
     const low = Math.min(wpos(B.foot_l).y, wpos(B.foot_r).y, wpos(B.ball_l).y + 0.03, wpos(B.ball_r).y + 0.03);
     this.g0 = low - (this.ankle0 - this.crew.t.minY);       // the ground's height in the model frame
-    if (sp.slide > 0) {
+    if (sp.slide > 0 && !(clips && clips.slide && sp.slideT != null)) {
       // sliding, the seat is on the dirt: the ground is just under the hips
       const seat = wpos(B.pelvis).y - 0.13 / this.scale;
       this.g0 += (seat - this.g0) * sp.slide;
@@ -831,7 +838,7 @@ export class Figure {
       this.locks.ph = ph;
       // (it gives way as the stride does: to a slide as the slide comes in, never cut in a frame, a held foot let
       // go at the first frame of a slide at 70 m/s)
-      const c = Math.cos(this.yaw), sn = Math.sin(this.yaw), k = FT / this.scale, kr = smooth((R.runW - 0.5) / 0.3) * (1 - clamp(sp.slide || 0, 0, 1));
+      const c = Math.cos(this.yaw), sn = Math.sin(this.yaw), k = FT / this.scale, kr = smooth((R.runW - 0.5) / 0.3) * (1 - clamp(sp.slide || 0, 0, 1)) * (1 - (this.stopW || 0));
       for (const s of ['l', 'r']) {
         let w = 0, ws = 0;
         for (const name of ['jog', 'run', 'sprint']) {
@@ -974,6 +981,19 @@ export class Figure {
       for (let i = 0; i < n; i++) if (UPPER.has(L[i].name)) L[i].quaternion.slerp(qa[i], idleW);
       any = true;
     }
+    // the slide (Mixamo's Running Slide, in place) over everything else by sp.slide, at clip time sp.slideT; a leap
+    // (the goalkeeper's catch, at its apex) over the legs and trunk by sp.leapW, at sp.leapT
+    for (const [key, w, t, only] of [['slide', sp.slide, sp.slideT, null], ['leap', sp.leapW, sp.leapT, LEAP_BONES]]) {
+      const c = C[key];
+      if (!c || !(w > 0.001) || t == null) continue;
+      for (let i = 0; i < n; i++) qa[i].copy(L[i].quaternion);
+      const pc = V();
+      this.sample(c, clamp(t, 0, c.dur), qa, pc);
+      const k = clamp(w, 0, 1);
+      for (let i = 0; i < n; i++) if (!only || only.has(L[i].name)) L[i].quaternion.slerp(qa[i], k);
+      if (!only && c.p0) pel.position.addScaledVector(pc.sub(c.p0), k);
+      any = true;
+    }
     if (useThrow) {
       // the pitch's trunk and arms, its release (0.9 s into the clip) on the plan's
       const c = C.throw, t = clamp(0.9 + (sp.throw - 1) * 0.55, 0, c.dur);
@@ -996,14 +1016,22 @@ export class Figure {
       itself starts and stops, shortened by legShare. */
   transition(sp, qa, pos) {
     const C = this.crew.clips, r = sp.run, L = this.list, n = L.length;
+    this.stopW = 0;
     for (const [key, t] of [['start', r.since], ['stop', r.until]]) {
       const c = C[key];
       if (!c || t == null || !(t >= 0) || t > c.dur) continue;
-      const w = 1 - smooth((t - (c.dur - TRANS_OUT)) / TRANS_OUT), qc = this.qc, pc = V();
+      // (a stop plays over the last STOP_SPAN seconds: its clip time runs a little fast when the plan's pull up is shorter)
+      const span = key === 'stop' ? Math.min(c.dur, STOP_SPAN) : c.dur;
+      if (t > span) continue;
+      const tc = t * (c.dur / span);
+      // (a stop gives itself up to the standing pose as he stands, over STOP_OUT: standing, until is 0 and stays 0, and
+      // when he sets off it jumps to the next stop, so a weight of 1 there was cut in a frame)
+      const w = (1 - smooth((tc - (c.dur - TRANS_OUT)) / TRANS_OUT)) * (key === 'stop' ? smooth(t / STOP_OUT) : 1), qc = this.qc, pc = V();
       if (!(w > 0.001)) continue;
       for (let i = 0; i < n; i++) qc[i].copy(qa[i]);
-      this.sample(c, key === 'start' ? t : c.dur - t, qc, pc);
+      this.sample(c, key === 'start' ? tc : c.dur - tc, qc, pc);
       for (let i = 0; i < n; i++) qa[i].slerp(qc[i], w);
+      if (key === 'stop') this.stopW = w;
       if (c.p0) pos.lerp(pc.sub(c.p0), w);
     }
   }

@@ -276,7 +276,11 @@ PEOPLE = {
                ('run', 'mixamo/Fast_Run.fbx', 1, 17, False, 'relaxed', 1.0),
                ('jog', 'mixamo/Jog_Forward.fbx', 1, 26, False, 'relaxed', 1.0),
                ('idle', 'mixamo/Baseball_Milling_Idle.fbx', 121, 201, False, 'relaxed', 1.0),
-               ('throw', '124/124_01.bvh', 85, 140, False, {'l': 'relaxed', 'r': 'grip'}, 1.0)],
+               ('throw', '124/124_01.bvh', 85, 140, False, {'l': 'relaxed', 'r': 'grip'}, 1.0),
+               # 2026-11-05 clips (30 fps files, every frame, in place: the pelvis keeps its height, not its travel)
+               ('stop', 'mixamo/Run_To_Stop.fbx', 1, 36, False, 'relaxed', 1.0, {'inplace': True}),
+               ('slide', 'mixamo/Running_Slide.fbx', 1, 56, False, 'relaxed', 1.0, {'inplace': True}),
+               ('leap', 'mixamo/Goalkeeper_Catch.fbx', 55, 125, False, 'relaxed', 1.0, {'inplace': True})],
     ),
     'umpire': dict(
         name='umpire', skin='middleage_caucasian_male', skin_size=1024,
@@ -310,6 +314,7 @@ def build(who):
         bpy.data.objects.remove(full, do_unlink=True)
     for (clip, path, a, b, mirror, hands, *rest) in cfg['clips']:
         kw = {'speed': rest[0]} if rest else {}
+        if len(rest) > 1: kw.update(rest[1])
         if path.endswith('.fbx'):
             retarget.apply_fbx(arm, f'{ASSETS}/{path}', clip, a, b, mirror=mirror, hands=hands, **kw)
         else:
