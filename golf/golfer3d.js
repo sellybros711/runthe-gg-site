@@ -1116,7 +1116,7 @@
      the page's PXG_EW_PAL): the frame, the lens, a strap, a trim and the inside of a mask. The Phantom Mask is its
      own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
   const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
-    ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'},
+    ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'},
     ppphantommask:{as:'mask',frame:'%',trim:'*',inner:'a',mark:'=',strap:'+'} };
   function ewColoursPP(d,EP){ const o={}; for(const k of ['frame','lens','strap','trim','inner','mark']) if(d[k]&&EP[d[k]]) o[k]='x:'+EP[d[k]];
     o.lens=o.lens||'x:#14161e'; o.frame=o.frame||'x:#26272d'; return o; }
@@ -1769,6 +1769,9 @@
     // the Saturn Ball: Saturn's cloud bands in cream and gold, a storm spot, and its rings as a bright tilted band across it
     ppsaturn:{ f:(p,P)=>{ const t=p[1]+0.28*p[0]; if(Math.abs(t)<0.075&&p[2]>-0.1) return {c:Math.abs(t)<0.03?P.W:P.R,gloss:3};
       if(Math.hypot(p[0]+0.35,p[1]+0.35)<0.12&&p[2]>0) return {c:P.s,gloss:1}; const k=Math.floor((p[1]+1)*6)%3; return {c:k===0?P.C:k===1?P.b:P.h,gloss:1}; } },
+    // the Prism Ball: clear crystal cut in facets, each a shade of violet, cyan or white, a bright edge between them
+    ppprism:{ f:(p,P)=>{ const q=[Math.round(p[0]*2.2),Math.round(p[1]*2.2),Math.round(p[2]*2.2)], k=((q[0]*7+q[1]*3+q[2]*5)%4+4)%4;
+      const e=Math.abs(p[0]*2.2-q[0])+Math.abs(p[1]*2.2-q[1])+Math.abs(p[2]*2.2-q[2]); if(e>1.2) return {c:P.W,gloss:3}; return {c:k===0?P.C:k===1?P.b:k===2?P.h:P.s,gloss:3}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};
