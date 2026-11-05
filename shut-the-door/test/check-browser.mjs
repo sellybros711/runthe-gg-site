@@ -113,6 +113,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
+import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
@@ -1591,15 +1593,54 @@ const SWEEP = [[390, 844], [844, 390], [768, 1024], [900, 900], [1000, 1020], [1
    nobody could aim and THROW never lit. At these the zone and the plate must be on screen and clear of
    the HUD, with every one of the 25 cells tappable (38 px at least); the hitter may run under a panel. */
 const SHORT = [[360, 640], [320, 568]];
+/* THE CHALLENGE LABEL (QA, 2026-11-05: an iPhone read "HALLENG"). The button clips, so a label wider
+   than its room loses both ends. Measured with the real Inter the page loads (the rest of the check
+   serves the fonts empty), at the browser check's sizes and the common iPhones. */
+const CHAL = [[320, 568], [375, 667], [375, 553], [390, 844], [393, 852], [430, 932], [844, 390], [768, 1024], [1440, 900]];
+/* Inter as Google serves it to Chromium (one variable woff2 for latin), fetched once and kept in the
+   temp folder; without the network, the Inter a machine has installed (static weights). null when
+   neither is there, and the label check then fails rather than measure another font. */
+function realInter() {
+  const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+  const dir = path.join(os.tmpdir(), 'std-check-inter'), file = path.join(dir, 'inter-latin.woff2');
+  const face = (w, url, fmt) => `@font-face{font-family:'Inter';font-style:normal;font-weight:${w};src:url(${url}) format('${fmt}');}`;
+  const W = [400, 500, 600, 700];
+  try {
+    if (!fs.existsSync(file)) {
+      const css = execFileSync('curl', ['-sSf', '--max-time', '20', '-A', UA, 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'], { encoding: 'utf8' });
+      const latin = css.split('/* latin */')[1];
+      const url = latin && (latin.match(/url\((https:[^)]+\.woff2)\)/) || [])[1];
+      if (!url) throw new Error('no latin face');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(file + '.part', execFileSync('curl', ['-sSf', '--max-time', '30', url]));
+      fs.renameSync(file + '.part', file);
+    }
+    return { from: 'Google Fonts', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/latin.woff2', 'woff2')).join('\n'), files: { 'latin.woff2': fs.readFileSync(file) }, type: 'font/woff2' };
+  } catch (e) {}
+  const sys = '/usr/share/fonts/opentype/inter', N = { 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold' };
+  if (W.every((w) => fs.existsSync(path.join(sys, 'Inter-' + N[w] + '.otf')))) {
+    const files = {};
+    for (const w of W) files[w + '.otf'] = fs.readFileSync(path.join(sys, 'Inter-' + N[w] + '.otf'));
+    return { from: 'the installed Inter', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/' + w + '.otf', 'opentype')).join('\n'), files, type: 'font/otf' };
+  }
+  return null;
+}
 async function sizeSweep() {
   console.log('\nevery window size');
   step('16 the window sizes', 900);
   const ctx = await browser.newContext({ viewport: { width: 1000, height: 1020 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   await page.addInitScript(STAGE_TEST);
+  const inter = realInter();
   await page.route('**/*', (route) => {
     const u = new URL(route.request().url());
     if (u.hostname === '127.0.0.1') return route.continue();
+    /* the real Inter here (the challenge label is measured with it), the rest of the fonts empty */
+    if (inter && u.hostname === 'fonts.googleapis.com' && /family=Inter/.test(u.search)) return route.fulfill({ status: 200, contentType: 'text/css', body: inter.css });
+    if (inter && u.hostname === 'fonts.gstatic.com' && u.pathname.startsWith('/std-inter/')) {
+      const f = inter.files[u.pathname.slice('/std-inter/'.length)];
+      if (f) return route.fulfill({ status: 200, contentType: inter.type, body: f, headers: { 'access-control-allow-origin': '*' } });
+    }
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
@@ -1658,6 +1699,31 @@ async function sizeSweep() {
     ok(m.over.length === 0 && m.cut.length === 0, `16 ${w}x${h}: the zone, all 25 cells and the plate on screen and clear of the HUD (zone x ${m.zone.join(' to ')})` +
       (m.over.length ? ' (' + m.over.join(', ') + ')' : '') + (m.cut.length ? ' (cut: ' + m.cut.join(', ') + ')' : ''));
     ok(m.n === 25 && m.cell[0] >= 38 && m.cell[1] >= 38, `16 ${w}x${h}: cells stay tappable (${Math.round(m.cell[0])}x${Math.round(m.cell[1])}, 38 at least)`);
+  }
+  /* the challenge button as the game shows it (ui.js absButton: the button unhidden, the pad abs-live),
+     put back after: the full word CHALLENGE inside its button, on one line, 38 px tall at least */
+  ok(!!inter, '16 the real Inter for the challenge label' + (inter ? ' (' + inter.from + ')' : ': neither Google Fonts nor an installed Inter'));
+  for (const [w, h] of inter ? CHAL : []) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(400);
+    const m = await page.evaluate(async () => {
+      await document.fonts.load('700 18px Inter');
+      const b = document.getElementById('m-abs-b'), pad = document.getElementById('m-pad'), lab = b.querySelector('b');
+      const was = [b.hidden, pad.classList.contains('abs-live')];
+      b.hidden = false; pad.classList.add('abs-live');
+      const cs = getComputedStyle(b), r = b.getBoundingClientRect(), rg = document.createRange();
+      rg.selectNodeContents(lab);
+      const t = rg.getBoundingClientRect(), lines = rg.getClientRects().length;
+      const room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const inter = document.fonts.check('700 ' + getComputedStyle(lab).fontSize + ' Inter') && [...document.fonts].some((f) => /^['"]?Inter['"]?$/.test(f.family) && f.status === 'loaded');
+      const out = { text: lab.textContent, inter, lines, label: +t.width.toFixed(1), sw: lab.scrollWidth, room: +room.toFixed(1),
+        bsw: b.scrollWidth, bcw: b.clientWidth, inside: t.left >= r.left + 1 && t.right <= r.right - 1, h: Math.round(r.height), fs: getComputedStyle(lab).fontSize };
+      b.hidden = was[0]; pad.classList.toggle('abs-live', was[1]);
+      return out;
+    });
+    ok(m.inter && m.text.toUpperCase() === 'CHALLENGE' && m.lines === 1 && m.sw <= m.room && m.label <= m.room && m.bsw <= m.bcw && m.inside && m.h >= 38,
+      `16 ${w}x${h}: CHALLENGE fits its button (label ${m.label} px in ${m.room} of room at ${m.fs}, scrollWidth ${m.sw}, ${m.h} px tall)` +
+      (m.inter ? '' : ' (not measured in Inter)') + (m.lines !== 1 ? ' (on ' + m.lines + ' lines)' : ''));
   }
   await ctx.close();
 }

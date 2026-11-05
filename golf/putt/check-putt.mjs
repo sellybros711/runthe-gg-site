@@ -1697,6 +1697,38 @@ if (!args.includes('--no-browser')){
       claim(ts.won && ts.sunk && ts.restart, `the recorded route, putted in the room, downs the bottles in order, drops and opens the vault; Restart sets it up again (${JSON.stringify([ts.won, ts.sunk, ts.restart])})`);
       claim(ts.out.n === 6 && ts.out.stuck && ts.out.lit && ts.out.more, `out of strokes, no more putts, and Restart lights up (${JSON.stringify(ts.out)})`);
       claim(ts.lives[0] === ts.lives[1], `a trick shot room never costs a life, won or out of strokes (${ts.lives.join(' then ')})`); }
+    // SHARE A CLIP (golf/putt/clips.js). Hole 1 played to the end in two putts, on a phone: the card offers the
+    // whole hole and each putt, every clip with something in it, and the clip decodes. Then the same hole with no
+    // MediaRecorder at all: it plays and ends the same, and the card has no share row.
+    { const clipRun = async noRec => { const cx = await b.newContext({ viewport:{ width:390, height:844 }, deviceScaleFactor:2, isMobile:true, hasTouch:true }), p2 = await cx.newPage();
+        if (noRec) await p2.addInitScript(() => { delete window.MediaRecorder; });
+        p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
+        await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
+        await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_CLIPS && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
+        await p2.evaluate(() => { openPutt(); window.RTT_PUTT._level(1); });
+        await p2.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && P.state === 'aim'; }, null, { timeout:120000 });
+        await p2.waitForTimeout(600);
+        const a1 = JSON.parse(fs.readFileSync(new URL('./routes.json', import.meta.url), 'utf8'))['main:1'][0];
+        // putt 1 is short and stays out; the ball goes back on the tee and putt 2 is the recorded ace
+        await p2.evaluate(a => window.RTT_PUTT._putt(a[0], 6), a1);
+        await p2.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P.state === 'aim' && P.strokes === 1; }, null, { timeout:30000 });
+        await p2.waitForTimeout(800);
+        await p2.evaluate(a => { const P = window.RTT_PUTT._state().play; P.ball = P.C.tee.slice(); window.RTT_PUTT._putt(a[0], a[1]); }, a1);
+        await p2.waitForSelector('.pt-pop', { timeout:30000 });
+        if (noRec) await p2.waitForTimeout(1500); else await p2.waitForSelector('.pt-pop [data-clips]', { timeout:10000 }).catch(() => {});
+        const o = await p2.evaluate(async () => { const S = window.RTT_PUTT._state(), C = window.RTT_PUTT_CLIPS, row = document.querySelector('[data-clips]');
+          const o = { on:C.on(), why:C.why(), strokes:S.play.strokes, sunk:!!S.play.sunk, card:!!document.querySelector('.pt-pop .row [data-a="again"]'), row:!!row, now:C.now(),
+            hole:!!(row && row.querySelector('[data-clip="hole"]')), putts:row ? row.querySelectorAll('.ppc-putts [data-clip]').length : 0 };
+          const v = row && row.querySelector('video');
+          if (v){ await new Promise(r => { if (v.readyState >= 1) r(); else { v.onloadedmetadata = r; setTimeout(r, 3000); } }); o.vw = v.videoWidth; o.vh = v.videoHeight; }
+          return o; });
+        await cx.close(); return o; };
+      const on = await clipRun(false), none = await clipRun(true), sz = on.now ? on.now.putts.map(c => c.size) : [];
+      claim(on.on && on.row && on.hole && on.putts === 2 && sz.length === 2 && sz.every(n => n > 0) && on.now.full > 0 && on.vw > 0 && on.vh > 0,
+        `a hole played to the end offers the whole hole and each putt as a clip, every one with something in it (putts ${sz.join(', ')} bytes, hole ${on.now && on.now.full} bytes, ${on.vw}x${on.vh})`);
+      claim(!none.on && none.why === 'no MediaRecorder' && none.strokes === 2 && none.sunk && none.card && !none.row && none.now === null,
+        `with no MediaRecorder the hole plays and ends the same, and the card has no share row (${JSON.stringify({ on:none.on, strokes:none.strokes, card:none.card, row:none.row })})`); }
+    // end of the clips check
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }
