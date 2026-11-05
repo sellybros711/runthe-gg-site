@@ -259,7 +259,6 @@ export class Crew {
     const LOOP = { sprint: 16 / 30, run: 16 / 30, jog: 25 / 30 };
     const clips = {};
     for (const a of gltf.animations) {
-      if (SKIPCLIPS.includes(a.name)) continue;
       const tracks = [];
       for (const tr of a.tracks) {
         const [node, prop] = tr.name.split('.');
@@ -488,7 +487,6 @@ const ACC_N = 6, ACC_MAX = 30;
 // (a push at 0.5 of it threw a breaking fielder's head forward just over a head's speed, check-jolt.mjs pop fielder -)
 const LEAN_PUSH = 0.3, LEAN_BRAKE = 0.25, G_FT = 32.17;
 // a start or stop clip gives way to the cycle over its last TRANS_OUT seconds (Figure.transition)
-let SKIPCLIPS = ['slide','leap'];
 const TRANS_OUT = 0.25;
 // the braking steps of Run To Stop are played over the last STOP_SPAN seconds before he stands (the plan's pull up
 // is 0.6 s where it can be), the clip's own length when that is shorter
