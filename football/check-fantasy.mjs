@@ -4119,7 +4119,12 @@ console.log('\nTHE LOCK DAY REMINDER COMES UP ONCE, ON THE DAY THE WEEK LOCKS');
   const DAY = LOCK - 3 * 3600 * 1000;
   ok('the fixture morning is the lock\'s own Eastern day', eastern(DAY) === eastern(LOCK),
     eastern(DAY) + ' vs ' + eastern(LOCK));
-  const midnight = Date.parse(eastern(LOCK) + 'T00:00:00-04:00') || Date.parse(eastern(LOCK) + 'T00:00:00-05:00');
+  /* The Eastern midnight that starts the lock's date, whichever offset that date is on. The
+     first version took -04:00 whenever it parsed, which is daylight time only: from the
+     first Sunday in November its minute after midnight was still the day before. */
+  const lockDay = eastern(LOCK);
+  const midnight = ['-05:00', '-04:00'].map((o) => Date.parse(lockDay + 'T00:00:00' + o))
+    .find((t) => eastern(t) === lockDay && eastern(t - 60 * 1000) !== lockDay);
   const TEST = 'window.RTG_FANPROMO_TEST=true;';
   const wait = async (page) => {
     await page.waitForTimeout(4500);
