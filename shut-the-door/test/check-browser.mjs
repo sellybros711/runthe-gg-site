@@ -166,6 +166,36 @@ const SHOT_N = {};
 const nextN = (tag) => { SHOT_N[tag] = (SHOT_N[tag] || 0) + 1; return String(SHOT_N[tag]).padStart(2, '0'); };
 const browser = await pw.chromium.launch(CHROME ? { executablePath: CHROME } : {});
 
+/* THE PINNED DAY. From the vote's first day (modes.js VOTE.EPOCH) the page's daily is candidate A of the
+   vote, which changes every day and is sometimes a two-halves pack (rules 8: the outing then ends on
+   the between-halves card, not the result, so every step that plays a daily to the result timed out).
+   So every page of the check runs on a fixed clock: the first day from the epoch whose default pack is a
+   one-half pack. It stays after the epoch so the vote block and the top 3 are on, and the day does not
+   depend on the real date. The time still flows (setSystemTime, not setFixedTime: the loading screen's cap and the timers read Date.now). Steps 15 and 18 set their own fixed day after this and win. STD_REAL_DAY=1 turns
+   the pin off (the real clock, as a player has it). */
+function pinnedDay() {
+  const M = require(path.join(ROOT, 'shut-the-door/modes.js'));
+  const sch = JSON.parse(fs.readFileSync(path.join(ROOT, 'shut-the-door/data/schedule.json'), 'utf8'));
+  let d = M.VOTE.EPOCH;
+  for (let i = 0; i < 60; i++, d = M.addDays(d, 1)) {
+    const f = path.join(ROOT, 'shut-the-door/data/packs', M.defaultPack(sch, d) + '.json');
+    if (!fs.existsSync(f)) continue;
+    const hs = (JSON.parse(fs.readFileSync(f, 'utf8')).scenario || {}).halves;
+    if (!hs || hs.length <= 1) return d;
+  }
+  throw new Error('no one-half default day within 60 days of the vote epoch');
+}
+const PIN_DAY = process.env.STD_REAL_DAY === '1' ? null : pinnedDay();
+if (PIN_DAY) {
+  console.log('the check plays the day ' + PIN_DAY + ' (a one-half pack), not the real clock');
+  const newContext = browser.newContext.bind(browser);
+  browser.newContext = async (...args) => {
+    const ctx = await newContext(...args), newPage = ctx.newPage.bind(ctx);
+    ctx.newPage = async (...a) => { const pg = await newPage(...a); await pg.clock.setSystemTime(new Date(PIN_DAY + 'T16:00:00Z')); return pg; };
+    return ctx;
+  };
+}
+
 
 /* ---- shared steps ------------------------------------------------------- */
 
@@ -2035,6 +2065,8 @@ async function halves(w, h, skip) {
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
+  /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
+  if (process.env.STD_FIRST === '1') { await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
   if (QUICK) { await run(1440, 900, 'dark'); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
   await bootStuck(390, 844);
