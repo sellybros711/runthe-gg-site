@@ -3219,14 +3219,14 @@
       "sha": "b7717515662f70fc"
     },
     "3d/boot.js": {
-      "v": "95",
-      "sha": "acbd28aa2aeaddde"
+      "v": "96",
+      "sha": "e179c088cae5283b"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "82",
-      "sha": "f76f50d2f380d257"
+      "v": "83",
+      "sha": "dc62b596a19a2381"
     }
   },
   "soccer/index.html": {
@@ -3349,8 +3349,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "96",
-      "sha": "4bd1a0072d72015f"
+      "v": "97",
+      "sha": "4142c7646ed9c1f2"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3399,16 +3399,16 @@
   },
   "shut-the-door/3d/stage.js": {
     "load.js": {
-      "v": "8",
-      "sha": "6740e4ce374039b0"
+      "v": "9",
+      "sha": "e3ef7b9faa1a8e47"
     },
     "park.js": {
-      "v": "15",
-      "sha": "8f2dcbec584c1232"
+      "v": "16",
+      "sha": "31312d5d1b14effc"
     },
     "people.js": {
-      "v": "44",
-      "sha": "5fe647d94dcf8393"
+      "v": "45",
+      "sha": "5e670d4223582899"
     },
     "pitch.js": {
       "v": "14",
@@ -3427,16 +3427,16 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "51",
-      "sha": "94beec1c7ed17094"
+      "v": "52",
+      "sha": "c9ad4a95c426dcb2"
     },
     "preview.js": {
       "v": "12",
       "sha": "b220f6f486908d3b"
     },
     "firstperson.js": {
-      "v": "22",
-      "sha": "ab28cab7a3f518e7"
+      "v": "23",
+      "sha": "05e356e012e604a0"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3447,12 +3447,12 @@
   },
   "shut-the-door/3d/park.js": {
     "field.js": {
-      "v": "13",
-      "sha": "9e301bae63ceee82"
+      "v": "14",
+      "sha": "5ec61e6d80a132df"
     },
     "stands.js": {
-      "v": "16",
-      "sha": "064437e4e54639d8"
+      "v": "17",
+      "sha": "5babd1873cfe9a29"
     },
     "units.js": {
       "v": "1",
@@ -3493,8 +3493,8 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "8",
-      "sha": "6740e4ce374039b0"
+      "v": "9",
+      "sha": "e3ef7b9faa1a8e47"
     },
     "motion.js": {
       "v": "5",
@@ -3541,16 +3541,16 @@
       "sha": "03cd975921e23213"
     },
     "fielders.js": {
-      "v": "12",
-      "sha": "8d32c75d6bb98010"
+      "v": "13",
+      "sha": "8472724234cb2a8f"
     },
     "ballpark.js": {
-      "v": "32",
-      "sha": "a12c979be1474e16"
+      "v": "33",
+      "sha": "5074596d55c27625"
     },
     "people.js": {
-      "v": "44",
-      "sha": "5fe647d94dcf8393"
+      "v": "45",
+      "sha": "5e670d4223582899"
     },
     "looks.js": {
       "v": "6",
@@ -3577,8 +3577,8 @@
       "sha": "e771dbef0b67350e"
     },
     "park.js": {
-      "v": "15",
-      "sha": "8f2dcbec584c1232"
+      "v": "16",
+      "sha": "31312d5d1b14effc"
     },
     "gear3d.js": {
       "v": "4",
@@ -3597,8 +3597,8 @@
       "sha": "7cf9dc9116ed14f1"
     },
     "load.js": {
-      "v": "8",
-      "sha": "6740e4ce374039b0"
+      "v": "9",
+      "sha": "e3ef7b9faa1a8e47"
     },
     "pitch.js": {
       "v": "14",
@@ -3611,8 +3611,8 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "8",
-      "sha": "6740e4ce374039b0"
+      "v": "9",
+      "sha": "e3ef7b9faa1a8e47"
     },
     "inplay-plan.js": {
       "v": "28",
@@ -3625,12 +3625,12 @@
       "sha": "e771dbef0b67350e"
     },
     "field.js": {
-      "v": "13",
-      "sha": "9e301bae63ceee82"
+      "v": "14",
+      "sha": "5ec61e6d80a132df"
     },
     "load.js": {
-      "v": "8",
-      "sha": "6740e4ce374039b0"
+      "v": "9",
+      "sha": "e3ef7b9faa1a8e47"
     },
     "crowd.js": {
       "v": "1",
@@ -3665,16 +3665,16 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "8",
-      "sha": "6740e4ce374039b0"
+      "v": "9",
+      "sha": "e3ef7b9faa1a8e47"
     },
     "inplay-plan.js": {
       "v": "28",
       "sha": "4d44b0d2ffc65111"
     },
     "field.js": {
-      "v": "13",
-      "sha": "9e301bae63ceee82"
+      "v": "14",
+      "sha": "5ec61e6d80a132df"
     },
     "foul.js": {
       "v": "1",
