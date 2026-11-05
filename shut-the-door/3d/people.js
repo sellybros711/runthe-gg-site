@@ -1604,7 +1604,7 @@ export class People {
         crouch(c, 1 - (c.clips.rise ? 0.8 : 0.5) * k, c.clips.rise ? 0 : 1);
         this.catcherArms(c, t);
       }
-      lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
+      lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tBall - pt.tRel))), 0.4);
       clavicles(c);
       deltoids(c);
     }
@@ -1633,7 +1633,7 @@ export class People {
     const pt = this.pitch;
     // a ball met by the bat or the batter never reaches him: the reach stops at contact and eases off
     const missed = pt.after && t > pt.tRel + pt.after.t0 ? smooth(clamp01((t - pt.tRel - pt.after.t0) / 0.35)) : 0;
-    const catchT = pt.after ? Math.min(pt.tCatch, pt.tRel + pt.after.t0 + 0.05) : pt.tCatch;
+    const catchT = pt.after ? Math.min(pt.tCatch, pt.tRel + pt.after.t0 + 0.05) : pt.tBall;
     const ball = pt.catchPoint.clone().lerp(pt.aimGlove, missed);   // where the ball meets the glove
     // the target he sets: the aimed point, carried back to his glove plane
     const aim = pt.aimGlove;

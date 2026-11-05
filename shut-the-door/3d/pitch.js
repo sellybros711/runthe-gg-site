@@ -38,8 +38,8 @@ const SPARKS = 36;
 const CARRY = new THREE.Vector3();          // the sparkle's quads (a perfect power and a perfect release, buildSparkle)
 export const T_RELEASE = 0.8;
 // a foul tip's tick: how far up (and toward the hitter's back side) it ends in the mitt from where the
-// pitch would have, feet
-const TIP_UP = 0.42, TIP_SIDE = 0.1;
+// pitch would have, and how high it pops on the way, feet; how much later it gets there, seconds
+const TIP_UP = 0.35, TIP_SIDE = 0.1, TIP_ARC = 0.3, TIP_LATE = 0.07;
 
 /** Contract section 2: a cell's centre, moved by the free aim point at = [u, v] inside it
     (contract.js aimPoint: x + u * 0.553 ft, zn + v / 3), catcher's view, x in feet, z in feet for
@@ -193,14 +193,14 @@ export class Pitch {
       this.after = { t0: contactT, c, foul: foulFlight(c, opts.foul), ground: false };
       return;
     } else if (kind === 'tip') {
-      // a foul tip (QA, 2026-11-05: it drew exactly as a swing and a miss): the ball ticks off the bat
-      // and changes its path, up off the wood into the top of the mitt. It stays the pitch's own clock:
-      // from contact it goes straight to its new spot in the glove by the same catch (tg, tCatch), so
-      // nothing about the timing moves, and the catcher's glove takes it there (catchPoint, people.js)
+      // a foul tip (QA, 2026-11-05: it drew exactly as a swing and a miss): the ball ticks off the bat,
+      // pops up a touch and goes into the top of the mitt a beat later (TIP_LATE, the catcher's glove
+      // closing on it then, people.js tBall). The pitch's clock does not move: contact, the call and
+      // the end of the play keep the catch they had (tCatch); only the ball's last few feet change
       if (!(contactT < this.tg)) return;
       const g = this.f.at(this.tg);
       const end = { x: g.x + (opts.lefty ? -1 : 1) * TIP_SIDE, y: Math.max(g.y, -1.45), z: Math.max(g.z, 0.25) + TIP_UP };
-      this.tip = { t0: contactT, c: this.f.at(contactT), end };
+      this.tip = { t0: contactT, t1: this.tg + TIP_LATE, c: this.f.at(contactT), end };
       this.catchPoint = P(end.x, end.y, end.z);
       return;
     } else if (kind === 'hbp') {
@@ -273,9 +273,12 @@ export class Pitch {
   /** A foul tip t seconds out of his hand, past the tick: a straight line from the bat to its spot in
       the mitt, met by the catch (the kink at the bat is the tick). */
   tipAt(t) {
-    const { t0, c, end } = this.tip, k = clamp01((t - t0) / Math.max(1e-3, this.tg - t0));
-    return P(c.x + (end.x - c.x) * k, c.y + (end.y - c.y) * k, c.z + (end.z - c.z) * k);
+    const { t0, t1, c, end } = this.tip, k = clamp01((t - t0) / Math.max(1e-3, t1 - t0));
+    return P(c.x + (end.x - c.x) * k, c.y + (end.y - c.y) * k, c.z + (end.z - c.z) * k + TIP_ARC * 4 * k * (1 - k));
   }
+
+  /** When the ball is in the glove (a foul tip a beat after the catch it would have had). */
+  get tBall() { return this.tip ? this.tRel + this.tip.t1 : this.tCatch; }
 
   pointAt(t) { const s = this.f.at(t); return P(s.x, s.y, s.z); }
 
@@ -429,7 +432,7 @@ export class Pitch {
   update(t, camera) {
     // in the air until the glove has it; off the bat or off the dirt it flies on, out of the frame
     const free = this.after || this.bounce;
-    const end = free ? this.tRel + 6 : this.tCatch + 0.02;
+    const end = free ? this.tRel + 6 : this.tBall + 0.02;
     const inFlight = t >= this.tRel && t <= end;
     const inHand = t < this.tRel && this.handPoint;
     this.ball.visible = inFlight || !!inHand;
@@ -437,7 +440,7 @@ export class Pitch {
     if (inHand) this.ball.position.copy(this.handPoint());
     if (inFlight) {
       const tt = t - this.tRel;
-      const tf = Math.min(tt, this.tCatch - this.tRel);
+      const tf = Math.min(tt, this.tBall - this.tRel);
       this.ball.position.copy(free ? this.ballAt(tt) : this.tip && tf > this.tip.t0 ? this.tipAt(tf) : this.seenAt(tf));
       this.ball.rotation.x = tt * this.spinRate;
       // the first person lens (firstperson.js): its own size (or, where its start was held nearer

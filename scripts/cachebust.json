@@ -3420,11 +3420,11 @@
     },
     "people.js": {
       "v": "46",
-      "sha": "05cc9de8e79a149a"
+      "sha": "1775c9c088879d76"
     },
     "pitch.js": {
       "v": "15",
-      "sha": "aaec8056119f1fb6"
+      "sha": "3ef8c03469978f61"
     },
     "play.js": {
       "v": "15",
@@ -3530,7 +3530,7 @@
   "shut-the-door/3d/play.js": {
     "pitch.js": {
       "v": "15",
-      "sha": "aaec8056119f1fb6"
+      "sha": "3ef8c03469978f61"
     },
     "foul.js": {
       "v": "1",
@@ -3562,7 +3562,7 @@
     },
     "people.js": {
       "v": "46",
-      "sha": "05cc9de8e79a149a"
+      "sha": "1775c9c088879d76"
     },
     "looks.js": {
       "v": "6",
@@ -3576,7 +3576,7 @@
   "shut-the-door/3d/preview.js": {
     "pitch.js": {
       "v": "15",
-      "sha": "aaec8056119f1fb6"
+      "sha": "3ef8c03469978f61"
     },
     "units.js": {
       "v": "1",
@@ -3614,7 +3614,7 @@
     },
     "pitch.js": {
       "v": "15",
-      "sha": "aaec8056119f1fb6"
+      "sha": "3ef8c03469978f61"
     }
   },
   "shut-the-door/3d/field.js": {
