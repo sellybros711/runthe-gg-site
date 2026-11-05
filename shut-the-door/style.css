@@ -605,9 +605,9 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .ab-dt { min-width: 0; padding: 2px 0 0; }
 .ab-dt p { margin: 0; }
 .dt-n { font-size: 11.5px; font-weight: 600; letter-spacing: 0.044em; color: var(--dim); }
-.dt-t { display: flex; align-items: center; gap: 7px; margin-top: 5px !important; font-weight: 700; font-size: 16px; line-height: 1.2; }
-.dt-t i { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
-.dt-t span { font-weight: 600; color: var(--dim); font-size: 14px; }
+.dt-t { margin-top: 5px !important; font-weight: 700; font-size: 16px; line-height: 1.25; }
+.dt-t i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 7px; vertical-align: 0; }
+.dt-t span { font-weight: 600; color: var(--dim); font-size: 14px; white-space: nowrap; }
 .dt-r { margin-top: 4px !important; font-weight: 700; font-size: 14px; }
 .dt-r em { font-style: normal; margin-left: 4px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--data); }
 .dt-w { margin-top: 2px !important; font-size: 13px; color: var(--dim); }
@@ -773,9 +773,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .bd-rows .nm { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .bd-rows .nm .un { font-style: normal; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* the stat line under the name (supabase/166, board.js nameHTML) */
-.bd-rows .nmc { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
-.bd-rows .nm1 { display: flex; align-items: center; min-width: 0; }
-.bd-rows .bst { font-weight: 500; font-size: 11.5px; line-height: 1.2; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.bd-rows .bst { grid-column: 2 / -1; margin: -6px 0 0; padding-left: 32px; font-weight: 500; font-size: 11.5px; line-height: 1.2; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
 .bd-rows li.mine .bst { color: var(--ink); opacity: .75; }
 .bd-hold { margin: 0 0 6px; padding: 0 8px; font-size: 12px; color: var(--faint); }
 .plate { display: block; flex: none; overflow: visible; }

@@ -27,6 +27,7 @@ node shut-the-door/test/api.mjs                the four calls, the daily, resume
 node shut-the-door/test/modes.mjs              the vote's candidates and Survivor's sequence, page and server alike
 node shut-the-door/test/survivor.mjs           the vote, Survivor, the archive and the Pro gate through the calls
 node shut-the-door/test/lesson.mjs             the lesson on the worst pitch
+node shut-the-door/test/postgame.mjs           the at bats, K-Zones and box line after the outing are the engine's
 node shut-the-door/check-replays.mjs           stored outings replayed against their scores (--self-test)
 node shut-the-door/check-rules.mjs             every in-play row in every pack a legal MLB play
 node shut-the-door/test/check-browser.mjs      the whole game in Chromium at 390x844 and 1440x900

@@ -98,18 +98,19 @@ function statLine(st, on) {
   var PG = window.STD_POSTGAME, t = on && PG && st ? PG.line(st) : '';
   return t ? '<small class="bst">' + esc(t) + '</small>' : '';
 }
-/* the name with the line under it; extra is the row's tags (you, live) */
-function nameHTML(r, on, extra) {
-  return '<span class="nm">' + plateOf(r) + '<span class="nmc"><span class="nm1"><i class="un">' + esc(r.username) + '</i>' + (extra || '') + '</span>' +
-    statLine(r.stats, on) + '</span></span>';
+/* the name; extra is the row's tags (you, live). The line goes on its own row under it (lineHTML),
+   the row's full width, so a phone never cuts it */
+function nameHTML(r, extra) {
+  return '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (extra || '') + '</span>';
 }
+function lineHTML(r, on) { return statLine(r.stats, on); }
 function rowHTML(r, on) {
   return '<li class="' + (r.mine ? 'mine' : '') + (r.rank <= 3 ? ' top' : '') + '">' +
     '<span class="rk">' + esc(r.rank) + '</span>' +
-    nameHTML(r, on, r.mine ? '<em>you</em>' : '') +
+    nameHTML(r, r.mine ? '<em>you</em>' : '') +
     chip(r.outcome) +
     '<span class="n">' + esc(r.pitches) + '</span>' +
-    '<span class="n sc">' + esc(r.score) + '</span></li>';
+    '<span class="n sc">' + esc(r.score) + '</span>' + lineHTML(r, on) + '</li>';
 }
 
 function renderList(rows) {
@@ -218,6 +219,7 @@ var api = {
   peek: peek,
   chip: chip,
   nameHTML: nameHTML,
+  lineHTML: lineHTML,
 };
 window.STD_BOARD = api;
 })();

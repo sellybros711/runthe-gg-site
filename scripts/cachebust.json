@@ -3207,12 +3207,12 @@
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
-      "v": "8",
-      "sha": "40f446b72de21777"
+      "v": "9",
+      "sha": "079c28d2327d3f0e"
     },
     "modes-ui.js": {
-      "v": "11",
-      "sha": "d55786a821fdfea0"
+      "v": "12",
+      "sha": "4ef3559bb7d9b39f"
     },
     "box-ui.js": {
       "v": "2",
@@ -3231,8 +3231,8 @@
       "sha": "472174c95dbcbfc9"
     },
     "ui.js": {
-      "v": "73",
-      "sha": "418e51b92c87f68e"
+      "v": "74",
+      "sha": "1211fc7cabfa6e4d"
     },
     "3d/boot.js": {
       "v": "97",

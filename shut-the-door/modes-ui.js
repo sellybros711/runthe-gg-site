@@ -252,9 +252,9 @@ function loadBoard(my, wait) {
     rows.forEach(function (r) {
       if (prev && r.rank > prev + 1) html += '<li class="gap" aria-hidden="true"><span>···</span></li>';
       html += '<li class="' + (r.mine ? 'mine' : '') + (r.rank <= 3 ? ' top' : '') + '"><span class="rk">' + esc(r.rank) + '</span>' +
-        (B && B.nameHTML ? B.nameHTML(r, on, (r.mine ? '<em>you</em>' : '') + (r.over ? '' : '<em class="live">live</em>'))
-          : '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + (r.over ? '' : '<em class="live">live</em>') + '</span>') +
-        '<span class="n sv-sv">' + esc(r.saves) + '</span><span class="n sc">' + esc(num(r.points)) + '</span></li>';
+        '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + (r.over ? '' : '<em class="live">live</em>') + '</span>' +
+        '<span class="n sv-sv">' + esc(r.saves) + '</span><span class="n sc">' + esc(num(r.points)) + '</span>' +
+        (B && B.lineHTML ? B.lineHTML(r, on) : '') + '</li>';
       prev = r.rank;
     });
     var n = rows[0].players;

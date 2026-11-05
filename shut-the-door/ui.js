@@ -2547,6 +2547,8 @@ function kzLegend() {
     return '<span><svg viewBox="0 0 20 20" aria-hidden="true">' + markSVG(k[0], 10, 10, 5.6, 'var(--dim)', null) + '</svg>' + k[1] + '</span>';
   }).join('') + '<span class="kz-note">Filled in the pitch\'s colour. From the mound.</span></div>';
 }
+/* the row is narrow on a phone: the short word (its label and the detail keep the long one) */
+var ROW_WORD = { called: 'Called', swing: 'Swinging', hbp: 'HBP' };
 /* one pitch's row: the detail is the row (tap it to light it on the zone), the Clip its own button */
 function pitchRow(p, clip, sel) {
   var col = typeCol(p.type), v = p.velo != null && isFinite(p.velo) ? Math.round(p.velo) : null;
@@ -2556,7 +2558,7 @@ function pitchRow(p, clip, sel) {
     '<button class="pc-pick" type="button" data-pick="' + p.n + '" aria-pressed="' + (sel ? 'true' : 'false') + '" aria-label="' + esc(title) + '">' +
     '<b class="n">' + p.k + '</b><span class="ty' + (lightColor(col) ? ' lt' : '') + '" style="--tc:' + col + '">' + esc(p.type) + '</span>' +
     '<span class="m">' + esc([v != null ? v : null, cnt].filter(function (x) { return x != null && x !== ''; }).join(' · ')) + '</span>' +
-    '<span class="w">' + esc(p.word) + '</span><i class="bd ' + esc(p.band || '') + '" aria-hidden="true"></i></button>' +
+    '<span class="w">' + esc(ROW_WORD[p.kind] || p.word) + '</span><i class="bd ' + esc(p.band || '') + '" aria-hidden="true"></i></button>' +
     (clip ? '<button class="pc-clip" type="button" data-clip="' + p.n + '" aria-label="' + esc('Clip ' + title) + '"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip</button>' : '') +
     '</div>';
 }
