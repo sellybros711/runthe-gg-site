@@ -171,7 +171,7 @@ const browser = await pw.chromium.launch(CHROME ? { executablePath: CHROME } : {
    the between-halves card, not the result, so every step that plays a daily to the result timed out).
    So every page of the check runs on a fixed clock: the first day from the epoch whose default pack is a
    one-half pack. It stays after the epoch so the vote block and the top 3 are on, and the day does not
-   depend on the real date. Steps 15 and 18 set their own day after this and win. STD_REAL_DAY=1 turns
+   depend on the real date. The time still flows (setSystemTime, not setFixedTime: the loading screen's cap and the timers read Date.now). Steps 15 and 18 set their own fixed day after this and win. STD_REAL_DAY=1 turns
    the pin off (the real clock, as a player has it). */
 function pinnedDay() {
   const M = require(path.join(ROOT, 'shut-the-door/modes.js'));
@@ -191,7 +191,7 @@ if (PIN_DAY) {
   const newContext = browser.newContext.bind(browser);
   browser.newContext = async (...args) => {
     const ctx = await newContext(...args), newPage = ctx.newPage.bind(ctx);
-    ctx.newPage = async (...a) => { const pg = await newPage(...a); await pg.clock.setFixedTime(new Date(PIN_DAY + 'T16:00:00Z')); return pg; };
+    ctx.newPage = async (...a) => { const pg = await newPage(...a); await pg.clock.setSystemTime(new Date(PIN_DAY + 'T16:00:00Z')); return pg; };
     return ctx;
   };
 }
@@ -2065,8 +2065,8 @@ async function halves(w, h, skip) {
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
-  /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11), for a local pass on the daily's steps */
-  if (process.env.STD_FIRST === '1') throw 'quick';
+  /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
+  if (process.env.STD_FIRST === '1') { await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
   if (QUICK) { await run(1440, 900, 'dark'); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
   await bootStuck(390, 844);
