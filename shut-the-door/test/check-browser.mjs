@@ -1016,6 +1016,16 @@ async function run(w, h, theme) {
   ok(back.on && back.started && back.gain > 0, '2 the switch back on lifts the master gain (' + JSON.stringify(back) + ')');
   await page.click('#sheet-settings .sh-x');
   await page.waitForSelector('#sheet-settings', { state: 'hidden', timeout: 3000 });
+  /* the voice of the ump (voices.js): behind its settings button, signed out the sign-in button, no review */
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
+  ok(await page.evaluate(() => document.getElementById('sheet-voices').hidden), '2 the voice of the ump is shut until its button');
+  await page.click('#set-voices');
+  await page.waitForSelector('#sheet-voices.on', { timeout: 3000 });
+  const vo = await page.evaluate(() => ({ signin: !!document.getElementById('vo-signin'), rec: !!document.getElementById('vo-rec') }));
+  ok(vo.signin && !vo.rec, '2 the voice of the ump opens from settings: signed out, the sign-in button only');
+  await page.click('#sheet-voices .sh-x');
+  await page.waitForSelector('#sheet-voices', { state: 'hidden', timeout: 3000 });
   if (QUICK || MODES) { ok(errors.length === 0, '2 no page errors' + (errors.length ? ': ' + errors.join(' | ') : '')); await ctx.close(); return; }
 
   /* 3 and 4 */
@@ -2062,13 +2072,64 @@ async function halves(w, h, skip) {
   await ctx.close();
 }
 
+/* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
+   made here), the consent before the send, the send, then the owner's review: waiting, approve, approved */
+function tinyWav(ms) {
+  const rate = 8000, n = Math.round(rate * ms / 1000), b = Buffer.alloc(44 + n * 2);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16);
+  b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(rate, 24); b.writeUInt32LE(rate * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34);
+  b.write('data', 36); b.writeUInt32LE(n * 2, 40);
+  for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.sin(i / 8) * 8000), 44 + i * 2);
+  return b;
+}
+async function voicesWalk(w, h) {
+  console.log(`\nthe voice of the ump, ${w}x${h}`);
+  step('19 the voice of the ump', 120);
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockOwner=1', { meterOff: true });
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  ok(true, '19 the owner sees the review button in settings');
+  await page.click('#set-voices');
+  await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
+  const l1 = await page.evaluate(() => ({ line: document.getElementById('vo-line').textContent, send: document.getElementById('vo-send').disabled, consent: document.querySelector('.vo-ok span').textContent }));
+  ok(l1.line === 'Strike!' && l1.send && l1.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)), '19 line 1 is "Strike!", the consent shows, nothing to send yet');
+  await page.setInputFiles('#vo-file', { name: 'long.wav', mimeType: 'audio/wav', buffer: tinyWav(3600) });
+  await page.waitForFunction(() => /Too long/.test(document.getElementById('vo-msg').textContent), null, { timeout: 5000 });
+  ok(true, '19 an upload longer than 3 seconds is refused');
+  await page.setInputFiles('#vo-file', { name: 'strike.wav', mimeType: 'audio/wav', buffer: tinyWav(900) });
+  await page.waitForSelector('#vo-play', { timeout: 5000 });
+  ok(await page.evaluate(() => document.getElementById('vo-send').disabled), '19 a take plays back, and waits for the consent');
+  await page.check('#vo-consent');
+  await page.fill('#vo-cr', 'Big Al');
+  await page.click('#vo-send');
+  await page.waitForFunction(() => /Sent/.test(document.getElementById('vo-msg').textContent), null, { timeout: 3000 });
+  const l2 = await page.evaluate(() => document.getElementById('vo-line').textContent);
+  ok(l2 === 'Strike three!', '19 sent, and on to the next line (' + l2 + ')');
+  await page.click('#sheet-voices .sh-x');
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  await page.click('#set-ump-review');
+  await page.waitForSelector('#sheet-ump-review.on .vr-row audio', { timeout: 3000 });
+  const q = await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent);
+  ok(/Strike!/.test(q) && /Big Al/.test(q), '19 the owner\'s queue holds it, with the credit');
+  await page.click('#vr-body [data-vr="approved"]');
+  await page.waitForSelector('#vr-empty', { timeout: 3000 });
+  await page.click('#vr-body [data-vr-tab="approved"]');
+  await page.waitForSelector('#sheet-ump-review .vr-row', { timeout: 3000 });
+  const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line)));
+  ok(ap.join() === 'strike', '19 approved: on the approved list and the game\'s list');
+  ok(errors.length === 0, '19 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
-  if (QUICK) { await run(1440, 900, 'dark'); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
+  if (QUICK) { await run(1440, 900, 'dark'); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
   await bootStuck(390, 844);
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
@@ -2088,6 +2149,7 @@ try {
   await modes(1440, 900, false);
   await halves(390, 844, false);
   await halves(1440, 900, true);
+  await voicesWalk(390, 844);
 } catch (e) {
   if (e === 'quick') e = null; else fails++;
   if (e) {

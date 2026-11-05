@@ -89,6 +89,7 @@ var AUTH_MODE = (/[?&]mockAuth=([^&]*)/.exec(location.search) || [])[1] || '';
 var mockIn = AUTH_MODE === '1';
 var authListeners = [];
 function mockSignedIn() { return mockIn; }
+var mockClips = [];
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
   var authState = function () { return mockIn ? { ready: true, waiting: false, signedIn: true, name: 'mockplayer', email: 'mock@example.com', userId: 'mock-user' } : { ready: AUTH_MODE === 'late', waiting: false, signedIn: false }; };
@@ -106,6 +107,30 @@ if (!window.STD_AUTH || FORCE) {
     signIn: AUTH_MODE === 'late' ? lateIn : none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
     board: mockBoard,
+    /* the voice of the ump (supabase/165), FICTIONAL: clips live in this page only. ?mockOwner=1
+       makes the signed-in mock account the owner, so the review sheet can be walked */
+    umpApproved: function () { return Promise.resolve(mockClips.filter(function (c) { return c.status === 'approved'; }).map(function (c) { return { id: c.id, line: c.line, path: c.path, credit: c.credit }; })); },
+    umpMine: function () { return Promise.resolve(mockIn ? mockClips.filter(function (c) { return c.status === 'pending'; }).map(function (c) { return { id: c.id, line_id: c.line }; }) : null); },
+    umpSubmit: function (c) {
+      if (!mockIn) return Promise.resolve({ error: 'Sign in first.' });
+      if (!c || c.consent !== (window.STD_VOICES && window.STD_VOICES.CONSENT)) return Promise.resolve({ error: 'tick the consent box first' });
+      var id = 'mock-clip-' + (mockClips.length + 1);
+      mockClips.push({ id: id, line: c.line, status: 'pending', path: 'mock-user/' + id, credit: c.credit || null, username: 'mockplayer', ms: c.ms, url: URL.createObjectURL(c.blob), createdAt: new Date().toISOString() });
+      return Promise.resolve({ data: { id: id } });
+    },
+    umpUrls: function (paths) { var m = {}; mockClips.forEach(function (c) { if (paths.indexOf(c.path) >= 0) m[c.path] = c.url; }); return Promise.resolve(m); },
+    umpOwner: function () { return Promise.resolve(mockIn && /[?&]mockOwner=1/.test(location.search)); },
+    umpQueue: function (st) {
+      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      return Promise.resolve({ data: mockClips.filter(function (c) { return c.status === (st || 'pending'); }).map(function (c) { return JSON.parse(JSON.stringify(c)); }) });
+    },
+    umpReview: function (id, st) {
+      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      var c = mockClips.filter(function (x) { return x.id === id; })[0];
+      if (!c) return Promise.resolve({ error: 'no such clip' });
+      c.status = st;
+      return Promise.resolve({ data: { id: id, status: st } });
+    },
     plates: function () { return Promise.resolve(mockIn ? JSON.parse(JSON.stringify(mockPlates)) : null); },
     setPlate: function (k) {
       if (!mockIn) return Promise.resolve({ error: 'sign in first' });

@@ -292,7 +292,7 @@ function renderSettings(prefs, onChange) {
       '<input type="checkbox" class="sw" id="' + id + '"' + (on ? ' checked' : '') + '></label>';
   }
   $('set-body').innerHTML =
-    row('set-sound', 'sound', 'real sounds are on the way. the buzz for now.', !!prefs.sound) +
+    row('set-sound', 'sound', 'The ump\'s calls and the buzz. More sounds are on the way.', !!prefs.sound) +
     row('set-quick', 'quick pitches', 'shorter animation', !!prefs.quick) +
     row('set-meter', 'release meter', 'time each release. off throws his usual command', prefs.meter !== false) +
     row('set-dark', 'dark mode', 'shared with every runthe.gg game', theme === 'dark');
@@ -300,6 +300,8 @@ function renderSettings(prefs, onChange) {
   $('set-quick').addEventListener('change', function (e) { onChange('quick', e.target.checked); });
   $('set-meter').addEventListener('change', function (e) { onChange('meter', e.target.checked); });
   $('set-dark').addEventListener('change', function (e) { onChange('theme', e.target.checked ? 'dark' : 'light'); });
+  /* the voice of the ump (voices.js): record a call, and the owner's review */
+  if (window.STD_VOICES) window.STD_VOICES.settingsRows($('set-body'));
 }
 
 /* ---- sign in ------------------------------------------------------------------ */

@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=76">
+<link rel="stylesheet" href="style.css?v=77">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -464,6 +464,12 @@ setTimeout(function () {
  <div class="sheet" id="sheet-share" hidden aria-hidden="true" role="dialog" aria-label="Share">
   <div class="sh-in"><div class="sh-h"><h2>share</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body share" id="share-body"></div></div>
 </div>
+<div class="sheet" id="sheet-voices" hidden aria-hidden="true" role="dialog" aria-label="Voice of the ump">
+  <div class="sh-in"><div class="sh-h"><h2>Voice of the ump</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body voices" id="vo-body"></div></div>
+</div>
+<div class="sheet" id="sheet-ump-review" hidden aria-hidden="true" role="dialog" aria-label="Review ump calls">
+  <div class="sh-in"><div class="sh-h"><h2>Review ump calls</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body voices" id="vr-body"></div></div>
+</div>
 <div class="sheet" id="sheet-auth" hidden aria-hidden="true" role="dialog" aria-label="Account">
   <div class="sh-in"><div class="sh-h"><h2>account</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body auth" id="auth-body"></div></div>
 </div>
@@ -485,26 +491,27 @@ setTimeout(function () {
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
 <script src="plate.js?v=1"></script>
-<script src="menus.js?v=20"></script>
+<script src="menus.js?v=21"></script>
 <script src="rng.js?v=1"></script>
 <script src="modes.js?v=2"></script>
 <script src="grade.js?v=17"></script>
 <script src="names.js?v=1"></script>
 <script src="lesson.js?v=7"></script>
 <script src="engine.js?v=19"></script>
-<script src="sound.js?v=4"></script>
+<script src="sound.js?v=5"></script>
 <script src="share.js?v=2"></script>
 <script src="card.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=8"></script>
+<script src="auth.js?v=9"></script>
+<script src="voices.js?v=1"></script>
 <script src="api.js?v=29"></script>
-<script src="mock-api.js?v=15"></script>
+<script src="mock-api.js?v=16"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=7"></script>
 <script src="modes-ui.js?v=10"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=3"></script>
-<script src="ui.js?v=70"></script>
+<script src="ui.js?v=71"></script>
 <script type="module" src="3d/boot.js?v=97"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 <script type="module">import { CLUBS, battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_CLUBS = CLUBS; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
