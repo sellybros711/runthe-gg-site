@@ -1,6 +1,6 @@
 /* A foul ball, off the bat to where it ends: the shape the scene draws it in, and its flight through
- * the park (the ground, the backstop's padding and net, the low wall down each line, the dugouts and
- * the seats). Pure: no three.js, no clock, no Math.random, so a node check
+ * the park (the ground, the backstop's padding and net, the low wall down each line and the net along
+ * it past the dugouts, the dugouts and the seats). Pure: no three.js, no clock, no Math.random, so a node check
  * (lab/pipeline/check-foul.mjs) runs every foul the engine calls through exactly what the scene draws.
  *
  * The engine says only that the pitch was fouled off (pr.result 'foul': no batted ball rides on it,
@@ -33,6 +33,32 @@ export const BALL_R = 0.12;
 export const BACKSTOP = 56;
 export const PAD_H = 5, NET_H = 37, NET_ARC = 180 - 34 * 1.6;
 export const WALL_LOW = 4, DUGOUT = [76, 100], DUGOUT_H = 3.4, SEAT_RISE = 0.5;
+/* THE NETTING (the owner, 2026-11-05: "there needs to be a net that protects the fans from foul balls
+   like a real stadium"). As in every MLB park since 2020, the backstop net is carried on along both lines
+   past the far end of each dugout (to NET_TO degrees from centre field, the dugouts end at 76), on top
+   of the low wall, a fine dark mesh on thin poles with a cable along its top. Its top falls from the
+   backstop's NET_H to NET_END at its far end (netTop). A ball that meets it below the top drops dead
+   off it to the ground in front; one above it flies on into the seats. ballpark.js draws it from netTop,
+   so the ball and the net are one surface. */
+export const NET_TO = 70, NET_END = 26, NET_DUG = 32;
+/** The top of the low wall (or the backstop's padding) at |th| = a degrees: 4 ft down the lines, rising
+    to the padding's 5 ft round the backstop (ballpark.js draws the wall and the seats on it). */
+export function frontTop(a) {
+  a = Math.abs(a);
+  if (a >= NET_ARC) return PAD_H;
+  const k = Math.max(0, Math.min(1, (a - 110) / (NET_ARC - 110)));
+  return WALL_LOW + (PAD_H - WALL_LOW) * k * k * (3 - 2 * k);
+}
+/** The top of the net at |th| = a degrees (feet up from the field), or 0 where there is none. */
+export function netTop(a) {
+  a = Math.abs(a);
+  if (a < NET_TO) return 0;
+  if (a >= NET_ARC) return NET_H;
+  // the far end to the plate end of the dugout, then up to the backstop's height
+  if (a <= DUGOUT[1]) return NET_END + (NET_DUG - NET_END) * (a - NET_TO) / (DUGOUT[1] - NET_TO);
+  const k = (a - DUGOUT[1]) / (NET_ARC - DUGOUT[1]);
+  return NET_DUG + (NET_H - NET_DUG) * k * k * (3 - 2 * k);
+}
 
 /** The front of the stands past the foul lines (|th| > 45 degrees from centre field): the low wall
     45 ft off each line, no further than 330 ft, swung round to the backstop from 100 to 128 degrees.
@@ -121,7 +147,7 @@ export function foulFlight(c, launch) {
   const N = Math.round(SPAN / STEP);
   const keep = 2, xyz = new Float32Array((N / keep + 1) * 3);
   const hits = [];
-  let state = 'air', front = null, k = 0;
+  let state = 'air', front = null, k = 0, netted = false;
   const put = () => { xyz[k * 3] = x; xyz[k * 3 + 1] = y; xyz[k * 3 + 2] = z; k++; };
   put();
   for (let i = 1; i <= N; i++) {
@@ -151,25 +177,31 @@ export function foulFlight(c, launch) {
       // the front of the stands
       const r = Math.hypot(x, y), th = Math.atan2(x, y) / D2R;
       if (state !== 'over' && Math.abs(th) > 45 && r >= foulFront(th)) {
-        const a = Math.abs(th), net = a >= NET_ARC;
-        const top = net ? NET_H : WALL_LOW;
-        if (!net && a >= DUGOUT[0] && a <= DUGOUT[1] && z < DUGOUT_H) {
+        const a = Math.abs(th), wallTop = frontTop(a), nt = netTop(a);
+        // (a ball already off the net and dropping down it, at its far end: the end pole and the net's
+        // edge, wrapped round it, still hold it)
+        const top = Math.max(wallTop, nt, netted && a >= NET_TO - 4 ? NET_END : 0), onNet = z > wallTop;
+        if (a < NET_ARC && a >= DUGOUT[0] && a <= DUGOUT[1] && z < DUGOUT_H) {
           // into the dugout, under its roof: it drops in and is gone
           x = px0; y = py0; z = pz0; state = 'dugout'; hits.push({ t, what: 'dugout' });
         } else if (z < top) {
-          // off the padding (or the net, which takes nearly all of it): back the way it came
-          const e = net && z > PAD_H ? 0.12 : 0.32;
+          // off the padding, or into the net, which gives and takes nearly all of it: it drops down the
+          // face of the net to the ground in front
+          const e = onNet ? 0.1 : 0.32;
           const g = frontNormal(th, r);
           const vn = vx * g.x + vy * g.y;
-          if (vn > 0) { vx -= (1 + e) * vn * g.x; vy -= (1 + e) * vn * g.y; vx *= 0.6; vy *= 0.6; vz *= net && z > PAD_H ? 0.25 : 0.8; }
-          x = px0; y = py0;
-          hits.push({ t, what: net && z > PAD_H ? 'net' : 'wall' });
+          // (a ball already dropping down its face only brushes it again: nothing more is taken off it)
+          const blow = vn > 4;
+          if (vn > 0) { vx -= (1 + e) * vn * g.x; vy -= (1 + e) * vn * g.y; if (blow) { vx *= onNet ? 0.1 : 0.6; vy *= onNet ? 0.1 : 0.6; vz = onNet ? Math.min(vz * 0.2, 0) : vz * 0.8; } }
+          x = px0 - g.x * 0.05; y = py0 - g.y * 0.05;
+          if (blow) hits.push({ t, what: onNet ? 'net' : 'wall' });
+          if (onNet) netted = true;
         } else { state = 'over'; front = { th, r }; hits.push({ t, what: 'over' }); }
       }
       if (state === 'over') {
         // over the wall: down on the seats, which rise behind it
         const r2 = Math.hypot(x, y), th2 = Math.atan2(x, y) / D2R;
-        const f0 = foulFront(th2), wallTop = Math.abs(th2) >= NET_ARC ? PAD_H : WALL_LOW;
+        const f0 = foulFront(th2), wallTop = frontTop(th2);
         const seat = wallTop + SEAT_RISE * Math.max(0, r2 - f0);
         if (z < seat) { z = seat; state = 'seats'; hits.push({ t, what: 'seats' }); }
       }

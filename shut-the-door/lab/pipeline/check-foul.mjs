@@ -24,18 +24,21 @@
  *   it leaves the bat less than MIN_FOUL degrees foul of a line (or not behind the plate)
  *   it is beyond the front of the stands (the backstop, the low wall) without having gone over it, or
  *     in the seats below them, or below the ground
- *   it goes through the backstop net (beyond it below the net's top)
+ *   it goes through the net (beyond it below the net's top, behind the plate or along the lines)
+ *   off the net, it keeps more than NET_KEEP of its speed, or is not down within NET_DROP s and NET_NEAR
+ *     ft in front of it
  *   it goes higher than TOP ft, or leaves the bat slower than 50 mph or faster than 105
  *   at the end of the scene's play (TAIL s after contact, stage.js) it hangs near the hitter: not yet
  *     LEFT ft from the plate nor landed (on the ground, the seats, the dugout)
  * and, over the seeded fouls, when the shapes do not mix (any shape under MIX of them), when a pick
- * is not the same twice, or when a foul would start the ball in play broadcast (only in_play or a
+ * is not the same twice, when under NET_SHARE of the balls that reach the front where the net stands
+meet it, under LINER_SHARE of the line drives do (or none goes over it), or when a foul would start the ball in play broadcast (only in_play or a
  * steal safe or out stages one, stage.js playOnce: no fielder chases a foul; a foul has its own short
  * follow of the ball, inplay-plan.js planFoul, where the field stands and watches, held by check-camera).
  */
 import { createRequire } from 'node:module';
 import { readdirSync, readFileSync } from 'node:fs';
-import { foulLaunch, foulFlight, foulAt, foulFront, isFoul, SHAPES, BALL_R, NET_ARC, NET_H, PAD_H, WALL_LOW, SEAT_RISE } from '../../3d/foul.js';
+import { foulLaunch, foulFlight, foulAt, foulFront, isFoul, SHAPES, BALL_R, NET_TO, SEAT_RISE, frontTop, netTop } from '../../3d/foul.js';
 
 const require = createRequire(import.meta.url);
 const G = require('../../grade.js');
@@ -44,6 +47,10 @@ const E = require('../../engine.js');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const SEEDS = arg('--seeds', 30), SHOW = arg('--show', 0);
 export const NEAR = 12, MIN_FOUL = 10, TOP = 120, TAIL = 1.5, LEFT = 40, MIX = 0.06;
+// the net: a ball off it keeps under NET_KEEP of its speed, is down within NET_DROP s and NET_NEAR ft of
+// it; of the balls that reach the front where the net stands, NET_SHARE at least meet the net (most line
+// drives into the stands hit it) and some go over it
+export const NET_KEEP = 0.35, NET_DROP = 1.6, NET_NEAR = 15, NET_SHARE = 0.5, LINER = 25, LINER_SHARE = 0.6;
 const GX = [-1.5, -1.1, -0.75, -0.4, 0, 0.4, 0.75, 1.1, 1.5];
 // where along the plate it is met (catcher's view y, feet: out in front, over it, deep)
 const MEET_Y = [2.6, 1.0, -0.6];
@@ -66,28 +73,52 @@ export function judge(L, c) {
     if (Math.abs(th) > 45) {
       const f = foulFront(th), past = r - f;
       if (past > 1 && t < overAt) { bad.push(`through the front of the stands at ${t.toFixed(2)} s (${past.toFixed(1)} ft past it, ${z.toFixed(1)} ft up)`); break; }
-      const wallTop = Math.abs(th) >= NET_ARC ? PAD_H : WALL_LOW;
+      const wallTop = frontTop(th);
       if (past > 1 && t >= overAt && fl.hits.some((h) => h.what === 'over') && z < wallTop + SEAT_RISE * past - 0.5) { bad.push(`into the seats at ${t.toFixed(2)} s`); break; }
     }
   }
   for (const h of fl.hits) if (h.what === 'over') {
     const q = foulAt(fl, h.t, p), th = Math.abs(Math.atan2(q.x, q.y) * 180 / Math.PI);
-    if (th >= NET_ARC && q.z < NET_H) bad.push(`over the net at ${q.z.toFixed(1)} ft (the net is ${NET_H})`);
+    if (netTop(th) && q.z < netTop(th)) bad.push(`over the net at ${q.z.toFixed(1)} ft, ${th.toFixed(0)} degrees round (the net is ${netTop(th).toFixed(1)} there)`);
   }
+  // THE NET (the owner, 2026-11-05: "the ball needs to hit the net and fall or go over it"): a ball into
+  // the net loses most of its speed there and drops down its face to the ground in front of it, within
+  // NET_DROP s and NET_NEAR ft of the net
+  const hn = fl.hits.find((h) => h.what === 'net');
+  let net = null;
+  if (hn) {
+    const i = Math.round(hn.t / fl.dt), P = (j) => { j = Math.max(0, Math.min(fl.n - 1, j)); return { x: fl.xyz[j * 3], y: fl.xyz[j * 3 + 1], z: fl.xyz[j * 3 + 2] }; };
+    const sp = (a, b) => Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z) / ((Math.abs(b.t - a.t)) || 1);
+    const w = 6, before = sp({ ...P(i - 2 * w), t: 0 }, { ...P(i - w), t: w * fl.dt }), after = sp({ ...P(i + w), t: 0 }, { ...P(i + 2 * w), t: w * fl.dt });
+    const q = P(i), th = Math.atan2(q.x, q.y) * 180 / Math.PI;
+    const down = fl.hits.find((h) => h.t > hn.t && ['ground', 'roll', 'dugout'].includes(h.what));
+    const land = down ? foulAt(fl, down.t, { x: 0, y: 0, z: 0 }) : null;
+    net = { z: q.z, th, keep: after / (before || 1) };
+    if (after > NET_KEEP * before) bad.push(`off the net at ${(100 * after / before).toFixed(0)}% of its speed (wants under ${NET_KEEP * 100}%)`);
+    if (!down || down.t - hn.t > NET_DROP) bad.push(`not down from the net ${NET_DROP} s after it hit it`);
+    else if (foulFront(Math.atan2(land.x, land.y) * 180 / Math.PI) - Math.hypot(land.x, land.y) > NET_NEAR) bad.push(`down ${(foulFront(Math.atan2(land.x, land.y) * 180 / Math.PI) - Math.hypot(land.x, land.y)).toFixed(0)} ft off the net (wants under ${NET_NEAR})`);
+  }
+  // (and where it met the front along the lines, for the shares: into the net, or over it)
+  const first = fl.hits.find((h) => ['net', 'over', 'wall', 'dugout'].includes(h.what));
+  let zone = null;
+  if (first) { const q = foulAt(fl, first.t, { x: 0, y: 0, z: 0 }), a = Math.abs(Math.atan2(q.x, q.y) * 180 / Math.PI); if (a >= NET_TO) zone = first.what; }
   if (top > TOP) bad.push(`goes ${top.toFixed(0)} ft up (wants under ${TOP})`);
   const e = foulAt(fl, TAIL, p), landed = fl.hits.some((h) => h.t <= TAIL && ['ground', 'roll', 'seats', 'dugout', 'net', 'wall'].includes(h.what));
   if (Math.hypot(e.x, e.y) < LEFT && !landed && e.z < 20) bad.push(`still by the plate when the play ends (${e.x.toFixed(0)}, ${e.y.toFixed(0)}, ${e.z.toFixed(0)})`);
   const end = foulAt(fl, 1e9, p);
   if (Math.hypot(end.x, end.y) > NEAR && !isFoul(end.x, end.y)) bad.push('ends in fair ground');
-  return { bad, end: fl.end, top };
+  return { bad, end: fl.end, top, net, zone };
 }
 
-const problems = [], byShape = Object.fromEntries(SHAPES.map((s) => [s, 0])), ends = {};
+const zones = {}, liners = {}, problems = [], byShape = Object.fromEntries(SHAPES.map((s) => [s, 0])), ends = {};
 let n = 0, fouls = 0, failed = 0;
 const take = (src, L, c, extra) => {
   n++;
   const j = judge(L, c);
   ends[j.end] = (ends[j.end] || 0) + 1;
+  if (j.zone) zones[j.zone] = (zones[j.zone] || 0) + 1;
+  // (a line drive: pulled or sliced, under LINER degrees)
+  if (j.zone && (L.shape === 'pulled' || L.shape === 'sliced') && L.la <= LINER) liners[j.zone] = (liners[j.zone] || 0) + 1;
   if (j.bad.length) { failed++; if (problems.length < 2000) problems.push({ src, L, c, ...extra, bad: j.bad }); }
 };
 
@@ -134,6 +165,11 @@ const mixBad = SHAPES.filter((s) => fouls && byShape[s] / fouls < MIX);
 console.log(`shapes over ${fouls} seeded fouls: ${SHAPES.map((s) => `${s} ${(100 * byShape[s] / Math.max(1, fouls)).toFixed(0)}%`).join(', ')}${mixBad.length ? `  FAIL: under ${MIX * 100}%: ${mixBad.join(', ')}` : ''}`);
 console.log(`where they end (4 s): ${Object.entries(ends).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 for (const p of problems.slice(0, Math.max(SHOW, Math.min(8, problems.length)))) console.log('  ', JSON.stringify(p));
-const ok = !failed && !mixBad.length && fouls > 0;
+const zn = Object.values(zones).reduce((a, b) => a + b, 0), netShare = (zones.net || 0) / Math.max(1, zn);
+const ln = Object.values(liners).reduce((a, b) => a + b, 0), linerShare = (liners.net || 0) / Math.max(1, ln);
+const netBad = !(netShare >= NET_SHARE && linerShare >= LINER_SHARE && zones.over > 0);
+console.log(`     line drives (pulled or sliced, ${LINER} degrees or under): of ${ln} to the front there, ${(100 * linerShare).toFixed(0)}% into the net (wants ${LINER_SHARE * 100}% or more), ${liners.over || 0} over it`);
+console.log(`${netBad ? 'FAIL' : 'ok  '} the net along the lines and behind the plate: of ${zn} balls to the front there, ${(100 * netShare).toFixed(0)}% into the net (wants ${NET_SHARE * 100}% or more), ${zones.over || 0} over it, ${zones.wall || 0} off the wall below it, ${zones.dugout || 0} into a dugout`);
+const ok = !failed && !mixBad.length && fouls > 0 && !netBad;
 console.log(`${ok ? 'ok  ' : 'FAIL'} check-foul: ${n} flights (${fouls} seeded fouls x ${MEET_Y.length} meet points, ${grid} grid), ${failed} wrong`);
 process.exit(ok ? 0 : 1);

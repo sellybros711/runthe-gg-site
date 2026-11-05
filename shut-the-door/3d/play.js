@@ -14,8 +14,8 @@
  *   &type=FF &cell=12 &mx=0.1 &mz=-0.1   override the pitch, the aimed cell, the miss (feet)
  *   &foul=back|pop|pulled|sliced         a foul's shape (foul.js), else picked as the game picks it
  */
-import { cellPoint } from './pitch.js?v=15';
-import { foulLaunch } from './foul.js?v=1';
+import { cellPoint } from './pitch.js?v=16';
+import { foulLaunch } from './foul.js?v=2';
 
 export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'hbp_fall', 'dirt'];
 

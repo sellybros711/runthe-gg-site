@@ -21,7 +21,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=29';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=14';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=34';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=35';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=46';
 import { look } from './looks.js?v=6';
@@ -345,6 +345,9 @@ export class InPlay {
     if (!this.netPoles) this.netPoles = [...this.scene.getObjectsByProperty('name', 'netPole'), ...this.scene.getObjectsByProperty('name', 'backstopNet')];
     // (a foul seen from the side, back into the net: the net is what it hits, and from there it hides nothing)
     for (const o of this.netPoles) o.visible = !broadcast || (!!A.foul && piece.cam === 'wide');
+    // (the pitcher's wedge of seats behind the plate: in the broadcast the ballpark's bowl is drawn there)
+    if (!this.standsBowl) this.standsBowl = this.scene.getObjectsByProperty('name', 'standsBowl');
+    for (const o of this.standsBowl) o.visible = !broadcast;
     // the sun's shadow map covers the plate only: in the broadcast it is not drawn again each frame
     this.renderer.shadowMap.autoUpdate = !broadcast;
     // ---- the ball
@@ -1835,6 +1838,7 @@ export class InPlay {
     this.crew.hide();
     this.park.visible = false;
     for (const o of this.netPoles || []) o.visible = true;
+    for (const o of this.standsBowl || []) o.visible = true;
     this.renderer.shadowMap.autoUpdate = true;
     this.trail.visible = false;
     this.marker.visible = false;

@@ -31,7 +31,7 @@
 import * as THREE from 'three';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import * as G from './gear3d.js?v=4';
-import { foulFlight, foulAt } from './foul.js?v=1';
+import { foulFlight, foulAt } from './foul.js?v=2';
 
 const G_FT = 32.17;
 const SPARKS = 36;
