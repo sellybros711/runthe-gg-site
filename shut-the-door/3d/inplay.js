@@ -88,7 +88,7 @@ const RAWFOV_S = { follow: 0.3, wide: 0.25, plate: 0.2, sky: 0.1, track: 0.12 };
 const POS_EASE_S = { follow: 0.25, wide: 0.16, plate: 0.12, sky: 0.08, track: 0.08 };
 // the fielders' and runners' clips (lab/pipeline/build_people.py 'fielder'), with their content hash
 // as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
-const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).href;
+const MOTION = new URL('./assets/fielder.glb?h=260d3bd862', import.meta.url).href;
 const OF = [7, 8, 9];
 /* The ready stance at the pitch, by position (poseFielder): crouch, lean and width as Figure.pose reads them,
    and where the hands are, in feet in front of him (fwd), to his glove side (side) and up (z). A middle
