@@ -182,6 +182,10 @@
       "v": "2",
       "sha": "8eb403844838a3f1"
     },
+    "/arcade/namesake.js": {
+      "v": "1",
+      "sha": "47d23b88a7d3ff0b"
+    },
     "/arcade/rosters.js": {
       "v": "10",
       "sha": "b9849242f71aa867"
@@ -947,6 +951,10 @@
     "/arcade/flags.js": {
       "v": "8",
       "sha": "15a845209f4b3402"
+    },
+    "/arcade/namesake.js": {
+      "v": "1",
+      "sha": "47d23b88a7d3ff0b"
     },
     "/arcade/rosters.js": {
       "v": "10",
