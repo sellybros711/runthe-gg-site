@@ -23,7 +23,9 @@ name: Shut The Door checks
 #              161_shut_the_door_full_close.sql (rules 8's two new spots) twice and its test; then
 #              163_shut_the_door_vote_nov5.sql (the vote from 2026-11-05) twice and its test; then
 #              164_shut_the_door_vote_anytime.sql (the vote without playing today) twice and its test; then
-#              165_shut_the_door_ump_voices.sql (the voice of the ump) twice and its test, over a storage stub
+#              165_shut_the_door_ump_voices.sql (the voice of the ump) twice and its test, over a storage stub; then
+#              162_shut_the_door_plates.sql (the boards 166 builds on), then
+#              166_shut_the_door_board_stats.sql (the stat line on the boards) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -80,6 +82,8 @@ jobs:
         run: node shut-the-door/test/meter.mjs
       - name: The voice of the ump on the page matches 165 (script, consent, types, limits, the call map)
         run: node shut-the-door/test/voices.mjs
+      - name: The at bats and the box line after the outing are the engine's (postgame.js), and 166's check agrees
+        run: node shut-the-door/test/postgame.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
@@ -90,7 +94,7 @@ jobs:
         run: node scripts/check-dashes.mjs shut-the-door
       - name: The copy rules, on the files that hold player copy
         run: |
-          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js shut-the-door/voices.js; do
+          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js shut-the-door/voices.js shut-the-door/postgame.js; do
             node scripts/check-copy.mjs "$f"
           done
 
@@ -168,3 +172,11 @@ jobs:
           $P -f supabase/165_shut_the_door_ump_voices.sql
           $P -f supabase/165_shut_the_door_ump_voices.sql
           $P -f supabase/test/shut_the_door_ump_voices_test.sql
+      - name: 166 applied twice (over 162's boards), then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -c "alter table public.profiles add column if not exists avatar_initials text"
+          $P -f supabase/162_shut_the_door_plates.sql
+          $P -f supabase/166_shut_the_door_board_stats.sql
+          $P -f supabase/166_shut_the_door_board_stats.sql
+          $P -f supabase/test/shut_the_door_board_stats_test.sql

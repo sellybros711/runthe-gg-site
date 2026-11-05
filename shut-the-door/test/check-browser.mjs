@@ -121,7 +121,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SHOTS = process.env.SHOTS || '';
-/* STD_QUICK=1: steps 1 and 2 at both sizes, the home button, the running game (15) at both and the window sizes (16), for a local pass. CI runs it all */
+/* STD_QUICK=1: steps 1 and 2 at both sizes, the clips (19), after the outing (20), the home button, the running game (15) at both and the window sizes (16), for a local pass. CI runs it all */
 const QUICK = process.env.STD_QUICK === '1';
 /* STD_MODES=1: steps 1 and 2 at 390x844, then the modes (17) at both sizes, for a local pass on the boards */
 const MODES = process.env.STD_MODES === '1';
@@ -2186,13 +2186,13 @@ async function clips(w, h) {
   await page.waitForSelector('#s-result.on', { timeout: PITCH_MS });
   await page.waitForTimeout(1200);
   const rs = await page.evaluate(() => {
-    const cards = [...document.querySelectorAll('#r-reveal .pc')], clips = cards.filter((c) => c.matches('button[data-clip]'));
+    const cards = [...document.querySelectorAll('#r-reveal .pc')], clips = cards.map((c) => c.querySelector('button[data-clip]')).filter(Boolean);
     return { cards: cards.length, clips: clips.length, minH: Math.min(...clips.map((c) => c.getBoundingClientRect().height)), pitches: window.STD_UI.state.result.pitches,
       open: document.getElementById('s-clip').classList.contains('on') };
   });
   ok(rs.clips === rs.pitches && rs.cards === rs.pitches && rs.minH >= 38, '19 every pitch in you vs the real game has a Clip, thumb tall (' + rs.clips + ' of ' + rs.pitches + ', ' + Math.round(rs.minH) + ' px)');
   ok(!rs.open, '19 the clip screen does not open by itself');
-  await page.click('#r-reveal .pc[data-clip="1"]');
+  await page.click('#r-reveal .pc [data-clip="1"]');
   await page.waitForSelector('#s-clip.on', { timeout: 30000 });
   await page.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'done', null, { timeout: 300000 });
   const cl = await page.evaluate(() => ({ head: document.getElementById('cl-head').textContent, canvas: !!document.querySelector('#cl-stage #m-canvas'), video: !document.getElementById('cl-video').hidden,
@@ -2222,6 +2222,119 @@ async function clips(w, h) {
   await p2.waitForSelector('#s-mound.on', { timeout: 60000 });
   ok(!/clip=/.test(await p2.evaluate(() => location.search)), '19 play today\'s daily goes to the mound, the clip gone from the address');
   ok(errors.length === 0, '19 clips: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* 20. AFTER THE OUTING (the owner, 2026-11-05), through the mock. Before you play: nothing of the
+   day's stats on the home, and no stat line on the board (a quiet line says when they show). Then the
+   daily to its end and the result: the box line is postgame.js's count of the outing's log, the grade
+   mix the strip's, and every at bat a card with the hitter, how it ended and its K-Zone. Each pitch
+   is plotted where it crossed (the log's actual, mirrored to the pitcher's view), numbered in the at
+   bat, filled in its type's colour, its mark the result's. A tap on a pitch shows its detail and opens
+   nothing; every pitch keeps its Clip. Then the board: a stat line under each name that has one.
+   STD_PG_SHOTS=dir saves this step's pictures (the result, the at bats, the board). */
+const PG_SHOTS = process.env.STD_PG_SHOTS || '';
+if (PG_SHOTS) fs.mkdirSync(PG_SHOTS, { recursive: true });
+async function postgame(w, h, theme) {
+  const tag = w + 'x' + h + ' ' + theme;
+  console.log('\nafter the outing, ' + tag);
+  step(tag + ' 20 after the outing', 300);
+  const shot = async (page, name, full) => { if (PG_SHOTS) await page.screenshot({ path: path.join(PG_SHOTS, w + 'x' + h + '-' + theme + '-' + name + '.png'), fullPage: !!full }); };
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1', { meterOff: true, theme });
+  ok(!(await page.evaluate(() => !!document.querySelector('#s-home .bst, #s-home .bx, #s-home .kz, #s-home .ab'))), '20 before you play: no stats of the day anywhere on the home');
+  await page.waitForSelector('#h-top-all', { state: 'visible', timeout: 30000 });
+  await page.click('#h-top-all');
+  await page.waitForSelector('#s-board.on #bd-list .bd-rows', { timeout: 30000 });
+  const b0 = await page.evaluate(() => ({ lines: document.querySelectorAll('#bd-list .bst').length, hold: (document.querySelector('#bd-list .bd-hold') || {}).textContent || '' }));
+  ok(b0.lines === 0 && /^Stat lines show once you've played today\.$/.test(b0.hold), '20 before you play: no stat line on the board, and one quiet line says when ("' + b0.hold + '")');
+  await page.click('#bd-back');
+  await page.waitForSelector('#s-home.on', { timeout: 30000 });
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(500);
+  await dailyDone(page);
+  ok(!(await page.evaluate(() => !!document.querySelector('#s-home .kz, #s-home .ab, #s-home .bx'))), '20 the at bats and the box line are on the result only, never the home');
+  ok(await nothingOpen(page), '20 nothing opens by itself after the daily');
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on #r-reveal .ab[data-ab] .kd', { timeout: 30000 });
+  await page.waitForTimeout(1500);
+  const rv = await page.evaluate(() => {
+    const S = window.STD_UI.state, st = S.daily || S.outing, log = st.log, PG = window.STD_POSTGAME, C = window.STD_CONTRACT;
+    const box = PG.box(log, S.result), abs = PG.atBats(log, S.scn, S.result.strip);
+    const tiles = [...document.querySelectorAll('#r-box .bx div')].map((d) => [d.querySelector('dt').textContent, d.querySelector('dd').textContent]);
+    const want = { Pitches: box.p, Strikes: box.s, Balls: box.b, K: box.k, BB: box.bb, H: box.h, R: box.r, HBP: box.hbp, 'Strike %': box.strikePct + '%', 'First-pitch strike': box.fpsPct + '%' };
+    const boxOk = tiles.length === 10 && tiles.every((t) => String(want[t[0]]) === t[1]);
+    const mix = [...document.querySelectorAll('#r-mix .mx-k b')].map((b) => +b.textContent);
+    const mixOk = mix.length === 4 && mix.reduce((a, x) => a + x, 0) === S.result.strip.length &&
+      C.BANDS.every((b, i) => mix[i] === S.result.strip.filter((x) => x === b.band).length);
+    const cards = [...document.querySelectorAll('#r-reveal .ab[data-ab]')];
+    const bad = [];
+    let dots = 0, mirrored = 0;
+    cards.forEach((card, i) => {
+      const ab = abs[i];
+      if (!ab) { bad.push('card ' + i + ' has no at bat'); return; }
+      if (card.querySelector('.ab-h .nm').textContent !== ab.name) bad.push('AB ' + (i + 1) + ' name');
+      if (card.querySelector('.ab-end').textContent !== (ab.code || '-')) bad.push('AB ' + (i + 1) + ' end ' + card.querySelector('.ab-end').textContent + ' vs ' + ab.code);
+      const svg = card.querySelector('.kz svg'), r = svg.getBoundingClientRect(), u = r.width / 104;
+      card.querySelectorAll('.kd').forEach((g) => {
+        const n = +g.getAttribute('data-pick'), p = log[n - 1], q = PG.point(p.actual);
+        const b = g.querySelector('.m-fill, .m-ball, .m-hbp, .m-ip').getBoundingClientRect();
+        const cx = (b.left + b.width / 2 - r.left) / u - 2, cy = (b.top + b.height / 2 - r.top) / u - 2;
+        const ex = Math.max(5, Math.min(95, q[0] * 100)), ey = Math.max(5, Math.min(95, q[1] * 100));
+        if (Math.abs(cx - ex) > 1.2 || Math.abs(cy - ey) > 1.2) bad.push('pitch ' + n + ' at ' + cx.toFixed(1) + ',' + cy.toFixed(1) + ' not ' + ex.toFixed(1) + ',' + ey.toFixed(1));
+        // the pitcher's view: a pitch to the catcher's right (+x) sits on the left of the picture
+        if (Math.abs(p.actual.x) > 0.3) { mirrored++; if ((p.actual.x > 0) !== (cx < 50)) bad.push('pitch ' + n + ' not mirrored'); }
+        if (!g.classList.contains(PG.KIND[p.result])) bad.push('pitch ' + n + ' mark ' + g.getAttribute('class') + ' for ' + p.result);
+        const row = card.querySelector('.pc[data-n="' + n + '"] .ty'), mk = g.firstElementChild.getAttribute('style') || '';
+        if (!row || mk.indexOf(row.style.getPropertyValue('--tc')) < 0) bad.push('pitch ' + n + ' colour');
+        const k = abs[i].pitches.findIndex((x) => x.n === n) + 1, t = g.querySelector('text');
+        if (!t || +t.textContent !== k) bad.push('pitch ' + n + ' number');
+        dots++;
+      });
+    });
+    const clips = document.querySelectorAll('#r-reveal .pc button[data-clip]').length;
+    return { boxOk, tiles, mixOk, mix, cards: cards.length, abs: abs.length, dots, pitches: log.length, mirrored, bad: bad.slice(0, 6), clips,
+      legend: document.querySelectorAll('#r-reveal .kz-key span svg').length, side: [...document.querySelectorAll('#r-reveal .kz-side')].map((x) => x.textContent).slice(0, 2) };
+  });
+  ok(rv.boxOk, '20 the box line is the outing\'s, counted off the log (' + rv.tiles.map((t) => t[0] + ' ' + t[1]).join(', ') + ')');
+  ok(rv.mixOk, '20 the grade mix is the strip\'s (' + rv.mix.join(', ') + ')');
+  ok(rv.cards === rv.abs && rv.dots === rv.pitches && !rv.bad.length, '20 a K-Zone per at bat (' + rv.cards + '), every pitch plotted where it crossed, numbered, its colour and mark (' + rv.dots + ' of ' + rv.pitches + (rv.bad.length ? ': ' + rv.bad.join('; ') : '') + ')');
+  ok(rv.mirrored > 0, '20 the zone is the pitcher\'s view: ' + rv.mirrored + ' pitches off the middle sit on the mirrored side');
+  ok(rv.legend === 6 && rv.side.every((t) => /^(InsideAway|AwayInside)$/.test(t)), '20 the marks have a legend, and the sides say inside and away (' + rv.side.join(' | ') + ')');
+  ok(rv.clips === rv.pitches, '20 every pitch keeps its Clip (' + rv.clips + ')');
+  await shot(page, 'result');
+  // a tap on the first pitch's mark: its detail, nothing opens
+  const first = await page.$('#r-reveal .ab[data-ab="0"] .kd[data-pick="1"]');
+  await first.scrollIntoViewIfNeeded();
+  await first.click({ force: true });
+  const dt = await page.evaluate(() => {
+    const S = window.STD_UI.state, p = (S.daily || S.outing).log[0], card = document.querySelector('#r-reveal .ab[data-ab="0"]');
+    return { t: card.querySelector('.ab-dt').textContent, on: card.querySelector('.pc.on').getAttribute('data-n'), speed: Math.round(p.velo), count: p.countBefore.b + '-' + p.countBefore.s,
+      clip: document.getElementById('s-clip').classList.contains('on') };
+  });
+  ok(/^Pitch 1 of \d+/.test(dt.t) && dt.t.indexOf(dt.speed + ' mph') >= 0 && dt.t.indexOf(dt.count) >= 0 && /(The call|Close|Costly|Wrong idea)$/.test(dt.t) && dt.on === '1',
+    '20 a tap on a pitch shows its detail: "' + dt.t + '"');
+  ok(!dt.clip && await nothingOpen(page), '20 the detail opens nothing (no clip, no sheet)');
+  // a tap on a row does the same
+  await page.click('#r-reveal .ab[data-ab="0"] .pc:last-child .pc-pick');
+  ok(await page.evaluate(() => { const c = document.querySelector('#r-reveal .ab[data-ab="0"]'); return c.querySelector('.pc.on') === c.querySelector('.pc:last-child') && !!c.querySelector('.kd[data-on]'); }), '20 a tap on a row lights its pitch on the zone');
+  ok(await noSideScroll(page), '20 the result has no sideways scroll');
+  await page.evaluate(() => document.querySelector('#r-reveal .ab-t').scrollIntoView());
+  await page.waitForTimeout(200);
+  await shot(page, 'at-bats');
+  // the board, after playing: a stat line under each name that has one
+  await page.click('#r-board');
+  await page.waitForSelector('#s-board.on #bd-list .bd-rows', { timeout: 30000 });
+  const b1 = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#bd-list .bd-rows li:not(.gap)')];
+    return { rows: rows.length, lines: rows.map((li) => (li.querySelector('.bst') || {}).textContent || ''), hold: !!document.querySelector('#bd-list .bd-hold'),
+      fit: rows.every((li) => { const n = li.querySelector('.bst'); return !n || n.scrollWidth <= n.clientWidth + 1; }) };
+  });
+  const withLine = b1.lines.filter(Boolean);
+  ok(withLine.length > 0 && withLine.length < b1.rows && withLine.every((t) => /^\d+ P · \d+ S · \d+ K · \d+ H · \d+ R$/.test(t)) && !b1.hold,
+    '20 after you play: a stat line under each name that has one (' + withLine.length + ' of ' + b1.rows + ', "' + withLine[0] + '"), none on an old row');
+  ok(b1.fit && await noSideScroll(page), '20 the stat line fits its row, no sideways scroll');
+  await shot(page, 'board');
+  ok(errors.length === 0, '20 after the outing: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
 
@@ -2280,11 +2393,13 @@ try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   /* STD_CLIPS=1: only the clips (19) at both sizes, for a local pass on them */
   if (process.env.STD_CLIPS === '1') { await clips(390, 844); await clips(1440, 900); throw 'quick'; }
+  /* STD_POSTGAME=1: only the result's at bats and the board's line (20) at both sizes, light and dark */
+  if (process.env.STD_POSTGAME === '1') { for (const t of ['light', 'dark']) { await postgame(390, 844, t); await postgame(1440, 900, t); } throw 'quick'; }
   await run(390, 844, 'light');
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
-  if (QUICK) { await run(1440, 900, 'dark'); await clips(390, 844); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
+  if (QUICK) { await run(1440, 900, 'dark'); await clips(390, 844); await postgame(390, 844, 'light'); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
   await bootStuck(390, 844);
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
@@ -2292,6 +2407,8 @@ try {
   await homeTrip(390, 844);
   await clips(390, 844);
   await clips(1440, 900);
+  await postgame(390, 844, 'light');
+  await postgame(1440, 900, 'dark');
   await sizeSweep();
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');

@@ -3199,32 +3199,36 @@
       "sha": "f42ddd13c70685d0"
     },
     "auth.js": {
-      "v": "9",
-      "sha": "215909bacdcd476a"
+      "v": "10",
+      "sha": "3507b40bb34fd819"
     },
     "voices.js": {
       "v": "1",
       "sha": "27db450876d5eda0"
     },
+    "postgame.js": {
+      "v": "1",
+      "sha": "fedfba1872eb4e2a"
+    },
     "api.js": {
-      "v": "31",
-      "sha": "8f7fc28354c973c2"
+      "v": "32",
+      "sha": "17e0605212244c92"
     },
     "mock-api.js": {
-      "v": "17",
-      "sha": "20303e938ceace3e"
+      "v": "18",
+      "sha": "13581b349be88d9c"
     },
     "coach.js": {
       "v": "2",
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
-      "v": "7",
-      "sha": "33aac98592cad168"
+      "v": "9",
+      "sha": "079c28d2327d3f0e"
     },
     "modes-ui.js": {
-      "v": "10",
-      "sha": "bce97b1073a77f47"
+      "v": "12",
+      "sha": "4ef3559bb7d9b39f"
     },
     "box-ui.js": {
       "v": "2",
@@ -3243,8 +3247,8 @@
       "sha": "472174c95dbcbfc9"
     },
     "ui.js": {
-      "v": "72",
-      "sha": "134a3a1143402c63"
+      "v": "75",
+      "sha": "3a990410987ef0a9"
     },
     "3d/boot.js": {
       "v": "99",
