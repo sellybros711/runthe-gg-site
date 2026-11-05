@@ -77,6 +77,7 @@ console.log('\nTHE RESULTS SCREEN\'S FANTASY CARD');
   const c = await card(week(30 * HOUR));
   ok('entries open, no lineup in: the card is there', c.shown, c.text.slice(0, 60));
   ok('  it names the week', /Week 9/.test(c.text));
+  ok('  it says what the week\'s top score wins', /Top score this week wins 30 days of Pro\./.test(c.text));
   ok('  and says when entries lock, in Eastern time', /Entries lock \w{3} \d{1,2}:\d{2}[ap]m ET\./.test(c.text), c.text);
   await c.page.click('#b-fanpromo-x');
   ok('  Not this week takes it away', await c.page.evaluate(() => document.getElementById('o-fanpromo').hidden));
