@@ -2479,8 +2479,8 @@
       "sha": "f8c8d8db3e957b72"
     },
     "/cfb/auth.js": {
-      "v": "8",
-      "sha": "d81dc7cbc4c21a96"
+      "v": "10",
+      "sha": "0379db2899acd50e"
     },
     "/assets/cloudsave.js": {
       "v": "3",
@@ -2513,8 +2513,8 @@
       "sha": "cc149708e8a0216e"
     },
     "/cfb/auth.js": {
-      "v": "8",
-      "sha": "d81dc7cbc4c21a96"
+      "v": "10",
+      "sha": "0379db2899acd50e"
     },
     "/football/fantasy/clubs.js": {
       "v": "2",
@@ -2543,8 +2543,8 @@
       "sha": "208ef7eb35ebaffc"
     },
     "auth.js": {
-      "v": "9",
-      "sha": "d81dc7cbc4c21a96"
+      "v": "10",
+      "sha": "0379db2899acd50e"
     },
     "board.js": {
       "v": "7",
