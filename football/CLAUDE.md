@@ -37,6 +37,7 @@ node football/check-overtime.mjs      a tie goes to overtime
 node football/check-simspeed.mjs      Slow and Slower pace by the drive, Normal untouched
 node football/check-freespin.mjs      the free re-spin: when it shows, what a watched or closed video does
 node football/check-banner.mjs        the closeable bottom banner covers no button at first view
+node football/check-fanpromo.mjs      the results screen's Fantasy card: open week, no lineup in, never during the games
 node football/check-fantasy.mjs       the Fantasy Challenge (--quick: the engine, no browser)
 psql ... -f supabase/test/launch_preflight.sql    the live modes' migrations are applied
 ```
@@ -89,12 +90,16 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
 
 - With the closeable banner from `assets/rtg-ads.js` up, no button or link may sit under it at
   first view (the owner's call, 2026-10-29). Layout keys on `body.rtg-sticky-on`, never on the
-  ad filling, so nothing moves when the ad arrives; `clearBand()` moves the first lower block
-  that would straddle it to just under the fold. A new block on the front page, the board, the
+  ad filling, so nothing moves when the ad arrives. Content below a screen's own choices
+  scrolls under it like any long page (`clearBand()` was removed in PR 812). A new block on the front page, the board, the
   results or a Fantasy banner screen has to keep `check-banner` and check-fantasy's banner section green.
 
 **The Fantasy Challenge**
 
+- **The results screen offers it only while entries are open** (the owner's call, 2026-11-05):
+  from the week's pointer moving to its lock, to somebody with no lineup in (this browser's
+  record and, signed in, `PS_AUTH.fantasyMyEntry`), and never from the first kickoff until the
+  next week opens. An inline card, never a sheet. `fantasyPromoPaint()` holds the rule.
 - **A price never moves once anybody has drafted against it.** The board is written on the Tuesday
   and left alone. Availability is live; prices are not.
 - **Injuries are their own file** (`football/data/injuries_<season>_w<week>.json`), merged over the
