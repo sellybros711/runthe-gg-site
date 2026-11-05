@@ -170,12 +170,16 @@ var CSS = '.ppc-row{margin:2px 0 12px;display:flex;flex-direction:column;gap:8px
   '.ppc-main span{flex:1;min-width:0}.ppc-main i{flex:none;width:30px;height:30px;border-radius:50%;background:#F1D04A;display:grid;place-items:center}' +
   '.ppc-main i svg{width:16px;height:16px}' +
   '.ppc-putts{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.ppc-putts::-webkit-scrollbar{display:none}' +
-  '.ppc-putts button{flex:1 0 auto;min-width:64px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fbf2e0;font:inherit;font-size:13px;font-weight:800;cursor:pointer}' +
+  '.ppc-putts button{flex:1 0 auto;min-width:64px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fbf2e0;font:inherit;font-size:13px;font-weight:800;cursor:pointer}' +
+  '.ppc-putts button svg{width:16px;height:16px;flex:none}' +
+  '.ppc-main .ppc-thumb{position:relative;flex:none;display:block;min-width:0}.ppc-thumb svg{position:absolute;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}' +
   '.ppc-putts button:hover,.ppc-putts button:focus-visible{border-color:#F1D04A;outline:none}' +
   '.ppc-row[data-busy] button{opacity:.6}' +
   '.pp-dres+.ppc-row,.pt-menu>.ppc-row{margin:0}';
 // share: an arrow up out of a tray; save: an arrow down into one
 function icon(share){ return '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="' + (share ? 'M8 1.5v8.2M4.9 4.4 8 1.3l3.1 3.1' : 'M8 1.5v8.2M4.9 6.6 8 9.7l3.1-3.1') + 'M3 7.5v6h10v-6" fill="none" stroke="#1c1606" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+// play: a yellow disc with a dark triangle, so a putt button reads as a video
+var PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.5" fill="#F1D04A"/><path d="M6.4 4.9v6.2L11.2 8z" fill="#1c1606"/></svg>';
 function css(){ if (document.getElementById('ppc-css')) return; var s = document.createElement('style'); s.id = 'ppc-css'; s.textContent = CSS; document.head.appendChild(s); }
 function canShareFile(){
   try{ if (!navigator.share || !navigator.canShare) return false; return navigator.canShare({ files:[new File([new Blob([''], { type:baseType() })], 'clip.' + ext(), { type:baseType() })] }); }catch(e){ return false; }
@@ -197,9 +201,9 @@ function settleCard(){
   var url = URL.createObjectURL(full || putts[0].blob); h.urls.push(url);
   var row = document.createElement('div'); row.className = 'ppc-row'; row.setAttribute('data-clips', '');
   var fullMs = h.fullMs || putts.reduce(function(a, c){ return a + c.ms; }, 0);
-  row.innerHTML = '<button class="ppc-main" data-clip="hole" aria-label="' + verb + ' the hole clip"><video muted loop playsinline autoplay preload="metadata" src="' + url + '"></video>' +
+  row.innerHTML = '<button class="ppc-main" data-clip="hole" aria-label="' + verb + ' the hole clip"><span class="ppc-thumb"><video muted loop playsinline autoplay preload="metadata" src="' + url + '"></video>' + PLAY + '</span>' +
     '<span><b>' + verb + ' ' + (one ? 'the clip' : 'the hole') + '</b><small>' + (one ? 'Your putt' : putts.length + ' putts') + ' · ' + secs(fullMs) + '</small></span><i>' + icon(share) + '</i></button>' +
-    (one ? '' : '<div class="ppc-putts">' + putts.map(function(c, j){ return '<button data-clip="' + j + '" aria-label="' + verb + ' putt ' + (j + 1) + '">Putt ' + (j + 1) + '</button>'; }).join('') + '</div>');
+    (one ? '' : '<div class="ppc-putts">' + putts.map(function(c, j){ return '<button data-clip="' + j + '" aria-label="' + verb + ' putt ' + (j + 1) + '">' + PLAY + 'Putt ' + (j + 1) + '</button>'; }).join('') + '</div>');
   if (before) before.parentNode.insertBefore(row, before); else after.parentNode.insertBefore(row, after.nextSibling);
   h.card = row;
   var nm = String(h.name || 'putt').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'putt';
