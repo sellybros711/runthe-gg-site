@@ -2543,7 +2543,7 @@
       "sha": "208ef7eb35ebaffc"
     },
     "auth.js": {
-      "v": "8",
+      "v": "9",
       "sha": "d81dc7cbc4c21a96"
     },
     "board.js": {
@@ -2613,8 +2613,8 @@
       "sha": "8648d9aa90526509"
     },
     "/football/auth.js": {
-      "v": "8",
-      "sha": "105d260a86068770"
+      "v": "9",
+      "sha": "105d3aa7d244408e"
     },
     "clubs.js": {
       "v": "2",
@@ -2695,8 +2695,8 @@
       "sha": "e3e8281d17288b69"
     },
     "auth.js": {
-      "v": "8",
-      "sha": "105d260a86068770"
+      "v": "9",
+      "sha": "105d3aa7d244408e"
     },
     "data/defender_seasons.json": {
       "v": "1",

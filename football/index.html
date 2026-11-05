@@ -511,6 +511,21 @@ window.GA_ID='G-L29P5MRWKE';
     --fan-g2:rgba(34,197,94,.5);
     --fan-bg1:rgba(8,38,20,.62); --fan-bg2:rgba(6,26,14,.62)}
   .hp-full.hp-fan .hp-full-name{color:#ffe8e8}
+  /* The results screen's Fantasy card: the door's red, as a card, above the way out. */
+  .fanpromo{margin:16px 0 4px;padding:14px 15px 12px;border-radius:14px;
+    border:1.5px solid rgba(239,68,68,.7);
+    background:linear-gradient(180deg,rgba(239,68,68,.14),rgba(239,68,68,.04) 60%),var(--grad-panel,#0f1626)}
+  .fanpromo .fpm-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .fanpromo .fpm-name{font-family:var(--fd);font-size:20px;letter-spacing:.02em;color:#ffe8e8;line-height:1}
+  .fanpromo .fpm-wk{margin-left:auto;font-size:12px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:#fca5a5;white-space:nowrap}
+  .fanpromo p{margin:0 0 4px;font-size:14px;line-height:1.4;color:var(--ink,#e8eef7)}
+  .fanpromo .fpm-lock{font-size:12.5px;color:var(--dim,#94a3b8);margin-bottom:10px}
+  .fanpromo .fpm-go{display:block;text-align:center;text-decoration:none;padding:12px 16px;border-radius:11px;
+    font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:15px;color:#fff;
+    background:linear-gradient(180deg,#ef4444,#b91c1c);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+  .fanpromo .fpm-later{display:block;margin:8px auto 0;background:none;border:0;padding:6px 10px;
+    color:var(--dim,#94a3b8);font-size:13px;cursor:pointer}
   .hp-full.hp-fan.hp-fan-in .hp-full-name{color:#dcfce7}
   .hp-full.hp-fan .hp-full-sub{color:rgba(255,226,226,.72)}
   .hp-full.hp-fan.hp-fan-in .hp-full-sub{color:rgba(220,252,231,.72)}
@@ -8437,6 +8452,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="rc-hi" id="rc-hi"></div>
     </div>
 
+    <!-- THE FANTASY CHALLENGE, OFFERED ONCE A RUN IS DONE (the owner's call, 2026-11-05).
+         Only while this week's entries are open, and only to somebody with no lineup in.
+         See fantasyPromoPaint(). -->
+    <div class="fanpromo" id="o-fanpromo" hidden></div>
+
     <div class="next-panel">
       <div class="next-pair">
         <button class="btn next-secondary" id="b-same"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 10a7 7 0 0 1 12.9-3.7M17 10a7 7 0 0 1-12.9 3.7"/><path d="M3 4v3h3M17 16v-3h-3"/></svg>Draft again</button>
@@ -8847,7 +8867,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      keeps its own body as the fallback, so a blocked copy still draws the old chart. -->
 <script src="/assets/fieldcast.js?v=5"></script>
 <script src="/assets/simspeed.js?v=1"></script>
-<script defer src="auth.js?v=8"></script>
+<script defer src="auth.js?v=9"></script>
 <script>
 (function(){
 'use strict';
@@ -12557,6 +12577,61 @@ function fantasyLockLine(){
   const left=d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
     :Math.max(1,Math.floor(ms/60000))+'m';
   return 'Week '+fanWeek.week+' &middot; locks in '+left;
+}
+
+/* THE FANTASY CHALLENGE, OFFERED AFTER A RUN (the owner's call, 2026-11-05): "promote the
+   fantasy challenge to users who haven't joined yet, after they complete a draft, and only in
+   times where entries are able to happen and not during the games".
+   ALL OF THESE, OR NO CARD:
+   - the page draws the Fantasy door at all (fantasyShow), so nobody is sold a mode they
+     are not shown;
+   - this week's pointer is in and its lock is still ahead. The pointer moves on Tuesday and
+     the lock is the first kickoff, so the card is up from the week opening to Thursday
+     night and gone from the first kickoff until the next week opens. Read fresh here,
+     never off a weekday;
+   - no lineup in: the browser's own record, and signed in, the server's (another device);
+   - not waved off for this week ("Not this week", kept per week on this browser).
+   An inline card and not a sheet, so nothing opens by itself. */
+const FPROMO_SKIP='ps_fanpromo_skip';
+const fpromoLock=(ms)=>{
+  try{
+    const f=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',
+      hour:'numeric',minute:'2-digit'}).format(new Date(ms));
+    return f.replace(/\s?([AP])M$/,(m,x)=>x.toLowerCase()+'m')+' ET';
+  }catch(_){ return new Date(ms).toUTCString(); }
+};
+function fantasyPromoPaint(){
+  const el=$('o-fanpromo'); if(!el) return;
+  el.hidden=true; el.innerHTML='';
+  if(!fantasyShow()) return;
+  fetch('/football/data/fantasy_now.json',{cache:'no-cache'})
+    .then(r=>r.ok?r.json():null)
+    .then(async n=>{
+      if(!n||n.season==null||n.week==null||!n.locks_at) return;
+      const lock=Date.parse(n.locks_at);
+      if(!(lock>Date.now())) return;
+      fanWeek=n;
+      if(fantasyEntered()) return;
+      const k=n.season+'_w'+n.week;
+      try{ if(localStorage.getItem(FPROMO_SKIP)===k) return; }catch(_){}
+      const A=window.PS_AUTH;
+      if(authState.signedIn&&A&&typeof A.fantasyMyEntry==='function'
+        &&(await A.fantasyMyEntry(n.season,n.week))===true) return;
+      if(!$('s-over').classList.contains('on')||!(lock>Date.now())) return;
+      const guest=!canPlayFantasy();
+      el.innerHTML='<div class="fpm-top">'+
+        '<span class="fpm-name">Fantasy Challenge</span><span class="fpm-wk">Week '+n.week+'</span></div>'+
+        '<p>Draft six real players for this week\'s NFL games. One lineup. Free to play.</p>'+
+        '<div class="fpm-lock">Entries lock '+fpromoLock(lock)+'.</div>'+
+        '<a class="fpm-go" id="b-fanpromo" href="/football/fantasy/">'+(guest?'Sign in and draft':'Draft my lineup')+'</a>'+
+        '<button class="fpm-later" type="button" id="b-fanpromo-x">Not this week</button>';
+      $('b-fanpromo-x').onclick=()=>{
+        try{ localStorage.setItem(FPROMO_SKIP,k); }catch(_){}
+        el.hidden=true;
+      };
+      el.hidden=false;
+    })
+    .catch(()=>{});
 }
 
 function ensureFantasyButton(){
@@ -22766,6 +22841,7 @@ function paintOver(){
   setOverTab(defaultTab);
   paintOwner();
   show('s-over');
+  fantasyPromoPaint();
 
   /* The celebration. A perfect run gets the biggest burst, a title a club-colored one;
      everything else gets nothing. Fired once the screen is up so it rains over the record,
