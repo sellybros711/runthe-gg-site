@@ -56,6 +56,11 @@ const SAME = [
   ['BYU', 'Brigham Young University'], ['SMU', 'Southern Methodist University'],
   ['UCF', 'Central Florida University'],
   ['Miami (FL)', 'Miami (Fla.)'], ['Miami Florida', 'Miami (Fla.)'],
+  /* A bare "Miami" in the data is the Florida school (34 rows, every one a
+     Hurricane). Njoku's row says "Miami", the grid offered "Miami (FL)" too,
+     and tapping it was marked wrong. */
+  ['Miami (FL)', 'Miami'], ['Miami Florida', 'Miami'], ['University of Miami', 'Miami (FL)'],
+  ['Miami (OH)', 'Miami University'], ['Miami, O.', 'Miami University'],
   ['California (PA)', 'California, Pa.'], ['Monmouth', 'Monmouth, N.J.'],
   ['Augustana', 'Augustana, S.D.'], ['Albany State', 'Albany State, Ga.'],
   ['Western State', 'Western State, Colo.'], ['Wayne State', 'Wayne State (NE)'],
@@ -114,6 +119,10 @@ const DIFFER = [
   ['Ohio', 'Ohio State'], ['Ohio U.', 'Ohio State'], ['Miami (OH)', 'Ohio State'],
   ['Indiana', 'Indiana State'], ['Iowa', 'Iowa State'], ['Washington', 'Washington State'],
   ["St. Mary's (CA)", "Saint Joseph's College (IN)"],
+  /* Bare "Miami" is Florida, and "Miami University" is the Ohio school's own
+     name, so neither may reach the other Miami. */
+  ['Miami (OH)', 'Miami'], ['Miami, O.', 'Miami'], ['Miami University', 'Miami'],
+  ['Miami University', 'Miami (FL)'], ['Miami', 'Miami Dade CC'],
 ];
 console.log('\n2) two different schools stay two different schools');
 for (const [a, b] of DIFFER) {

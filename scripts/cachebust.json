@@ -182,6 +182,10 @@
       "v": "2",
       "sha": "8eb403844838a3f1"
     },
+    "/arcade/namesake.js": {
+      "v": "1",
+      "sha": "47d23b88a7d3ff0b"
+    },
     "/arcade/rosters.js": {
       "v": "10",
       "sha": "b9849242f71aa867"
@@ -307,8 +311,8 @@
       "sha": "a87d04996195b81f"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/fact.js": {
       "v": "6",
@@ -555,8 +559,8 @@
       "sha": "4f304dc9b4be7abf"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/fact.js": {
       "v": "6",
@@ -689,8 +693,8 @@
       "sha": "78b9065056032f84"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/howto.js": {
       "v": "26",
@@ -947,6 +951,10 @@
     "/arcade/flags.js": {
       "v": "8",
       "sha": "15a845209f4b3402"
+    },
+    "/arcade/namesake.js": {
+      "v": "1",
+      "sha": "47d23b88a7d3ff0b"
     },
     "/arcade/rosters.js": {
       "v": "10",
@@ -1987,8 +1995,8 @@
       "sha": "78b9065056032f84"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/howto.js": {
       "v": "26",
@@ -2113,8 +2121,8 @@
       "sha": "3b13e2fe5b4ec3b5"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/sportegories.js": {
       "v": "21",
@@ -2311,8 +2319,8 @@
       "sha": "4f304dc9b4be7abf"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/fact.js": {
       "v": "6",

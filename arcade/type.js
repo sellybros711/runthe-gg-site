@@ -229,7 +229,9 @@
     northcarolinastate: 'NC State', calpolysanluisobispo: 'Cal Poly',
     bowlinggreenstate: 'Bowling Green', detroitmercy: 'Detroit Mercy',
     louisianamonroe: 'Louisiana-Monroe', louisianalafayette: 'Louisiana-Lafayette',
-    wisconsinoshkosh: 'Wisconsin-Oshkosh', saintmarysca: "Saint Mary's (CA)"
+    wisconsinoshkosh: 'Wisconsin-Oshkosh', saintmarysca: "Saint Mary's (CA)",
+    /* Two schools called Miami, so neither prints bare. See miamiOf below. */
+    miami: 'Miami (FL)', miamiuniversity: 'Miami (OH)'
   };
   function schoolLabel(s) {
     var raw = String(s == null ? '' : s).trim();
@@ -251,8 +253,32 @@
      "are these two rows the same school", which is what a data check needs.
      This does: the set-off qualifier is canonicalised, and nothing else is
      forgiven. */
+  /* TWO SCHOOLS CALLED MIAMI. Every bare "Miami" in the data is the Florida
+     school (Frank Gore, Greg Olsen, David Njoku and 31 more). The Ohio school
+     always carries its state, or its own name "Miami University". The game
+     used to treat "Miami" and "Miami (FL)" as two different schools, so it
+     offered both as choices for Njoku and called the right one wrong. A
+     player sent in the screenshot.
+     Returns 'fl', 'oh', '' for a bare "Miami" (which the data means as
+     Florida), or null when the name is not one of the two. */
+  function miamiOf(s) {
+    var w = schoolWords(s);
+    if (w[0] !== 'miami') return null;
+    if (w.length === 1) return '';
+    if (w.length === 2 && w[1] === 'university') return 'oh';
+    if (w.length === 2) {
+      var st = STATE_CANON[w[1]];
+      if (st === 'fl' || st === 'oh') return st;
+    }
+    return null;
+  }
+  /* A typed bare "Miami" could mean either school. The page asks which one
+     rather than ending a run over it. "University of Miami" is not bare. */
+  function ambiguousSchool(s) { return norm(s) === 'miami'; }
   function schoolIdent(s) {
     var raw = String(s == null ? '' : s);
+    var mia = miamiOf(raw);
+    if (mia !== null) return 'miami' + (mia || 'fl');
     var w = schoolWords(raw);
     if (!w.length) return '';
     if (w.length > 1 && hasSetOffTail(raw)) {
@@ -296,6 +322,8 @@
     return /[(,]\s*[A-Za-z][A-Za-z. ]{0,13}\)?\s*$/.test(String(raw == null ? '' : raw));
   }
   function sameCollege(typed, target) {
+    var ma = miamiOf(typed), mb = miamiOf(target);
+    if (ma !== null && mb !== null) return (ma || 'fl') === (mb || 'fl');
     var a = schoolWords(typed), b = schoolWords(target);
     if (!a.length || !b.length) return false;
     var aj = a.join(''), bj = b.join('');
@@ -665,6 +693,7 @@
     mount: mount, close: close, harden: harden,
     norm: norm, tokens: tokens, nameKey: nameKey, hasFullName: hasFullName,
     sameName: sameName, schoolKey: schoolKey, schoolIdent: schoolIdent, schoolLabel: schoolLabel, sameCollege: sameCollege,
+    ambiguousSchool: ambiguousSchool,
     playerSource: playerSource, collegeSource: collegeSource
   };
 });
