@@ -5075,6 +5075,93 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ hxfloor:['#c8a060', '#d8b878', '#b8905a', 0.1, function(c, R){ var a = Math.sin(c.ti * 0.21 + Math.sin(c.tj * 0.13) * 2 + c.tj * 0.05); return R(a > 0.55 ? '#f0dfb4' : a > -0.2 ? '#d8b878' : '#b8905a'); }],
         hxwall:['#e2c88c', '#f0dfb4', '#b8905a', 0.16, function(c, R){ var z = c.z || 0, a = Math.sin(c.ti * 0.35 + z * 1.6 + Math.sin(c.ti * 0.05 + z * 0.4) * 2);
           if (z > 5.6) return R('#fff8e8'); return R(a > 0.6 ? '#fff2d0' : a > 0 ? '#e2c88c' : a > -0.6 ? '#c8a060' : '#8a5a2a'); }] } }; };
+  /* ---------------- CRYSTARA IS A JOURNEY. Out over the shard fields, the course laid on clear crystal with shards of it
+     standing about (1 to 4), into the spire forest, tall points of violet crystal all round (5 to 8), by the mirror lake, a
+     still sheet of crystal that holds the stars, with prisms on its shore throwing light (9 to 12), down in a great geode,
+     its walls lined with rose crystal points (13 to 16), and at last the heart of the planet, a huge glowing crystal where
+     the light comes from (17 and 18). Past the crystal's edge is the void: near black violet, full of stars, the ground
+     falling gently away into it, never a cliff. A violet nebula and two small moons of crystal hang in the sky. */
+  STOPS.crystara = [[1, 'shards'], [5, 'spires'], [9, 'mirror'], [13, 'geode'], [17, 'heart']];
+  (function(){ BUILD.crystara = function(L){ var s = L.stop; return s === 'heart' ? crysHeart(L) : s === 'geode' ? crysGeodeStop(L) : s === 'mirror' ? crysMirror(L) : s === 'spires' ? crysSpires(L) : crysShards(L); }; })();
+
+  function crysEdge(L, x, y){ return 4.4 + fbm(x * 0.09, y * 0.09, L.seed + 81) * 3; }
+  // the paint: the crystal pale cyan (or rose, in the geode) with its faint facet check, a bright rim at its edge and a dark
+  // underside, and the void beyond, near black violet with stars and wisps of nebula
+  function crysMats(rose, mirror){ var dk = rose ? ['#c4a8f0', '#e0c8ff', '#a888e0', '#ffffff', '#f4e8ff'] : ['#9fd8e8', '#c8f0fa', '#88c6dc', '#ffffff', '#e8fbff'];
+    return { cglass:[dk[0], dk[1], dk[2], 0.12, function(c, R){ if (c.rim === 1) return R(dk[3]); if (c.rim === 2) return R('#3a2a6a');
+        if (c.lake){ var st = hash(c.ti, c.tj, 97); return R(st > 0.985 ? '#ffffff' : c.lake === 2 ? '#c8f0fa' : '#2a2a5a'); }
+        var b = blot(c, 0.2, 95), d1 = (c.ti + c.tj) & 15, d2 = (c.ti - c.tj + 4096) & 15; if (d1 === 0 || d2 === 0) return R(dk[4]); return R(b > 0.68 ? dk[1] : b < 0.25 ? dk[2] : dk[0]); }],
+      cvoid:['#0e0820', '#1c1236', '#0a0618', 0.06, function(c, R){ var st = hash(c.ti, c.tj, 96), n = blot(c, 0.05, 98);
+        if (st > 0.992) return R('#ffffff'); if (st > 0.982) return R('#b8a8ff'); return R(n > 0.72 ? '#2a1a4a' : n > 0.6 ? '#1c1236' : '#0e0820'); }] }; }
+  function crysBase(L, o){ var seed = L.seed;
+    function fall(x, y){ var c = L.clearAt(x, y), e = crysEdge(L, x, y); return sm(e, e + 3, c); }
+    return {
+      h:function(x, y){ var f = fall(x, y); return (fbm(x * 0.1, y * 0.1, seed) - 0.45) * 0.3 * (1 - f) * sm(1.3, 4, L.clearAt(x, y)) - 1.4 * f; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = crysEdge(L, x, y);
+        if (c < e + 0.5){ var rim = c > e - 0.35 ? 1 : c > e ? 2 : 0, lk = 0;
+          if (o.lake && !rim && c > 2.2){ var lx = (x - o.lake[0]) / o.lake[2], ly = (y - o.lake[1]) / (o.lake[2] * 0.6), ld = Math.hypot(lx, ly); if (ld < 1) lk = ld > 0.92 ? 2 : 1; }
+          return ['cglass', { rim:rim, lake:lk }]; }
+        return ['cvoid', {}]; },
+      fill:{ on:['cglass'], trees:o.shards == null ? 0.14 : o.shards, lows:0.12,
+        tree:function(B, x, y, i){ var zb = B.gz(x, y), hh = 0.8 + hash(i, seed, 81) * 1.6, rose = o.rose || hash(i, seed, 82) < 0.4;
+          B.solid(x - 0.5, y - 0.5, zb - 0.1, x + 0.5, y + 0.5, zb + hh, function(px, py, pz){ var u = (pz - zb) / hh, r = 0.42 * (1 - u); if (Math.abs(px - x) + Math.abs(py - y) > r) return null;
+            return (px - x) + (py - y) < -r * 0.3 ? '#ffffff' : rose ? '#c8a8ff' : '#9ff0ff'; }); },
+        low:function(B, x, y, i){ rockAt(B, x, y, 0.2 + hash(i, seed, 83) * 0.3, o.rose ? ['#c8a8ff', '#f4e8ff'] : ['#b8e6f4', '#ffffff']); } },
+      // the sky: stars, a violet nebula, and two little moons of crystal
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createRadialGradient(V.W * 0.3, top * 0.4, 2, V.W * 0.3, top * 0.4, Math.max(8, V.W * 0.35)); g.addColorStop(0, 'rgba(168,122,255,0.35)'); g.addColorStop(1, 'rgba(168,122,255,0)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        for (var i = 0; i < 140; i++){ var sx = hash(i, 1, seed) * V.W, sy = hash(i, 2, seed) * top, a = 0.35 + hash(i, 3, seed) * 0.6;
+          ctx.fillStyle = 'rgba(236,240,255,' + a.toFixed(2) + ')'; ctx.fillRect(sx | 0, sy | 0, hash(i, 4, seed) < 0.12 ? 2 : 1, hash(i, 4, seed) < 0.12 ? 2 : 1); }
+        [[0.74, 0.45, 0.13, '#9ff0ff'], [0.86, 0.25, 0.06, '#d8b8ff']].forEach(function(m){ var mx = V.W * m[0], my = top * m[1], mr = Math.min(top * m[2] * 2, V.W * m[2] * 0.5); if (mr < 2) return;
+          ctx.fillStyle = m[3]; ctx.beginPath(); ctx.moveTo(mx, my - mr); ctx.lineTo(mx + mr * 0.8, my); ctx.lineTo(mx, my + mr); ctx.lineTo(mx - mr * 0.8, my); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.moveTo(mx, my - mr); ctx.lineTo(mx - mr * 0.8, my); ctx.lineTo(mx, my); ctx.closePath(); ctx.fill(); });
+        if (o.glow){ var gg = ctx.createLinearGradient(0, 0, 0, top); gg.addColorStop(0, 'rgba(159,240,255,0)'); gg.addColorStop(1, 'rgba(159,240,255,0.22)'); ctx.fillStyle = gg; ctx.fillRect(0, 0, V.W, top); } },
+      bg:o.bg || '#0a0618', gain:2, mats:crysMats(!!o.rose, !!o.lake) }; }
+  // a crystal spire: a tall six sided point of violet crystal, a white edge where the light catches it
+  function crysSpireAt(B, X, Y, H, rose){ var zb = B.gz(X, Y), W = H * 0.22; if (B.light) B.light(X, Y, zb + H * 0.5, rose ? '#d8b8ff' : '#9ff0ff');
+    B.solid(X - W, Y - W, zb - 0.1, X + W, Y + W, zb + H, function(px, py, pz){ var dx = px - X, dy = py - Y, u = (pz - zb) / H, r = W * (1 - u) * (u < 0.8 ? 1 : 1 - (u - 0.8) * 2.5) + 0.04,
+      a = Math.atan2(dy, dx), d = Math.hypot(dx, dy) * Math.cos(((a + 9.42) % 1.047) - 0.524); if (d > r) return null;
+      if (d > r - 0.1) return a > -1.2 && a < 0.6 ? '#ffffff' : '#5a3aa8'; return u > 0.7 ? '#efe6ff' : (((a + 9.42) / 1.047) | 0) % 2 ? (rose ? '#d8b8ff' : '#b894f0') : (rose ? '#c09ae8' : '#8ae0ff'); }); }
+  // a prism on the ground, throwing a short beam of light across the crystal beside it
+  function crysPrismAt(B, X, Y, s, dir){ var zb = B.gz(X, Y); if (B.light) B.light(X + dir * 2, Y, zb + 0.5, '#9ff0ff');
+    B.solid(X - s - 4, Y - s, zb - 0.1, X + s + 4, Y + s, zb + s * 1.6, function(px, py, pz){ var dx = (px - X) * dir, dy = py - Y, t = pz - zb;
+      if (dx > s * 0.6 && t < 0.18 && Math.abs(dy) < 0.3 && dx < s + 4) return Math.abs(dy) < 0.1 ? '#ffffff' : '#9ff0ff';
+      var u = t / (s * 1.6), hw = s * (1 - u); if (u > 1 || Math.abs(dy) > s * 0.75 || Math.abs(dx) > hw) return null;
+      return Math.abs(Math.abs(dx) - hw) < 0.1 ? '#ffffff' : dx < -s * 0.2 ? '#d8b8ff' : dx < s * 0.3 ? '#b89cff' : '#8ae0ff'; }); }
+  // a geode broken open, its hollow lined with violet points
+  function crysGeodeAt(B, X, Y, R){ var zb = B.gz(X, Y); if (B.light) B.light(X, Y + R * 0.4, zb + R * 0.6, '#c8a8ff');
+    B.solid(X - R, Y - R, zb - 0.2, X + R, Y + R, zb + R * 1.1, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy, (t - R * 0.4) * 1.1);
+      if (d > R) return null; if (dy > R * 0.1 && t > R * 0.3 && d < R - 0.3) return null; if (d > R - 0.3) return ((dx * 3 | 0) + (t * 3 | 0)) % 2 ? '#6a6478' : '#5a5468';
+      return hash(px * 4 | 0, py * 4 | 0, pz * 4 | 0) > 0.6 ? '#ffffff' : d < R * 0.5 ? '#c8a8ff' : '#8a5ad8'; }); }
+
+  // 1. THE SHARD FIELDS (and every Crystara hole with no place): clear crystal, shards of it standing all round
+  function crysShards(L){ var O = crysBase(L, { shards:0.3 }); O.build = function(){}; return O; }
+  // 2. THE SPIRE FOREST: tall spires behind and beside the hole
+  function crysSpires(L){ var O = crysBase(L, { shards:0.1 }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(1.6, function(x, y){ return L.north(x, y) * 0.5 + L.side(x) * 1.6 + hash(x | 0, y | 0, L.seed + 31 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ crysSpireAt(B, q.x, q.y, 5 + (k % 3) * 1.6, k % 2 === 1); }); }; return O; }
+  // 3. THE MIRROR LAKE: a still sheet of dark crystal holding the stars beside the hole, prisms on its shore
+  function crysMirror(L){ var lk = L.spot(3, function(x, y){ return L.side(x) * 2 - L.north(x, y) * 0.1; }), O = crysBase(L, { shards:0.08, lake:lk ? [lk.x, lk.y, 4.5] : null }), pr = [], i;
+    for (i = 0; i < 2; i++){ var q = L.spot(1.2, function(x, y){ return L.north(x, y) * 0.6 + hash(x | 0, y | 0, L.seed + 41 + i) * 2; }); if (q) pr.push(q); }
+    O.build = function(B){ pr.forEach(function(q, k){ crysPrismAt(B, q.x, q.y, 1.1, k ? -1 : 1); }); }; return O; }
+  // 4. THE GEODE: the crystal turned rose, geodes broken open round the hole
+  function crysGeodeStop(L){ var O = crysBase(L, { shards:0.16, rose:true, bg:'#140a20' }), gs = [], i;
+    for (i = 0; i < 2; i++){ var q = L.spot(1.8, function(x, y){ return L.north(x, y) * 0.7 + hash(x | 0, y | 0, L.seed + 51 + i) * 2; }); if (q) gs.push(q); }
+    O.build = function(B){ gs.forEach(function(q, k){ crysGeodeAt(B, q.x, q.y, 1.8 + k * 0.5); }); }; return O; }
+  // 5. THE HEART: the great crystal the light comes from, standing behind the hole, glowing
+  function crysHeart(L){ var O = crysBase(L, { shards:0.06, glow:true }), hq = L.spot(2.4, function(x, y){ return L.north(x, y) * 1.2; });
+    O.build = function(B){ if (hq){ crysSpireAt(B, hq.x, hq.y, 9, false); crysSpireAt(B, hq.x - 2.2, hq.y + 0.6, 5, true); crysSpireAt(B, hq.x + 2.2, hq.y + 0.4, 6, true); if (B.light) B.light(hq.x, hq.y + 2, B.gz(hq.x, hq.y) + 3, '#ffffff'); } }; return O; }
+
+  // the Rainbow Geode: inside a great geode, its walls lined with crystal points in every colour of the light
+  BUILD['s-geode'] = function(L){ var R0 = room(L, { floor:'gfloor', wall:'gwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ if (B.light){ B.light(L.cx, L.cy, 6.5, '#ffffff'); B.light(L.cx - 4, L.cy - 4, 4, '#c8a8ff'); B.light(L.cx + 4, L.cy - 4, 4, '#9ff0ff'); }
+        byWall(L, 6, 83, 2.6).forEach(function(q, k){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 3.8, ['#ff8ad8', '#ffd34d', '#9ff0ff', '#c8a8ff'][k % 4]); }); },
+      bg:'#0a0618', gain:2,
+      mats:{ gfloor:['#c4a8f0', '#e0c8ff', '#a888e0', 0.1, function(c, R){ var d1 = (c.ti + c.tj) & 15, d2 = (c.ti - c.tj + 4096) & 15; if (d1 === 0 || d2 === 0) return R('#f4e8ff'); var b = blot(c, 0.2, 99); return R(b > 0.66 ? '#e0c8ff' : b < 0.3 ? '#a888e0' : '#c4a8f0'); }],
+        gwall:['#8a5ad8', '#c8a8ff', '#5a3aa8', 0.16, function(c, R){ var z = c.z || 0, h = hash(c.ti, (z * 4) | 0, 91), k = ((c.ti >> 2) + ((z * 2) | 0)) % 5;
+          if (z > 5.6) return R('#ffffff'); if (h > 0.9) return R('#ffffff'); return R(['#ff8ad8', '#ffd34d', '#9ff0ff', '#c8a8ff', '#8a5ad8'][k]); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
