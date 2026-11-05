@@ -1,8 +1,9 @@
 /* sound.js: every noise in Shut The Door, made on the spot with the Web Audio API.
 
-   Nothing is downloaded and nothing is sampled: the glove, the bat, the umpire and the crowd are
-   filtered noise and oscillators built here. The umpire is a formant voice (a buzz through three
-   vowel filters), never a recording. One 2 s noise buffer is made once at unlock and every sound
+   The builders below make the glove, the bat, the umpire and the crowd from filtered noise and
+   oscillators (all off since 2026-11-03, see window.STD_SFX). The one sound on is the umpire's
+   call, played from players' approved recordings (umpClips, voices.js); the formant voice below
+   stays for reference. One 2 s noise buffer is made once at unlock and every sound
    reads it from a random offset, so a pitch only schedules nodes on the audio thread.
 
    The graph:  voices -> sfx -> comp -> master -> out
@@ -15,7 +16,7 @@
    - Quiet when the tab is hidden: the context is suspended and resumed on return.
 
    window.STD_SFX: setOn(v) isOn() state() pitch(mph, ms, quick) pop(level, ms) crack(kind, ms)
-   miss(ms) thud(ms) snap(ms) ump(word) roar(size) groan(size) cheer() bed(level) tick() chime(level)
+   miss(ms) thud(ms) snap(ms) ump(word) umpClips(list) umpState() roar(size) groan(size) cheer() bed(level) tick() chime(level)
    tap() tab() sting(outcome) buzz(pattern) */
 (function () {
   'use strict';
@@ -38,6 +39,7 @@
       } catch (e) { ac = null; return null; }
     }
     if (ac.state === 'suspended') { try { ac.resume(); } catch (e) {} }
+    if (clips.length) umpDecode();
     return ac;
   }
 
@@ -271,6 +273,7 @@
       return;
     }
     if (ctx()) { master.gain.cancelScheduledValues(0); master.gain.value = 0.9; if (bedLevel > 0) bed(bedLevel); }
+    umpFetch();
   }
   function unlock() {
     if (gesture) return;
@@ -284,6 +287,48 @@
     try { if (document.hidden) ac.suspend(); else if (on) ac.resume(); } catch (e) {}
   });
 
+  /* ---- the voice of the ump: approved player recordings (voices.js, supabase/165) --------------
+     voices.js hands over a few signed URLs a line once the mound is up. Each is fetched once and
+     decoded as soon as there is a context (the first tap). A call plays a random decoded clip for
+     its line straight onto the sfx bus, ducking the crowd; a line with no decoded clip stays
+     silent. Nothing waits: a pitch never schedules around a clip. */
+  var clips = [], fetching = false;
+  function umpClips(list) {
+    (list || []).forEach(function (c) {
+      if (c && c.line && c.url && !clips.some(function (x) { return x.url === c.url; })) clips.push({ line: c.line, url: c.url, bytes: null, buf: null, state: 'new' });
+    });
+    umpFetch();
+  }
+  function umpFetch() {
+    if (!on || fetching || typeof fetch !== 'function') return;
+    var next = clips.filter(function (c) { return c.state === 'new'; })[0];
+    if (!next) return umpDecode();
+    fetching = true; next.state = 'fetching';
+    fetch(next.url).then(function (r) { return r.ok ? r.arrayBuffer() : null; }).then(function (b) {
+      next.bytes = b; next.state = b ? 'fetched' : 'failed';
+    }).catch(function () { next.state = 'failed'; }).then(function () { fetching = false; umpDecode(); umpFetch(); });
+  }
+  function umpDecode() {
+    if (!ac) return;
+    clips.forEach(function (c) {
+      if (c.state !== 'fetched') return;
+      c.state = 'decoding';
+      var done = function (b) { c.buf = b; c.bytes = null; c.state = 'ready'; }, fail = function () { c.bytes = null; c.state = 'failed'; };
+      try { var p = ac.decodeAudioData(c.bytes.slice(0), done, fail); if (p && p.then) p.then(done, fail); } catch (e) { fail(); }
+    });
+  }
+  function umpPlay(word) {
+    var V = window.STD_VOICES, lines = V && V.linesFor ? V.linesFor(word) : [];
+    var ready = clips.filter(function (c) { return c.state === 'ready' && lines.indexOf(c.line) >= 0; });
+    if (!ready.length) return;
+    var c = ready[Math.floor(Math.random() * ready.length)], t = at(0);
+    var s = ac.createBufferSource(); s.buffer = c.buf;
+    var g = ac.createGain(); g.gain.value = 0.9;
+    s.connect(g); g.connect(sfx);
+    duck(t, 0.5, Math.min(2.5, c.buf.duration + 0.1));
+    s.start(t);
+  }
+
   function off() {}
   window.STD_SFX = {
     setOn: setOn,
@@ -296,7 +341,10 @@
        the phone's buzz work as before. The crowd went first ("sounds like white noise"). The
        synthesized builders above stay for reference until the recordings land. */
     pitch: off, pop: off, crack: off, miss: off, thud: off, snap: off,
-    ump: off, roar: off, groan: off, cheer: off, sting: off,
+    /* the one sound on: the umpire's calls, in players' own approved recordings (2026-11-05) */
+    ump: run(umpPlay), umpClips: umpClips,
+    umpState: function () { return clips.map(function (c) { return { line: c.line, state: c.state }; }); },
+    roar: off, groan: off, cheer: off, sting: off,
     tick: off, chime: off, tap: off, tab: off,
     bed: off,
     buzz: function (p) { if (!on || !canBuzz()) return; try { navigator.vibrate(p); } catch (e) {} },
