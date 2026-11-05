@@ -1474,7 +1474,9 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 @media (orientation: landscape), (min-width: 700px) and (min-height: 600px) {
   #s-mound { --col: 330px; --dock-w: 252px; }
   .dock { left: auto; }
-  #s-mound .mh-bug { max-width: none; }
+  /* no wider than the column (the menu button sits in the right corner here, not beside the bug): a long
+     club name ellipsizes instead of widening the bar over the hitter (844x390: 317 px of a 260 px column) */
+  #s-mound .mh-bug { max-width: 100%; }
   #s-mound .mh-card { margin-right: 0; }
   /* a list: one pitch a row, the key, the name, the speed and the glyph on one line */
   #m-arsenal[data-n] { grid-template-columns: 1fr; gap: 5px; }
