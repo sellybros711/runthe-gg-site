@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -151,6 +151,11 @@ var KIT = {
   saturn:{ g:['#9a94cc', '#a8a2d8', '#8a84bc', 0.18], gpat:'satDeck', p:['#e8e6f6', '#f4f2fc', '#d4d0ec'], paved:true, tree:[], leaves:['#c8d8ee', '#dceaf6', '#a8c4e8'], bark:'#6a6488', dens:0.001,
     low:['rockice', 'rockice', 'rock'], brk:'crate', haz:'slow', hazC:['#a8a0c8', '#8a84b0'], waterC:['#d8b878', '#f0dfb4'], bogC:['#a8a0c8', '#8a84b0'], lm:['satModule', 'satMast', 'satProbe'], wall:['#d8dcec', '#7670b0'],
     npc:{ skin:'deep', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the station hand' },
+  // Crystara: clear crystal ground with its facets, the starry void showing through where it breaks off, a pale glass path,
+  // no trees, crystal sand for the bog, the void for the water, crystal shards to break
+  crystara:{ g:['#9fd8e8', '#b4e6f2', '#88c6dc', 0.18], gpat:'crysGlass', p:['#eef8ff', '#ffffff', '#d8ecf8'], paved:true, tree:[], leaves:['#c8b4ff', '#9ff0ff', '#e8dcff'], bark:'#5a4a8a', dens:0.001,
+    low:['rockcrys', 'rockcrys', 'rockice'], brk:'crate', haz:'slow', hazC:['#c8b4ec', '#a894d8'], waterC:['#0e0820', '#3a2a60'], bogC:['#c8b4ec', '#a894d8'], lm:['crysSpire', 'crysPrism', 'crysGeode'], wall:['#eef8ff', '#7a86c8'],
+    npc:{ skin:'medium', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'ponytail', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the crystal surveyor' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -778,8 +783,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockice:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
-var LOWH = { bush:1.8, rockice:1.3, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
+var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
+var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -798,7 +803,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -815,11 +820,12 @@ var SECRET_SAY = {
   moon:'Mission control logged a secret hole on this trail. On the dark side, they think.',
   mars:'The colony found a cave under the ice. The way in is on this trail.',
   saturn:'There\'s a storm room somewhere on this trail. The eye of it is calm.',
+  crystara:'The crystal sings on this trail. Something hollow is under it.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -990,6 +996,9 @@ BUILD.rockdark = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#3e383c', '#2a2428'
 // Red Planet's rocks: rust red, and dark basalt
 BUILD.rockred = function(B, t, i){ rockAt(B, t.x, t.y, 1.1, ['#a8502e', '#7a3220', '#d27a48'], i); };
 BUILD.rockice = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#dceaf6', '#a8c4e8', '#ffffff'], i); };
+// Crystara's low crystals: a little cluster of violet and cyan points
+BUILD.rockcrys = function(B, t, i){ box(B, t.x, t.y, 2.2, 2.2, 1.7, function(dx, dy, tt){ for (var k = 0; k < 3; k++){ var a = hash(i, k, 61) * 6.283, ox = Math.cos(a) * 0.45 * (k ? 1 : 0), oy = Math.sin(a) * 0.45 * (k ? 1 : 0), hh = 1.6 - k * 0.35;
+    var r = 0.38 * (1 - tt / hh); if (tt < hh && Math.abs(dx - ox) + Math.abs(dy - oy) < r) return (dx - ox) + (dy - oy) < 0 ? '#ffffff' : k === 1 ? '#9ff0ff' : '#b894f0'; } return null; }); };
 BUILD.rockbasalt = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#3a2420', '#2a1814', '#6a3a2a'], i); };
 BUILD.rocksnow = function(B, t, i){ rockAt(B, t.x, t.y, 1.2, ['#7a8494', '#5e6878', '#ffffff'], i); };
 BUILD.bushsnow = function(B, t, i){ bushAt(B, t.x, t.y, 1.1, ['#1f4f3e', '#ffffff', '#2a6450']); };
@@ -1287,6 +1296,7 @@ var LIFE = {
   moon:{ fly:['drone', 2], mote:['spark', 30] },
   mars:{ fly:['drone', 1], mote:['dust', 40] },
   saturn:{ fly:['drone', 2], mote:[['snow', 30], ['spark', 12]] },
+  crystara:{ fly:['drone', 1], mote:[['spark', 40], ['snow', 10]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -3755,6 +3765,42 @@ BUILD.satLander = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, d
 BUILD.satGeyser = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, r = 0.3 + u * (t.w / 2 - 0.4), d = Math.hypot(dx - Math.sin(u * 2) * 0.3, dy);
   if (tt < 0.25) return d < 0.7 && d > 0.35 ? '#9fb8d8' : null; if (d > r) return null; var n = hash(dx * 3 | 0, tt * 3 | 0, dy * 3 | 0); return n < 0.25 + u * 0.4 ? null : (n > 0.85 ? '#dceaf6' : '#ffffff'); }); };
 LMSIZE.satModule = [7, 3, 2.6]; LMSIZE.satMast = [4, 4, 7]; LMSIZE.satProbe = [5, 5, 3.4]; LMSIZE.satLander = [5, 5, 3.2]; LMSIZE.satGeyser = [5, 5, 10];
+/* ---- Crystara's stops on the walk, the same places its holes stand in (land.js): out over the shard fields, through the
+   spire forest, by the mirror lake, down in the geode and at the heart of the planet. No trees: the walk is a glass path
+   over clear crystal, and where the crystal breaks off the starry void shows through. */
+// an opening in the crystal, where the void shows: near black violet with stars, a bright rim of crystal round the gap
+function crysGap(c){ var o = vn(c.ti * 0.016, c.tj * 0.016, 115); if (o < 0.66) return null; if (o < 0.685) return '#ffffff'; if (o < 0.7) return '#5a4a8a';
+  var st = hash(c.ti, c.tj, 116); return st > 0.985 ? '#ffffff' : st > 0.97 ? '#b8a8ff' : '#0e0820'; }
+GPAT.crysGlass = function(c){ var gp = crysGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 111), b = vn(c.ti * 0.14, c.tj * 0.14, 112);
+  if ((((c.ti + c.tj) >> 4) + ((c.ti - c.tj + 4096) >> 4)) % 2 === 0 && (((c.ti + c.tj) & 15) === 0 || ((c.ti - c.tj + 4096) & 15) === 0)) return '#e8fbff';
+  return a > 0.72 ? '#c8f0fa' : b > 0.8 ? '#d8f4ff' : a < 0.28 ? '#88c6dc' : '#9fd8e8'; };
+GPAT.crysRose = function(c){ var gp = crysGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 113), b = vn(c.ti * 0.14, c.tj * 0.14, 114);
+  if ((((c.ti + c.tj) >> 4) + ((c.ti - c.tj + 4096) >> 4)) % 2 === 0 && (((c.ti + c.tj) & 15) === 0 || ((c.ti - c.tj + 4096) & 15) === 0)) return '#f4e8ff';
+  return a > 0.7 ? '#e0c8ff' : b > 0.78 ? '#ead8ff' : a < 0.3 ? '#a888e0' : '#c4a8f0'; };
+KIT['crystara~shards'] = kitFrom(KIT.crystara, { nlm:3, lm:['crysSpire', 'crysPrism', 'crysSpire'] });
+KIT['crystara~spires'] = kitFrom(KIT.crystara, { nlm:5, lm:['crysSpire', 'crysSpire', 'crysPrism', 'crysSpire', 'crysSpire'] });
+KIT['crystara~mirror'] = kitFrom(KIT.crystara, { nlm:3, lm:['crysPrism', 'crysGeode', 'crysPrism'] });
+KIT['crystara~geode'] = kitFrom(KIT.crystara, { g:['#c4a8f0', '#e0c8ff', '#a888e0', 0.15], gpat:'crysRose', nlm:4, low:['rockcrys', 'rockcrys', 'rockcrys'], lm:['crysGeode', 'crysGeode', 'crysSpire', 'crysGeode'] });
+KIT['crystara~heart'] = kitFrom(KIT.crystara, { nlm:3, lm:['crysPrism', 'crysSpire', 'crysPrism'] });
+LIFE_AS['crystara~shards'] = { fly:['drone', 1], mote:[['spark', 40], ['snow', 10]] };
+LIFE_AS['crystara~spires'] = { mote:[['spark', 50], ['firefly', 10]] };
+LIFE_AS['crystara~mirror'] = { fly:['drone', 2], mote:['spark', 30] };
+LIFE_AS['crystara~geode'] = { mote:[['spark', 30], ['firefly', 16]] };
+LIFE_AS['crystara~heart'] = { mote:[['spark', 70]] };
+// a crystal spire: a tall six sided point of violet crystal with a cyan core and a white edge where the light catches it
+BUILD.crysSpire = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, r = (t.w / 2 - 0.3) * (1 - u) * (u < 0.8 ? 1 : 1 - (u - 0.8) * 2.5) + 0.05, a = Math.atan2(dy, dx), d = Math.hypot(dx, dy) * Math.cos(((a + 9.42) % 1.047) - 0.524);
+  if (d > r) { var k2 = Math.hypot(dx - t.w * 0.28, dy + 0.3), r2 = 0.5 * (1 - tt / (t.h * 0.45)); return tt < t.h * 0.45 && k2 < r2 ? (dx > t.w * 0.28 ? '#9ff0ff' : '#d8c8ff') : null; }
+  if (d > r - 0.12) return a > -1.2 && a < 0.6 ? '#ffffff' : '#6a4ab8'; return u > 0.7 ? '#e8dcff' : (((a + 9.42) / 1.047) | 0) % 2 ? '#b894f0' : '#9a74e0'; }); };
+// a prism on a plinth of glass, throwing a beam of light across the ground beside it
+BUILD.crysPrism = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (tt < 0.5) return Math.abs(dx) < 1.2 && Math.abs(dy) < 1.2 ? (tt > 0.38 ? '#ffffff' : '#a8c8ec') : null;
+  if (tt < 0.62 && dx > 1.2 && Math.abs(dy) < 0.22) return Math.abs(dy) < 0.08 ? '#ffffff' : '#9ff0ff';
+  var u = (tt - 0.5) / (t.h - 0.5), hw = 1.1 * (1 - u); if (u > 1 || Math.abs(dy) > 0.9) return null; if (Math.abs(dx) > hw) return null;
+  return Math.abs(Math.abs(dx) - hw) < 0.12 ? '#ffffff' : dx < -0.2 ? '#d8b8ff' : dx < 0.3 ? '#b89cff' : '#8ae0ff'; }); };
+// a geode: a rough grey shell broken open, a hollow lined with violet crystal points glinting inside
+BUILD.crysGeode = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2 - 0.3, d = Math.hypot(dx, dy * t.w / t.d, (tt - R * 0.5) * 1.1);
+  if (d > R) return null; if (dy > R * 0.1 && tt > R * 0.35 && d < R - 0.35) return null; if (d > R - 0.35) return ((dx * 3 | 0) + (tt * 3 | 0)) % 2 ? '#6a6478' : '#5a5468';
+  return hash(dx * 4 | 0, dy * 4 | 0, tt * 4 | 0) > 0.6 ? '#ffffff' : (d < R * 0.5 ? '#c8a8ff' : '#8a5ad8'); }); };
+LMSIZE.crysSpire = [4, 4, 9]; LMSIZE.crysPrism = [5, 3, 3]; LMSIZE.crysGeode = [5, 4, 3.4];
 // @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

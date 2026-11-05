@@ -10,8 +10,8 @@
    depth buffer.
 
    RTT_PUTT_TRIP.play(host, { from:'earth', to:'moon', vehicle:'rocket', label, name }, cb). A tap skips it. putt.js's
-   spaceTrip() hands the trip here and keeps its own flat version for when this file is missing or throws. PLANETS is where
-   Mars and Saturn will join. */
+   spaceTrip() hands the trip here and keeps its own flat version for when this file is missing or throws. PLANETS holds every
+   world it flies between: the Earth, the Moon, Mars, Saturn and Crystara. */
 (function(){
 var root = typeof window !== 'undefined' ? window : globalThis;
 
@@ -34,6 +34,12 @@ function noise3(x, y, z){ var X = Math.floor(x), Y = Math.floor(y), Z = Math.flo
   var a = lerp(hash(X, Y, Z), hash(X + 1, Y, Z), fx), b = lerp(hash(X, Y + 1, Z), hash(X + 1, Y + 1, Z), fx), c = lerp(hash(X, Y, Z + 1), hash(X + 1, Y, Z + 1), fx), d = lerp(hash(X, Y + 1, Z + 1), hash(X + 1, Y + 1, Z + 1), fx);
   return lerp(lerp(a, b, fy), lerp(c, d, fy), fz); }
 function fbm(p, oct){ var s = 0, a = 0.5, f = 1; for (var i = 0; i < oct; i++){ s += a * noise3(p[0] * f, p[1] * f, p[2] * f); f *= 2.03; a *= 0.5; } return s; }
+// Crystara seen from afar: a domain warped swirl for the body of the planet and ridged noise for its glowing veins
+function crysFar(n){ var w = fbm([n[0] * 1.6 + 3.1, n[1] * 1.6, n[2] * 1.6 - 2.3], 3), q = [n[0] * 2.4 + w * 2.6, n[1] * 2.4 - w * 1.8, n[2] * 2.4 + w * 2.2];
+  var sw = fbm(q, 4), v = fbm([q[0] * 2.2 + sw * 1.5, q[1] * 2.2, q[2] * 2.2 - sw * 1.5], 3), vein = 1 - Math.abs(v * 2 - 1);
+  var c = sw < 0.42 ? lerpV([34, 20, 78], [92, 52, 168], smooth((sw - 0.22) / 0.2)) : sw < 0.6 ? lerpV([92, 52, 168], [176, 92, 220], smooth((sw - 0.42) / 0.18)) : lerpV([176, 92, 220], [236, 140, 226], smooth((sw - 0.6) / 0.15));
+  c = lerpV(c, [120, 236, 255], smooth((vein - 0.82) / 0.12) * 0.8);
+  return lerpV(c, [236, 252, 255], smooth((vein - 0.93) / 0.05)); }
 function hex(c){ return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; }
 function rotX(a){ var c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; }
 function rotY(a){ var c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c]; }
@@ -153,7 +159,9 @@ var PLANETS = {
       if (cy < 0.025 && n[1] > -0.6) return '#5a1e0e';
       if (c < 0.42) return v > 0.5 ? '#6e2e1a' : '#7a3420'; return c > 0.6 ? (v > 0.55 ? '#d8784a' : '#c8643a') : (v > 0.55 ? '#b4502a' : '#c25a30'); }, air:'#d89a72' },
   // Saturn: the ship comes down on a great deck of ring ice (this body), with Saturn itself and its rings hanging in the sky
-  saturn:{ R:240, paint:null, air:null, giant:{ R:900, off:[-1500, 900, -2600], band:['#e8d2a0', '#d8b878', '#f0dfb4', '#c8a060', '#e2c88c', '#b8905a'] } }
+  saturn:{ R:240, paint:null, air:null, giant:{ R:900, off:[-1500, 900, -2600], band:['#e8d2a0', '#d8b878', '#f0dfb4', '#c8a060', '#e2c88c', '#b8905a'] } },
+  // Crystara: a planet of living crystal, faceted in violet and cyan from afar; the ship comes down on a field of clear crystal
+  crystara:{ R:260, paint:null, air:null }
 };
 // the Moon's craters: a few big ones seen from afar, and a field of smaller ones round the landing spot (its underside, -y)
 var CRATERS = []; for (var ci = 0; ci < 46; ci++){ var th = hash(ci, 1, 7) * 6.283, ph = Math.acos(1 - 2 * hash(ci, 2, 7)); CRATERS.push([Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th), 0.05 + hash(ci, 3, 7) * 0.2]); }
@@ -266,6 +274,18 @@ function play(host, o, cb){
           var ex = (bx2 + hash(bx2, bz2, 52)) * 1.9, ez = (bz2 + hash(bx2, bz2, 53)) * 1.9, er = 0.15 + hash(bx2, bz2, 54) * 0.45, ed = Math.hypot(gx - ex, (gz - ez) * 1.15) / er;
           if (ed < 1){ col = ed < 0.5 && (gx - ex) + (gz - ez) < 0 ? [255, 255, 255] : [168, 196, 232]; nn = norm(add(nn, mul(norm(V(gx - ex, 0.01, gz - ez)), 0.6 * ed))); } } }
       return [col, nn]; }
+    /* Crystara: from afar a living world, swirls of deep indigo, violet and magenta stirred like a nebula, laced with glowing
+       cyan veins of crystal and a few bright seams; near the ground clear pale crystal, cyan drifting into lilac with bright veins, with
+       points of crystal standing out of it */
+    if (kind === 'crystara'){ var fc = clamp((tt - 25) / 80, 0, 1), far = crysFar(ne);
+      var gw = fbm([gx * 0.07 + 5.3, 1.7, gz * 0.07], 3), gs = fbm([gx * 0.11 + gw * 2.4, 4.1, gz * 0.11 - gw * 2.4], 3), gv = 1 - Math.abs(fbm([gx * 0.24 + gs * 1.6, 8.2, gz * 0.24], 3) * 2 - 1);
+      var nearC = lerpV(lerpV([150, 210, 236], [196, 176, 242], smooth((gs - 0.38) / 0.24)), [232, 252, 255], smooth((gv - 0.84) / 0.12) * 0.9);
+      col = lerpV(nearC, far, fc);
+      if (near && tt < 140){ var pcx = Math.floor(gx / 2.1), pcz = Math.floor(gz / 2.1);
+        for (var pi2 = -1; pi2 <= 1; pi2++) for (var pj = -1; pj <= 1; pj++){ var qx = pcx + pi2, qz = pcz + pj; if (hash(qx, qz, 62) > 0.12) continue;
+          var px2 = (qx + hash(qx, qz, 63)) * 2.1, pz2 = (qz + hash(qx, qz, 64)) * 2.1, pr2 = 0.18 + hash(qx, qz, 65) * 0.4, pd = (Math.abs(gx - px2) + Math.abs(gz - pz2) * 1.15) / pr2;
+          if (pd < 1){ col = (gx - px2) + (gz - pz2) < 0 ? [255, 255, 255] : hash(qx, qz, 66) < 0.5 ? [184, 148, 240] : [138, 224, 255]; nn = norm(add(nn, mul(norm(V(gx - px2, 0.01, gz - pz2)), 0.7 * pd))); } } }
+      return [col, nn]; }
     if (kind === 'mars'){ var uvr = sphUV(ne), tr = (Math.floor(uvr[1] * TEX.EH) * TEX.EW + Math.floor(uvr[0] * TEX.EW)) * 3, fr = clamp((tt - 25) / 80, 0, 1);
       col = lerpV([200, 104, 58], [TEX.mars[tr], TEX.mars[tr + 1], TEX.mars[tr + 2]], fr);
       if (near && tt < 140){ var rip = Math.sin(gx * 1.3 + gz * 0.4 + noise3(gx * 0.2, 0, gz * 0.2) * 4), mott = noise3(gx * 0.35, 3, gz * 0.35);
@@ -294,7 +314,7 @@ function play(host, o, cb){
 
   function render(t){
     var rk = rocketAt(t), cam = camAt(t, rk), sun = sunAt(t), f = norm(sub(cam.tg, cam.pos)), r = norm(cross(f, cam.up)), u = cross(r, f), foc = (W / 2) / Math.tan(cam.fov * Math.PI / 360);
-    var GI = PLANETS[TOK].giant, GC = GI ? add(CM, GI.off) : null, GN = GI ? norm(V(0.25, 0.94, 0.22)) : null;
+    var GIF = !PLANETS[TOK].giant && !!PLANETS[FROMK].giant, GI = PLANETS[TOK].giant || PLANETS[FROMK].giant, GC = GI ? add(GIF ? CE : CM, GI.off) : null, GN = GI ? norm(V(0.25, 0.94, 0.22)) : null;
     var alt = len(sub(cam.pos, CE)) - Re, sky = FROMK === 'earth' ? smooth(alt / 260) : 1, padOn = alt < 120, altM = len(sub(cam.pos, CM)) - Rm, nearMoon = altM < 260,
       air = TOK === 'mars' ? 1 - smooth(altM / 90) : 0, upM = norm(sub(cam.pos, CM)), airF = FROMK === 'mars' ? 1 - smooth(alt / 90) : 0, upE = norm(sub(cam.pos, CE));
     var models = [];
@@ -314,7 +334,7 @@ function play(host, o, cb){
         if (FROMK === 'earth' && alt > 60 && dot(n, sun) < -0.1) col = mul(col, 0.35); }
       var tm = hitSphere(cam.pos, rd, CM, Rm); if (tm > 0 && tm < best){ best = tm; id = 7; var sm2 = surf(TOK, cam.pos, rd, tm, CM, nearMoon); col = sm2[0]; n = sm2[1]; }
       // a giant in the sky (Saturn): its cloud bands, and its rings, a flat band of ice round it with the Cassini gap in it
-      if (GI && alt > 160){ var tg = hitSphere(cam.pos, rd, GC, GI.R); if (tg > 0 && tg < best){ best = tg; id = 8; var pg = add(cam.pos, mul(rd, tg)), ng = norm(sub(pg, GC)), lat = dot(ng, GN);
+      if (GI && (GIF ? altM > 900 : alt > 160)){ var tg = hitSphere(cam.pos, rd, GC, GI.R); if (tg > 0 && tg < best){ best = tg; id = 8; var pg = add(cam.pos, mul(rd, tg)), ng = norm(sub(pg, GC)), lat = dot(ng, GN);
           var bi = Math.floor((lat + 1) * 9 + noise3(ng[0] * 3, ng[1] * 3, ng[2] * 3) * 1.4) % GI.band.length; col = hex(GI.band[(bi + GI.band.length) % GI.band.length]); n = ng; }
         var dn = dot(rd, GN); if (Math.abs(dn) > 1e-4){ var tr = dot(sub(GC, cam.pos), GN) / dn; if (tr > 0 && tr < best){ var pr = add(cam.pos, mul(rd, tr)), rr = len(sub(pr, GC)) / GI.R;
             if (rr > 1.3 && rr < 2.3 && !(rr > 1.92 && rr < 1.99)){ best = tr; id = 8; var rk2 = noise3(rr * 30, 0, 0); col = rr < 1.55 ? [160, 140, 120] : rr < 1.92 ? (rk2 > 0.5 ? [236, 222, 196] : [214, 196, 166]) : [200, 186, 168]; n = dot(GN, sun) > 0 ? GN : mul(GN, -1); } } } }
@@ -357,9 +377,9 @@ function play(host, o, cb){
       parts.push({ lp:V(j[0], -0.8, j[2]), lv:V(j[0] * 2, -sp, j[2] * 2), r:0.42, life:0.32, age:0, kind:'fire', c:[255, 255, 230], a:1 }); } }
     if (FROMK === 'earth' && t < 2.35 && Math.floor(t * 12) !== Math.floor((t - dt) * 12)) parts.push({ p:V(-2.4 + hash(t, 1, 1), 6.2, (hash(t, 2, 1) - 0.5)), v:V(1.2, 0.6, 0.4), r:0.3, life:1.2, age:0, kind:'vapour', c:[245, 248, 252], a:0.8 });
     if (t > 2.3 && t < 4.6){ for (var s = 0, ns = many(90); s < ns; s++){ var an = hash(s, t * 1e3, 7) * 6.283, spd = 4 + hash(s, t * 1e3, 8) * 6;
-      parts.push({ p:V(Math.cos(an) * 1.2, 0.6, Math.sin(an) * 1.2), v:V(Math.cos(an) * spd, 0.4 + hash(s, t, 9) * 1.2, Math.sin(an) * spd), r:0.9, life:3, age:0, kind:'smoke', c:FROMK === 'moon' ? [190, 188, 184] : FROMK === 'mars' ? [214, 150, 112] : [232, 232, 238], a:0.85 }); } }
+      parts.push({ p:V(Math.cos(an) * 1.2, 0.6, Math.sin(an) * 1.2), v:V(Math.cos(an) * spd, 0.4 + hash(s, t, 9) * 1.2, Math.sin(an) * spd), r:0.9, life:3, age:0, kind:'smoke', c:FROMK === 'moon' ? [190, 188, 184] : FROMK === 'mars' ? [214, 150, 112] : FROMK === 'saturn' ? [220, 222, 240] : [232, 232, 238], a:0.85 }); } }
     if (t > 8.7 && t < 9.4){ for (var d = 0, nd = many(70); d < nd; d++){ var a2 = hash(d, t * 1e3, 17) * 6.283, s2 = 3 + hash(d, t * 1e3, 18) * 5;
-      parts.push({ p:V(Math.cos(a2) * 0.8, HM - 0.15, Math.sin(a2) * 0.8), v:V(Math.cos(a2) * s2, -0.6 - hash(d, t, 19), Math.sin(a2) * s2), r:0.35, life:1.5, age:0, kind:'dust', c:TOK === 'mars' ? [206, 122, 80] : TOK === 'saturn' ? [230, 236, 250] : [196, 192, 184], a:0.7 }); } }
+      parts.push({ p:V(Math.cos(a2) * 0.8, HM - 0.15, Math.sin(a2) * 0.8), v:V(Math.cos(a2) * s2, -0.6 - hash(d, t, 19), Math.sin(a2) * s2), r:0.35, life:1.5, age:0, kind:'dust', c:TOK === 'mars' ? [206, 122, 80] : TOK === 'saturn' ? [230, 236, 250] : TOK === 'crystara' ? [200, 240, 255] : [196, 192, 184], a:0.7 }); } }
     parts.forEach(function(p){ p.age += dt; if (p.lp) p.lp = add(p.lp, mul(p.lv, dt)); else p.p = add(p.p, mul(p.v, dt)); var k = p.age / p.life;
       if (p.kind === 'fire'){ p.c = k < 0.25 ? [255, 255, 220] : k < 0.5 ? [255, 214, 80] : k < 0.75 ? [255, 140, 40] : [200, 70, 30]; p.r = 0.4 + k * 0.5; }
       else if (p.kind === 'smoke'){ p.v = mul(p.v, 1 - dt * 0.9); p.r = 0.9 + k * 3.2; p.a = 0.85 * (1 - k); }

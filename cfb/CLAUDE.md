@@ -27,6 +27,7 @@ node cfb/build/test/commish/test_longterm.mjs    a term, the ladder, both tiers 
 node cfb/build/test/commish/probe_longrun.mjs    30 runs of 50 seasons (--bold, --years 80 --runs 40)
 node cfb/build/test/commish/test_standings.mjs   the standings screen, four states
 node cfb/build/test/test_fantasy.mjs             the College Fantasy Challenge (--quick: no browser)
+node cfb/build/test/test_fanpromo.mjs            the results screen's Fantasy card: open week, no lineup in
 ```
 
 The SQL suites (`supabase/test/commish_clock_test.sql`, `tenure_test.sql`, `cfb_fantasy_test.sql`)
@@ -58,3 +59,9 @@ run against a scratch Postgres; the order of files each needs is in the matching
 
 - ESPN is the only source. The week locks at the first slate kickoff. There is no results file:
   points live only in `cfb_fantasy_results`.
+- **The results screen offers it only while entries are open.** From the pointer's lock to the
+  next week's, to somebody with no lineup in (this browser's record, and signed in,
+  `PS_CFB_AUTH.fantasyMyEntry`, which reads `cfb_fantasy_my_entry`). An inline card, never a sheet.
+  `fantasyPromoPaint()` holds the rule, and every `show('s-over')` calls it.
+- **`fantasyMyEntry` is in `auth.js` and needs `auth.js`'s version moved with it.** Three pages load
+  `/cfb/auth.js`, so the `?v=` moves on all of them in one commit.
