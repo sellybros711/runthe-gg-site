@@ -3107,8 +3107,8 @@
       "sha": "cc149708e8a0216e"
     },
     "contract.js": {
-      "v": "12",
-      "sha": "7aa143f3a0bf39f3"
+      "v": "13",
+      "sha": "b883c8109cfa81e8"
     },
     "meter.js": {
       "v": "6",
@@ -3155,8 +3155,8 @@
       "sha": "bffd7d6c51f38cfb"
     },
     "grade.js": {
-      "v": "17",
-      "sha": "cb017774c791526a"
+      "v": "18",
+      "sha": "ba34efdc4ceb2aec"
     },
     "names.js": {
       "v": "1",
@@ -3167,8 +3167,8 @@
       "sha": "39299b08c1e9d276"
     },
     "engine.js": {
-      "v": "19",
-      "sha": "51be41db7957c9a8"
+      "v": "20",
+      "sha": "ab265ce37fca808d"
     },
     "sound.js": {
       "v": "5",
@@ -3191,8 +3191,8 @@
       "sha": "27db450876d5eda0"
     },
     "api.js": {
-      "v": "31",
-      "sha": "8f7fc28354c973c2"
+      "v": "32",
+      "sha": "f813d9c64681bba7"
     },
     "mock-api.js": {
       "v": "17",
@@ -3231,14 +3231,14 @@
       "sha": "134a3a1143402c63"
     },
     "3d/boot.js": {
-      "v": "97",
-      "sha": "89fc873b5ab9cabb"
+      "v": "98",
+      "sha": "08d85b37693a2a9e"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "84",
-      "sha": "c976b57c51fd9727"
+      "v": "85",
+      "sha": "e8f878993b2a03a2"
     }
   },
   "soccer/index.html": {
@@ -3361,8 +3361,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "98",
-      "sha": "7f9940ef8ea502ae"
+      "v": "99",
+      "sha": "5367cd7340edc022"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3427,8 +3427,8 @@
       "sha": "a1a37a929b5aba8f"
     },
     "play.js": {
-      "v": "14",
-      "sha": "25558ded9f5f76c3"
+      "v": "15",
+      "sha": "535141d12f82f5d8"
     },
     "looks.js": {
       "v": "6",

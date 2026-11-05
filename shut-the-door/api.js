@@ -67,6 +67,9 @@
   /* Rules 10 (the touch measured on the zone as drawn, engine.js 13) starts the same way: a daily of a
      day before this is played as rules 9, so today's board stays one game. */
   const DRAWN_TOUCH_FROM = '2026-11-04';
+  /* Rules 11 (the reach: a hit by pitch only when the ball reaches the batter, engine.js 14) starts
+     the same way: a daily of a day before this is played as rules 10. */
+  const HBP_REACH_FROM = '2026-11-06';
   const STORE_V = 1;
   const PICKS_KEY = 'std_picks_v1';         // vote days the server has locked: {day: pack}
   const SURVIVOR_KEY = 'std_survivor_v1';   // today's run on this device
@@ -208,7 +211,7 @@
     const saved = readSaved();
     const resume = saved && saved.day === cur.day && saved.scenarioId === scenarioId && Array.isArray(saved.calls) ? saved : null;
     // an outing begun before rules 2 shipped (its calls carry no r) finishes under the rules it began with
-    const rules = resume && resume.calls.length ? E.rulesOf(resume.calls) : cur.day < FULL_CLOSE_FROM ? G.STEAL_RULES : cur.day < ABS_TOUCH_FROM ? G.FULL_RULES : cur.day < DRAWN_TOUCH_FROM ? G.TOUCH_RULES : undefined;
+    const rules = resume && resume.calls.length ? E.rulesOf(resume.calls) : cur.day < FULL_CLOSE_FROM ? G.STEAL_RULES : cur.day < ABS_TOUCH_FROM ? G.FULL_RULES : cur.day < DRAWN_TOUCH_FROM ? G.TOUCH_RULES : cur.day < HBP_REACH_FROM ? G.DRAWN_RULES : undefined;
     const o = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id, rules });
     const rec = { o, day: cur.day, number: cur.number, result: null, submitted: false };
     if (resume) {

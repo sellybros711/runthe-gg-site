@@ -746,6 +746,46 @@ is the ball's edge to the zone the ABS read, the inches the quick replay prints.
 **The daily's rollout.** `api.js DRAWN_TOUCH_FROM` (2026-11-04): a daily of a day before it plays
 rules 9. Survivor, practice and the archive start new outings under rules 10.
 
+## 5m. Rules 11: a hit by pitch reaches the batter (2026-11-06)
+
+Rules 10 and everything before it, plus one thing. A new outing's calls carry `r: 11`; a call with
+`r: 10` or before replays under its own rules, exactly (`fixtures/replays-rules10-pre-hbp-reach.json`).
+
+**Why.** QA, 2026-11-05: a hit by pitch on a 92 mph cutter graded green that looked in the zone. The
+outcome is drawn from the row of the cell the pitch crossed, and the edge cells run out forever, so
+the inside column (column 0 for a right handed hitter, 4 for a lefty) is everything past 0.83 ft
+inside, carrying the cell's real hit by pitch rate (the real ones crossed far inside). The engine
+played that rate on balls just off the black: over 1,500 simulated dailies the median hit by pitch
+crossed 1.11 ft from the plate's centre, 63% under 1.2 ft. The drawn hitter's body is 2 ft and more
+away at those heights, so the ball passed in front of him. (The 2,020 real hit by pitches of 2024,
+Baseball Savant: median 1.92 ft inside, 5% under 1.2 ft.)
+
+**The reach.** A pitch is a hit by pitch only when `contract.js insideFt(x, bats) >= hbpReach(zn)`:
+the ball's centre at least the reach inside, at its height. `HBP.REACH` is measured on the hitter the
+3D draws (`pipeline/hbp_reach.mjs`: 272 hitters of the 30 packs in their take, where `people.js`
+stands them, feet straddling 2.95 ft off the plate's centre): for each tenth of his zone's height, the
+nearest any hitter's body comes in that band or the next, less a ball's radius (`BALL_IN`). In his
+zone's height that is 2.02 ft (his front hip and thigh at 2.14 ft); above the zone his hands bring it
+to 1.36 ft (zn 0.9) and the helmet's bill to 0.97 ft (head high); below it his legs, 1.88 ft.
+
+**Short of the reach.** Where the drawn row says hit by pitch and the ball crossed short of the reach,
+the pitch is a take there, called where it crossed (THE CALL, `calledStrikeP(zoneDist)`): the same
+library draw, read inside the hit by pitch's slice, so the four draws never move. Off the plate by an
+inch it may be a strike; a few inches off it is a ball. No other key moves.
+
+**The grade** prices the same thing one pitch ahead (`grade.js keyMixCtx`, `Model.hbpMass`): per
+actual cell, the share of the miss that reaches him keeps the hit by pitch, the rest goes to the
+take by the umpire's chance over where it crossed. The hold table is untouched (as rules 5), `BANDS`
+are unchanged.
+
+**The scene.** A real hit by pitch is drawn reaching him: `3d/play.js fromResult` moves the drawn
+crossing of a `hit_by_pitch` out to `BODY_FAR` (the furthest drawn hitter's body front at that
+height, the same measurement), so the ball meets whoever is batting. The result's crossing is the
+engine's.
+
+**The daily's rollout.** `api.js HBP_REACH_FROM` (2026-11-06): a daily of a day before it plays
+rules 10. Survivor, practice and the archive start new outings under rules 11.
+
 ## 6. Pitch result
 
 ```js
