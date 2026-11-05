@@ -434,6 +434,11 @@ const GYMS = loadGyms(), KFILES = kindFiles(), PAGE = fs.readFileSync(new URL('.
         const at = adj[0], r = at && GYMS.step(G, GYMS.place(G, s1, at[1]), (at[0] + 2) % 4); back = back && !!r && r.ev === 'reset' && GYMS.key(G, r.s) === k0; }
       claim(moved && back && s.ok, `${G.id}: the lever puts every piece back where it started, and that start is the solvable one`); }
     claim(G.say.length === 3 && G.say.every(l => l.length > 20 && !l.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212)), `${G.id}: the civilian has a nudge, a plainer line after two resets and a warmer one after five`);
+    /* ONE HINT, NEVER THE SOLUTION (the owner, 2026-11-05): a gatekeeper carries one hand-written idea, its own line,
+       none of the civilian's, and never a count of steps one way ("3 left") */
+    if (G.keeper){ const h = G.hint;
+      claim(typeof h === 'string' && h.length >= 40 && h.length <= 200 && /\.$/.test(h) && G.say.indexOf(h) < 0 && !/\d+\s*(steps?|moves?|taps?|times?\s+)?\s*(up|down|left|right|north|south|east|west|clockwise|anticlockwise|forwards?|backwards?)\b/i.test(h) && !h.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212),
+        `${G.id}: the gatekeeper has one hint of its own, none of the civilian's lines and no steps counted out ("${h}")`); }
     { const gl = GYMS.goal(G); claim(typeof gl === 'string' && gl.length >= 8 && gl.length <= 70 && /\.$/.test(gl) && !gl.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212), `${G.id}: its goal line, always in the panel, is one short line ("${gl}")`); }
     if (G.world === 'pirate'){ claim(G.mech[0] === 'barrel', `${G.id}: Pirate Cove's gyms are its barrels first`); claim(G.kind === 'push', `${G.id}: Pirate Cove's gyms are the push kind`); } }
   for (const w in byWorld){ const gs = byWorld[w], legs = gs.map(g => g.leg).sort((a, b) => a - b), keep = gs.find(g => g.leg === 18), mid = gs.find(g => g.leg !== 18);
@@ -968,15 +973,19 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        any move; Z and R do the same from the keys. A step kind's pad steps him; a tap kind shows no pad, and a real
        tap on the screen over a tile acts on it (a tap kind's whole sequence is played by real taps where its tiles are
        drawn). On the desktop the gym is then solved from its start, and nothing the vault pays with lands over the board. */
+    /* the page's own sign in settles first (it asks for a session once, and finding none sets sbUser back to nobody), so
+       the record a room's check writes under its own test account is the one the game reads and saves to */
+    const settle = async () => { try{ if (typeof sb !== 'undefined' && sb && sb.auth) await sb.auth.getSession(); }catch(e){} await new Promise(r => setTimeout(r, 500)); };
     const lay = {}, KEEPS = await pg.evaluate(() => window.RTT_PUTT_GYMS.kinds().filter(k => k.input !== 'own').map(k => (k.gyms || []).find(g => g.keeper && g.world)).filter(Boolean).map(g => g.id));
     for (const [vw, vh, touch] of [[390, 844, true], [1440, 900, false]]){
       const cx = await b.newContext({ viewport:{ width:vw, height:vh }, hasTouch:touch, isMobile:touch, deviceScaleFactor:touch ? 2 : 1 }), p2 = await cx.newPage();
       p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
+      await p2.evaluate(settle);
       for (const gid of KEEPS) lay[vw + ' ' + gid] = await p2.evaluate(async ([desk, gid]) => { const out = { id:gid }, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@lay', best = {};
         for (let n = 1; n <= 270; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], gyt:{ [gid]:desk ? [0, 240] : [0, 200] }, tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'lay' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
         const G = GL.byId(gid), tapIn = GL.input(G) === 'tap'; let f = 0; for (let i = 1; i < 270 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
@@ -1014,6 +1023,18 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         else { const s1 = k(), q = t.gymXY(pf[3]), p = t.scr(q[0], q[1], 0.45), v = t.view(), box = document.querySelector('.pp-tbox').getBoundingClientRect(), dpr = v.W / box.width;
           const o = { bubbles:true, clientX:box.left + p[0] / dpr, clientY:box.top + p[1] / dpr, pointerId:9, isPrimary:true }, el = document.elementFromPoint(o.clientX, o.clientY);
           el.dispatchEvent(new PointerEvent('pointerdown', o)); await sleep(40); el.dispatchEvent(new PointerEvent('pointerup', o)); for (let w = 0; w < 100 && k() === s1; w++) await sleep(20); await idle(); await sleep(60); out.pad = !R.pad && k() !== s1 && g().n === n0 + 1; }
+        /* ONE HINT (the owner, 2026-11-05): the phone came in at 200 seconds of trying and has made one Restart, so no
+           Hint yet, and its second Restart shows it; the desktop came in at 4 minutes, so Hint is there from the door.
+           Pressed, it says the gym's one hint, held in the panel, and records it; pressed again it says the same line.
+           With it showing, nothing covers the board. */
+        { const hb = () => document.querySelector('[data-ghint]'), shown = () => !!hb() && !hb().hidden && !!hb().offsetParent; out.hint = { before:desk ? shown() : !shown() };
+          if (!desk){ document.querySelector('[data-grestart]').click(); await sleep(150); }
+          out.hint.after = shown();
+          if (out.hint.after){ hb().click(); await sleep(150); out.hint.says = t.gymSays() === G.hint; out.hint.kept = (JSON.parse(localStorage.getItem(K)).ghn || []).indexOf(gid) >= 0;
+            await sleep(1500); out.hint.held = t.gymSays() === G.hint;
+            document.querySelector('[data-grestart]').click(); await sleep(150); hb().click(); await sleep(1500); out.hint.again = t.gymSays() === G.hint && shown();
+            const R2 = t.gymRects(); out.hint.covered = ['panel', 'goal', 'say', 'controls', 'pad'].filter(k => hit(R2[k], R2.board)).concat(R2.buttons.filter(x => hit(x, R2.board)).map(() => 'a button'));
+            out.hint.onScreen = R2.board.left >= 0 && R2.board.top >= 0 && R2.board.right <= innerWidth && R2.board.bottom <= innerHeight; out.hint.big = R2.buttons.every(x => x && x.bottom - x.top >= 44 && x.right - x.left >= 44); } }
         if (desk){ document.querySelector('[data-grestart]').click(); await sleep(150); await play(pf); for (let i = 0; i < 40 && !g().solved; i++) await sleep(100); await sleep(2800);
           const toasts = [...document.querySelectorAll('[role=status]')].map(e => e.getBoundingClientRect());
           out.won = g().solved; out.toastsOver = toasts.filter(x => hit(x, R.board)).length; out.wonLine = /solved/.test(t.gymSays()) && document.querySelector('.pp-bub').hidden; }
@@ -1024,6 +1045,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       claim(L.in && !L.covered.length && !L.missing.length && L.hidden && L.onScreen && L.goal && L.big, `${nm}, in the room nothing covers the board: the panel, goal line, controls and pad sit outside it, the stick is hidden, the whole room is on screen at zoom ${L.kk[0]} (${JSON.stringify({ covered:L.covered, missing:L.missing, hidden:L.hidden, onScreen:L.onScreen, goal:L.goal, big:L.big, board:L.board })})`);
       claim(L.undo.moved && L.undo.stepped && L.undo.back && L.undo.resets && L.undo.n, `${nm}, Undo (${w === 390 ? 'the button' : 'Z'}) puts back the state before each move exactly and is not counted as a reset (${JSON.stringify(L.undo)})`);
       claim(L.restart.start && L.restart.resets && L.restart.moves && L.restart.undone && L.pad, `${nm}, Restart (${w === 390 ? 'the button' : 'R'}) is the start and counts as a reset, Undo takes it back, and the pad steps him or a tap on a tile acts (${JSON.stringify([L.restart, L.pad])})`);
+      { const Hn = L.hint || {}; claim(Hn.before && Hn.after && Hn.says && Hn.kept && Hn.held && Hn.again && Hn.covered && !Hn.covered.length && Hn.onScreen && Hn.big, `${nm}, Hint shows only once he has tried (${w === 390 ? 'the second Restart' : '4 minutes in the room'}), says the gym's one hint and holds it, records it, says the same again, and with it showing nothing covers the board (${JSON.stringify(Hn)})`); }
       if (w === 1440) claim(L.won && L.toastsOver === 0 && L.wonLine, `${nm}, solved, the vault says what it paid in the panel, and no toast lands over the board (${JSON.stringify([L.won, L.toastsOver, L.wonLine])})`); }
     claim(KEEPS.length >= 1 && Object.keys(lay).length === KEEPS.length * 2, `the room of every kind's gatekeeper is measured on the phone and the desktop (${KEEPS.join(', ')})`);
     /* THE SAME FOR THE CLUBHOUSE'S GATEKEEPER, the trick shot kind (input 'own': no pad, a putt is a pull on the board):
@@ -1036,9 +1058,10 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && window.RTT_GYMKIND_TRICKSHOT && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
+      await p2.evaluate(settle);
       layT[vw] = await p2.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@layt', best = {};
         for (let n = 1; n <= 270; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], gyt:{ clubhouse2:[0, 240] }, tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'layt' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
         const G = GL.byId('clubhouse2'); let f = 0; for (let i = 1; i < 270 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
@@ -1051,10 +1074,13 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         out.hidden = !R.stick && !R.bubble; out.onScreen = R.board.left >= 0 && R.board.top >= 0 && R.board.right <= innerWidth && R.board.bottom <= innerHeight;
         out.goal = document.querySelector('[data-ggoal]').textContent === GL.goal(G); out.big = R.buttons.every(x => x && x.bottom - x.top >= 44);
         out.calm = !!window.RTT_GYMKIND_TRICKSHOT.calm;
+        { const hb = document.querySelector('[data-ghint]'); out.hint = !!hb && !hb.hidden && !!hb.offsetParent; if (out.hint){ hb.click(); await sleep(1500); const R2 = t.gymRects();
+          out.hint = t.gymSays() === G.hint && !['panel', 'goal', 'say', 'controls'].some(k => hit(R2[k], R2.board)) && !R2.buttons.some(x => !x || hit(x, R2.board) || x.bottom - x.top < 44); } }
         window.RTT_PUTT.close(); localStorage.removeItem(K); return out; });
       await cx.close(); }
     for (const w of [390, 1440]){ const L = layT[w], nm = w === 390 ? 'on a 390 x 844 phone' : 'on a 1440 x 900 desktop';
-      claim(L.in && L.keeper && !L.covered.length && !L.missing.length && L.hidden && L.onScreen && L.goal && L.big && L.calm, `${nm}, in the Clubhouse's gatekeeper (The Back Bar, a trick shot room) nothing covers the board and the room is calm (${JSON.stringify({ covered:L.covered, missing:L.missing, hidden:L.hidden, onScreen:L.onScreen, goal:L.goal, big:L.big, calm:L.calm })})`); }
+      claim(L.in && L.keeper && !L.covered.length && !L.missing.length && L.hidden && L.onScreen && L.goal && L.big && L.calm, `${nm}, in the Clubhouse's gatekeeper (The Back Bar, a trick shot room) nothing covers the board and the room is calm (${JSON.stringify({ covered:L.covered, missing:L.missing, hidden:L.hidden, onScreen:L.onScreen, goal:L.goal, big:L.big, calm:L.calm })})`);
+      claim(L.hint, `${nm}, in The Back Bar after 4 minutes Hint is there, says its one hint, and nothing covers the board with it showing`); }
     /* A KIND OF ANOTHER INPUT, PLAYED BY TAPS: the worked example (gymkinds/example.js, a tap kind in no world) is put
        on Pirate Cove's mid-world trail for the length of this check and played in a real room by tapping its tiles on
        the screen: the frame highlights what a tap changes, Undo takes a tap back, and the winning tap opens the vault. */

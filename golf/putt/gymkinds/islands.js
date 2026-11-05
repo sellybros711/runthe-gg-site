@@ -61,6 +61,7 @@ var GYMS = [
     say:['My grandfather geared these islands together. Turn one and the next one fights you.',
       'Gears never turn the same way as their partner. Ropes always do.',
       'That anchored island won\'t take a tap. You\'ll have to move it with its neighbours, then fix them after.'],
+    hint:'Three taps turn an island one step back. Its gear partners then turn one step forward. Think of it that way and the gears stop fighting you.',
     rows:[
       '#######',
       '#~~C~~#',

@@ -1941,11 +1941,11 @@ function run(box, P, pic, api){
   if (gym){ gPanel = document.createElement('div'); gPanel.className = 'pp-gp'; gPanel.hidden = true; gPanel.setAttribute('data-gp', '');
     gPanel.innerHTML = '<div class="pp-gph"><b data-gname></b><i data-gkeep hidden>Gatekeeper</i><span data-gmoves></span></div><p class="pp-gpg" data-ggoal></p>' +
       '<div class="pp-gps" data-gsay aria-live="polite"><span class="pp-gpf" data-gface></span><p data-gtext></p></div>' +
-      '<div class="pp-gpc" data-gctl><div class="pp-gpb"><button data-gundo>Undo</button><button data-grestart>Restart</button><button data-gleave>Leave</button><button data-gskip hidden>Skip</button></div>' +
+      '<div class="pp-gpc" data-gctl><div class="pp-gpb"><button data-gundo>Undo</button><button data-grestart>Restart</button><button data-gleave>Leave</button><button data-ghint hidden>Hint</button><button data-gskip hidden>Skip</button></div>' +
       '<div class="pp-gpd" data-gpad><button data-d="0" aria-label="Step up"></button><button data-d="3" aria-label="Step left"></button><button data-d="1" aria-label="Step right"></button><button data-d="2" aria-label="Step down"></button></div></div>' +
       '<div class="pp-gpk" data-gkeys></div>';
     ui.appendChild(gPanel);
-    ['name', 'keep', 'moves', 'goal', 'say', 'face', 'text', 'ctl', 'pad', 'keys', 'undo', 'restart', 'leave', 'skip'].forEach(function(k){ gE[k] = gPanel.querySelector('[data-g' + k + ']'); });
+    ['name', 'keep', 'moves', 'goal', 'say', 'face', 'text', 'ctl', 'pad', 'keys', 'undo', 'restart', 'leave', 'hint', 'skip'].forEach(function(k){ gE[k] = gPanel.querySelector('[data-g' + k + ']'); });
     gE.name.textContent = gym.G.name; gE.keep.hidden = !gym.G.keeper; gE.goal.textContent = GL.goal(gym.G);
     var stepIn = gym.inp === 'step'; gE.pad.hidden = !stepIn; gPanel.classList.toggle('nopad', !stepIn);
     gE.keys.textContent = (stepIn ? 'Arrows or WASD step · ' : gym.inp === 'tap' ? 'Click a tile · ' : '') + 'Z undo · R restart';
@@ -1956,6 +1956,10 @@ function run(box, P, pic, api){
     gE.leave.onclick = function(e){ e.stopPropagation(); gymOut(); };
     /* SKIP (the gatekeeper only, once he has tried it: putt.js GYM_SKIP). The first press asks, the second skips: out
        through the gate with the hole open, the vault still shut. */
+    /* HINT (the gatekeeper only, once he has tried a little: putt.js GYM_HINT). One line, the same every press, held in
+       the panel until something else is said. Pressed, it is recorded, and Hint stays from then on. */
+    gE.hint.onclick = function(e){ e.stopPropagation(); if (!gym.in || gym.solved) return;
+      var h = ''; try{ h = api.gymHint ? api.gymHint(GY.id) : ''; }catch(e2){ h = ''; } h = h || gym.G.hint || ''; if (h) gymLine(h, 0, false); };
     gE.skip.onclick = function(e){ e.stopPropagation(); if (!gym.in || gymBusy()) return;
       if (!gym.skipSure){ gym.skipSure = true; gE.skip.textContent = 'Skip it'; gymLine('Skip it and the hole opens. The badge and the Tour pack stay in the vault until you solve it.', 6000, false); return; }
       var m = ''; try{ m = api.gymSkip ? api.gymSkip(GY.id) : ''; }catch(e2){ m = ''; } gym.canSkip = false; gymOut(); if (m) sayLater(m, 4200, 0.4); };
@@ -2004,11 +2008,12 @@ function run(box, P, pic, api){
   function gymReset(tsec, s0){ gym.leverAt = tsec; gym.resets++; api.sfx && api.sfx('blip');
     var tmp = []; gView.things(tmp, tsec); tmp.forEach(function(o){ var z = o.o && o.o.z != null ? o.o.z : GYM_DECK; burst(o.x, o.y, z + 1, ['rgba(230,220,200,.85)', '#c8a070'], 8, 1.4, 0.6); });
     gymKeep(); gym.n = 0; gym.s = s0; gView.lay(gym.s); var q = gT(GY.Q.start); g.x = q[0]; g.y = q[1]; burst(q[0], q[1], GYM_DECK + 1.2, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymCheck(); gymPanel();
-    if ((gym.resets === 2 || gym.resets === 5) && civIt) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200);
-    gymTried(1, 0); }
+    var civ = (gym.resets === 2 || gym.resets === 5) && civIt;
+    if (civ) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200);
+    gymTried(1, 0, civ ? 7200 : 0); }
   function gymOpen(tsec){ var V = gym.vault; if (!V) return;
     if (gym.solved){ say('The vault\'s empty. You already cleaned it out.', 2400); return; }
-    gym.solved = true; V.done = true; V.openAt = tsec; api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
+    gym.solved = true; V.done = true; V.openAt = tsec; gymSkipShow(false); gymHintShow(); api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
     try{ res = api.gym ? api.gym(GY.id) : null; }catch(e){ res = null; }
     // the coins are said in the panel: nothing floats over the board in a gym
     setTimeout(function(){ if (!alive) return; burst(V.x, V.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff', '#c89cff'], 40, 1.5, 1.4); ring(V.x, V.y, '255,214,64');
@@ -2028,7 +2033,7 @@ function run(box, P, pic, api){
   function gymEnter(tsec){ gym.in = true; g.vx = g.vy = 0; var q = gT(GY.Q.gate); g.x = q[0]; g.y = q[1]; gym.hist = []; gym.n = 0; gHot = null;
     var st = GL.place(gym.G, gym.s, GY.Q.gate), Gd = gym.G; gym.s = st;
     gym.anim = { ph:[[['me', GY.Q.gate, GY.Q.start, 'walk']]], k:0, t0:tsec, then:function(){ gym.s = GL.place(Gd, gym.s, GY.Q.start); gymCheck(); gymPanel(); } };
-    gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); gym.canSkip = true; gymSkipShow(gym.G.keeper && !gym.solved && api.gymCanSkip && (function(){ try{ return api.gymCanSkip(GY.id); }catch(e){ return false; } })()); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
+    gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); gym.canSkip = true; gymSkipShow(gym.G.keeper && !gym.solved && api.gymCanSkip && (function(){ try{ return api.gymCanSkip(GY.id); }catch(e){ return false; } })()); gymHintShow(); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
     if (!gym.told.in){ gym.told.in = 1; sayLater(gym.solved ? 'Solved already. Have a look around.' : GK.hello || 'Undo takes one back.', 3600, 0.5); }
     camAim(true); }
   function gymLeave(){ gym.in = false; gym.lock = true; g.x = GY.ax; g.y = GY.ay + 0.4; g.face = [0, 1]; g.aimI = null; g.vx = g.vy = 0; gPanel.hidden = true; ui.classList.remove('ingym'); gym.stuck = false; gymLit();
@@ -2043,9 +2048,17 @@ function run(box, P, pic, api){
     // time in the room counts as trying, a little at a time, so a closed tab loses at most a few seconds of it
     if (gym.in && !gym.solved){ if (!gym.tAt) gym.tAt = now; else if (now - gym.tAt > 15000){ gymTried(0, (now - gym.tAt) / 1000); gym.tAt = now; } } else gym.tAt = 0; }
   // a try (a Restart, or time in the room) told to putt.js, which says whether the gatekeeper can now be skipped
-  function gymTried(dr, ds){ if (!gym.G.keeper || gym.solved || !api.gymTry) return; var c = false; try{ c = !!api.gymTry(GY.id, dr, ds); }catch(e){ c = false; } gymSkipShow(c); }
-  function gymSkipShow(c){ if (!gE.skip) return; var was = gym.canSkip; gym.canSkip = !!c && !gym.solved; gE.skip.hidden = !gym.canSkip; if (!gym.canSkip){ gym.skipSure = false; gE.skip.textContent = 'Skip'; }
-    if (gym.canSkip && !was && gym.in) gymLine('Stuck? You can skip this one. The vault keeps its prize until you solve it.', 6000, false); }
+  // wait: the civilian has just spoken (his plainer or warmer line), so the Skip line waits until he is done
+  function gymTried(dr, ds, wait){ if (!gym.G.keeper || gym.solved || !api.gymTry) return; var c = false; try{ c = !!api.gymTry(GY.id, dr, ds); }catch(e){ c = false; } gymSkipShow(c, wait); gymHintShow(); }
+  function gymSkipShow(c, wait){ if (!gE.skip) return; var was = gym.canSkip; gym.canSkip = !!c && !gym.solved; gE.skip.hidden = !gym.canSkip; if (!gym.canSkip){ gym.skipSure = false; gE.skip.textContent = 'Skip'; }
+    gymBtns(); if (gym.canSkip && !was && gym.in){ var tell = function(){ if (gym.in && gym.canSkip && !gym.solved) gymLine('Stuck? You can skip this one. The vault keeps its prize until you solve it.', 6000, false); };
+      if (wait) setTimeout(tell, wait); else tell(); } }
+  // Hint: a gatekeeper with a hint, not solved, once putt.js says he has tried enough (or has had it before). It never shows the hint itself.
+  function gymHintShow(){ if (!gE.hint) return; var c = false;
+    if (gym.G.keeper && gym.G.hint && !gym.solved && api.gymCanHint){ try{ c = !!api.gymCanHint(GY.id); }catch(e){ c = false; } }
+    gE.hint.hidden = !c; gymBtns(); }
+  // the second row is Leave alone, or Leave beside Hint and Skip: one, two or three across, never a third row
+  function gymBtns(){ var b = gE.leave && gE.leave.parentNode; if (!b) return; var n = (gE.hint && !gE.hint.hidden ? 1 : 0) + (gE.skip && !gE.skip.hidden ? 1 : 0); cls(b, 'x1', n === 1); cls(b, 'x2', n === 2); }
   // what the panel says between messages: the civilian's current line, or once the vault is open, what it paid
   function gymIdle(){ if (gym.solved) gymLine(gym.wonLine || 'Solved. The vault is open.', 0, false); else gymLine(GL.clue(gym.G, gym.resets), 0, true); }
   // a tap steps toward where it lands: whichever way, across or up and down the screen, is the further (a tap kind: that tile)
@@ -2392,7 +2405,7 @@ function run(box, P, pic, api){
     gymRestart:function(){ if (gym && gym.in && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); }, gymLeave:function(){ gymOut(); },
     gymSays:function(){ return gym && gym.line ? gym.line.txt : ''; }, gymHot:function(){ return gym && gym.in ? gymHot() : null; },
     gymRects:function(){ if (!gym) return null; var R = function(el){ if (!el || el.hidden || !el.offsetParent) return null; var r = el.getBoundingClientRect(); return { left:r.left, top:r.top, right:r.right, bottom:r.bottom }; };
-      return { board:gymBoard(), panel:R(gPanel), goal:R(gE.goal), say:R(gE.say), controls:R(gE.ctl), pad:R(gE.pad), buttons:[gE.undo, gE.restart, gE.leave].map(R), stick:R(stick), bubble:R(bubEl), kk:kk, kkBase:kkBase }; },
+      return { board:gymBoard(), panel:R(gPanel), goal:R(gE.goal), say:R(gE.say), controls:R(gE.ctl), pad:R(gE.pad), buttons:[gE.undo, gE.restart, gE.leave].concat([gE.hint, gE.skip].filter(function(e){ return e && !e.hidden; })).map(R), stick:R(stick), bubble:R(bubEl), kk:kk, kkBase:kkBase }; },
     // a camera held where a check puts it, and the highlights off, so a room's pixels can be compared with an older build's
     gymPin:function(o){ if (gym){ gym.pin = o && o.ox != null ? { ox:o.ox, oy:o.oy, kk:o.kk } : null; gym.marks = !(o && o.marks === false); } }, bubble:function(){ return bubble ? bubble.txt : ''; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;

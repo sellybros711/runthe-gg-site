@@ -78,6 +78,7 @@ var GYMS = [
     say:['Our tour guide says pipes with the same stripe are hooked together. Turn one and they all turn. I tried it.',
       'My mom says you can\'t do both sides at once in here. Do one side. Then the other.',
       'The guide says a dry pipe never spills when it turns. That\'s what the valves are for.'],
+    hint:'Not every pipe has to be dry to turn. The pink tee in the middle can swing with chocolate in it. Its stem stays joined. So the middle valve can stay open while you work the sides.',
     rows:[
       '#########',
       '#......C#',
