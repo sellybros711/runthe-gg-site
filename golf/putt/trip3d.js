@@ -34,6 +34,12 @@ function noise3(x, y, z){ var X = Math.floor(x), Y = Math.floor(y), Z = Math.flo
   var a = lerp(hash(X, Y, Z), hash(X + 1, Y, Z), fx), b = lerp(hash(X, Y + 1, Z), hash(X + 1, Y + 1, Z), fx), c = lerp(hash(X, Y, Z + 1), hash(X + 1, Y, Z + 1), fx), d = lerp(hash(X, Y + 1, Z + 1), hash(X + 1, Y + 1, Z + 1), fx);
   return lerp(lerp(a, b, fy), lerp(c, d, fy), fz); }
 function fbm(p, oct){ var s = 0, a = 0.5, f = 1; for (var i = 0; i < oct; i++){ s += a * noise3(p[0] * f, p[1] * f, p[2] * f); f *= 2.03; a *= 0.5; } return s; }
+// Crystara seen from afar: a domain warped swirl for the body of the planet and ridged noise for its glowing veins
+function crysFar(n){ var w = fbm([n[0] * 1.6 + 3.1, n[1] * 1.6, n[2] * 1.6 - 2.3], 3), q = [n[0] * 2.4 + w * 2.6, n[1] * 2.4 - w * 1.8, n[2] * 2.4 + w * 2.2];
+  var sw = fbm(q, 4), v = fbm([q[0] * 2.2 + sw * 1.5, q[1] * 2.2, q[2] * 2.2 - sw * 1.5], 3), vein = 1 - Math.abs(v * 2 - 1);
+  var c = sw < 0.42 ? lerpV([34, 20, 78], [92, 52, 168], smooth((sw - 0.22) / 0.2)) : sw < 0.6 ? lerpV([92, 52, 168], [176, 92, 220], smooth((sw - 0.42) / 0.18)) : lerpV([176, 92, 220], [236, 140, 226], smooth((sw - 0.6) / 0.15));
+  c = lerpV(c, [120, 236, 255], smooth((vein - 0.82) / 0.12) * 0.8);
+  return lerpV(c, [236, 252, 255], smooth((vein - 0.93) / 0.05)); }
 function hex(c){ return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; }
 function rotX(a){ var c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; }
 function rotY(a){ var c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c]; }
@@ -268,12 +274,12 @@ function play(host, o, cb){
           var ex = (bx2 + hash(bx2, bz2, 52)) * 1.9, ez = (bz2 + hash(bx2, bz2, 53)) * 1.9, er = 0.15 + hash(bx2, bz2, 54) * 0.45, ed = Math.hypot(gx - ex, (gz - ez) * 1.15) / er;
           if (ed < 1){ col = ed < 0.5 && (gx - ex) + (gz - ez) < 0 ? [255, 255, 255] : [168, 196, 232]; nn = norm(add(nn, mul(norm(V(gx - ex, 0.01, gz - ez)), 0.6 * ed))); } } }
       return [col, nn]; }
-    /* Crystara: from afar a ball of facets, each flat face its own shade of violet, cyan or white; near the ground clear pale
-       cyan crystal in a faint diagonal check, with points of crystal standing out of it */
-    if (kind === 'crystara'){ var fq = [Math.round(ne[0] * 5), Math.round(ne[1] * 5), Math.round(ne[2] * 5)], fh = hash(fq[0] * 7 + fq[2], fq[1], 61), fc = clamp((tt - 25) / 80, 0, 1);
-      var far = fh < 0.3 ? [168, 122, 240] : fh < 0.55 ? [138, 224, 255] : fh < 0.75 ? [200, 184, 255] : fh < 0.9 ? [110, 90, 200] : [240, 250, 255];
-      nn = fc > 0.5 ? norm(add(ne, mul(norm(V(fq[0] * 0.2 + 0.01, fq[1] * 0.2, fq[2] * 0.2)), 0.35))) : ne;
-      var chk = (Math.floor((gx + gz) / 2.2) + Math.floor((gx - gz) / 2.2)) % 2 === 0, nearC = chk ? [168, 226, 240] : [154, 214, 232];
+    /* Crystara: from afar a living world, swirls of deep indigo, violet and magenta stirred like a nebula, laced with glowing
+       cyan veins of crystal and a few bright seams; near the ground clear pale crystal, cyan drifting into lilac with bright veins, with
+       points of crystal standing out of it */
+    if (kind === 'crystara'){ var fc = clamp((tt - 25) / 80, 0, 1), far = crysFar(ne);
+      var gw = fbm([gx * 0.07 + 5.3, 1.7, gz * 0.07], 3), gs = fbm([gx * 0.11 + gw * 2.4, 4.1, gz * 0.11 - gw * 2.4], 3), gv = 1 - Math.abs(fbm([gx * 0.24 + gs * 1.6, 8.2, gz * 0.24], 3) * 2 - 1);
+      var nearC = lerpV(lerpV([150, 210, 236], [196, 176, 242], smooth((gs - 0.38) / 0.24)), [232, 252, 255], smooth((gv - 0.84) / 0.12) * 0.9);
       col = lerpV(nearC, far, fc);
       if (near && tt < 140){ var pcx = Math.floor(gx / 2.1), pcz = Math.floor(gz / 2.1);
         for (var pi2 = -1; pi2 <= 1; pi2++) for (var pj = -1; pj <= 1; pj++){ var qx = pcx + pi2, qz = pcz + pj; if (hash(qx, qz, 62) > 0.12) continue;
