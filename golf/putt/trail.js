@@ -2004,8 +2004,9 @@ function run(box, P, pic, api){
   function gymReset(tsec, s0){ gym.leverAt = tsec; gym.resets++; api.sfx && api.sfx('blip');
     var tmp = []; gView.things(tmp, tsec); tmp.forEach(function(o){ var z = o.o && o.o.z != null ? o.o.z : GYM_DECK; burst(o.x, o.y, z + 1, ['rgba(230,220,200,.85)', '#c8a070'], 8, 1.4, 0.6); });
     gymKeep(); gym.n = 0; gym.s = s0; gView.lay(gym.s); var q = gT(GY.Q.start); g.x = q[0]; g.y = q[1]; burst(q[0], q[1], GYM_DECK + 1.2, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymCheck(); gymPanel();
-    if ((gym.resets === 2 || gym.resets === 5) && civIt) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200);
-    gymTried(1, 0); }
+    var civ = (gym.resets === 2 || gym.resets === 5) && civIt;
+    if (civ) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200);
+    gymTried(1, 0, civ ? 7200 : 0); }
   function gymOpen(tsec){ var V = gym.vault; if (!V) return;
     if (gym.solved){ say('The vault\'s empty. You already cleaned it out.', 2400); return; }
     gym.solved = true; V.done = true; V.openAt = tsec; api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
@@ -2043,9 +2044,11 @@ function run(box, P, pic, api){
     // time in the room counts as trying, a little at a time, so a closed tab loses at most a few seconds of it
     if (gym.in && !gym.solved){ if (!gym.tAt) gym.tAt = now; else if (now - gym.tAt > 15000){ gymTried(0, (now - gym.tAt) / 1000); gym.tAt = now; } } else gym.tAt = 0; }
   // a try (a Restart, or time in the room) told to putt.js, which says whether the gatekeeper can now be skipped
-  function gymTried(dr, ds){ if (!gym.G.keeper || gym.solved || !api.gymTry) return; var c = false; try{ c = !!api.gymTry(GY.id, dr, ds); }catch(e){ c = false; } gymSkipShow(c); }
-  function gymSkipShow(c){ if (!gE.skip) return; var was = gym.canSkip; gym.canSkip = !!c && !gym.solved; gE.skip.hidden = !gym.canSkip; if (!gym.canSkip){ gym.skipSure = false; gE.skip.textContent = 'Skip'; }
-    if (gym.canSkip && !was && gym.in) gymLine('Stuck? You can skip this one. The vault keeps its prize until you solve it.', 6000, false); }
+  // wait: the civilian's line just said is not spoken over (Skip's own line comes once it has had its time)
+  function gymTried(dr, ds, wait){ if (!gym.G.keeper || gym.solved || !api.gymTry) return; var c = false; try{ c = !!api.gymTry(GY.id, dr, ds); }catch(e){ c = false; } gymSkipShow(c, wait); }
+  function gymSkipShow(c, wait){ if (!gE.skip) return; var was = gym.canSkip; gym.canSkip = !!c && !gym.solved; gE.skip.hidden = !gym.canSkip; if (!gym.canSkip){ gym.skipSure = false; gE.skip.textContent = 'Skip'; }
+    if (gym.canSkip && !was && gym.in){ var ln = function(){ if (alive && gym.in && gym.canSkip && !gym.solved) gymLine('Stuck? You can skip this one. The vault keeps its prize until you solve it.', 6000, false); };
+      if (wait) setTimeout(ln, wait); else ln(); } }
   // what the panel says between messages: the civilian's current line, or once the vault is open, what it paid
   function gymIdle(){ if (gym.solved) gymLine(gym.wonLine || 'Solved. The vault is open.', 0, false); else gymLine(GL.clue(gym.G, gym.resets), 0, true); }
   // a tap steps toward where it lands: whichever way, across or up and down the screen, is the further (a tap kind: that tile)
