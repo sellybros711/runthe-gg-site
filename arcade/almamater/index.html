@@ -451,7 +451,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/pregame.js?v=29"></script>
 <script src="/arcade/howto.js?v=26"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
-<script src="/arcade/type.js?v=5"></script>
+<script src="/arcade/type.js?v=6"></script>
 <script src="/arcade/fact.js?v=6"></script>
 <script>
 (function(){
@@ -504,12 +504,19 @@ window.GA_ID='G-L29P5MRWKE';
      runs on the raw value, and RTGType.sameCollege accepts both spellings. */
   // the answer as read back: the school he finished at, then any others
   function schoolsOf(r){
-    var o=(r.cols||[]).filter(function(c){ return normCol(c)!==normCol(r.col); }).map(label);
+    var o=(r.cols||[]).filter(function(c){ return colId(c)!==colId(r.col); }).map(label);
     return label(r.col) + (o.length ? ' (also ' + o.join(', ') + ')' : '');
   }
   function label(c){ try{ return (window.RTGType && RTGType.schoolLabel) ? RTGType.schoolLabel(c) : c; }catch(e){ return c; } }
 
   function normCol(c){ return String(c||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+  /* The SCHOOL, not the spelling. "Miami" and "Miami (FL)" are one school
+     written two ways, and keying on the string put both on Njoku's four
+     choices and marked the one he did not finish at wrong. Everything that
+     asks "is this the same school" on this page asks this. */
+  function colId(c){ try{ if(window.RTGType && RTGType.schoolIdent){ var k=RTGType.schoolIdent(c); if(k) return k; } }catch(e){} return normCol(c); }
+  // a tapped choice is right when it is any school he attended
+  function isAnswer(c, r){ var k=colId(c); return (r.cols||[r.col]).some(function(x){ return colId(x)===k; }); }
   function badCol(c){ return !c || /^(none|n\/?a|unknown|no college|--)$/i.test(String(c).trim()); }
   var corpF={}; ENT.forEach(function(e){ if(e&&TEAM_SPORTS[e.sport]){ var k=e.name+'|'+e.sport; corpF[k]=Math.max(corpF[k]||0, e.f||0); } });
 
@@ -538,7 +545,7 @@ window.GA_ID='G-L29P5MRWKE';
     try{ Object.defineProperty(row, '_ent', { value: ent || { name:name, sport:sport, act:1, decade:[2020] }, enumerable:false }); }catch(x){}
     POOL.push(row);
     colFreq[cc]=(colFreq[cc]||0)+1;
-    var n=normCol(cc); if(!sportSeen[sport][n]){ sportSeen[sport][n]=1; collegesBySport[sport].push(cc); }
+    var n=colId(cc); if(!sportSeen[sport][n]){ sportSeen[sport][n]=1; collegesBySport[sport].push(cc); }
   }
   /* THE CLUB UNDER THE NAME. e.pt is the club they spent longest at
      (primary.js, folded on by data.js); e.t[0] is the club they came up with.
@@ -618,13 +625,13 @@ window.GA_ID='G-L29P5MRWKE';
         e.decade.forEach(function(d){ var k=q.sport+'|'+fam+'|'+d; (SCHOOLS_AT[k]=SCHOOLS_AT[k]||[]).push(q.col); });
       });
     }
-    var fam=RTGFame.posFamily(me)||'?', ds=(me.decade||[]), mine=normCol(p.col);
+    var fam=RTGFame.posFamily(me)||'?', ds=(me.decade||[]), mine=colId(p.col);
     // same position family and decade first, then the decades either side
     [0,10].forEach(function(off){
       ds.forEach(function(d){
         [d-off, d+off].forEach(function(dd){
           shuffle(SCHOOLS_AT[p.sport+'|'+fam+'|'+dd]||[]).forEach(function(c){
-            var n=normCol(c); if(n!==mine && !hit[n]){ hit[n]=1; out.push(c); }
+            var n=colId(c); if(n!==mine && !hit[n]){ hit[n]=1; out.push(c); }
           });
         });
       });
@@ -637,15 +644,20 @@ window.GA_ID='G-L29P5MRWKE';
   }
   function makeRound(p){
     // every school he attended is a right answer, so none of them is a decoy
-    var opts=[p.col], used={}; used[normCol(p.col)]=1;
-    (p.cols||[]).forEach(function(c){ used[normCol(c)]=1; });
+    /* Keyed on the school AND on the printed name, so no two buttons can
+       read the same and no decoy is another spelling of the answer. */
+    var opts=[p.col], used={};
+    function take(c){ used[colId(c)]=1; used['@'+normCol(label(c))]=1; }
+    function free(c){ return !used[colId(c)] && !used['@'+normCol(label(c))]; }
+    take(p.col);
+    (p.cols||[]).forEach(take);
     if(flagOn('decoys')){
       var al=alikeSchools(p);
-      for(var a=0;a<al.length && opts.length<4;a++){ var n0=normCol(al[a]); if(!used[n0]){ used[n0]=1; opts.push(al[a]); } }
+      for(var a=0;a<al.length && opts.length<4;a++){ if(free(al[a])){ take(al[a]); opts.push(al[a]); } }
     }
     var same=shuffle(collegesBySport[p.sport]||[]);
-    for(var i=0;i<same.length && opts.length<4;i++){ var c=same[i], n=normCol(c); if(!used[n]){ used[n]=1; opts.push(c); } }
-    if(opts.length<4){ var comm=shuffle(COMMON); for(var j=0;j<comm.length && opts.length<4;j++){ var c2=comm[j], n2=normCol(c2); if(!used[n2]){ used[n2]=1; opts.push(c2); } } }
+    for(var i=0;i<same.length && opts.length<4;i++){ var c=same[i]; if(free(c)){ take(c); opts.push(c); } }
+    if(opts.length<4){ var comm=shuffle(COMMON); for(var j=0;j<comm.length && opts.length<4;j++){ var c2=comm[j]; if(free(c2)){ take(c2); opts.push(c2); } } }
     return { name:p.name, sport:p.sport, team:p.team, col:p.col, cols:p.cols||null, opts:shuffle(opts) };
   }
   // Progressive difficulty among RECOGNISABLE names only. Fame Rule A: NFL is a
@@ -801,7 +813,7 @@ window.GA_ID='G-L29P5MRWKE';
     bailed=true;
     choicesEl.hidden=false;
     choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(label(c))+'</button>'; }).join('');
-    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(r.opts[+bt.dataset.i]===r.col, bt); }); });
+    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(isAnswer(r.opts[+bt.dataset.i], r), bt); }); });
     setAnswerEnabled(true);
     setSub('It’s one of these. Worth 1 point.');
     saveResume();
@@ -826,6 +838,12 @@ window.GA_ID='G-L29P5MRWKE';
     var right = (r.cols||[r.col]).some(function(c){
       return window.RTGType ? RTGType.sameCollege(text, c) : (text.trim().toLowerCase()===String(c).toLowerCase());
     });
+    // two schools are called Miami: ask which, do not end the run on it
+    if(!right && window.RTGType && RTGType.ambiguousSchool && RTGType.ambiguousSchool(text)){
+      setSub('Which Miami? Type Miami (FL) or Miami (OH).');
+      if(window.RTGSound && RTGSound.soft) RTGSound.soft();
+      return;
+    }
     if(!right && !knownSchool(text)){
       setSub('We don’t know that school. Check the spelling and try again.');
       if(window.RTGSound && RTGSound.soft) RTGSound.soft();
@@ -867,7 +885,7 @@ window.GA_ID='G-L29P5MRWKE';
       answer: schoolsOf(r), ok: !!right, note: bailed ? 'Took the four choices' : '' });
     if(bailed){
       [].forEach.call(choicesEl.querySelectorAll('.choice'), function(b){
-        if(r.opts[+b.dataset.i]===r.col) b.classList.add('correct'); else b.classList.add('dim');
+        if(isAnswer(r.opts[+b.dataset.i], r)) b.classList.add('correct'); else b.classList.add('dim');
       });
       if(bt && !right){ bt.classList.remove('dim'); bt.classList.add('wrong'); }
     }
