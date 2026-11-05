@@ -2479,8 +2479,8 @@
       "sha": "f8c8d8db3e957b72"
     },
     "/cfb/auth.js": {
-      "v": "8",
-      "sha": "d81dc7cbc4c21a96"
+      "v": "10",
+      "sha": "0379db2899acd50e"
     },
     "/assets/cloudsave.js": {
       "v": "3",
@@ -2513,8 +2513,8 @@
       "sha": "cc149708e8a0216e"
     },
     "/cfb/auth.js": {
-      "v": "8",
-      "sha": "d81dc7cbc4c21a96"
+      "v": "10",
+      "sha": "0379db2899acd50e"
     },
     "/football/fantasy/clubs.js": {
       "v": "2",
@@ -2543,8 +2543,8 @@
       "sha": "208ef7eb35ebaffc"
     },
     "auth.js": {
-      "v": "9",
-      "sha": "d81dc7cbc4c21a96"
+      "v": "10",
+      "sha": "0379db2899acd50e"
     },
     "board.js": {
       "v": "7",
@@ -2753,20 +2753,20 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "127",
-      "sha": "6109f8d7ee70c74c"
+      "v": "128",
+      "sha": "0423d92736d80c01"
     },
     "putt/land.js": {
-      "v": "17",
-      "sha": "0b44799b5066d2c1"
+      "v": "18",
+      "sha": "a82e4b8fae8d3263"
     },
     "putt/hole3d.js": {
-      "v": "20",
-      "sha": "ff389fb15ea156e7"
+      "v": "21",
+      "sha": "5a4eae6c2ef78bdf"
     },
     "putt/trip3d.js": {
-      "v": "4",
-      "sha": "4ab5c144564fcacb"
+      "v": "5",
+      "sha": "c6cb05685595a3e0"
     },
     "putt/gyms.js": {
       "v": "4",
@@ -2828,21 +2828,25 @@
       "v": "1",
       "sha": "aa44bfcf89fb87e2"
     },
+    "putt/gymkinds/tint.js": {
+      "v": "1",
+      "sha": "b20021e502a16048"
+    },
     "putt/trail.js": {
-      "v": "50",
-      "sha": "d8d0373fef0c8f2f"
+      "v": "51",
+      "sha": "dbf39ee899b26d2e"
     },
     "putt/mapland.js": {
-      "v": "9",
-      "sha": "ce540ddb2eff169d"
+      "v": "10",
+      "sha": "dd94dae5d905bfe4"
     },
     "putt/clips.js": {
       "v": "2",
       "sha": "3fdb09af3736bd66"
     },
     "golfer3d.js": {
-      "v": "26",
-      "sha": "4b6e50723348e369"
+      "v": "27",
+      "sha": "ab4f27f375d68149"
     },
     "tracer3d.js": {
       "v": "2",
@@ -3235,8 +3239,8 @@
       "sha": "134a3a1143402c63"
     },
     "3d/boot.js": {
-      "v": "99",
-      "sha": "3dc551531072c656"
+      "v": "100",
+      "sha": "c4816fd9386754b8"
     }
   },
   "shut-the-door/lab/index.html": {
@@ -3365,8 +3369,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "100",
-      "sha": "261a7e1bca00d19b"
+      "v": "101",
+      "sha": "a61d0e87fea07eb2"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3453,6 +3457,10 @@
     "firstperson.js": {
       "v": "24",
       "sha": "64a7b82c9d99a302"
+    },
+    "idle.js": {
+      "v": "1",
+      "sha": "87510ccce3640fac"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3619,6 +3627,16 @@
     "pitch.js": {
       "v": "15",
       "sha": "3ef8c03469978f61"
+    }
+  },
+  "shut-the-door/3d/idle.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "34647a01ead672d6"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
     }
   },
   "shut-the-door/3d/field.js": {

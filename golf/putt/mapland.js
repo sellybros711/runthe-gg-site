@@ -51,6 +51,7 @@ var PAL={
   iceage:{ g:['#d9e2e8','#e3eaef','#edf2f5','#f6f9fb'], sp:[['#a89884',.012],['#ffffff',.02]], tree:'pine', leaf:['#1e3f30','#28503e','#33624c','#42785c'], snow:'#f6f9fd', trunk:'#4a3626', path:['#b8aa92','#c8bca6'], water:['#141210','#1e1a16','#2c2620','#4a4036'], shadow:.7 },
   moon:{ g:['#8a8892','#96949e','#a2a0aa','#aeacb6'], sp:[['#c8c6ce',.012],['#6a6872',.01]], tree:'round', leaf:['#6a6872','#7a7882','#8a8892','#9a98a2'], trunk:'#4a4852', path:['#c8ccd8','#dfe3ec'], water:['#05060f','#0b0e22','#141a36','#c8d4ff'], shadow:.62 },
   saturn:{ g:['#d8b878','#e2c88c','#e8d2a0','#f0dfb4'], sp:[['#b8905a',.012],['#fff2d0',.012]], tree:'round', leaf:['#c8d8ee','#dceaf6','#a8c4e8','#ffffff'], trunk:'#6a6488', path:['#e8e6f6','#f4f2fc'], water:['#b8905a','#c8a060','#d8b878','#fff2d0'], shadow:.62 },
+  crystara:{ g:['#0e0820','#1c1236','#2a1a4a','#9fd8e8'], sp:[['#ffffff',.01],['#b8a8ff',.01]], tree:'round', leaf:['#8a5ad8','#b894f0','#9ff0ff','#ffffff'], trunk:'#5a4a8a', path:['#eef8ff','#ffffff'], water:['#0a0618','#0e0820','#1c1236','#b8a8ff'], shadow:.6 },
   mars:{ g:['#b85a32','#c4683e','#d07648','#dc8654'], sp:[['#7a3220',.014],['#f0b088',.01]], tree:'round', leaf:['#5a2a1c','#7a3a22','#8a4a2a','#a8502e'], trunk:'#3a2420', path:['#e8b088','#f2c4a0'], water:['#2a0e08','#3a140c','#5a2010','#a8502e'], shadow:.62 },
   candy:{ g:['#eaa9c0','#f0b8cc','#f5c6d7','#f9d4e2'], sp:[['#ffffff',.012],['#ffd23f',.006]], tree:'round', leaf:['#c2306a','#e0488a','#ff6fa8','#ffa8cc'], trunk:'#f6f1ea', path:['#c98a5a','#d89c6c'], water:['#3a1c0c','#5a2e14','#7a4422','#a8683e'], shadow:.66 },
   harvest:{ g:['#8a7a3a','#9a8a44','#a8984e','#b5a65a'], sp:[['#d07a2a',.012],['#5a3818',.01]], tree:'round', leaf:['#7a2e10','#a8461a','#d06a22','#e8a03a'], trunk:'#3a2416', path:['#c4a46a','#d4b47a'], water:['#2e5a6e','#3a7088','#4f88a0','#c6dde6'], shadow:.6, fog:'#e8a03a' }
@@ -430,6 +431,26 @@ WORLD.saturn=function(P,th,seed){
   for(var bq=0;bq<40;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),4,4,5,tk); if(!bb)continue; var rs=1+hash(bq,7,seed)*1.4;
     P.ell(bb[0]+2.6,bb[1]+3.4,rs*1.2,rs*.5,function(a,b){ P.shade(a,b,.6); }); P.ell(bb[0]+2,bb[1]+2,rs,rs*.8,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.3?'#ffffff':dx+dy>.4?'#a8c4e8':'#dceaf6')); }); }
   for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ if(P.pathD(x,y)<7)continue; var h=hash(x,y,seed+71); if(h<.003)P.set(x,y,hex('#ffffff')); }
+};
+WORLD.crystara=function(P,th,seed){
+  var tk=[], x, y;
+  // the void, near black violet with stars and a drift of nebula; the walk runs along fields of clear crystal laid over it,
+  // faceted in a faint check, spires of crystal standing all round, prisms throwing beams, and the heart glowing by the trail's end. No trees.
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var n=fbm(x*.03,y*.03,seed+3), st=hash(x,y,seed+5);
+    P.set(x,y,hex(st>.994?'#ffffff':st>.986?'#b8a8ff':n>.66?'#2a1a4a':n>.55?'#1c1236':'#0e0820')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=11+fbm(x*.06,y*.06,seed+9)*6; if(pd<e)P.set(x,y,hex(pd>e-1.2?'#ffffff':(((x+y)>>3)+((x-y+4096)>>3))%2?'#a8e0ee':'#9fd8e8')); else if(pd<e+1.5)P.shade(x,y,.6); }
+  // the heart: a great glowing crystal near the trail's end
+  var hx=spot(P,P.w*.72,P.h*.82,14,22,6,tk); if(hx){ var cx=hx[0]+7;
+    P.ell(cx,hx[1]+20,9,3,function(a,b){ P.tint(a,b,hex('#9ff0ff'),.35); });
+    for(y=hx[1];y<hx[1]+20;y++)for(x=hx[0];x<hx[0]+14;x++){ var u=(y-hx[1])/20, w=6*(u<.25?u/.25:1-(u-.25)*.9); if(Math.abs(x-cx)<w)P.set(x,y,hex(Math.abs(x-cx)>w-1.1?'#ffffff':x<cx?'#e8dcff':'#9ff0ff')); } }
+  // spires of crystal, each with its shadow
+  for(var bq=0;bq<34;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),5,8,5,tk); if(!bb)continue; var hs=4+hash(bq,7,seed)*4, rose=hash(bq,8,seed)<.45;
+    P.ell(bb[0]+3.4,bb[1]+hs+.6,2.2,.8,function(a,b){ P.shade(a,b,.6); });
+    for(y=0;y<hs;y++){ var hw=1.8*(y/hs); for(x=-2;x<=2;x++) if(Math.abs(x)<=hw) P.set(bb[0]+2+x,bb[1]+y,hex(x<0?'#ffffff':rose?'#b894f0':'#8ae0ff')); } }
+  // prisms throwing beams of light across the crystal
+  for(var pq=0;pq<5;pq++){ var pp=spot(P,P.w*hash(pq,15,seed),P.h*hash(pq,16,seed),16,4,6,tk); if(!pp)continue;
+    for(x=0;x<4;x++)for(y=0;y<4;y++) if(y>=3-x) P.set(pp[0]+x,pp[1]+y,hex(x<2?'#d8b8ff':'#8ae0ff'));
+    for(x=4;x<16;x++){ P.set(pp[0]+x,pp[1]+2,hex('#ffffff')); P.tint(pp[0]+x,pp[1]+1,hex('#9ff0ff'),.5); P.tint(pp[0]+x,pp[1]+3,hex('#9ff0ff'),.5); } }
 };
 WORLD.candy=function(P,th,seed){
   var tk=[], x, y;
