@@ -932,6 +932,17 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       out.walkBtn = !!document.querySelector('.pp-sheet [data-walk]');
       window.RTT_PUTT.close(); rec([keep[0].id]); openPutt(); await sleep(300); out.openAfter = !window.RTT_PUTT._keeperBlocks(n);
       best[n] = 4; window.RTT_PUTT.close(); rec([]); openPutt(); await sleep(300); out.playedStaysOpen = !window.RTT_PUTT._keeperBlocks(n);
+      // A STUCK PLAYER CAN SKIP IT (the owner, 2026-11-05): not before he has tried, then Skip asks once and opens the hole, the vault still shut
+      delete best[n]; const recT = (gyt) => { rec([]); const st = JSON.parse(localStorage.getItem(K)); st.gyt = gyt; localStorage.setItem(K, JSON.stringify(st)); };
+      window.RTT_PUTT.close(); recT({ [keep[0].id]:[4, 590] }); openPutt(); await sleep(300); window.RTT_PUTT._level(n, 'main'); await sleep(200);
+      out.noSkipYet = !!document.querySelector('.pp-sheet [data-walk]') && !document.querySelector('.pp-sheet [data-skip]');
+      window.RTT_PUTT.close(); recT({ [keep[0].id]:[5, 0] }); openPutt(); await sleep(300); window.RTT_PUTT._level(n, 'main'); await sleep(200);
+      const skb = document.querySelector('.pp-sheet [data-skip]'); out.skipShown = !!skb;
+      if (skb){ skb.click(); await sleep(100); out.asks = window.RTT_PUTT._state().screen !== 'play' && /stay in the vault/.test(document.querySelector('.pp-sheet .m').textContent);
+        document.querySelector('.pp-sheet [data-skip]').click(); await sleep(600); }
+      const sst = JSON.parse(localStorage.getItem(K)); out.skipped = (sst.gsk || []).indexOf(keep[0].id) >= 0 && (sst.gym || []).indexOf(keep[0].id) < 0;
+      out.skipPlays = window.RTT_PUTT._state().screen === 'play' && !window.RTT_PUTT._keeperBlocks(n);
+      window.RTT_PUTT.close(); localStorage.setItem(K, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem(K)), { cur:null })));
       // chest odds: fixed for a key, and near the table over many chests
       const R = window.RTT_PUTT._chestRoll, cnt = { coins:0, haul:0, item:0, pack:0 }; out.fixed = R('main:7', 'ch0') === R('main:7', 'ch0');
       for (let i = 0; i < 4000; i++) cnt[R('main:' + (i % 270 + 1), 'ch' + i)]++; out.cnt = cnt;
@@ -941,6 +952,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       h.pack = () => 1; out.packMsg = k ? window.RTT_PUTT._chestLuck(k[0], k[1], 600) : null; h.pack = hp; h.commonItem = hi;
       window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
     claim(gk.keepers >= 1 && gk.n > 0 && gk.blocks && gk.sheet && gk.notPlaying && gk.walkBtn, `the gatekeeper guards the world's last hole: Hole ${gk.n} asks for it to be solved first, with a way to walk to it (${JSON.stringify(gk)})`);
+    claim(gk.noSkipYet && gk.skipShown && gk.asks && gk.skipped && gk.skipPlays, `a stuck player can skip the gatekeeper: no Skip before he has tried, then Skip asks once, opens the hole, and the vault keeps its badge and pack (${JSON.stringify([gk.noSkipYet, gk.skipShown, gk.asks, gk.skipped, gk.skipPlays])})`);
     claim(gk.openAfter && gk.playedStaysOpen, `solved, the hole opens; a hole already played is never taken away (${JSON.stringify([gk.openAfter, gk.playedStaysOpen])})`);
     claim(gk.fixed && gk.cnt.coins > 2900 && gk.cnt.coins < 3350 && gk.cnt.haul > 450 && gk.cnt.haul < 750 && gk.cnt.item > 120 && gk.cnt.item < 290 && gk.cnt.pack > 40 && gk.cnt.pack < 130, `a chest's roll is fixed, and over 4,000 chests the odds come out near 78/15/5/2 (${JSON.stringify(gk.cnt)})`);
     claim(gk.fallback && gk.fallback.coins === 1200 && gk.packMsg && gk.packMsg.coins === 0 && /pack/.test(gk.packMsg.msg), `a lucky pack that cannot land is a big haul instead (${JSON.stringify([gk.fallback, gk.packMsg])})`);

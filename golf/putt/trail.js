@@ -1941,11 +1941,11 @@ function run(box, P, pic, api){
   if (gym){ gPanel = document.createElement('div'); gPanel.className = 'pp-gp'; gPanel.hidden = true; gPanel.setAttribute('data-gp', '');
     gPanel.innerHTML = '<div class="pp-gph"><b data-gname></b><i data-gkeep hidden>Gatekeeper</i><span data-gmoves></span></div><p class="pp-gpg" data-ggoal></p>' +
       '<div class="pp-gps" data-gsay aria-live="polite"><span class="pp-gpf" data-gface></span><p data-gtext></p></div>' +
-      '<div class="pp-gpc" data-gctl><div class="pp-gpb"><button data-gundo>Undo</button><button data-grestart>Restart</button><button data-gleave>Leave</button></div>' +
+      '<div class="pp-gpc" data-gctl><div class="pp-gpb"><button data-gundo>Undo</button><button data-grestart>Restart</button><button data-gleave>Leave</button><button data-gskip hidden>Skip</button></div>' +
       '<div class="pp-gpd" data-gpad><button data-d="0" aria-label="Step up"></button><button data-d="3" aria-label="Step left"></button><button data-d="1" aria-label="Step right"></button><button data-d="2" aria-label="Step down"></button></div></div>' +
       '<div class="pp-gpk" data-gkeys></div>';
     ui.appendChild(gPanel);
-    ['name', 'keep', 'moves', 'goal', 'say', 'face', 'text', 'ctl', 'pad', 'keys', 'undo', 'restart', 'leave'].forEach(function(k){ gE[k] = gPanel.querySelector('[data-g' + k + ']'); });
+    ['name', 'keep', 'moves', 'goal', 'say', 'face', 'text', 'ctl', 'pad', 'keys', 'undo', 'restart', 'leave', 'skip'].forEach(function(k){ gE[k] = gPanel.querySelector('[data-g' + k + ']'); });
     gE.name.textContent = gym.G.name; gE.keep.hidden = !gym.G.keeper; gE.goal.textContent = GL.goal(gym.G);
     var stepIn = gym.inp === 'step'; gE.pad.hidden = !stepIn; gPanel.classList.toggle('nopad', !stepIn);
     gE.keys.textContent = (stepIn ? 'Arrows or WASD step · ' : gym.inp === 'tap' ? 'Click a tile · ' : '') + 'Z undo · R restart';
@@ -1954,6 +1954,11 @@ function run(box, P, pic, api){
     gE.undo.onclick = function(e){ e.stopPropagation(); gymUndo(); };
     gE.restart.onclick = function(e){ e.stopPropagation(); if (gym.in && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); };
     gE.leave.onclick = function(e){ e.stopPropagation(); gymOut(); };
+    /* SKIP (the gatekeeper only, once he has tried it: putt.js GYM_SKIP). The first press asks, the second skips: out
+       through the gate with the hole open, the vault still shut. */
+    gE.skip.onclick = function(e){ e.stopPropagation(); if (!gym.in || gymBusy()) return;
+      if (!gym.skipSure){ gym.skipSure = true; gE.skip.textContent = 'Skip it'; gymLine('Skip it and the hole opens. The badge and the Tour pack stay in the vault until you solve it.', 6000, false); return; }
+      var m = ''; try{ m = api.gymSkip ? api.gymSkip(GY.id) : ''; }catch(e2){ m = ''; } gym.canSkip = false; gymOut(); if (m) sayLater(m, 4200, 0.4); };
     // the pad: a press steps at once, and held it keeps stepping, as the stick does
     [].forEach.call(gE.pad.querySelectorAll('button'), function(bt){ var d = +bt.getAttribute('data-d');
       bt.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); padDir = d; gym.tap = d; try{ bt.setPointerCapture(e.pointerId); }catch(e2){} });
@@ -1999,7 +2004,8 @@ function run(box, P, pic, api){
   function gymReset(tsec, s0){ gym.leverAt = tsec; gym.resets++; api.sfx && api.sfx('blip');
     var tmp = []; gView.things(tmp, tsec); tmp.forEach(function(o){ var z = o.o && o.o.z != null ? o.o.z : GYM_DECK; burst(o.x, o.y, z + 1, ['rgba(230,220,200,.85)', '#c8a070'], 8, 1.4, 0.6); });
     gymKeep(); gym.n = 0; gym.s = s0; gView.lay(gym.s); var q = gT(GY.Q.start); g.x = q[0]; g.y = q[1]; burst(q[0], q[1], GYM_DECK + 1.2, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymCheck(); gymPanel();
-    if ((gym.resets === 2 || gym.resets === 5) && civIt) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200); }
+    if ((gym.resets === 2 || gym.resets === 5) && civIt) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200);
+    gymTried(1, 0); }
   function gymOpen(tsec){ var V = gym.vault; if (!V) return;
     if (gym.solved){ say('The vault\'s empty. You already cleaned it out.', 2400); return; }
     gym.solved = true; V.done = true; V.openAt = tsec; api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
@@ -2022,7 +2028,7 @@ function run(box, P, pic, api){
   function gymEnter(tsec){ gym.in = true; g.vx = g.vy = 0; var q = gT(GY.Q.gate); g.x = q[0]; g.y = q[1]; gym.hist = []; gym.n = 0; gHot = null;
     var st = GL.place(gym.G, gym.s, GY.Q.gate), Gd = gym.G; gym.s = st;
     gym.anim = { ph:[[['me', GY.Q.gate, GY.Q.start, 'walk']]], k:0, t0:tsec, then:function(){ gym.s = GL.place(Gd, gym.s, GY.Q.start); gymCheck(); gymPanel(); } };
-    gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
+    gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); gym.canSkip = true; gymSkipShow(gym.G.keeper && !gym.solved && api.gymCanSkip && (function(){ try{ return api.gymCanSkip(GY.id); }catch(e){ return false; } })()); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
     if (!gym.told.in){ gym.told.in = 1; sayLater(gym.solved ? 'Solved already. Have a look around.' : GK.hello || 'Undo takes one back.', 3600, 0.5); }
     camAim(true); }
   function gymLeave(){ gym.in = false; gym.lock = true; g.x = GY.ax; g.y = GY.ay + 0.4; g.face = [0, 1]; g.aimI = null; g.vx = g.vy = 0; gPanel.hidden = true; ui.classList.remove('ingym'); gym.stuck = false; gymLit();
@@ -2033,7 +2039,13 @@ function run(box, P, pic, api){
      time, then the panel goes back to the civilian's current line, so the nudge is always there to read again. */
   function gymLine(txt, ms, civ){ if (!gPanel) return; gym.line = { txt:txt, civ:!!civ, until:ms ? performance.now() + ms : 0 };
     put(gE.text, 'textContent', txt); cls(gE.say, 'civ', !!civ); cls(gE.say, 'fresh', false); void gE.say.offsetWidth; cls(gE.say, 'fresh', true); }
-  function gymLineTick(now){ var L = gym.line; if (L && L.until && now > L.until) gymIdle(); }
+  function gymLineTick(now){ var L = gym.line; if (L && L.until && now > L.until) gymIdle();
+    // time in the room counts as trying, a little at a time, so a closed tab loses at most a few seconds of it
+    if (gym.in && !gym.solved){ if (!gym.tAt) gym.tAt = now; else if (now - gym.tAt > 15000){ gymTried(0, (now - gym.tAt) / 1000); gym.tAt = now; } } else gym.tAt = 0; }
+  // a try (a Restart, or time in the room) told to putt.js, which says whether the gatekeeper can now be skipped
+  function gymTried(dr, ds){ if (!gym.G.keeper || gym.solved || !api.gymTry) return; var c = false; try{ c = !!api.gymTry(GY.id, dr, ds); }catch(e){ c = false; } gymSkipShow(c); }
+  function gymSkipShow(c){ if (!gE.skip) return; var was = gym.canSkip; gym.canSkip = !!c && !gym.solved; gE.skip.hidden = !gym.canSkip; if (!gym.canSkip){ gym.skipSure = false; gE.skip.textContent = 'Skip'; }
+    if (gym.canSkip && !was && gym.in) gymLine('Stuck? You can skip this one. The vault keeps its prize until you solve it.', 6000, false); }
   // what the panel says between messages: the civilian's current line, or once the vault is open, what it paid
   function gymIdle(){ if (gym.solved) gymLine(gym.wonLine || 'Solved. The vault is open.', 0, false); else gymLine(GL.clue(gym.G, gym.resets), 0, true); }
   // a tap steps toward where it lands: whichever way, across or up and down the screen, is the further (a tap kind: that tile)
