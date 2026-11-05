@@ -60,6 +60,9 @@
  *      Survivor board, one run a day and when the next opens) and the
  *      archive (only when entitlements say Pro)
  *
+ *  19. clips: a Clip on every pitch of the result, never open by itself, the replay plays to its end
+ *      (and records where it can), and its link opens the viewer on a page of its own, writing nothing
+ *
  *  18. rules 8: a two-half daily played through the page to the third out of
  *      the 8th; the scorebug follows the half (the 9th, nobody out, nobody on,
  *      the score his team left), as the outing's state says. Between the two
@@ -2072,6 +2075,90 @@ async function halves(w, h, skip) {
   await ctx.close();
 }
 
+/* 19. CLIPS (clip-ui.js), through the mock. A whole outing to the result: every one of your pitches in
+   you vs the real game carries a Clip, thumb tall, and the clip screen never opens by itself. A tap
+   opens it, the pitch plays again on the stage to its end (recorded where the browser can), and back
+   goes to the result with the mound's canvas home. Then the pitch's link on a fresh page: the viewer
+   over the home, waiting for a tap, nothing written, the pitch plays, and play today's daily goes to
+   the mound with the clip gone from the address. No page error and no console error. */
+async function clips(w, h) {
+  console.log(`\nclips, ${w}x${h}`);
+  step('19 clips', 900);
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  await page.addInitScript(() => { try { if (!sessionStorage.getItem('ck-clip')) { sessionStorage.setItem('ck-clip', '1'); localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false })); } } catch (e) {} });
+  const errors = [];
+  const watch = (pg) => {
+    pg.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+    pg.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
+  };
+  watch(page);
+  const route = (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net' || /(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  };
+  await page.route('**/*', route);
+  await page.goto(BASE + '?mockEnd=door_shut', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 60000 });
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 30000 });
+  await stageReady(page);
+  const onResult = () => page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
+  for (let i = 0; i < 40 && !(await onResult()); i++) {
+    await page.waitForFunction(() => !window.STD_UI.state.busy || document.getElementById('s-result').classList.contains('on'), null, { timeout: PITCH_MS });
+    if (await onResult()) break;
+    await page.keyboard.press('1');
+    await page.click('#m-aim .cell[data-cell="12"]');
+    await page.click('#m-throw');
+    await page.waitForTimeout(150);
+  }
+  await page.waitForSelector('#s-result.on', { timeout: PITCH_MS });
+  await page.waitForTimeout(1200);
+  const rs = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('#r-reveal .pc')], clips = cards.filter((c) => c.matches('button[data-clip]'));
+    return { cards: cards.length, clips: clips.length, minH: Math.min(...clips.map((c) => c.getBoundingClientRect().height)), pitches: window.STD_UI.state.result.pitches,
+      open: document.getElementById('s-clip').classList.contains('on') };
+  });
+  ok(rs.clips === rs.pitches && rs.cards === rs.pitches && rs.minH >= 38, '19 every pitch in you vs the real game has a Clip, thumb tall (' + rs.clips + ' of ' + rs.pitches + ', ' + Math.round(rs.minH) + ' px)');
+  ok(!rs.open, '19 the clip screen does not open by itself');
+  await page.click('#r-reveal .pc[data-clip="1"]');
+  await page.waitForSelector('#s-clip.on', { timeout: 30000 });
+  await page.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'done', null, { timeout: 300000 });
+  const cl = await page.evaluate(() => ({ head: document.getElementById('cl-head').textContent, canvas: !!document.querySelector('#cl-stage #m-canvas'), video: !document.getElementById('cl-video').hidden,
+    say: document.getElementById('cl-say').textContent, link: window.STD_CLIP_UI.lastLink(), rec: window.STD_CLIP_UI.canRecord(), grade: !!document.querySelector('#s-clip .sq, #s-clip .bd') }));
+  ok(/^Pitch 1: /.test(cl.head) && cl.canvas && !cl.grade, '19 a tap on Clip plays pitch 1 again on the stage, with no grade ("' + cl.head + '")');
+  ok(cl.rec ? cl.video : /link/i.test(cl.say), '19 ' + (cl.rec ? 'the clip records a video to share' : 'without a recorder the clip says to share the link') + ' ("' + cl.say + '")');
+  ok(/[?&]clip=1\.d\.\d{8}\.\d+\.[a-z0-9-]+\.[A-Z]{2}\d/.test(cl.link || ''), '19 the clip has a link (' + (cl.link || 'none').replace(/^.*\?/, '?') + ')');
+  await page.click('#cl-close');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  const home = await page.evaluate(() => !!document.querySelector('#m-scene #m-canvas'));
+  ok(home, '19 closing the clip goes back to the result, the canvas back on the mound');
+  /* the link, on a page of its own */
+  const p2 = await ctx.newPage();
+  watch(p2);
+  await p2.route('**/*', route);
+  await p2.addInitScript(() => { try { localStorage.removeItem('std_outing_v1'); } catch (e) {} });
+  const q = new URL(cl.link).search;
+  await p2.goto(BASE + q + '&mockEnd=door_shut', { waitUntil: 'domcontentloaded' });
+  await p2.waitForSelector('#s-clip.on', { timeout: 240000 });
+  await p2.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'idle', null, { timeout: 240000 });
+  const lv = await p2.evaluate(() => ({ daily: !document.getElementById('cl-daily').hidden, play: !document.getElementById('cl-play').hidden, kept: Object.keys(localStorage).filter((k) => /outing/.test(k)) }));
+  ok(lv.daily && lv.play && !lv.kept.length, '19 a clip link opens the viewer, waits for a tap, with play today\'s daily, and writes nothing (' + JSON.stringify(lv) + ')');
+  await stageReady(p2);
+  await p2.click('#cl-play');
+  await p2.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'done', null, { timeout: 300000 });
+  await p2.click('#cl-daily');
+  await p2.waitForSelector('#s-mound.on', { timeout: 60000 });
+  ok(!/clip=/.test(await p2.evaluate(() => location.search)), '19 play today\'s daily goes to the mound, the clip gone from the address');
+  ok(errors.length === 0, '19 clips: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 /* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
    made here), the consent before the send, the send, then the owner's review: waiting, approve, approved */
 function tinyWav(ms) {
@@ -2125,16 +2212,20 @@ async function voicesWalk(w, h) {
 
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
+  /* STD_CLIPS=1: only the clips (19) at both sizes, for a local pass on them */
+  if (process.env.STD_CLIPS === '1') { await clips(390, 844); await clips(1440, 900); throw 'quick'; }
   await run(390, 844, 'light');
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
-  if (QUICK) { await run(1440, 900, 'dark'); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
+  if (QUICK) { await run(1440, 900, 'dark'); await clips(390, 844); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
   await bootStuck(390, 844);
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
   await halfSwitch(390, 844);
   await homeTrip(390, 844);
+  await clips(390, 844);
+  await clips(1440, 900);
   await sizeSweep();
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');

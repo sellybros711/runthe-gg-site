@@ -1895,6 +1895,40 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
 /* the menu's home: only while an outing is on screen */
 body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="s-next"]) #sheet-menu .menu-home { display: none; }
 
+/* ---- CLIPS (clip-ui.js): a pitch's Clip on the result, and the clip screen ------------------- */
+.pc.clp { font: inherit; color: inherit; text-align: left; border: 0; cursor: pointer; min-height: 38px; }
+.pc.clp:hover, .pc.clp:focus-visible { box-shadow: inset 0 0 0 2px var(--signal); outline: none; }
+.pc .cl { display: flex; align-items: center; gap: 3px; margin-top: 4px; font-family: var(--sans); font-weight: 700; font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--signal); }
+.pc .cl svg { width: 9px; height: 9px; fill: currentColor; }
+#s-clip.on { display: flex; flex-direction: column; position: fixed; inset: 0; z-index: 30; background: #0b0f17; color: #f4f5f7; }
+.cl-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; background: #0b0f17; }
+.cl-stage #m-canvas, .cl-stage #cl-out { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cl-stage #cl-out { z-index: 1; }
+/* the overlay's place (clip-ui.js sizeOut sets them from the overlay's own unit) */
+.cl-wm, .cl-l3 { position: absolute; pointer-events: none; }
+#s-clip .cl-play { position: absolute; z-index: 2; left: 50%; top: 40%; transform: translate(-50%, -50%); width: auto; max-width: calc(100% - 32px); padding: 0 28px; white-space: nowrap; }
+.cl-play[hidden] { display: none; }
+.cl-panel { flex: 0 0 auto; padding: 14px 16px max(16px, env(safe-area-inset-bottom)); background: #0b0f17; border-top: 1px solid rgba(255, 255, 255, .08); }
+.cl-top { display: flex; align-items: center; gap: 10px; }
+.cl-top .eyebrow { flex: 1; min-width: 0; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-x { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .06); color: #f4f5f7; display: grid; place-items: center; }
+.cl-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.cl-head { margin: 8px 0 2px; font-family: var(--sans); font-weight: 700; font-size: 20px; line-height: 1.2; }
+.cl-sub { margin: 0; font-size: 14px; color: #9aa3b5; }
+.cl-say { margin: 6px 0 0; min-height: 18px; font-size: 13px; color: #9aa3b5; }
+.cl-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.cl-acts .btn { text-transform: uppercase; letter-spacing: .04em; font-size: 14px; min-height: 46px; padding: 10px 12px; }
+.cl-acts .btn[hidden] { display: none; }
+.cl-acts .btn:disabled { opacity: .5; }
+#s-clip .cl-acts .btn.go { background: var(--signal); color: #fff; }
+#s-clip .cl-acts .btn.ghost { background: rgba(255, 255, 255, .06); color: #f4f5f7; border-color: rgba(255, 255, 255, .16); }
+.cl-acts .cl-daily, .cl-acts #cl-video { grid-column: 1 / -1; }
+@media (min-width: 900px) {
+  #s-clip.on { flex-direction: row; }
+  .cl-panel { flex: 0 0 360px; border-top: 0; border-left: 1px solid rgba(255, 255, 255, .08); padding: 28px 28px 24px; display: flex; flex-direction: column; }
+  .cl-head { font-size: 26px; margin-top: 18px; }
+  .cl-acts { grid-template-columns: 1fr; margin-top: 18px; }
+}
 /* the voice of the ump (voices.js): the record sheet, the owner's review */
 .set-row.set-go { width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; color: var(--ink); text-align: left; cursor: pointer; }
 .voices .vo-n { color: var(--dim); font-size: 13px; margin: 0; }

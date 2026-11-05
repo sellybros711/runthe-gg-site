@@ -168,6 +168,7 @@ function backPressed() {
   if (MN && MN.isOpen()) { MN.close(); return; }
   var id = document.body.dataset.screen || 's-home';
   if (id === 's-home') return;
+  if (id === 's-clip' && window.STD_CLIP_UI) { window.STD_CLIP_UI.close(); backSync(); return; }
   if (id === 's-mound' || id === 's-half' || id === 's-next') {
     if (S.busy) { backSync(); return; }
     moundHome();
@@ -2465,6 +2466,8 @@ function vsText(r, rv, runs) {
 
 /* Your plate appearances from the outing's log: one per batter, in order, each with its pitches.
    The word is the play by play's tag on the pitch that ended it; each pitch keeps its own tag. */
+/* a pitch can be clipped when the clip module and the API's clip calls are on the page */
+function CLIPS() { return !!(window.STD_CLIP_UI && API.clipSpec && API.clip); }
 function myPAs(log, strip) {
   var out = [], start = 0, bi = 0, runs = 0;
   (log || []).forEach(function (pr, i) {
@@ -2472,7 +2475,7 @@ function myPAs(log, strip) {
     if (!pr.paOver && i < log.length - 1) return;
     var b = batterAt(bi);
     var calls = log.slice(start, i + 1).map(function (q, j) {
-      return { n: start + j + 1, type: q.call && q.call.type, velo: q.velo, count: q.countBefore, tag: playText(q, b).tag, band: strip && strip[start + j] };
+      return { n: start + j + 1, type: q.call && q.call.type, velo: q.velo, count: q.countBefore, tag: playText(q, b).tag, band: strip && strip[start + j], clip: CLIPS() };
     });
     out.push({ batter: b.name, bats: b.bats, word: playText(pr, b).tag, pitches: i - start + 1, runs: runs, calls: calls });
     start = i + 1; runs = 0;
@@ -2495,9 +2498,14 @@ function pitchCard(c) {
   var cnt = c.count ? c.count.b + '-' + c.count.s : '';
   var meta = [v, cnt].filter(function (x) { return x != null && x !== ''; }).join(' · ');
   var title = 'pitch ' + c.n + ': ' + nm + (v != null ? ', ' + v + ' mph' : '') + (cnt ? ', ' + cnt : '') + ', ' + c.tag + (c.band ? ', ' + BAND_WORD[c.band] : '');
-  return '<span class="pc" title="' + esc(title) + '"><b class="n">' + c.n + '</b>' +
+  /* CLIPS (clip-ui.js): the card is the Clip action, behind a tap only */
+  var clip = c.clip ? ' data-clip="' + c.n + '" type="button" aria-label="' + esc('Clip ' + title) + '"' : '';
+  var tg = c.clip ? 'button' : 'span';
+  return '<' + tg + ' class="pc' + (c.clip ? ' clp' : '') + '" title="' + esc(title) + '"' + clip + '><b class="n">' + c.n + '</b>' +
     '<span class="ty' + (lightColor(col) ? ' lt' : '') + '" style="--tc:' + col + '">' + esc(c.type) + '</span>' +
-    '<span class="m">' + esc(meta) + '</span><span class="m">' + esc(CARD_TAG[c.tag] || c.tag) + '</span><i class="bd ' + esc(c.band || '') + '"></i></span>';
+    '<span class="m">' + esc(meta) + '</span><span class="m">' + esc(CARD_TAG[c.tag] || c.tag) + '</span>' +
+    (c.clip ? '<span class="cl"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip</span>' : '') +
+    '<i class="bd ' + esc(c.band || '') + '"></i></' + tg + '>';
 }
 
 /* Two columns, you and the real game. The outcome, runs and pitches, then one row per batter faced
@@ -2591,8 +2599,8 @@ function openCoach() {
    navigator.share run straight off a tap. Where files cannot be shared, the image is saved instead,
    and the text is always one tap away. */
 function shareText(r) { return r.share || (window.STD_SHARE && window.STD_SHARE.text(r, S.scn.number)) || ''; }
-function copyText(text) {
-  function copied() { toast('copied. paste it anywhere.'); }
+function copyText(text, msg) {
+  function copied() { toast(msg || 'copied. paste it anywhere.'); }
   function fallback() {
     try {
       var ta = document.createElement('textarea');
@@ -2730,6 +2738,30 @@ function takeMound() {
   });
 }
 
+/* ---- clips (clip-ui.js): a pitch played again, as a video or a link ------------------------- */
+function initClips() {
+  var CU = window.STD_CLIP_UI;
+  if (!CU) return;
+  CU.init({
+    api: function () { return API; },
+    scene: function () { if (!S.scene) S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas')); return S.scene; },
+    show: show, toast: toast, copy: copyText, playText: playText, lastName: lastName, pitchSounds: pitchSounds,
+    typeColor: function (t) { return TYPE_COLORS[t] || '#64748b'; },
+    play2d: function (sc, opts) { return AN.play(sc, opts); },
+    home: function () { renderHomeState(); show('s-home'); drawHero(); },
+    playDaily: function () { dailyBack(); renderHomeState(); show('s-home'); takeMound(); },
+  });
+  /* the Clip on each of your pitches in you vs the real game: behind a tap only */
+  $('r-reveal').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.pc[data-clip]');
+    if (!b) return;
+    var st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
+    if (!st || !st.outingId) return;
+    audio();
+    CU.fromOuting(st.outingId, +b.getAttribute('data-clip'));
+  });
+}
+
 /* ---- boot --------------------------------------------------------------------------------- */
 
 function boot() {
@@ -2813,6 +2845,7 @@ function boot() {
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
   initResultNav();
+  initClips();
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
   window.addEventListener('std-clubs', function () { if (S.scn && document.body.dataset.screen === 's-mound') setPitcher(); });
@@ -2833,6 +2866,9 @@ function boot() {
   }).then(function () {
     renderHomeState();
     restoreTab();
+    /* a clip link (?clip=): its viewer over the home, once the page is in. It plays only on a tap */
+    var cq = Q.get('clip');
+    if (cq && window.STD_CLIP_UI) BOOT.ready.then(function () { window.STD_CLIP_UI.fromLink(cq); });
   }).catch(function (e) {
     /* nothing to wait for: the error and its try again go up at once */
     bootFail();
