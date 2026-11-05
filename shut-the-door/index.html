@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=76">
+<link rel="stylesheet" href="style.css?v=79">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -397,6 +397,33 @@ setTimeout(function () {
   </div>
 </section>
 
+<!-- 7. A CLIP: one of your pitches played again (clip-ui.js). From a pitch's Clip on the result, or a
+     clip link. The stage's canvas moves in here for it; #cl-out is what the player sees and what the
+     video records. The two [data-hud] boxes are the overlay's place, so the stage frames clear of it. -->
+<section class="screen" id="s-clip" aria-labelledby="cl-head" data-phase="">
+  <div class="cl-stage" id="cl-stage">
+    <canvas id="cl-out" aria-hidden="true"></canvas>
+    <div class="cl-wm" id="cl-wm-box" data-hud aria-hidden="true"></div>
+    <div class="cl-l3" id="cl-l3-box" data-hud aria-hidden="true"></div>
+    <button class="btn take cl-play" id="cl-play" type="button" hidden>Play the pitch</button>
+  </div>
+  <div class="cl-panel">
+    <div class="cl-top">
+      <p class="eyebrow" id="cl-eyebrow"></p>
+      <button class="cl-x" id="cl-close" type="button" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <h2 class="cl-head" id="cl-head"></h2>
+    <p class="cl-sub" id="cl-sub"></p>
+    <p class="cl-say" id="cl-say" aria-live="polite"></p>
+    <div class="cl-acts">
+      <button class="btn go cl-daily" id="cl-daily" type="button" hidden>Play today's daily</button>
+      <button class="btn go" id="cl-video" type="button" hidden>Share video</button>
+      <button class="btn ghost" id="cl-link" type="button">Share link</button>
+      <button class="btn ghost" id="cl-again" type="button">Replay</button>
+    </div>
+  </div>
+</section>
+
 <!-- BETWEEN TWO OF HIS HALVES (rules 8): his team's real half on the line score, plate appearance by
      plate appearance, then back to the mound. A few seconds; a tap skips it (box-ui.js). -->
 <section class="screen" id="s-half" aria-live="polite" aria-label="His team bats">
@@ -464,6 +491,12 @@ setTimeout(function () {
  <div class="sheet" id="sheet-share" hidden aria-hidden="true" role="dialog" aria-label="Share">
   <div class="sh-in"><div class="sh-h"><h2>share</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body share" id="share-body"></div></div>
 </div>
+<div class="sheet" id="sheet-voices" hidden aria-hidden="true" role="dialog" aria-label="Voice of the ump">
+  <div class="sh-in"><div class="sh-h"><h2>Voice of the ump</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body voices" id="vo-body"></div></div>
+</div>
+<div class="sheet" id="sheet-ump-review" hidden aria-hidden="true" role="dialog" aria-label="Review ump calls">
+  <div class="sh-in"><div class="sh-h"><h2>Review ump calls</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body voices" id="vr-body"></div></div>
+</div>
 <div class="sheet" id="sheet-auth" hidden aria-hidden="true" role="dialog" aria-label="Account">
   <div class="sh-in"><div class="sh-h"><h2>account</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body auth" id="auth-body"></div></div>
 </div>
@@ -485,27 +518,30 @@ setTimeout(function () {
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
 <script src="plate.js?v=1"></script>
-<script src="menus.js?v=20"></script>
+<script src="menus.js?v=21"></script>
 <script src="rng.js?v=1"></script>
 <script src="modes.js?v=2"></script>
 <script src="grade.js?v=17"></script>
 <script src="names.js?v=1"></script>
 <script src="lesson.js?v=7"></script>
 <script src="engine.js?v=19"></script>
-<script src="sound.js?v=4"></script>
+<script src="sound.js?v=5"></script>
 <script src="share.js?v=2"></script>
 <script src="card.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=8"></script>
-<script src="api.js?v=29"></script>
-<script src="mock-api.js?v=15"></script>
+<script src="auth.js?v=9"></script>
+<script src="voices.js?v=1"></script>
+<script src="api.js?v=31"></script>
+<script src="mock-api.js?v=17"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=7"></script>
 <script src="modes-ui.js?v=10"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=3"></script>
-<script src="ui.js?v=70"></script>
-<script type="module" src="3d/boot.js?v=97"></script>
+<script src="clip.js?v=1"></script>
+<script src="clip-ui.js?v=1"></script>
+<script src="ui.js?v=72"></script>
+<script type="module" src="3d/boot.js?v=98"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 <script type="module">import { CLUBS, battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_CLUBS = CLUBS; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>

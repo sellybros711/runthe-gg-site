@@ -1782,7 +1782,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613615869,2019-09-01,2019,Silk Fest,Granby,CT,2,13,Echo of a Rose,463,false,Vasudo,,3,18,0,65,false,false,,",",false,jam,With Jeff Arevalo on drums.,,,Groove
 1613615869,2019-09-01,2019,Silk Fest,Granby,CT,2,14,Hot Tea,408,false,Vasudo,,0,43,0,58,false,false,,>,true,closer,,,,Groove
 1613615869,2019-09-01,2019,Silk Fest,Granby,CT,2,15,Strokin',560,true,Clarence Carter,,51,5,35,,false,false,,>,true,,Clarence Carter. With Luke Bemand on percussion and Greg Knight freestyle.,,,Groove
-1613615869,2019-09-01,2019,Silk Fest,Granby,CT,2,16,Loose Ends,762,false,Vasudo,,0,1,0,,false,false,,>,true,closer,First known version. With Luke Bemand on percussion.,,,Easy
+1613615869,2019-09-01,2019,Silk Fest,Granby,CT,2,16,Loose Ends,762,false,Vasudo,,0,1,0,,false,false,,>,true,,First known version. With Luke Bemand on percussion.,,,Easy
 1613615869,2019-09-01,2019,Silk Fest,Granby,CT,2,17,Hot Tea,408,false,Vasudo,,0,44,0,58,false,false,,",",false,closer,With Luke Bemand on percussion.,,,Groove
 1613615869,2019-09-01,2019,Silk Fest,Granby,CT,2,18,Turned Clouds,400,false,,,2,47,0,,false,false,,",",false,,With Luke Bemand on percussion.,,,Groove
 1613615869,2019-09-01,2019,Silk Fest,Granby,CT,2,19,Green River,482,true,Creedence Clearwater Revival,,9,14,10,44,false,false,,",",false,,Creedence Clearwater Revival. With Luke Bemand on percussion.,,,Rocker
@@ -1937,7 +1937,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613508165,2019-11-07,2019,XL Live,Harrisburg,PA,1,6,Make The Move,514,true,Kenny Loggins,,12,10,10,36,false,false,,",",false,,Kenny Loggins.,,,Groove
 1613508165,2019-11-07,2019,XL Live,Harrisburg,PA,1,7,Jive II,413,false,,,6,35,0,44,false,false,,>,true,opener,,,,Groove
 1613508165,2019-11-07,2019,XL Live,Harrisburg,PA,1,8,Jive Lee,502,false,,,1,27,0,57,false,false,,>,true,closer|jam,Unfinished.,,,Groove
-1613508165,2019-11-07,2019,XL Live,Harrisburg,PA,1,9,Loose Ends,762,false,Vasudo,,12,2,10,,false,false,,",",false,closer,,,,Easy
+1613508165,2019-11-07,2019,XL Live,Harrisburg,PA,1,9,Loose Ends,762,false,Vasudo,,12,2,10,,false,false,,",",false,,,,,Easy
 1613508165,2019-11-07,2019,XL Live,Harrisburg,PA,1,10,Butter Rum,415,false,Vasudo,,2,48,0,49,false,false,,",",false,,,,,Groove
 1613508165,2019-11-07,2019,XL Live,Harrisburg,PA,1,11,So Ready,421,false,,,1,77,0,38,false,false,,,false,closer,,,,Groove
 1616454806,2019-11-08,2019,9:30 Club,Washington,DC,1,1,Flodown,478,false,Vasudo,552,3,74,0,40,false,false,,",",false,closer,Flopener.,This was an opening set for Sunsquabi. There was a Charge! chant before the set started.,,Groove
@@ -2125,7 +2125,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613433393,2019-12-14,2019,The Mousetrap,Indianapolis,IN,2,7,Get The Funk Out Ma Face,479,true,Brothers Johnson,421,16,2,10,,false,false,,>,true,,The Brothers Johnson.,,,Groove
 1613433393,2019-12-14,2019,The Mousetrap,Indianapolis,IN,2,8,Billie Jean,440,true,Michael Jackson,622,7,6,0,,false,false,,>,true,,Michael Jackson. With Tumble and Hava Nagila teases.,,Hava Nagila,Groove
 1613433393,2019-12-14,2019,The Mousetrap,Indianapolis,IN,2,9,Boogie On Reggae Woman,441,true,Stevie Wonder,633,7,12,0,,false,false,,->,true,,Stevie Wonder.,,,Groove
-1613433393,2019-12-14,2019,The Mousetrap,Indianapolis,IN,2,10,Loose Ends,762,false,Vasudo,141,14,3,10,,false,false,,",",false,closer,,,,Easy
+1613433393,2019-12-14,2019,The Mousetrap,Indianapolis,IN,2,10,Loose Ends,762,false,Vasudo,141,14,3,10,,false,false,,",",false,,,,,Easy
 1613433393,2019-12-14,2019,The Mousetrap,Indianapolis,IN,2,11,Turned Clouds,400,false,,687,2,52,0,,false,false,,",",false,,,,,Groove
 1613433393,2019-12-14,2019,The Mousetrap,Indianapolis,IN,2,12,So Ready,421,false,,799,2,81,0,38,false,false,,,false,closer,,,,Groove
 1613433393,2019-12-14,2019,The Mousetrap,Indianapolis,IN,E,13,Christmas Card From A Hooker In Minneapolis,448,true,Tom Waits,401,17,3,10,,false,false,,",",false,ballad|encore,Tom Waits.,,,Ballad
@@ -2531,7 +2531,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,6,Jive II,413,false,,723,1,45,0,44,false,false,,",",false,opener,,,,Groove
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,7,The Whales,425,false,,451,5,3,0,,false,false,,",",false,opener,,,,Rocker
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,8,White Lights,586,false,,586,4,32,0,41,false,false,,->,true,closer|encore,,,,Anthem
-1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,9,Loose Ends,762,false,Vasudo,276,43,4,20,,false,false,,->,true,closer,,,,Easy
+1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,9,Loose Ends,762,false,Vasudo,276,43,4,20,,false,false,,->,true,,,,,Easy
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,10,White Lights,586,false,,105,0,33,0,41,false,false,,,false,closer|encore,,,,Anthem
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,2,11,Wysteria Lane,405,false,Vasudo,1088,6,62,0,73,true,false,Peter really simmers on this jam. Groovy and dark-tinged.,",",false,opener|jam|peak,,,,Groove
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,2,12,Time to Flee,404,false,,195,1,62,0,56,false,false,,>,true,,,,,Groove
@@ -2693,7 +2693,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1624330525,2021-06-11,2021,Northlands Live,Swanzey,NH,1,4,Lead the Way,406,false,,753,2,62,0,44,true,false,"Beautiful build with extra patience than normal, part of the fantastic 2021 this song had.",",",false,opener,,,,Easy
 1624330525,2021-06-11,2021,Northlands Live,Swanzey,NH,1,5,Weird Fishes / Arpeggi,428,true,Radiohead,871,14,6,10,,false,false,,>,true,,Radiohead.,,,Space
 1624330525,2021-06-11,2021,Northlands Live,Swanzey,NH,1,6,Wysteria Lane,405,false,Vasudo,1016,1,66,0,73,true,false,"Great Peter throughout as he moves between piano, clav, and Vibe. Rick hangs back to let the keys take the lead on the funky zone that eventually builds and smoothly -> to a quick ""Loose Ends.""",->,true,opener|jam|peak,,,,Groove
-1624330525,2021-06-11,2021,Northlands Live,Swanzey,NH,1,7,Loose Ends,762,false,Vasudo,69,11,5,10,,false,false,,,false,closer,,,,Easy
+1624330525,2021-06-11,2021,Northlands Live,Swanzey,NH,1,7,Loose Ends,762,false,Vasudo,69,11,5,10,,false,false,,,false,,,,,Easy
 1624330525,2021-06-11,2021,Northlands Live,Swanzey,NH,2,8,The Labyrinth,639,false,,774,0,1,0,36,false,false,,>,true,opener,FTP.,,,Space
 1624330525,2021-06-11,2021,Northlands Live,Swanzey,NH,2,9,Love Is A Battlefield,612,true,Pat Benatar,498,6,2,0,36,false,false,,",",false,,Pat Benatar.,,,Rocker
 1624330525,2021-06-11,2021,Northlands Live,Swanzey,NH,2,10,White Lights,586,false,,895,2,35,0,41,false,false,,",",false,closer|encore,,,,Anthem
@@ -2966,7 +2966,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1635919553,2021-10-29,2021,State Theater,Portland,ME,2,11,Flodown,478,false,Vasudo,699,2,96,0,40,false,false,,,false,closer,,,,Groove
 1635919553,2021-10-29,2021,State Theater,Portland,ME,E,12,726,432,false,,542,6,7,0,38,false,false,,>,true,ballad|encore,,,,Ballad
 1635919553,2021-10-29,2021,State Theater,Portland,ME,E,13,Jive Lee,502,false,,541,1,52,0,57,false,false,,->,true,closer|jam,Unfinished.,,,Groove
-1635919553,2021-10-29,2021,State Theater,Portland,ME,E,14,Loose Ends,762,false,Vasudo,106,21,6,20,,false,false,,,false,closer,,,,Easy
+1635919553,2021-10-29,2021,State Theater,Portland,ME,E,14,Loose Ends,762,false,Vasudo,106,21,6,20,,false,false,,,false,,,,,Easy
 1643255453,2021-10-30,2021,The Palladium,Worcester,MA,1,1,Wysteria Lane,405,false,Vasudo,866,2,70,0,73,false,false,,>,true,opener|jam|peak,,,,Groove
 1643255453,2021-10-30,2021,The Palladium,Worcester,MA,1,2,Time to Flee,404,false,,933,5,70,0,56,false,false,,",",false,,,,,Groove
 1643255453,2021-10-30,2021,The Palladium,Worcester,MA,1,3,Jive II,413,false,,630,5,53,0,44,false,false,,",",false,opener,,,,Groove
@@ -3235,7 +3235,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1643430972,2022-01-28,2022,The Fonda Theatre,Los Angeles,CA,2,12,Can't Get You Out Of My Head,426,true,Kylie Minogue,530,4,13,0,44,false,false,,->,true,jam,Kylie Minogue.,,,Groove
 1643430972,2022-01-28,2022,The Fonda Theatre,Los Angeles,CA,2,13,Arrow,438,false,,63,0,23,0,62,false,false,,",",false,opener|closer|jam,,,,Rocker
 1643430972,2022-01-28,2022,The Fonda Theatre,Los Angeles,CA,2,14,White Lights,586,false,,861,2,44,0,41,false,false,,->,true,closer|encore,Unfinished.,,,Anthem
-1643430972,2022-01-28,2022,The Fonda Theatre,Los Angeles,CA,2,15,Loose Ends,762,false,Vasudo,205,18,7,10,,false,false,,,false,closer,,,,Easy
+1643430972,2022-01-28,2022,The Fonda Theatre,Los Angeles,CA,2,15,Loose Ends,762,false,Vasudo,205,18,7,10,,false,false,,,false,,,,,Easy
 1643430972,2022-01-28,2022,The Fonda Theatre,Los Angeles,CA,E,16,726,432,false,,524,3,11,0,38,false,false,,,false,ballad|encore,,,,Ballad
 1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,1,Doc Brown,459,false,Great Blue,476,7,32,0,,false,false,,",",false,,,,,Groove
 1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,2,Rockdale,714,false,Vasudo,714,4,6,0,59,false,false,,",",false,opener|closer|jam,,,,Groove
@@ -3711,7 +3711,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,14,Hungersite,740,false,,1173,2,7,0,62,true,true,The riff that forever changed the future of Rock & Roll. Goose’s incredible first song/jam ft Trey Anastasio w/ beautiful double guitar intro & Trey hits THAT MOMENT. Great repeating hook at end that allows Trey to shred the final jam peak.,>,true,opener|jam|peak,With Trey Anastasio on guitar and vocals.,,,Anthem
 1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,15,Arcadia,403,false,,1043,1,152,0,67,true,true,The Original Artreydia. Lovely guitar interplay & Trey song phrasing shifts to blissful magic as Peter switches to piano. Free-like riffing leads to Trey nailing the peak & handing the torch to Rick to close it out. Euphoric moment in Goose history.,",",false,closer,With Trey Anastasio on guitar and vocals.,,,Groove
 1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,16,Dripfield,738,false,,1137,1,9,0,62,false,false,,->,true,closer|jam|peak,Unfinished. With Trey Anastasio on guitar.,,,Space
-1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,17,Loose Ends,762,false,Vasudo,137,38,8,20,,false,false,,",",false,closer,With Trey Anastasio on guitar.,,,Easy
+1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,17,Loose Ends,762,false,Vasudo,137,38,8,20,,false,false,,",",false,,With Trey Anastasio on guitar.,,,Easy
 1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,18,The Empress Of Organos,604,false,Vasudo,1094,1,25,0,58,true,false,"Rick and Trey once again shine with their immediate guitar chemistry, harmonizing lick after lick and closing out the historic sit-in set with a boom.",,false,closer|jam,With Trey Anastasio on guitar.,,,Groove
 1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,E,19,Tomorrow Never Knows,573,true,The Beatles,436,8,6,10,40,false,false,,,false,jam|encore,"The Beatles. With Trey Anastasio on guitar and vocals, Father John Misty on drums and vocals, and Jeff on guitar.",,,Space
 1667314241,2022-06-25,2022,Studio 1515,New York,NY,1,1,Hungersite,740,false,,256,0,8,0,62,false,false,,",",false,opener|jam|peak,,Goose was the musical guest on CBS Saturday Mornings.,,Anthem
@@ -3963,7 +3963,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1661655131,2022-10-06,2022,Joy Theater,New Orleans,LA,2,11,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,1078,12,28,10,45,false,false,,",",false,closer|jam,Grateful Dead. With Wild Night teases.,,Wild Night,Easy
 1661655131,2022-10-06,2022,Joy Theater,New Orleans,LA,2,12,Your Ocean,590,false,,440,12,21,10,,false,false,,,false,,,,,Easy
 1661655131,2022-10-06,2022,Joy Theater,New Orleans,LA,E,13,White Lights,586,false,,642,10,51,10,41,false,false,,->,true,closer|encore,,,,Anthem
-1661655131,2022-10-06,2022,Joy Theater,New Orleans,LA,E,14,Loose Ends,762,false,Vasudo,97,21,9,20,,false,false,,->,true,closer,,,,Easy
+1661655131,2022-10-06,2022,Joy Theater,New Orleans,LA,E,14,Loose Ends,762,false,Vasudo,97,21,9,20,,false,false,,->,true,,,,,Easy
 1661655131,2022-10-06,2022,Joy Theater,New Orleans,LA,E,15,White Lights,586,false,,88,0,52,0,41,false,false,,,false,closer|encore,,,,Anthem
 1661655168,2022-10-07,2022,Joy Theater,New Orleans,LA,1,1,Tumble,418,false,Vasudo,929,3,77,0,71,false,false,,",",false,closer|jam|peak,Vibey Tumble. Played with regular Tumble composed section and jam.,"Vibey Tumble was played for the first time since January 30, 2022 (60 shows). What's Up was played for the first time since June 27, 2020 (125 shows). The band sang happy birthday to Tamara Sastow before the second set.",,Groove
 1661655168,2022-10-07,2022,Joy Theater,New Orleans,LA,1,2,California Magic,735,false,,507,2,12,0,,false,false,,",",false,,,,,Easy
@@ -4449,7 +4449,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1670440474,2023-04-16,2023,Palace Theatre,St. Paul,MN,1,2,Yeti,416,false,Great Blue,537,3,86,0,50,false,false,,",",false,opener,,,,Groove
 1670440474,2023-04-16,2023,Palace Theatre,St. Paul,MN,1,3,Turned Clouds,400,false,,695,7,90,0,,false,false,,",",false,,,,,Groove
 1670440474,2023-04-16,2023,Palace Theatre,St. Paul,MN,1,4,Tumble,418,false,Vasudo,1533,4,85,0,71,true,false,"Second vibey ""Tumble"" of the spring has a now well-practiced transition to the regular jam. While it's long, it doesn't do a whole lot until a break for funkier play that transitions nicely -> to ""Loose Ends.""",->,true,closer|jam|peak,Vibey Tumble. Played with regular Tumble composed section and jam. Unfinished.,,,Groove
-1670440474,2023-04-16,2023,Palace Theatre,St. Paul,MN,1,5,Loose Ends,762,false,Vasudo,333,42,10,20,,false,false,,",",false,closer,,,,Easy
+1670440474,2023-04-16,2023,Palace Theatre,St. Paul,MN,1,5,Loose Ends,762,false,Vasudo,333,42,10,20,,false,false,,",",false,,,,,Easy
 1670440474,2023-04-16,2023,Palace Theatre,St. Paul,MN,1,6,The Old Man's Boat,710,false,,776,10,20,10,40,false,false,,->,true,,,,,Groove
 1670440474,2023-04-16,2023,Palace Theatre,St. Paul,MN,1,7,Mas Que Nada,513,true,Sergio Mendes,548,53,17,35,38,false,false,,",",false,,Sergio Mendes.,,,Groove
 1670440474,2023-04-16,2023,Palace Theatre,St. Paul,MN,1,8,Same Old Shenanigans,541,false,,843,3,32,0,45,false,false,,,false,closer,,,,Easy
@@ -4566,7 +4566,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1670440734,2023-04-29,2023,Cal Coast Credit Union Amphitheater,San Diego,CA,1,1,Echo of a Rose,463,false,Vasudo,656,4,75,0,65,false,false,,>,true,jam,Fast version.,,,Groove
 1670440734,2023-04-29,2023,Cal Coast Credit Union Amphitheater,San Diego,CA,1,2,The Whales,425,false,,610,2,27,0,,false,false,,",",false,opener,,,,Rocker
 1670440734,2023-04-29,2023,Cal Coast Credit Union Amphitheater,San Diego,CA,1,3,Rockdale,714,false,Vasudo,1006,2,34,0,59,true,false,"Hints of darkness early on are quickly abandoned in favour of a now-standard double-time jam within ""Rockdale."" An abrupt and succinct ""Loose Ends"" is sandwiched within.",->,true,opener|closer|jam,,,,Groove
-1670440734,2023-04-29,2023,Cal Coast Credit Union Amphitheater,San Diego,CA,1,4,Loose Ends,762,false,Vasudo,68,8,11,10,,false,false,,->,true,closer,,,,Easy
+1670440734,2023-04-29,2023,Cal Coast Credit Union Amphitheater,San Diego,CA,1,4,Loose Ends,762,false,Vasudo,68,8,11,10,,false,false,,->,true,,,,,Easy
 1670440734,2023-04-29,2023,Cal Coast Credit Union Amphitheater,San Diego,CA,1,5,Rockdale,714,false,Vasudo,188,0,35,0,59,false,false,,",",false,opener|closer|jam,,,,Groove
 1670440734,2023-04-29,2023,Cal Coast Credit Union Amphitheater,San Diego,CA,1,6,Lead Up,822,false,,340,4,7,0,,false,false,,",",false,,,,,Easy
 1670440734,2023-04-29,2023,Cal Coast Credit Union Amphitheater,San Diego,CA,1,7,Arcadia,403,false,,973,2,167,0,67,true,false,"Fans of 11/16/19 and 11/17/22 will be familiar with this uplifting chord progression. Nothing new, but DAMN good.",,false,closer,,,,Groove
@@ -4729,7 +4729,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1680623971,2023-07-01,2023,Nelson Ledges Quarry Park,Garrettsville,OH,2,8,Spirit Of The Dark Horse,557,false,,670,44,28,20,41,false,false,,>,true,,,,,Rocker
 1680623971,2023-07-01,2023,Nelson Ledges Quarry Park,Garrettsville,OH,2,9,Dancing In The Moonlight,456,true,King Harvest,337,111,13,50,,false,false,,",",false,encore,King Harvest.,,,Anthem
 1680623971,2023-07-01,2023,Nelson Ledges Quarry Park,Garrettsville,OH,2,10,White Lights,586,false,,483,16,59,10,41,false,false,,->,true,closer|encore,,,,Anthem
-1680623971,2023-07-01,2023,Nelson Ledges Quarry Park,Garrettsville,OH,2,11,Loose Ends,762,false,Vasudo,241,13,12,10,,false,false,,->,true,closer,,,,Easy
+1680623971,2023-07-01,2023,Nelson Ledges Quarry Park,Garrettsville,OH,2,11,Loose Ends,762,false,Vasudo,241,13,12,10,,false,false,,->,true,,,,,Easy
 1680623971,2023-07-01,2023,Nelson Ledges Quarry Park,Garrettsville,OH,2,12,White Lights,586,false,,77,0,60,0,41,false,false,,",",false,closer|encore,,,,Anthem
 1680623971,2023-07-01,2023,Nelson Ledges Quarry Park,Garrettsville,OH,2,13,Bob Don,429,false,,371,5,40,0,38,false,false,,",",false,ballad,,,,Ballad
 1680623971,2023-07-01,2023,Nelson Ledges Quarry Park,Garrettsville,OH,2,14,The Empress Of Organos,604,false,Vasudo,1131,4,45,0,58,true,true,"The Umphress Of Organos (Umphrey’s McGee sit-in): after the typical beautiful Trevor solo, Joel Cummins & Pete trade off on keys wonderfully then hand over to Jake Cinninger & Rick for a diabolical, multi-part shredfest.",",",false,closer|jam,With Jake Cinninger on guitar and Joel Cummins on keys.,,,Groove
@@ -4856,7 +4856,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1680624194,2023-09-17,2023,Miller High Life Theatre,Milwaukee,WI,2,12,Doobie Song,461,false,,488,31,20,20,,false,false,,",",false,closer|encore,,,,Groove
 1680624194,2023-09-17,2023,Miller High Life Theatre,Milwaukee,WI,2,13,Tumble,418,false,Vasudo,1046,8,91,10,71,false,false,,,false,closer|jam|peak,,,,Groove
 1680624194,2023-09-17,2023,Miller High Life Theatre,Milwaukee,WI,E,14,White Lights,586,false,,500,10,61,10,41,false,false,,->,true,closer|encore,,,,Anthem
-1680624194,2023-09-17,2023,Miller High Life Theatre,Milwaukee,WI,E,15,Loose Ends,762,false,Vasudo,236,10,13,10,,false,false,,->,true,closer,,,,Easy
+1680624194,2023-09-17,2023,Miller High Life Theatre,Milwaukee,WI,E,15,Loose Ends,762,false,Vasudo,236,10,13,10,,false,false,,->,true,,,,,Easy
 1680624194,2023-09-17,2023,Miller High Life Theatre,Milwaukee,WI,E,16,White Lights,586,false,,36,0,62,0,41,false,false,,,false,closer|encore,,,,Anthem
 1680624215,2023-09-20,2023,Red Butte Garden Amphitheatre,Salt Lake City,UT,1,1,California Magic,735,false,,477,3,27,0,,false,false,,",",false,,,The show was ended early due to lightning in the area.,,Easy
 1680624215,2023-09-20,2023,Red Butte Garden Amphitheatre,Salt Lake City,UT,1,2,Indian River,410,false,,1331,10,104,10,50,true,false,Never really departs the Delta space but has some excellent Peter exploration of tones on clav and Vintage Vibe. A fun listen.,",",false,,80s synth version. With Welcome to Delta jam.,,,Space
@@ -5506,7 +5506,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,8,Same Old Shenanigans,541,false,,888,2,47,0,45,false,false,,,false,closer,,,,Easy
 1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,9,Wysteria Lane,405,false,Vasudo,1397,8,101,10,73,true,true,"The OB-6 makes the jam feel like it's in a spaceship taking off as the band leans hard into ambient space with a commitment to patience and quieter dynamics. Rick infuses digital sauce under the subtle textures as the jam gets more percussive before Peter transforms the synth into its own pulsating organism. Trevor leads into a new progression as the waves of digital sound continue. Transforms to a beauteous bliss jam not unlike the Raleigh ""Pancakes"" around the 18th minute and closes with an amazing peak.",>,true,opener|jam|peak,,,,Groove
 1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,10,White Lights,586,false,,698,6,68,0,41,false,false,,->,true,closer|encore,,,,Anthem
-1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,11,Loose Ends,762,false,Vasudo,98,53,14,35,,false,false,,->,true,closer,,,,Easy
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,11,Loose Ends,762,false,Vasudo,98,53,14,35,,false,false,,->,true,,,,,Easy
 1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,12,White Lights,586,false,,215,0,69,0,41,false,false,,",",false,closer|encore,,,,Anthem
 1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,13,Creatures,420,false,,697,9,119,10,63,false,false,,",",false,jam,,,,Groove
 1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,14,State Of The Art (A.E.I.O.U.),558,true,Jim James,440,128,7,50,,false,false,,,false,closer,Jim James.,,,Rocker
@@ -5584,7 +5584,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1719248198,2024-09-03,2024,MGM Music Hall at Fenway,Boston,MA,2,10,Echo of a Rose,463,false,Vasudo,641,7,97,0,65,false,false,,->,true,jam,Fast version. Unfinished.,,,Groove
 1719248198,2024-09-03,2024,MGM Music Hall at Fenway,Boston,MA,2,11,Interlude II,409,false,,216,28,2,20,,false,false,,->,true,,,,,Groove
 1719248198,2024-09-03,2024,MGM Music Hall at Fenway,Boston,MA,2,12,Jive I,411,false,,264,10,122,10,,false,false,,->,true,,,,,Groove
-1719248198,2024-09-03,2024,MGM Music Hall at Fenway,Boston,MA,2,13,Loose Ends,762,false,Vasudo,83,5,15,0,,false,false,,->,true,closer,,,,Easy
+1719248198,2024-09-03,2024,MGM Music Hall at Fenway,Boston,MA,2,13,Loose Ends,762,false,Vasudo,83,5,15,0,,false,false,,->,true,,,,,Easy
 1719248198,2024-09-03,2024,MGM Music Hall at Fenway,Boston,MA,2,14,Jive I,411,false,,183,0,123,0,,false,false,,>,true,,,,,Groove
 1719248198,2024-09-03,2024,MGM Music Hall at Fenway,Boston,MA,2,15,Red Bird,536,false,,995,4,42,0,59,false,false,,>,true,jam,,,,Anthem
 1719248198,2024-09-03,2024,MGM Music Hall at Fenway,Boston,MA,2,16,Travelers,574,false,,666,3,25,0,41,false,false,,>,true,,,,,Easy
@@ -6071,7 +6071,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,11,Hungersite,740,false,,1088,5,56,0,62,false,false,,",",false,opener|jam|peak,,,,Anthem
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,12,You Spin Me Round (Like A Record),950,true,Dead or Alive,1036,7,2,0,,false,false,,>,true,opener|closer|encore,Dead or Alive. With Sinnerman teases from Peter.,,Sinnerman,Groove
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,13,Pancakes,723,false,Great Blue,932,2,53,0,62,false,false,,->,true,opener|closer|jam|peak,,,,Groove
-1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,14,Loose Ends,762,false,Vasudo,179,33,16,20,,false,false,,>,true,closer,,,,Easy
+1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,14,Loose Ends,762,false,Vasudo,179,33,16,20,,false,false,,>,true,,,,,Easy
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,15,Pancakes,723,false,Great Blue,123,0,54,0,62,false,false,,",",false,opener|closer|jam|peak,,,,Groove
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,16,This Old Sea,572,false,,321,4,36,0,54,false,false,,>,true,jam|ballad,,,,Ballad
 1719248901,2024-11-12,2024,The Anthem,Washington,DC,2,17,Animal,764,false,,617,3,55,0,47,false,false,,,false,opener|closer,With Welcome to Delta tease from Peter.,,Welcome to Delta,Groove
@@ -6807,7 +6807,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1745888390,2025-09-26,2025,Ameris Bank Amphitheatre,Alpharetta,GA,1,7,Yeti,416,false,Great Blue,871,13,121,10,50,false,false,,,false,opener,,,,Groove
 1745888390,2025-09-26,2025,Ameris Bank Amphitheatre,Alpharetta,GA,2,8,Fish In The Sea,477,true,Fat Freddy's Drop,867,15,29,10,45,false,false,,",",false,opener|jam,Fat Freddy’s Drop.,,,Groove
 1745888390,2025-09-26,2025,Ameris Bank Amphitheatre,Alpharetta,GA,2,9,Big Modern!,945,false,,1081,3,26,0,56,true,false,"Kicks into a funkier variation on the typical peaky jam at first with Peter suggesting an ascending riff. Rick and Trevor play off of it for a bit before Cotter increases the tempo and things pick up steam. Rick cues multiple modulations with his talkback mic as things continue to build, breezing through a small peak before things flatten out into some punchy synth-driven funk. Toying with a cool bliss progression for a bit, Rick opts to pull into ""Loose Ends"" in lieu of more jamming.",->,true,opener|closer|jam|peak,Unfinished.,,,Groove
-1745888390,2025-09-26,2025,Ameris Bank Amphitheatre,Alpharetta,GA,2,10,Loose Ends,762,false,Vasudo,309,58,17,35,,false,false,,",",false,closer,,,,Easy
+1745888390,2025-09-26,2025,Ameris Bank Amphitheatre,Alpharetta,GA,2,10,Loose Ends,762,false,Vasudo,309,58,17,35,,false,false,,",",false,,,,,Easy
 1745888390,2025-09-26,2025,Ameris Bank Amphitheatre,Alpharetta,GA,2,11,This Old Sea,572,false,,568,5,41,0,54,false,false,,>,true,jam|ballad,,,,Ballad
 1745888390,2025-09-26,2025,Ameris Bank Amphitheatre,Alpharetta,GA,2,12,Madhuvan,512,false,,1204,6,176,0,75,true,false,"Coming late in a show light on improv, Goose makes up for lost time with a twisted, dissonant section reminiscent of the Milwaukee and Grand Rapids versions from earlier in the year. From there, Rick executes a smooth modulation to a dreamy major key and Peter works in some subtle Rhodes textures as the bliss jam eventually winds its way home to a hot conclusion.",,false,opener|closer|jam,,,,Rocker
 1745888390,2025-09-26,2025,Ameris Bank Amphitheatre,Alpharetta,GA,E,13,Hot Tea,408,false,Vasudo,747,6,157,0,58,false,false,,,false,closer,,,,Groove
@@ -7030,7 +7030,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,2,11,Interlude II,409,false,,146,12,12,10,,false,false,,->,true,,,,,Groove
 1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,2,12,Jive I,411,false,,602,12,133,10,,false,false,,>,true,,,,,Groove
 1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,2,13,Green River,482,true,Creedence Clearwater Revival,1311,13,36,10,44,true,false,"Hangs out in a collaborative two-guitar space for a bit before slipping neatly into Goontz land thanks to Cotter pushing the tempo. Spur-of-the-moment dance vibes eventually fade but no natural conclusion appears, so the band opts to throw us a somewhat forced -> into ""Loose Ends.""",->,true,,Creedence Clearwater Revival. Unfinished.,,,Rocker
-1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,2,14,Loose Ends,762,false,Vasudo,282,15,18,10,,false,false,,,false,closer,,,,Easy
+1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,2,14,Loose Ends,762,false,Vasudo,282,15,18,10,,false,false,,,false,,,,,Easy
 1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,E,15,How It Ends,933,false,Vasudo,832,13,10,10,,false,false,,,false,,,,,Easy
 1762797178,2026-04-15,2026,War Memorial Auditorium,Fort Lauderdale,FL,1,1,Same Old Shenanigans,541,false,,1447,12,61,10,45,true,false,"First of the breakout versions in early 2026. The band really milks the jam for all its worth across 20+ minutes, setting the stage for the versions to come as this becomes the norm.",",",false,closer,,"U.S. Blues was played for the first time since July 4, 2023 (179 shows). Kung Fu Fighting was played for the first time since March 1, 2019 (474 shows). The setlist spelled out ""Suck It Storm.""",,Easy
 1762797178,2026-04-15,2026,War Memorial Auditorium,Fort Lauderdale,FL,1,2,U.S. Blues,659,true,Grateful Dead,452,178,2,50,,false,false,,",",false,closer|encore,Grateful Dead.,,,Rocker
@@ -7758,3 +7758,17 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1780327768,2026-11-03,2026,The Midland,Kansas City,MO,2,10,Red Bird,536,false,,,8,67,10,59,false,false,,->,true,jam,,,,Anthem
 1780327768,2026-11-03,2026,The Midland,Kansas City,MO,2,11,Big Modern!,945,false,,,2,45,0,56,false,false,,,false,opener|closer|jam|peak,,,,Groove
 1780327768,2026-11-03,2026,The Midland,Kansas City,MO,E,12,Doobie Song,461,false,,,22,26,20,,false,false,,,false,closer|encore,,,,Groove
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,1,Animal,764,false,,,7,88,0,47,false,false,,",",false,opener|closer,,"Loose Ends was played for the first time since April 14, 2026 (60 shows). Elizabeth was played for the first time since April 17, 2026 (58 shows).",,Groove
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,2,Silver Rising,736,false,,,9,82,10,36,false,false,,",",false,ballad,,,,Ballad
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,3,Butter Rum,415,false,Vasudo,,4,124,0,49,false,false,,->,true,,,,,Groove
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,4,Loose Ends,762,false,Vasudo,,59,19,35,,false,false,,->,true,,,,,Easy
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,5,Butter Rum,415,false,Vasudo,,0,125,0,49,false,false,,",",false,,,,,Groove
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,6,Mr. Action,817,false,,,7,44,0,,false,false,,",",false,,,,,Easy
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,7,Elizabeth,465,false,,,57,66,35,53,false,false,,",",false,opener|jam,,,,Groove
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,8,In Your Eyes,498,true,Peter Gabriel,,16,17,10,45,false,false,,>,true,jam|peak,Peter Gabriel.,,,Anthem
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,1,9,Yeti,416,false,Great Blue,,5,134,0,50,false,false,,,false,opener,,,,Groove
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,2,10,Into the Myst,402,false,,,1,91,0,57,false,false,,>,true,jam,Unfinished,,,Space
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,2,11,Everything Must Go,805,false,,,7,51,0,54,false,false,,>,true,jam|peak,,,,Groove
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,2,12,Give It Time,931,false,,,3,46,0,,false,false,,",",false,closer|encore,,,,Anthem
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,2,13,Madhuvan,512,false,,,9,189,10,75,false,false,,,false,opener|closer|jam,,,,Rocker
+1780327769,2026-11-04,2026,The Midland,Kansas City,MO,E,14,The Way It Is,570,true,Bruce Hornsby,,12,44,10,41,false,false,,,false,,Bruce Hornsby.,,,Easy

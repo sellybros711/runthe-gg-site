@@ -1301,7 +1301,10 @@ if (!args.includes('--no-browser')){
       sbUser = { id:'cld' }; localStorage.removeItem('bag_ppt_v1@cld'); openPutt();
       for (let t = 0; t < 100 && document.querySelectorAll('.pp-lv:not(.lock)').length < 30; t++) await new Promise(r => setTimeout(r, 50));
       const open = document.querySelectorAll('.pp-lv:not(.lock)').length, local = JSON.parse(localStorage.getItem('bag_ppt_v1@cld') || '{}');
-      // a stale copy pushed from another device is refused, merged and sent again, so nothing is lost on either side
+      // a stale copy pushed from another device is refused, merged and sent again, so nothing is lost on either side.
+      // The page sends its merged record up once it opens: wait for that to land, or the server copy edited below is the
+      // one that upload then replaces, and the test races the page instead of testing the merge.
+      for (let t = 0; t < 100 && !(calls.includes('ps_save_put') && store.tour.progress !== 30); t++) await new Promise(r => setTimeout(r, 50));
       store.tour.payload.tours.main.ace = { 7:1 }; store.tour.progress += 1; window.RTT_PUTT._lose();
       for (let t = 0; t < 60 && !(store.tour.payload.tours.main.lv >= 30 && JSON.parse(localStorage.getItem('bag_ppt_v1@cld')).tours.main.ace[7]); t++) await new Promise(r => setTimeout(r, 50));
       const after = JSON.parse(localStorage.getItem('bag_ppt_v1@cld')), srv = store.tour; window.RTT_PUTT.close(); sb = sb0;
@@ -1328,9 +1331,14 @@ if (!args.includes('--no-browser')){
       const set0 = Storage.prototype.setItem; Storage.prototype.setItem = function(k, v){ if (/^bag_ppt_v1@lat/.test(k)) throw new Error('QuotaExceededError'); return set0.call(this, k, v); };
       window.RTT_PUTT._lose(); localStorage.removeItem('bag_ppt_v1@lat'); const s1 = window.RTT_PUTT.summary(puttHost()); await new Promise(r => setTimeout(r, 100));
       Storage.prototype.setItem = set0; window.RTT_PUTT.close(); sb = sb0; window.RTT_PUTT_MAPFIRST = mf;
-      return { first, after, scr, lv:s1.lv, sentLv:sent.length ? sent[sent.length - 1].tours.main.lv : null }; });
+      const last = sent.length ? sent[sent.length - 1] : null;
+      return { first, after, scr, lv:s1.lv, sentLv:last ? last.tours.main.lv : null, card:last && last.card, levels:window.RTT_PUTT.LEVELS.length }; });
     claim(lat.first === 1 && lat.after === 30 && lat.scr === 'trail', `the trail moves on to the account's hole when its record lands after the first screen (hole ${lat.first}, then ${lat.after})`);
     claim(lat.lv === 30 && lat.sentLv === 30, `a browser that refuses to save keeps the record in memory and still sends it to the account (hole ${lat.lv}, sent ${lat.sentLv})`);
+    // THE PLAYER CARD (165): the save carries the card other players see from the Daily Hole board, worked out from the
+    // record it is sent with (only the copy sent up carries it: cardOf is never written into the record)
+    claim(!!lat.card && lat.card.v === 1 && lat.card.lv === 30 && lat.card.levels === lat.levels && lat.card.starsMax === lat.levels * 3 && lat.card.stars >= 0 && typeof lat.card.world === 'string',
+      `the cloud save carries the player card, level ${lat.card && lat.card.lv} of ${lat.card && lat.card.levels}, ${lat.card && lat.card.stars} of ${lat.card && lat.card.starsMax} stars, in ${lat.card && lat.card.world}`);
     // LIVES ARE THE SERVER'S (138, 146). A fresh browser takes the server's lives and their clocks, a lost life is
     // spent there, and a device clock wound past them fills nothing: only the server's answer does.
     const lvs = await pg.evaluate(async () => { const sb0 = sb, calls = [], soon = () => new Date(Date.now() + 3600e3).toISOString(),

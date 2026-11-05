@@ -89,6 +89,7 @@ var AUTH_MODE = (/[?&]mockAuth=([^&]*)/.exec(location.search) || [])[1] || '';
 var mockIn = AUTH_MODE === '1';
 var authListeners = [];
 function mockSignedIn() { return mockIn; }
+var mockClips = [];
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
   var authState = function () { return mockIn ? { ready: true, waiting: false, signedIn: true, name: 'mockplayer', email: 'mock@example.com', userId: 'mock-user' } : { ready: AUTH_MODE === 'late', waiting: false, signedIn: false }; };
@@ -106,6 +107,30 @@ if (!window.STD_AUTH || FORCE) {
     signIn: AUTH_MODE === 'late' ? lateIn : none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
     board: mockBoard,
+    /* the voice of the ump (supabase/165), FICTIONAL: clips live in this page only. ?mockOwner=1
+       makes the signed-in mock account the owner, so the review sheet can be walked */
+    umpApproved: function () { return Promise.resolve(mockClips.filter(function (c) { return c.status === 'approved'; }).map(function (c) { return { id: c.id, line: c.line, path: c.path, credit: c.credit }; })); },
+    umpMine: function () { return Promise.resolve(mockIn ? mockClips.filter(function (c) { return c.status === 'pending'; }).map(function (c) { return { id: c.id, line_id: c.line }; }) : null); },
+    umpSubmit: function (c) {
+      if (!mockIn) return Promise.resolve({ error: 'Sign in first.' });
+      if (!c || c.consent !== (window.STD_VOICES && window.STD_VOICES.CONSENT)) return Promise.resolve({ error: 'tick the consent box first' });
+      var id = 'mock-clip-' + (mockClips.length + 1);
+      mockClips.push({ id: id, line: c.line, status: 'pending', path: 'mock-user/' + id, credit: c.credit || null, username: 'mockplayer', ms: c.ms, url: URL.createObjectURL(c.blob), createdAt: new Date().toISOString() });
+      return Promise.resolve({ data: { id: id } });
+    },
+    umpUrls: function (paths) { var m = {}; mockClips.forEach(function (c) { if (paths.indexOf(c.path) >= 0) m[c.path] = c.url; }); return Promise.resolve(m); },
+    umpOwner: function () { return Promise.resolve(mockIn && /[?&]mockOwner=1/.test(location.search)); },
+    umpQueue: function (st) {
+      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      return Promise.resolve({ data: mockClips.filter(function (c) { return c.status === (st || 'pending'); }).map(function (c) { return JSON.parse(JSON.stringify(c)); }) });
+    },
+    umpReview: function (id, st) {
+      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      var c = mockClips.filter(function (x) { return x.id === id; })[0];
+      if (!c) return Promise.resolve({ error: 'no such clip' });
+      c.status = st;
+      return Promise.resolve({ data: { id: id, status: st } });
+    },
     plates: function () { return Promise.resolve(mockIn ? JSON.parse(JSON.stringify(mockPlates)) : null); },
     setPlate: function (k) {
       if (!mockIn) return Promise.resolve({ error: 'sign in first' });
@@ -813,7 +838,37 @@ function survivorBoard(day, limit) {
   return Promise.resolve(rows);
 }
 
-window.STD_API = { API_VERSION: 1, MOCK: true, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
+/* clips (clip.js) over the fixture: the same link, the mock's own replay of it on a fresh outing,
+   never stored. The fixture's calls carry no r, so the link says rules 1. */
+function clipSpec(outingId, n) {
+  var o = OUTINGS[outingId], L = window.STD_CLIP;
+  if (!o || !L || !(n >= 1 && n <= o.calls.length)) return null;
+  var mode = { daily: 'd', archive: 'a', practice: 'p' }[o.st.mode] || 'p';
+  var spec = { mode: mode, day: o.day || C.easternDay(), rules: 1, pack: o.scn.id, seed: o.st.seed, calls: o.calls.slice(0, n).map(function (c) { return clone(c); }) };
+  return { spec: spec, link: L.encode(spec) };
+}
+function clip(spec) {
+  return load().then(function (j) {
+    var scn = j.scenario;
+    if (!spec || spec.pack !== scn.id || !spec.calls || !spec.calls.length) throw new Error('no such scenario: ' + (spec && spec.pack));
+    var sd = spec.mode === 'd' || spec.mode === 'a' ? hashSeed(C.DAILY_SEED_PREFIX + spec.day) : (spec.seed >>> 0);
+    var o = { scn: scn, day: spec.day, calls: [], rng: mulberry32(sd), absRng: mulberry32(hashSeed('abs|' + sd)), st: freshState(scn, 'practice', sd, 'clip') };
+    var play = function (c0) {
+      if (o.st.status !== 'live') throw new Error('the outing ended before the clip');
+      var c = clone(c0), ch = c.ch === 1; delete c.ch; delete c.pa; delete c.r;
+      o.calls.push(c);
+      var r = apply(scn, o.st, c, o.rng, o.absRng);
+      return { pr: clone(r.pitchResult), ch: ch };
+    };
+    spec.calls.slice(0, -1).forEach(function (c) { var x = play(c); if (x.ch && absLive(o)) challengePitch(o); });
+    var before = snapshot(o), x = play(spec.calls[spec.calls.length - 1]), fin = x.pr;
+    if (x.ch && absLive(o)) fin = clone(challengePitch(o));
+    var sc = clone(scn); delete sc.reveal; sc.day = spec.day; sc.number = C.dayNumberOf(spec.day);
+    return { scn: sc, spec: spec, before: before, pr: x.pr, final: fin, after: snapshot(o) };
+  });
+}
+
+window.STD_API = { API_VERSION: 1, MOCK: true, clipSpec: clipSpec, clip: clip, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
   pending: pending, claim: claim, entitlements: entitlements, vote: vote, castVote: castVote,
   survivorState: survivorState, survivorStart: survivorStart, survivorClaim: survivorClaim, survivorBoard: survivorBoard };
 })();

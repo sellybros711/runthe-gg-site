@@ -1399,13 +1399,17 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 /* the button: ink glass with a data blue edge, beside THROW, as tall as it */
 .pad.abs-live { display: flex; gap: 8px; }
 .pad.abs-live .btn.throw { flex: 1 1 auto; min-width: 0; width: auto; }
-.btn.abs-b { position: relative; flex: 0 0 42%; height: 54px; min-height: 54px; margin: 0; padding: 4px 10px; border-radius: 14px; overflow: hidden;
+.btn.abs-b { position: relative; flex: 0 0 42%; height: 54px; min-height: 54px; margin: 0; padding: 4px 8px; border-radius: 14px; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; line-height: 1;
   background: rgba(11, 15, 23, .93); color: #fff; border: 1.5px solid var(--data); box-shadow: 0 3px 0 #1c3db8, 0 8px 24px rgba(0, 0, 0, .3);
   font-family: var(--sans); font-weight: 700; text-transform: uppercase;
   animation: ab-in .22s ease-out; }
 .btn.abs-b[hidden] { display: none; }
-.btn.abs-b b { font-size: 22px; letter-spacing: .04em; }
+/* the label fits its button on one line at every size (QA, 2026-11-05: an iPhone read "HALLENG", 142 px of
+   label in 132 of room, clipped at both ends). Sized by measurement with Inter loaded: 9 capitals at
+   .02em run 6.27em, so each size below is the largest whole px that clears its room with a margin.
+   test/check-browser.mjs step 16 holds it at the phone, short, sideways and desk sizes. */
+.btn.abs-b b { font-size: 18px; letter-spacing: .02em; white-space: nowrap; }
 .ab-dots { display: flex; gap: 5px; }
 .ab-dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .45); }
 .ab-dots i.on { background: #8fb0ff; border-color: #8fb0ff; }
@@ -1494,6 +1498,9 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .ar-zone { align-self: center; width: auto; height: min(46%, 150px); aspect-ratio: 1; flex: 0 1 auto; min-height: 0; }
   .ar-txt { align-items: center; max-width: 100%; }
   .ar-v { align-self: center; }
+  /* the narrow dock: the challenge label at 13 px fits its 88 px of room (81.5 px) */
+  .btn.abs-b { padding: 4px 6px; }
+  .btn.abs-b b { font-size: 13px; }
 }
 /* a phone on its side is short: two columns of pitches */
 @media (orientation: landscape) and (max-height: 520px) {
@@ -1515,7 +1522,6 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .btn.throw { height: 48px; min-height: 48px; padding: 3px 12px; gap: 1px; }
   .btn.throw b { font-size: 24px; }
   .btn.abs-b { height: 48px; min-height: 48px; gap: 4px; }
-  .btn.abs-b b { font-size: 18px; }
   .absr { gap: 8px; padding: 10px 10px 12px; }
   .ar-v { font-size: 16.8px; }
   .bb-nm { font-size: 14.4px; }
@@ -1545,8 +1551,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   #m-arsenal[data-n] .ps { font-size: 16px; }
   .btn.throw { height: 60px; min-height: 60px; }
   .btn.throw b { font-size: 32px; }
-  .btn.abs-b { height: 60px; min-height: 60px; }
-  .btn.abs-b b { font-size: 24px; }
+  .btn.abs-b { height: 60px; min-height: 60px; padding: 4px 6px; }
+  .btn.abs-b b { font-size: 17px; }
   .ar-k { font-size: 14px; }
   .ar-d { font-size: 16px; }
   .ar-d b { font-size: 16px; }
@@ -1601,8 +1607,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   #s-mound .btn.throw { flex: 1 1 auto; height: auto; min-height: 40px; padding: 4px 6px; border-radius: 13px; }
   #s-mound .btn.throw b { font-size: 22px; letter-spacing: .02em; }
   #s-mound .pad.abs-live { flex-direction: column; gap: 4px; }
-  #s-mound .btn.abs-b { flex: 1 1 auto; height: auto; min-height: 40px; padding: 3px 6px; }
-  #s-mound .btn.abs-b b { font-size: 14px; }
+  #s-mound .btn.abs-b { flex: 1 1 auto; height: auto; min-height: 40px; padding: 3px 4px; }
+  #s-mound .btn.abs-b b { font-size: 12px; }
 }
 
 /* ---- THE MODES AROUND THE DAILY (modes-ui.js, 2026-10-30): the save, the vote, Survivor ----
@@ -1894,3 +1900,61 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
 .mh-home.wait { opacity: .6; }
 /* the menu's home: only while an outing is on screen */
 body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="s-next"]) #sheet-menu .menu-home { display: none; }
+
+/* ---- CLIPS (clip-ui.js): a pitch's Clip on the result, and the clip screen ------------------- */
+.pc.clp { font: inherit; color: inherit; text-align: left; border: 0; cursor: pointer; min-height: 38px; }
+.pc.clp:hover, .pc.clp:focus-visible { box-shadow: inset 0 0 0 2px var(--signal); outline: none; }
+.pc .cl { display: flex; align-items: center; gap: 3px; margin-top: 4px; font-family: var(--sans); font-weight: 700; font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--signal); }
+.pc .cl svg { width: 9px; height: 9px; fill: currentColor; }
+#s-clip.on { display: flex; flex-direction: column; position: fixed; inset: 0; z-index: 30; background: #0b0f17; color: #f4f5f7; }
+.cl-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; background: #0b0f17; }
+.cl-stage #m-canvas, .cl-stage #cl-out { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cl-stage #cl-out { z-index: 1; }
+/* the overlay's place (clip-ui.js sizeOut sets them from the overlay's own unit) */
+.cl-wm, .cl-l3 { position: absolute; pointer-events: none; }
+#s-clip .cl-play { position: absolute; z-index: 2; left: 50%; top: 40%; transform: translate(-50%, -50%); width: auto; max-width: calc(100% - 32px); padding: 0 28px; white-space: nowrap; }
+.cl-play[hidden] { display: none; }
+.cl-panel { flex: 0 0 auto; padding: 14px 16px max(16px, env(safe-area-inset-bottom)); background: #0b0f17; border-top: 1px solid rgba(255, 255, 255, .08); }
+.cl-top { display: flex; align-items: center; gap: 10px; }
+.cl-top .eyebrow { flex: 1; min-width: 0; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-x { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .06); color: #f4f5f7; display: grid; place-items: center; }
+.cl-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.cl-head { margin: 8px 0 2px; font-family: var(--sans); font-weight: 700; font-size: 20px; line-height: 1.2; }
+.cl-sub { margin: 0; font-size: 14px; color: #9aa3b5; }
+.cl-say { margin: 6px 0 0; min-height: 18px; font-size: 13px; color: #9aa3b5; }
+.cl-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.cl-acts .btn { text-transform: uppercase; letter-spacing: .04em; font-size: 14px; min-height: 46px; padding: 10px 12px; }
+.cl-acts .btn[hidden] { display: none; }
+.cl-acts .btn:disabled { opacity: .5; }
+#s-clip .cl-acts .btn.go { background: var(--signal); color: #fff; }
+#s-clip .cl-acts .btn.ghost { background: rgba(255, 255, 255, .06); color: #f4f5f7; border-color: rgba(255, 255, 255, .16); }
+.cl-acts .cl-daily, .cl-acts #cl-video { grid-column: 1 / -1; }
+@media (min-width: 900px) {
+  #s-clip.on { flex-direction: row; }
+  .cl-panel { flex: 0 0 360px; border-top: 0; border-left: 1px solid rgba(255, 255, 255, .08); padding: 28px 28px 24px; display: flex; flex-direction: column; }
+  .cl-head { font-size: 26px; margin-top: 18px; }
+  .cl-acts { grid-template-columns: 1fr; margin-top: 18px; }
+}
+/* the voice of the ump (voices.js): the record sheet, the owner's review */
+.set-row.set-go { width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; color: var(--ink); text-align: left; cursor: pointer; }
+.voices .vo-n { color: var(--dim); font-size: 13px; margin: 0; }
+.voices .vo-line { font-family: var(--hero); font-size: 34px; line-height: 1.1; margin: 6px 0 4px; }
+.voices .vo-hint { margin: 0 0 6px; }
+.voices .vo-rec, .voices .vo-act { display: flex; gap: 8px; margin: 12px 0 6px; }
+.voices .vo-rec .btn, .voices .vo-act .btn { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; }
+.voices .vo-act .btn:disabled { opacity: .5; }
+.voices .vo-on { background: var(--signal); color: #fff; }
+.voices .vo-meter { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.voices .vo-meter i { display: block; height: 100%; width: 0; background: var(--signal); }
+.voices .vo-play { width: 100%; margin: 8px 0; }
+.voices .vo-ok { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.4; margin: 12px 0 8px; }
+.voices .vo-ok input { margin-top: 3px; width: 20px; height: 20px; flex: 0 0 auto; }
+.voices .vo-credit { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dim); }
+.voices .vo-credit input { font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink); }
+.voices .vr-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.voices .vr-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.voices .vr-h { display: flex; flex-direction: column; }
+.voices .vr-h small { color: var(--dim); font-size: 12px; }
+.voices .vr-row audio { width: 100%; margin: 8px 0; }
+.voices .vr-act { display: flex; gap: 8px; }
+.voices .vr-act .btn { flex: 1 1 0; min-height: 42px; }

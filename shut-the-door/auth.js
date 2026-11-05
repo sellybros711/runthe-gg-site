@@ -266,8 +266,56 @@
   const plates = () => rpc('shutdoor_my_plates', {}, true);
   const setPlate = (key) => act('shutdoor_set_plate', { p_plate: key || '' });
 
+  /* ---------------- the voice of the ump (supabase/165_shut_the_door_ump_voices.sql) ---------------- */
+
+  const UMP_BUCKET = 'shutdoor-ump-voices';
+  /* every approved clip [{id, line, path, credit}], signed out too. null on failure. */
+  async function umpApproved() {
+    const r = await rpc('shutdoor_ump_approved', {});
+    return Array.isArray(r) ? r : null;
+  }
+  /* the caller's own clips still waiting for review (RLS shows nothing else) */
+  async function umpMine() {
+    if (!sb || !session) return null;
+    try {
+      const r = await sb.from('shutdoor_ump_clips').select('id, line_id, created_at').eq('status', 'pending');
+      return r && !r.error && Array.isArray(r.data) ? r.data : null;
+    } catch (e) { return null; }
+  }
+  /* the row first (the server sets its path and checks the consent), then the file at that path.
+     {data: {id}} or {error}. A row whose file never lands is dropped by the server after 15 minutes. */
+  async function umpSubmit(c) {
+    if (!sb) return { error: 'Accounts are not available right now.' };
+    if (!session) return { error: 'Sign in first.' };
+    try {
+      const ins = await sb.from('shutdoor_ump_clips').insert({
+        user_id: session.user.id, line_id: c.line, consent_text: c.consent, consent_version: c.consentVersion,
+        credit: c.credit || null, mime: c.mime, bytes: c.bytes, duration_ms: c.ms, storage_path: 'pending',
+      }).select('id, storage_path').single();
+      if (ins.error || !ins.data) return { error: (ins.error && ins.error.message) || 'That did not send.' };
+      const up = await sb.storage.from(UMP_BUCKET).upload(ins.data.storage_path, c.blob, { contentType: c.mime, upsert: false });
+      if (up.error) return { error: up.error.message || 'The file did not upload.' };
+      return { data: { id: ins.data.id } };
+    } catch (e) { return { error: (e && e.message) || 'That did not send.' }; }
+  }
+  /* {path: signed url} for the paths the caller may read (approved, or the owner). null on failure. */
+  async function umpUrls(paths, secs) {
+    if (!sb || !paths || !paths.length) return null;
+    try {
+      const r = await sb.storage.from(UMP_BUCKET).createSignedUrls(paths, secs || 3600);
+      if (!r || r.error || !Array.isArray(r.data)) return null;
+      const out = {};
+      r.data.forEach((x) => { if (x && x.signedUrl && !x.error) out[x.path] = x.signedUrl; });
+      return out;
+    } catch (e) { return null; }
+  }
+  const umpOwner = async () => (await rpc('shutdoor_ump_owner', {}, true)) === true;
+  const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 100 });
+  const umpReview = (id, status) => act('shutdoor_ump_review', { p_id: id, p_status: status });
+
   window.STD_AUTH = {
     API_VERSION: 1,
+    umpApproved, umpMine, umpSubmit, umpUrls, umpOwner, umpQueue, umpReview,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,

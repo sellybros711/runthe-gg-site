@@ -60,6 +60,9 @@
  *      Survivor board, one run a day and when the next opens) and the
  *      archive (only when entitlements say Pro)
  *
+ *  19. clips: a Clip on every pitch of the result, never open by itself, the replay plays to its end
+ *      (and records where it can), and its link opens the viewer on a page of its own, writing nothing
+ *
  *  18. rules 8: a two-half daily played through the page to the third out of
  *      the 8th; the scorebug follows the half (the 9th, nobody out, nobody on,
  *      the score his team left), as the outing's state says. Between the two
@@ -110,6 +113,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
+import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
@@ -1016,6 +1021,16 @@ async function run(w, h, theme) {
   ok(back.on && back.started && back.gain > 0, '2 the switch back on lifts the master gain (' + JSON.stringify(back) + ')');
   await page.click('#sheet-settings .sh-x');
   await page.waitForSelector('#sheet-settings', { state: 'hidden', timeout: 3000 });
+  /* the voice of the ump (voices.js): behind its settings button, signed out the sign-in button, no review */
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
+  ok(await page.evaluate(() => document.getElementById('sheet-voices').hidden), '2 the voice of the ump is shut until its button');
+  await page.click('#set-voices');
+  await page.waitForSelector('#sheet-voices.on', { timeout: 3000 });
+  const vo = await page.evaluate(() => ({ signin: !!document.getElementById('vo-signin'), rec: !!document.getElementById('vo-rec') }));
+  ok(vo.signin && !vo.rec, '2 the voice of the ump opens from settings: signed out, the sign-in button only');
+  await page.click('#sheet-voices .sh-x');
+  await page.waitForSelector('#sheet-voices', { state: 'hidden', timeout: 3000 });
   if (QUICK || MODES) { ok(errors.length === 0, '2 no page errors' + (errors.length ? ': ' + errors.join(' | ') : '')); await ctx.close(); return; }
 
   /* 3 and 4 */
@@ -1578,15 +1593,54 @@ const SWEEP = [[390, 844], [844, 390], [768, 1024], [900, 900], [1000, 1020], [1
    nobody could aim and THROW never lit. At these the zone and the plate must be on screen and clear of
    the HUD, with every one of the 25 cells tappable (38 px at least); the hitter may run under a panel. */
 const SHORT = [[360, 640], [320, 568]];
+/* THE CHALLENGE LABEL (QA, 2026-11-05: an iPhone read "HALLENG"). The button clips, so a label wider
+   than its room loses both ends. Measured with the real Inter the page loads (the rest of the check
+   serves the fonts empty), at the browser check's sizes and the common iPhones. */
+const CHAL = [[320, 568], [375, 667], [375, 553], [390, 844], [393, 852], [430, 932], [844, 390], [768, 1024], [1440, 900]];
+/* Inter as Google serves it to Chromium (one variable woff2 for latin), fetched once and kept in the
+   temp folder; without the network, the Inter a machine has installed (static weights). null when
+   neither is there, and the label check then fails rather than measure another font. */
+function realInter() {
+  const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+  const dir = path.join(os.tmpdir(), 'std-check-inter'), file = path.join(dir, 'inter-latin.woff2');
+  const face = (w, url, fmt) => `@font-face{font-family:'Inter';font-style:normal;font-weight:${w};src:url(${url}) format('${fmt}');}`;
+  const W = [400, 500, 600, 700];
+  try {
+    if (!fs.existsSync(file)) {
+      const css = execFileSync('curl', ['-sSf', '--max-time', '20', '-A', UA, 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'], { encoding: 'utf8' });
+      const latin = css.split('/* latin */')[1];
+      const url = latin && (latin.match(/url\((https:[^)]+\.woff2)\)/) || [])[1];
+      if (!url) throw new Error('no latin face');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(file + '.part', execFileSync('curl', ['-sSf', '--max-time', '30', url]));
+      fs.renameSync(file + '.part', file);
+    }
+    return { from: 'Google Fonts', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/latin.woff2', 'woff2')).join('\n'), files: { 'latin.woff2': fs.readFileSync(file) }, type: 'font/woff2' };
+  } catch (e) {}
+  const sys = '/usr/share/fonts/opentype/inter', N = { 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold' };
+  if (W.every((w) => fs.existsSync(path.join(sys, 'Inter-' + N[w] + '.otf')))) {
+    const files = {};
+    for (const w of W) files[w + '.otf'] = fs.readFileSync(path.join(sys, 'Inter-' + N[w] + '.otf'));
+    return { from: 'the installed Inter', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/' + w + '.otf', 'opentype')).join('\n'), files, type: 'font/otf' };
+  }
+  return null;
+}
 async function sizeSweep() {
   console.log('\nevery window size');
   step('16 the window sizes', 900);
   const ctx = await browser.newContext({ viewport: { width: 1000, height: 1020 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   await page.addInitScript(STAGE_TEST);
+  const inter = realInter();
   await page.route('**/*', (route) => {
     const u = new URL(route.request().url());
     if (u.hostname === '127.0.0.1') return route.continue();
+    /* the real Inter here (the challenge label is measured with it), the rest of the fonts empty */
+    if (inter && u.hostname === 'fonts.googleapis.com' && /family=Inter/.test(u.search)) return route.fulfill({ status: 200, contentType: 'text/css', body: inter.css });
+    if (inter && u.hostname === 'fonts.gstatic.com' && u.pathname.startsWith('/std-inter/')) {
+      const f = inter.files[u.pathname.slice('/std-inter/'.length)];
+      if (f) return route.fulfill({ status: 200, contentType: inter.type, body: f, headers: { 'access-control-allow-origin': '*' } });
+    }
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
@@ -1645,6 +1699,31 @@ async function sizeSweep() {
     ok(m.over.length === 0 && m.cut.length === 0, `16 ${w}x${h}: the zone, all 25 cells and the plate on screen and clear of the HUD (zone x ${m.zone.join(' to ')})` +
       (m.over.length ? ' (' + m.over.join(', ') + ')' : '') + (m.cut.length ? ' (cut: ' + m.cut.join(', ') + ')' : ''));
     ok(m.n === 25 && m.cell[0] >= 38 && m.cell[1] >= 38, `16 ${w}x${h}: cells stay tappable (${Math.round(m.cell[0])}x${Math.round(m.cell[1])}, 38 at least)`);
+  }
+  /* the challenge button as the game shows it (ui.js absButton: the button unhidden, the pad abs-live),
+     put back after: the full word CHALLENGE inside its button, on one line, 38 px tall at least */
+  ok(!!inter, '16 the real Inter for the challenge label' + (inter ? ' (' + inter.from + ')' : ': neither Google Fonts nor an installed Inter'));
+  for (const [w, h] of inter ? CHAL : []) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(400);
+    const m = await page.evaluate(async () => {
+      await document.fonts.load('700 18px Inter');
+      const b = document.getElementById('m-abs-b'), pad = document.getElementById('m-pad'), lab = b.querySelector('b');
+      const was = [b.hidden, pad.classList.contains('abs-live')];
+      b.hidden = false; pad.classList.add('abs-live');
+      const cs = getComputedStyle(b), r = b.getBoundingClientRect(), rg = document.createRange();
+      rg.selectNodeContents(lab);
+      const t = rg.getBoundingClientRect(), lines = rg.getClientRects().length;
+      const room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const inter = document.fonts.check('700 ' + getComputedStyle(lab).fontSize + ' Inter') && [...document.fonts].some((f) => /^['"]?Inter['"]?$/.test(f.family) && f.status === 'loaded');
+      const out = { text: lab.textContent, inter, lines, label: +t.width.toFixed(1), sw: lab.scrollWidth, room: +room.toFixed(1),
+        bsw: b.scrollWidth, bcw: b.clientWidth, inside: t.left >= r.left + 1 && t.right <= r.right - 1, h: Math.round(r.height), fs: getComputedStyle(lab).fontSize };
+      b.hidden = was[0]; pad.classList.toggle('abs-live', was[1]);
+      return out;
+    });
+    ok(m.inter && m.text.toUpperCase() === 'CHALLENGE' && m.lines === 1 && m.sw <= m.room && m.label <= m.room && m.bsw <= m.bcw && m.inside && m.h >= 38,
+      `16 ${w}x${h}: CHALLENGE fits its button (label ${m.label} px in ${m.room} of room at ${m.fs}, scrollWidth ${m.sw}, ${m.h} px tall)` +
+      (m.inter ? '' : ' (not measured in Inter)') + (m.lines !== 1 ? ' (on ' + m.lines + ' lines)' : ''));
   }
   await ctx.close();
 }
@@ -2062,18 +2141,157 @@ async function halves(w, h, skip) {
   await ctx.close();
 }
 
+/* 19. CLIPS (clip-ui.js), through the mock. A whole outing to the result: every one of your pitches in
+   you vs the real game carries a Clip, thumb tall, and the clip screen never opens by itself. A tap
+   opens it, the pitch plays again on the stage to its end (recorded where the browser can), and back
+   goes to the result with the mound's canvas home. Then the pitch's link on a fresh page: the viewer
+   over the home, waiting for a tap, nothing written, the pitch plays, and play today's daily goes to
+   the mound with the clip gone from the address. No page error and no console error. */
+async function clips(w, h) {
+  console.log(`\nclips, ${w}x${h}`);
+  step('19 clips', 900);
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  await page.addInitScript(() => { try { if (!sessionStorage.getItem('ck-clip')) { sessionStorage.setItem('ck-clip', '1'); localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false })); } } catch (e) {} });
+  const errors = [];
+  const watch = (pg) => {
+    pg.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+    pg.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
+  };
+  watch(page);
+  const route = (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net' || /(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  };
+  await page.route('**/*', route);
+  await page.goto(BASE + '?mockEnd=door_shut', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 60000 });
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 30000 });
+  await stageReady(page);
+  const onResult = () => page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
+  for (let i = 0; i < 40 && !(await onResult()); i++) {
+    await page.waitForFunction(() => !window.STD_UI.state.busy || document.getElementById('s-result').classList.contains('on'), null, { timeout: PITCH_MS });
+    if (await onResult()) break;
+    await page.keyboard.press('1');
+    await page.click('#m-aim .cell[data-cell="12"]');
+    await page.click('#m-throw');
+    await page.waitForTimeout(150);
+  }
+  await page.waitForSelector('#s-result.on', { timeout: PITCH_MS });
+  await page.waitForTimeout(1200);
+  const rs = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('#r-reveal .pc')], clips = cards.filter((c) => c.matches('button[data-clip]'));
+    return { cards: cards.length, clips: clips.length, minH: Math.min(...clips.map((c) => c.getBoundingClientRect().height)), pitches: window.STD_UI.state.result.pitches,
+      open: document.getElementById('s-clip').classList.contains('on') };
+  });
+  ok(rs.clips === rs.pitches && rs.cards === rs.pitches && rs.minH >= 38, '19 every pitch in you vs the real game has a Clip, thumb tall (' + rs.clips + ' of ' + rs.pitches + ', ' + Math.round(rs.minH) + ' px)');
+  ok(!rs.open, '19 the clip screen does not open by itself');
+  await page.click('#r-reveal .pc[data-clip="1"]');
+  await page.waitForSelector('#s-clip.on', { timeout: 30000 });
+  await page.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'done', null, { timeout: 300000 });
+  const cl = await page.evaluate(() => ({ head: document.getElementById('cl-head').textContent, canvas: !!document.querySelector('#cl-stage #m-canvas'), video: !document.getElementById('cl-video').hidden,
+    say: document.getElementById('cl-say').textContent, link: window.STD_CLIP_UI.lastLink(), rec: window.STD_CLIP_UI.canRecord(), grade: !!document.querySelector('#s-clip .sq, #s-clip .bd') }));
+  ok(/^Pitch 1: /.test(cl.head) && cl.canvas && !cl.grade, '19 a tap on Clip plays pitch 1 again on the stage, with no grade ("' + cl.head + '")');
+  ok(cl.rec ? cl.video : /link/i.test(cl.say), '19 ' + (cl.rec ? 'the clip records a video to share' : 'without a recorder the clip says to share the link') + ' ("' + cl.say + '")');
+  ok(/[?&]clip=1\.d\.\d{8}\.\d+\.[a-z0-9-]+\.[A-Z]{2}\d/.test(cl.link || ''), '19 the clip has a link (' + (cl.link || 'none').replace(/^.*\?/, '?') + ')');
+  await page.click('#cl-close');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  const home = await page.evaluate(() => !!document.querySelector('#m-scene #m-canvas'));
+  ok(home, '19 closing the clip goes back to the result, the canvas back on the mound');
+  /* the link, on a page of its own */
+  const p2 = await ctx.newPage();
+  watch(p2);
+  await p2.route('**/*', route);
+  await p2.addInitScript(() => { try { localStorage.removeItem('std_outing_v1'); } catch (e) {} });
+  const q = new URL(cl.link).search;
+  await p2.goto(BASE + q + '&mockEnd=door_shut', { waitUntil: 'domcontentloaded' });
+  await p2.waitForSelector('#s-clip.on', { timeout: 240000 });
+  await p2.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'idle', null, { timeout: 240000 });
+  const lv = await p2.evaluate(() => ({ daily: !document.getElementById('cl-daily').hidden, play: !document.getElementById('cl-play').hidden, kept: Object.keys(localStorage).filter((k) => /outing/.test(k)) }));
+  ok(lv.daily && lv.play && !lv.kept.length, '19 a clip link opens the viewer, waits for a tap, with play today\'s daily, and writes nothing (' + JSON.stringify(lv) + ')');
+  await stageReady(p2);
+  await p2.click('#cl-play');
+  await p2.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'done', null, { timeout: 300000 });
+  await p2.click('#cl-daily');
+  await p2.waitForSelector('#s-mound.on', { timeout: 60000 });
+  ok(!/clip=/.test(await p2.evaluate(() => location.search)), '19 play today\'s daily goes to the mound, the clip gone from the address');
+  ok(errors.length === 0, '19 clips: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
+   made here), the consent before the send, the send, then the owner's review: waiting, approve, approved */
+function tinyWav(ms) {
+  const rate = 8000, n = Math.round(rate * ms / 1000), b = Buffer.alloc(44 + n * 2);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16);
+  b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(rate, 24); b.writeUInt32LE(rate * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34);
+  b.write('data', 36); b.writeUInt32LE(n * 2, 40);
+  for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.sin(i / 8) * 8000), 44 + i * 2);
+  return b;
+}
+async function voicesWalk(w, h) {
+  console.log(`\nthe voice of the ump, ${w}x${h}`);
+  step('19 the voice of the ump', 120);
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockOwner=1', { meterOff: true });
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  ok(true, '19 the owner sees the review button in settings');
+  await page.click('#set-voices');
+  await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
+  const l1 = await page.evaluate(() => ({ line: document.getElementById('vo-line').textContent, send: document.getElementById('vo-send').disabled, consent: document.querySelector('.vo-ok span').textContent }));
+  ok(l1.line === 'Strike!' && l1.send && l1.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)), '19 line 1 is "Strike!", the consent shows, nothing to send yet');
+  await page.setInputFiles('#vo-file', { name: 'long.wav', mimeType: 'audio/wav', buffer: tinyWav(3600) });
+  await page.waitForFunction(() => /Too long/.test(document.getElementById('vo-msg').textContent), null, { timeout: 5000 });
+  ok(true, '19 an upload longer than 3 seconds is refused');
+  await page.setInputFiles('#vo-file', { name: 'strike.wav', mimeType: 'audio/wav', buffer: tinyWav(900) });
+  await page.waitForSelector('#vo-play', { timeout: 5000 });
+  ok(await page.evaluate(() => document.getElementById('vo-send').disabled), '19 a take plays back, and waits for the consent');
+  await page.check('#vo-consent');
+  await page.fill('#vo-cr', 'Big Al');
+  await page.click('#vo-send');
+  await page.waitForFunction(() => /Sent/.test(document.getElementById('vo-msg').textContent), null, { timeout: 3000 });
+  const l2 = await page.evaluate(() => document.getElementById('vo-line').textContent);
+  ok(l2 === 'Strike three!', '19 sent, and on to the next line (' + l2 + ')');
+  await page.click('#sheet-voices .sh-x');
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  await page.click('#set-ump-review');
+  await page.waitForSelector('#sheet-ump-review.on .vr-row audio', { timeout: 3000 });
+  const q = await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent);
+  ok(/Strike!/.test(q) && /Big Al/.test(q), '19 the owner\'s queue holds it, with the credit');
+  await page.click('#vr-body [data-vr="approved"]');
+  await page.waitForSelector('#vr-empty', { timeout: 3000 });
+  await page.click('#vr-body [data-vr-tab="approved"]');
+  await page.waitForSelector('#sheet-ump-review .vr-row', { timeout: 3000 });
+  const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line)));
+  ok(ap.join() === 'strike', '19 approved: on the approved list and the game\'s list');
+  ok(errors.length === 0, '19 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
+  /* STD_CLIPS=1: only the clips (19) at both sizes, for a local pass on them */
+  if (process.env.STD_CLIPS === '1') { await clips(390, 844); await clips(1440, 900); throw 'quick'; }
   await run(390, 844, 'light');
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
-  if (QUICK) { await run(1440, 900, 'dark'); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
+  if (QUICK) { await run(1440, 900, 'dark'); await clips(390, 844); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
   await bootStuck(390, 844);
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
   await halfSwitch(390, 844);
   await homeTrip(390, 844);
+  await clips(390, 844);
+  await clips(1440, 900);
   await sizeSweep();
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
@@ -2088,6 +2306,7 @@ try {
   await modes(1440, 900, false);
   await halves(390, 844, false);
   await halves(1440, 900, true);
+  await voicesWalk(390, 844);
 } catch (e) {
   if (e === 'quick') e = null; else fails++;
   if (e) {

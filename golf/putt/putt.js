@@ -2735,7 +2735,7 @@ var CSS = '\
 .pp-big{font-family:var(--display,inherit);font-size:38px;color:#F1D04A;font-variant-numeric:tabular-nums}.pp-wide{display:block;width:100%;margin-top:8px}.pp-wide small{display:block;font-size:10.5px;font-weight:700;opacity:.75}.pt-go[disabled]{opacity:.55;cursor:default}\
 .pp-nums{display:flex;justify-content:center;gap:16px;margin:8px 0}.pp-nums span{font-size:10.5px;letter-spacing:.1em;color:#9fbfae;font-weight:800;text-transform:uppercase}.pp-nums b{display:block;font-size:24px;color:#fff;letter-spacing:0}\
 .pp-coins{font-weight:900;color:#ffd45e;font-size:16px;margin:4px 0 6px}.pp-reward{background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.45);border-radius:11px;padding:8px;margin:8px 0;font-weight:800;font-size:13px;color:#fff}.pp-fine{font-size:11px!important;opacity:.75}\
-.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid rgba(255,255,255,.08);font-weight:800}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}.pp-av.g3,.pp-dav.g3{overflow:hidden}.pp-av.g3 img,.pp-dav.g3 img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}\
+.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border:0;border-top:1px solid rgba(255,255,255,.08);font:inherit;font-weight:800;color:inherit;background:none;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent}.pp-drow:hover,.pp-drow:focus-visible{background:rgba(255,255,255,.06);border-radius:8px;outline:none}.pp-pcsh{position:fixed;z-index:9}.pp-pc{max-height:calc(100dvh - 32px);overflow:auto}.pp-pc.pro{border:2px solid #f1d04a;box-shadow:0 0 24px rgba(241,208,74,.28)}.pp-pcfig{display:flex;justify-content:center;min-height:80px;margin:2px 0 6px}.pp-pcfig img{height:96px;width:auto;image-rendering:pixelated}.pp-pcfig .pp-dav{width:72px;height:72px}.pp-pcnm{font-weight:900;font-size:22px;color:#fff;word-break:break-word}.pp-pcpass{display:inline-block;margin-top:4px;font-weight:900;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#1d1405;background:#f1d04a;border-radius:999px;padding:3px 9px}.pp-pctoday{margin:8px 0 10px;font-weight:800;font-size:13px;color:#ffd9a8}.pp-pctoday b{color:#f1d04a}.pp-pclv{font-size:15px;color:#e8efe9}.pp-pclv b{color:#fff;font-size:20px}.pp-pclv span{display:block;font-size:12px;opacity:.75;margin-top:2px}.pp-pcbar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);margin:9px 0 5px;overflow:hidden}.pp-pcbar i{display:block;height:100%;background:linear-gradient(90deg,#f1d04a,#ffe48a)}.pp-pcstar{font-weight:900;color:#f1d04a;font-size:14px}.pp-pcg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 4px}.pp-pct{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 4px}.pp-pct b{display:block;font-size:18px;color:#fff;line-height:1.1}.pp-pct span{display:block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;opacity:.7;margin-top:2px}.pp-pcmem{margin:8px 0 2px;font-size:12.5px;color:#ffd9a8}.pp-pcmem b{color:#f08a24}.pp-pcsh .pp-wide{margin-top:12px}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}.pp-av.g3,.pp-dav.g3{overflow:hidden}.pp-av.g3 img,.pp-dav.g3 img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}\
 .pp-dres{border-radius:16px;padding:16px;text-align:center}.pp-dres .k{font-size:11px;letter-spacing:.14em;font-weight:900;text-transform:uppercase;opacity:.85}.pp-dres .t{font-family:var(--display,inherit);font-size:34px;margin:4px 0}.pp-dres .m{font-size:13px}\
 .pp-hub{position:relative;max-width:none}.pp-hub .pp-map{position:absolute;inset:0;border-top:0;background:#0b1a12}\
 .pp-hdr{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 26px;background:linear-gradient(rgba(5,10,14,.78),rgba(5,10,14,0));pointer-events:none}\
@@ -3336,13 +3336,34 @@ function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
   if ((g.curT || 0) > (st.curT || 0)){ st.cur = g.cur || null; st.curT = g.curT; }
   if (g.streak && g.streak.last && (!st.streak || !st.streak.last || g.streak.last > st.streak.last)) st.streak = Object.assign({}, g.streak, { best:Math.max((st.streak && st.streak.best) || 0, g.streak.best || 0) });
   return pmerge(st, g); }
+/* THE PLAYER CARD (165_putt_player_card.sql). What another player sees on tapping this player's row on the Daily Hole
+   board: worked out from the record here and sent up with the cloud save as payload.card, which the server reads back
+   by username and nothing else of the save. Counts only, the same ones the hub and the achievements show. */
+function cardOf(st){ try{
+  var beat = function(tp, TR, n){ var b = tp.best[n]; return b != null && b < TR.levels[n - 1].par; };
+  var TR = TOURS.main, tp = st.tours.main || { lv:1, best:{}, ace:{} }, N = TR.levels.length, K = TR.per || PER, stars = 0, holes = 0, worlds = 0;
+  tp.best = tp.best || {}; tp.ace = tp.ace || {};
+  for (var n = 1; n <= N; n++){ if (beat(tp, TR, n)) holes++; stars += starsOf(tp.best[n], TR.levels[n - 1].par, TR.levels[n - 1].three); }
+  WORLDS.forEach(function(W, w){ var all = true; for (var n = w * K + 1; n <= Math.min(N, w * K + K); n++) if (!beat(tp, TR, n)) all = false; if (all) worlds++; });
+  var lv = Math.min(tp.lv || 1, N), wv = Math.floor((lv - 1) / PER); while (wv > 0 && !revealed(TR, wv, st)) wv--;
+  var MT = TOURS.members, mp = st.tours.members || null, m = null;
+  if (mp && ((mp.lv || 1) > 1 || Object.keys(mp.best || {}).length)){ var ms = 0, mh = 0; mp.best = mp.best || {};
+    for (var j = 1; j <= MT.levels.length; j++){ if (beat(mp, MT, j)) mh++; ms += starsOf(mp.best[j], MT.levels[j - 1].par, MT.levels[j - 1].three); }
+    m = { lv:Math.min(mp.lv || 1, MT.levels.length), levels:MT.levels.length, stars:ms, starsMax:MT.levels.length * 3, holes:mh }; }
+  var chests = 0; Object.keys(st.trail || {}).forEach(function(k){ chests += ((st.trail[k] || {}).ch || []).length; });
+  var daily = Object.keys(st.daily || {}).filter(function(d){ return st.daily[d] && st.daily[d].done; }).length;
+  return { v:1, lv:lv, levels:N, world:WORLDS[wv].name, w:wv + 1, worlds:worlds, worldsN:WORLDS.length, stars:stars, starsMax:N * 3, holes:holes,
+    aces:Object.keys(tp.ace).filter(function(k){ return tp.ace[k]; }).length, members:m, daily:daily,
+    streak:Math.max((st.streak && st.streak.best) || 0, (st.streak && st.streak.n) || 0), chests:chests,
+    built:PP_PUTTERS.filter(function(pt){ return partsOf(st, pt.id) >= 3; }).length, builtN:PP_PUTTERS.length };
+}catch(e){ return null; } }
 function cloudRow(d){ var r = Array.isArray(d) ? d[0] : d; return r && typeof r === 'object' ? r : null; }
 function cloudPush(){ var uid = cloudUid(); if (!uid || CLOUD.uid !== uid) return;
   if (CLOUD.busy){ CLOUD.again = true; return; }
   var st = null; try{ st = JSON.parse(praw()); }catch(e){} if (!st || st.v !== 2) return;
   CLOUD.busy = true; CLOUD.again = false;
   var done = function(){ CLOUD.busy = false; if (CLOUD.again) cloudPush(); };
-  var p = null; try{ p = hostOf().rpc('ps_save_put', { p_game:'putt', p_slot:'tour', p_payload:st, p_progress:cloudProg(st) }); }catch(e){ p = null; }
+  var p = null; try{ p = hostOf().rpc('ps_save_put', { p_game:'putt', p_slot:'tour', p_payload:Object.assign({}, st, { card:cardOf(st) }), p_progress:cloudProg(st) }); }catch(e){ p = null; }
   if (!p || !p.then) return done();
   p.then(function(d){ var r = cloudRow(d);
     // refused: the server holds more than this copy. Merge it in, keep it, and send the merged record.
@@ -4692,10 +4713,48 @@ function dailyBoard(dk, again){ var box = S.ov && S.ov.querySelector('[data-rows
     clearTimeout(S.boardT); S.boardT = setTimeout(function(){ if (S && S.ov && S.ov.contains(box)) dailyBoard(dk, true); }, BOARD_EVERY);
     if (!rows || !rows.length){ box.innerHTML = '<div class="m">' + (rows ? 'Nobody has posted yet. Be the first.' : 'The board is on its way.') + '</div>'; return; }
     var n = rows[0].players || rows.length;
-    box.innerHTML = rows.map(function(r){ var im = '', g = r.look ? chipImg(r.look) : ''; if (g) im = '<i class="pp-dav g3">' + g + '</i>';
-      else try{ var c = r.look && h.portrait ? h.portrait(r.look) : null; if (c && c.toDataURL) im = '<i class="pp-dav" style="background-image:url(' + c.toDataURL() + ')"></i>'; }catch(e){}
-      return '<div class="pp-drow' + (r.mine ? ' me' : '') + '"><b>' + r.rank + '</b>' + im + '<span>' + esc(r.username) + '</span><em>' + r.strokes + ' · ' + (r.ms != null ? clockTxt(r.ms) : '-') + '</em></div>'; }).join('') +
-      '<div class="m" style="margin-top:6px;opacity:.75">' + n + (n === 1 ? ' player' : ' players') + ' today.</div>'; }); }
+    box.innerHTML = rows.map(function(r, i){ var im = rowAv(r.look);
+      // a Tour Pass holder's name is gold, as on the Pro Tour's boards (the page's isProUser / .proname)
+      var nm = boardPro(r.username, r.mine) ? '<span class="proname">' + esc(r.username) + '</span>' : esc(r.username);
+      return '<button type="button" class="pp-drow' + (r.mine ? ' me' : '') + '" data-card="' + i + '" aria-label="' + esc(r.username) + '\'s card"><b>' + r.rank + '</b>' + im + '<span>' + nm + '</span><em>' + r.strokes + ' · ' + (r.ms != null ? clockTxt(r.ms) : '-') + '</em></button>'; }).join('') +
+      '<div class="m" style="margin-top:6px;opacity:.75">' + n + (n === 1 ? ' player' : ' players') + ' today. Tap a player for their card.</div>';
+    box.querySelectorAll('[data-card]').forEach(function(b){ b.onclick = function(){ playerCard(rows[+b.getAttribute('data-card')], dk); }; }); }); }
+function rowAv(look){ var g = look ? chipImg(look) : ''; if (g) return '<i class="pp-dav g3">' + g + '</i>';
+  try{ var c = look && S.host.portrait ? S.host.portrait(look) : null; if (c && c.toDataURL) return '<i class="pp-dav" style="background-image:url(' + c.toDataURL() + ')"></i>'; }catch(e){} return ''; }
+function boardPro(name, mine){ try{ return !!(S.host.isPro && S.host.isPro(name, !!mine)); }catch(e){ return false; } }
+/* A PLAYER'S CARD, from a row on the Daily Hole board (the owner, 2026-11-05): their golfer, today's round, and where
+   they are on the tour. Your own row reads your record here; anyone else's is asked for (putt_player_card). A player
+   whose page has not sent a card yet shows their round and their Daily Hole count. */
+var CARD_CACHE = {};
+function playerCard(r, dk){ if (!r || !S || !S.ov) return; var old = S.ov.querySelector('.pp-pcsh'); if (old) old.remove();
+  var h = S.host, pro = boardPro(r.username, r.mine), fig = '';
+  try{ fig = (h.figureOf && r.look) ? h.figureOf(r.look) : ''; }catch(e){}
+  if (!fig) fig = rowAv(r.look);
+  var sh = el('<div class="pp-sheet pp-pcsh" role="dialog" aria-modal="true" aria-label="' + esc(r.username) + '\'s card"><div class="pp-card pp-pc' + (pro ? ' pro' : '') + '">' +
+    '<div class="pp-pcfig">' + fig + '</div>' +
+    '<div class="pp-pcnm">' + (pro ? '<span class="proname">' + esc(r.username) + '</span>' : esc(r.username)) + '</div>' +
+    (pro ? '<div class="pp-pcpass">Tour Pass</div>' : '') +
+    '<div class="pp-pctoday"><b>#' + r.rank + '</b> today · ' + r.strokes + (r.strokes === 1 ? ' stroke' : ' strokes') + ' on a par ' + r.par + (r.ms != null ? ' · ' + clockTxt(r.ms) : '') + '</div>' +
+    '<div class="pp-pcst" data-st>' + (r.mine ? cardHTML(cardOf(pload()), null) : '<div class="m">Loading their card.</div>') + '</div>' +
+    '<button class="pt-bt pp-wide" data-n>Close</button></div></div>');
+  S.ov.appendChild(sh);
+  var shut = function(){ sh.remove(); }; sh.querySelector('[data-n]').onclick = shut; sh.onclick = function(e){ if (e.target === sh) shut(); };
+  if (r.mine) return;
+  var key = String(r.username || '').toLowerCase(), box = sh.querySelector('[data-st]');
+  var show = function(row){ if (!sh.isConnected) return; box.innerHTML = row ? cardHTML(row.card, row.board_days) : '<div class="m">Their card could not load. Try again soon.</div>'; };
+  var c = CARD_CACHE[key]; if (c && Date.now() - c.t < 60000) return show(c.row);
+  var p = null; try{ p = h.rpc && h.rpc('putt_player_card', { p_username:r.username }); }catch(e){ p = null; }
+  Promise.resolve(p).then(function(d){ var row = Array.isArray(d) ? d[0] : d; row = row && typeof row === 'object' ? row : null; if (row) CARD_CACHE[key] = { t:Date.now(), row:row }; show(row); }, function(){ show(null); }); }
+function cardHTML(c, days){
+  var tile = function(v, k){ return '<div class="pp-pct"><b>' + v + '</b><span>' + k + '</span></div>'; };
+  if (!c || c.v !== 1) return (days ? '<div class="pp-pcg">' + tile(days, 'Daily Holes') + '</div>' : '') + '<div class="m">The rest of their card shows once they play again.</div>';
+  var o = '<div class="pp-pclv"><b>Level ' + c.lv + '</b> of ' + c.levels + '<span>' + esc(c.world || '') + '</span></div>' +
+    '<div class="pp-pcbar"><i style="width:' + Math.round(100 * Math.min(1, c.stars / Math.max(1, c.starsMax))) + '%"></i></div>' +
+    '<div class="pp-pcstar">★ ' + c.stars + ' of ' + c.starsMax + ' stars</div>' +
+    '<div class="pp-pcg">' + tile(c.holes, 'Holes beaten') + tile(c.aces, 'Aces') + tile(c.worlds + '/' + c.worldsN, 'Worlds cleared') +
+      tile(Math.max(c.daily || 0, days || 0), 'Daily Holes') + tile(c.streak, 'Best streak') + tile(c.built + '/' + c.builtN, 'Putters built') + '</div>';
+  if (c.members) o += '<div class="pp-pcmem"><b>Members Tour</b> · Level ' + c.members.lv + ' of ' + c.members.levels + ' · ★ ' + c.members.stars + ' of ' + c.members.starsMax + '</div>';
+  return o; }
 function dailyResult(got, dk){
   var st = pload(); dk = dk || (S.round && S.round.day) || today(); var rec = st.daily[dk], dh = dailyHole(dk), T = THEMES[dh.theme];
   if (!rec) return showHub();
