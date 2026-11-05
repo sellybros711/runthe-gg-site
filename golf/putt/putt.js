@@ -4488,7 +4488,7 @@ function nextCardHTML(nx){ if (!nx || nx.done) return '';
     '<button class="pt-go pp-nxgo" data-nxgo>Open the map ▸</button></div>';
   var line = nextLine(nx);
   return '<div class="pt-card pp-next" data-next><div class="k">Your next Tour hole</div><div class="pp-nxr"><span class="th" data-nxth></span><div class="pp-nxt">' +
-    '<b>Hole ' + nx.n + '</b><span>' + esc(nx.world) + ' · par ' + nx.par + '</span><span class="pay">' + (nx.pays ? '+' + nx.pays + ' coins · ' : '') + 'up to ★★★</span>' +
+    '<b>Hole ' + nx.n + '</b><span>' + esc(nx.world) + ' · par ' + nx.par + '</span><span class="pay">' + (nx.pays && !isGuest() ? '+' + nx.pays + ' coins · ' : '') + 'up to ★★★</span>' +
     (line ? '<span class="rw">★ ' + esc(line) + '</span>' : '') + '</div></div>' +
     '<button class="pt-go pp-nxgo" data-nxgo>' + (nx.guest ? 'Sign in to play hole ' + nx.n + ' ▸' : 'Play hole ' + nx.n + ' ▸') + '</button></div>'; }
 function wireNext(nx){ var box = S.ov.querySelector('[data-next]'); if (!box || !nx) return;
