@@ -52,6 +52,7 @@
   const SH = () => (NODE ? require('./share.js') : window.STD_SHARE);
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
   const M = NODE ? require('./modes.js') : window.STD_MODES;
+  const CL = () => (NODE ? require('./clip.js') : window.STD_CLIP);
 
   const API_VERSION = 1;
   const SCHEDULE_V = 20;
@@ -616,8 +617,37 @@
     return Array.isArray(r) ? r : null;
   }
 
+  /* ---------------- clips (clip.js): one pitch again, from the calls, never stored ---------------- */
+
+  /* The clip of pitch n (1 based) of an outing this page holds: { spec, link } (the link's value,
+     clip.js encode), or null when there is no such pitch. */
+  function clipSpec(outingId, n) {
+    const rec = outings[outingId], L = CL();
+    if (!rec || !L || !(n >= 1 && n <= rec.o.calls.length)) return null;
+    const spec = L.specOf(rec.o, rec.day || C.easternDay(), n);
+    return { spec, link: L.encode(spec) };
+  }
+
+  /* A clip played again: its scenario (no reveal, as getScenario), the state before the pitch, the
+     pitch as the field saw it (pr) and as it stands (final). Its own outing in memory: nothing is
+     stored, resumed or posted, and today's daily is never touched. A pack the schedule does not list
+     or calls the engine refuses throw. */
+  async function clip(spec) {
+    const L = CL();
+    if (!L || !spec || !Array.isArray(spec.calls) || !spec.calls.length) throw new Error('not a clip');
+    const sch = await loadSchedule();
+    if (!sch.packs[spec.pack]) throw new Error('no such scenario: ' + spec.pack);
+    const p = await loadPack(spec.pack);
+    const r = L.replay(E, p.pack, p.model, spec);
+    const sc = clone(p.pack.scenario);
+    delete sc.reveal;
+    sc.day = spec.day;
+    sc.number = C.dayNumberOf(spec.day);
+    return Object.assign({ scn: sc, spec }, r);
+  }
+
   const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, pending, claim,
-    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, configure };
+    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, configure, clipSpec, clip };
   // a sign-in posts the day's finished daily by itself (the board and the result read it after)
   try {
     const A = AUTH();

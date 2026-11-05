@@ -2753,8 +2753,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "126",
-      "sha": "e55cb1c3e3d12554"
+      "v": "127",
+      "sha": "6109f8d7ee70c74c"
     },
     "putt/land.js": {
       "v": "17",
@@ -3191,12 +3191,12 @@
       "sha": "27db450876d5eda0"
     },
     "api.js": {
-      "v": "29",
-      "sha": "54506911cf480ddb"
+      "v": "31",
+      "sha": "8f7fc28354c973c2"
     },
     "mock-api.js": {
-      "v": "16",
-      "sha": "3eb337abd44489b0"
+      "v": "17",
+      "sha": "20303e938ceace3e"
     },
     "coach.js": {
       "v": "2",
@@ -3218,9 +3218,17 @@
       "v": "3",
       "sha": "9314ac5af2667f8b"
     },
+    "clip.js": {
+      "v": "1",
+      "sha": "9ab4c3ad526a7dc4"
+    },
+    "clip-ui.js": {
+      "v": "1",
+      "sha": "472174c95dbcbfc9"
+    },
     "ui.js": {
-      "v": "71",
-      "sha": "afa968528b847dbc"
+      "v": "72",
+      "sha": "134a3a1143402c63"
     },
     "3d/boot.js": {
       "v": "98",

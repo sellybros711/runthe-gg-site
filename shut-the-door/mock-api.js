@@ -838,7 +838,37 @@ function survivorBoard(day, limit) {
   return Promise.resolve(rows);
 }
 
-window.STD_API = { API_VERSION: 1, MOCK: true, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
+/* clips (clip.js) over the fixture: the same link, the mock's own replay of it on a fresh outing,
+   never stored. The fixture's calls carry no r, so the link says rules 1. */
+function clipSpec(outingId, n) {
+  var o = OUTINGS[outingId], L = window.STD_CLIP;
+  if (!o || !L || !(n >= 1 && n <= o.calls.length)) return null;
+  var mode = { daily: 'd', archive: 'a', practice: 'p' }[o.st.mode] || 'p';
+  var spec = { mode: mode, day: o.day || C.easternDay(), rules: 1, pack: o.scn.id, seed: o.st.seed, calls: o.calls.slice(0, n).map(function (c) { return clone(c); }) };
+  return { spec: spec, link: L.encode(spec) };
+}
+function clip(spec) {
+  return load().then(function (j) {
+    var scn = j.scenario;
+    if (!spec || spec.pack !== scn.id || !spec.calls || !spec.calls.length) throw new Error('no such scenario: ' + (spec && spec.pack));
+    var sd = spec.mode === 'd' || spec.mode === 'a' ? hashSeed(C.DAILY_SEED_PREFIX + spec.day) : (spec.seed >>> 0);
+    var o = { scn: scn, day: spec.day, calls: [], rng: mulberry32(sd), absRng: mulberry32(hashSeed('abs|' + sd)), st: freshState(scn, 'practice', sd, 'clip') };
+    var play = function (c0) {
+      if (o.st.status !== 'live') throw new Error('the outing ended before the clip');
+      var c = clone(c0), ch = c.ch === 1; delete c.ch; delete c.pa; delete c.r;
+      o.calls.push(c);
+      var r = apply(scn, o.st, c, o.rng, o.absRng);
+      return { pr: clone(r.pitchResult), ch: ch };
+    };
+    spec.calls.slice(0, -1).forEach(function (c) { var x = play(c); if (x.ch && absLive(o)) challengePitch(o); });
+    var before = snapshot(o), x = play(spec.calls[spec.calls.length - 1]), fin = x.pr;
+    if (x.ch && absLive(o)) fin = clone(challengePitch(o));
+    var sc = clone(scn); delete sc.reveal; sc.day = spec.day; sc.number = C.dayNumberOf(spec.day);
+    return { scn: sc, spec: spec, before: before, pr: x.pr, final: fin, after: snapshot(o) };
+  });
+}
+
+window.STD_API = { API_VERSION: 1, MOCK: true, clipSpec: clipSpec, clip: clip, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
   pending: pending, claim: claim, entitlements: entitlements, vote: vote, castVote: castVote,
   survivorState: survivorState, survivorStart: survivorStart, survivorClaim: survivorClaim, survivorBoard: survivorBoard };
 })();
