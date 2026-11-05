@@ -1627,6 +1627,7 @@ if (!args.includes('--no-browser')){
       sb = { rpc:(fn, args) => { calls.push([fn, args]); if (mode === 'down') return Promise.resolve({ error:{ message:'no such function' } });
         // the post takes a moment to land, as a real one does: the board must not be read before it has
         if (fn === 'putt_daily_submit') return new Promise(res => setTimeout(() => { calls.push(['posted']); res({ data:true }); }, 120));
+        if (fn === 'putt_tour_board') return Promise.resolve({ data:[{ rank:1, username:'far', stars:120, stars_max:756, lv:50, levels:252, world:'Candy Works', look:null, card:{ v:1, lv:50, levels:252, world:'Candy Works', stars:120, starsMax:756, holes:49, aces:1, worlds:2, worldsN:14, daily:9, streak:3, built:0, builtN:3 }, board_days:9, mine:false, players:1 }] });
         return Promise.resolve({ data: fn === 'putt_daily_board' ? [{ rank:1, username:'one', strokes:1, par:3, ms:5000, look:null, mine:false, players:2 }, { rank:2, username:'me', strokes:2, par:3, ms:9000, look:null, mine:true, players:2 }] : true }); } };
       sbUser = { id:'dchk' }; puttOn = () => true; const T = window.RTT_PUTT, S = T._state(), k = String(todayKey()), day = /^\d{8}$/.test(k) ? k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8) : k;
       const clear = () => Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).forEach(k0 => { const s0 = JSON.parse(localStorage.getItem(k0)); s0.daily = {}; localStorage.setItem(k0, JSON.stringify(s0)); });
@@ -1634,6 +1635,19 @@ if (!args.includes('--no-browser')){
       const sub = calls.filter(c => c[0] === 'putt_daily_submit'); r.posted = sub.length === 1 && sub[0][1].p_day === day && sub[0][1].p_strokes === 2 && !!sub[0][1].p_look;
       r.rows = S.ov.querySelectorAll('.pp-drow').length === 2 && !!S.ov.querySelector('.pp-drow.me');
       const ix = n => calls.findIndex(c => c[0] === n); r.after = ix('posted') >= 0 && ix('putt_daily_board') > ix('posted');
+      // THE NEXT TOUR HOLE (the owner, 2026-11-05): the Daily's card points at the player's next Tour hole and its reward
+      const nx = T.summary(puttHost()).next, card = S.ov.querySelector('[data-next]');
+      const ct = card ? card.textContent : '';
+      r.next = !!nx && (nx.done ? !card : !!card && !!card.querySelector('[data-nxgo]') && (nx.gate ? /Opens at \d+ ★/.test(ct)
+        : (card.querySelector('.pp-nxt b') || {}).textContent === 'Hole ' + nx.n && (!nx.reward || ct.indexOf(nx.reward) >= 0)));
+      // the second tab ranks the Tour by stars, and its rows open the card they were ranked from without asking again
+      S.ov.querySelector('[data-bt="tour"]').click(); await new Promise(x => setTimeout(x, 120));
+      const tr = S.ov.querySelectorAll('[data-rows] .pp-drow'); r.tour = tr.length === 1 && /★ 120 · Hole 50/.test(tr[0].textContent) && calls.some(c => c[0] === 'putt_tour_board');
+      const asked = calls.filter(c => c[0] === 'putt_player_card').length; tr[0].click(); await new Promise(x => setTimeout(x, 60));
+      const pc = S.ov.querySelector('.pp-pcsh'); r.tourCard = !!pc && /Level 50 of 252/.test(pc.textContent) && /on the Tour stars board/.test(pc.textContent) && calls.filter(c => c[0] === 'putt_player_card').length === asked;
+      if (pc) pc.remove(); S.ov.querySelector('[data-bt="day"]').click(); await new Promise(x => setTimeout(x, 60));
+      // and clearing a Tour hole ticks the Tour's daily quest
+      puttHost().questDaily('tour'); r.quest = dailyQuestDefs().some(d => d.k === 'putttour') && !!dailyQuests().putttour;
       clear(); calls.length = 0; const y = new Date(Date.parse(day + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10); S.round = { mode:'pdaily', day:y }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       r.lateQuiet = !calls.some(c => c[0] === 'putt_daily_submit');
       clear(); mode = 'down'; S.round = { mode:'pdaily', day:day }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
@@ -1641,6 +1655,9 @@ if (!args.includes('--no-browser')){
       clear(); sb = keepSb; sbUser = keepU; puttOn = keepOn; return r; });
     claim(db.posted && db.rows, `a Daily Hole played on its day posts to the board once, with the golfer's look, and the card shows the day's rows (${JSON.stringify(db)})`);
     claim(db.after, 'the board is read once the round has landed, so the player is on it (it was read alongside the post and said nobody had posted)');
+    claim(db.next, 'the Daily card points at the next Tour hole, with what it pays, the reward ahead and a button into it');
+    claim(db.tour && db.tourCard, 'the Tour stars tab ranks the Tour by stars, and a row opens the card it was ranked from without asking the server again');
+    claim(db.quest, 'clearing a Tour hole ticks the daily quest "Clear a Putt Putt Tour hole"');
     claim(db.lateQuiet, 'a Daily Hole played late from the calendar never posts');
     claim(db.down, 'a server without the board yet says it is on its way, and nothing breaks');
     // THE LOCKED GATE IS PART OF ITS FENCE: built to the gap and drawn at the land's size on a smoothed walk (it once stood at half)
