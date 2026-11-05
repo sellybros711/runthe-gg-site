@@ -1894,3 +1894,27 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
 .mh-home.wait { opacity: .6; }
 /* the menu's home: only while an outing is on screen */
 body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="s-next"]) #sheet-menu .menu-home { display: none; }
+
+/* the voice of the ump (voices.js): the record sheet, the owner's review */
+.set-row.set-go { width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; color: var(--ink); text-align: left; cursor: pointer; }
+.voices .vo-n { color: var(--dim); font-size: 13px; margin: 0; }
+.voices .vo-line { font-family: var(--hero); font-size: 34px; line-height: 1.1; margin: 6px 0 4px; }
+.voices .vo-hint { margin: 0 0 6px; }
+.voices .vo-rec, .voices .vo-act { display: flex; gap: 8px; margin: 12px 0 6px; }
+.voices .vo-rec .btn, .voices .vo-act .btn { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; }
+.voices .vo-act .btn:disabled { opacity: .5; }
+.voices .vo-on { background: var(--signal); color: #fff; }
+.voices .vo-meter { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.voices .vo-meter i { display: block; height: 100%; width: 0; background: var(--signal); }
+.voices .vo-play { width: 100%; margin: 8px 0; }
+.voices .vo-ok { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.4; margin: 12px 0 8px; }
+.voices .vo-ok input { margin-top: 3px; width: 20px; height: 20px; flex: 0 0 auto; }
+.voices .vo-credit { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dim); }
+.voices .vo-credit input { font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink); }
+.voices .vr-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.voices .vr-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.voices .vr-h { display: flex; flex-direction: column; }
+.voices .vr-h small { color: var(--dim); font-size: 12px; }
+.voices .vr-row audio { width: 100%; margin: 8px 0; }
+.voices .vr-act { display: flex; gap: 8px; }
+.voices .vr-act .btn { flex: 1 1 0; min-height: 42px; }

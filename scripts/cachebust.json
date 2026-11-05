@@ -3143,8 +3143,8 @@
       "sha": "bf474e5493daa5d1"
     },
     "menus.js": {
-      "v": "20",
-      "sha": "126dfc5dd4a5d767"
+      "v": "21",
+      "sha": "ae316097ef32a09e"
     },
     "rng.js": {
       "v": "1",
@@ -3171,8 +3171,8 @@
       "sha": "51be41db7957c9a8"
     },
     "sound.js": {
-      "v": "4",
-      "sha": "25388ec2cdc0a72a"
+      "v": "5",
+      "sha": "87051ef4ff5dc28c"
     },
     "share.js": {
       "v": "2",
@@ -3183,16 +3183,20 @@
       "sha": "f42ddd13c70685d0"
     },
     "auth.js": {
-      "v": "8",
-      "sha": "7418302df8dc54da"
+      "v": "9",
+      "sha": "215909bacdcd476a"
+    },
+    "voices.js": {
+      "v": "1",
+      "sha": "27db450876d5eda0"
     },
     "api.js": {
       "v": "29",
       "sha": "54506911cf480ddb"
     },
     "mock-api.js": {
-      "v": "15",
-      "sha": "5eeeb29e3b3a726b"
+      "v": "16",
+      "sha": "3eb337abd44489b0"
     },
     "coach.js": {
       "v": "2",
@@ -3215,8 +3219,8 @@
       "sha": "9314ac5af2667f8b"
     },
     "ui.js": {
-      "v": "70",
-      "sha": "b7717515662f70fc"
+      "v": "71",
+      "sha": "afa968528b847dbc"
     },
     "3d/boot.js": {
       "v": "97",
