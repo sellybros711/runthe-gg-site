@@ -76,6 +76,8 @@ jobs:
         run: node shut-the-door/test/survivor.mjs
       - name: The lesson
         run: node shut-the-door/test/lesson.mjs
+      - name: Every scenario names both real clubs (never "us" or "them")
+        run: node shut-the-door/test/clubs.mjs
       - name: A pitch's clip link round-trips and plays the pitch the outing threw
         run: node shut-the-door/test/clip.mjs
       - name: The release meter on the page keeps the same e and q

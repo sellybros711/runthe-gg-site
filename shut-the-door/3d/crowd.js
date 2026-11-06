@@ -16,7 +16,7 @@
  * No logos or club artwork: colours only ([[2026-10-19-shut-the-door-real-uniforms]]).
  */
 import * as THREE from 'three';
-import { clubNamed, battingClub } from './clubs.js?v=2';
+import { clubNamed, battingClub } from './clubs.js?v=3';
 
 const CW = 96, CH = 176, COLS = 4, ROWS = 4;   // the atlas: 4 x 4 fans, 96 x 176 px each
 const WAIST = 128;                               // the shirt ends here; the lap and the shins below
