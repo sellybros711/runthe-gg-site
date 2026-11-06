@@ -1699,12 +1699,12 @@ function realInter() {
   const W = [400, 500, 600, 700];
   try {
     if (!fs.existsSync(file)) {
-      const css = execFileSync('curl', ['-sSf', '--max-time', '20', '-A', UA, 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'], { encoding: 'utf8' });
+      const css = execFileSync('curl', ['-sSf', '--retry', '4', '--retry-all-errors', '--retry-delay', '3', '--max-time', '20', '-A', UA, 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'], { encoding: 'utf8' });
       const latin = css.split('/* latin */')[1];
       const url = latin && (latin.match(/url\((https:[^)]+\.woff2)\)/) || [])[1];
       if (!url) throw new Error('no latin face');
       fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(file + '.part', execFileSync('curl', ['-sSf', '--max-time', '30', url]));
+      fs.writeFileSync(file + '.part', execFileSync('curl', ['-sSf', '--retry', '4', '--retry-all-errors', '--retry-delay', '3', '--max-time', '30', url]));
       fs.renameSync(file + '.part', file);
     }
     return { from: 'Google Fonts', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/latin.woff2', 'woff2')).join('\n'), files: { 'latin.woff2': fs.readFileSync(file) }, type: 'font/woff2' };
