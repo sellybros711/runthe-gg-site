@@ -881,6 +881,65 @@ export function planPickoff(po, o = {}) {
   return p;
 }
 
+/** A foul ball, followed (QA, 2026-11-05: a foul left the long lens within a phone frame or three of
+    contact, and with no cut a foul read as a swing and a miss). Nothing is decided here: the engine
+    said foul, and foul.js gave its shape and its flight (o.at(s): catcher's view feet s seconds after
+    contact; o.hit: when it first meets the ground, the net, a wall or the seats; o.shape). The field
+    stands where it stood for the pitch and watches it (no fielder chases a foul), a runner on goes back
+    to his bag, and the cut is short, inside the time a foul already took (stage.js tail, FOUL_TAIL):
+    the pitcher's view for CUT, one shot on the ball, and back to the pitcher's view for the end of it.
+    Straight back or popped up behind is seen from the high base camera on the side (the net and the
+    seats behind the plate side on), pulled or sliced from the high home camera (the ball out over
+    foul ground to the low wall or the stands). Plan time 0 is contact. Returns a plan of planPlay's
+    shape (kind 'foul'). */
+export const FOUL_CUT = 0.1, FOUL_TAIL = 1.5;
+export function planFoul(pr, o = {}) {
+  const bats = o.bats || 'R', id = o.id || 'f' + (pr.n ?? 0);
+  const before = pr.bases ?? 0;
+  const F = alignment(bats, { shade: o.shade || null, bases: before, outs: pr.outs ?? 0, inning: o.inning, margin: o.margin });
+  if (holdsRunner(before)) F[3] = { x: BASE[1].x - 1.4, y: BASE[1].y - 0.6 };
+  const back = o.shape === 'back' || o.shape === 'pop';
+  const p = { kind: 'foul', label: 'foul', bb: null, ev: null, la: null, spray: o.spray ?? 0, guess: [], events: [], segs: [], fielders: {}, runners: [], notes: [], foul: { shape: o.shape || null } };
+  const T = {};
+  for (let n = 1; n <= 9; n++) T[n] = new Track(F[n], { v: SPEED(n).v, a: SPEED(n).a });
+  p.fielders = T;
+  const ctx = { p, T, F, pr, o, id, kind: 'foul', label: 'foul', moves: [], spray: p.spray, bats, outs0: pr.outs ?? 0 };
+  // the ball: in the air to its first hit (the trail behind it), then on as foul.js has it (off the net,
+  // the wall or the seats, rolling on the ground) to the end
+  const tHit = clamp(o.hit ?? 1.5, 0.15, 3.5), at = o.at || (() => ({ x: 0, y: -10, z: 4 }));
+  const land = at(tHit);
+  p.segs.push({ kind: 'air', t0: 0, t1: tHit, at: (s) => { const q = at(s); return { x: q.x, y: q.y, z: q.z }; } });
+  p.segs.push({ kind: 'roll', t0: tHit, t1: 4, at: (s) => { const q = at(s); return { x: q.x, y: q.y, z: q.z }; } });
+  p.flight = { land: { x: land.x, y: land.y }, tLand: tHit, wall: null, over: false };
+  // a runner on, off his bag with the pitch, goes back to it
+  for (const b of [1, 2, 3]) if (before & (1 << (b - 1))) {
+    const tr = new Track(leadOff(b), { v: 27, a: 16 });
+    const arrive = tr.run(0.35, [BASE[b]], { v: 9, toRest: true });
+    p.runners.push({ from: b, to: b, track: tr, out: false, batter: false, safeAt: b, arrive });
+  }
+  ctx.firstTouch = { s: tHit, n: null, how: 'none', at: { x: land.x, y: land.y }, fell: true, landAt: tHit };
+  ctx.lastHolder = null;
+  for (let n = 1; n <= 9; n++) T[n].settle();
+  for (const r of p.runners) r.track.settle();
+  stopOnBags(p);
+  // the cut: back to his view once it has come down (or hit the net), and never under MIN_SHOT_S
+  const BACK = clamp(tHit + 0.45, 0.8, 1.15);
+  p.edit = [
+    { s0: 0, s1: FOUL_CUT, cam: 'pitcher', rate: 1 },
+    { s0: FOUL_CUT, s1: BACK, cam: back ? 'wide' : 'follow', rate: 1, m: tHit },
+    { s0: BACK, s1: FOUL_TAIL, cam: 'pitcher', rate: 1 },
+  ];
+  p.decisive = null;
+  p.realDur = FOUL_TAIL;
+  p.dur = FOUL_TAIL;
+  p.resolveAt = 0;
+  p.ballAt = (s) => ballAt(p, s);
+  p.outcome = outcomeOf(ctx);
+  p.umps = planUmps(p, 0.1);
+  drawAll(p);
+  return p;
+}
+
 /** Bases occupied before the play, from the moves and the bases after (a runner who did not move
     is still on his base). */
 export function basesBefore(pr) {

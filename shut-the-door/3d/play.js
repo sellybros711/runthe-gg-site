@@ -14,8 +14,8 @@
  *   &type=FF &cell=12 &mx=0.1 &mz=-0.1   override the pitch, the aimed cell, the miss (feet)
  *   &foul=back|pop|pulled|sliced         a foul's shape (foul.js), else picked as the game picks it
  */
-import { cellPoint } from './pitch.js?v=14';
-import { foulLaunch } from './foul.js?v=1';
+import { cellPoint } from './pitch.js?v=16';
+import { foulLaunch } from './foul.js?v=2';
 
 export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'hbp_fall', 'dirt'];
 
@@ -64,12 +64,28 @@ export function motion(play, batter) {
 /** FNV-1a of an id (a drawn pitch's game_pk:at_bat:pitch), for picks that must replay the same. */
 function hashId(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
 
+/* A hit by pitch reaches him (rules 11, contract.js THE REACH). The engine's hit by pitch crosses at
+   least far enough inside to touch the nearest drawn hitter; BODY_FAR is, for each tenth of the
+   hitter's zone height from BODY_LO tenths, the furthest any drawn hitter's body front sits from the
+   plate's centre (catcher's view feet), measured by shut-the-door/pipeline/hbp_reach.mjs on the 272
+   hitters of the 30 packs, 2026-11-05. The scene's ball crosses at least that far inside, so it
+   meets whoever is batting. Only the drawn flight moves: the engine's crossing is the result. */
+const BODY_LO = -11;
+const BODY_FAR = [3.04, 2.99, 2.89, 2.58, 2.63, 2.64, 2.66, 2.6, 2.56, 2.51, 2.46, 2.4, 2.3, 2.36, 2.43, 2.48,
+  2.57, 2.67, 2.7, 2.7, 2.69, 2.61, 2.58, 2.28, 1.72, 1.69, 1.74, 1.72, 1.7, 1.63, 1.67, 1.77];
+export function hbpCrossX(x, zn, bats) {
+  const s = bats === 'L' ? 1 : -1;
+  const far = BODY_FAR[Math.max(0, Math.min(BODY_FAR.length - 1, Math.floor(zn * 10) - BODY_LO))];
+  return s * x >= far ? x : s * far;
+}
+
 /** From the engine's PitchResult (the game, phase C). actual.zn is normalised to this batter. */
 export function fromResult(r, batter) {
   const z = batter.szBot + r.actual.zn * (batter.szTop - batter.szBot);
+  const x = r.result === 'hit_by_pitch' ? hbpCrossX(r.actual.x, r.actual.zn, batter.bats) : r.actual.x;
   // the movement of the pitch he threw: his effort slice of his own pitches (pr.stuff), else his average
   const st = r.stuff || {};
-  return { call: r.call, actual: { x: r.actual.x, z }, velo: r.velo, pfxX: st.pfxX ?? null, pfxZ: st.pfxZ ?? null, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null, drawnId: r.drawn ? r.drawn.id : null, n: r.n ?? null,
+  return { call: r.call, actual: { x, z }, velo: r.velo, pfxX: st.pfxX ?? null, pfxZ: st.pfxZ ?? null, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null, drawnId: r.drawn ? r.drawn.id : null, n: r.n ?? null,
     dirt: z < 0.35, check: r.batter === 'take' && r.result === 'ball' && Math.abs(r.actual.x) < 1.2 && r.countBefore && r.countBefore.s === 2 };
 }
 

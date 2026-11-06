@@ -175,6 +175,8 @@ const U = { time: { value: 0 }, pal: { value: PAL }, sun: { value: new THREE.Vec
    the broadcast frame together. lod: device pixels a metre at a metre (crowd.js sets it each frame). */
 export const LOD = { lo: 4, hi: 7, uniform: U.lod };
 export const FAN_VIS = 0.81;
+/** The sun's direction on the fans, for the seats under them (ballpark.js: lit the same way). */
+export const CROWD_SUN = U.sun;
 /** Where the sun is (world, toward it): park.js, from its key light. */
 export function crowdLight(dir) { U.sun.value.copy(dir).normalize(); }
 
@@ -187,25 +189,26 @@ export function crowdClub(facts) {
   fillPalette(usHome ? ours : theirs, usHome ? theirs : ours);
 }
 
-/** The far crowd painted on a seat texture's layout (64 x 256: 8 seats a row, 32 rows, 8 px a seat): a
-    shirt and a head in about seven seats in ten, from the crowd's own palette. Redrawn when the club
-    changes (ballpark.js setClub). */
+/** The far crowd painted on a seat texture's layout (ballpark.js: a row each 8 px, 8 px a seat, the last
+    seat of each 16 an aisle): a shirt and a head in about seven seats in ten, from the crowd's own palette,
+    over the row's tread and seat backs, where a seated fan is. Redrawn when the club changes (ballpark.js
+    setClub). */
 export function crowdImpostor(canvas) {
-  const g = canvas.getContext('2d'), r = rng(71);
+  const g = canvas.getContext('2d'), r = rng(71), seats = Math.floor(canvas.width / 8);
   g.clearRect(0, 0, canvas.width, canvas.height);
   const skins = ['#c79a7d', '#a8765b', '#7a5038', '#4f3122', '#e0b99c'];
-  for (let row = 0; row < 32; row++) for (let seat = 0; seat < 8; seat++) {
-    if (r() > 0.72) continue;
+  for (let row = 0; row < 32; row++) for (let seat = 0; seat < seats; seat++) {
+    if (seat % 16 === 15 || r() > 0.72) continue;
     const x = seat * 8, y = row * 8;
-    g.fillStyle = HEX[Math.floor(r() * 16)]; g.fillRect(x + 1, y + 3, 6, 5);
-    g.fillStyle = skins[Math.floor(r() * skins.length)]; g.fillRect(x + 3, y + 1, 2, 2);
+    g.fillStyle = HEX[Math.floor(r() * 16)]; g.fillRect(x + 1, y + 2, 6, 5);
+    g.fillStyle = skins[Math.floor(r() * skins.length)]; g.fillRect(x + 3, y, 2, 2);
   }
 }
 
 const _clock = { t0: null, fn: null }, _size = new THREE.Vector2();
 /** The crowd's clock, seconds (the lab's stepped clock for its videos; the game keeps the frame's own). */
 export function crowdClock(fn) { _clock.fn = fn; }
-function material(blur, crop, lod) {
+function material(blur, crop, lod, face) {
   const m = new THREE.MeshBasicMaterial({ alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.crowdAtlas = { value: atlas() };
@@ -222,7 +225,7 @@ function material(blur, crop, lod) {
         uniform vec3 crowdPal[16];
         uniform float crowdLod;
         attribute vec3 fanCenter; attribute float fanYaw; attribute float fanId;
-        flat varying vec3 vShirt, vSkin, vHair, vCap, vPants; flat varying float vAdd, vFade; varying vec2 vCell;
+        flat varying vec3 vShirt, vSkin, vHair, vCap, vPants; flat varying float vAdd, vFade, vBack; varying vec2 vCell;
         uint fanHash(uint x) { x ^= x >> 16; x *= 0x7feb352dU; x ^= x >> 15; x *= 0x846ca68bU; x ^= x >> 16; return x; }
         vec3 skinTone(float k) { return mix(mix(vec3(0.62, 0.40, 0.29), vec3(0.32, 0.18, 0.11), smoothstep(0.35, 1.0, k)), vec3(0.80, 0.58, 0.45), 1.0 - smoothstep(0.0, 0.4, k)); }
         // a little of the haze and the sheen the lit shader gave cloth (it read less saturated)
@@ -230,6 +233,15 @@ function material(blur, crop, lod) {
       .replace('#include <begin_vertex>', `#include <begin_vertex>
         uint hh = fanHash(uint(fanId + 0.5) * 2654435761U + 7U);
         vec3 side = vec3(cos(fanYaw), 0.0, -sin(fanYaw)), nW = vec3(sin(fanYaw), 0.0, cos(fanYaw));
+        ${face ? `// FACING THE CAMERA: his card turns on its upright to the lens, so from no camera is he ever seen
+        // edge on (a card that faced the plate went thin from the high base cameras and vanished side on).
+        // Seen from behind (the lens behind the way he sits), his head is the back of his head.
+        vec3 toC = cameraPosition - (modelMatrix * vec4(fanCenter, 1.0)).xyz;
+        vec2 tc = normalize(toC.xz + vec2(1e-4, 0.0));
+        vec3 off = transformed - fanCenter;
+        side = vec3(tc.y, 0.0, -tc.x);
+        transformed = fanCenter + side * (length(off.xz) * sign(uv.x - 0.5)) + vec3(0.0, off.y, 0.0);
+        vBack = dot(nW.xz, tc) < -0.15 ? 1.0 : 0.0;` : 'vBack = 0.0;'}
         uint u = hh & 0x7fffffffU;
         float ph = float(hh & 1023U) / 1023.0 * 6.2831;
         float sp = 0.7 + float((hh >> 10) & 255U) / 255.0 * 0.6;
@@ -259,7 +271,7 @@ function material(blur, crop, lod) {
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform sampler2D crowdAtlas;
-        flat varying vec3 vShirt, vSkin, vHair, vCap, vPants; flat varying float vAdd, vFade; varying vec2 vCell;`)
+        flat varying vec3 vShirt, vSkin, vHair, vCap, vPants; flat varying float vAdd, vFade, vBack; varying vec2 vCell;`)
       .replace('#include <map_fragment>', `
         vec2 auv = (vCell + clamp(vec2(vUv.x, (1.0 - vUv.y) * ${crop.toFixed(4)}), 0.015, 0.985)) / vec2(${COLS}.0, ${ROWS}.0);   // the atlas unflipped: v down the canvas
         vec4 tx = texture2D(crowdAtlas, auv, ${blur.toFixed(2)});
@@ -268,25 +280,29 @@ function material(blur, crop, lod) {
         float aa = (tx.a - mix(1.02, 0.5, vFade)) / max(fwidth(tx.a), 1e-4) + 0.5;
         float ia = 1.0 / max(tx.a, 1e-3), bv = tx.b * ia;
         vec3 bcol = bv < 0.48 ? vCap : bv < 0.74 ? vPants : vHair;
-        diffuseColor = vec4((vShirt * tx.r + vSkin * tx.g + bcol * tx.b) * ia + vAdd, clamp(aa, 0.0, 1.0));`)
+        // (from behind: the face is the back of his head, his hands are behind him)
+        float cv = (1.0 - vUv.y) * ${crop.toFixed(4)};
+        vec3 scol = vBack > 0.5 ? (cv < 0.3 ? vHair : vShirt) : vSkin;
+        if (vBack > 0.5 && cv < 0.3) bcol = bv < 0.48 ? vCap : vHair;
+        diffuseColor = vec4((vShirt * tx.r + scol * tx.g + bcol * tx.b) * ia + vAdd, clamp(aa, 0.0, 1.0));`)
       .replace('#include <alphatest_fragment>', 'if (diffuseColor.a < 0.02) discard;');
   };
   m.defines = { USE_UV: '' };
-  m.customProgramCacheKey = () => `crowd${blur}/${crop}/${lod}`;
+  m.customProgramCacheKey = () => `crowd${blur}/${crop}/${lod}/${face}`;
   return m;
 }
 
 /** A crowd from seats: spots [{ x, y, z (world, the seat's floor point), yaw (radians, the
     way he faces), s (scale) }]. sectors: how many meshes round the field (by the spot's bearing from the
-    plate), each culled on its own. blur: the atlas's mip bias (the long lens's soft background behind
+    plate), each culled on its own. face: each card turns to the camera on its upright. blur: the atlas's mip bias (the long lens's soft background behind
     the plate). lod: far fans dissolve into the seats' painted crowd (LOD). chest: the figures from the waist up (where no seat backs stand in front to hide the
     legs, a whole seated figure reads as standing). lift: metres from the floor to the quad's foot.
     Returns a group. */
-export function buildCrowd(spots, { sectors = 1, blur = 0, lift = 0, chest = false, lod = false } = {}) {
+export function buildCrowd(spots, { sectors = 1, blur = 0, lift = 0, chest = false, lod = false, face = false } = {}) {
   const group = new THREE.Group();
   group.name = 'crowd';
   const crop = chest ? (WAIST + 2) / CH : 1, h = FAN.h * crop;
-  const mat = material(blur, crop, lod);
+  const mat = material(blur, crop, lod, face);
   const by = Array.from({ length: sectors }, () => []);
   spots.forEach((p, id) => {
     const b = Math.atan2(p.x, p.z);   // bearing round the plate

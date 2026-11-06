@@ -81,15 +81,15 @@
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=9';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=16';
-import { People } from './people.js?v=45';
-import { Pitch, releaseOf } from './pitch.js?v=14';
-import { fromResult, motion } from './play.js?v=14';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=18';
+import { People } from './people.js?v=46';
+import { Pitch, releaseOf } from './pitch.js?v=16';
+import { fromResult, motion } from './play.js?v=17';
 import { look } from './looks.js?v=6';
 import { P, smooth } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=54';
-import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=12';
-import { FirstPerson } from './firstperson.js?v=23';
+import { InPlay } from './inplay.js?v=56';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=14';
+import { FirstPerson } from './firstperson.js?v=25';
 import * as IDLE from './idle.js?v=2';
 
 const C = () => window.STD_CONTRACT;
@@ -987,20 +987,24 @@ class Stage {
     // (a steal on a ball or a strike, rules 7: the same broadcast, from the catch: the throw down, the
     // slide and the tag, as the engine called it)
     const steal = !inPlay && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
-    if (((inPlay && pt.after) || steal) && this.inplay) {
-      try { run = this.inplay.begin(pr, pt, { hooks, sit }); } catch (e) { console.error(steal ? 'the steal could not be staged' : 'the ball in play could not be staged', e); this.inplay.active = null; }
+    // (a foul off the bat: followed for about a second and back to his view, inside the time a foul
+    // always took, FOUL_TAIL. Its call, its land and the diamond keep their foul timing: only the picture cuts)
+    const foulRun = !inPlay && !steal && pr.result === 'foul' && !!(pt.after && pt.after.foul);
+    if (((inPlay && pt.after) || steal || foulRun) && this.inplay) {
+      try { run = this.inplay.begin(pr, pt, { hooks, sit }); } catch (e) { console.error(steal ? 'the steal could not be staged' : foulRun ? 'the foul could not be staged' : 'the ball in play could not be staged', e); this.inplay.active = null; }
     }
+    const foulCut = !!(run && foulRun);
     // (knocked down by a pitch, he stays down for a beat)
-    const tail = run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
+    const tail = foulCut ? 1.5 : run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
     const tEnd = resultAt + tail;
     // his head and glove are back at the set by the end of the pitch (the next one starts there)
     this.eye.settle = tEnd;
     if (this.fp) this.fp.settle = tEnd;
-    const callAt = run ? resultAt + run.resolveReal : resultAt + 0.12;
+    const callAt = run && !foulCut ? resultAt + run.resolveReal : resultAt + 0.12;
     const sceneT = (t) => (run && t > resultAt ? resultAt + run.sceneAt(t - resultAt) : t);
     // the runners on the scorebar diamond: the 3D runners themselves after a ball in play, else the
     // clock the old drawing used (ms from the start)
-    const track = run ? { running: true, at: (ms) => ({ runners: this.inplay.fieldAt(Math.max(0, sceneT(ms / 1000) - resultAt)) }) }
+    const track = run && !foulCut ? { running: true, at: (ms) => ({ runners: this.inplay.fieldAt(Math.max(0, sceneT(ms / 1000) - resultAt)) }) }
       : AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
     if (hooks.sound) hooks.sound('whoosh', pt.tRel * 1000 / speed);
     // what the browser check reads back: the play's reading and a few frames of it, and rel, his
@@ -1023,7 +1027,7 @@ class Stage {
     let subPrev = null;
     const keepSub = (ts) => {
       if (TEST() && subPrev != null && ts > subPrev) {
-        const hi = run ? resultAt : resultAt + SUB_POST;
+        const hi = run && !foulCut ? resultAt : resultAt + SUB_POST;
         for (let k = 1; k < SUB; k++) {
           const tk = subPrev + (ts - subPrev) * k / SUB;
           if (tk < resultAt - SUB_PRE || tk > hi) continue;
@@ -1039,7 +1043,7 @@ class Stage {
     let landed = null;
     const land = (t) => {
       if (landed || landAt == null) return;
-      landed = run ? { fair: true, how: run.land.how, t: Math.round(Math.min(t, landAt) * 1000) / 1000 } : { fair: false, how: 'foul', t: Math.round(Math.min(t, landAt) * 1000) / 1000 };
+      landed = run && run.land ? { fair: true, how: run.land.how, t: Math.round(Math.min(t, landAt) * 1000) / 1000 } : { fair: false, how: 'foul', t: Math.round(Math.min(t, landAt) * 1000) / 1000 };
       if (hooks.land) hooks.land(landed);
     };
     return new Promise((done) => {
@@ -1068,12 +1072,13 @@ class Stage {
             // the broadcast over, its last frame held for the play's tail: the director cuts back to the
             // mound, as television does, rather than leave the canvas on a long lens full of grass until
             // the next hitter (after the outing's last play nothing else would bring the set back)
-            if (run) { this.inplay.end(this.camera); this.preview(); this.render(); }
+            // (a foul ends on his own view already, the hitter back in his box: the set comes with the next pitch)
+            if (run) { this.inplay.end(this.camera); if (!foulCut) this.preview(); this.render(); }
           }
         } catch (e) { console.error('the end of the pitch failed', e); trace.error = String(e && e.message || e); }
         this.judgeTier(gaps);
         this.dirty = true;
-        const summary = { n: pr.n, result: pr.result, inPlay: !!run, land: landed, skipped: trace.skipped, seconds: Math.round(Math.max(0, Math.min(lastT, tEnd)) / speed * 1000) / 1000 };
+        const summary = { n: pr.n, result: pr.result, inPlay: !!run && !foulCut, land: landed, skipped: trace.skipped, seconds: Math.round(Math.max(0, Math.min(lastT, tEnd)) / speed * 1000) / 1000 };
         trace.summary = summary;
         try { if (hooks.done) hooks.done(summary); } catch (e) { console.error('hooks.done failed', e); }
         done(summary);

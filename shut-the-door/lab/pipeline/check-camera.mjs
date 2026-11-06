@@ -248,6 +248,82 @@ for (const w of Object.keys(CEILING)) {
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 console.log(`\n${cases.length} cases, ${fails} over the ceiling (${HOLD.label})`);
+
+/* THE FOUL FOLLOW (QA, 2026-11-05: a foul left the long lens within a phone frame or three, and with no
+   cut it read as a swing and a miss). A foul is staged as the game stages it (stage.js: inplay.js begin
+   on the pitch's foul.js flight, inplay-plan.js planFoul) and held to the broadcast's own limits, LIM,
+   frame by frame at 60 a second, with no ceiling above nothing: no whip, no jerk, no shot too short, and
+   the ball on screen on every frame of the shot on it (the high base camera's included: the foul is all
+   that shot is about). The cases: each of the four shapes, both hands, FOUL_IDS ids each (the hash
+   spreads every shape over its whole range of speed, angle and curl), on the bases empty, a man on
+   first and the bases loaded. */
+// (once a run: on shard 0 of a sharded run, never in --combine, which opens no page)
+const FOUL_IDS = ONLY || COMBINE || SEL.shard.i !== 0 ? 0 : arg('--foul-ids', 16);
+const foulUrl = FOUL_IDS && await page.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name).find((n) => /\/foul\.js/.test(n)));
+const foulRows = FOUL_IDS ? await page.evaluate(async ({ u, LIM, ASPECT, N }) => {
+  const F = await import(u), st = window.STD_STAGE.current, ip = st.inplay, facts0 = ip.facts, cam = st.camera.clone(), out = [];
+  const FT = 0.3048, V = (p) => cam.position.clone().set(-p.x * FT, (p.z || 0) * FT, p.y * FT);
+  const D = 180 / Math.PI, sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }), len = (a) => Math.hypot(a.x, a.y, a.z);
+  const unit = (a) => { const l = len(a) || 1; return { x: a.x / l, y: a.y / l, z: a.z / l }; };
+  const d2 = (a, b, c) => len({ x: a.x - 2 * b.x + c.x, y: a.y - 2 * b.y + c.y, z: a.z - 2 * b.z + c.z });
+  const warp = window.__plan.warp;
+  for (const shape of F.SHAPES) for (const bats of ['L', 'R']) for (let i = 0; i < N; i++) for (const bases of [0, 1, 7]) {
+    const L = F.foulLaunch({ id: `cam-${shape}-${i}`, n: i, x: 0, bats, shape });
+    const c = { x: (bats === 'L' ? 1 : -1) * 0.25, y: 1.0, z: 2.6 }, fl = F.foulFlight(c, L);
+    const stub = { after: { t0: 0, c, foul: fl }, afterAt: (s) => F.foulAt(fl, s), f: { at: () => c }, m: { foul: L }, ball: st.pitch.ball, overlays: false };
+    const pr = { n: i, result: 'foul', bases, outs: 1, drawn: { id: `cam-${shape}-${i}` }, runnerMoves: [] };
+    const tag = `${shape} ${bats} #${i} bases ${bases}`;
+    ip.facts = { ...facts0, batter: { ...facts0.batter, bats } };
+    let run;
+    try { run = ip.begin(pr, stub, { align: { shade: null, inning: 9, margin: 1 } }); } catch (e) { out.push({ tag, err: String(e) }); continue; }
+    const plan = run.plan, ed = plan.edit, miss = {}, shots = [];
+    const note = (what, at, info) => { if (!miss[what]) miss[what] = { at: +at.toFixed(3), ...info }; };
+    let shot = null;
+    for (let f = 0; f <= Math.ceil(plan.realDur * 60); f++) {
+      const r = Math.min(plan.realDur, f / 60), w = warp(ed, r), s = w.s, pc = w.piece;
+      if (!shot || pc.cam !== shot.cam) { shot = { cam: pc.cam, f0: f, fr: [] }; shots.push(shot); }
+      shot.f1 = f;
+      if (pc.cam === 'pitcher') continue;
+      const k = ip.cameraAt(pc, s, ASPECT);
+      shot.fr.push({ pos: k.pos, dir: unit(sub(k.look, k.pos)), fov: k.fov, s });
+      const b = plan.ballAt(s);
+      cam.position.copy(V(k.pos)); cam.fov = k.fov; cam.aspect = ASPECT; cam.updateProjectionMatrix(); cam.lookAt(V(k.look)); cam.updateMatrixWorld();
+      const v = V(b).project(cam);
+      if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1 || v.z > 1) note('lost', r, { s: +s.toFixed(2), cam: pc.cam, v: [+v.x.toFixed(2), +v.y.toFixed(2)], fov: +k.fov.toFixed(1), ball: [Math.round(b.x), Math.round(b.y), Math.round(b.z)] });
+    }
+    for (const sh of shots) {
+      const fr = sh.fr, n = fr.length;
+      for (let j = 1; j < n; j++) {
+        const a = Math.acos(Math.max(-1, Math.min(1, fr[j].dir.x * fr[j - 1].dir.x + fr[j].dir.y * fr[j - 1].dir.y + fr[j].dir.z * fr[j - 1].dir.z))) * D;
+        if (a > LIM.WHIP_DEG) note('whip', (sh.f0 + j) / 60, { cam: sh.cam, deg: +a.toFixed(2) });
+        if (j >= 6 && j < n - 7) {
+          const lt = (x) => Math.log(Math.tan(x * Math.PI / 360));
+          const aj = d2(fr[j + 1].dir, fr[j].dir, fr[j - 1].dir) * D, pj = d2(fr[j + 1].pos, fr[j].pos, fr[j - 1].pos), fj = Math.abs(lt(fr[j + 1].fov) - 2 * lt(fr[j].fov) + lt(fr[j - 1].fov));
+          if (aj > LIM.ANG_JERK || pj > LIM.POS_JERK || fj > LIM.FOV_JERK) note('jerk', (sh.f0 + j) / 60, { cam: sh.cam, ang: +aj.toFixed(3), pos: +pj.toFixed(3), fov: +fj.toFixed(4) });
+        }
+      }
+    }
+    for (let j = 1; j < shots.length - 1; j++) { const len2 = (shots[j].f1 - shots[j].f0 + 1) / 60; if (len2 < LIM.MIN_SHOT_S) note('short', shots[j].f0 / 60, { cam: shots[j].cam, len: +len2.toFixed(2) }); }
+    // (and the foul is the pitch's own clock: its cut never runs past the time a foul always took)
+    if (Math.abs(plan.realDur - 1.5) > 1e-6) note('long', plan.realDur, { realDur: plan.realDur });
+    out.push({ tag, miss, edit: ed.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | ') });
+    ip.end(st.camera);
+  }
+  ip.facts = facts0;
+  return out;
+}, { u: foulUrl, LIM, ASPECT, N: FOUL_IDS }) : [];
+let foulFails = 0;
+if (FOUL_IDS) {
+  console.log(`\nthe foul follow: ${foulRows.length} fouls (no ceiling above nothing)`);
+  for (const w of ['whip', 'jerk', 'lost', 'short', 'long']) {
+    const m = foulRows.filter((r) => r.miss && r.miss[w]);
+    foulFails += m.length;
+    console.log(`  ${m.length ? 'FAIL' : 'ok  '} ${w.padEnd(9)} ${String(m.length).padStart(6)} of ${foulRows.length}`);
+    for (const r of m.slice(0, Math.max(SHOW, 3))) console.log('     ', r.tag, JSON.stringify(r.miss[w]), '|', r.edit);
+  }
+  for (const e of foulRows.filter((r) => r.err).slice(0, 5)) { foulFails++; console.log('  threw:', e.tag, e.err); }
+}
+fails += foulFails;
 if (browser) await browser.close();
 if (server) server.close();
 process.exit(fails || errs.length ? 1 : 0);

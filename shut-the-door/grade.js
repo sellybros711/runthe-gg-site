@@ -236,6 +236,8 @@ Model.prototype.singleModel = function () {
   return this._single;
 };
 
+/* The batter's side (contract.js insideFt), for the reach (rules 11). */
+Model.prototype.batsOf = function (st) { return this.pack.scenario.batters[this.who(st)].bats; };
 /* The batter at the plate in a state: his index in scenario.batters, by the half's lineup. */
 Model.prototype.who = function (st) { return this.lineup[st.h || 0][st.bi % this.N]; };
 
@@ -491,7 +493,7 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 10;
+const RULES = 11;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
@@ -542,6 +544,15 @@ const TOUCH_RULES = 9;
    took the ball's radius off the drawn sides, so a ball the screen shows on the box could stand as a
    ball. Only a challenge's answer moves. A call with r 9 replays as rules 9. */
 const DRAWN_RULES = 10;
+/* Rules 11 (2026-11-06, the owner's call after QA: "an HBP on an FC 92 that was graded green and
+   looked in the zone") is rules 10 with the reach (contract.js THE REACH): a pitch is a hit by pitch
+   only when its crossing reaches the batter's body. Where the cell's row says hit by pitch and the
+   ball crossed short of the reach, it is a take there, called where it crossed (contract.js THE
+   CALL): the engine reads it inside the hit by pitch's slice of the same library draw, and the grade
+   one pitch ahead moves the same share (keyMixCtx, Model.hbpMass). The draws do not move, and no
+   other key changes. A call with r 10 replays as rules 10. */
+const HBP_RULES = 11;
+const KEY_HBP = 4;
 const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
@@ -898,6 +909,9 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
   // rules 4 (THE CALL): a take is called where it crossed, so each cell's takes split by the
   // umpire's chance over where in that cell this aim's miss puts the ball
   const cm = ctx.rules >= ABS_RULES ? this.callMass(type, ctx.fatigue, target, off ? a0 : null) : null;
+  // rules 11: the reach's mass, worked out only when a row this call can land in holds a hit by pitch
+  let hm = null;
+  const hmOf = () => hm || (hm = this.hbpMass(type, ctx.fatigue, target, off ? a0 : null, this.batsOf(st)));
   const out = new Float64Array(KEYS.length);
   for (let a = 0; a < 25; a++) {
     const w = ker[base + a];
@@ -914,8 +928,67 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
     // rules 5 (contract.js ROUTINE): a routine error is all but KEEP the out of its kind
     const rt = ctx.rules >= ROUTINE_RULES && row[KEY_ERROR] ? this.routineOf(entry, a) : null;
     if (rt) { const m = w * row[KEY_ERROR] / 1000 * (1 - rt.keep); out[KEY_ERROR] -= m; out[rt.out] += m; }
+    // rules 11 (contract.js THE REACH): the hit by pitch share keeps only the mass that reaches him;
+    // the rest is a take where it crossed, a strike by the umpire's chance there, else a ball
+    if (ctx.rules >= HBP_RULES && row[KEY_HBP]) {
+      hmOf();
+      const h = row[KEY_HBP] / 1000, hit = Math.min(w, hm.hit[a]), ps = Math.min(w - hit, hm.strike[a]);
+      out[KEY_HBP] -= h * (w - hit);
+      out[1] += h * ps;
+      out[0] += h * (w - hit - ps);
+    }
   }
   return out;
+};
+
+/* ---- the reach (rules 11, contract.js THE REACH) --------------------------
+ * For one aim and miss, per actual cell: hit, the chance the pitch crosses in that cell AND reaches
+ * the batter (its centre at least contract.js hbpReach inside, at its height), and strike, the
+ * chance it crosses in that cell short of the reach AND a take there is called a strike. The height
+ * is cut into the call's strips (callGrid); across, the reach is exact (the normal's tail past it),
+ * and short of it the inside column is cut into half-inch strips with the umpire's chance read at
+ * each strip's middle, the other four columns read off callMass. */
+Model.prototype.hbpMass = function (type, f, target, at, bats) {
+  if (!this._hm) this._hm = new Map();
+  const key = type + '|' + f + '|' + target + '|' + (at ? at[0] + '|' + at[1] : '') + '|' + bats;
+  let m = this._hm.get(key);
+  if (m) return m;
+  const g = this.callGrid();
+  const sig = this.arsenal.find(a => a.type === type).sigmaFt * f, sz = sig / this.zoneFt;
+  const p = at ? K.aimPoint(target, at) : K.targetOf(target);
+  const s = bats === 'L' ? 1 : -1, col = bats === 'L' ? 4 : 0, edge = K.GRID.ZONE_HALF_FT;
+  const px = s * p.x;   // the aim, feet inside
+  const tail = (d) => 1 - R.normCdf((d - px) / sig);   // P(inside >= d)
+  const cm = this.callMass(type, f, target, at);
+  const hit = new Float64Array(25), strike = new Float64Array(25);
+  // the strips across, from the drawn edge to the umpire's last bin (6.25 inches off), and the
+  // normal's tail at each, once: past that bin his chance is its floor, one strip to the reach
+  const step = CALL_STEP_IN / 12, last = edge - K.UMPIRE.D[0] / 12;
+  if (tail(edge) > 1e-12) {
+    const B = [], T = [];
+    for (let d = edge; d < last - 1e-9; d += step) { B.push(d); T.push(tail(d)); }
+    B.push(last); T.push(tail(last));
+    // the umpire's chance at each whole strip's middle, by height strip (the same for every aim)
+    if (!this._hbpP) this._hbpP = g.zs.map(z => B.slice(0, -1).map((b, k) => K.calledStrikeP(K.zoneDist((b + B[k + 1]) / 2, z[2], this.zoneFt))));
+    g.zs.forEach(([lo, hi, mid, row], j) => {
+      const wz = R.normCdf((hi - p.zn) / sz) - R.normCdf((lo - p.zn) / sz);
+      if (wz < 1e-12) return;
+      const reach = K.hbpReach(mid), tR = tail(reach), c = row * 5 + col, Pj = this._hbpP[j];
+      hit[c] += wz * tR;
+      let sm = 0;
+      for (let k = 0; k + 1 < B.length && B[k] < reach - 1e-9; k++) {
+        const whole = B[k + 1] <= reach, wx = T[k] - (whole ? T[k + 1] : tR);
+        if (wx < 1e-12) continue;
+        sm += wx * (whole ? Pj[k] : K.calledStrikeP(K.zoneDist((B[k] + reach) / 2, mid, this.zoneFt)));
+      }
+      if (last < reach) sm += (T[T.length - 1] - tR) * K.UMPIRE.P[0];
+      strike[c] += wz * sm;
+    });
+  }
+  for (let a = 0; a < 25; a++) if (a % 5 !== col) strike[a] = cm[a];
+  m = { hit, strike };
+  capSet(this._hm, key, m, CAP.cm);
+  return m;
 };
 
 /* ---- the call by location (rules 4, contract.js THE CALL) ----------------
@@ -1150,7 +1223,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, TOUCH_RULES, DRAWN_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, TOUCH_RULES, DRAWN_RULES, HBP_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;

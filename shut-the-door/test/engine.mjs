@@ -859,7 +859,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   const rp = JSON.parse(readFileSync(new URL('../data/packs/std-2001-ws7-rivera.json', import.meta.url), 'utf8'));
   const zf = rp.kernelZoneFt, x8 = 0.85, z8 = 1.01;
   check('rules 10: the owner\'s pitch 8 on the drawn corner stood as a ball under rules 9, a strike now',
-    G.RULES === 10 && G.DRAWN_RULES === 10 && K.absDist(x8, z8, zf) < 0 && K.touchDist(x8, z8, zf) >= 0 && K.zoneDist(x8, z8, zf) < 0
+    G.RULES >= 10 && G.DRAWN_RULES === 10 && K.absDist(x8, z8, zf) < 0 && K.touchDist(x8, z8, zf) >= 0 && K.zoneDist(x8, z8, zf) < 0
     && Math.abs(K.touchDist(x8, z8, zf) - (K.zoneDist(x8, z8, zf) + K.BALL_IN)) < 1e-12);
   // the drawn picture: the ball's centre within BALL_IN of the drawn box is touching, and only then
   const half = K.GRID.ZONE_HALF_FT * 12, H = zf * 12;
@@ -895,6 +895,72 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
     }
   }
   check(`rules 10: the engine's ABS answers a ball touching the drawn zone a strike, and nothing else moves (${flips} flips)`, flips > 0 && !wrong && !other);
+}
+
+/* rules 11 (the reach, contract.js THE REACH): QA's pitch, 2026-11-05 (a cutter off the black called
+   a hit by pitch, the ball 1.1 ft inside, his body 2 ft and more away in the 3D). A hit by pitch only
+   when the ball's centre crosses at least hbpReach(zn) inside; short of it the same slice of the same
+   library draw is a take, called where it crossed. Nothing else moves, the four draws included, and
+   the grade one pitch ahead moves the same share. */
+{
+  check('rules 11: the reach is the 3D body less a ball: 2.02 ft in his zone, his hands above it, the bill at head height',
+    G.RULES === 11 && G.HBP_RULES === 11 && K.hbpReach(0.5) >= 2 && K.hbpReach(0.05) >= 2 && K.hbpReach(1.1) < 1.5 && K.hbpReach(1.6) < 1.1
+    && K.hbpReach(-3) === K.HBP.REACH[0] && K.hbpReach(5) === K.HBP.REACH[K.HBP.REACH.length - 1] && K.HBP.REACH.every(x => x > K.GRID.ZONE_HALF_FT));
+  check('rules 11: QA\'s cutter 1.1 ft inside at the belt is short of him, 2.3 ft reaches him, either hand',
+    K.insideFt(-1.1, 'R') < K.hbpReach(0.5) && K.insideFt(1.1, 'L') < K.hbpReach(0.5) && K.insideFt(-2.3, 'R') >= K.hbpReach(0.5) && K.insideFt(2.3, 'R') < 0);
+  // the engine: the same seed and calls under 10 and 11, inside pitches a plenty
+  let parts = 0, wrong = 0, other = 0, hbp11 = 0, short11 = 0, drawsOk = true;
+  const KH = G.KEYS.indexOf('hit_by_pitch');
+  for (let s = 0; s < 120; s++) {
+    const rng = R.mulberry32(R.hashSeed('reach' + s));
+    const calls = Array.from({ length: 40 }, () => ({ type: model.types[Math.floor(rng() * model.types.length)], cell: [0, 5, 10, 15, 20, 4, 9, 14, 19, 24, 12][Math.floor(rng() * 11)], q: Math.round(rng() * 100) / 100 }));
+    const outs = [10, 11].map(r => { const o = E.createOuting(pack, { seed: 900 + s, model, rules: r }); for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); } return o; });
+    const a = outs[0], b = outs[1];
+    for (const x of b.log) if (x.result === 'hit_by_pitch') { hbp11++; if (K.insideFt(x.actual.x, pack.scenario.batters[model.who(b.before[x.n - 1])].bats) < K.hbpReach(x.actual.zn)) short11++; }
+    const n = Math.min(a.log.length, b.log.length);
+    for (let i = 0; i < n; i++) {
+      const p = a.log[i], q = b.log[i];
+      if (JSON.stringify(p.actual) !== JSON.stringify(q.actual)) { other++; break; }
+      if (p.result === q.result && p.drawn.id === q.drawn.id) continue;
+      const bats = pack.scenario.batters[model.who(a.before[i])].bats;
+      if (!(p.result === 'hit_by_pitch' && K.insideFt(p.actual.x, bats) < K.hbpReach(p.actual.zn) && (q.result === 'ball' || q.result === 'called_strike'))) wrong++;
+      parts++;
+      break;   // the outings part here
+    }
+    // the four draws a pitch: the rules 11 stream is where four a pitch put it
+    const r0 = R.mulberry32(900 + s); for (let i = 0; i < 4 * b.log.length; i++) r0();
+    if (r0() !== b.rng()) drawsOk = false;
+  }
+  check(`rules 11: only a hit by pitch short of the reach moves, to a take where it crossed (${parts} parted, ${hbp11} hit by pitch kept)`, parts > 0 && !wrong && !other);
+  check('rules 11: every hit by pitch under rules 11 reaches him', short11 === 0);
+  check('rules 11: four draws a pitch, as before', drawsOk);
+  check('rules 11: a rules 11 outing plays, a rules 10 one replays as rules 10', E.createOuting(pack, { seed: 1, model }).rules === 11
+    && E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 10 }], { model }).rules === 10);
+  // the grade: the reach's mass against a sampled miss, and the key mix moving only the hit by pitch's share
+  const type = model.types[0], sig = model.arsenal[0].sigmaFt, zf = model.zoneFt;
+  let worst = 0;
+  for (const [cell, bats] of [[10, 'R'], [14, 'L'], [5, 'R'], [20, 'R'], [12, 'R']]) {
+    const hm = model.hbpMass(type, 1, cell, null, bats), t = K.targetOf(cell), rr = R.mulberry32(R.hashSeed('hm' + cell));
+    const N = 60000, hit = new Float64Array(25), str = new Float64Array(25);
+    for (let i = 0; i < N; i++) {
+      const x = t.x + R.probit(rr()) * sig, zn = t.zn + R.probit(rr()) * sig / zf, a = K.cellAt(x, zn);
+      if (K.insideFt(x, bats) >= K.hbpReach(zn)) hit[a]++;
+      else str[a] += K.calledStrikeP(K.zoneDist(x, zn, zf));
+    }
+    for (let a = 0; a < 25; a++) worst = Math.max(worst, Math.abs(hit[a] / N - hm.hit[a]), Math.abs(str[a] / N - hm.strike[a]));
+  }
+  check(`rules 11: the grade's reach mass is the engine's miss, sampled (worst cell ${worst.toFixed(4)})`, worst < 0.006);
+  const st = model.startState();
+  const ctx10 = G.contextOf([], st, 10, model.center, model.zone0), ctx11 = G.contextOf([], st, 11, model.center, model.zone0);
+  let moved = 0, badMix = 0;
+  for (const tp of model.types) for (let cell = 0; cell < 25; cell++) {
+    const m10 = model.keyMixCtx(st, tp, cell, ctx10), m11 = model.keyMixCtx(st, tp, cell, ctx11);
+    const d = m10[KH] - m11[KH];
+    if (d < -1e-12 || Math.abs((m11[0] + m11[1]) - (m10[0] + m10[1]) - d) > 1e-9) badMix++;
+    for (let i = 2; i < G.KEYS.length; i++) if (i !== KH && Math.abs(m10[i] - m11[i]) > 1e-12) badMix++;
+    if (d > 1e-6) moved++;
+  }
+  check(`rules 11: the grade moves the hit by pitch share short of the reach to the take, nothing else (${moved} calls moved)`, moved > 0 && !badMix);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');
