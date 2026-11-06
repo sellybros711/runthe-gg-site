@@ -3255,14 +3255,14 @@
       "sha": "3a990410987ef0a9"
     },
     "3d/boot.js": {
-      "v": "101",
-      "sha": "a00070b16698c61d"
+      "v": "102",
+      "sha": "2c909e1023fedc26"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "85",
-      "sha": "993e27842b13d924"
+      "v": "86",
+      "sha": "766b80c57db88398"
     }
   },
   "soccer/index.html": {
@@ -3385,8 +3385,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "102",
-      "sha": "e617227598a6e073"
+      "v": "103",
+      "sha": "e8346fc5799d790b"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3439,20 +3439,20 @@
       "sha": "e3ef7b9faa1a8e47"
     },
     "park.js": {
-      "v": "17",
-      "sha": "17b21f3388d7bcaf"
+      "v": "18",
+      "sha": "a8c4ac841caf8312"
     },
     "people.js": {
       "v": "46",
       "sha": "1775c9c088879d76"
     },
     "pitch.js": {
-      "v": "15",
-      "sha": "3ef8c03469978f61"
+      "v": "16",
+      "sha": "eddc5a4efcc4d2e9"
     },
     "play.js": {
-      "v": "15",
-      "sha": "3e0010dca456d0c3"
+      "v": "16",
+      "sha": "ea816877655ed6e4"
     },
     "looks.js": {
       "v": "6",
@@ -3463,16 +3463,16 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "55",
-      "sha": "210a3b4a0f037a66"
+      "v": "56",
+      "sha": "75ee30e8f40e689b"
     },
     "preview.js": {
-      "v": "13",
-      "sha": "c20d78249e930b15"
+      "v": "14",
+      "sha": "0458bea100016e8c"
     },
     "firstperson.js": {
-      "v": "24",
-      "sha": "64a7b82c9d99a302"
+      "v": "25",
+      "sha": "cb5e0870fdde6a6a"
     },
     "idle.js": {
       "v": "2",
@@ -3491,16 +3491,16 @@
       "sha": "d485438ece9ac69e"
     },
     "stands.js": {
-      "v": "18",
-      "sha": "909dc5cc24386662"
+      "v": "19",
+      "sha": "6c94e7609f259846"
     },
     "units.js": {
       "v": "1",
       "sha": "e771dbef0b67350e"
     },
     "crowd.js": {
-      "v": "1",
-      "sha": "3927849175e216ae"
+      "v": "2",
+      "sha": "4509f49e8481d63f"
     }
   },
   "shut-the-door/3d/people.js": {
@@ -3551,18 +3551,18 @@
       "sha": "0bad52cc143e0887"
     },
     "foul.js": {
-      "v": "1",
-      "sha": "b7d0b5b988c18048"
+      "v": "2",
+      "sha": "fa85bc5ed4fbac6e"
     }
   },
   "shut-the-door/3d/play.js": {
     "pitch.js": {
-      "v": "15",
-      "sha": "3ef8c03469978f61"
+      "v": "16",
+      "sha": "eddc5a4efcc4d2e9"
     },
     "foul.js": {
-      "v": "1",
-      "sha": "b7d0b5b988c18048"
+      "v": "2",
+      "sha": "fa85bc5ed4fbac6e"
     }
   },
   "shut-the-door/3d/looks.js": {
@@ -3585,8 +3585,8 @@
       "sha": "717bca8a1b04a217"
     },
     "ballpark.js": {
-      "v": "34",
-      "sha": "42dc2485f5e4ef4e"
+      "v": "35",
+      "sha": "4c20bf4a133a16dc"
     },
     "people.js": {
       "v": "46",
@@ -3603,8 +3603,8 @@
   },
   "shut-the-door/3d/preview.js": {
     "pitch.js": {
-      "v": "15",
-      "sha": "3ef8c03469978f61"
+      "v": "16",
+      "sha": "eddc5a4efcc4d2e9"
     },
     "units.js": {
       "v": "1",
@@ -3617,8 +3617,8 @@
       "sha": "e771dbef0b67350e"
     },
     "park.js": {
-      "v": "17",
-      "sha": "17b21f3388d7bcaf"
+      "v": "18",
+      "sha": "a8c4ac841caf8312"
     },
     "gear3d.js": {
       "v": "4",
@@ -3641,8 +3641,8 @@
       "sha": "e3ef7b9faa1a8e47"
     },
     "pitch.js": {
-      "v": "15",
-      "sha": "3ef8c03469978f61"
+      "v": "16",
+      "sha": "eddc5a4efcc4d2e9"
     }
   },
   "shut-the-door/3d/idle.js": {
@@ -3683,8 +3683,8 @@
       "sha": "e3ef7b9faa1a8e47"
     },
     "crowd.js": {
-      "v": "1",
-      "sha": "3927849175e216ae"
+      "v": "2",
+      "sha": "4509f49e8481d63f"
     }
   },
   "shut-the-door/3d/crowd.js": {
@@ -3727,12 +3727,12 @@
       "sha": "d485438ece9ac69e"
     },
     "foul.js": {
-      "v": "1",
-      "sha": "b7d0b5b988c18048"
+      "v": "2",
+      "sha": "fa85bc5ed4fbac6e"
     },
     "crowd.js": {
-      "v": "1",
-      "sha": "3927849175e216ae"
+      "v": "2",
+      "sha": "4509f49e8481d63f"
     },
     "clubs.js": {
       "v": "2",
