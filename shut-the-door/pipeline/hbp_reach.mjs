@@ -5,7 +5,7 @@
  *
  * Rules 11 (contract.js THE REACH): a pitch is a hit by pitch only when its crossing reaches the
  * batter. The batter is the one the game draws: people.js places him with his feet straddling a
- * point 2.95 ft off the plate's centre on his side (setupBatter), dressed and built for each hitter of
+ * point STANCE_X ft off the plate's centre on his side (setupBatter, inplay-plan.js), dressed and built for each hitter of
  * the pack (his height and weight, his helmet, his look), in his take (people.js update). So the game
  * page is loaded in Chromium (its own stage and people, drawing nothing), every hitter of every pack
  * is staged on a taken ball the way the game stages one (stage.js prepare), and at the moment the
@@ -28,6 +28,10 @@
  * 2,020 hit by pitches of the 2024 regular season (Baseball Savant, plate_x by stand) crossed a
  * median 1.92 ft inside, 5% under 1.2 ft: a real hitter stands a little nearer the plate than the
  * drawn one.
+ * Run 2026-11-06 with his feet 2.82 ft off (2.95 before; his hips' midpoint now 28 in off the inside
+ * edge a second before release, Statcast's league average stance): every band 0.13 ft nearer, in his
+ * zone's height the nearest body 2.01 ft, a ball reaching it from 1.89 ft. contract.js keeps the
+ * 2.95 ft table until the rules that take the new one.
  */
 import fs from 'node:fs';
 import path from 'node:path';
