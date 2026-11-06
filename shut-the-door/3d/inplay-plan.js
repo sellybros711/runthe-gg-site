@@ -37,8 +37,13 @@ export const WALL_H = 8;
 export const BASE = [{ x: 0, y: 0 }, { x: 63.64, y: 63.64 }, { x: 0, y: 127.28 }, { x: -63.64, y: 63.64 }, { x: 0, y: 0 }];
 export const MOUND = { x: 0, y: 60.5 };
 // where the batter's feet straddle, feet off the plate's centre on his side (people.js setupBatter
-// stands him there and has the source; the batter's run to first starts there)
+// stands him there and has the source)
 export const STANCE_X = 2.82;
+// where the batter's run to first starts, feet off the plate's centre: the box as every play has been
+// planned from. He is drawn running from the broadcast's first cut, so the 1.6 in his stance moved
+// nearer the plate (2026-11-06) is never seen; moved with it, every play's timing shifted by a hair
+// and fielders' runs and the cut's frames with it (check-gait, check-jolt)
+const BOX_X = 2.95;
 export const NAME = { 1: 'P', 2: 'C', 3: '1B', 4: '2B', 5: '3B', 6: 'SS', 7: 'LF', 8: 'CF', 9: 'RF' };
 const OF = [7, 8, 9], IF = [3, 4, 5, 6];
 const HITS = { single: 1, double: 2, triple: 3, home_run: 4 };
@@ -334,8 +339,15 @@ export class Track {
     }
     // find the top speed that takes exactly t1 - t0 (bisection; runTime falls with v)
     let lo = 1, hi = v;
-    for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (runTime(d, m, this.a, true, o.toRest ?? true) > t1 - t0) lo = m; else hi = m; }
-    return this.run(t0, [p], { ...o, v: hi });
+    // (a man with time to spare jogs, and a jog starts and stops gentler than a sprint: under half his top
+    // speed his push and pull up scale with his pace, never under half a sprinter's. At a sprinter's push a
+    // jog of 8 ft/s was up to speed and stopped again in under half a second each end, check-gait.mjs kink.
+    // Faster than half, a gentler push only raised the top speed a pull up then had to brake from)
+    // (and only on a run of 25 ft or more: a step or two to a ball pulls up as planned, its brake fixed,
+    // so a longer push only made it harder)
+    const aOf = (m) => o.a ?? (d < 25 ? this.a : this.a * Math.max(0.5, Math.min(1, 2 * m / v)));
+    for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (runTime(d, m, aOf(m), true, o.toRest ?? true) > t1 - t0) lo = m; else hi = m; }
+    return this.run(t0, [p], { ...o, v: hi, a: aOf(hi) });
   }
   /** A run that ends at full speed with nothing straight on after it (a wait, or a run that starts
       from rest) pulls up over its last STOP_S instead, in the same time to the same spot: from full
@@ -1293,7 +1305,7 @@ function throwBall(ctx, from, to, rel, a, b, fly) {
 function runnerEta(ctx, o) {
   if (!(o.from >= 1 && o.base > o.from || o.from === 0 && o.base > 1)) return false;
   const bat = o.from === 0, v = bat ? 26.5 : 27;
-  let d = 0, prev = bat ? { x: ctx.bats === 'L' ? STANCE_X : -STANCE_X, y: 0.4 } : leadOff(o.from);
+  let d = 0, prev = bat ? { x: ctx.bats === 'L' ? BOX_X : -BOX_X, y: 0.4 } : leadOff(o.from);
   for (const q of bat ? [...roundFirst(), ...basePath(1, o.base)] : basePath(o.from, o.base)) { d += dist(prev, q); prev = q; }
   const go = ctx.catchAt && ctx.kind === 'air_out' ? ctx.catchAt.s + 0.08 : bat ? 0.28 : 0.15;
   o.eta = go + runTime(d, v, 16, true, false);
@@ -1626,7 +1638,7 @@ function basePath(a, b, start) {
 function planRunners(ctx) {
   const { p, moves, kind, before, o, pr } = ctx;
   const bats = ctx.bats;
-  const box = { x: bats === 'L' ? STANCE_X : -STANCE_X, y: 0.4 };
+  const box = { x: bats === 'L' ? BOX_X : -BOX_X, y: 0.4 };
   const hr = kind === 'hr';
   const putMap = new Map((ctx.putouts || []).map((x) => [x.from, x]));
   // the outfield catch decides when runners may go (they tag up), and when the batter is out
@@ -1932,11 +1944,18 @@ function planRest(ctx) {
   for (const n of busy) {
     const tr = T[n], last = tr.acts[tr.acts.length - 1];
     if (!last || (last.kind !== 'dive' && last.kind !== 'throw')) continue;
+    // (after he is done and up (a diver is up 1.35 s after he goes down, inplay.js), never chained to the run
+    // that brought him: a step at the end of his run, before his throw, made that run brake to a stop; and a
+    // walk, eased in and out, check-gait.mjs)
+    const t0 = Math.max(tr.free, last.t + (last.kind === 'dive' ? 1.4 : 0.4)), lg = tr.legs.length ? tr.legs[tr.legs.length - 1].g : null;
+    // (and only a man whose run came to rest: one that ends at speed is carried on by inplay.js, and a
+    // later step turned that run into a dead stop)
+    if (lg && !((lg.dbe ?? lg.be) > 0)) continue;
     for (let b = 1; b <= 3; b++) {
       const g = BASE[b], e = tr.end, d = dist(e, g);
       if (d >= 5 || !Object.keys(T).some((k) => +k !== n && dist(T[k].end, g) < 3)) continue;
       const u = d > 0.1 ? e : { x: g.x + 1, y: g.y }, k = dist(u, g);
-      tr.run(tr.free, [{ x: g.x + (u.x - g.x) * 5 / k, y: g.y + (u.y - g.y) * 5 / k }], { toRest: true, v: 6 });
+      tr.run(t0, [{ x: g.x + (u.x - g.x) * 5 / k, y: g.y + (u.y - g.y) * 5 / k }], { toRest: true, v: 5, a: 4 });
     }
   }
 }
@@ -2365,8 +2384,8 @@ export function passing(plan) {
   return null;
 }
 
-/** Two fielders standing still on one bag at once (within 3 ft of it, both under 2 ft/s), the
-    first such moment, or null. A man running across a bag another holds is not standing on it, and
+/** Two fielders standing still on one bag at once (within 3 ft of it, both under half a foot a second), the
+    first such moment, or null. A man moving across or off a bag another holds is not standing on it, and
     nor is the man playing the ball by it (fielding it, picking it up or throwing it within a second:
     a first baseman who fields a grounder by the bag and flips to the pitcher covering). */
 const PLAYS_BALL = new Set(['set', 'field', 'pickup', 'bobble', 'throw']);
@@ -2376,8 +2395,11 @@ export function stillOnBag(plan) {
     const on = [];
     for (let n = 1; n <= 9; n++) {
       const f = plan.fielders[n]; if (!f) continue;
+      // (a man whose last run ends at speed is carried on past its end by inplay.js: not standing there)
+      const lg = f.legs && f.legs.length ? f.legs[f.legs.length - 1].g : null;
+      if (lg && t >= f.free && !((lg.dbe ?? lg.be) > 0)) continue;
       const q = f.at(t);
-      if (Math.hypot(q.x - BASE[base].x, q.y - BASE[base].y) < 3 && !(q.spd > 2)
+      if (Math.hypot(q.x - BASE[base].x, q.y - BASE[base].y) < 3 && !(q.spd > 0.5)
         && !f.acts.some((a) => PLAYS_BALL.has(a.kind) && Math.abs(a.t - t) < 1)) on.push(n);
     }
     if (on.length > 1) return { a: on[0], b: on[1], base, t };
