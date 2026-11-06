@@ -24,7 +24,7 @@ import { People } from '../3d/people.js?v=46';
 import { Pitch } from '../3d/pitch.js?v=16';
 import { labPlay, motion, describe } from '../3d/play.js?v=17';
 import { FT, P, smooth } from '../3d/units.js?v=1';
-import { InPlay } from '../3d/inplay.js?v=50';
+import { InPlay } from '../3d/inplay.js?v=57';
 import { crowdClock } from '../3d/crowd.js?v=2';
 
 const Q = new URLSearchParams(location.search);
