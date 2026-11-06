@@ -19,6 +19,12 @@
  *     or saves it where files cannot be shared. Without a recorder, or if it fails, the link is all.
  *   THE LINK. ?clip= opens this screen over the home with PLAY THE PITCH and PLAY TODAY'S DAILY. It
  *     plays only on a tap, writes nothing, and shows nothing of any day's real game.
+ * THE AT BAT (the owner, 2026-11-06: "share clips of any pitch or at bat"). An at bat's Clip on the
+ *   result plays every pitch of that plate appearance in order (api.js clip with from: each pitch as
+ *   the one pitch's clip has it), on the same stage, overlay, recording and share sheet. Between
+ *   pitches it cuts straight to the next set: no walk-in, no reset beat. The lower third shows each
+ *   pitch's count as it is thrown and its result once seen, then ends on the at bat's (postgame.js
+ *   atBats, the card's own word). Its link (?clip=2...) plays the at bat.
  * No grade and no band: the clip is the pitch, not its verdict. */
 (function () {
 'use strict';
@@ -26,9 +32,12 @@ var D = null;          // what ui.js lends (init)
 var CL = {             // the clip on screen
   on: false, from: null, data: null, link: '', playing: null, rec: null, file: null, url: null,
   revealed: false, phase: '', closeAsked: false, hook: null, raf: 0, n: 0,
+  list: [], i: 0, end: false, played: 0,   // the pitches it plays (one, or an at bat's), the one on screen
 };
 var MAX_SIDE = 1280;   // the video's long side, px
 var LEAD_MS = 500, TAIL_MS = 600;
+var GAP_MS = 350;      // an at bat: the result held this long, then the cut to the next set
+var END_MS = 1100;     // an at bat: its result on the lower third at the end
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -52,9 +61,10 @@ function typeName(scn, t) {
 }
 function batterOf(scn, i) { var bs = scn.batters; return bs[((i % bs.length) + bs.length) % bs.length]; }
 var OUTS = ['No outs', 'One out', 'Two outs'];
-function facts(d) {
-  var scn = d.scn, b4 = d.before, pr = d.final, bat = batterOf(scn, b4.batterIndex);
-  var t = D.playText(pr, bat, d.after);
+/* what the lower third says of one pitch (x: { before, final, after }) */
+function facts(scn, x) {
+  var b4 = x.before, pr = x.final, bat = batterOf(scn, b4.batterIndex);
+  var t = D.playText(pr, bat, x.after);
   var cnt = pr.countBefore ? pr.countBefore.b + '-' + pr.countBefore.s : '';
   var v = pr.velo != null && isFinite(pr.velo) ? Math.round(pr.velo) + ' mph' : '';
   var abs = pr.challenge ? (pr.challenge.overturned ? 'Overturned' : 'Call stands') : '';
@@ -64,6 +74,25 @@ function facts(d) {
     outs: OUTS[b4.outs] || '', tag: cap(t.tag), abs: abs, club: (scn.pitcher.teamColors || [])[0] || '#ff4f1f',
     title: scn.title || '', label: scn.preview ? 'Preview' : '#' + scn.number,
   };
+}
+/* the pitches a clip plays: one, or each of an at bat's */
+function listOf(d) { return d.pitches && d.pitches.length ? d.pitches : [{ before: d.before, pr: d.pr, final: d.final, after: d.after }]; }
+/* the at bat as the result's card has it: its end in words (postgame.js atBats on its own pitches) */
+function abEnd(d) {
+  var PG = window.STD_POSTGAME, fin = CL.list.map(function (x) { return x.final; });
+  var ab = PG && PG.atBats ? PG.atBats(fin, d.scn)[0] : null;
+  return ab && ab.code ? ab.word : '';
+}
+function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+/* the facts on screen: the pitch in hand, and for an at bat where it is in it and, at the end, how
+   the at bat ended */
+function factsNow() {
+  var f = CL.pf[CL.i];
+  if (!CL.ab) return f;
+  var K = CL.list.length;
+  var g = Object.assign({}, f, { of: 'Pitch ' + (CL.i + 1) + ' of ' + K });
+  if (CL.end) { g.of = plural(K, 'pitch', 'pitches'); if (CL.endWord) g.tag = CL.endWord; g.abs = ''; }
+  return g;
 }
 
 /* ---- the overlay, on the canvas ---------------------------------------------------------- */
@@ -110,9 +139,19 @@ function overlay(ctx, W, H, f, shown) {
   var py = y + 11.6 * u;
   ctx.fillStyle = f.color;
   ctx.fillRect(tx, py - 3.1 * u, 1.4 * u, 3.6 * u);
+  var l2 = [f.type, shown ? f.velo : '', 'to ' + f.short].filter(Boolean).join(' · '), ofW = 0;
+  /* an at bat: where this pitch is in it, right */
+  if (f.of) {
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#9aa3b5';
+    ctx.font = '600 ' + Math.round(3.2 * u) + 'px Inter, system-ui, sans-serif';
+    ctx.fillText(f.of, x + w - 4 * u, py);
+    ofW = ctx.measureText(f.of).width + 3 * u;
+    ctx.textAlign = 'left';
+  }
   ctx.fillStyle = '#e6e9ef';
-  ctx.font = '600 ' + Math.round(3.6 * u) + 'px Inter, system-ui, sans-serif';
-  ctx.fillText([f.type, shown ? f.velo : '', 'to ' + f.short].filter(Boolean).join(' · '), tx + 2.6 * u, py);
+  fit(ctx, l2, tw - 2.6 * u - ofW, Math.round(3.6 * u), '600 $px Inter, system-ui, sans-serif');
+  ctx.fillText(l2, tx + 2.6 * u, py);
   /* the result, big, once the player has seen it (as the game's own reveal) */
   var ry = y + lh - 3.4 * u;
   if (shown) {
@@ -142,7 +181,7 @@ function composite() {
   ctx.fillStyle = '#0b0f17';
   ctx.fillRect(0, 0, out.width, out.height);
   try { if (src.width && src.height) ctx.drawImage(src, 0, 0, out.width, out.height); } catch (e) {}
-  overlay(ctx, out.width, out.height, CL.facts, CL.revealed);
+  overlay(ctx, out.width, out.height, factsNow(), CL.revealed);
 }
 
 /* ---- the stage ----------------------------------------------------------------------------- */
@@ -193,12 +232,20 @@ function sitFor(st, b4) {
   st.lastN = 0; st.runsIn = 0;
   st.halfAt = b4 && b4.half && b4.score ? { inning: b4.half.inning, lead: b4.score.us - b4.score.them } : null;
 }
+function setFrame(sc) { if (sc.draw) sc.draw(sc.is3d ? undefined : { pitcher: 'set', batter: 'stance', umpire: 'set' }); }
+/* the set for pitch i of the clip: its aim, the pitcher set, the hitter in his stance (a cut) */
+function cue(i) {
+  var sc = D.scene(), x = CL.list[i];
+  CL.i = i;
+  if (sc.setTarget) sc.setTarget(x.pr.call.cell, x.pr.call.at || null);
+  setFrame(sc);
+}
 function setUp(d) {
-  var sc = D.scene();
+  var sc = D.scene(), x = CL.list[0];
   moveCanvas(true);
   sc.setScenario(d.scn);
-  sc.setBatter(batterOf(d.scn, d.before.batterIndex));
-  if (sc.setTarget) sc.setTarget(d.pr.call.cell, d.pr.call.at || null);
+  sc.setBatter(batterOf(d.scn, x.before.batterIndex));
+  if (sc.setTarget) sc.setTarget(x.pr.call.cell, x.pr.call.at || null);
   sizeOut();
   sc.layout();
   hookOn();
@@ -207,7 +254,7 @@ function setUp(d) {
     hookOn();
     sizeOut();
     sc.layout();
-    if (sc.draw) sc.draw(sc.is3d ? undefined : { pitcher: 'set', batter: 'stance', umpire: 'set' });
+    setFrame(sc);
     composite();
   });
 }
@@ -224,10 +271,30 @@ function phase(p) {
   $('cl-video').hidden = !CL.file && !(busy && CL.rec);
   $('cl-play').hidden = p !== 'idle';
 }
+/* one pitch of the clip on the stage, from its set to the end of its play */
+function playOne(i) {
+  var d = CL.data, sc = D.scene(), x = CL.list[i];
+  if (CL.ab) cue(i);
+  CL.i = i; CL.revealed = false;
+  composite();
+  sitFor(realStage(), x.before);
+  var hooks = {
+    call: function () { CL.revealed = true; composite(); },
+    land: function () {},
+    sound: D.pitchSounds(x.pr),
+    field: function () {},
+  };
+  var opts = { pr: x.pr, ap: (d.scn.pitcher.arsenal || []).filter(function (a) { return a.type === x.pr.call.type; })[0], quick: false, hooks: hooks };
+  return (sc.is3d ? sc.play(opts) : D.play2d(sc, opts)).then(function () {
+    CL.revealed = true;
+    CL.played++;
+    composite();
+  });
+}
 function play(record) {
   if (CL.playing) return CL.playing;
-  var d = CL.data, sc = D.scene(), my = CL.n;
-  CL.revealed = false;
+  var d = CL.data, my = CL.n, last = CL.list.length - 1;
+  CL.revealed = false; CL.end = false; CL.played = 0; CL.i = 0;
   composite();
   var type = record ? recType() : null, chunks = [], rec = null, stopped = null;
   if (type) {
@@ -242,21 +309,17 @@ function play(record) {
   CL.rec = rec;
   phase('playing');
   say(rec ? 'Recording the clip.' : '');
-  sitFor(realStage(), d.before);
   loop2d(true);
-  var hooks = {
-    call: function () { CL.revealed = true; composite(); },
-    land: function () {},
-    sound: D.pitchSounds(d.pr),
-    field: function () {},
-  };
-  var opts = { pr: d.pr, ap: (d.scn.pitcher.arsenal || []).filter(function (a) { return a.type === d.pr.call.type; })[0], quick: false, hooks: hooks };
-  CL.playing = wait(rec ? LEAD_MS : 0).then(function () {
-    return sc.is3d ? sc.play(opts) : D.play2d(sc, opts);
-  }).then(function () {
-    CL.revealed = true;
-    composite();
-    return wait(rec ? TAIL_MS : 0);
+  if (CL.ab) cue(0);
+  /* each pitch in turn; between two, the result a beat and then the cut to the next set */
+  var chain = wait(rec ? LEAD_MS : 0);
+  CL.list.forEach(function (x, i) {
+    chain = chain.then(function () { if (my === CL.n) return playOne(i); })
+      .then(function () { return i < last && my === CL.n ? wait(GAP_MS) : null; });
+  });
+  CL.playing = chain.then(function () {
+    if (CL.ab) { CL.end = true; composite(); }
+    return wait(rec ? (CL.ab ? END_MS : TAIL_MS) : (CL.ab ? 400 : 0));
   }).then(function () {
     loop2d(false);
     if (!rec) return null;
@@ -265,7 +328,7 @@ function play(record) {
       if (my !== CL.n) return;
       var blob = chunks.length ? new Blob(chunks, { type: type.split(';')[0] }) : null;
       if (!blob || !blob.size) throw new Error('the recording is empty');
-      CL.file = new File([blob], 'shut-the-door-pitch-' + d.pr.n + '.' + extOf(type), { type: type.split(';')[0] });
+      CL.file = new File([blob], 'shut-the-door-' + (CL.ab ? 'at-bat-' + d.from : 'pitch-' + d.pr.n) + '.' + extOf(type), { type: type.split(';')[0] });
       if (CL.url) URL.revokeObjectURL(CL.url);
       CL.url = URL.createObjectURL(blob);
     });
@@ -294,7 +357,7 @@ function shareVideo() {
   var can = false;
   try { can = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) {}
   if (can && touch()) {
-    navigator.share({ files: [f], title: 'Shut The Door', text: 'Pitch ' + CL.facts.n + '. ' + CL.facts.tag + '. ' + linkUrl() }).catch(function () {});
+    navigator.share({ files: [f], title: 'Shut The Door', text: shareLine() + ' ' + linkUrl() }).catch(function () {});
     return;
   }
   var a = document.createElement('a');
@@ -302,9 +365,15 @@ function shareVideo() {
   document.body.appendChild(a); a.click(); a.remove();
   D.toast('Video saved.');
 }
+/* what the share says of the clip: the pitch and its result, or the at bat and how it ended */
+function shareLine() {
+  var f = CL.facts;
+  if (!CL.ab) return 'Pitch ' + f.n + '. ' + f.tag + '.';
+  return f.short + ' at bat. ' + (CL.endWord || f.tag) + '.';
+}
 function shareLink() {
   var u = linkUrl();
-  if (navigator.share && touch()) { navigator.share({ url: u, title: 'Shut The Door: pitch ' + CL.facts.n }).catch(function () {}); return; }
+  if (navigator.share && touch()) { navigator.share({ url: u, title: 'Shut The Door: ' + (CL.ab ? CL.facts.short + ' at bat' : 'pitch ' + CL.facts.n) }).catch(function () {}); return; }
   D.copy(u, 'Link copied.');
 }
 
@@ -312,8 +381,14 @@ function shareLink() {
 function paint(fromLink) {
   var f = CL.facts;
   $('cl-eyebrow').textContent = 'Clip · ' + f.label + ' · ' + f.title;
-  $('cl-head').textContent = 'Pitch ' + f.n + ': ' + f.type;
-  $('cl-sub').textContent = f.pitcher + ' to ' + f.batter + '. ' + [f.count ? f.count + ' count' : '', f.outs].filter(Boolean).join(' · ') + '.';
+  if (CL.ab) {
+    $('cl-head').textContent = 'At bat: ' + f.batter;
+    $('cl-sub').textContent = f.pitcher + ' to ' + f.short + '. ' + [plural(CL.list.length, 'pitch', 'pitches'), f.outs].filter(Boolean).join(' · ') + '.';
+  } else {
+    $('cl-head').textContent = 'Pitch ' + f.n + ': ' + f.type;
+    $('cl-sub').textContent = f.pitcher + ' to ' + f.batter + '. ' + [f.count ? f.count + ' count' : '', f.outs].filter(Boolean).join(' · ') + '.';
+  }
+  $('cl-play').textContent = CL.ab ? 'Play the at bat' : 'Play the pitch';
   $('cl-daily').hidden = !fromLink;
   $('cl-close').setAttribute('aria-label', fromLink ? 'Home' : 'Back to the result');
 }
@@ -321,11 +396,14 @@ function open(d, link, from) {
   CL.n++;
   CL.on = true; CL.from = from; CL.data = d; CL.link = link; CL.file = null; CL.closeAsked = false;
   if (CL.url) { URL.revokeObjectURL(CL.url); CL.url = null; }
-  CL.facts = facts(d);
+  CL.list = listOf(d); CL.ab = !!(d.pitches && d.pitches.length); CL.i = 0; CL.end = false; CL.played = 0;
+  CL.pf = CL.list.map(function (x) { return facts(d.scn, x); });
+  CL.facts = CL.pf[0];
+  CL.endWord = CL.ab ? abEnd(d) : '';
+  say(CL.ab ? 'Setting up the at bat.' : 'Setting up the pitch.');
   paint(from === 'link');
   D.show('s-clip');
   phase('loading');
-  say('Setting up the pitch.');
   var fonts = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('400 40px Anton'), document.fonts.load('700 20px Inter'), document.fonts.load('600 20px Inter')]).catch(function () {}) : Promise.resolve();
   var my = CL.n;
   return Promise.all([setUp(d), fonts]).then(function () {
@@ -337,10 +415,10 @@ function open(d, link, from) {
     return play(true);
   });
 }
-/* from the result: pitch n of the outing on the page */
-function fromOuting(outingId, n) {
-  var c = D.api().clipSpec ? D.api().clipSpec(outingId, n) : null;
-  if (!c) { D.toast('That pitch cannot be clipped.'); return; }
+/* from the result: pitch n of the outing on the page, or with from, its at bat of pitches from to n */
+function fromOuting(outingId, n, from) {
+  var c = D.api().clipSpec ? D.api().clipSpec(outingId, n, from) : null;
+  if (!c) { D.toast(from != null ? 'That at bat cannot be clipped.' : 'That pitch cannot be clipped.'); return; }
   D.api().clip(c.spec).then(function (d) { return open(d, c.link, 'result'); }).catch(function (e) {
     if (window.console) console.warn(e);
     D.toast('That clip did not load.');
@@ -379,7 +457,7 @@ function close() {
   if (sc && sc.setTarget) sc.setTarget(null);
   moveCanvas(false);
   if (CL.url) { URL.revokeObjectURL(CL.url); CL.url = null; }
-  CL.file = null; CL.data = null;
+  CL.file = null; CL.data = null; CL.list = []; CL.ab = false;
   if (from === 'link') { dropParam(); D.home(); } else D.show('s-result');
 }
 function playDaily() {
@@ -403,6 +481,8 @@ function init(deps) {
 window.STD_CLIP_UI = {
   init: init, fromOuting: fromOuting, fromLink: fromLink, close: close,
   isOpen: function () { return CL.on; },
+  /* for the browser check: what the last play showed (pitches played, the at bat's end on screen) */
+  shown: function () { return { ab: !!CL.ab, pitches: CL.list.length, played: CL.played, end: CL.end ? (CL.endWord || '') : null, i: CL.i }; },
   lastLink: function () { return CL.link ? linkUrl() : null; },
   canRecord: function () { return !!recType(); },
 };

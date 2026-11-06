@@ -650,16 +650,19 @@
   /* ---------------- clips (clip.js): one pitch again, from the calls, never stored ---------------- */
 
   /* The clip of pitch n (1 based) of an outing this page holds: { spec, link } (the link's value,
-     clip.js encode), or null when there is no such pitch. */
-  function clipSpec(outingId, n) {
+     clip.js encode), or null when there is no such pitch. With from, the at bat of pitches from to n
+     (postgame.js atBats: an at bat's from + 1 and its to); clip() refuses a span that is not one. */
+  function clipSpec(outingId, n, from) {
     const rec = outings[outingId], L = CL();
     if (!rec || !L || !(n >= 1 && n <= rec.o.calls.length)) return null;
-    const spec = L.specOf(rec.o, rec.day || C.easternDay(), n);
+    if (from != null && !(Number.isInteger(from) && from >= 1 && from <= n)) return null;
+    const spec = L.specOf(rec.o, rec.day || C.easternDay(), n, from);
     return { spec, link: L.encode(spec) };
   }
 
   /* A clip played again: its scenario (no reveal, as getScenario), the state before the pitch, the
-     pitch as the field saw it (pr) and as it stands (final). Its own outing in memory: nothing is
+     pitch as the field saw it (pr) and as it stands (final); an at bat's also has each of its
+     pitches the same way (pitches, clip.js replay). Its own outing in memory: nothing is
      stored, resumed or posted, and today's daily is never touched. A pack the schedule does not list
      or calls the engine refuses throw. */
   async function clip(spec) {

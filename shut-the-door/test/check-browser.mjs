@@ -193,8 +193,8 @@ const UNITS = [
   ['15 the running game, 390x844', 65, () => runningGame(390, 844)],
   ['18 the switch, 390x844', 79, () => halfSwitch(390, 844)],
   ['16 home from the mound, 390x844', 65, () => homeTrip(390, 844)],
-  ['19 clips, 390x844', 170, () => clips(390, 844)],
-  ['19 clips, 1440x900', 202, () => clips(1440, 900)],
+  ['19 clips, 390x844', 270, () => clips(390, 844)],
+  ['19 clips, 1440x900', 330, () => clips(1440, 900)],
   ['20 after the outing, 390x844 light', 24, () => postgame(390, 844, 'light')],
   ['20 after the outing, 1440x900 dark', 35, () => postgame(1440, 900, 'dark')],
   ['16 every window size', 73, () => sizeSweep()],
@@ -2262,10 +2262,13 @@ async function halves(w, h, skip) {
    opens it, the pitch plays again on the stage to its end (recorded where the browser can), and back
    goes to the result with the mound's canvas home. Then the pitch's link on a fresh page: the viewer
    over the home, waiting for a tap, nothing written, the pitch plays, and play today's daily goes to
-   the mound with the clip gone from the address. No page error and no console error. */
+   the mound with the clip gone from the address. Then the at bats (the owner, 2026-11-06): every at bat
+   card carries its own Clip, thumb tall; a tap plays each of its pitches in order and ends on how it
+   ended, with a version 2 link; and that link on a fresh page waits for a tap, writes nothing and
+   plays the whole at bat. No page error and no console error. */
 async function clips(w, h) {
   console.log(`\nclips, ${w}x${h}`);
-  step('19 clips', 900);
+  step('19 clips', 1500);
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   await page.addInitScript(STAGE_TEST);
@@ -2320,6 +2323,26 @@ async function clips(w, h) {
   await page.waitForSelector('#s-result.on', { timeout: 10000 });
   const home = await page.evaluate(() => !!document.querySelector('#m-scene #m-canvas'));
   ok(home, '19 closing the clip goes back to the result, the canvas back on the mound');
+  /* the at bat's Clip */
+  const ab = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('#r-reveal .ab[data-ab]')], bs = cards.map((c) => c.querySelector('button.ab-clip')).filter(Boolean);
+    const sizes = bs.map((b) => b.getBoundingClientRect());
+    return { cards: cards.length, clips: bs.length, minH: Math.min(...sizes.map((r) => r.height)), wide: Math.max(...sizes.map((r) => r.right)) <= document.documentElement.clientWidth,
+      first: cards.length ? cards[0].querySelectorAll('.pc').length : 0, open: document.getElementById('s-clip').classList.contains('on') };
+  });
+  ok(ab.cards > 0 && ab.clips === ab.cards && ab.minH >= 38 && ab.wide && !ab.open, '19 every at bat carries its own Clip, thumb tall, and nothing opens by itself (' + ab.clips + ' of ' + ab.cards + ', ' + Math.round(ab.minH) + ' px)');
+  await page.click('#r-reveal .ab[data-ab="0"] .ab-clip');
+  await page.waitForSelector('#s-clip.on', { timeout: 30000 });
+  await page.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'done', null, { timeout: 600000 });
+  const ac = await page.evaluate(() => ({ head: document.getElementById('cl-head').textContent, shown: window.STD_CLIP_UI.shown(), link: window.STD_CLIP_UI.lastLink(), video: !document.getElementById('cl-video').hidden,
+    rec: window.STD_CLIP_UI.canRecord(), say: document.getElementById('cl-say').textContent, grade: !!document.querySelector('#s-clip .sq, #s-clip .bd') }));
+  ok(/^At bat: /.test(ac.head) && ac.shown.ab && ac.shown.pitches === ab.first && ac.shown.played === ab.first && ac.shown.end != null && !ac.grade,
+    '19 an at bat\'s Clip plays each of its pitches in order and ends on its result, with no grade ("' + ac.head + '", ' + ac.shown.played + ' of ' + ab.first + ' pitches, "' + ac.shown.end + '")');
+  ok(ac.rec ? ac.video : /link/i.test(ac.say), '19 ' + (ac.rec ? 'the at bat records one video to share' : 'without a recorder the at bat says to share the link') + ' ("' + ac.say + '")');
+  ok(/[?&]clip=2\.d\.\d{8}\.\d+\.[a-z0-9-]+\.1\.[A-Z]{2}\d/.test(ac.link || ''), '19 the at bat has a version 2 link (' + (ac.link || 'none').replace(/^.*\?/, '?') + ')');
+  await page.click('#cl-close');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  ok(await page.evaluate(() => !!document.querySelector('#m-scene #m-canvas')), '19 closing the at bat goes back to the result, the canvas back on the mound');
   /* the link, on a page of its own */
   const p2 = await ctx.newPage();
   watch(p2);
@@ -2337,6 +2360,22 @@ async function clips(w, h) {
   await p2.click('#cl-daily');
   await p2.waitForSelector('#s-mound.on', { timeout: 60000 });
   ok(!/clip=/.test(await p2.evaluate(() => location.search)), '19 play today\'s daily goes to the mound, the clip gone from the address');
+  /* the at bat's link, on a page of its own */
+  const p3 = await ctx.newPage();
+  watch(p3);
+  await p3.route('**/*', route);
+  await p3.addInitScript(() => { try { localStorage.removeItem('std_outing_v1'); } catch (e) {} });
+  await p3.goto(BASE + new URL(ac.link).search + '&mockEnd=door_shut', { waitUntil: 'domcontentloaded' });
+  await p3.waitForSelector('#s-clip.on', { timeout: 240000 });
+  await p3.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'idle', null, { timeout: 240000 });
+  const al = await p3.evaluate(() => ({ head: document.getElementById('cl-head').textContent, play: document.getElementById('cl-play').hidden ? '' : document.getElementById('cl-play').textContent,
+    daily: !document.getElementById('cl-daily').hidden, kept: Object.keys(localStorage).filter((k) => /outing/.test(k)) }));
+  ok(/^At bat: /.test(al.head) && /at bat/i.test(al.play) && al.daily && !al.kept.length, '19 an at bat link opens the viewer, waits for a tap and writes nothing (' + JSON.stringify(al) + ')');
+  await stageReady(p3);
+  await p3.click('#cl-play');
+  await p3.waitForFunction(() => document.getElementById('s-clip').dataset.phase === 'done', null, { timeout: 600000 });
+  const ap = await p3.evaluate(() => window.STD_CLIP_UI.shown());
+  ok(ap.ab && ap.played === ab.first && ap.end != null, '19 the at bat link plays the whole at bat (' + ap.played + ' of ' + ab.first + ' pitches)');
   ok(errors.length === 0, '19 clips: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
