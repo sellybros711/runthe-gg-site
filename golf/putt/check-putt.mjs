@@ -1183,7 +1183,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       const L3 = T().life(), P3 = T().plan(); out.ships = L3.ships.length; out.afloat = L3.ships.every(q => q.y < P3.b[1] || q.y > P3.b[3] || P3.seaAt(q.x, q.y));
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
-      out.greeters = []; for (let w = 0; w < 16; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      out.greeters = []; for (let w = 0; w < 16; w++){ let P = window.RTT_PUTT._trailPlan(w * 18); if (P.spec.space) P = window.RTT_PUTT._trailPlan(w * 18, 'main', true); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }   // a space world's greeter is on its landed walk
       for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       out.secrets = []; out.secretElse = []; out.secretAt = [];
