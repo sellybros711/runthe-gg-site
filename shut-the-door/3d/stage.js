@@ -81,15 +81,15 @@
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=9';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=19';
-import { People } from './people.js?v=47';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=20';
+import { People } from './people.js?v=48';
 import { Pitch, releaseOf } from './pitch.js?v=16';
-import { fromResult, motion } from './play.js?v=18';
+import { fromResult, motion } from './play.js?v=19';
 import { look } from './looks.js?v=6';
 import { P, smooth } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=57';
+import { InPlay } from './inplay.js?v=58';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=14';
-import { FirstPerson } from './firstperson.js?v=26';
+import { FirstPerson } from './firstperson.js?v=27';
 import * as IDLE from './idle.js?v=2';
 
 const C = () => window.STD_CONTRACT;

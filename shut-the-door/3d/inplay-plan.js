@@ -1926,11 +1926,12 @@ function planRest(ctx) {
     }
     void tB;
   }
-  // a diver with nothing more to do gets up and steps off a bag another man holds (a shortstop laid
-  // out by second got up on the bag the second baseman was covering)
+  // a diver, or a man who has thrown, with nothing more to do steps off a bag another man holds (a
+  // shortstop laid out by second got up on the bag the second baseman was covering; a first baseman
+  // who fielded by the bag and flipped to the pitcher stood on it with him)
   for (const n of busy) {
     const tr = T[n], last = tr.acts[tr.acts.length - 1];
-    if (!last || last.kind !== 'dive') continue;
+    if (!last || (last.kind !== 'dive' && last.kind !== 'throw')) continue;
     for (let b = 1; b <= 3; b++) {
       const g = BASE[b], e = tr.end, d = dist(e, g);
       if (d >= 5 || !Object.keys(T).some((k) => +k !== n && dist(T[k].end, g) < 3)) continue;
@@ -2365,7 +2366,10 @@ export function passing(plan) {
 }
 
 /** Two fielders standing still on one bag at once (within 3 ft of it, both under 2 ft/s), the
-    first such moment, or null. A man running across a bag another holds is not standing on it. */
+    first such moment, or null. A man running across a bag another holds is not standing on it, and
+    nor is the man playing the ball by it (fielding it, picking it up or throwing it within a second:
+    a first baseman who fields a grounder by the bag and flips to the pitcher covering). */
+const PLAYS_BALL = new Set(['set', 'field', 'pickup', 'bobble', 'throw']);
 export function stillOnBag(plan) {
   const end = plan.realDur || 8;
   for (let t = 0; t <= end; t += 0.1) for (const base of [1, 2, 3]) {
@@ -2373,7 +2377,8 @@ export function stillOnBag(plan) {
     for (let n = 1; n <= 9; n++) {
       const f = plan.fielders[n]; if (!f) continue;
       const q = f.at(t);
-      if (Math.hypot(q.x - BASE[base].x, q.y - BASE[base].y) < 3 && !(q.spd > 2)) on.push(n);
+      if (Math.hypot(q.x - BASE[base].x, q.y - BASE[base].y) < 3 && !(q.spd > 2)
+        && !f.acts.some((a) => PLAYS_BALL.has(a.kind) && Math.abs(a.t - t) < 1)) on.push(n);
     }
     if (on.length > 1) return { a: on[0], b: on[1], base, t };
   }
