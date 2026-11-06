@@ -110,6 +110,7 @@
     var D = window.FAW_DAILY, ds = D ? D.seed() : null;
     var seed = ds != null ? ds : forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
     played = p;
+    if (window.FAW_CLIP) window.FAW_CLIP.cancel();
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
     remember(res, p, D && D.active());
@@ -186,6 +187,7 @@
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
     renderSnaps();
+    clipFor(r);
     c.hidden = false;
     card = null;
     $('dbgTxt').textContent = 'seed ' + r.seed + ' · replay this exact snap: ?seed=' + r.seed;
@@ -243,10 +245,39 @@
       setTimeout(function () { URL.revokeObjectURL(u); }, 1000);
     });
   });
+  /* THE CLIP (the owner, 2026-11-06: "when u share a play with someone, it
+     should share the video of the play"). It is recorded behind the card as
+     soon as the card shows (clip.js), so Share can hand the phone the file in
+     the moment of the tap. Still recording: the button says so, then asks
+     for one more tap. A browser that cannot record shares the line alone. */
+  var CL = window.FAW_CLIP;
+  function shareLine() { var D = window.FAW_DAILY; return D && D.active() ? D.share(res) : SH.text(res); }
+  function clipName() { return (A.draft.name || A.nameFor(played) || '4th-and-what').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(); }
+  function clipFor(r) {
+    $('rShare').textContent = 'Share';
+    if (!CL || !CL.supported()) return;
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
+    var D = window.FAW_DAILY, s = A.sitText();
+    CL.start(r, { situation: (D && D.active() ? 'Daily #' + D.number() + ' · ' : '') + s.down + ' · ' + s.spot,
+      name: A.draft.name || A.nameFor(played), title: r.title, line: gained + ' · vs ' + r.callName, win: r.win });
+  }
   $('rShare').addEventListener('click', function () {
     if (!res) return;
-    var D = window.FAW_DAILY;
-    SH.send(D && D.active() ? D.share(res) : SH.text(res)).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
+    if (CL && CL.supported()) {
+      var c = CL.ready();
+      if (c) {
+        SH.sendVideo(c, shareLine(), clipName()).then(function (how) { A.toast('rToast', how === 'shared' ? 'Shared.' : how === 'saved' ? 'Video saved. The line is copied too.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
+        return;
+      }
+      $('rShare').textContent = 'Making video…'; $('rShare').disabled = true;
+      CL.whenReady().then(function (made) {
+        $('rShare').disabled = false;
+        $('rShare').textContent = made ? 'Send video' : 'Share';
+        if (!made) SH.send(shareLine()).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : ''); });
+      });
+      return;
+    }
+    SH.send(shareLine()).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
   });
   $('rBreak').addEventListener('click', function () { close3d(); A.show('replay'); window.FAW_GAME.load(res, played); });
   $('bClose3d').addEventListener('click', function () { $('rCard').hidden = true; });

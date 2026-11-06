@@ -65,8 +65,8 @@
       "sha": "ff5a4357d74041fd"
     },
     "share.js": {
-      "v": "1",
-      "sha": "ddf3f027cc22c5ac"
+      "v": "2",
+      "sha": "62b4e1dcee456ae1"
     },
     "play.js": {
       "v": "2",
@@ -88,9 +88,13 @@
       "v": "4",
       "sha": "3af1970ebee67474"
     },
+    "clip.js": {
+      "v": "1",
+      "sha": "42acc78a2a9a5a7b"
+    },
     "flow.js": {
-      "v": "5",
-      "sha": "599fc02b5c987704"
+      "v": "6",
+      "sha": "1a3c48665e7cee37"
     },
     "daily.js": {
       "v": "4",
