@@ -60,6 +60,7 @@ var GYMS = [
     say:['Two of them now. One copies me like a mirror on the wall. The other like a puddle on the floor.',
       'Line one up and the other one slips. Look for the walls that only stop one of them.',
       'You\'re doing fine. Just don\'t let those two end up perfect opposites. Then they copy each other forever.'],
+    hint:'You don\'t have to move for them to move. Find a spot near your gold nest where the boulders box you in. Every press there moves only the babies. Walk them home, then step onto your nest last.',
     rows:[
       '###########',
       '#.m.....n.#',

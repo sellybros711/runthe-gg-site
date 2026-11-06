@@ -281,7 +281,7 @@ if (!QUICK){
     const ok = ['', ':sc', ':3'].map(k => ROUTES[TR.id + ':' + n + k]).filter(l => l && l.length <= want).find(l => !replayRoute(C, l));
     claim(!!ok && P.starsOf(ok.length, L.par, L.three) === 3, `${TR.id} ${n} ${P.levelName(n, TR.id)}: three stars (${want === 1 ? 'an ace' : want + ' strokes'}) has a route that replays with room for error`); };
   const TM = P.TOURS.main, TB = P.TOURS.members, Cn = P.PAY;
-  claim(TM.levels.length === 270 && TM.worlds.length === 15 && TM.per === 18, `the main tour is 270 holes in ${TM.worlds.length} worlds of ${TM.per}`);
+  claim(TM.levels.length === 288 && TM.worlds.length === 16 && TM.per === 18, `the main tour is 288 holes in ${TM.worlds.length} worlds of ${TM.per}`);
   claim(TB.levels.length === 18 && TB.worlds.length === 2 && TB.per === 9 && TB.members, `the Members Tour is 18 holes in ${TB.worlds.length} worlds of ${TB.per}`);
   claim(TM.worlds.every(W => P.CAL_THEMES.indexOf(W.theme) < 0), 'the main tour wears none of the calendar themes, which belong to the passes (' + TM.worlds.map(W => W.theme).join(', ') + ')');
   for (const TR of [TM, TB]){
@@ -319,7 +319,7 @@ if (!QUICK){
     // HARDER AS IT GOES: each world packs more into a hole than the one before, and asks for more putts
     const per = (fn) => TR.worlds.map((W, w) => { let t = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) t += fn(n); return t / TR.per; });
     // a rail or a curb is something to aim at, not a set piece, so a thin block is not counted
-    const kitAvg = per(n => { const C = P.buildLevel(n, TR.id); return C.bumpers.length + C.blocks.filter(r => Math.min(r.x1 - r.x0, r.y1 - r.y0) > 0.7).length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.ferries || []).length + (C.devils || []).length + (C.rings || []).length + (C.hazes || []).length + (C.beams || []).length + (C.mill ? 1 : 0) + C.zones.length; });
+    const kitAvg = per(n => { const C = P.buildLevel(n, TR.id); return C.bumpers.length + C.blocks.filter(r => Math.min(r.x1 - r.x0, r.y1 - r.y0) > 0.7).length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.ferries || []).length + (C.devils || []).length + (C.rings || []).length + (C.hazes || []).length + (C.beams || []).length + (C.hops || []).length + (C.mill ? 1 : 0) + C.zones.length; });
     const parAvg = per(n => TR.levels[n - 1].par);
     claim(kitAvg.every((a, w) => !w || a > kitAvg[w - 1]), `${TR.name}: more set pieces a hole world by world (${kitAvg.map(a => a.toFixed(2)).join(', ')})`);
     claim(parAvg[parAvg.length - 1] > parAvg[0], `${TR.name}: the last world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
@@ -434,6 +434,11 @@ const GYMS = loadGyms(), KFILES = kindFiles(), PAGE = fs.readFileSync(new URL('.
         const at = adj[0], r = at && GYMS.step(G, GYMS.place(G, s1, at[1]), (at[0] + 2) % 4); back = back && !!r && r.ev === 'reset' && GYMS.key(G, r.s) === k0; }
       claim(moved && back && s.ok, `${G.id}: the lever puts every piece back where it started, and that start is the solvable one`); }
     claim(G.say.length === 3 && G.say.every(l => l.length > 20 && !l.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212)), `${G.id}: the civilian has a nudge, a plainer line after two resets and a warmer one after five`);
+    /* ONE HINT, NEVER THE SOLUTION (the owner, 2026-11-05): a gatekeeper carries one hand-written idea, its own line,
+       none of the civilian's, and never a count of steps one way ("3 left") */
+    if (G.keeper){ const h = G.hint;
+      claim(typeof h === 'string' && h.length >= 40 && h.length <= 200 && /\.$/.test(h) && G.say.indexOf(h) < 0 && !/\d+\s*(steps?|moves?|taps?|times?\s+)?\s*(up|down|left|right|north|south|east|west|clockwise|anticlockwise|forwards?|backwards?)\b/i.test(h) && !h.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212),
+        `${G.id}: the gatekeeper has one hint of its own, none of the civilian's lines and no steps counted out ("${h}")`); }
     { const gl = GYMS.goal(G); claim(typeof gl === 'string' && gl.length >= 8 && gl.length <= 70 && /\.$/.test(gl) && !gl.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212), `${G.id}: its goal line, always in the panel, is one short line ("${gl}")`); }
     if (G.world === 'pirate'){ claim(G.mech[0] === 'barrel', `${G.id}: Pirate Cove's gyms are its barrels first`); claim(G.kind === 'push', `${G.id}: Pirate Cove's gyms are the push kind`); } }
   for (const w in byWorld){ const gs = byWorld[w], legs = gs.map(g => g.leg).sort((a, b) => a - b), keep = gs.find(g => g.leg === 18), mid = gs.find(g => g.leg !== 18);
@@ -742,11 +747,11 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        pick up lies in the water, every crossing has its bridge and its deck is dry, and the creeks come in the
        worlds' own kinds. Then he really walks across one: the deck holds him and the water either side does not. */
     const cr = await pg.evaluate(async () => { const out = { n:0, kinds:{}, wet:0, inWater:0, bridges:0, crossings:0, dryDeck:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {};
-      for (let n = 1; n <= 270; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+      for (let n = 1; n <= 288; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara'], tours:{ main:{ lv:288, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'walk' }; openPutt(); await sleep(300);
       let firstWater = 0;
-      for (let f = 1; f < 270; f++){ const P = window.RTT_PUTT._trailPlan(f);
+      for (let f = 1; f < 288; f++){ const P = window.RTT_PUTT._trailPlan(f);
         for (const p of P.path){ const o = P.poolAt(p[0], p[1]); if ((o && o.k === 'water') || P.seaAt(p[0], p[1])) out.wet++; }
         if (!P.creek) continue; out.n++; out.kinds[P.creek.k] = 1; if (P.creek.k === 'water' && !firstWater) firstWater = f;
         out.crossings += P.creek.xs.length; out.bridges += P.things.filter(t => t.k === 'bridge').length;
@@ -784,17 +789,17 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        ended: a prize that turns up before its puzzle is done, a gate that never shuts, a crate that goes either way,
        all fail here. And the local on a puzzle trail gives its clue. */
     const pzr = await pg.evaluate(async () => { const out = { gymTrails:0, gymWorlds:{}, gymPz:0, gymNotNone:0, n:0, pz:0, kinds:{}, drops:true, solo:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, bm = {}, TR = window.RTT_PUTT_TRAIL, GLz = window.RTT_PUTT_GYMS;
-      for (let n = 1; n <= 270; n++) best[n] = 3; for (let n = 1; n <= 18; n++) bm[n] = 3;
-      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'haunted', 'harvest'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} }, members:{ lv:18, best:bm, ace:{}, paid:{}, wpaid:{} } } }));
+      for (let n = 1; n <= 288; n++) best[n] = 3; for (let n = 1; n <= 18; n++) bm[n] = 3;
+      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'haunted', 'harvest'], tours:{ main:{ lv:288, best, ace:{}, paid:{}, wpaid:{} }, members:{ lv:18, best:bm, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'pzl' }; openPutt(); await sleep(300);
       const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@pzl')).trail || {}), first = {};
       // the main tour: a gym world's trails carry no puzzle
-      for (let f = 1; f < 270; f++){ const P = window.RTT_PUTT._trailPlan(f), th = P.spec.theme; if (!GLz.GYMS.some(g => g.world === th)) continue;
+      for (let f = 1; f < 288; f++){ const P = window.RTT_PUTT._trailPlan(f), th = P.spec.theme; if (!GLz.GYMS.some(g => g.world === th)) continue;
         out.gymTrails++; out.gymWorlds[th] = 1; if (P.puzzle) out.gymPz++; if (!P.spec.cross && P.spec.pzKind !== 'none') out.gymNotNone++; }
       // where they live on: the Members Tour first, then a main world with no gyms yet
       const where = [];
       for (let f = 1; f < window.RTT_PUTT.TOURS.members.levels.length; f++) where.push(['members', f, 9]);
-      for (let f = 1; f < 270; f++) where.push(['main', f, 18]);
+      for (let f = 1; f < 288; f++) where.push(['main', f, 18]);
       for (const [tid, f, per] of where){ const P = window.RTT_PUTT._trailPlan(f, tid); if (tid === 'main' && GLz.GYMS.some(g => g.world === P.spec.theme)) continue; out.n++; const pz = P.puzzle; if (!pz) continue; out.pz++; out.kinds[pz.k] = (out.kinds[pz.k] || 0) + 1;
         const pr = P.items.filter(t => t.k === 'prize'); if (pr.length !== 1 || pr[0].drops.length !== TR.PZ_COINS) out.drops = false;
         if (!pz.clue || P.items.filter(t => t.k === 'chest').length !== 1) out.solo = false;
@@ -856,12 +861,12 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        line comes), walked out of and back into, and solved by its recorded proof, one tile a step. The vault pays its
        coins once and the badge is kept; opened again the gym shows as it was left solved. */
     const gyr = await pg.evaluate(async () => { const out = { trails:[] }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, GL = window.RTT_PUTT_GYMS;
-      for (let n = 1; n <= 270; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@gyc', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+      for (let n = 1; n <= 288; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@gyc', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara'], tours:{ main:{ lv:288, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'gyc' }; openPutt(); await sleep(300);
       const segMin = (P, x, y) => { let m = 1e9; for (let i = 0; i < P.path.length - 1; i++){ const a = P.path[i], c = P.path[i + 1], dx = c[0] - a[0], dy = c[1] - a[1], L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / L)); m = Math.min(m, Math.hypot(x - a[0] - dx * u, y - a[1] - dy * u)); } return m; };
       const want = GL.GYMS.map(g => g.id).sort().join(), got = [];
-      for (let f = 1; f < 270; f++){ const P = window.RTT_PUTT._trailPlan(f); if (!P.spec.gym) continue; got.push(P.spec.gym);
+      for (let f = 1; f < 288; f++){ const P = window.RTT_PUTT._trailPlan(f); if (!P.spec.gym) continue; got.push(P.spec.gym);
         const G = P.gym, o = { f, id:P.spec.gym, has:!!G }; out.trails.push(o); if (!G) continue;
         let near = 1e9; for (let y = G.y0; y <= G.y0 + G.d; y += 0.5) for (let x = G.x0; x <= G.x0 + G.w; x += 0.5) near = Math.min(near, segMin(P, x, y));
         o.clear = +near.toFixed(2); o.gateOff = +segMin(P, G.ax, G.ay).toFixed(2);
@@ -923,7 +928,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     // THE GATEKEEPER GUARDS THE WORLD'S LAST HOLE (the owner, 2026-10-17), and CHESTS ROLL THEIR ODDS once, fixed
     const gk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@gk';
       const keep = GL.GYMS.filter(g => g.keeper), mid = GL.GYMS.filter(g => !g.keeper), W = window.RTT_PUTT._trailPlan; out.keepers = keep.length;
-      const n = (() => { for (let f = 1; f < 270; f++){ const P = W(f); if (P.spec.gym === keep[0].id) return f + 1; } return 0; })(); out.n = n;
+      const n = (() => { for (let f = 1; f < 288; f++){ const P = W(f); if (P.spec.gym === keep[0].id) return f + 1; } return 0; })(); out.n = n;
       const best = {}; for (let i = 1; i < n; i++) best[i] = 3;
       const rec = (gym) => localStorage.setItem(K, JSON.stringify({ v:2, lives:9, l9:1, back:[], gym, tours:{ main:{ lv:n, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'gk' }; window.RTT_PUTT_MAPFIRST = true; rec([]); openPutt(); await sleep(400);
@@ -932,15 +937,27 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       out.walkBtn = !!document.querySelector('.pp-sheet [data-walk]');
       window.RTT_PUTT.close(); rec([keep[0].id]); openPutt(); await sleep(300); out.openAfter = !window.RTT_PUTT._keeperBlocks(n);
       best[n] = 4; window.RTT_PUTT.close(); rec([]); openPutt(); await sleep(300); out.playedStaysOpen = !window.RTT_PUTT._keeperBlocks(n);
+      // A STUCK PLAYER CAN SKIP IT (the owner, 2026-11-05): not before he has tried, then Skip asks once and opens the hole, the vault still shut
+      delete best[n]; const recT = (gyt) => { rec([]); const st = JSON.parse(localStorage.getItem(K)); st.gyt = gyt; localStorage.setItem(K, JSON.stringify(st)); };
+      window.RTT_PUTT.close(); recT({ [keep[0].id]:[4, 590] }); openPutt(); await sleep(300); window.RTT_PUTT._level(n, 'main'); await sleep(200);
+      out.noSkipYet = !!document.querySelector('.pp-sheet [data-walk]') && !document.querySelector('.pp-sheet [data-skip]');
+      window.RTT_PUTT.close(); recT({ [keep[0].id]:[5, 0] }); openPutt(); await sleep(300); window.RTT_PUTT._level(n, 'main'); await sleep(200);
+      const skb = document.querySelector('.pp-sheet [data-skip]'); out.skipShown = !!skb;
+      if (skb){ skb.click(); await sleep(100); out.asks = window.RTT_PUTT._state().screen !== 'play' && /stay in the vault/.test(document.querySelector('.pp-sheet .m').textContent);
+        document.querySelector('.pp-sheet [data-skip]').click(); await sleep(600); }
+      const sst = JSON.parse(localStorage.getItem(K)); out.skipped = (sst.gsk || []).indexOf(keep[0].id) >= 0 && (sst.gym || []).indexOf(keep[0].id) < 0;
+      out.skipPlays = window.RTT_PUTT._state().screen === 'play' && !window.RTT_PUTT._keeperBlocks(n);
+      window.RTT_PUTT.close(); rec([]); openPutt(); await sleep(300);   // open again: the chest odds below read the host
       // chest odds: fixed for a key, and near the table over many chests
       const R = window.RTT_PUTT._chestRoll, cnt = { coins:0, haul:0, item:0, pack:0 }; out.fixed = R('main:7', 'ch0') === R('main:7', 'ch0');
-      for (let i = 0; i < 4000; i++) cnt[R('main:' + (i % 270 + 1), 'ch' + i)]++; out.cnt = cnt;
+      for (let i = 0; i < 4000; i++) cnt[R('main:' + (i % 288 + 1), 'ch' + i)]++; out.cnt = cnt;
       const h = window.RTT_PUTT._state().host, hp = h.pack, hi = h.commonItem; h.pack = () => 0; h.commonItem = () => null;
-      let k = null; for (let i = 0; i < 4000 && !k; i++) if (R('main:' + (i % 270 + 1), 'x' + i) === 'pack') k = ['main:' + (i % 270 + 1), 'x' + i];
+      let k = null; for (let i = 0; i < 4000 && !k; i++) if (R('main:' + (i % 288 + 1), 'x' + i) === 'pack') k = ['main:' + (i % 288 + 1), 'x' + i];
       out.fallback = k ? window.RTT_PUTT._chestLuck(k[0], k[1], 600) : null;
       h.pack = () => 1; out.packMsg = k ? window.RTT_PUTT._chestLuck(k[0], k[1], 600) : null; h.pack = hp; h.commonItem = hi;
       window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
     claim(gk.keepers >= 1 && gk.n > 0 && gk.blocks && gk.sheet && gk.notPlaying && gk.walkBtn, `the gatekeeper guards the world's last hole: Hole ${gk.n} asks for it to be solved first, with a way to walk to it (${JSON.stringify(gk)})`);
+    claim(gk.noSkipYet && gk.skipShown && gk.asks && gk.skipped && gk.skipPlays, `a stuck player can skip the gatekeeper: no Skip before he has tried, then Skip asks once, opens the hole, and the vault keeps its badge and pack (${JSON.stringify([gk.noSkipYet, gk.skipShown, gk.asks, gk.skipped, gk.skipPlays])})`);
     claim(gk.openAfter && gk.playedStaysOpen, `solved, the hole opens; a hole already played is never taken away (${JSON.stringify([gk.openAfter, gk.playedStaysOpen])})`);
     claim(gk.fixed && gk.cnt.coins > 2900 && gk.cnt.coins < 3350 && gk.cnt.haul > 450 && gk.cnt.haul < 750 && gk.cnt.item > 120 && gk.cnt.item < 290 && gk.cnt.pack > 40 && gk.cnt.pack < 130, `a chest's roll is fixed, and over 4,000 chests the odds come out near 78/15/5/2 (${JSON.stringify(gk.cnt)})`);
     claim(gk.fallback && gk.fallback.coins === 1200 && gk.packMsg && gk.packMsg.coins === 0 && /pack/.test(gk.packMsg.msg), `a lucky pack that cannot land is a big haul instead (${JSON.stringify([gk.fallback, gk.packMsg])})`);
@@ -956,17 +973,21 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        any move; Z and R do the same from the keys. A step kind's pad steps him; a tap kind shows no pad, and a real
        tap on the screen over a tile acts on it (a tap kind's whole sequence is played by real taps where its tiles are
        drawn). On the desktop the gym is then solved from its start, and nothing the vault pays with lands over the board. */
+    /* the page's own sign in settles first (it asks for a session once, and finding none sets sbUser back to nobody), so
+       the record a room's check writes under its own test account is the one the game reads and saves to */
+    const settle = async () => { try{ if (typeof sb !== 'undefined' && sb && sb.auth) await sb.auth.getSession(); }catch(e){} await new Promise(r => setTimeout(r, 500)); };
     const lay = {}, KEEPS = await pg.evaluate(() => window.RTT_PUTT_GYMS.kinds().filter(k => k.input !== 'own').map(k => (k.gyms || []).find(g => g.keeper && g.world)).filter(Boolean).map(g => g.id));
     for (const [vw, vh, touch] of [[390, 844, true], [1440, 900, false]]){
       const cx = await b.newContext({ viewport:{ width:vw, height:vh }, hasTouch:touch, isMobile:touch, deviceScaleFactor:touch ? 2 : 1 }), p2 = await cx.newPage();
       p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
+      await p2.evaluate(settle);
       for (const gid of KEEPS) lay[vw + ' ' + gid] = await p2.evaluate(async ([desk, gid]) => { const out = { id:gid }, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@lay', best = {};
-        for (let n = 1; n <= 270; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+        for (let n = 1; n <= 288; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara'], gyt:{ [gid]:desk ? [0, 240] : [0, 200] }, tours:{ main:{ lv:288, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'lay' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
-        const G = GL.byId(gid), tapIn = GL.input(G) === 'tap'; let f = 0; for (let i = 1; i < 270 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
+        const G = GL.byId(gid), tapIn = GL.input(G) === 'tap'; let f = 0; for (let i = 1; i < 288 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
         const t = T(), hit = (a, c) => !!a && !!c && a.left < c.right && a.right > c.left && a.top < c.bottom && a.bottom > c.top;
         const idle = async () => { for (let i = 0; i < 1000 && t.gymBusy(); i++) await sleep(20); };
@@ -1002,6 +1023,18 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         else { const s1 = k(), q = t.gymXY(pf[3]), p = t.scr(q[0], q[1], 0.45), v = t.view(), box = document.querySelector('.pp-tbox').getBoundingClientRect(), dpr = v.W / box.width;
           const o = { bubbles:true, clientX:box.left + p[0] / dpr, clientY:box.top + p[1] / dpr, pointerId:9, isPrimary:true }, el = document.elementFromPoint(o.clientX, o.clientY);
           el.dispatchEvent(new PointerEvent('pointerdown', o)); await sleep(40); el.dispatchEvent(new PointerEvent('pointerup', o)); for (let w = 0; w < 100 && k() === s1; w++) await sleep(20); await idle(); await sleep(60); out.pad = !R.pad && k() !== s1 && g().n === n0 + 1; }
+        /* ONE HINT (the owner, 2026-11-05): the phone came in at 200 seconds of trying and has made one Restart, so no
+           Hint yet, and its second Restart shows it; the desktop came in at 4 minutes, so Hint is there from the door.
+           Pressed, it says the gym's one hint, held in the panel, and records it; pressed again it says the same line.
+           With it showing, nothing covers the board. */
+        { const hb = () => document.querySelector('[data-ghint]'), shown = () => !!hb() && !hb().hidden && !!hb().offsetParent; out.hint = { before:desk ? shown() : !shown() };
+          if (!desk){ document.querySelector('[data-grestart]').click(); await sleep(150); }
+          out.hint.after = shown();
+          if (out.hint.after){ hb().click(); await sleep(150); out.hint.says = t.gymSays() === G.hint; out.hint.kept = (JSON.parse(localStorage.getItem(K)).ghn || []).indexOf(gid) >= 0;
+            await sleep(1500); out.hint.held = t.gymSays() === G.hint;
+            document.querySelector('[data-grestart]').click(); await sleep(150); hb().click(); await sleep(1500); out.hint.again = t.gymSays() === G.hint && shown();
+            const R2 = t.gymRects(); out.hint.covered = ['panel', 'goal', 'say', 'controls', 'pad'].filter(k => hit(R2[k], R2.board)).concat(R2.buttons.filter(x => hit(x, R2.board)).map(() => 'a button'));
+            out.hint.onScreen = R2.board.left >= 0 && R2.board.top >= 0 && R2.board.right <= innerWidth && R2.board.bottom <= innerHeight; out.hint.big = R2.buttons.every(x => x && x.bottom - x.top >= 44 && x.right - x.left >= 44); } }
         if (desk){ document.querySelector('[data-grestart]').click(); await sleep(150); await play(pf); for (let i = 0; i < 40 && !g().solved; i++) await sleep(100); await sleep(2800);
           const toasts = [...document.querySelectorAll('[role=status]')].map(e => e.getBoundingClientRect());
           out.won = g().solved; out.toastsOver = toasts.filter(x => hit(x, R.board)).length; out.wonLine = /solved/.test(t.gymSays()) && document.querySelector('.pp-bub').hidden; }
@@ -1012,6 +1045,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       claim(L.in && !L.covered.length && !L.missing.length && L.hidden && L.onScreen && L.goal && L.big, `${nm}, in the room nothing covers the board: the panel, goal line, controls and pad sit outside it, the stick is hidden, the whole room is on screen at zoom ${L.kk[0]} (${JSON.stringify({ covered:L.covered, missing:L.missing, hidden:L.hidden, onScreen:L.onScreen, goal:L.goal, big:L.big, board:L.board })})`);
       claim(L.undo.moved && L.undo.stepped && L.undo.back && L.undo.resets && L.undo.n, `${nm}, Undo (${w === 390 ? 'the button' : 'Z'}) puts back the state before each move exactly and is not counted as a reset (${JSON.stringify(L.undo)})`);
       claim(L.restart.start && L.restart.resets && L.restart.moves && L.restart.undone && L.pad, `${nm}, Restart (${w === 390 ? 'the button' : 'R'}) is the start and counts as a reset, Undo takes it back, and the pad steps him or a tap on a tile acts (${JSON.stringify([L.restart, L.pad])})`);
+      { const Hn = L.hint || {}; claim(Hn.before && Hn.after && Hn.says && Hn.kept && Hn.held && Hn.again && Hn.covered && !Hn.covered.length && Hn.onScreen && Hn.big, `${nm}, Hint shows only once he has tried (${w === 390 ? 'the second Restart' : '4 minutes in the room'}), says the gym's one hint and holds it, records it, says the same again, and with it showing nothing covers the board (${JSON.stringify(Hn)})`); }
       if (w === 1440) claim(L.won && L.toastsOver === 0 && L.wonLine, `${nm}, solved, the vault says what it paid in the panel, and no toast lands over the board (${JSON.stringify([L.won, L.toastsOver, L.wonLine])})`); }
     claim(KEEPS.length >= 1 && Object.keys(lay).length === KEEPS.length * 2, `the room of every kind's gatekeeper is measured on the phone and the desktop (${KEEPS.join(', ')})`);
     /* THE SAME FOR THE CLUBHOUSE'S GATEKEEPER, the trick shot kind (input 'own': no pad, a putt is a pull on the board):
@@ -1024,11 +1058,12 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && window.RTT_GYMKIND_TRICKSHOT && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
+      await p2.evaluate(settle);
       layT[vw] = await p2.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@layt', best = {};
-        for (let n = 1; n <= 270; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+        for (let n = 1; n <= 288; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara'], gyt:{ clubhouse2:[0, 240] }, tours:{ main:{ lv:288, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'layt' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
-        const G = GL.byId('clubhouse2'); let f = 0; for (let i = 1; i < 270 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
+        const G = GL.byId('clubhouse2'); let f = 0; for (let i = 1; i < 288 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
         const t = T(), hit = (a, c) => !!a && !!c && a.left < c.right && a.right > c.left && a.top < c.bottom && a.bottom > c.top;
         const Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);
@@ -1039,20 +1074,23 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         out.hidden = !R.stick && !R.bubble; out.onScreen = R.board.left >= 0 && R.board.top >= 0 && R.board.right <= innerWidth && R.board.bottom <= innerHeight;
         out.goal = document.querySelector('[data-ggoal]').textContent === GL.goal(G); out.big = R.buttons.every(x => x && x.bottom - x.top >= 44);
         out.calm = !!window.RTT_GYMKIND_TRICKSHOT.calm;
+        { const hb = document.querySelector('[data-ghint]'); out.hint = !!hb && !hb.hidden && !!hb.offsetParent; if (out.hint){ hb.click(); await sleep(1500); const R2 = t.gymRects();
+          out.hint = t.gymSays() === G.hint && !['panel', 'goal', 'say', 'controls'].some(k => hit(R2[k], R2.board)) && !R2.buttons.some(x => !x || hit(x, R2.board) || x.bottom - x.top < 44); } }
         window.RTT_PUTT.close(); localStorage.removeItem(K); return out; });
       await cx.close(); }
     for (const w of [390, 1440]){ const L = layT[w], nm = w === 390 ? 'on a 390 x 844 phone' : 'on a 1440 x 900 desktop';
-      claim(L.in && L.keeper && !L.covered.length && !L.missing.length && L.hidden && L.onScreen && L.goal && L.big && L.calm, `${nm}, in the Clubhouse's gatekeeper (The Back Bar, a trick shot room) nothing covers the board and the room is calm (${JSON.stringify({ covered:L.covered, missing:L.missing, hidden:L.hidden, onScreen:L.onScreen, goal:L.goal, big:L.big, calm:L.calm })})`); }
+      claim(L.in && L.keeper && !L.covered.length && !L.missing.length && L.hidden && L.onScreen && L.goal && L.big && L.calm, `${nm}, in the Clubhouse's gatekeeper (The Back Bar, a trick shot room) nothing covers the board and the room is calm (${JSON.stringify({ covered:L.covered, missing:L.missing, hidden:L.hidden, onScreen:L.onScreen, goal:L.goal, big:L.big, calm:L.calm })})`);
+      claim(L.hint, `${nm}, in The Back Bar after 4 minutes Hint is there, says its one hint, and nothing covers the board with it showing`); }
     /* A KIND OF ANOTHER INPUT, PLAYED BY TAPS: the worked example (gymkinds/example.js, a tap kind in no world) is put
        on Pirate Cove's mid-world trail for the length of this check and played in a real room by tapping its tiles on
        the screen: the frame highlights what a tap changes, Undo takes a tap back, and the winning tap opens the vault. */
     const ex = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@ex', best = {};
       await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'putt/gymkinds/example.js?v=check'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
       GL.rescan(); const E = GL.byId('example1'), M = GL.GYMS.find(g => g.world === 'pirate' && !g.keeper), w0 = [E.world, E.leg, M.leg]; E.world = 'pirate'; E.leg = M.leg; M.leg = -1;
-      try{ for (let n = 1; n <= 270; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+      try{ for (let n = 1; n <= 288; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara'], tours:{ main:{ lv:288, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT.close(); sbUser = { id:'ex' }; openPutt(); await sleep(300); const h = window.RTT_PUTT._state().host, hc = h.coins, hp = h.pack; h.coins = () => {}; h.pack = () => 1;
-        let f = 0; for (let i = 1; i < 270 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === E.id) f = i; out.f = f;
+        let f = 0; for (let i = 1; i < 288 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === E.id) f = i; out.f = f;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(500);
         const t = T(), Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);
         // a tap is taken only once he has finished walking in (on a busy machine 600 ms is not always enough)
@@ -1075,11 +1113,11 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     const tapG = await pg.evaluate(() => window.RTT_PUTT_GYMS.GYMS.filter(g => g.world && window.RTT_PUTT_GYMS.input(g) === 'tap').map(g => g.id));
     for (const gid of tapG){
       const tp = await pg.evaluate(async (gid) => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@tp', best = {}, G = GL.byId(gid);
-        for (let n = 1; n <= 270; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+        for (let n = 1; n <= 288; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara'], tours:{ main:{ lv:288, best, ace:{}, paid:{}, wpaid:{} } } }));
         const paid = [], packs = [], S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(); let hk = null, hc = null, hp = null;
         const hook = () => { const h = S().host; if (h !== hk){ if (hk){ hk.coins = hc; hk.pack = hp; } hk = h; hc = h.coins; hp = h.pack; h.coins = n => { paid.push(n); }; h.pack = tier => { packs.push(tier); return 1; }; } };
-        let f = 0; for (let i = 1; i < 270 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === gid) f = i; out.f = f;
+        let f = 0; for (let i = 1; i < 288 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === gid) f = i; out.f = f;
         const open = async () => { window.RTT_PUTT.close(); sbUser = { id:'tp' }; openPutt(); await sleep(300); hook(); window.RTT_PUTT._walkTo(f); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(500); hook(); return T(); };
         const idle = async t => { for (let i = 0; i < 300 && t.gymBusy(); i++) await sleep(20); };
         const enter = async t => { const Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0); await idle(t); await sleep(300); return t.gym().in; };
@@ -1137,13 +1175,13 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       const L3 = T().life(), P3 = T().plan(); out.ships = L3.ships.length; out.afloat = L3.ships.every(q => q.y < P3.b[1] || q.y > P3.b[3] || P3.seaAt(q.x, q.y));
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
-      out.greeters = []; for (let w = 0; w < 15; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      out.greeters = []; for (let w = 0; w < 16; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       out.secrets = []; out.secretElse = []; out.secretAt = [];
-      for (let w = 0; w < 15; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
+      for (let w = 0; w < 16; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
         out.secrets.push(!!(P.secret && P.secret.i === w + 1 && P.spur2 && P.spur2.length > 1 && P.secret.reach && P.items.some(t => t.k === 'npc'))); }
-      for (let f = 0; f < 270; f++) if (window.RTT_PUTT._trailPlan(f).secret && out.secretAt[Math.floor(f / 18)] !== f % 18 + 1) out.secretElse.push(f + 1);
+      for (let f = 0; f < 288; f++) if (window.RTT_PUTT._trailPlan(f).secret && out.secretAt[Math.floor(f / 18)] !== f % 18 + 1) out.secretElse.push(f + 1);
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'chk' }; return out; });
     claim(wo.world && wo.ban && wo.host, `opening the Tour drops the golfer into the world on the trail to the next hole, with its title card and Map top right (${wo.world}, ${wo.ban}, ${wo.host})`);
     claim(wo.talk && wo.face && wo.held, `the world's greeter walks up and talks, with their face in the box, and walking waits for them (${wo.talk}, ${wo.face}, ${wo.held})`);
@@ -1152,7 +1190,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     claim(wo.alive && wo.ships === 2 && wo.afloat && wo.sails, `the world is alive round him, and two pirate ships sail Pirate Cove's sea (${wo.alive}, ${wo.ships}, ${wo.afloat}, ${wo.sails})`);
     claim(wo.secrets.every(Boolean) && !wo.secretElse.length, `every world has one walk with a second path to a secret way in that can be walked to, with a local on it, and no other walk has one (${wo.secrets.map(Number).join('')}${wo.secretElse.length ? ', also on ' + wo.secretElse.join(' ') : ''})`);
     claim(wo.secretAt.every(k => k > 1 && k <= 18) && new Set(wo.secretAt).size === wo.secretAt.length, `the secrets sit on a different walk in each world, never its first (${wo.secretAt.join(' ')})`);
-    claim(wo.greeters.every(Boolean) && wo.notMid, `all fifteen worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
+    claim(wo.greeters.every(Boolean) && wo.notMid, `all sixteen worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
     // THE HOLES AT EACH END OF A WALK ARE THE REAL HOLES: the one you just played behind you, the next one past the arch,
     // each drawn from its own compiled course, with its cup where the course puts it
     const ft = await pg.evaluate(() => { const P = window.RTT_PUTT._trailPlan(17), f = P.feet || [];
@@ -1190,7 +1228,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'cld' };
       // short of the stars: 18 pars is 18 stars, under the 40 the gate asks
       localStorage.setItem(K, JSON.stringify(rec(18, 3))); openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="1"]'); i++) await sleep(50);
-      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 14 && !document.querySelector('.pp-map [data-lv="19"]');
+      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 15 && !document.querySelector('.pp-map [data-lv="19"]');
       out.card = window.RTT_PUTT.summary().world === 'The Clubhouse';
       window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
       out.walk = !hidden.test(document.body.innerText) && T().clouds() === 'on';
@@ -1296,7 +1334,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 14), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the fourteen worlds ahead under cloud');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 15), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the fifteen worlds ahead under cloud');
     // A RECORD SAVED SIGNED OUT IS CLAIMED, NEVER LOST. A player reached hole 18 and came back to hole 1, because
     // the record is keyed by account and a session that opened before sign-in resolved played under the bare key.
     const mrg = await pg.evaluate(async () => { window.RTT_PUTT.close(); const best = {}; for (let n = 1; n <= 17; n++) best[n] = 2;
@@ -1422,10 +1460,10 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     { const tr = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
       claim(/if \(!api\.guestCoins\) floatText\('\+' \+ COIN_V/.test(tr) && /if \(!api\.guestCoins\) floatText\('\+' \+ BRK_V/.test(tr) && /api\.guestCoins \? 'Sign in' : '\+' \+ coinsGot/.test(tr),
         'a guest\'s trail floats no +coins and its counter reads Sign in'); }
-    // every world painted means every world revealed: a record that has walked through all fifteen gates
-    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
+    // every world painted means every world revealed: a record that has walked through all sixteen gates
+    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 15, null, { timeout:15000 }).catch(() => {});
+    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 16, null, { timeout:15000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
       return { cols:cols.size, exact:Math.abs(c.offsetWidth - c.width * 2) < 1 && Math.abs(c.offsetHeight - c.height * 2) < 1, covers:c.offsetWidth >= b.offsetWidth && c.offsetHeight >= b.offsetHeight }; }));
@@ -1569,13 +1607,13 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         const FA = fa.cv.getContext('2d').getImageData(0, 0, fa.cv.width, fa.cv.height).data, FB = fr.cv.getContext('2d').getImageData(0, 0, fr.cv.width, fr.cv.height).data;
         let fd = fa.cv.width === fr.cv.width && fa.cv.height === fr.cv.height ? 0 : -1; if (!fd) for (let k = 0; k < FA.length; k++) if (FA[k] !== FB[k]) fd++;
         out.fxDiff = fd; out.fxSky = !!(fa.sky && fa.bg); const fms = [];
-        for (let n2 = 1; n2 <= 270; n2 += 18){ const t1 = performance.now(); D3.render(P.buildFrom(P.tourDesc(n2, null, 'main')), { aspect:2, fx:true }); fms.push(performance.now() - t1); }
+        for (let n2 = 1; n2 <= 288; n2 += 18){ const t1 = performance.now(); D3.render(P.buildFrom(P.tourDesc(n2, null, 'main')), { aspect:2, fx:true }); fms.push(performance.now() - t1); }
         fms.sort((x, y) => x - y); out.fxMed = Math.round(fms[fms.length >> 1]); }
       out.ms.sort((x, y) => x - y); out.med = Math.round(out.ms[out.ms.length >> 1]); out.max = Math.round(out.ms[out.ms.length - 1]);
       return out; });
     claim(!!v3, 'the 3D hole module loaded');
     if (v3){
-      claim(v3.n === 72 + 270 + 18 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
+      claim(v3.n === 72 + 288 + 18 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
       claim(v3.off.length === 0, 'the projection puts open carpet on carpet in every picture, so the ball rolls on what is drawn' + (v3.off.length ? ': ' + v3.off.slice(0, 4).join('; ') : ''));
       claim(v3.sliceDiff === 0 && v3.slices > 20, `rendered a little at a time (${v3.slices} steps) it is the same picture, pixel for pixel` + (v3.sliceDiff ? ': ' + v3.sliceDiff + ' differ' : ''));
       claim(v3.med < 600, `a hole renders in ${v3.med}ms at the median (${v3.max}ms the slowest), on this machine`);
@@ -1703,11 +1741,11 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && window.RTT_GYMKIND_TRICKSHOT && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
       const ts = await p2.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, KT = window.RTT_GYMKIND_TRICKSHOT, K = 'bag_ppt_v1@ts', best = {};
-        for (let n = 1; n <= 270; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara'], tours:{ main:{ lv:270, best, ace:{}, paid:{}, wpaid:{} } } }));
+        for (let n = 1; n <= 288; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara'], tours:{ main:{ lv:288, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'ts' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
         const h = window.RTT_PUTT._state().host, hc = h.coins, hp = h.pack; h.coins = () => {}; h.pack = () => 1;
-        const G = GL.byId('clubhouse1'); let f = 0; for (let i = 1; i < 270 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i; out.f = f;
+        const G = GL.byId('clubhouse1'); let f = 0; for (let i = 1; i < 288 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i; out.f = f;
         const lives0 = window.RTT_PUTT.summary(puttHost()).lives;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
         const t = T(), Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);

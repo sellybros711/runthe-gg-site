@@ -51,6 +51,10 @@ export function geodesic(C, avoid){
   C.ramps.forEach(R => { if (inZ(R.x, R.y)) return; const e = near(R.x - R.dx * 0.6, R.y - R.dy * 0.6); if (e < 0) return;
     for (let k = 1.5; k <= 9; k += 0.5) for (const s of [-0.5, 0, 0.5]){ const a = near(R.x + R.dx * k - R.dy * s * R.w, R.y + R.dy * k + R.dx * s * R.w); if (a >= 0) back.push([a, e, k * 0.6]); } });
   C.loops.forEach(L => { const a = near(L.x + L.dx * 0.8, L.y + L.dy * 0.8), e = near(L.x - L.dx * 0.8, L.y - L.dy * 0.8); if (a >= 0 && e >= 0) back.push([a, e, 1.6]); });
+  // a jelly pad (Jellara) throws the ball any way it is going, up to HOP_MAX: every landing it can reach leads back to the pad
+  (C.hops || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y); if (e < 0) return;
+    for (let a = 0; a < 360; a += 10) for (let k = 2; k <= P.HOP_MAX; k += 1){ const x = q.x + Math.cos(a * Math.PI / 180) * k, y = q.y + Math.sin(a * Math.PI / 180) * k, o = idx(x, y);
+      if (o >= 0 && pass[o]) back.push([o, e, k * 0.6]); } });
   const outOf = new Map(); back.forEach(([a, e, w]) => { if (!outOf.has(a)) outOf.set(a, []); outOf.get(a).push([e, w]); });
   const start = near(C.cup[0], C.cup[1]); if (start < 0) return () => 1e9;
   // a Dijkstra over the grid with the jumps as extra edges (a binary heap keeps it quick)

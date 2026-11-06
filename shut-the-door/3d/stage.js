@@ -90,7 +90,7 @@ import { P, smooth } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=55';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=13';
 import { FirstPerson } from './firstperson.js?v=24';
-import * as IDLE from './idle.js?v=1';
+import * as IDLE from './idle.js?v=2';
 
 const C = () => window.STD_CONTRACT;
 /* the quality tiers (Stage.judgeTier): the pixel ratio's cap and the sun's shadow map, best first.

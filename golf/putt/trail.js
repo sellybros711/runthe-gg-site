@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -156,6 +156,11 @@ var KIT = {
   crystara:{ g:['#9fd8e8', '#b4e6f2', '#88c6dc', 0.18], gpat:'crysGlass', p:['#eef8ff', '#ffffff', '#d8ecf8'], paved:true, tree:[], leaves:['#c8b4ff', '#9ff0ff', '#e8dcff'], bark:'#5a4a8a', dens:0.001,
     low:['rockcrys', 'rockcrys', 'rockice'], brk:'crate', haz:'slow', hazC:['#c8b4ec', '#a894d8'], waterC:['#0e0820', '#3a2a60'], bogC:['#c8b4ec', '#a894d8'], lm:['crysSpire', 'crysPrism', 'crysGeode'], wall:['#eef8ff', '#7a86c8'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'ponytail', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the crystal surveyor' },
+  // Jellara: lime jelly ground with its wobble, the goo sea showing through where the jelly breaks off, a pink jelly path,
+  // no trees, gloop for the bog, the goo for the water, crates to break
+  jellara:{ g:['#9be86a', '#b0f07e', '#86d858', 0.18], gpat:'jelLime', p:['#ffd0ec', '#ffe4f4', '#ffb8e0'], paved:true, tree:[], leaves:['#ff8ad0', '#9be86a', '#ffb030'], bark:'#227068', dens:0.001,
+    low:['rockjel', 'rockjel', 'bush'], brk:'crate', haz:'slow', hazC:['#c8f0a0', '#a8d880'], waterC:['#3fd0b0', '#8af0d8'], bogC:['#c8f0a0', '#a8d880'], lm:['jelDome', 'jelBean', 'jelWobbler'], wall:['#ffb8e0', '#c8508a'],
+    npc:{ skin:'tan', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'ponytail', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the goo keeper' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -783,8 +788,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
-var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
+var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
+var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -803,7 +808,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -821,11 +826,12 @@ var SECRET_SAY = {
   mars:'The colony found a cave under the ice. The way in is on this trail.',
   saturn:'There\'s a storm room somewhere on this trail. The eye of it is calm.',
   crystara:'The crystal sings on this trail. Something hollow is under it.',
+  jellara:'Something big wobbles under this trail. There is a way in, if you can find it.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -999,6 +1005,9 @@ BUILD.rockice = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#dceaf6', '#a8c4e8',
 // Crystara's low crystals: a little cluster of violet and cyan points
 BUILD.rockcrys = function(B, t, i){ box(B, t.x, t.y, 2.2, 2.2, 1.7, function(dx, dy, tt){ for (var k = 0; k < 3; k++){ var a = hash(i, k, 61) * 6.283, ox = Math.cos(a) * 0.45 * (k ? 1 : 0), oy = Math.sin(a) * 0.45 * (k ? 1 : 0), hh = 1.6 - k * 0.35;
     var r = 0.38 * (1 - tt / hh); if (tt < hh && Math.abs(dx - ox) + Math.abs(dy - oy) < r) return (dx - ox) + (dy - oy) < 0 ? '#ffffff' : k === 1 ? '#9ff0ff' : '#b894f0'; } return null; }); };
+// Jellara's low jelly: a little wobbling blob of pink and lime jelly with its shine
+BUILD.rockjel = function(B, t, i){ box(B, t.x, t.y, 2.2, 2.2, 1.3, function(dx, dy, tt){ var lime = hash(i, 3, 62) < 0.5, r = 0.9 * Math.sqrt(Math.max(0, 1 - tt / 1.2)) + 0.05, d = Math.hypot(dx, dy);
+    if (d > r) return null; return dx + dy < -r * 0.5 && tt > 0.5 ? '#ffffff' : lime ? (d > r - 0.15 ? '#78c84a' : '#9be86a') : (d > r - 0.15 ? '#e070b8' : '#ff8ad0'); }); };
 BUILD.rockbasalt = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#3a2420', '#2a1814', '#6a3a2a'], i); };
 BUILD.rocksnow = function(B, t, i){ rockAt(B, t.x, t.y, 1.2, ['#7a8494', '#5e6878', '#ffffff'], i); };
 BUILD.bushsnow = function(B, t, i){ bushAt(B, t.x, t.y, 1.1, ['#1f4f3e', '#ffffff', '#2a6450']); };
@@ -1297,6 +1306,7 @@ var LIFE = {
   mars:{ fly:['drone', 1], mote:['dust', 40] },
   saturn:{ fly:['drone', 2], mote:[['snow', 30], ['spark', 12]] },
   crystara:{ fly:['drone', 1], mote:[['spark', 40], ['snow', 10]] },
+  jellara:{ fly:['drone', 1], mote:[['petal', 20], ['spark', 14]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -1941,11 +1951,11 @@ function run(box, P, pic, api){
   if (gym){ gPanel = document.createElement('div'); gPanel.className = 'pp-gp'; gPanel.hidden = true; gPanel.setAttribute('data-gp', '');
     gPanel.innerHTML = '<div class="pp-gph"><b data-gname></b><i data-gkeep hidden>Gatekeeper</i><span data-gmoves></span></div><p class="pp-gpg" data-ggoal></p>' +
       '<div class="pp-gps" data-gsay aria-live="polite"><span class="pp-gpf" data-gface></span><p data-gtext></p></div>' +
-      '<div class="pp-gpc" data-gctl><div class="pp-gpb"><button data-gundo>Undo</button><button data-grestart>Restart</button><button data-gleave>Leave</button></div>' +
+      '<div class="pp-gpc" data-gctl><div class="pp-gpb"><button data-gundo>Undo</button><button data-grestart>Restart</button><button data-gleave>Leave</button><button data-ghint hidden>Hint</button><button data-gskip hidden>Skip</button></div>' +
       '<div class="pp-gpd" data-gpad><button data-d="0" aria-label="Step up"></button><button data-d="3" aria-label="Step left"></button><button data-d="1" aria-label="Step right"></button><button data-d="2" aria-label="Step down"></button></div></div>' +
       '<div class="pp-gpk" data-gkeys></div>';
     ui.appendChild(gPanel);
-    ['name', 'keep', 'moves', 'goal', 'say', 'face', 'text', 'ctl', 'pad', 'keys', 'undo', 'restart', 'leave'].forEach(function(k){ gE[k] = gPanel.querySelector('[data-g' + k + ']'); });
+    ['name', 'keep', 'moves', 'goal', 'say', 'face', 'text', 'ctl', 'pad', 'keys', 'undo', 'restart', 'leave', 'hint', 'skip'].forEach(function(k){ gE[k] = gPanel.querySelector('[data-g' + k + ']'); });
     gE.name.textContent = gym.G.name; gE.keep.hidden = !gym.G.keeper; gE.goal.textContent = GL.goal(gym.G);
     var stepIn = gym.inp === 'step'; gE.pad.hidden = !stepIn; gPanel.classList.toggle('nopad', !stepIn);
     gE.keys.textContent = (stepIn ? 'Arrows or WASD step · ' : gym.inp === 'tap' ? 'Click a tile · ' : '') + 'Z undo · R restart';
@@ -1954,6 +1964,15 @@ function run(box, P, pic, api){
     gE.undo.onclick = function(e){ e.stopPropagation(); gymUndo(); };
     gE.restart.onclick = function(e){ e.stopPropagation(); if (gym.in && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); };
     gE.leave.onclick = function(e){ e.stopPropagation(); gymOut(); };
+    /* SKIP (the gatekeeper only, once he has tried it: putt.js GYM_SKIP). The first press asks, the second skips: out
+       through the gate with the hole open, the vault still shut. */
+    /* HINT (the gatekeeper only, once he has tried a little: putt.js GYM_HINT). One line, the same every press, held in
+       the panel until something else is said. Pressed, it is recorded, and Hint stays from then on. */
+    gE.hint.onclick = function(e){ e.stopPropagation(); if (!gym.in || gym.solved) return;
+      var h = ''; try{ h = api.gymHint ? api.gymHint(GY.id) : ''; }catch(e2){ h = ''; } h = h || gym.G.hint || ''; if (h) gymLine(h, 0, false); };
+    gE.skip.onclick = function(e){ e.stopPropagation(); if (!gym.in || gymBusy()) return;
+      if (!gym.skipSure){ gym.skipSure = true; gE.skip.textContent = 'Skip it'; gymLine('Skip it and the hole opens. The badge and the Tour pack stay in the vault until you solve it.', 6000, false); return; }
+      var m = ''; try{ m = api.gymSkip ? api.gymSkip(GY.id) : ''; }catch(e2){ m = ''; } gym.canSkip = false; gymOut(); if (m) sayLater(m, 4200, 0.4); };
     // the pad: a press steps at once, and held it keeps stepping, as the stick does
     [].forEach.call(gE.pad.querySelectorAll('button'), function(bt){ var d = +bt.getAttribute('data-d');
       bt.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); padDir = d; gym.tap = d; try{ bt.setPointerCapture(e.pointerId); }catch(e2){} });
@@ -1999,10 +2018,12 @@ function run(box, P, pic, api){
   function gymReset(tsec, s0){ gym.leverAt = tsec; gym.resets++; api.sfx && api.sfx('blip');
     var tmp = []; gView.things(tmp, tsec); tmp.forEach(function(o){ var z = o.o && o.o.z != null ? o.o.z : GYM_DECK; burst(o.x, o.y, z + 1, ['rgba(230,220,200,.85)', '#c8a070'], 8, 1.4, 0.6); });
     gymKeep(); gym.n = 0; gym.s = s0; gView.lay(gym.s); var q = gT(GY.Q.start); g.x = q[0]; g.y = q[1]; burst(q[0], q[1], GYM_DECK + 1.2, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymCheck(); gymPanel();
-    if ((gym.resets === 2 || gym.resets === 5) && civIt) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200); }
+    var civ = (gym.resets === 2 || gym.resets === 5) && civIt;
+    if (civ) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200);
+    gymTried(1, 0, civ ? 7200 : 0); }
   function gymOpen(tsec){ var V = gym.vault; if (!V) return;
     if (gym.solved){ say('The vault\'s empty. You already cleaned it out.', 2400); return; }
-    gym.solved = true; V.done = true; V.openAt = tsec; api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
+    gym.solved = true; V.done = true; V.openAt = tsec; gymSkipShow(false); gymHintShow(); api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
     try{ res = api.gym ? api.gym(GY.id) : null; }catch(e){ res = null; }
     // the coins are said in the panel: nothing floats over the board in a gym
     setTimeout(function(){ if (!alive) return; burst(V.x, V.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff', '#c89cff'], 40, 1.5, 1.4); ring(V.x, V.y, '255,214,64');
@@ -2022,7 +2043,7 @@ function run(box, P, pic, api){
   function gymEnter(tsec){ gym.in = true; g.vx = g.vy = 0; var q = gT(GY.Q.gate); g.x = q[0]; g.y = q[1]; gym.hist = []; gym.n = 0; gHot = null;
     var st = GL.place(gym.G, gym.s, GY.Q.gate), Gd = gym.G; gym.s = st;
     gym.anim = { ph:[[['me', GY.Q.gate, GY.Q.start, 'walk']]], k:0, t0:tsec, then:function(){ gym.s = GL.place(Gd, gym.s, GY.Q.start); gymCheck(); gymPanel(); } };
-    gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
+    gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); gym.canSkip = true; gymSkipShow(gym.G.keeper && !gym.solved && api.gymCanSkip && (function(){ try{ return api.gymCanSkip(GY.id); }catch(e){ return false; } })()); gymHintShow(); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
     if (!gym.told.in){ gym.told.in = 1; sayLater(gym.solved ? 'Solved already. Have a look around.' : GK.hello || 'Undo takes one back.', 3600, 0.5); }
     camAim(true); }
   function gymLeave(){ gym.in = false; gym.lock = true; g.x = GY.ax; g.y = GY.ay + 0.4; g.face = [0, 1]; g.aimI = null; g.vx = g.vy = 0; gPanel.hidden = true; ui.classList.remove('ingym'); gym.stuck = false; gymLit();
@@ -2033,7 +2054,21 @@ function run(box, P, pic, api){
      time, then the panel goes back to the civilian's current line, so the nudge is always there to read again. */
   function gymLine(txt, ms, civ){ if (!gPanel) return; gym.line = { txt:txt, civ:!!civ, until:ms ? performance.now() + ms : 0 };
     put(gE.text, 'textContent', txt); cls(gE.say, 'civ', !!civ); cls(gE.say, 'fresh', false); void gE.say.offsetWidth; cls(gE.say, 'fresh', true); }
-  function gymLineTick(now){ var L = gym.line; if (L && L.until && now > L.until) gymIdle(); }
+  function gymLineTick(now){ var L = gym.line; if (L && L.until && now > L.until) gymIdle();
+    // time in the room counts as trying, a little at a time, so a closed tab loses at most a few seconds of it
+    if (gym.in && !gym.solved){ if (!gym.tAt) gym.tAt = now; else if (now - gym.tAt > 15000){ gymTried(0, (now - gym.tAt) / 1000); gym.tAt = now; } } else gym.tAt = 0; }
+  // a try (a Restart, or time in the room) told to putt.js, which says whether the gatekeeper can now be skipped
+  // wait: the civilian has just spoken (his plainer or warmer line), so the Skip line waits until he is done
+  function gymTried(dr, ds, wait){ if (!gym.G.keeper || gym.solved || !api.gymTry) return; var c = false; try{ c = !!api.gymTry(GY.id, dr, ds); }catch(e){ c = false; } gymSkipShow(c, wait); gymHintShow(); }
+  function gymSkipShow(c, wait){ if (!gE.skip) return; var was = gym.canSkip; gym.canSkip = !!c && !gym.solved; gE.skip.hidden = !gym.canSkip; if (!gym.canSkip){ gym.skipSure = false; gE.skip.textContent = 'Skip'; }
+    gymBtns(); if (gym.canSkip && !was && gym.in){ var tell = function(){ if (alive && gym.in && gym.canSkip && !gym.solved) gymLine('Stuck? You can skip this one. The vault keeps its prize until you solve it.', 6000, false); };
+      if (wait) setTimeout(tell, wait); else tell(); } }
+  // Hint: a gatekeeper with a hint, not solved, once putt.js says he has tried enough (or has had it before). It never shows the hint itself.
+  function gymHintShow(){ if (!gE.hint) return; var c = false;
+    if (gym.G.keeper && gym.G.hint && !gym.solved && api.gymCanHint){ try{ c = !!api.gymCanHint(GY.id); }catch(e){ c = false; } }
+    gE.hint.hidden = !c; gymBtns(); }
+  // the second row is Leave alone, or Leave beside Hint and Skip: one, two or three across, never a third row
+  function gymBtns(){ var b = gE.leave && gE.leave.parentNode; if (!b) return; var n = (gE.hint && !gE.hint.hidden ? 1 : 0) + (gE.skip && !gE.skip.hidden ? 1 : 0); cls(b, 'x1', n === 1); cls(b, 'x2', n === 2); }
   // what the panel says between messages: the civilian's current line, or once the vault is open, what it paid
   function gymIdle(){ if (gym.solved) gymLine(gym.wonLine || 'Solved. The vault is open.', 0, false); else gymLine(GL.clue(gym.G, gym.resets), 0, true); }
   // a tap steps toward where it lands: whichever way, across or up and down the screen, is the further (a tap kind: that tile)
@@ -2380,7 +2415,7 @@ function run(box, P, pic, api){
     gymRestart:function(){ if (gym && gym.in && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); }, gymLeave:function(){ gymOut(); },
     gymSays:function(){ return gym && gym.line ? gym.line.txt : ''; }, gymHot:function(){ return gym && gym.in ? gymHot() : null; },
     gymRects:function(){ if (!gym) return null; var R = function(el){ if (!el || el.hidden || !el.offsetParent) return null; var r = el.getBoundingClientRect(); return { left:r.left, top:r.top, right:r.right, bottom:r.bottom }; };
-      return { board:gymBoard(), panel:R(gPanel), goal:R(gE.goal), say:R(gE.say), controls:R(gE.ctl), pad:R(gE.pad), buttons:[gE.undo, gE.restart, gE.leave].map(R), stick:R(stick), bubble:R(bubEl), kk:kk, kkBase:kkBase }; },
+      return { board:gymBoard(), panel:R(gPanel), goal:R(gE.goal), say:R(gE.say), controls:R(gE.ctl), pad:R(gE.pad), buttons:[gE.undo, gE.restart, gE.leave].concat([gE.hint, gE.skip].filter(function(e){ return e && !e.hidden; })).map(R), stick:R(stick), bubble:R(bubEl), kk:kk, kkBase:kkBase }; },
     // a camera held where a check puts it, and the highlights off, so a room's pixels can be compared with an older build's
     gymPin:function(o){ if (gym){ gym.pin = o && o.ox != null ? { ox:o.ox, oy:o.oy, kk:o.kk } : null; gym.marks = !(o && o.marks === false); } }, bubble:function(){ return bubble ? bubble.txt : ''; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
@@ -3801,6 +3836,36 @@ BUILD.crysGeode = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, d
   if (d > R) return null; if (dy > R * 0.1 && tt > R * 0.35 && d < R - 0.35) return null; if (d > R - 0.35) return ((dx * 3 | 0) + (tt * 3 | 0)) % 2 ? '#6a6478' : '#5a5468';
   return hash(dx * 4 | 0, dy * 4 | 0, tt * 4 | 0) > 0.6 ? '#ffffff' : (d < R * 0.5 ? '#c8a8ff' : '#8a5ad8'); }); };
 LMSIZE.crysSpire = [4, 4, 9]; LMSIZE.crysPrism = [5, 3, 3]; LMSIZE.crysGeode = [5, 4, 3.4];
+/* ---- Jellara's stops on the walk, the same places its holes stand in (land.js): along the goo shore, over the domes, past
+   the jelly falls, through the bean grove and at the core. No trees: the walk is a pink jelly path over lime jelly, and where
+   the jelly breaks off the teal goo shows through. */
+// an opening in the jelly, where the goo shows: teal with pink bubbles, a pink rim of jelly round the gap
+function jelGap(c){ var o = vn(c.ti * 0.016, c.tj * 0.016, 125); if (o < 0.66) return null; if (o < 0.685) return '#ffb8e0'; if (o < 0.7) return '#227068';
+  var st = hash(c.ti, c.tj, 126); return st > 0.985 ? '#ffd0ec' : st > 0.97 ? '#ff9ad8' : '#3fd0b0'; }
+GPAT.jelLime = function(c){ var gp = jelGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 121), w = Math.sin(c.ti * 0.09 + Math.sin(c.tj * 0.07) * 2);
+  if (w > 0.94) return '#d8fca8'; return a > 0.72 ? '#c0f58a' : a < 0.28 ? '#78c84a' : '#9be86a'; };
+GPAT.jelPink = function(c){ var gp = jelGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 123), w = Math.sin(c.ti * 0.09 + Math.sin(c.tj * 0.07) * 2);
+  if (w > 0.94) return '#ffe0f4'; return a > 0.7 ? '#ffc8ec' : a < 0.3 ? '#e070b8' : '#ff9ad8'; };
+KIT['jellara~shore'] = kitFrom(KIT.jellara, { nlm:3, lm:['jelBean', 'jelWobbler', 'jelBean'] });
+KIT['jellara~domes'] = kitFrom(KIT.jellara, { nlm:5, lm:['jelDome', 'jelDome', 'jelBean', 'jelDome', 'jelDome'] });
+KIT['jellara~falls'] = kitFrom(KIT.jellara, { g:['#ff9ad8', '#ffc8ec', '#e070b8', 0.15], gpat:'jelPink', nlm:3, lm:['jelWobbler', 'jelDome', 'jelWobbler'] });
+KIT['jellara~beans'] = kitFrom(KIT.jellara, { nlm:4, low:['rockjel', 'rockjel', 'rockjel'], lm:['jelBean', 'jelBean', 'jelDome', 'jelBean'] });
+KIT['jellara~core'] = kitFrom(KIT.jellara, { g:['#ff9ad8', '#ffc8ec', '#e070b8', 0.15], gpat:'jelPink', nlm:3, lm:['jelBean', 'jelDome', 'jelBean'] });
+LIFE_AS['jellara~shore'] = { fly:['drone', 1], mote:[['petal', 20], ['spark', 14]] };
+LIFE_AS['jellara~domes'] = { mote:[['spark', 30], ['petal', 16]] };
+LIFE_AS['jellara~falls'] = { fly:['drone', 2], mote:['petal', 30] };
+LIFE_AS['jellara~beans'] = { mote:[['spark', 24], ['firefly', 14]] };
+LIFE_AS['jellara~core'] = { mote:[['spark', 60]] };
+// a dome of clear pink jelly with a jelly bean set inside it, a shine across its top
+BUILD.jelDome = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2 - 0.3, d = Math.hypot(dx, dy * t.w / t.d, tt * R / t.h);
+  if (d > R) return null; if (d > R - 0.3) return dx + dy < -R * 0.3 && tt > t.h * 0.45 ? '#ffffff' : '#ff8ad0'; if (Math.hypot(dx, dy, tt - t.h * 0.3) < R * 0.3) return '#ffb030'; return null; }); };
+// a giant jelly bean standing on end, orange, a white shine down one side
+BUILD.jelBean = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, r = (t.w / 2 - 0.4) * Math.sqrt(Math.max(0, 1 - Math.pow(2 * u - 1, 2))) * (1 - 0.15 * Math.sin(u * 3.1)) + 0.05, d = Math.hypot(dx, dy);
+  if (d > r) return null; return d > r - 0.18 && dx + dy < 0 ? '#ffffff' : u > 0.5 ? '#ffb030' : '#ff9020'; }); };
+// a wobbler: a stack of three jelly blobs, lime on pink on lime, each a little smaller than the one under it
+BUILD.jelWobbler = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var k = Math.min(2, (tt / (t.h / 3)) | 0), zc = (k + 0.5) * t.h / 3, R = (t.w / 2 - 0.3) * (1 - k * 0.22);
+  var d = Math.hypot(dx, dy, (tt - zc) * 1.5); if (d > R) return null; return dx + dy < -R * 0.4 && tt > zc ? '#ffffff' : k === 1 ? '#ff5fb8' : '#9be86a'; }); };
+LMSIZE.jelDome = [6, 5, 4]; LMSIZE.jelBean = [4, 4, 7]; LMSIZE.jelWobbler = [4, 4, 5];
 // @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();
