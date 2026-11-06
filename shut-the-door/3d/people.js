@@ -12,7 +12,7 @@ import { capFor, frontFor } from './uniforms.js?v=2';
 import * as G from './gear3d.js?v=4';
 import * as HG from './headgear.js?v=5';
 import { measureHead, wear, wornShade } from './headgear.js?v=5';
-import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
+import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld, aimBone } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=9';
 import { STANCE_X } from './inplay-plan.js?v=33';
@@ -482,6 +482,29 @@ function blockCrouch(p, k) {
   }
   crouch(p, 1);
   p.crouch = c0; p.feet = f0;
+}
+
+/* The ball and socket of the shoulder from the bind pose (arms 45 degrees down and out): 120 of swing
+   and 70 of roll, as deform-probe.js LIMITS judges it. */
+const SHOULDER = { swing: 120, twist: 70 };
+
+/** Keep the shoulder's ball and socket inside its range, after the collar bone has taken its share
+    (motion.js clavicles). The elbow stays where the range leaves it, the forearm reaches on to the
+    wrist and the hand keeps its facing, so the mitt is where it was unless the wrist is out of reach.
+    The catcher's glove arm: a target high and inside a lefty is across his chest, past where the
+    shoulder goes from the deep set (site PR #837); the solve crossed the arm to 149 degrees and rolled
+    it 40 more in two frames. An arm inside its range is untouched. */
+function shoulderRange(p, s) {
+  const B = p.bones, ua = B[`upperarm_${s}`], la = B[`lowerarm_${s}`], hand = B[`hand_${s}`];
+  const q0 = ua.quaternion.clone();
+  const wrist = wpos(hand), handQ = wquat(hand);
+  limitSwing(p, `upperarm_${s}`, SHOULDER.swing);
+  limitTwist(p, `upperarm_${s}`, SHOULDER.twist);
+  if (ua.quaternion.angleTo(q0) < 1e-6) return;
+  aimBone(la, hand, wrist.sub(wpos(la)));
+  const pq = wquat(la).invert();
+  hand.quaternion.copy(pq.multiply(handQ));
+  hand.updateMatrixWorld(true);
 }
 
 /** Keep a joint's twist (about its own length, from the bind pose) inside maxDeg; its swing stays. */
@@ -1611,6 +1634,7 @@ export class People {
       }
       lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tBall - pt.tRel))), 0.4);
       clavicles(c);
+      shoulderRange(c, 'l');
       deltoids(c);
     }
     if (u) {
