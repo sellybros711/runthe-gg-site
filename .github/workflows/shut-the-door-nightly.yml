@@ -61,7 +61,7 @@ jobs:
       - name: Install Playwright
         if: matrix.name != 'inplay'
         timeout-minutes: 14
-        run: bash scripts/install-playwright.sh
+        uses: ./.github/actions/playwright
       - name: The checkpoint of an earlier attempt of this commit, if any
         uses: actions/cache/restore@v4
         with:
