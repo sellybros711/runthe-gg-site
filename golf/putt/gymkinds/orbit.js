@@ -61,6 +61,7 @@ var GYMS = [
     say:['Two decks, two plates. Each plate only turns its own deck.',
       'The ice takes you a long way for one step. See where it leaves you.',
       'A shard on a deck rides with it. Bring it round before you leave it behind.'],
+    hint:'You\'ll go up through the top deck more than once. Each turn of it opens a different way up, to a different shard. Come back down and turn it again.',
     rows:[
       '#########',
       '####C####',

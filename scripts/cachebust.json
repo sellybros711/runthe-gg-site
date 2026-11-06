@@ -182,6 +182,10 @@
       "v": "2",
       "sha": "8eb403844838a3f1"
     },
+    "/arcade/namesake.js": {
+      "v": "1",
+      "sha": "47d23b88a7d3ff0b"
+    },
     "/arcade/rosters.js": {
       "v": "10",
       "sha": "b9849242f71aa867"
@@ -307,8 +311,8 @@
       "sha": "a87d04996195b81f"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/fact.js": {
       "v": "6",
@@ -555,8 +559,8 @@
       "sha": "4f304dc9b4be7abf"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/fact.js": {
       "v": "6",
@@ -689,8 +693,8 @@
       "sha": "78b9065056032f84"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/howto.js": {
       "v": "26",
@@ -947,6 +951,10 @@
     "/arcade/flags.js": {
       "v": "8",
       "sha": "15a845209f4b3402"
+    },
+    "/arcade/namesake.js": {
+      "v": "1",
+      "sha": "47d23b88a7d3ff0b"
     },
     "/arcade/rosters.js": {
       "v": "10",
@@ -1987,8 +1995,8 @@
       "sha": "78b9065056032f84"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/howto.js": {
       "v": "26",
@@ -2113,8 +2121,8 @@
       "sha": "3b13e2fe5b4ec3b5"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/sportegories.js": {
       "v": "21",
@@ -2311,8 +2319,8 @@
       "sha": "4f304dc9b4be7abf"
     },
     "/arcade/type.js": {
-      "v": "5",
-      "sha": "3c801e8a64f49dc8"
+      "v": "6",
+      "sha": "fbcc723fa1659338"
     },
     "/arcade/fact.js": {
       "v": "6",
@@ -2753,8 +2761,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "129",
-      "sha": "c6c04238ee57e36e"
+      "v": "130",
+      "sha": "f9faa0f2fc248e88"
     },
     "putt/land.js": {
       "v": "18",
@@ -2773,68 +2781,68 @@
       "sha": "45d7b0b33e29de49"
     },
     "putt/gymkinds/push.js": {
-      "v": "2",
-      "sha": "5e5dcad639562666"
+      "v": "3",
+      "sha": "11b6a4bdc2498c46"
     },
     "putt/gymkinds/trickshot.js": {
-      "v": "1",
-      "sha": "2aec2e642e30c10e"
+      "v": "2",
+      "sha": "1bc7b5ec2b778ff5"
     },
     "putt/gymkinds/lights.js": {
-      "v": "1",
-      "sha": "de60231e000e6f18"
+      "v": "2",
+      "sha": "05af84aaec2a69c8"
     },
     "putt/gymkinds/islands.js": {
-      "v": "1",
-      "sha": "6fcc6d3bd2960e73"
+      "v": "2",
+      "sha": "d3cf1ecfa7942acf"
     },
     "putt/gymkinds/pipes.js": {
-      "v": "2",
-      "sha": "9126c9571ee3625a"
+      "v": "3",
+      "sha": "316e9cd976e8b596"
     },
     "putt/gymkinds/lasers.js": {
-      "v": "1",
-      "sha": "688f2b5686062a2b"
+      "v": "2",
+      "sha": "5bdaec4bac513f10"
     },
     "putt/gymkinds/ice.js": {
-      "v": "1",
-      "sha": "5113cf9c84996a35"
+      "v": "2",
+      "sha": "575654814e53f8f7"
     },
     "putt/gymkinds/mimic.js": {
-      "v": "1",
-      "sha": "17ea52c313a233e3"
+      "v": "2",
+      "sha": "9cad1f40928a6ccb"
     },
     "putt/gymkinds/railyard.js": {
-      "v": "2",
-      "sha": "8e064fd810692f35"
+      "v": "3",
+      "sha": "d87c6b20f3d037c9"
     },
     "putt/gymkinds/rock.js": {
-      "v": "1",
-      "sha": "df8dd5a7cbc927a2"
+      "v": "2",
+      "sha": "91409363b7eb8fbe"
     },
     "putt/gymkinds/runes.js": {
-      "v": "1",
-      "sha": "e506eaa07ba7c4e9"
+      "v": "2",
+      "sha": "f26b59472d5c52f8"
     },
     "putt/gymkinds/gravity.js": {
-      "v": "1",
-      "sha": "979c87aaa5399755"
+      "v": "2",
+      "sha": "f8150b243149bfd5"
     },
     "putt/gymkinds/air.js": {
-      "v": "1",
-      "sha": "c4c1a83f9ba63d6a"
+      "v": "2",
+      "sha": "eb860639372dec7f"
     },
     "putt/gymkinds/orbit.js": {
-      "v": "1",
-      "sha": "aa44bfcf89fb87e2"
+      "v": "2",
+      "sha": "4a1979aa73837e84"
     },
     "putt/gymkinds/tint.js": {
-      "v": "1",
-      "sha": "b20021e502a16048"
+      "v": "2",
+      "sha": "3a050619c1f47f63"
     },
     "putt/trail.js": {
-      "v": "52",
-      "sha": "653f20c117a82af6"
+      "v": "53",
+      "sha": "60c69ec6efc10fc1"
     },
     "putt/mapland.js": {
       "v": "10",
@@ -3191,32 +3199,36 @@
       "sha": "f42ddd13c70685d0"
     },
     "auth.js": {
-      "v": "9",
-      "sha": "215909bacdcd476a"
+      "v": "10",
+      "sha": "3507b40bb34fd819"
     },
     "voices.js": {
       "v": "1",
       "sha": "27db450876d5eda0"
     },
+    "postgame.js": {
+      "v": "1",
+      "sha": "fedfba1872eb4e2a"
+    },
     "api.js": {
-      "v": "31",
-      "sha": "8f7fc28354c973c2"
+      "v": "32",
+      "sha": "17e0605212244c92"
     },
     "mock-api.js": {
-      "v": "17",
-      "sha": "20303e938ceace3e"
+      "v": "18",
+      "sha": "13581b349be88d9c"
     },
     "coach.js": {
       "v": "2",
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
-      "v": "7",
-      "sha": "33aac98592cad168"
+      "v": "9",
+      "sha": "079c28d2327d3f0e"
     },
     "modes-ui.js": {
-      "v": "10",
-      "sha": "bce97b1073a77f47"
+      "v": "12",
+      "sha": "4ef3559bb7d9b39f"
     },
     "box-ui.js": {
       "v": "2",
@@ -3235,12 +3247,12 @@
       "sha": "472174c95dbcbfc9"
     },
     "ui.js": {
-      "v": "72",
-      "sha": "134a3a1143402c63"
+      "v": "75",
+      "sha": "3a990410987ef0a9"
     },
     "3d/boot.js": {
-      "v": "98",
-      "sha": "08d85b37693a2a9e"
+      "v": "99",
+      "sha": "3dc551531072c656"
     }
   },
   "shut-the-door/lab/index.html": {
@@ -3369,8 +3381,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "99",
-      "sha": "6410cb6bee59a3d3"
+      "v": "100",
+      "sha": "5264b7fa48f58d43"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3457,6 +3469,10 @@
     "firstperson.js": {
       "v": "23",
       "sha": "05e356e012e604a0"
+    },
+    "idle.js": {
+      "v": "1",
+      "sha": "87510ccce3640fac"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3623,6 +3639,16 @@
     "pitch.js": {
       "v": "14",
       "sha": "a1a37a929b5aba8f"
+    }
+  },
+  "shut-the-door/3d/idle.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "34647a01ead672d6"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
     }
   },
   "shut-the-door/3d/field.js": {

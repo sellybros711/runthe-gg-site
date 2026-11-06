@@ -75,6 +75,7 @@ var GYMS = [
     say:['Those belts in there don\'t care what\'s riding them. You, a barrel, whatever. Took my kids forever to figure out why that matters.',
       'You\'ll never walk to every hole in there. Doesn\'t mean a barrel can\'t get there.',
       'Once you ride that belt up, there\'s no carrying anything with you. Whatever you need up there has to go first.'],
+    hint:'You don\'t have to fill every hole. The ones in the middle room are only in your way. Save your barrels for the holes between you and the vault.',
     rows:[
       '###########',
       '#v..#C#...#',
