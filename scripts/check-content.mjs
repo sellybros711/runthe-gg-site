@@ -105,7 +105,9 @@ async function deal(game, flags, n = 30) {
       return {
         name: t.name, sport: t.sport, fame: fam, fam: F ? F.posFamily(t) : null, decade: t.decade || [],
         opts: (r.opts || []).filter(o => o && o.name !== t.name).map(o => ({ name: o.name, sport: o.sport, fam: F.posFamily(o), era: F.eraScore(t, o) })),
-        col: r.col || null, schools: r.schools || null, cols: (r.target && r.target.cols) || null, extra: r.extra || null
+        col: r.col || null, schools: r.schools || null, cols: (r.target && r.target.cols) || null, extra: r.extra || null,
+        // the SCHOOL behind each option, so two spellings of one place count as one
+        schoolIds: (r.schools && window.RTGType && RTGType.schoolIdent) ? r.schools.map(s => RTGType.schoolIdent(s)) : null
       };
     });
   }, n);
@@ -136,7 +138,9 @@ for (const g of RUNS) {
     R.ok(same >= 0.75 * known.length, `decoys: most options share the position family (${same} of ${known.length})`);
   }
   if (g === 'almamater') {
-    const bad = on.deal.filter(r => !r.schools || new Set(r.schools.map(s => s.toLowerCase())).size !== r.schools.length || r.schools.indexOf(r.col) < 0);
+    /* By the school, not the string: "Miami" and "Miami (FL)" were both on
+       David Njoku's grid, and the one he did not tap was marked right. */
+    const bad = on.deal.filter(r => !r.schools || new Set(r.schoolIds || r.schools.map(s => s.toLowerCase())).size !== r.schools.length || r.schools.indexOf(r.col) < 0);
     R.ok(!bad.length, 'decoys: four different schools, the right one among them', bad.slice(0, 2).map(r => r.name).join(', '));
   }
   // the default game: a fingerprint of the daily deal

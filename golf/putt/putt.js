@@ -2735,7 +2735,7 @@ var CSS = '\
 .pp-big{font-family:var(--display,inherit);font-size:38px;color:#F1D04A;font-variant-numeric:tabular-nums}.pp-wide{display:block;width:100%;margin-top:8px}.pp-wide small{display:block;font-size:10.5px;font-weight:700;opacity:.75}.pt-go[disabled]{opacity:.55;cursor:default}\
 .pp-nums{display:flex;justify-content:center;gap:16px;margin:8px 0}.pp-nums span{font-size:10.5px;letter-spacing:.1em;color:#9fbfae;font-weight:800;text-transform:uppercase}.pp-nums b{display:block;font-size:24px;color:#fff;letter-spacing:0}\
 .pp-coins{font-weight:900;color:#ffd45e;font-size:16px;margin:4px 0 6px}.pp-reward{background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.45);border-radius:11px;padding:8px;margin:8px 0;font-weight:800;font-size:13px;color:#fff}.pp-fine{font-size:11px!important;opacity:.75}\
-.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border:0;border-top:1px solid rgba(255,255,255,.08);font:inherit;font-weight:800;color:inherit;background:none;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent}.pp-drow:hover,.pp-drow:focus-visible{background:rgba(255,255,255,.06);border-radius:8px;outline:none}.pp-pcsh{position:fixed;z-index:9}.pp-pc{max-height:calc(100dvh - 32px);overflow:auto}.pp-pc.pro{border:2px solid #f1d04a;box-shadow:0 0 24px rgba(241,208,74,.28)}.pp-pcfig{display:flex;justify-content:center;min-height:80px;margin:2px 0 6px}.pp-pcfig img{height:96px;width:auto;image-rendering:pixelated}.pp-pcfig .pp-dav{width:72px;height:72px}.pp-pcnm{font-weight:900;font-size:22px;color:#fff;word-break:break-word}.pp-pcpass{display:inline-block;margin-top:4px;font-weight:900;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#1d1405;background:#f1d04a;border-radius:999px;padding:3px 9px}.pp-pctoday{margin:8px 0 10px;font-weight:800;font-size:13px;color:#ffd9a8}.pp-pctoday b{color:#f1d04a}.pp-pclv{font-size:15px;color:#e8efe9}.pp-pclv b{color:#fff;font-size:20px}.pp-pclv span{display:block;font-size:12px;opacity:.75;margin-top:2px}.pp-pcbar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);margin:9px 0 5px;overflow:hidden}.pp-pcbar i{display:block;height:100%;background:linear-gradient(90deg,#f1d04a,#ffe48a)}.pp-pcstar{font-weight:900;color:#f1d04a;font-size:14px}.pp-pcg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 4px}.pp-pct{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 4px}.pp-pct b{display:block;font-size:18px;color:#fff;line-height:1.1}.pp-pct span{display:block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;opacity:.7;margin-top:2px}.pp-pcmem{margin:8px 0 2px;font-size:12.5px;color:#ffd9a8}.pp-pcmem b{color:#f08a24}.pp-pcsh .pp-wide{margin-top:12px}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}.pp-av.g3,.pp-dav.g3{overflow:hidden}.pp-av.g3 img,.pp-dav.g3 img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}\
+.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border:0;border-top:1px solid rgba(255,255,255,.08);font:inherit;font-weight:800;color:inherit;background:none;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent}.pp-drow:hover,.pp-drow:focus-visible{background:rgba(255,255,255,.06);border-radius:8px;outline:none}.pp-btabs{display:flex;gap:4px;margin:6px 0 2px;padding:3px;border-radius:999px;background:rgba(0,0,0,.25);width:max-content}.pp-btabs button{border:0;border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.04em;background:transparent;color:#cfd8e3;cursor:pointer}.pp-btabs button.on{background:#F1D04A;color:#10241a}.pp-next{border:2px solid #f1d04a;background:linear-gradient(160deg,#173a26,#0b2016);cursor:default}.pp-next .k{color:#f1d04a}.pp-nxr{display:flex;gap:12px;align-items:center;margin:8px 0 10px}.pp-nxr .th{flex:0 0 74px;height:96px;border-radius:10px;overflow:hidden;background:#0a1d14}.pp-nxr .th canvas{width:100%;height:100%;object-fit:cover;image-rendering:pixelated}.pp-nxt{display:flex;flex-direction:column;gap:2px;text-align:left;min-width:0}.pp-nxt b{font-size:22px;color:#fff;line-height:1.05}.pp-nxt span{font-size:13px;opacity:.85}.pp-nxt .pay{color:#ffd9a8;font-weight:800;opacity:1}.pp-nxt .rw{color:#f1d04a;font-weight:900;opacity:1;margin-top:2px}.pp-nxgo{width:100%;padding:13px}.pp-pcsh{position:fixed;z-index:9}.pp-pc{max-height:calc(100dvh - 32px);overflow:auto}.pp-pc.pro{border:2px solid #f1d04a;box-shadow:0 0 24px rgba(241,208,74,.28)}.pp-pcfig{display:flex;justify-content:center;min-height:80px;margin:2px 0 6px}.pp-pcfig img{height:96px;width:auto;image-rendering:pixelated}.pp-pcfig .pp-dav{width:72px;height:72px}.pp-pcnm{font-weight:900;font-size:22px;color:#fff;word-break:break-word}.pp-pcpass{display:inline-block;margin-top:4px;font-weight:900;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#1d1405;background:#f1d04a;border-radius:999px;padding:3px 9px}.pp-pctoday{margin:8px 0 10px;font-weight:800;font-size:13px;color:#ffd9a8}.pp-pctoday b{color:#f1d04a}.pp-pclv{font-size:15px;color:#e8efe9}.pp-pclv b{color:#fff;font-size:20px}.pp-pclv span{display:block;font-size:12px;opacity:.75;margin-top:2px}.pp-pcbar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);margin:9px 0 5px;overflow:hidden}.pp-pcbar i{display:block;height:100%;background:linear-gradient(90deg,#f1d04a,#ffe48a)}.pp-pcstar{font-weight:900;color:#f1d04a;font-size:14px}.pp-pcg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 4px}.pp-pct{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 4px}.pp-pct b{display:block;font-size:18px;color:#fff;line-height:1.1}.pp-pct span{display:block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;opacity:.7;margin-top:2px}.pp-pcmem{margin:8px 0 2px;font-size:12.5px;color:#ffd9a8}.pp-pcmem b{color:#f08a24}.pp-pcsh .pp-wide{margin-top:12px}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}.pp-av.g3,.pp-dav.g3{overflow:hidden}.pp-av.g3 img,.pp-dav.g3 img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}\
 .pp-dres{border-radius:16px;padding:16px;text-align:center}.pp-dres .k{font-size:11px;letter-spacing:.14em;font-weight:900;text-transform:uppercase;opacity:.85}.pp-dres .t{font-family:var(--display,inherit);font-size:34px;margin:4px 0}.pp-dres .m{font-size:13px}\
 .pp-hub{position:relative;max-width:none}.pp-hub .pp-map{position:absolute;inset:0;border-top:0;background:#0b1a12}\
 .pp-hdr{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 26px;background:linear-gradient(rgba(5,10,14,.78),rgba(5,10,14,0));pointer-events:none}\
@@ -3358,13 +3358,17 @@ function cardOf(st){ try{
     streak:Math.max((st.streak && st.streak.best) || 0, (st.streak && st.streak.n) || 0), chests:chests,
     built:PP_PUTTERS.filter(function(pt){ return partsOf(st, pt.id) >= 3; }).length, builtN:PP_PUTTERS.length };
 }catch(e){ return null; } }
+// the card as it goes up: with the golfer's look (the page's lookForBoard, at most 4 KB) for the Tour board's rows
+function cardFor(st){ var c = cardOf(st); if (!c) return c;
+  try{ var h = hostOf(), lk = h.boardLook ? h.boardLook() : null; if (lk && JSON.stringify(lk).length <= 4096) c.look = lk; }catch(e){}
+  return c; }
 function cloudRow(d){ var r = Array.isArray(d) ? d[0] : d; return r && typeof r === 'object' ? r : null; }
 function cloudPush(){ var uid = cloudUid(); if (!uid || CLOUD.uid !== uid) return;
   if (CLOUD.busy){ CLOUD.again = true; return; }
   var st = null; try{ st = JSON.parse(praw()); }catch(e){} if (!st || st.v !== 2) return;
   CLOUD.busy = true; CLOUD.again = false;
   var done = function(){ CLOUD.busy = false; if (CLOUD.again) cloudPush(); };
-  var p = null; try{ p = hostOf().rpc('ps_save_put', { p_game:'putt', p_slot:'tour', p_payload:Object.assign({}, st, { card:cardOf(st) }), p_progress:cloudProg(st) }); }catch(e){ p = null; }
+  var p = null; try{ p = hostOf().rpc('ps_save_put', { p_game:'putt', p_slot:'tour', p_payload:Object.assign({}, st, { card:cardFor(st) }), p_progress:cloudProg(st) }); }catch(e){ p = null; }
   if (!p || !p.then) return done();
   p.then(function(d){ var r = cloudRow(d);
     // refused: the server holds more than this copy. Merge it in, keep it, and send the merged record.
@@ -3573,7 +3577,7 @@ function home(tid){ var t = window.RTT_PUTT_MAPFIRST ? null : tid && worldOk(tid
   var TR = tourOf(t), tp = pload().tours[TR.id], n = Math.min(TR.levels.length, frontier(tp, TR));
   S.tour = t; var r = openTrail(t, n - 1); if (S.trailTo) S.trailTo.home = true; return r; }
 function showHub(tid){
-  stopTrail(); cancelAnimationFrame(S.raf); S.screen = 'menu'; S.play = null; clearInterval(S.tick);
+  stopTrail(); cancelAnimationFrame(S.raf); S.screen = 'menu'; S.tourFrom = null;   // a walk from the Daily card left for the map is no longer from it S.play = null; clearInterval(S.tick);
   if (!cloudUid()) spareFill();   // this device's lives: a spare kept from before fills any gap (signed in, livesSync does it)
   var st = pload(), dk = today(), dh = dailyHole(dk), dT = THEMES[dh.theme], drec = st.daily[dk];
   // which tour the map shows: the one asked for, else the one last looked at; the Members Tour only when it is open
@@ -4530,6 +4534,8 @@ function startLevel(n, tid){
   var d = tourDesc(n, S.host, tid), TRs = tourOf(tid);
   if (!TRs.secret) reveal(TRs, Math.floor((n - 1) / (TRs.per || PER)));   // standing in a world is seeing it
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
+  if (!TRs.lab && !TRs.secret) pt('putt_tour_start', { n:n, tour:tid, from:S.tourFrom || 'tour', resume:!!back, first:!(st.tours[tid] && st.tours[tid].best && st.tours[tid].best[n] != null) });
+  S.tourFrom = null;
   stopTrail(); playHole(); warmWalk(tourOf(tid), n); trailAhead(tid, n);
   if (back) resumeInto(c);
 }
@@ -4621,11 +4627,44 @@ function secretOut(holed){
 // a Tour hole ends one of three ways
 /* THE GAME'S OWN QUESTS AND STREAK hear about Putt Putt: a hole won, new stars, an ace, a chest, the Daily Hole
    (host.quest feeds the weekly challenges, host.questDaily the daily quests, host.dayPlayed the one streak). */
+/* THE FUNNEL (the owner, 2026-11-05): many play the Daily Hole every day and never the Tour. These say where they stop:
+   the Daily played, the next-hole card seen and tapped, a Tour hole started (and from where) and finished. */
+function pt(ev, props){ try{ S.host.track && S.host.track(ev, props || {}); }catch(e){} }
+/* THE NEXT TOUR HOLE, for the Daily Hole's card and the page's home (summary().next): the hole the player is up to on
+   the main Tour, what it pays, and how far the world's signature hole (and its item) is. A world still behind its star
+   gate says how many stars it needs. A guest past hole 1 is asked to sign in, as everywhere. */
+function nextTour(st){ try{
+  st = st || pload(); var TR = TOURS.main, tp = st.tours.main, N = TR.levels.length, K = TR.per || PER, PY = PAY.main;
+  if (!tp) return null; var n = Math.min(tp.lv || 1, N);
+  if (tp.best[n] != null){ if (n >= N) return { done:1 };
+    var wn = Math.floor(n / K); return { gate:1, n:n + 1, w:wn + 1, world:revealed(TR, wn, st) ? WORLDS[wn].name : 'The next world', need:worldGate(TR, wn - 1), have:starsThrough(tp, TR, wn - 1) }; }
+  var w = Math.floor((n - 1) / K), L = TR.levels[n - 1], sg = sigHole(TR, w);
+  return { n:n, name:levelName(n, 'main'), w:w + 1, world:WORLDS[w].name, par:L.par, sig:!!L.sig, pays:tp.paid[n] ? 0 : (L.sig ? PY.sig : PY.hole),
+    toGo:sg ? sg - n + 1 : 0, reward:sg ? PY.sigReward[w] : '', reward2:sg ? PY.worldReward[w] : '', guest:guestAsks('main', n) };
+}catch(e){ return null; } }
+function nextLine(nx){ if (!nx || nx.gate || nx.done || !nx.reward) return '';
+  return nx.toGo <= 1 ? 'This hole wins the ' + nx.reward : nx.toGo + ' holes to the ' + nx.reward; }
+function nextCardHTML(nx){ if (!nx || nx.done) return '';
+  if (nx.gate) return '<div class="pt-card pp-next" data-next><div class="k">Your next Tour hole</div><div class="pp-nxr"><div class="pp-nxt"><b>' + esc(nx.world) + '</b>' +
+    '<span>Opens at ' + nx.need + ' ★. You have ' + nx.have + '.</span><span class="rw">Replay a hole for more stars to open it.</span></div></div>' +
+    '<button class="pt-go pp-nxgo" data-nxgo>Open the map ▸</button></div>';
+  var line = nextLine(nx);
+  return '<div class="pt-card pp-next" data-next><div class="k">Your next Tour hole</div><div class="pp-nxr"><span class="th" data-nxth></span><div class="pp-nxt">' +
+    '<b>Hole ' + nx.n + '</b><span>' + esc(nx.world) + ' · par ' + nx.par + '</span><span class="pay">' + (nx.pays && !isGuest() ? '+' + nx.pays + ' coins · ' : '') + 'up to ★★★</span>' +
+    (line ? '<span class="rw">★ ' + esc(line) + '</span>' : '') + '</div></div>' +
+    '<button class="pt-go pp-nxgo" data-nxgo>' + (nx.guest ? 'Sign in to play hole ' + nx.n + ' ▸' : 'Play hole ' + nx.n + ' ▸') + '</button></div>'; }
+function wireNext(nx){ var box = S.ov.querySelector('[data-next]'); if (!box || !nx) return;
+  pt('putt_next_shown', { n:nx.n, gate:!!nx.gate, guest:!!nx.guest });
+  if (!nx.gate) setTimeout(function(){ if (S && S.screen === 'card'){ try{ thumb(S.ov.querySelector('[data-nxth]'), tourDesc(nx.n, S.host, 'main'), 'nx' + nx.n); }catch(e){} } }, 60);
+  box.querySelector('[data-nxgo]').onclick = function(){ pt('putt_next_go', { n:nx.n, gate:!!nx.gate, guest:!!nx.guest }); S.tourFrom = 'daily_card';
+    if (nx.gate) return showHub('main'); if (nx.guest) return guestSheet(nx.n, 'main');
+    if (trailOk()) return openTrail('main', nx.n - 1); startLevel(nx.n, 'main'); }; }
 function hq(metric, n){ try{ if (n > 0 && S.host.quest) S.host.quest(metric, n); }catch(e){} }
 function tourOut(holed){
   if (S.round && S.round.tid === 'secret') return secretOut(holed);
   var P = S.play, R = S.round, C = P.C, n = R.lv, tid = R.tid || 'main', TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, N = TR.levels.length;
   var s = P.strokes, par = C.par, st = pload(), tp = st.tours[TR.id], th = TR.levels[n - 1].three;
+  if (!TR.lab) pt('putt_tour_done', { n:n, tour:TR.id, won:!!(holed && s <= par), strokes:s, par:par });
   clearCur(st); if (TR.lab || !(holed && s <= par)) psave(st);
   if (holed && s <= par){
     var first = tp.best[n] == null, lines = [], had = starsOf(tp.best[n], par, th), wasLv = tp.lv;
@@ -4642,7 +4681,8 @@ function tourOut(holed){
     var w = Math.floor((n - 1) / K), worldDone = TR.levels[n - 1].sig && !tp.wpaid[w];
     if (worldDone){ tp.wpaid[w] = 1; grant(st, PY.sigReward[w]); grant(st, PY.worldReward[w]); if (PY.finish && n === N) grant(st, PY.finish); }
     psave(st); if (got || worldDone) coins(got + (worldDone ? PY.world : 0), TR.name + ' ' + wl(n, tid));
-    if (!TR.lab){ if (s < par) hq('ppHolesWon', 1); hq('ppStars', stars - had); if (s === 1 && ac) hq('ppAces', 1); }
+    if (!TR.lab){ if (s < par) hq('ppHolesWon', 1); hq('ppStars', stars - had); if (s === 1 && ac) hq('ppAces', 1);
+      try{ S.host.questDaily && S.host.questDaily('tour'); }catch(e){} }   // the daily quest: clear a Putt Putt Tour hole
     try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
     if (worldDone) return worldComplete(n, s, par, got, tid, lines);
     var sec = !!P.foundSecret; if (sec){ tp.secret = tp.secret || {}; if (!tp.secret[n]){ tp.secret[n] = 1; psave(st); } }
@@ -4708,6 +4748,7 @@ function dailyFinish(s, par, ms){
   if (!late){ st.streak.n = st.streak.last === y ? st.streak.n + 1 : (st.streak.last === dk ? st.streak.n : 1); st.streak.last = dk; st.streak.best = Math.max(st.streak.best || 0, st.streak.n);
   if (STREAK_REWARD[st.streak.n]) grant(st, STREAK_REWARD[st.streak.n]); }
   psave(st); coins(got, 'Daily Hole');
+  pt('putt_daily_done', { s:s, par:par, late:!!late });
   if (!late){ hq('ppDaily', 1); try{ S.host.questDaily && S.host.questDaily(); }catch(e){} try{ S.host.dayPlayed && S.host.dayPlayed(); }catch(e){}
     // the day's shared board (148_putt_daily_board.sql): the first round of the day stands, a late one never posts
     // the board waits for this post (S.dailyPost), or it is read before the round lands and says nobody has posted
@@ -4721,11 +4762,17 @@ function dailyFinish(s, par, ms){
    the result is on screen, so rounds posted by others come in without leaving and coming back. */
 var BOARD_EVERY = 20000;
 function dailyBoard(dk, again){ var box = S.ov && S.ov.querySelector('[data-rows]'); if (!box) return; var h = S.host;
+  // TWO BOARDS (the owner, 2026-11-05): today's Daily Hole, and the Tour ranked by stars (putt_tour_board), each row a card
+  var tab = S.boardTab === 'tour' ? 'tour' : 'day', seq = S.boardSeq = (S.boardSeq || 0) + 1;
+  S.ov.querySelectorAll('[data-bt]').forEach(function(b){ var on = b.getAttribute('data-bt') === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+    b.onclick = function(){ var t = b.getAttribute('data-bt'); if (t === tab) return; S.boardTab = t; clearTimeout(S.boardT); pt('putt_board_tab', { tab:t }); dailyBoard(dk); }; });
+  var bm = S.ov.querySelector('[data-bm]'); if (bm) bm.textContent = tab === 'tour' ? 'Most stars on the Tour. The furthest hole breaks a tie.' : 'Fewest strokes wins. The clock breaks a tie.';
   if (!(h.signedIn && h.signedIn())){ box.innerHTML = '<div class="m">Sign in to see how you stack up.</div>'; return; }
+  if (tab === 'tour') return tourBoard(box, dk, again, seq);
   if (!again) box.innerHTML = '<div class="m">Loading the board.</div>';
   var post = S.dailyPost; S.dailyPost = null;
   var p = Promise.resolve(post).catch(function(){ return null; }).then(function(){ try{ return h.rpc('putt_daily_board', { p_day:dk, p_limit:10 }); }catch(e){ return null; } });
-  p.then(function(rows){ if (!S || !S.ov || !S.ov.contains(box)) return;
+  p.then(function(rows){ if (!S || !S.ov || !S.ov.contains(box) || seq !== S.boardSeq) return;
     clearTimeout(S.boardT); S.boardT = setTimeout(function(){ if (S && S.ov && S.ov.contains(box)) dailyBoard(dk, true); }, BOARD_EVERY);
     if (!rows || !rows.length){ box.innerHTML = '<div class="m">' + (rows ? 'Nobody has posted yet. Be the first.' : 'The board is on its way.') + '</div>'; return; }
     var n = rows[0].players || rows.length;
@@ -4735,6 +4782,21 @@ function dailyBoard(dk, again){ var box = S.ov && S.ov.querySelector('[data-rows
       return '<button type="button" class="pp-drow' + (r.mine ? ' me' : '') + '" data-card="' + i + '" aria-label="' + esc(r.username) + '\'s card"><b>' + r.rank + '</b>' + im + '<span>' + nm + '</span><em>' + r.strokes + ' · ' + (r.ms != null ? clockTxt(r.ms) : '-') + '</em></button>'; }).join('') +
       '<div class="m" style="margin-top:6px;opacity:.75">' + n + (n === 1 ? ' player' : ' players') + ' today. Tap a player for their card.</div>';
     box.querySelectorAll('[data-card]').forEach(function(b){ b.onclick = function(){ playerCard(rows[+b.getAttribute('data-card')], dk); }; }); }); }
+// the Tour board: the top ten by stars and the player's own row, each with the card it was ranked from (166_putt_tour_board.sql)
+function tourBoard(box, dk, again, seq){ var h = S.host;
+  if (!again) box.innerHTML = '<div class="m">Loading the board.</div>';
+  var p = null; try{ p = h.rpc('putt_tour_board', { p_limit:10 }); }catch(e){ p = null; }
+  Promise.resolve(p).catch(function(){ return null; }).then(function(rows){ if (!S || !S.ov || !S.ov.contains(box) || seq !== S.boardSeq) return;
+    clearTimeout(S.boardT); S.boardT = setTimeout(function(){ if (S && S.ov && S.ov.contains(box)) dailyBoard(dk, true); }, BOARD_EVERY);
+    if (!rows || !rows.length){ box.innerHTML = '<div class="m">' + (rows ? 'Nobody is on the Tour board yet. Play a Tour hole to be first.' : 'The board is on its way.') + '</div>'; return; }
+    var n = rows[0].players || rows.length;
+    box.innerHTML = rows.map(function(r, i){ var nm = boardPro(r.username, r.mine) ? '<span class="proname">' + esc(r.username) + '</span>' : esc(r.username);
+      return '<button type="button" class="pp-drow' + (r.mine ? ' me' : '') + '" data-card="' + i + '" aria-label="' + esc(r.username) + '\'s card"><b>' + r.rank + '</b>' + rowAv(r.look) + '<span>' + nm + '</span><em>★ ' + r.stars + ' · Hole ' + r.lv + '</em></button>'; }).join('') +
+      '<div class="m" style="margin-top:6px;opacity:.75">' + n + (n === 1 ? ' player' : ' players') + ' on the Tour board. Tap a player for their card.</div>';
+    box.querySelectorAll('[data-card]').forEach(function(b){ b.onclick = function(){ var r = rows[+b.getAttribute('data-card')];
+      // the row carries the card it was ranked from, so opening it asks the server for nothing
+      CARD_CACHE[String(r.username || '').toLowerCase()] = { t:Date.now(), row:{ card:r.card, board_days:r.board_days } };
+      playerCard(Object.assign({ kind:'tour' }, r), dk); }; }); }); }
 function rowAv(look){ var g = look ? chipImg(look) : ''; if (g) return '<i class="pp-dav g3">' + g + '</i>';
   try{ var c = look && S.host.portrait ? S.host.portrait(look) : null; if (c && c.toDataURL) return '<i class="pp-dav" style="background-image:url(' + c.toDataURL() + ')"></i>'; }catch(e){} return ''; }
 function boardPro(name, mine){ try{ return !!(S.host.isPro && S.host.isPro(name, !!mine)); }catch(e){ return false; } }
@@ -4750,7 +4812,7 @@ function playerCard(r, dk){ if (!r || !S || !S.ov) return; var old = S.ov.queryS
     '<div class="pp-pcfig">' + fig + '</div>' +
     '<div class="pp-pcnm">' + (pro ? '<span class="proname">' + esc(r.username) + '</span>' : esc(r.username)) + '</div>' +
     (pro ? '<div class="pp-pcpass">Tour Pass</div>' : '') +
-    '<div class="pp-pctoday"><b>#' + r.rank + '</b> today · ' + r.strokes + (r.strokes === 1 ? ' stroke' : ' strokes') + ' on a par ' + r.par + (r.ms != null ? ' · ' + clockTxt(r.ms) : '') + '</div>' +
+    '<div class="pp-pctoday">' + (r.kind === 'tour' ? '<b>#' + r.rank + '</b> on the Tour stars board' : '<b>#' + r.rank + '</b> today · ' + r.strokes + (r.strokes === 1 ? ' stroke' : ' strokes') + ' on a par ' + r.par + (r.ms != null ? ' · ' + clockTxt(r.ms) : '')) + '</div>' +
     '<div class="pp-pcst" data-st>' + (r.mine ? cardHTML(cardOf(pload()), null) : '<div class="m">Loading their card.</div>') + '</div>' +
     '<button class="pt-bt pp-wide" data-n>Close</button></div></div>');
   S.ov.appendChild(sh);
@@ -4780,11 +4842,12 @@ function dailyResult(got, dk){
     <div class="pp-dres"><div class="k">Daily Hole · ' + monthDay(dk) + '</div><div class="nm">' + esc(dh.name) + '</div><div class="m" style="opacity:.8">' + esc(T.name) + '</div><span class="th" data-th></span>\
       <div class="sc"><b>' + rec.s + '</b><span>' + (rec.s === 1 ? 'stroke' : 'strokes') + '<br>par ' + rec.par + '</span>' + (rec.ms != null ? '<b class="pp-tm">' + clockTxt(rec.ms) + '</b><span>time</span>' : '') + '</div>\
       <div class="m" style="color:#ffd9a8;font-weight:800">' + esc(label) + (rec.s < rec.par ? ' · beat par' : '') + (st.streak.best > 1 ? ' · best streak ' + st.streak.best : '') + '</div>' + (got ? (isGuest() ? '<div class="m">' + GUEST_COINS + '</div>' : '<div class="pp-coins">+' + got + ' coins</div>') : '') + '</div>\
-    <div class="pt-card pp-dboard" style="cursor:default" data-board><div class="k">Leaderboard</div><div class="m">Fewest strokes wins. The clock breaks a tie.</div><div class="pp-drows" data-rows></div></div>\
+' + nextCardHTML(S.nextHole = nextTour(st)) + '\
+    <div class="pt-card pp-dboard" style="cursor:default" data-board><div class="k">Leaderboard</div><div class="pp-btabs" role="tablist"><button type="button" data-bt="day" role="tab">Today</button><button type="button" data-bt="tour" role="tab">Tour stars</button></div><div class="m" data-bm></div><div class="pp-drows" data-rows></div></div>\
     <button class="pt-go" data-share style="background:#12a08f;color:#fff;padding:14px">Share</button><button class="pt-bt" data-menu style="padding:13px">Calendar</button>\
     <div class="m" style="text-align:center;color:#a9a3c9">' + (rec.late ? 'Played late, so the streak did not move. ' : 'Played. ') + 'Next Daily Hole in ' + hm(msToNextDay()) + '.</div></div>';
   setTimeout(function(){ if (S && S.screen === 'card') thumb(S.ov.querySelector('[data-th]'), dh, 'd' + dk); }, 30);
-  dailyBoard(dk);
+  dailyBoard(dk); wireNext(S.nextHole);
   S.ov.querySelector('[data-x]').onclick = function(){ showHub(); }; S.ov.querySelector('[data-menu]').onclick = function(){ showHub('daily'); };
   S.ov.querySelector('[data-share]').onclick = function(e){ var txt = 'Run The Tour · Putt Putt Tour Daily Hole ' + dk + '\n' + T.name + ': ' + dh.name + '\n' + label + ' (' + rec.s + ', par ' + rec.par + ')' + (rec.ms != null ? ' in ' + clockTxt(rec.ms) : '') + '\nrunthe.gg/golf';
     try{ navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Copied'; }catch(err){} };
@@ -5863,7 +5926,8 @@ RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk =
   var tm = st.tours.main, lv = Math.min(tm.lv, LEVELS.length), wv = Math.floor((lv - 1) / PER);
   while (wv > 0 && !revealed(TOURS.main, wv, st)) wv--;   // a world still under cloud is not named on the home card either
   return { lv:lv, levels:LEVELS.length, world:WORLDS[wv].name, theme:WORLDS[wv].theme, w:wv + 1, worlds:WORLDS.length, wStars:worldStars(tm, TOURS.main, wv), wMax:worldMax(TOURS.main, wv), members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
-    daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par, ms:rec && rec.ms }, nextMs:msToNextDay() }; };
+    daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par, ms:rec && rec.ms }, nextMs:msToNextDay(),
+    next:(function(){ var nx = nextTour(st); if (nx) nx.line = nextLine(nx); return nx; })() }; };
 /* THE REWARDS AS CLOSET ITEMS, for the page: every name with its item, whether the record holds it, and where to win it.
    Each reads the record only (rewardRec), so the page can ask while it works out what a player owns. */
 RTT_PUTT.rewardItems = function(){ return Object.keys(REWARD_ITEM).map(function(nm){ return { name:nm, key:REWARD_ITEM[nm] }; }); };

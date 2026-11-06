@@ -23,6 +23,11 @@ on:
         type: boolean
         required: false
         default: false
+      catchup:
+        description: 'Only build if the week is not live yet (what the watchdog sends).'
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -56,35 +61,80 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Build the board
+      # THE WEEK IS WORKED OUT ONCE, HERE, and handed to the guard and the build, so the two can
+      # never be asking about different weeks. A week typed in by hand is taken as given.
+      - name: Which week
+        id: week
         if: steps.when.outputs.go == 'yes'
+        run: |
+          WEEK='${{ inputs.week }}'
+          if [ -n "$WEEK" ]; then
+            echo "season=$(date -u +%Y)" >> "$GITHUB_OUTPUT"
+            echo "week=$WEEK" >> "$GITHUB_OUTPUT"
+            echo "asked for week $WEEK"
+          else
+            # 2 is the season over: nothing to build, and not a failure. Anything else fails.
+            set +e
+            node cfb/build/fantasy/next-week.mjs
+            RC=$?
+            set -e
+            if [ "$RC" = "2" ]; then echo "none=yes" >> "$GITHUB_OUTPUT"; exit 0; fi
+            exit $RC
+          fi
+
+      # A PRICE NEVER MOVES ONCE ANYBODY HAS DRAFTED AGAINST IT. The scheduled run and the
+      # watchdog's catch up both stop if the week is already live, because either can land just
+      # after another build opened it. A plain manual run still builds, because a person asked.
+      # THE POINTER IS READ FROM origin/main, NOT FROM THIS CHECKOUT. A dispatched run checks out
+      # the commit main was on when it was dispatched, so a catch up queued behind the Monday
+      # build would read the pointer from before that build committed, and rebuild a live week.
+      - name: Is it already open
+        id: open
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          if [ "${{ steps.week.outputs.none }}" = "yes" ]; then
+            echo "the season is over. Nothing to build."
+            echo "go=no" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch -q --depth 1 origin main
+          LIVE=$(git show origin/main:cfb/data/fantasy/now.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const n=JSON.parse(s);console.log(n.season+" "+n.week)})')
+          WANT='${{ steps.week.outputs.season }} ${{ steps.week.outputs.week }}'
+          echo "live: $LIVE, this week: $WANT"
+          GUARDED=no
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.catchup }}" = "true" ]; then GUARDED=yes; fi
+          if [ "$GUARDED" = "yes" ] && [ "$LIVE" = "$WANT" ]; then
+            echo "week $WANT is already open. Nothing to do."
+            echo "go=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the board
+        if: steps.open.outputs.go == 'yes'
         run: |
           set -o pipefail
           WRITE=''
           if [ "${{ steps.when.outputs.write }}" = "true" ]; then WRITE='--write'; fi
-          WEEK='${{ inputs.week }}'
-          if [ -n "$WEEK" ]; then
-            node cfb/build/fantasy/pool.mjs --week "$WEEK" $WRITE
-          else
-            node cfb/build/fantasy/pool.mjs $WRITE
-          fi
+          node cfb/build/fantasy/pool.mjs --season '${{ steps.week.outputs.season }}' \
+            --week '${{ steps.week.outputs.week }}' $WRITE
 
       - name: Who is out
-        if: steps.when.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        if: steps.open.outputs.go == 'yes' && steps.when.outputs.write == 'true'
         run: node cfb/build/fantasy/injuries.mjs --write
 
       - name: Can it be drafted
-        if: steps.when.outputs.go == 'yes'
+        if: steps.open.outputs.go == 'yes'
         run: node cfb/build/test/test_fantasy.mjs --quick
 
       - name: Install the postgres client
-        if: steps.when.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        if: steps.open.outputs.go == 'yes' && steps.when.outputs.write == 'true'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
 
       # THE BOARD IS PUBLISHED BEFORE ANYTHING IS COMMITTED. A committed board with no row on
       # the server is a page that drafts perfectly and refuses every submit.
       - name: Publish the week to the leaderboard
-        if: steps.when.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        if: steps.open.outputs.go == 'yes' && steps.when.outputs.write == 'true'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
@@ -97,7 +147,7 @@ jobs:
           echo "published."
 
       - name: Commit the week
-        if: steps.when.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        if: steps.open.outputs.go == 'yes' && steps.when.outputs.write == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
