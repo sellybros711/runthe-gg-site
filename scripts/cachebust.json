@@ -3219,12 +3219,12 @@
       "sha": "fedfba1872eb4e2a"
     },
     "api.js": {
-      "v": "34",
-      "sha": "f313f4231ac32c7a"
+      "v": "35",
+      "sha": "3793b6b3dac331a0"
     },
     "mock-api.js": {
-      "v": "18",
-      "sha": "13581b349be88d9c"
+      "v": "19",
+      "sha": "40a14761a6689a60"
     },
     "coach.js": {
       "v": "2",
@@ -3247,16 +3247,16 @@
       "sha": "9314ac5af2667f8b"
     },
     "clip.js": {
-      "v": "1",
-      "sha": "9ab4c3ad526a7dc4"
+      "v": "2",
+      "sha": "1e85ead60ba32183"
     },
     "clip-ui.js": {
-      "v": "1",
-      "sha": "472174c95dbcbfc9"
+      "v": "2",
+      "sha": "26b07d7d61b15d86"
     },
     "ui.js": {
-      "v": "76",
-      "sha": "1b6c77a6871d3ac4"
+      "v": "77",
+      "sha": "4ab3f0c7dbff01f8"
     },
     "3d/boot.js": {
       "v": "110",

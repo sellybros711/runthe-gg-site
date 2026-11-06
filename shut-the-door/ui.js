@@ -2567,6 +2567,11 @@ function pitchRow(p, clip, sel) {
     (clip ? '<button class="pc-clip" type="button" data-clip="' + p.n + '" aria-label="' + esc('Clip ' + title) + '"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip</button>' : '') +
     '</div>';
 }
+/* the at bat's own Clip, under the detail: every pitch of it in order, one video (clip-ui.js) */
+function abClipBtn(ab) {
+  return '<button class="ab-clip" type="button" data-abclip="' + (ab.from + 1) + '" data-abto="' + ab.to + '" aria-label="' + esc('Clip the at bat: ' + (ab.name || 'this hitter') + ', ' + plural(ab.pitches.length, 'pitch', 'pitches')) + '">' +
+    '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip at bat</button>';
+}
 /* the picked pitch, beside the zone */
 function pitchDetail(ab, p) {
   if (!p) return '';
@@ -2594,7 +2599,7 @@ function abCard(ab, real, i, col, bat) {
   if (!ab) return '<article class="cmp-bat ab never"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head + vs + '</article>';
   return '<article class="cmp-bat ab" data-ab="' + i + '"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head +
     '<div class="ab-body">' + kzoneSVG(ab).replace('data-pick="' + pick + '"', 'data-pick="' + pick + '" data-on="1"') +
-    '<div class="ab-dt" aria-live="polite">' + pitchDetail(ab, cur) + '</div></div>' +
+    '<div class="ab-side"><div class="ab-dt" aria-live="polite">' + pitchDetail(ab, cur) + '</div>' + (clip ? abClipBtn(ab) : '') + '</div></div>' +
     '<div class="ab-list">' + ab.pitches.map(function (p) { return pitchRow(p, clip, p.n === pick); }).join('') + '</div>' + vs + '</article>';
 }
 /* a tap on a pitch (its row or its mark): light it and show its detail. Nothing else moves */
@@ -2854,16 +2859,18 @@ function initClips() {
     playDaily: function () { dailyBack(); renderHomeState(); show('s-home'); takeMound(); },
   });
   /* a pitch in an at bat: a tap on its row or its mark shows its detail; the Clip on each of your
-     pitches plays it again. Both behind a tap only */
+     pitches plays it again, and the at bat's Clip plays all of its pitches. All behind a tap only */
   $('r-reveal').addEventListener('click', function (e) {
     var pk = e.target.closest && e.target.closest('[data-pick]');
     if (pk) { var card = pk.closest('.ab[data-ab]'); if (card) pickPitch(card, +pk.getAttribute('data-pick')); return; }
-    var b = e.target.closest && e.target.closest('[data-clip]');
+    var b = e.target.closest && e.target.closest('[data-clip], [data-abclip]');
     if (!b) return;
     var st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
     if (!st || !st.outingId) return;
     audio();
-    CU.fromOuting(st.outingId, +b.getAttribute('data-clip'));
+    /* an at bat's Clip: its pitches from its first to its last, in order */
+    if (b.hasAttribute('data-abclip')) CU.fromOuting(st.outingId, +b.getAttribute('data-abto'), +b.getAttribute('data-abclip'));
+    else CU.fromOuting(st.outingId, +b.getAttribute('data-clip'));
   });
 }
 
