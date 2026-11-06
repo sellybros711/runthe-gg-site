@@ -52,6 +52,7 @@ var PAL={
   moon:{ g:['#8a8892','#96949e','#a2a0aa','#aeacb6'], sp:[['#c8c6ce',.012],['#6a6872',.01]], tree:'round', leaf:['#6a6872','#7a7882','#8a8892','#9a98a2'], trunk:'#4a4852', path:['#c8ccd8','#dfe3ec'], water:['#05060f','#0b0e22','#141a36','#c8d4ff'], shadow:.62 },
   saturn:{ g:['#d8b878','#e2c88c','#e8d2a0','#f0dfb4'], sp:[['#b8905a',.012],['#fff2d0',.012]], tree:'round', leaf:['#c8d8ee','#dceaf6','#a8c4e8','#ffffff'], trunk:'#6a6488', path:['#e8e6f6','#f4f2fc'], water:['#b8905a','#c8a060','#d8b878','#fff2d0'], shadow:.62 },
   crystara:{ g:['#0e0820','#1c1236','#2a1a4a','#9fd8e8'], sp:[['#ffffff',.01],['#b8a8ff',.01]], tree:'round', leaf:['#8a5ad8','#b894f0','#9ff0ff','#ffffff'], trunk:'#5a4a8a', path:['#eef8ff','#ffffff'], water:['#0a0618','#0e0820','#1c1236','#b8a8ff'], shadow:.6 },
+  jellara:{ g:['#2aa890','#3fd0b0','#6ae0c4','#9be86a'], sp:[['#ff9ad8',.012],['#ffd0ec',.008]], tree:'round', leaf:['#ff5fb8','#ff8ad0','#9be86a','#ffb030'], trunk:'#227068', path:['#ffd0ec','#ffe8f6'], water:['#2aa890','#3fd0b0','#6ae0c4','#ffd0ec'], shadow:.62 },
   mars:{ g:['#b85a32','#c4683e','#d07648','#dc8654'], sp:[['#7a3220',.014],['#f0b088',.01]], tree:'round', leaf:['#5a2a1c','#7a3a22','#8a4a2a','#a8502e'], trunk:'#3a2420', path:['#e8b088','#f2c4a0'], water:['#2a0e08','#3a140c','#5a2010','#a8502e'], shadow:.62 },
   candy:{ g:['#eaa9c0','#f0b8cc','#f5c6d7','#f9d4e2'], sp:[['#ffffff',.012],['#ffd23f',.006]], tree:'round', leaf:['#c2306a','#e0488a','#ff6fa8','#ffa8cc'], trunk:'#f6f1ea', path:['#c98a5a','#d89c6c'], water:['#3a1c0c','#5a2e14','#7a4422','#a8683e'], shadow:.66 },
   harvest:{ g:['#8a7a3a','#9a8a44','#a8984e','#b5a65a'], sp:[['#d07a2a',.012],['#5a3818',.01]], tree:'round', leaf:['#7a2e10','#a8461a','#d06a22','#e8a03a'], trunk:'#3a2416', path:['#c4a46a','#d4b47a'], water:['#2e5a6e','#3a7088','#4f88a0','#c6dde6'], shadow:.6, fog:'#e8a03a' }
@@ -451,6 +452,28 @@ WORLD.crystara=function(P,th,seed){
   for(var pq=0;pq<5;pq++){ var pp=spot(P,P.w*hash(pq,15,seed),P.h*hash(pq,16,seed),16,4,6,tk); if(!pp)continue;
     for(x=0;x<4;x++)for(y=0;y<4;y++) if(y>=3-x) P.set(pp[0]+x,pp[1]+y,hex(x<2?'#d8b8ff':'#8ae0ff'));
     for(x=4;x<16;x++){ P.set(pp[0]+x,pp[1]+2,hex('#ffffff')); P.tint(pp[0]+x,pp[1]+1,hex('#9ff0ff'),.5); P.tint(pp[0]+x,pp[1]+3,hex('#9ff0ff'),.5); } }
+};
+WORLD.jellara=function(P,th,seed){
+  var tk=[], x, y;
+  // the goo sea, teal with pink bubbles; the walk runs along banks of lime jelly laid over it, a pink rim at their edge, round
+  // domes of pink jelly and giant beans standing all round, a fall of jelly pouring into the goo, and the core glowing near the end
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var n=fbm(x*.03,y*.03,seed+3), st=hash(x,y,seed+5);
+    P.set(x,y,hex(st>.994?'#ffd0ec':st>.986?'#ff9ad8':n>.66?'#6ae0c4':n>.5?'#3fd0b0':'#2aa890')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=11+fbm(x*.06,y*.06,seed+9)*6; if(pd<e)P.set(x,y,hex(pd>e-1.2?'#ffb8e0':Math.sin(x*.3+Math.sin(y*.2)*2)>.85?'#c0f58a':'#9be86a')); else if(pd<e+1.5)P.shade(x,y,.65); }
+  // the core: a great glowing dome of pink jelly near the trail's end
+  var hx=spot(P,P.w*.72,P.h*.82,16,14,6,tk); if(hx){ var cx=hx[0]+8, cy=hx[1]+9;
+    P.ell(cx,cy+3,9,3,function(a,b){ P.tint(a,b,hex('#ff5fb8'),.35); });
+    P.ell(cx,cy,7,6,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.6?'#ffffff':dx+dy<-.1?'#ffc8ec':dy>.5?'#e070b8':'#ff8ad0')); }); }
+  // domes and giant beans, each with its shadow
+  for(var bq=0;bq<30;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var dome=hash(bq,7,seed)<.5, col=['#ff5fb8','#ffb030','#b894f0','#9be86a'][(hash(bq,8,seed)*4)|0];
+    P.ell(bb[0]+3,bb[1]+6.2,2.6,.8,function(a,b){ P.shade(a,b,.6); });
+    if(dome) P.ell(bb[0]+3,bb[1]+4,2.6,2.2,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.5?'#ffffff':dy>.4?'#e070b8':'#ff8ad0')); });
+    else P.ell(bb[0]+3,bb[1]+3,1.4,3,function(a,b,dx){ P.set(a,b,hex(dx<-.4?'#ffffff':col)); }); }
+  // falls of pink jelly pouring into a pool of goo
+  for(var pq=0;pq<3;pq++){ var pp=spot(P,P.w*hash(pq,15,seed),P.h*hash(pq,16,seed),8,10,6,tk); if(!pp)continue;
+    for(x=0;x<8;x++){ P.set(pp[0]+x,pp[1],hex('#78c84a')); P.set(pp[0]+x,pp[1]+1,hex('#9be86a')); }
+    for(y=2;y<8;y++)for(x=2;x<6;x++) P.set(pp[0]+x,pp[1]+y,hex((x+y)%3?'#ff5fb8':'#ffd0ec'));
+    P.ell(pp[0]+4,pp[1]+8.5,4,1.4,function(a,b){ P.set(a,b,hex('#6ae0c4')); }); }
 };
 WORLD.candy=function(P,th,seed){
   var tk=[], x, y;

@@ -11,7 +11,7 @@
 
    RTT_PUTT_TRIP.play(host, { from:'earth', to:'moon', vehicle:'rocket', label, name }, cb). A tap skips it. putt.js's
    spaceTrip() hands the trip here and keeps its own flat version for when this file is missing or throws. PLANETS holds every
-   world it flies between: the Earth, the Moon, Mars, Saturn and Crystara. */
+   world it flies between: the Earth, the Moon, Mars, Saturn, Crystara and Jellara. */
 (function(){
 var root = typeof window !== 'undefined' ? window : globalThis;
 
@@ -40,6 +40,14 @@ function crysFar(n){ var w = fbm([n[0] * 1.6 + 3.1, n[1] * 1.6, n[2] * 1.6 - 2.3
   var c = sw < 0.42 ? lerpV([34, 20, 78], [92, 52, 168], smooth((sw - 0.22) / 0.2)) : sw < 0.6 ? lerpV([92, 52, 168], [176, 92, 220], smooth((sw - 0.42) / 0.18)) : lerpV([176, 92, 220], [236, 140, 226], smooth((sw - 0.6) / 0.15));
   c = lerpV(c, [120, 236, 255], smooth((vein - 0.82) / 0.12) * 0.8);
   return lerpV(c, [236, 252, 255], smooth((vein - 0.93) / 0.05)); }
+/* Jellara from afar: a teal goo sea stirred into flowing swirls, lime jelly drifting through it like continents of slime,
+   blushes of pink jelly folded into the lime and soft bright streaks where the goo catches the light (warped noise, never a grid) */
+function jelFar(n){ var w = fbm([n[0] * 1.4 - 1.7, n[1] * 1.4 + 2.2, n[2] * 1.4], 3), q = [n[0] * 2.1 - w * 2.4, n[1] * 2.1 + w * 2.0, n[2] * 2.1 - w * 2.6];
+  var sw = fbm(q, 4), pk = fbm([q[0] * 1.8 + sw * 2.2, q[1] * 1.8 - 3.1, q[2] * 1.8 + sw * 1.4], 3), st = 1 - Math.abs(fbm([q[0] * 3.1 + pk, q[1] * 3.1, q[2] * 3.1 - pk], 2) * 2 - 1);
+  var c = lerpV([28, 120, 112], [63, 208, 176], smooth((sw - 0.3) / 0.16));
+  c = lerpV(c, lerpV([110, 196, 70], [170, 240, 118], smooth((sw - 0.5) / 0.12)), smooth((sw - 0.43) / 0.07));
+  c = lerpV(c, [255, 128, 204], smooth((pk - 0.5) / 0.1) * smooth((sw - 0.4) / 0.1) * 0.9);
+  return lerpV(c, [236, 255, 246], smooth((st - 0.9) / 0.08) * 0.6); }
 function hex(c){ return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; }
 function rotX(a){ var c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; }
 function rotY(a){ var c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c]; }
@@ -161,7 +169,9 @@ var PLANETS = {
   // Saturn: the ship comes down on a great deck of ring ice (this body), with Saturn itself and its rings hanging in the sky
   saturn:{ R:240, paint:null, air:null, giant:{ R:900, off:[-1500, 900, -2600], band:['#e8d2a0', '#d8b878', '#f0dfb4', '#c8a060', '#e2c88c', '#b8905a'] } },
   // Crystara: a planet of living crystal, faceted in violet and cyan from afar; the ship comes down on a field of clear crystal
-  crystara:{ R:260, paint:null, air:null }
+  crystara:{ R:260, paint:null, air:null },
+  // Jellara: a wobbling jelly planet, lime and pink jelly over a teal goo sea; the ship comes down on a bank of lime jelly
+  jellara:{ R:250, paint:null, air:null }
 };
 // the Moon's craters: a few big ones seen from afar, and a field of smaller ones round the landing spot (its underside, -y)
 var CRATERS = []; for (var ci = 0; ci < 46; ci++){ var th = hash(ci, 1, 7) * 6.283, ph = Math.acos(1 - 2 * hash(ci, 2, 7)); CRATERS.push([Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th), 0.05 + hash(ci, 3, 7) * 0.2]); }
@@ -286,6 +296,17 @@ function play(host, o, cb){
           var px2 = (qx + hash(qx, qz, 63)) * 2.1, pz2 = (qz + hash(qx, qz, 64)) * 2.1, pr2 = 0.18 + hash(qx, qz, 65) * 0.4, pd = (Math.abs(gx - px2) + Math.abs(gz - pz2) * 1.15) / pr2;
           if (pd < 1){ col = (gx - px2) + (gz - pz2) < 0 ? [255, 255, 255] : hash(qx, qz, 66) < 0.5 ? [184, 148, 240] : [138, 224, 255]; nn = norm(add(nn, mul(norm(V(gx - px2, 0.01, gz - pz2)), 0.7 * pd))); } } }
       return [col, nn]; }
+    /* Jellara: from afar the swirling goo and jelly of jelFar; near the ground lime jelly with a slow, warped wobble of light
+       and shade through it and blobs of pink jelly sitting on it */
+    if (kind === 'jellara'){ var fj = clamp((tt - 25) / 80, 0, 1), farJ = jelFar(ne);
+      var jw = fbm([gx * 0.08 - 2.1, 3.3, gz * 0.08], 3), js = fbm([gx * 0.13 + jw * 2.6, 6.7, gz * 0.13 - jw * 2.2], 3), jg = 1 - Math.abs(fbm([gx * 0.3 + js * 1.4, 9.1, gz * 0.3], 2) * 2 - 1);
+      var nearJ = lerpV(lerpV([128, 210, 84], [176, 242, 124], smooth((js - 0.38) / 0.24)), [226, 255, 200], smooth((jg - 0.86) / 0.1) * 0.7);
+      col = lerpV(nearJ, farJ, fj);
+      if (near && tt < 140){ var jcx = Math.floor(gx / 2.3), jcz = Math.floor(gz / 2.3);
+        for (var ji = -1; ji <= 1; ji++) for (var jj = -1; jj <= 1; jj++){ var qx2 = jcx + ji, qz2 = jcz + jj; if (hash(qx2, qz2, 72) > 0.1) continue;
+          var bx3 = (qx2 + hash(qx2, qz2, 73)) * 2.3, bz3 = (qz2 + hash(qx2, qz2, 74)) * 2.3, br3 = 0.2 + hash(qx2, qz2, 75) * 0.4, bd3 = Math.hypot(gx - bx3, (gz - bz3) * 1.15) / br3;
+          if (bd3 < 1){ col = bd3 < 0.45 && (gx - bx3) + (gz - bz3) < 0 ? [255, 255, 255] : [255, 138, 208]; nn = norm(add(nn, mul(norm(V(gx - bx3, 0.01, gz - bz3)), 0.7 * bd3))); } } }
+      return [col, nn]; }
     if (kind === 'mars'){ var uvr = sphUV(ne), tr = (Math.floor(uvr[1] * TEX.EH) * TEX.EW + Math.floor(uvr[0] * TEX.EW)) * 3, fr = clamp((tt - 25) / 80, 0, 1);
       col = lerpV([200, 104, 58], [TEX.mars[tr], TEX.mars[tr + 1], TEX.mars[tr + 2]], fr);
       if (near && tt < 140){ var rip = Math.sin(gx * 1.3 + gz * 0.4 + noise3(gx * 0.2, 0, gz * 0.2) * 4), mott = noise3(gx * 0.35, 3, gz * 0.35);
@@ -377,9 +398,9 @@ function play(host, o, cb){
       parts.push({ lp:V(j[0], -0.8, j[2]), lv:V(j[0] * 2, -sp, j[2] * 2), r:0.42, life:0.32, age:0, kind:'fire', c:[255, 255, 230], a:1 }); } }
     if (FROMK === 'earth' && t < 2.35 && Math.floor(t * 12) !== Math.floor((t - dt) * 12)) parts.push({ p:V(-2.4 + hash(t, 1, 1), 6.2, (hash(t, 2, 1) - 0.5)), v:V(1.2, 0.6, 0.4), r:0.3, life:1.2, age:0, kind:'vapour', c:[245, 248, 252], a:0.8 });
     if (t > 2.3 && t < 4.6){ for (var s = 0, ns = many(90); s < ns; s++){ var an = hash(s, t * 1e3, 7) * 6.283, spd = 4 + hash(s, t * 1e3, 8) * 6;
-      parts.push({ p:V(Math.cos(an) * 1.2, 0.6, Math.sin(an) * 1.2), v:V(Math.cos(an) * spd, 0.4 + hash(s, t, 9) * 1.2, Math.sin(an) * spd), r:0.9, life:3, age:0, kind:'smoke', c:FROMK === 'moon' ? [190, 188, 184] : FROMK === 'mars' ? [214, 150, 112] : FROMK === 'saturn' ? [220, 222, 240] : [232, 232, 238], a:0.85 }); } }
+      parts.push({ p:V(Math.cos(an) * 1.2, 0.6, Math.sin(an) * 1.2), v:V(Math.cos(an) * spd, 0.4 + hash(s, t, 9) * 1.2, Math.sin(an) * spd), r:0.9, life:3, age:0, kind:'smoke', c:FROMK === 'moon' ? [190, 188, 184] : FROMK === 'mars' ? [214, 150, 112] : FROMK === 'saturn' ? [220, 222, 240] : FROMK === 'crystara' ? [210, 240, 255] : [232, 232, 238], a:0.85 }); } }
     if (t > 8.7 && t < 9.4){ for (var d = 0, nd = many(70); d < nd; d++){ var a2 = hash(d, t * 1e3, 17) * 6.283, s2 = 3 + hash(d, t * 1e3, 18) * 5;
-      parts.push({ p:V(Math.cos(a2) * 0.8, HM - 0.15, Math.sin(a2) * 0.8), v:V(Math.cos(a2) * s2, -0.6 - hash(d, t, 19), Math.sin(a2) * s2), r:0.35, life:1.5, age:0, kind:'dust', c:TOK === 'mars' ? [206, 122, 80] : TOK === 'saturn' ? [230, 236, 250] : TOK === 'crystara' ? [200, 240, 255] : [196, 192, 184], a:0.7 }); } }
+      parts.push({ p:V(Math.cos(a2) * 0.8, HM - 0.15, Math.sin(a2) * 0.8), v:V(Math.cos(a2) * s2, -0.6 - hash(d, t, 19), Math.sin(a2) * s2), r:0.35, life:1.5, age:0, kind:'dust', c:TOK === 'mars' ? [206, 122, 80] : TOK === 'saturn' ? [230, 236, 250] : TOK === 'crystara' ? [200, 240, 255] : TOK === 'jellara' ? [255, 190, 230] : [196, 192, 184], a:0.7 }); } }
     parts.forEach(function(p){ p.age += dt; if (p.lp) p.lp = add(p.lp, mul(p.lv, dt)); else p.p = add(p.p, mul(p.v, dt)); var k = p.age / p.life;
       if (p.kind === 'fire'){ p.c = k < 0.25 ? [255, 255, 220] : k < 0.5 ? [255, 214, 80] : k < 0.75 ? [255, 140, 40] : [200, 70, 30]; p.r = 0.4 + k * 0.5; }
       else if (p.kind === 'smoke'){ p.v = mul(p.v, 1 - dt * 0.9); p.r = 0.9 + k * 3.2; p.a = 0.85 * (1 - k); }

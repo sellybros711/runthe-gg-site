@@ -224,7 +224,7 @@ function* steps(C, opt){
   if (LD && LD.build) LD.build(B);
   (C.bumpers || []).forEach(function(u){ prop(u.x, u.y, u.r * 1.05, u.skin, base(u.x, u.y) - 0.1); });
   function inTri3(P, x, y){ var sg = 0; for (var i = 0; i < 3; i++){ var a = P[i], b = P[(i + 1) % 3], c = (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]); sg += c > 0 ? 1 : c < 0 ? -1 : 0; } return Math.abs(sg) === 3; }
-  (C.blocks || []).forEach(function(rc){ var fn = SK[rc.skin] || SK.stone, h = rc.tri ? 1.9 : 1.5, zb = CARP;
+  (C.blocks || []).forEach(function(rc){ var fn = SK[rc.skin] || SK.stone, h = rc.tri ? 1.9 : rc.low ? 0.7 : 1.5, zb = CARP;   // a jelly hedge (Jellara) stands low
     solid(rc.x0, rc.y0, zb, rc.x1, rc.y1, zb + h, function(x, y, z){ var u = ((x - rc.x0) / (rc.x1 - rc.x0)) * 2 - 1, v = 1 - 2 * (z - zb) / h;
       if (rc.tri && !inTri3(rc.tri, x, y)) return null;   // a prism (Crystara): only the voxels inside its triangle
       if (rc.rot){ var q = rc.rot, dx = x - q.cx, dy = y - q.cy, a = dx * q.c + dy * q.s; if (Math.abs(a) > q.hl || Math.abs(-dx * q.s + dy * q.c) > q.hw) return null; u = a / q.hl; }   // a bank board: only the voxels inside the turned board
