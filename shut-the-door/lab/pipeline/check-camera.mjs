@@ -119,7 +119,7 @@ const CHUNK = 300;
 const CK = COMBINE ? null : openCheckpoint('check-camera', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK });
 const PARAMS = { STRIDE, LIMIT: String(LIMIT), ONLY, CHUNK };
 for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
-  if (CK.has(i)) { const got = CK.get(i); rows.push(...got.out); for (const k2 of Object.keys(got.stats)) (dist[k2] ||= []).push(...got.stats[k2]); continue; }
+  if (CK.has(i)) { const got = CK.get(i); for (const v of got.out) rows.push(v); for (const k2 of Object.keys(got.stats)) { const a = (dist[k2] ||= []); for (const v of got.stats[k2]) a.push(v); } continue; }
   const part = cases.slice(i, i + CHUNK).map((c, j) => ({ k: IDX[i + j], pr: c.pr, hand: c.hand, align: c.align, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate(({ part, ASPECT, LIM }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [], warp = window.__plan.warp;
@@ -204,8 +204,8 @@ for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
     const thin = (a) => a.sort((x, y) => x - y).filter((_, i) => i % 7 === 0);
     return { out, stats: { ang: thin(stats.ang), angJ: thin(stats.angJ), posJ: thin(stats.posJ), fovJ: thin(stats.fovJ), shot: stats.shot, fov: thin(stats.fov), ...Object.fromEntries(Object.keys(stats).filter((x) => x.startsWith('fov_')).map((x) => [x, thin(stats[x])])) } };
   }, { part, ASPECT, LIM });
-  rows.push(...got.out);
-  for (const k2 of Object.keys(got.stats)) (dist[k2] ||= []).push(...got.stats[k2]);
+  for (const v of got.out) rows.push(v);
+  for (const k2 of Object.keys(got.stats)) { const a = (dist[k2] ||= []); for (const v of got.stats[k2]) a.push(v); }
   CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
@@ -221,8 +221,8 @@ if (ROWS_OUT) writeShard(ROWS_OUT, 'check-camera', PARAMS, SEL.shard, IDX, {
 const DMAX = {}, DN = {};
 if (COMBINE) {
   for (const q of readShards(COMBINE, 'check-camera', PARAMS, IDX)) {
-    rows.push(...q.data.rows);
-    for (const [k2, d] of Object.entries(q.data.dist)) { (dist[k2] ||= []).push(...d.s); DMAX[k2] = Math.max(DMAX[k2] || 0, d.max); DN[k2] = (DN[k2] || 0) + d.n; }
+    for (const v of q.data.rows) rows.push(v);
+    for (const [k2, d] of Object.entries(q.data.dist)) { { const a = (dist[k2] ||= []); for (const v of d.s) a.push(v); } DMAX[k2] = Math.max(DMAX[k2] || 0, d.max); DN[k2] = (DN[k2] || 0) + d.n; }
   }
   rows.sort((a, b) => a.k - b.k);
 }

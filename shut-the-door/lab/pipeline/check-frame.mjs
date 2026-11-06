@@ -111,7 +111,7 @@ const CHUNK = 500;
 const PARAMS = { STRIDE: SEL.stride, LIMIT: String(LIMIT), CHUNK, SMALL: process.env.SMALL || null };
 const CK = COMBINE ? null : openCheckpoint('check-frame', { STRIDE: SEL.stride, LIMIT: String(LIMIT), SHARD: SEL.shard, CHUNK, SMALL: process.env.SMALL || null });
 for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
-  if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
+  if (CK.has(i)) { for (const v of CK.get(i)) rows.push(v); continue; }
   const part = cases.slice(i, i + CHUNK).map((c, j) => ({ k: IDX[i + j], pr: c.pr, hand: c.hand, align: c.align, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate(({ part, ASPECT, MARGIN }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
@@ -188,7 +188,7 @@ for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
     ip.facts = facts0;
     return out;
   }, { part, ASPECT, MARGIN });
-  rows.push(...got);
+  for (const v of got) rows.push(v);
   CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
@@ -198,7 +198,7 @@ if (CK) CK.close();
    moment only when it missed or threw */
 if (ROWS_OUT) writeShard(ROWS_OUT, 'check-frame', PARAMS, SEL.shard, IDX, rows.map((r) => (r.err || r.miss ? r : { k: r.k, what: r.what, tall: r.tall, cam: r.cam })));
 if (COMBINE) {
-  for (const q of readShards(COMBINE, 'check-frame', PARAMS, IDX)) rows.push(...q.data);
+  for (const q of readShards(COMBINE, 'check-frame', PARAMS, IDX)) for (const v of q.data) rows.push(v);
   // (in the order a whole run takes them: by case, a case's moments as they came)
   rows.sort((a, b) => a.k - b.k);
 }
