@@ -904,7 +904,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
    the grade one pitch ahead moves the same share. */
 {
   check('rules 11: the reach is the 3D body less a ball: 2.02 ft in his zone, his hands above it, the bill at head height',
-    G.RULES === 11 && G.HBP_RULES === 11 && K.hbpReach(0.5) >= 2 && K.hbpReach(0.05) >= 2 && K.hbpReach(1.1) < 1.5 && K.hbpReach(1.6) < 1.1
+    G.RULES >= 11 && G.HBP_RULES === 11 && K.hbpReach(0.5) >= 2 && K.hbpReach(0.05) >= 2 && K.hbpReach(1.1) < 1.5 && K.hbpReach(1.6) < 1.1
     && K.hbpReach(-3) === K.HBP.REACH[0] && K.hbpReach(5) === K.HBP.REACH[K.HBP.REACH.length - 1] && K.HBP.REACH.every(x => x > K.GRID.ZONE_HALF_FT));
   check('rules 11: QA\'s cutter 1.1 ft inside at the belt is short of him, 2.3 ft reaches him, either hand',
     K.insideFt(-1.1, 'R') < K.hbpReach(0.5) && K.insideFt(1.1, 'L') < K.hbpReach(0.5) && K.insideFt(-2.3, 'R') >= K.hbpReach(0.5) && K.insideFt(2.3, 'R') < 0);
@@ -934,7 +934,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check(`rules 11: only a hit by pitch short of the reach moves, to a take where it crossed (${parts} parted, ${hbp11} hit by pitch kept)`, parts > 0 && !wrong && !other);
   check('rules 11: every hit by pitch under rules 11 reaches him', short11 === 0);
   check('rules 11: four draws a pitch, as before', drawsOk);
-  check('rules 11: a rules 11 outing plays, a rules 10 one replays as rules 10', E.createOuting(pack, { seed: 1, model }).rules === 11
+  check('rules 11: a rules 11 outing plays, a rules 10 one replays as rules 10', E.createOuting(pack, { seed: 1, model, rules: 11 }).rules === 11
     && E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 10 }], { model }).rules === 10);
   // the grade: the reach's mass against a sampled miss, and the key mix moving only the hit by pitch's share
   const type = model.types[0], sig = model.arsenal[0].sigmaFt, zf = model.zoneFt;
@@ -961,6 +961,87 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
     if (d > 1e-6) moved++;
   }
   check(`rules 11: the grade moves the hit by pitch share short of the reach to the take, nothing else (${moved} calls moved)`, moved > 0 && !badMix);
+}
+
+/* rules 12 (the reach where he stands, contract.js hbpReachAt): the table measured again on the drawn
+   hitter at Statcast's average stance, moved by his own distance off the plate (the pack's stanceIn).
+   Only the reach moves: a hit by pitch between the two reaches, and nothing else, the four draws
+   included; the grade one pitch ahead moves the same share. */
+{
+  const PL = await import('../3d/inplay-plan.js'), SX = await import('../3d/stance.js');
+  const IP = { STANCE_X: PL.STANCE_X, STANCE_IN: SX.STANCE_IN, stanceX: (b) => PL.STANCE_X + SX.stanceOff(b) };
+  check('rules 12: the reach is the drawn hitter at the 2.82 ft stance, and his stance moves it inch for inch',
+    G.RULES === 12 && G.STANCE_RULES === 12 && K.HBP.STANCE_IN === IP.STANCE_IN && IP.STANCE_X === 2.82
+    && K.HBP.REACH12.length === K.HBP.REACH.length && K.HBP.REACH12.every((x, i) => x < K.HBP.REACH[i] && x > K.GRID.ZONE_HALF_FT)
+    && K.hbpReachAt(0.5, null) === K.HBP.REACH12[16] && K.hbpReachAt(0.5, 28) === K.hbpReachAt(0.5, null)
+    && Math.abs(K.hbpReachAt(0.5, 34) - K.hbpReachAt(0.5, 28) - 0.5) < 1e-12 && Math.abs(K.hbpReachAt(0.5, 22) - K.HBP.REACH12[16] + 0.5) < 1e-12
+    && Math.abs(IP.stanceX({ stanceIn: 34 }) - 3.32) < 1e-12 && IP.stanceX({}) === 2.82 && IP.stanceX({ stanceIn: null }) === 2.82
+    && K.hbpReachAt(-3, null) === K.HBP.REACH12[0] && K.hbpReachAt(5, null) === K.HBP.REACH12[K.HBP.REACH12.length - 1]
+    && K.hbpReachAt(1.5, 16) === K.GRID.ZONE_HALF_FT && K.hbpReachAt(0.5, 16) > K.GRID.ZONE_HALF_FT);
+  // a pack whose hitters stand where Statcast puts real ones, near and far, and one with none
+  const p12 = JSON.parse(JSON.stringify(pack));
+  const ST = [17, 40, null, 18, 38, 28, 16, null, 39];
+  p12.scenario.batters.forEach((b, i) => { if (ST[i % ST.length] != null) b.stanceIn = ST[i % ST.length]; });
+  const m12 = new G.Model(p12);
+  const reach12 = (o, i, x) => K.hbpReachAt(x.actual.zn, p12.scenario.batters[m12.who(o.before[i])].stanceIn ?? null);
+  let parts = 0, wrong = 0, other = 0, hbp12 = 0, short12 = 0, drawsOk = true, toHbp = 0, fromHbp = 0;
+  const KH = G.KEYS.indexOf('hit_by_pitch');
+  for (let s = 0; s < 240; s++) {
+    const rng = R.mulberry32(R.hashSeed('stance' + s));
+    const calls = Array.from({ length: 40 }, () => ({ type: m12.types[Math.floor(rng() * m12.types.length)], cell: [0, 5, 10, 15, 20, 4, 9, 14, 19, 24, 12][Math.floor(rng() * 11)], q: Math.round(rng() * 100) / 100 }));
+    const outs = [11, 12].map(r => { const o = E.createOuting(p12, { seed: 700 + s, model: m12, rules: r }); for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); } return o; });
+    const a = outs[0], b = outs[1];
+    b.log.forEach((x, i) => { if (x.result === 'hit_by_pitch') { hbp12++; if (K.insideFt(x.actual.x, p12.scenario.batters[m12.who(b.before[i])].bats) < reach12(b, i, x)) short12++; } });
+    const n = Math.min(a.log.length, b.log.length);
+    for (let i = 0; i < n; i++) {
+      const p = a.log[i], q = b.log[i];
+      if (JSON.stringify(p.actual) !== JSON.stringify(q.actual)) { other++; break; }
+      if (p.result === q.result && p.drawn.id === q.drawn.id) continue;
+      const bats = p12.scenario.batters[m12.who(a.before[i])].bats, ins = K.insideFt(p.actual.x, bats);
+      const r11 = K.hbpReach(p.actual.zn), r12 = reach12(a, i, p);
+      // rules 11 had a hit by pitch rules 12's reach does not, or the reverse: the only ways to part
+      if (p.result === 'hit_by_pitch' && ins >= r11 && ins < r12 && (q.result === 'ball' || q.result === 'called_strike')) fromHbp++;
+      else if (q.result === 'hit_by_pitch' && ins >= r12 && ins < r11 && (p.result === 'ball' || p.result === 'called_strike')) toHbp++;
+      else wrong++;
+      parts++;
+      break;
+    }
+    const r0 = R.mulberry32(700 + s); for (let i = 0; i < 4 * b.log.length; i++) r0();
+    if (r0() !== b.rng()) drawsOk = false;
+  }
+  check(`rules 12: only a hit by pitch between the two reaches moves (${parts} parted: ${toHbp} reach him now, ${fromHbp} no longer; ${hbp12} hit by pitch)`, parts > 0 && toHbp > 0 && fromHbp > 0 && !wrong && !other);
+  check('rules 12: every hit by pitch under rules 12 reaches him where he stands', short12 === 0);
+  check('rules 12: four draws a pitch, as before', drawsOk);
+  check('rules 12: a new outing plays rules 12, a rules 11 one replays as rules 11', E.createOuting(p12, { seed: 1, model: m12 }).rules === 12
+    && E.replay(p12, 1, [{ type: m12.types[0], cell: 12, r: 11 }], { model: m12 }).rules === 11);
+  // the grade: the reach's mass where he stands against a sampled miss
+  const type = m12.types[0], sig = m12.arsenal[0].sigmaFt, zf = m12.zoneFt;
+  let worst = 0;
+  for (const [cell, bats, sIn] of [[10, 'R', 20], [14, 'L', 35], [5, 'R', null], [20, 'R', 24], [9, 'L', 31]]) {
+    const hm = m12.hbpMass(type, 1, cell, null, bats, sIn), t = K.targetOf(cell), rr = R.mulberry32(R.hashSeed('hm12' + cell));
+    const N = 60000, hit = new Float64Array(25), str = new Float64Array(25);
+    for (let i = 0; i < N; i++) {
+      const x = t.x + R.probit(rr()) * sig, zn = t.zn + R.probit(rr()) * sig / zf, a = K.cellAt(x, zn);
+      if (K.insideFt(x, bats) >= K.hbpReachAt(zn, sIn)) hit[a]++;
+      else str[a] += K.calledStrikeP(K.zoneDist(x, zn, zf));
+    }
+    for (let a = 0; a < 25; a++) worst = Math.max(worst, Math.abs(hit[a] / N - hm.hit[a]), Math.abs(str[a] / N - hm.strike[a]));
+  }
+  check(`rules 12: the grade's reach mass where he stands is the engine's miss, sampled (worst cell ${worst.toFixed(4)})`, worst < 0.006);
+  // one pitch ahead: rules 11 and 12 differ only in the hit by pitch's share and the take it goes to
+  let moved = 0, badMix = 0;
+  for (let bi = 0; bi < 3; bi++) {
+    const st = Object.assign(m12.startState(), { bi });
+    const c11 = G.contextOf([], st, 11, m12.center, m12.zone0), c12 = G.contextOf([], st, 12, m12.center, m12.zone0);
+    for (const tp of m12.types) for (let cell = 0; cell < 25; cell++) {
+      const a = m12.keyMixCtx(st, tp, cell, c11), b = m12.keyMixCtx(st, tp, cell, c12);
+      const d = a[KH] - b[KH];
+      if (Math.abs((b[0] + b[1]) - (a[0] + a[1]) - d) > 1e-9) badMix++;
+      for (let i = 2; i < G.KEYS.length; i++) if (i !== KH && Math.abs(a[i] - b[i]) > 1e-12) badMix++;
+      if (Math.abs(d) > 1e-6) moved++;
+    }
+  }
+  check(`rules 12: the grade moves only the hit by pitch share and its take (${moved} calls moved)`, moved > 0 && !badMix);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');

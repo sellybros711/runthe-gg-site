@@ -101,8 +101,13 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
   plus the reach: a hit by pitch only when the ball's centre crosses at least `contract.js hbpReach(zn)`
   inside (the 3D hitter's body less a ball, `pipeline/hbp_reach.mjs`); short of it the hit by pitch's
   slice of the same draw is a take called where it crossed, and the grade moves the same share. A
-  call with `r: 10` replays as rules 10 (`fixtures/replays-rules10-pre-hbp-reach.json`).
-  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`, `ABS_TOUCH_FROM`, `DRAWN_TOUCH_FROM`, `HBP_REACH_FROM`). The strengths live in `grade.js R2`; change them only
+  call with `r: 10` replays as rules 10 (`fixtures/replays-rules10-pre-hbp-reach.json`). Rules 12
+  (2026-11-07, CONTRACT.md 5n) is rules 11 with the reach where he stands: `contract.js
+  hbpReachAt(zn, stanceIn)`, the drawn hitter at Statcast's average stance (`HBP.REACH12`) moved by his
+  own distance off the plate (the pack's `stanceIn`, `pipeline/stance.mjs`; none, the average), and
+  the 3D stands him there (`3d/stance.js`). A call with `r: 11` replays as rules 11
+  (`fixtures/replays-rules11-pre-stance.json`).
+  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`, `ABS_TOUCH_FROM`, `DRAWN_TOUCH_FROM`, `HBP_REACH_FROM`, `STANCE_FROM`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

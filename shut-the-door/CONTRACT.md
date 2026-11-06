@@ -786,6 +786,41 @@ engine's.
 **The daily's rollout.** `api.js HBP_REACH_FROM` (2026-11-06): a daily of a day before it plays
 rules 10. Survivor, practice and the archive start new outings under rules 11.
 
+## 5n. Rules 12: the reach where he stands (2026-11-07)
+
+Rules 11 and everything before it, plus one thing. A new outing's calls carry `r: 12`; a call with
+`r: 11` or before replays under its own rules, exactly (`fixtures/replays-rules11-pre-stance.json`).
+
+**Why.** The owner, 2026-11-06: a hit by pitch rate nearer the real one. Rules 11's reach was measured
+with the drawn hitter's feet 2.95 ft off the plate's centre. #947 stood him at 2.82 ft (Statcast's
+league average stance), and every hitter stood the same.
+
+**The stance.** Each pack hitter carries `stanceIn`, `stanceYear` and `stanceSrc` where Statcast has
+him (`pipeline/stance.mjs`): Baseball Savant's batting stance, his distance off the plate (the hips'
+midpoint from the inside edge, inches, one second before release), from the side he bats, his own
+season (`stanceSrc: 'season'`) or else his nearest season within two (`'near'`, a labelled proxy).
+Savant has it from 2023: 70 of the 272 pack hitters at their own season, 16 near, 186 with none.
+A hitter with none stands where the league's average hitter does (28 in). Nothing is filled in.
+
+**The reach.** A pitch is a hit by pitch only when `insideFt(x, bats) >= hbpReachAt(zn, stanceIn)`:
+`HBP.REACH12` at his height plus `(stanceIn - HBP.STANCE_IN) / 12` ft, never nearer the plate than
+the inside column's edge (`GRID.ZONE_HALF_FT`). `REACH12` is measured as rules 11's was
+(`pipeline/hbp_reach.mjs`): every vertex of the drawn hitter's body, his arms and batting gloves
+included (the bat left out), each hitter where `people.js` stands him and taken back by his stance's
+offset. In his zone's height his front thigh, 1.89 ft; at zn 0.8 his trunk, 1.32 ft; from 0.9 to 1.2
+his upper arm, 1.22 to 1.0 ft; head high the helmet, 0.84 ft. His hands sit higher and further back
+than his upper arm and are never the nearest point. Everything else is rules 11's: short of the
+reach, the hit by pitch's slice of the same draw is a take called where it crossed.
+
+**The grade** prices the same reach one pitch ahead (`Model.hbpMass` with his stance, the height
+strips cut where the reach's band changes). `BANDS` are unchanged.
+
+**The scene.** `people.js` stands him `stance.js stanceOff` nearer or further, and `play.js` moves a
+real hit by pitch out to `BODY_FAR` plus the same offset.
+
+**The daily's rollout.** `api.js STANCE_FROM` (2026-11-07): a daily of a day before it plays rules 11.
+Survivor, practice and the archive start new outings under rules 12.
+
 ## 6. Pitch result
 
 ```js

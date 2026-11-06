@@ -238,6 +238,8 @@ Model.prototype.singleModel = function () {
 
 /* The batter's side (contract.js insideFt), for the reach (rules 11). */
 Model.prototype.batsOf = function (st) { return this.pack.scenario.batters[this.who(st)].bats; };
+/* His distance off the plate, inches (rules 12, the pack's stanceIn): null where Statcast has none. */
+Model.prototype.stanceOf = function (st) { const b = this.pack.scenario.batters[this.who(st)]; return b.stanceIn == null ? null : b.stanceIn; };
 /* The batter at the plate in a state: his index in scenario.batters, by the half's lineup. */
 Model.prototype.who = function (st) { return this.lineup[st.h || 0][st.bi % this.N]; };
 
@@ -493,7 +495,7 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 11;
+const RULES = 12;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
@@ -552,6 +554,12 @@ const DRAWN_RULES = 10;
    one pitch ahead moves the same share (keyMixCtx, Model.hbpMass). The draws do not move, and no
    other key changes. A call with r 10 replays as rules 10. */
 const HBP_RULES = 11;
+/* Rules 12 (2026-11-07, the owner's call: a hit by pitch rate nearer the real one) is rules 11 with
+   the reach where he stands (contract.js hbpReachAt): the table measured again on the drawn hitter at
+   Statcast's average stance (2.82 ft, rules 11's was 2.95), plus how far his own stance is from it
+   (the pack's stanceIn, Statcast's batting stance; none, the average). Only the reach moves, in the
+   engine and one pitch ahead alike. A call with r 11 replays as rules 11. */
+const STANCE_RULES = 12;
 const KEY_HBP = 4;
 const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
@@ -911,7 +919,9 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
   const cm = ctx.rules >= ABS_RULES ? this.callMass(type, ctx.fatigue, target, off ? a0 : null) : null;
   // rules 11: the reach's mass, worked out only when a row this call can land in holds a hit by pitch
   let hm = null;
-  const hmOf = () => hm || (hm = this.hbpMass(type, ctx.fatigue, target, off ? a0 : null, this.batsOf(st)));
+  // (rules 12: the reach where this batter stands, his stance or the average's; rules 11: one table)
+  const hmOf = () => hm || (hm = this.hbpMass(type, ctx.fatigue, target, off ? a0 : null, this.batsOf(st),
+    ctx.rules >= STANCE_RULES ? this.stanceOf(st) : undefined));
   const out = new Float64Array(KEYS.length);
   for (let a = 0; a < 25; a++) {
     const w = ker[base + a];
@@ -948,9 +958,11 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
  * is cut into the call's strips (callGrid); across, the reach is exact (the normal's tail past it),
  * and short of it the inside column is cut into half-inch strips with the umpire's chance read at
  * each strip's middle, the other four columns read off callMass. */
-Model.prototype.hbpMass = function (type, f, target, at, bats) {
+Model.prototype.hbpMass = function (type, f, target, at, bats, stanceIn) {
   if (!this._hm) this._hm = new Map();
-  const key = type + '|' + f + '|' + target + '|' + (at ? at[0] + '|' + at[1] : '') + '|' + bats;
+  const key = type + '|' + f + '|' + target + '|' + (at ? at[0] + '|' + at[1] : '') + '|' + bats + '|' + stanceIn;
+  // stanceIn undefined: rules 11's one table; null or inches: rules 12's, where he stands
+  const reachOf = stanceIn === undefined ? K.hbpReach : (zn) => K.hbpReachAt(zn, stanceIn);
   let m = this._hm.get(key);
   if (m) return m;
   const g = this.callGrid();
@@ -970,19 +982,27 @@ Model.prototype.hbpMass = function (type, f, target, at, bats) {
     B.push(last); T.push(tail(last));
     // the umpire's chance at each whole strip's middle, by height strip (the same for every aim)
     if (!this._hbpP) this._hbpP = g.zs.map(z => B.slice(0, -1).map((b, k) => K.calledStrikeP(K.zoneDist((b + B[k + 1]) / 2, z[2], this.zoneFt))));
+    const W = (a, b) => R.normCdf((b - p.zn) / sz) - R.normCdf((a - p.zn) / sz);
     g.zs.forEach(([lo, hi, mid, row], j) => {
-      const wz = R.normCdf((hi - p.zn) / sz) - R.normCdf((lo - p.zn) / sz);
+      const wz = W(lo, hi);
       if (wz < 1e-12) return;
-      const reach = K.hbpReach(mid), tR = tail(reach), c = row * 5 + col, Pj = this._hbpP[j];
-      hit[c] += wz * tR;
-      let sm = 0;
-      for (let k = 0; k + 1 < B.length && B[k] < reach - 1e-9; k++) {
-        const whole = B[k + 1] <= reach, wx = T[k] - (whole ? T[k + 1] : tR);
-        if (wx < 1e-12) continue;
-        sm += wx * (whole ? Pj[k] : K.calledStrikeP(K.zoneDist((B[k] + reach) / 2, mid, this.zoneFt)));
+      const c = row * 5 + col, Pj = this._hbpP[j];
+      // rules 11: the strip at its middle's reach. Rules 12: the strip cut where the reach's band
+      // changes, each piece at its own band's reach (the reach moves with his stance, so a strip far
+      // past the zone, one strip to infinity, spans bands whose reaches differ more)
+      for (const [w, reach] of stanceIn === undefined ? [[wz, reachOf(mid)]] : bandPieces(lo, hi, W, reachOf)) {
+        if (w < 1e-12) continue;
+        const tR = tail(reach);
+        hit[c] += w * tR;
+        let sm = 0;
+        for (let k = 0; k + 1 < B.length && B[k] < reach - 1e-9; k++) {
+          const whole = B[k + 1] <= reach, wx = T[k] - (whole ? T[k + 1] : tR);
+          if (wx < 1e-12) continue;
+          sm += wx * (whole ? Pj[k] : K.calledStrikeP(K.zoneDist((B[k] + reach) / 2, mid, this.zoneFt)));
+        }
+        if (last < reach) sm += (T[T.length - 1] - tR) * K.UMPIRE.P[0];
+        strike[c] += w * sm;
       }
-      if (last < reach) sm += (T[T.length - 1] - tR) * K.UMPIRE.P[0];
-      strike[c] += wz * sm;
     });
   }
   for (let a = 0; a < 25; a++) if (a % 5 !== col) strike[a] = cm[a];
@@ -990,6 +1010,22 @@ Model.prototype.hbpMass = function (type, f, target, at, bats) {
   capSet(this._hm, key, m, CAP.cm);
   return m;
 };
+
+/* A height strip [lo, hi] cut at the tenths of zn where contract.js HBP's bands change: [mass, reach]
+   for each piece (W(a, b) the miss's mass between two heights, reachOf the reach at a height). */
+function bandPieces(lo, hi, W, reachOf) {
+  const out = [], first = (K.HBP.LO + 1) / 10, lastCut = (K.HBP.LO + K.HBP.REACH12.length - 1) / 10;
+  let a = lo;
+  for (let k = K.HBP.LO + 1; k <= K.HBP.LO + K.HBP.REACH12.length - 1; k++) {
+    const cut = k / 10;
+    if (cut <= a + 1e-12) continue;
+    if (cut >= hi - 1e-12) break;
+    out.push([W(a, cut), reachOf(a === -Infinity ? first - 0.05 : (a + cut) / 2)]);
+    a = cut;
+  }
+  out.push([W(a, hi), reachOf(hi === Infinity ? lastCut + 0.05 : a === -Infinity ? first - 0.05 : (a + hi) / 2)]);
+  return out;
+}
 
 /* ---- the call by location (rules 4, contract.js THE CALL) ----------------
  * For one aim and miss, per actual cell: the chance the pitch crosses in that
@@ -1223,7 +1259,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, TOUCH_RULES, DRAWN_RULES, HBP_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, TOUCH_RULES, DRAWN_RULES, HBP_RULES, STANCE_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;

@@ -230,15 +230,40 @@ function touchDist(x, zn, zoneFt) {
    any hitter's body comes to the plate's centre in that band or the band either side, less a ball's
    radius (BALL_IN). In his zone's height his front hip and thigh, 2.14 ft (so 2.02 ft); his hands
    above the zone, 1.48 ft; the helmet's bill at head height, 1.10 ft; his legs below, 2.01 ft.
-   Past the table's ends the end band's number holds. A ball short of it cannot touch him. */
+   Past the table's ends the end band's number holds. A ball short of it cannot touch him.
+   THE REACH, RULES 12 (2026-11-07, the owner's call: a hit by pitch rate nearer the real one). The
+   reach is where he stands: hbpReachAt(zn, stanceIn) is REACH12 at his height plus how much further
+   off the plate he stands than the league's average hitter, STANCE_IN (inches, his hips' midpoint
+   from the plate's inside edge a second before the release, Statcast's batting stance). stanceIn is
+   his own (the pack's batter record, Baseball Savant's batting stance, pipeline/stance.mjs); a hitter
+   Statcast has none for (null) stands at STANCE_IN, the reach REACH12 itself.
+   REACH12: MEASURED on the hitter the 3D draws as rules 11's was (pipeline/hbp_reach.mjs, 2026-11-06,
+   the 272 hitters of the 30 packs, each where people.js stands him: his feet 2.82 ft off the plate's
+   centre, Statcast's 28 in, moved by his own stance), every vertex of his skinned body, his arms and
+   his batting gloves included (the bat left out), less his stance's offset, so the table is his body
+   against where he stands. The nearest point is a leg through his zone's height (front thigh, 2.01
+   ft, so 1.89 ft), the trunk at zn 0.8, an arm from zn 0.9 to 1.2 (1.32 to 1.0 ft) and the head and
+   helmet above (0.84 ft). His hands sit higher and further back than his upper arm: never the nearest. */
 const HBP = Object.freeze({
   LO: -11,
   REACH: Object.freeze([1.89, 1.88, 1.88, 1.88, 1.91, 1.98, 2.29, 2.22, 2.16, 2.04, 2.02, 2.02, 2.02, 2.02, 2.04, 2.08,
     2.14, 2.17, 2.13, 1.45, 1.35, 1.26, 1.18, 1.13, 1.06, 0.98, 0.97, 0.97, 0.97, 1, 1.01, 1.05]),
+  STANCE_IN: 28,
+  REACH12: Object.freeze([1.76, 1.75, 1.75, 1.75, 1.78, 1.85, 2.16, 2.09, 2.03, 1.91, 1.89, 1.89, 1.89, 1.89, 1.91, 1.95,
+    2.01, 2.04, 2, 1.32, 1.22, 1.13, 1.05, 1, 0.93, 0.85, 0.84, 0.84, 0.84, 0.87, 0.88, 0.92]),
 });
 function hbpReach(zn) {
   const i = Math.max(0, Math.min(HBP.REACH.length - 1, Math.floor(zn * 10) - HBP.LO));
   return HBP.REACH[i];
+}
+/* Rules 12: the reach for a hitter who stands stanceIn inches off the plate (null: the league's
+   average hitter, STANCE_IN). Never nearer than the inside column's edge (GRID.ZONE_HALF_FT, the zone
+   as drawn): a hit by pitch is the inside column's, as under rules 11, whose reach was past that edge
+   at every height. It binds only head high and above the zone for a hitter who crowds the plate (his
+   stance under about 24 in). */
+function hbpReachAt(zn, stanceIn) {
+  const i = Math.max(0, Math.min(HBP.REACH12.length - 1, Math.floor(zn * 10) - HBP.LO));
+  return Math.max(GRID.ZONE_HALF_FT, HBP.REACH12[i] + (stanceIn == null ? 0 : (stanceIn - HBP.STANCE_IN) / 12));
 }
 /* How far inside the ball's centre crossed, feet: toward the batter's side positive (catcher's view:
    a right handed batter stands at -x). */
@@ -503,7 +528,7 @@ const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
-  UMPIRE, zoneDist, BALL_IN, absDist, touchDist, HBP, hbpReach, insideFt, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
+  UMPIRE, zoneDist, BALL_IN, absDist, touchDist, HBP, hbpReach, hbpReachAt, insideFt, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

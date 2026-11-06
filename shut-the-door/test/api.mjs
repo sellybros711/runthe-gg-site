@@ -293,9 +293,9 @@ check('practice is never stored', mem[C.OUTING_KEY] === before && pr.mode === 'p
   await Q3.getScenario(after);
   const back = await Q3.startOuting(s8.id, null, { mode: 'daily' });
   check('rules 8: a reload resumes in the second half, the card kept', back.half.inning === s8.halves[1].inning && back.halves.length === 1 && back.pitchNo === r.state.pitchNo);
-  /* rules 9 (CONTRACT.md 5k), 10 (5l) and 11 (5m): each starts with a whole day's daily too (api.js
-     ABS_TOUCH_FROM, DRAWN_TOUCH_FROM, HBP_REACH_FROM) */
-  for (const [day, want] of [['2026-11-02', 8], ['2026-11-03', 9], ['2026-11-04', 10], ['2026-11-05', 10], ['2026-11-06', 11]]) {
+  /* rules 9 (CONTRACT.md 5k), 10 (5l), 11 (5m) and 12 (5n): each starts with a whole day's daily too
+     (api.js ABS_TOUCH_FROM, DRAWN_TOUCH_FROM, HBP_REACH_FROM, STANCE_FROM) */
+  for (const [day, want] of [['2026-11-02', 8], ['2026-11-03', 9], ['2026-11-04', 10], ['2026-11-05', 10], ['2026-11-06', 11], ['2026-11-07', 12]]) {
     for (const k of Object.keys(mem)) delete mem[k];
     const Qd = freshApi(), sd = await Qd.getScenario(day), od = await Qd.startOuting(sd.id, null, { mode: 'daily' });
     const rd = await Qd.throwPitch(od.outingId, { type: sd.pitcher.arsenal[0].type, cell: 12 });
