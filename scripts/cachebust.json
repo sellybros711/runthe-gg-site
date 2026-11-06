@@ -3263,14 +3263,14 @@
       "sha": "961a704d1466e460"
     },
     "3d/boot.js": {
-      "v": "114",
-      "sha": "d7219830e676fd65"
+      "v": "115",
+      "sha": "7471912c2a8fdde4"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "98",
-      "sha": "47ee7284fac47f70"
+      "v": "99",
+      "sha": "6015402bf7c2042f"
     }
   },
   "soccer/index.html": {
@@ -3393,8 +3393,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "115",
-      "sha": "eb078b980bb92cab"
+      "v": "116",
+      "sha": "5ff363ace28417bd"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3443,16 +3443,16 @@
   },
   "shut-the-door/3d/stage.js": {
     "load.js": {
-      "v": "9",
-      "sha": "e3ef7b9faa1a8e47"
+      "v": "10",
+      "sha": "d6f8eda6075d0fdc"
     },
     "park.js": {
-      "v": "23",
-      "sha": "f0c5af376476d14e"
+      "v": "24",
+      "sha": "2dc65ff98077acfc"
     },
     "people.js": {
-      "v": "56",
-      "sha": "ebb703bd17e95914"
+      "v": "57",
+      "sha": "f5847426b639f4a7"
     },
     "pitch.js": {
       "v": "16",
@@ -3471,16 +3471,16 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "67",
-      "sha": "b2a69da35b57075e"
+      "v": "68",
+      "sha": "efa9397645c52b9c"
     },
     "preview.js": {
       "v": "14",
       "sha": "0458bea100016e8c"
     },
     "firstperson.js": {
-      "v": "30",
-      "sha": "45a48de57a637d6e"
+      "v": "31",
+      "sha": "aaf829a55e4329a6"
     },
     "idle.js": {
       "v": "2",
@@ -3488,7 +3488,7 @@
     },
     "walkin.js": {
       "v": "1",
-      "sha": "4ff624c6952913bd"
+      "sha": "59c41684e9d07e38"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3499,12 +3499,12 @@
   },
   "shut-the-door/3d/park.js": {
     "field.js": {
-      "v": "19",
-      "sha": "71fe1f226ae4a953"
+      "v": "20",
+      "sha": "e11c8343797d6c4a"
     },
     "stands.js": {
-      "v": "24",
-      "sha": "601f25214b9b2cb6"
+      "v": "25",
+      "sha": "e83f6ae0f69237a5"
     },
     "units.js": {
       "v": "1",
@@ -3545,8 +3545,8 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "9",
-      "sha": "e3ef7b9faa1a8e47"
+      "v": "10",
+      "sha": "d6f8eda6075d0fdc"
     },
     "inplay-plan.js": {
       "v": "33",
@@ -3609,12 +3609,12 @@
       "sha": "717bca8a1b04a217"
     },
     "ballpark.js": {
-      "v": "41",
-      "sha": "16c6856e22b75847"
+      "v": "42",
+      "sha": "5acfb2e6e0a32f37"
     },
     "people.js": {
-      "v": "56",
-      "sha": "ebb703bd17e95914"
+      "v": "57",
+      "sha": "f5847426b639f4a7"
     },
     "looks.js": {
       "v": "6",
@@ -3641,8 +3641,8 @@
       "sha": "e771dbef0b67350e"
     },
     "park.js": {
-      "v": "23",
-      "sha": "f0c5af376476d14e"
+      "v": "24",
+      "sha": "2dc65ff98077acfc"
     },
     "gear3d.js": {
       "v": "4",
@@ -3661,8 +3661,8 @@
       "sha": "7cf9dc9116ed14f1"
     },
     "load.js": {
-      "v": "9",
-      "sha": "e3ef7b9faa1a8e47"
+      "v": "10",
+      "sha": "d6f8eda6075d0fdc"
     },
     "pitch.js": {
       "v": "16",
@@ -3695,8 +3695,8 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "9",
-      "sha": "e3ef7b9faa1a8e47"
+      "v": "10",
+      "sha": "d6f8eda6075d0fdc"
     },
     "inplay-plan.js": {
       "v": "33",
@@ -3709,12 +3709,12 @@
       "sha": "e771dbef0b67350e"
     },
     "field.js": {
-      "v": "19",
-      "sha": "71fe1f226ae4a953"
+      "v": "20",
+      "sha": "e11c8343797d6c4a"
     },
     "load.js": {
-      "v": "9",
-      "sha": "e3ef7b9faa1a8e47"
+      "v": "10",
+      "sha": "d6f8eda6075d0fdc"
     },
     "crowd.js": {
       "v": "3",
@@ -3749,16 +3749,16 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "9",
-      "sha": "e3ef7b9faa1a8e47"
+      "v": "10",
+      "sha": "d6f8eda6075d0fdc"
     },
     "inplay-plan.js": {
       "v": "33",
       "sha": "a197e1759f72a732"
     },
     "field.js": {
-      "v": "19",
-      "sha": "71fe1f226ae4a953"
+      "v": "20",
+      "sha": "e11c8343797d6c4a"
     },
     "foul.js": {
       "v": "2",

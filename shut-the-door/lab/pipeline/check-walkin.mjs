@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const CLEAR_M = 0.18, DUR_MIN = 1.8, DUR_MAX = 3.3, SKATE = 0.35, PLANT_M = 0.03, JOLT = 0.12;
+const TOTAL_MAX = 3.5, CLEAR_M = 0.18, DUR_MIN = 1.8, DUR_MAX = 3.3, SKATE = 0.35, PLANT_M = 0.03, JOLT = 0.12;
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) { /* next */ } }
@@ -67,6 +67,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
   await page.goto(BASE);
   await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 180000 });
   await page.evaluate(() => window.STD_STAGE.current.inplay.motion);
+  await page.waitForFunction(() => { const s = window.STD_STAGE.current; return s.walkClips && s.ghost3d; }, null, { timeout: 180000 });
   const r = await page.evaluate(async ({ scn, W, H, PLANT_M }) => {
     const st = window.STD_STAGE.current, C = window.STD_CONTRACT;
     const cv = st.canvas;
@@ -120,7 +121,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
       };
       st.walkLift();
       const gapSet = headGap();
-      const dt = 1 / 60, w = Wk.w;
+      const dt = 1 / 60, w = Wk.in;
       for (let s = 0; s <= Wk.dur + 1e-9; s += dt) {
         Wk.clock = s; st.walkApply();
         const P = pts();
@@ -129,7 +130,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
         const feet = ['l', 'r'].map((x) => wp(B.bones['foot_' + x]));
         const lo = feet[0].y < feet[1].y ? 0 : 1, ground = w.set.ankle;
         const loP = prevFeet ? (prevFeet[0].y < prevFeet[1].y ? 0 : 1) : -1;
-        if (prevFeet && lo === loP && s < w.tCruise && feet[lo].y - ground < PLANT_M && prevFeet[lo].y - ground < PLANT_M) { const v = Math.hypot(feet[lo].x - prevFeet[lo].x, feet[lo].z - prevFeet[lo].z) / dt; if (v > skate) { skate = v; o.skAt = Math.round(s * 1000) / 1000 + ' ' + lo; } }
+        if (prevFeet && lo === loP && s < Wk.dur - 0.5 && feet[lo].y - ground < PLANT_M && prevFeet[lo].y - ground < PLANT_M) { const v = Math.hypot(feet[lo].x - prevFeet[lo].x, feet[lo].z - prevFeet[lo].z) / dt; if (v > skate) { skate = v; o.skAt = Math.round(s * 1000) / 1000 + ' ' + lo; } }
         prevFeet = feet;
         const g = headGap();
         if (g < near) { near = g; nearAt = Math.round(s * 100) / 100; }
@@ -177,6 +178,44 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
     await st.play({ pr, quick: true });
     const mid = st.trace.s;
     res.pitch = { frames: plain.length, same: JSON.stringify(plain) === JSON.stringify(mid), walkOver: !st.walk };
+    // a strikeout ends the at bat: the hitter walks out (the ghost) and the next one walks in
+    {
+      window.STD_STAGE_TEST = { step: 1 / 30, renderEvery: 1 };
+      const A = bs[2], Bn = bs[3];
+      setOf(A, bs[1]);
+      st.ghostFor = null; st.ghostDress();
+      await new Promise((r) => { const f = () => (st.ghostFor === A.id ? r() : setTimeout(f, 50)); f(); });
+      const k = { n: 2, call: { type: scn.pitcher.arsenal[0].type, cell: 22 }, actual: { x: 0.1, zn: -0.05 }, actualCell: C.cellAt(0.1, -0.05), velo: scn.pitcher.arsenal[0].velo, batter: 'swing', result: 'swinging_strike',
+        inPlay: null, countBefore: { b: 0, s: 2 }, count: { b: 0, s: 3 }, outs: 1, bases: 0, runnerMoves: [], runs: 0, paOver: true };
+      await st.play({ pr: k, quick: true });
+      window.STD_STAGE_TEST = { step: 1 / 60, renderEvery: 1, walk: true };
+      const G = st.ghost3d.batter, B = st.people.batter;
+      // the swap: the ghost takes his pose exactly, before anything moves
+      const before = B.bind.map(([b]) => b.getWorldPosition(new V()));
+      st.setBatter(Bn); st.draw();
+      const Wk = st.walk; const out = { started: !!(Wk && Wk.out) };
+      if (Wk) { cancelAnimationFrame(Wk.raf); Wk.raf = 0; }
+      if (out.started) {
+        Wk.clock = 0; st.walkApply();
+        const gb = G.bind.map(([b]) => b.getWorldPosition(new V()));
+        out.swap = Math.max(...gb.map((v, i) => v.distanceTo(before[i])));
+        out.shown = G.root.visible;
+        let prev = null, jolt = 0, joltAt = null;
+        for (let s = 0; s <= Wk.dur + 1e-9; s += 1 / 60) {
+          Wk.clock = s; st.walkApply();
+          const P = [...['hand_l', 'hand_r', 'foot_l', 'foot_r', 'head'].map((x) => G.bones[x].getWorldPosition(new V())), new V(0, 0.84, 0).applyMatrix4(G.bat.matrixWorld)];
+          if (prev && G.root.visible) P.forEach((p, i) => { const d = p.distanceTo(prev[i]); if (d > jolt) { jolt = d; joltAt = Math.round(s * 100) / 100 + ' ' + i; } });
+          prev = P;
+        }
+        out.jolt = jolt; out.joltAt = joltAt; out.dur = Wk.dur; out.outDur = Wk.out.dur; out.leaves = !!Wk.out.leaves;
+        Wk.clock = Wk.dur; st.walkApply();
+        st.walkEnd();
+        out.hidden = !G.root.visible;
+        out.total = st.walked.dur;
+        out.endDiff = diff(dump(), setOf(Bn, A));
+      }
+      res.out = out;
+    }
     window.STD_CHECK_UP = (b, prev) => !walkOf(b, prev);
     return res;
   }, { scn, W, H, PLANT_M });
@@ -230,6 +269,11 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
   ok(r.tap.ended && r.tap.skipped && r.tap.diff === 0 && r.key.ended && r.key.diff === 0, `${tag} skip: a tap and a key end it in the set's pose (${JSON.stringify([r.tap, r.key])})`);
   ok(r.pitch.same && r.pitch.walkOver && r.pitch.frames > 10, `${tag} pitch: a pitch thrown mid walk is the plain set's, frame for frame (${r.pitch.frames} frames)`);
   console.log(`     ${tag} cost: the walk's pose ${(hs.reduce((a, o) => a + o.layMs, 0) / hs.length).toFixed(2)} ms of JS a frame here (reported only)`);
+  const O = r.out;
+  ok(O.started && O.shown && O.swap < 1e-6, `${tag} walk out: after a strikeout the hitter walks out on the ghost, taking his pose exactly (${O.swap})`);
+  ok(O.started && O.leaves && O.hidden, `${tag} walk out: he is out of the frame in ${O.outDur && O.outDur.toFixed(2)} s, then the ghost goes`);
+  ok(O.started && O.jolt < JOLT, `${tag} walk out: at most ${O.jolt && O.jolt.toFixed(3)} m in a 1/60 s step (at ${O.joltAt}; held under ${JOLT})`);
+  ok(O.started && O.total <= TOTAL_MAX, `${tag} walk out and in: ${O.total && O.total.toFixed(2)} s in all (held to ${TOTAL_MAX})`);
   ok(r.quiet, `${tag} quiet: no walk under reduced motion`);
   ok(errors.length === 0, `${tag} no page error` + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
   await page.close();

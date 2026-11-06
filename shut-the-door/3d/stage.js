@@ -87,16 +87,18 @@
  * broadcast's textures at load (inplay.js prime) so the stall is shorter too.
  */
 import * as THREE from 'three';
-import { preload } from './load.js?v=9';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=23';
-import { People } from './people.js?v=56';
+import { preload, assetUrl } from './load.js?v=10';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=24';
+import { People } from './people.js?v=57';
 import { Pitch, releaseOf } from './pitch.js?v=16';
 import { fromResult, motion } from './play.js?v=24';
 import { look } from './looks.js?v=6';
 import { P, smooth } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=67';
+import { InPlay } from './inplay.js?v=68';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=14';
-import { FirstPerson } from './firstperson.js?v=30';
+import { FirstPerson } from './firstperson.js?v=31';
 import * as IDLE from './idle.js?v=2';
 import * as WALKIN from './walkin.js?v=1';
 
@@ -290,6 +292,7 @@ class Stage {
     this.applyGhost();
     this.breathe();
     this.idleRun();
+    this.walkLoad();
     return this;
   }
 
@@ -319,6 +322,7 @@ class Stage {
       if (this.loaded) { this.inplay.warm(true); this.renderer.compile(this.scene, this.camera); this.inplay.warm(false); }
     } else { this.inplay.people = this.people; this.inplay.setFacts(this.facts); }
     if (this.batterId != null) this.applyBatter();
+    if (this.ghostGltf) this.ghostMake();
   }
 
   setBatter(b) {
@@ -332,6 +336,8 @@ class Stage {
       return;
     }
     this.walkEnd();
+    this.walkOut = this.loaded && this.pitched && this.walkOk() ? this.walkOutPlan() : null;
+    this.lastEnd = null;
     this.batterId = b.id;
     this.bat = b;
     this.zone = { szTop: b.szTop, szBot: b.szBot, bats: b.bats };
@@ -340,7 +346,11 @@ class Stage {
     this.layout();
     // a new hitter after a pitch has been played walks up to the plate (the first of an outing on
     // the home screen is dressed there and stands in)
-    if (this.loaded && this.pitched && this.facts && this.facts.batter) this.walkStart();
+    // (after a strikeout the last hitter walks out first, on the ghost: walkOutPlan, before the
+    // batter's body is dressed as the new hitter)
+    if (this.loaded && this.pitched && this.facts && this.facts.batter) this.walkStart(this.walkOut);
+    this.walkOut = null;
+    if (!this.walk) this.ghostDress();
     if (this.loaded) { this.breathe(); this.idleRun(); }
   }
 
@@ -403,7 +413,7 @@ class Stage {
 
   /** The set: everyone in their stance, the catcher set up on the target, no ball yet. */
   preview() {
-    if (this.walk) { this.walkLift(); this.walk.w = null; }
+    if (this.walk) { this.walkLift(); this.walk.in = null; }
     if (this.inplay && this.inplay.active) this.inplay.end(this.camera);
     const f = this.facts.batter, c = C();
     const cell = this.cell == null ? 12 : this.cell;
@@ -418,7 +428,7 @@ class Stage {
   }
 
   setPitch(play) {
-    if (this.walk) { this.walkLift(); this.walk.w = null; }
+    if (this.walk) { this.walkLift(); this.walk.in = null; }
     if (this.pitch) this.pitch.dispose();
     const m = motion(play, this.facts.batter);
     this.pitch = new Pitch({ scene: this.scene, facts: this.facts, play, batter: this.facts.batter, m, grid: false });
@@ -434,7 +444,7 @@ class Stage {
     this.t = t;
     // (the walk's pose is laid over the set at each draw: put the set back first, and plan again from
     // the set this pose makes)
-    if (this.walk) { this.walkLift(); this.walk.w = null; }
+    if (this.walk) { this.walkLift(); this.walk.in = null; }
     // any pose but the set's own ends the life at the set (idleSet starts it again)
     if (this.idle) this.idle.on = false;
     this.eye.update(t);
@@ -606,23 +616,103 @@ class Stage {
     if (b.bat) b.bat.visible = !on;
   }
 
-  /** THE NEXT HITTER WALKS UP (walkin.js, the header). walkStart begins it on the set just posed;
-      walkApply lays it at each draw (planned on the first, from the set's pose and the set's camera);
-      walkRun draws every frame while it lasts, its clock moving only on a shown canvas and page (at
-      most MAX_STEP a frame); walkEnd puts the set's pose back exactly and hands over to the life at
-      the set, which eases in from nothing as at any new set. A tap or a key ends it (skip). */
+  /** THE CHANGE OF HITTER (walkin.js, the header). walkStart begins it on the set just posed:
+      after a strikeout the last hitter walks out of the box on a second body (the ghost: the same
+      batter.glb, dressed as him beforehand and given his pose at the swap, so nothing changes on
+      screen), and the new hitter walks in on the batter's own body at the same time, out of sight
+      until the last one has walked out of the frame (walkin.js planIn's lead). walkApply
+      lays both at each draw (the walk in planned on the first, from the set's pose and the set's
+      camera); walkRun draws every frame while it lasts, its clock moving only on a shown canvas and
+      page (at most MAX_STEP a frame); walkEnd puts the set's pose back exactly, hides the ghost and
+      hands over to the life at the set, which eases in from nothing as at any new set. A tap or a key
+      ends it all (skip). */
   walkOk() {
-    const c = this.inplay && this.inplay.crew;
-    return !!this.loaded && !reducedMotion() && window.STD_STAGE_WALK !== false && (!TEST() || !!TEST().walk) && !!(c && c.clips && c.clips.jog && c.t);
+    return !!this.loaded && !reducedMotion() && window.STD_STAGE_WALK !== false && (!TEST() || !!TEST().walk) && !!this.walkClips;
   }
 
-  walkStart() {
+  /** The clips (assets/walkup.glb) and the ghost body, fetched after the scene is up (never fatal: no
+      walk without them). */
+  walkLoad() {
+    if (this.walkLoading) return this.walkLoading;
+    const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const clips = gl.loadAsync(assetUrl('walkup.glb')).then((g) => { this.walkClips = WALKIN.clipsOf(g); });
+    const ghost = fetch(assetUrl('batter.glb')).then((r) => r.arrayBuffer()).then((buf) => gl.parseAsync(buf, assetUrl('')))
+      .then((g) => { this.ghostGltf = g; this.ghostMake(); this.ghostDress(); });
+    this.walkLoading = Promise.all([clips, ghost]).catch((e) => { console.warn('the walk up is off', e); this.walkClips = null; });
+    return this.walkLoading;
+  }
+
+  /** The ghost: a second batter, hidden until a struck out hitter walks out on it. Made again for each
+      scenario (his kit is its hitters' club). */
+  ghostMake() {
+    if (!this.ghostGltf || !this.facts) return;
+    if (this.ghost3d) { const g = this.ghost3d.batter; if (g) { this.scene.remove(g.root); if (g.bat) this.scene.remove(g.bat); } }
+    const facts = { ...this.facts, batter: null };
+    const P = new People({ scene: this.scene, facts });
+    P.setup({ batter: this.ghostGltf });
+    this.ghost3d = P;
+    this.ghostFor = null;
+    this.ghostShow(false);
+  }
+
+  ghostShow(on) {
+    const g = this.ghost3d && this.ghost3d.batter;
+    if (!g) return;
+    g.root.visible = !!on;
+    if (g.bat) g.bat.visible = !!on;
+  }
+
+  /** Dress the ghost as the hitter up now, while nothing plays (it is the costly part: his build,
+      kit, helmet and bat), so a strikeout's swap costs nothing. */
+  ghostDress() {
+    const P = this.ghost3d, f = this.facts && this.facts.batter;
+    if (!P || !f || this.ghostFor === f.id) return;
+    clearTimeout(this.ghostT);
+    this.ghostT = setTimeout(() => {
+      if (!this.ghost3d || !this.facts.batter || this.facts.batter.id !== f.id || this.ghostFor === f.id) return;
+      // (never while a pitch plays or a walk is on: again a little later)
+      if (this.playing || this.walk) { this.ghostDress(); return; }
+      this.ghost3d.facts = { ...this.facts, batter: f };
+      this.ghost3d.setBatter(f);
+      this.ghostFor = f.id;
+      this.ghostShow(false);
+    }, 250);
+  }
+
+  /** The hitter's set as the pitch found it (bones, place, bat), for his walk out after a strikeout. */
+  keepSet() {
+    const b = this.people && this.people.batter;
+    if (!b || !this.facts.batter) return;
+    this.idleLift();
+    this.lastSet = { id: this.facts.batter.id, set: WALKIN.setOf(b) };
+  }
+
+  /** The walk out after a strikeout: the ghost, dressed as the hitter who struck out, takes his pose
+      as it is now and walks out from it. Returns the plan or null. */
+  walkOutPlan() {
+    const E = this.lastEnd, P = this.ghost3d, b = this.people && this.people.batter;
+    if (!E || E.kind !== 'k' || !P || !P.batter || this.ghostFor !== E.id || !this.lastSet || this.lastSet.id !== E.id || !b) return null;
+    const g = P.batter, byName = (x) => g.bones[x.name];
+    // his pose, value for value, on the ghost (the same rig, the same dress)
+    for (const [bone] of b.bind) { const t = g.bones[bone.name]; if (t) { t.position.copy(bone.position); t.quaternion.copy(bone.quaternion); } }
+    g.root.position.copy(b.root.position); g.root.quaternion.copy(b.root.quaternion); g.root.scale.copy(b.root.scale);
+    g.root.updateMatrixWorld(true);
+    if (g.bat && b.bat) { g.bat.position.copy(b.bat.position); g.bat.quaternion.copy(b.bat.quaternion); g.bat.updateMatrixWorld(true); }
+    const from = WALKIN.setOf(g);
+    const S = this.lastSet.set;
+    const set = { ...S, bones: S.bones.map(([bone, pos, q]) => [byName(bone), pos, q]).filter(([x]) => x) };
+    clearTimeout(this.ghostT);
+    try { return WALKIN.planOut(g, this.walkClips, set, from, this.cam0); } catch (e) { console.error('the walk out could not be planned', e); return null; }
+  }
+
+  walkStart(out) {
     if (!this.walkOk() || !this.people || !this.people.batter || !this.people.batter.bat) return;
     const skip = (e) => {
       if (e && e.type === 'pointerdown' && e.target && e.target.closest && e.target.closest('header, .sheet')) return;
       this.walkEnd();
     };
-    this.walk = { clock: 0, w: null, laid: false, skip, id: this.facts.batter.id, frames: 0 };
+    this.walk = { clock: 0, in: null, out: out || null, inAt: 0, laid: false, skip, id: this.facts.batter.id, frames: 0 };
+    if (out) this.ghostShow(true);
     document.addEventListener('pointerdown', skip, true);
     document.addEventListener('keydown', skip, true);
     this.walkRun();
@@ -631,18 +721,18 @@ class Stage {
   walkApply() {
     const W = this.walk;
     if (!W || this.playing) return;
-    if (!W.w) {
-      const c = this.inplay.crew;
-      try { W.w = WALKIN.plan(this.people.batter, c.clips.jog, c.t.names, this.cam0); } catch (e) { console.error('the walk up could not be planned', e); this.walkEnd(); return; }
-      W.dur = W.w.dur;
+    if (!W.in) {
+      try { W.in = WALKIN.planIn(this.people.batter, this.walkClips, this.cam0, W.out ? W.out.dur : 0); } catch (e) { console.error('the walk up could not be planned', e); this.walkEnd(); return; }
+      W.dur = Math.max(W.inAt + W.in.dur, W.out ? W.out.dur : 0);
     }
-    W.laid = WALKIN.lay(W.w, W.clock);
+    W.laid = WALKIN.lay(W.in, Math.max(0, W.clock - W.inAt));
+    if (W.out) { const on = WALKIN.lay(W.out, W.clock); if (!on) this.ghostShow(false); }
   }
 
   walkLift() {
     const W = this.walk;
-    if (!W || !W.w || !W.laid) return;
-    WALKIN.restoreSet(W.w);
+    if (!W || !W.in || !W.laid) return;
+    WALKIN.restoreSet(W.in);
     W.laid = false;
   }
 
@@ -676,11 +766,13 @@ class Stage {
     document.removeEventListener('keydown', W.skip, true);
     this.walkLift();
     this.walk = null;
-    // what the checks read back: how long it ran and whether a tap ended it
-    this.walked = { id: W.id, dur: W.dur ?? null, clock: W.clock, skipped: W.dur == null || W.clock < W.dur, frames: W.frames };
+    this.ghostShow(false);
+    // what the checks read back: how long it ran, whether a tap ended it, and the walk out's
+    this.walked = { id: W.id, dur: W.dur ?? null, clock: W.clock, skipped: W.dur == null || W.clock < W.dur, frames: W.frames,
+      inDur: W.in ? W.in.dur : null, inAt: W.inAt, seenAtStart: W.in ? !!W.in.seenAtStart : null, out: W.out ? { dur: W.out.dur, leaves: !!W.out.leaves } : null };
     // the life at the set comes in from nothing, as at any new set
     if (this.idle) { this.idle.clock = 0; this.idle.laid = -1; }
-    if (this.loaded && !this.playing) { this.soon(); this.idleRun(); }
+    if (this.loaded && !this.playing) { this.soon(); this.idleRun(); this.ghostDress(); }
   }
 
   /** The broadcast's cut is not his view: his glove and arm go while it is on (the park is drawn only
@@ -748,7 +840,7 @@ class Stage {
   layout() {
     const w = this.canvas.clientWidth || this.canvas.width, h = this.canvas.clientHeight || this.canvas.height;
     if (!w || !h) return;
-    if (this.walk) { this.walkLift(); this.walk.w = null; }
+    if (this.walk) { this.walkLift(); this.walk.in = null; }
     this.renderer.setSize(w, h, false);
     this.eye.resize(w, h);
     this.camera.userData.cssH = h;
@@ -1072,6 +1164,9 @@ class Stage {
     this.walkEnd();
     if (this.away) this.batterAway(false);
     this.pitched = true;
+    clearTimeout(this.ghostT);
+    this.keepSet();
+    this.lastEnd = null;
     const p = this.playing = this.playOnce(opts);
     const clear = () => { if (this.playing === p) this.playing = null; };
     p.then(clear, clear);
@@ -1195,6 +1290,8 @@ class Stage {
         } catch (e) { console.error('the end of the pitch failed', e); trace.error = String(e && e.message || e); }
         this.judgeTier(gaps);
         this.dirty = true;
+        // an at bat over on a strikeout: the next setBatter walks him out first (walkOutPlan)
+        this.lastEnd = pr.paOver && !run && /^(called_strike|swinging_strike|foul_tip)$/.test(pr.result) && this.facts.batter ? { kind: 'k', id: this.facts.batter.id } : null;
         const summary = { n: pr.n, result: pr.result, inPlay: !!run && !foulCut, land: landed, skipped: trace.skipped, seconds: Math.round(Math.max(0, Math.min(lastT, tEnd)) / speed * 1000) / 1000 };
         trace.summary = summary;
         try { if (hooks.done) hooks.done(summary); } catch (e) { console.error('hooks.done failed', e); }
