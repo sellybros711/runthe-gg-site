@@ -82,12 +82,12 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=9';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=23';
-import { People } from './people.js?v=53';
+import { People } from './people.js?v=54';
 import { Pitch, releaseOf } from './pitch.js?v=16';
-import { fromResult, motion } from './play.js?v=21';
+import { fromResult, motion } from './play.js?v=22';
 import { look } from './looks.js?v=6';
 import { P, smooth } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=64';
+import { InPlay } from './inplay.js?v=65';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=14';
 import { FirstPerson } from './firstperson.js?v=30';
 import * as IDLE from './idle.js?v=2';
@@ -220,7 +220,8 @@ function factsFrom(scn, extra) {
     release: releaseOf(p),
     batters: scn.batters.map((b) => {
       const bi = extra.bio && extra.bio[b.id];
-      return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot, heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id, scn.id) };
+      // stanceIn: his real distance off the plate where Statcast has it (rules 12, people.js setupBatter)
+      return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot, stanceIn: b.stanceIn ?? null, heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id, scn.id) };
     }),
     uniform: extra.uniform,
   };

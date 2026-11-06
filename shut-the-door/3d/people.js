@@ -16,6 +16,7 @@ import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld, aimBon
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=9';
 import { STANCE_X } from './inplay-plan.js?v=33';
+import { stanceOff } from './stance.js?v=1';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -739,8 +740,11 @@ export class People {
     // puts the midpoint of his hips 28 in off the plate's inside edge (36.5 in from its centre) a second
     // before the release, where Statcast's batting stance measures the average big league hitter (MLB
     // glossary, Batting Stance: distance off plate, the hips' midpoint from the inside edge, one second
-    // before release; the league average 28 in). At 2.95 ft his hips stood 29.6 in off it
-    const want = P(lefty ? STANCE_X : -STANCE_X, 0.55, 0);
+    // before release; the league average 28 in). At 2.95 ft his hips stood 29.6 in off it. A hitter
+    // Statcast has a stance for (the pack's stanceIn, pipeline/stance.mjs) stands as much nearer or
+    // further as his own distance off the plate is from 28 in (stance.js)
+    const sx = STANCE_X + stanceOff(this.facts.batter);
+    const want = P(lefty ? sx : -sx, 0.55, 0);
     b.root.position.x += want.x - mid.x; b.root.position.z += want.z - mid.z;
     b.root.updateMatrixWorld(true);
     ground(b);

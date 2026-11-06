@@ -121,8 +121,11 @@ const MT = NODE ? require('./meter.js') : (window.STD_METER || null);
    14: rules 11 (grade.js HBP_RULES): a hit by pitch only when the crossing reaches the batter's body
    (contract.js THE REACH). Where the row says hit by pitch and the ball crossed short of it, the
    pitch is a take there, called where it crossed, read inside the hit by pitch's slice of the same
-   library draw. A call with r 10 or before replays exactly as under 13. */
-const ENGINE_VERSION = 14;
+   library draw. A call with r 10 or before replays exactly as under 13.
+   15: rules 12 (grade.js STANCE_RULES): the reach where he stands (contract.js hbpReachAt): the drawn
+   hitter's body at Statcast's average stance, moved by his own distance off the plate (the pack's
+   stanceIn). Only the reach moves. A call with r 11 or before replays exactly as under 14. */
+const ENGINE_VERSION = 15;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread.
    3: the hold table is solved with runs on a legal third out (rules 3), and
@@ -209,7 +212,7 @@ function createOuting(pack, opts) {
   if (!pack || pack.v !== PACK_VERSION) throw new Error('pack format ' + (pack && pack.v) + ', engine reads ' + PACK_VERSION);
   const sc = pack.scenario;
   const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.STEAL_RULES, G.FULL_RULES, G.TOUCH_RULES, G.DRAWN_RULES, G.HBP_RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
+  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.STEAL_RULES, G.FULL_RULES, G.TOUCH_RULES, G.DRAWN_RULES, G.HBP_RULES, G.STANCE_RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
   // rules 7 and before play the first half alone, as they were played (grade.js THE HALVES)
   let model = opts.model || new G.Model(pack);
   if (rules < G.FULL_RULES) model = model.singleModel();
@@ -348,9 +351,11 @@ function throwPitch(o, call) {
   if (abs && k <= 1 && row[0] + row[1] > 0) k = u / (row[0] + row[1]) < K.calledStrikeP(dIn) ? 1 : 0;
   // rules 11 (THE REACH, contract.js hbpReach): a hit by pitch only when the ball reaches him. Short
   // of it, the pitch is a take where it crossed: the same library draw, read inside the hit by
-  // pitch's slice, called by the umpire's chance there. No other key moves
+  // pitch's slice, called by the umpire's chance there. No other key moves. Rules 12: the reach where
+  // he stands (contract.js hbpReachAt, his stanceIn)
   else if (o.rules >= G.HBP_RULES && k === G.KEYS.indexOf('hit_by_pitch')
-    && K.insideFt(actual.x, sc.batters[who].bats) < K.hbpReach(actual.zn)) {
+    && K.insideFt(actual.x, sc.batters[who].bats) < (o.rules >= G.STANCE_RULES
+      ? K.hbpReachAt(actual.zn, sc.batters[who].stanceIn == null ? null : sc.batters[who].stanceIn) : K.hbpReach(actual.zn))) {
     k = (u - (acc - row[k])) / row[k] < K.calledStrikeP(dIn) ? 1 : 0;
   }
   let ref = entry.x[actualCell][k];

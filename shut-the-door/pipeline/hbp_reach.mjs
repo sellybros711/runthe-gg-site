@@ -76,40 +76,55 @@ await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {};
 
 const PACKS = path.join(ROOT, 'shut-the-door', 'data', 'packs');
 const files = fs.readdirSync(PACKS).filter((f) => f.endsWith('.json')).sort().slice(0, +(arg('--packs') || 999));
-const LO = K.HBP.LO, HI = LO + K.HBP.REACH.length - 1;   // the bands, tenths of zn
+const LO = K.HBP.LO, HI = LO + K.HBP.REACH12.length - 1, REF = K.HBP.STANCE_IN;   // the bands, tenths of zn
 const all = [];
 for (const file of files) {
   const scn = JSON.parse(fs.readFileSync(path.join(PACKS, file), 'utf8')).scenario;
-  const got = await page.evaluate(({ scn, LO, HI }) => {
+  const got = await page.evaluate(({ scn, LO, HI, REF }) => {
     const st = window.STD_STAGE.current, FT = 0.3048, out = [];
     st.setScenario(scn);
+    // a vertex's part, by the bone that moves it most: what is nearest in each band
+    const partOf = (name) => /hand|thumb|index|middle|ring|pinky/.test(name) ? 'hand' : /clavicle|upperarm|lowerarm|deltoid|elbow/.test(name) ? 'arm'
+      : /head|neck/.test(name) ? 'head' : /thigh|calf|foot|ball|knee/.test(name) ? 'leg' : 'trunk';
     for (const b of st.facts.batters) {
       st.setBatter(b);
       const ppl = st.people, B = ppl.batter, side = b.bats === 'L' ? 1 : -1;
+      // where he stands: people.js stands a hitter with a real stance (stanceIn) that far off his 28 in
+      const off = b.stanceIn != null ? (b.stanceIn - REF) / 12 : 0;
       const a0 = scn.pitcher.arsenal[0];
       st.prepare({ n: 1, call: { type: a0.type, cell: 12 }, actual: { x: side * 1.6, zn: 0.5 }, actualCell: side > 0 ? 14 : 10, velo: a0.velo || 90,
         batter: 'take', result: 'ball', inPlay: null, countBefore: { b: 0, s: 0 }, count: { b: 1, s: 0 }, outs: 0, bases: 0, runnerMoves: [], runs: 0, paOver: false, drawn: null });
-      const pt = st.pitch, near = {}, v = B.root.position.clone();
+      const pt = st.pitch, near = {}, part = {}, v = B.root.position.clone();
+      // his feet as drawn, for the record: the stance the measurement took him in
+      const foot = (s) => { const p = v.clone(); B.bones['foot_' + s].getWorldPosition(p); return side * (-p.x / FT); };
+      ppl.update(pt.tPlate); B.root.updateMatrixWorld(true);
+      const feet = (foot('l') + foot('r')) / 2;
       for (const dt of [-0.02, 0, 0.02]) {
         ppl.update(pt.tPlate + dt);
         B.root.updateMatrixWorld(true);
         B.root.traverse((o) => {
           if (!o.isMesh || !o.visible || !o.geometry || !o.geometry.attributes.position) return;
-          const n = o.geometry.attributes.position.count;
+          const n = o.geometry.attributes.position.count, si = o.geometry.attributes.skinIndex, sw = o.geometry.attributes.skinWeight;
           for (let i = 0; i < n; i++) {
             if (o.isSkinnedMesh) o.getVertexPosition(i, v); else v.fromBufferAttribute(o.geometry.attributes.position, i);
             v.applyMatrix4(o.matrixWorld);
-            const ins = side * (-v.x / FT), deep = v.z / FT, zn = (v.y / FT - b.szBot) / (b.szTop - b.szBot);
+            // (taken back to the league's stance: the table is his body against where he stands)
+            const ins = side * (-v.x / FT) - off, deep = v.z / FT, zn = (v.y / FT - b.szBot) / (b.szTop - b.szBot);
             if (deep < -1.5 || deep > 3) continue;
             const band = Math.max(LO, Math.min(HI, Math.floor(zn * 10)));
-            if (!(band in near) || ins < near[band]) near[band] = ins;
+            if (!(band in near) || ins < near[band]) {
+              near[band] = ins;
+              let bone = 'helmet';
+              if (o.isSkinnedMesh && si) { let bw = -1, bi = 0; for (let k = 0; k < 4; k++) { const w = sw.getComponent(i, k); if (w > bw) { bw = w; bi = si.getComponent(i, k); } } bone = o.skeleton.bones[bi].name; }
+              part[band] = bone === 'helmet' ? 'head' : partOf(bone);
+            }
           }
         });
       }
-      out.push({ id: b.id, bats: b.bats, near });
+      out.push({ id: b.id, bats: b.bats, off, feet: feet - off, near, part });
     }
     return out;
-  }, { scn, LO, HI });
+  }, { scn, LO, HI, REF });
   for (const g of got) all.push({ pack: file, ...g });
   console.error(`${file}: ${got.length} hitters`);
 }
@@ -117,13 +132,20 @@ await browser.close();
 server.close();
 
 const BALL_FT = K.BALL_IN / 12;
-const reach = [], far = [];
+const reach = [], far = [], parts = [];
 const mn = (b) => Math.min(...all.map((h) => h.near[b]).filter((x) => x != null));
 for (let b = LO; b <= HI; b++) {
   const m = Math.min(mn(b), b > LO ? mn(b - 1) : Infinity, b < HI ? mn(b + 1) : Infinity);
   reach.push(Math.floor((m - BALL_FT) * 100) / 100);
   far.push(Math.ceil(Math.max(...all.map((h) => h.near[b]).filter((x) => x != null)) * 100) / 100);
+  // what the nearest hitter's nearest point is in this band
+  const h = all.reduce((a, x) => (x.near[b] != null && (!a || x.near[b] < a.near[b]) ? x : a), null);
+  parts.push(h ? h.part[b] : null);
 }
-console.log(JSON.stringify({ hitters: all.length, packs: files.length, LO, REACH: reach, BODY_FAR: far }));
-const same = JSON.stringify(reach) === JSON.stringify(K.HBP.REACH);
-console.log(same ? 'contract.js HBP.REACH matches' : 'contract.js HBP.REACH differs: ' + JSON.stringify(K.HBP.REACH));
+const own = all.filter((h) => h.off !== 0).length, feet = all.map((h) => h.feet);
+console.error(`stances: ${own} of ${all.length} at their own (Statcast), the rest at ${REF} in; feet drawn at ${Math.min(...feet).toFixed(3)} to ${Math.max(...feet).toFixed(3)} ft off once taken back to ${REF} in`);
+console.error('nearest part by band (zn tenths from ' + LO + '): ' + parts.map((p, i) => `${LO + i} ${p}`).join(', '));
+console.log(JSON.stringify({ hitters: all.length, packs: files.length, LO, REACH12: reach, BODY_FAR: far }));
+const same = JSON.stringify(reach) === JSON.stringify(K.HBP.REACH12);
+console.log(same ? 'contract.js HBP.REACH12 matches' : 'contract.js HBP.REACH12 differs: ' + JSON.stringify(K.HBP.REACH12));
+if (arg('--out')) fs.writeFileSync(arg('--out'), JSON.stringify(all));
