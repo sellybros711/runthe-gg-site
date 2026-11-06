@@ -590,7 +590,7 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 .deck .decklabel { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); padding: 5px 40px; white-space: nowrap; background: #08121d;
   border: 2px solid var(--gold); color: #fff; font: italic 900 17px/1 'Barlow Condensed', sans-serif; letter-spacing: .08em; text-transform: uppercase;
   clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); box-shadow: 0 0 14px rgba(245, 183, 42, .4); }
-.deck .decklabel::before, .deck .decklabel::after { content: '///'; color: var(--gold); margin: 0 10px; letter-spacing: -2px; }
+.deck .decklabel i { color: var(--gold); margin: 0 10px; letter-spacing: -2px; }
 .deck .field > span { display: flex; align-items: center; gap: 6px; color: #fff; font: 900 16px/1 'Barlow Condensed', sans-serif; letter-spacing: .04em; text-transform: uppercase; }
 .deck .field > span svg { width: 18px; height: 18px; fill: var(--gold); color: var(--gold); }
 .deck input, .deck select { background: #0a1828; border: 2px solid rgba(25, 198, 167, .55); color: #fff; font-weight: 700; box-shadow: inset 0 0 10px rgba(25, 198, 167, .15); }
@@ -641,7 +641,7 @@ body.gamemode .view.studio { padding-top: 14px; }
   .view.studio { padding: 26px 8px 10px; }
   .deck { padding: 18px 12px 12px; }
   .deck .decklabel { font-size: 13px; padding: 4px 16px; }
-  .deck .decklabel::before, .deck .decklabel::after { display: none; }
+  .deck .decklabel i { display: none; }
   .deck .decklevel { grid-auto-flow: row; width: 100%; }
   .view.studio .tool { min-width: 46px; padding: 5px 6px; font-size: 11px; }
   .view.studio .tool svg { width: 18px; height: 18px; }
@@ -649,3 +649,49 @@ body.gamemode .view.studio { padding-top: 14px; }
   .runplay { flex: 1; justify-content: center; font-size: 24px; }
   .dockbtn { flex: 1; justify-content: center; padding: 8px 10px; font-size: 14px; }
 }
+
+/* ---------- Frames that never cut what is in them (the owner, 2026-11-06) ----------
+   The angled frames used to be clip-path on the element itself, which also cut
+   the text (half the ? of WHAT?) and the border on every slanted edge. Now the
+   element is a plain box and two layers behind it draw the shape: ::before is
+   the rim (the border box), ::after the fill (the padding box), both clipped to
+   --shape. The text sits on top and is never clipped. Glows are drop-shadows on
+   the element, so they follow the shape. */
+.plogo h1, .plogo .kicker, .pspoth, .arena .dist, .playnow, .deck .decklabel, .dockbtn, .runplay, .strip .ez.own, .strip .ez.opp {
+  --bw: 2px; isolation: isolate; clip-path: none; background: none; border: var(--bw) solid transparent; border-radius: 0; box-shadow: none; }
+.plogo h1, .plogo .kicker, .pspoth, .arena .dist, .playnow, .dockbtn, .runplay, .strip .ez.own, .strip .ez.opp { position: relative; }
+.plogo h1::before, .plogo .kicker::before, .pspoth::before, .arena .dist::before, .playnow::before, .deck .decklabel::before, .dockbtn::before, .runplay::before, .strip .ez.own::before, .strip .ez.opp::before,
+.plogo h1::after, .plogo .kicker::after, .pspoth::after, .arena .dist::after, .playnow::after, .deck .decklabel::after, .dockbtn::after, .runplay::after, .strip .ez.own::after, .strip .ez.opp::after {
+  content: ''; position: absolute; pointer-events: none; clip-path: var(--shape); }
+.plogo h1::before, .plogo .kicker::before, .pspoth::before, .arena .dist::before, .playnow::before, .deck .decklabel::before, .dockbtn::before, .runplay::before, .strip .ez.own::before, .strip .ez.opp::before {
+  inset: calc(-1 * var(--bw)); z-index: -2; background: var(--rim); }
+.plogo h1::after, .plogo .kicker::after, .pspoth::after, .arena .dist::after, .playnow::after, .deck .decklabel::after, .dockbtn::after, .runplay::after, .strip .ez.own::after, .strip .ez.opp::after {
+  inset: 0; z-index: -1; background: var(--fill); }
+.plogo h1 { --bw: 3px; --shape: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%); padding-right: 60px; padding-left: 52px;
+  --rim: linear-gradient(90deg, var(--teal), #8fe7ff 45%, var(--gold)); --fill: linear-gradient(#0b1a2b, #060f1b); }
+.plogo .kicker { --shape: polygon(4% 0, 100% 0, 96% 100%, 0 100%); --rim: rgba(245, 183, 42, .8); --fill: #08121d; }
+.pspoth { --shape: polygon(5% 0, 95% 0, 100% 100%, 0 100%); --rim: rgba(245, 183, 42, .85); --fill: #07111c; }
+.arena .dist { --shape: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0 50%); --rim: var(--teal);
+  --fill: repeating-linear-gradient(90deg, transparent 0 18%, rgba(255, 255, 255, .06) 18% 19%), linear-gradient(#2f7a3d, #1d5428);
+  filter: drop-shadow(0 0 8px rgba(25, 198, 167, .45)); }
+.arena .dist[aria-pressed="true"] { --rim: var(--gold); border-color: transparent; box-shadow: none; filter: drop-shadow(0 0 14px rgba(245, 183, 42, .85)); }
+.arena .dist:active { box-shadow: none; }
+.playnow { --bw: 3px; --shape: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%); --rim: #ffe27a; --fill: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c); }
+.deck .decklabel { --shape: polygon(6% 0, 94% 0, 100% 100%, 0 100%); --rim: var(--gold); --fill: #08121d; filter: drop-shadow(0 0 10px rgba(245, 183, 42, .45)); }
+.dockbtn { --shape: polygon(6% 0, 100% 0, 94% 100%, 0 100%); --rim: #2a4a66; --fill: #0b1929; }
+.dockbtn:hover { --rim: var(--teal); }
+.runplay { --bw: 3px; --shape: polygon(6% 0, 100% 0, 94% 100%, 0 100%); --rim: #ffe27a; --fill: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c); }
+.strip .ez.own { --shape: polygon(30% 0, 100% 0, 100% 100%, 0 100%, 0 30%); --rim: var(--teal);
+  --fill: radial-gradient(farthest-side, color-mix(in srgb, var(--teal) 8%, #07121e), color-mix(in srgb, var(--teal) 28%, #07121e)); }
+.strip .ez.opp { --shape: polygon(0 0, 70% 0, 100% 100%, 0 100%); --rim: var(--gold);
+  --fill: radial-gradient(farthest-side, color-mix(in srgb, var(--gold) 8%, #07121e), color-mix(in srgb, var(--gold) 28%, #07121e)); }
+@media (max-width: 760px) {
+  .plogo h1 { padding-left: 28px; padding-right: 36px; }
+}
+
+/* ---------- No light frame around the stadium (the owner, 2026-11-06) ----------
+   Play's first screen and the Studio are a night stadium in either theme. While
+   one is on screen the page behind it is the stadium's own dark, and the
+   stadium has no outline, so it reaches the edges instead of sitting in a frame. */
+html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPlay:not([hidden])) body, html:has(#vStudio:not([hidden])) body { background: #050c16; }
+.pick.arena, .view.studio { border-color: transparent; }

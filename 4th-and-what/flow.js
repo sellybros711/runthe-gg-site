@@ -72,8 +72,16 @@
     $('pBallTxt').textContent = '(' + spotWord(A.SC.ballOn) + ')';
     $('pGainTxt').textContent = goal ? '(Goal line)' : '(' + spotWord(A.SC.ballOn - A.SC.distance) + ')';
     $('pGainTag').querySelector('b').textContent = goal ? 'Score' : '1st down';
+    /* a short distance puts the two tags on top of each other: push them
+       apart by the overlap, half each way, so neither hides the other */
+    var W = $('pTurf').offsetWidth, bt = $('pBallTag'), gt = $('pGainTag');
+    var over = Math.max(14, bx) / 100 * W + 12 - (Math.min(86, gx) / 100 * W - 12) + 4;
+    bt.style.marginLeft = over > 0 && W ? -over / 2 + 'px' : '';
+    gt.style.marginLeft = over > 0 && W ? over / 2 + 'px' : '';
     $('pStrip').setAttribute('aria-valuenow', String(A.SC.ballOn)); $('pStrip').setAttribute('aria-valuetext', 'Ball on ' + spotWord(A.SC.ballOn));
   }
+  /* the push apart needs the strip's width, which is 0 while Play is hidden */
+  if (window.ResizeObserver && $('pTurf')) new ResizeObserver(function () { renderStrip(); }).observe($('pTurf'));
   function spotAt(clientX) {
     var r = $('pTurf').getBoundingClientRect(), f = (clientX - r.left) / r.width;
     var on = Math.round(100 - Math.max(0.01, Math.min(0.99, f)) * 100);
