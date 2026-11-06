@@ -101,6 +101,7 @@ var GYMS = [
     say:['Two carts and one set of points. My partner and I used to argue all day about who went first.',
       'The orange ones flip for every cart that goes through them. Even the cart you\'re not watching.',
       'That blue cart isn\'t in your way. It\'s the best help you\'ve got. Watch what it leaves behind.'],
+    hint:'The blue cart isn\'t only there to throw switches. It loads ore when it rolls over a chute, and the vault takes it too. Let it carry half the ore.',
     sw:[
       { s:'D', w:['U', 'R'], t:'f', set:0 },    // 1 the lower siding facing up, a flip
       { s:'U', w:['D', 'L'], t:'p', set:0 },    // 2 the blue cart's siding, facing down

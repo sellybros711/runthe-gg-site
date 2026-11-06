@@ -63,6 +63,7 @@ var GYMS = [
     say:['That airlock only opens while there\'s weight on the plate. Safety rule. I wrote it.',
       'The plate doesn\'t care which rock is on it. Any rock will do.',
       'Get the door open first and keep it open. The crater can wait.'],
+    hint:'The crater sits right under a wall. Tilt up and that wall stops a rock dead on it. So the moon rock only needs the crater\'s column. Rocks piled on a side wall can line it up.',
     rows:[
       '#########',
       '#p......#',

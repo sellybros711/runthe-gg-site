@@ -62,6 +62,7 @@ var GYMS = [
     say:['I tend this bar. Every new member tries the straight line first. Every one of them hears that ring.',
       'The ball keeps rolling after a bottle goes. Where it rolls is half the shot.',
       'Some of those bottles line up nicer from the back of the room than from the tee.'],
+    hint:'One putt can drop two bottles. The ball runs on after a bottle falls, and a side wall can turn it into the next one. Look for the pair that sits that way.',
     felt:[-5, -15, 5, 0], tee:[0, -1.5], cup:[0, -3.6], bottles:[[-1.55, -9.4], [-3.65, -13.0], [-2.6, -11.2], [1.5, -13.8], [-0.96, -6.4]],
     f:function(T, K){ var H = K.hole([K.rm(-5, 0, 5, -15)], [0, -1.5], [0, -3.6]);
       K.board(H, T, -2.2, -4.2, -2.2, -8.3, 0.36); K.board(H, T, 2.2, -4.2, 2.2, -8.3, 0.36);
