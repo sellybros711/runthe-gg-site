@@ -72,6 +72,7 @@ var GYMS = [
     say:['Those round stones in the floor? Step on one and the whole tablet flips on you. Ask me how I know.',
       'Backwards isn\'t wrong in there. Backwards is how you get home.',
       'You\'re doing fine. Sometimes the way forward is walking back the way you came.'],
+    hint:'The safe slabs don\'t turn the tablet back. Reach them while it reads backwards and it starts again from its last symbol. Some gold near the door is lit that way.',
     rows:[
       '#######',
       '#######',

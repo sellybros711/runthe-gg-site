@@ -158,6 +158,11 @@ console.log('\n1b. Career Path, flag current');
   await off.close();
 }
 
+/* Retired corpus careers that share a name and sport with a different man
+   on today's roster feed (found 2026-11-05). Both games once took the
+   roster row as proof the retired man still plays. */
+const RETIRED_NAMESAKES = [['Chris Johnson', 'NFL'], ['Kyle Williams', 'NFL'], ['Jon Runyan', 'NFL'], ['Charles Grant', 'NFL']];
+
 /* ---- 2. Alma Mater: current players only -------------------------------- */
 console.log('\n2. Alma Mater, flag current');
 {
@@ -184,6 +189,17 @@ console.log('\n2. Alma Mater, flag current');
     else if ((team && rows[0].team !== team) || rows[0].col !== col) fail(name + ' is dealt as ' + rows[0].team + ', ' + rows[0].col + '; want ' + (team || 'any club') + ', ' + col);
     else ok(name + ' is dealt once, as the ' + rows[0].team + ' man, ' + col);
   }
+  /* The other direction: a retired man is not "current" because somebody on
+     a roster today shares his name. A Dolphins cornerback named Chris
+     Johnson made the Titans running back current while the check was keyed
+     on the name. Each of these is a corpus career that ended years ago
+     beside a different man of the same name on today's feed. */
+  for (const [name, sport] of RETIRED_NAMESAKES) {
+    const rows = await page.evaluate(([n, s]) => window.__rtgPoolRows(n, s), [name, sport]);
+    const cur = rows.filter((x) => x.current);
+    if (cur.length) fail(name + ' (' + sport + ') is current through a namesake: ' + JSON.stringify(cur));
+    else ok(name + ' (' + sport + '): the retired man is not current because a namesake is');
+  }
   await close();
 }
 
@@ -205,7 +221,9 @@ console.log('\n3. Guess the Player, flag current');
        player the corpus never had, so for the NBA it can land on the same
        size as the all-time one by coincidence (581 and 581). What the flag
        promises is that a retired name is not offered as a guess. */
-    const RETIRED = ['Michael Jordan', 'Larry Bird', 'Tom Brady', 'Peyton Manning', 'Derek Jeter', 'Babe Ruth'];
+    /* With the sport: Michael Jordan the Ravens guard is on a roster today
+       and is rightly guessable. The retired one is the NBA's. */
+    const RETIRED = ['Michael Jordan|NBA', 'Larry Bird|NBA', 'Tom Brady|NFL', 'Peyton Manning|NFL', 'Derek Jeter|MLB', 'Babe Ruth|MLB'];
     const hasOn = await on.page.evaluate((n) => window.__rtgGuessHas(n), RETIRED);
     const hasOff = await off.page.evaluate((n) => window.__rtgGuessHas(n), RETIRED);
     // and the all-time list really does offer them, or this proves nothing
@@ -213,6 +231,13 @@ console.log('\n3. Guess the Player, flag current');
     else if (hasOn.length) fail('the current guess list still offers retired players: ' + hasOn.join(', '));
     else ok('answer ' + a.g.target + '; ' + a.total + ' possible answers, all on a roster; guessable ' + JSON.stringify(a.g.guessable) + ' against ' + JSON.stringify(b.guessable) + ' any era');
   }
+  /* No retired man is a possible answer, or a guess, through a namesake. */
+  const nsBad = await on.page.evaluate((list) => {
+    const g = window.__rtgGuess();
+    return list.filter(([n, s]) => g.targets.indexOf(s + '|' + n) !== -1 || window.__rtgGuessCareer(n, s));
+  }, RETIRED_NAMESAKES);
+  if (nsBad.length) fail('retired men are current through a namesake: ' + nsBad.map((x) => x.join(' ')).join(', '));
+  else ok('no retired man is current through a namesake (' + RETIRED_NAMESAKES.map((x) => x[0]).join(', ') + ')');
   if (!/^A current /.test(a.lead.trim())) fail('the lead still reads ' + JSON.stringify(a.lead.trim().slice(0, 60)));
   else ok('and it says so: ' + JSON.stringify(a.lead.trim().slice(0, 40)));
   if (b.current) fail('the flag is on with it turned off');

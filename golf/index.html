@@ -62,28 +62,28 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=129"></script>
+<script defer src="putt/putt.js?v=131"></script>
 <script defer src="putt/land.js?v=19"></script>
 <script defer src="putt/hole3d.js?v=22"></script>
 <script defer src="putt/trip3d.js?v=6"></script>
 <script defer src="putt/gyms.js?v=4"></script>
-<script defer src="putt/gymkinds/push.js?v=2"></script>
-<script defer src="putt/gymkinds/trickshot.js?v=1"></script>
-<script defer src="putt/gymkinds/lights.js?v=1"></script>
-<script defer src="putt/gymkinds/islands.js?v=1"></script>
-<script defer src="putt/gymkinds/pipes.js?v=2"></script>
-<script defer src="putt/gymkinds/lasers.js?v=1"></script>
-<script defer src="putt/gymkinds/ice.js?v=1"></script>
-<script defer src="putt/gymkinds/mimic.js?v=1"></script>
-<script defer src="putt/gymkinds/railyard.js?v=2"></script>
-<script defer src="putt/gymkinds/rock.js?v=1"></script>
-<script defer src="putt/gymkinds/runes.js?v=1"></script>
-<script defer src="putt/gymkinds/gravity.js?v=1"></script>
-<script defer src="putt/gymkinds/air.js?v=1"></script>
-<script defer src="putt/gymkinds/orbit.js?v=1"></script>
-<script defer src="putt/gymkinds/tint.js?v=1"></script>
+<script defer src="putt/gymkinds/push.js?v=3"></script>
+<script defer src="putt/gymkinds/trickshot.js?v=2"></script>
+<script defer src="putt/gymkinds/lights.js?v=2"></script>
+<script defer src="putt/gymkinds/islands.js?v=2"></script>
+<script defer src="putt/gymkinds/pipes.js?v=3"></script>
+<script defer src="putt/gymkinds/lasers.js?v=2"></script>
+<script defer src="putt/gymkinds/ice.js?v=2"></script>
+<script defer src="putt/gymkinds/mimic.js?v=2"></script>
+<script defer src="putt/gymkinds/railyard.js?v=3"></script>
+<script defer src="putt/gymkinds/rock.js?v=2"></script>
+<script defer src="putt/gymkinds/runes.js?v=2"></script>
+<script defer src="putt/gymkinds/gravity.js?v=2"></script>
+<script defer src="putt/gymkinds/air.js?v=2"></script>
+<script defer src="putt/gymkinds/orbit.js?v=2"></script>
+<script defer src="putt/gymkinds/tint.js?v=2"></script>
 <script defer src="putt/gymkinds/hop.js?v=1"></script>
-<script defer src="putt/trail.js?v=52"></script>
+<script defer src="putt/trail.js?v=54"></script>
 <script defer src="putt/mapland.js?v=11"></script>
 <!-- Share clips of a hole's putts from the card after it (reads putt.js, never changes it). -->
 <script defer src="putt/clips.js?v=2"></script>
@@ -6409,7 +6409,9 @@ const DAILY_QUEST_DEFS=[
 // PUTT PUTT IN THE DAILY QUESTS. With Putt Putt (puttOn) the day's quests carry its Daily Hole too, so the all-done
 // Tour Rep reward asks for a little of both games. Everything that lists or counts the quests reads dailyQuestDefs().
 const PUTT_QUEST={k:'putt', label:'Play the Putt Putt Daily Hole', hint:'Putt Putt'};
-function dailyQuestDefs(){ let on=false; try{ on=puttOn(); }catch(e){} return on?DAILY_QUEST_DEFS.concat([PUTT_QUEST]):DAILY_QUEST_DEFS; }
+// the Tour too (the owner, 2026-11-05: Daily Hole players were not playing the Tour). Cleared = holed at par or better.
+const PUTT_TOUR_QUEST={k:'putttour', label:'Clear a Putt Putt Tour hole', hint:'Par or better'};
+function dailyQuestDefs(){ let on=false; try{ on=puttOn(); }catch(e){} return on?DAILY_QUEST_DEFS.concat([PUTT_QUEST,PUTT_TOUR_QUEST]):DAILY_QUEST_DEFS; }
 function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquests'),null);
   if(!q||typeof q!=='object'||q.day!==t) q={day:t,daily:0,season:0,pass:0,share:0,xpDone:0}; return q; }
 function dailyQuestsAllDone(q){ q=q||dailyQuests(); return dailyQuestDefs().every(d=>q[d.k]); }
@@ -12210,7 +12212,7 @@ function cosmeticItems(cat){
   if(cat==='pants') return PANTS.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'no1cap',name:'World No.1 Cap',hw:1,hist:'Reach World No.1'}].concat(ppRewardItems('hw'),proLineItems('hw'));
-  if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Crystal Specs',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}].concat(ppRewardItems('ew'));
+  if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}].concat(ppRewardItems('ew'));
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
   if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'},{id:'scarecrow',name:'Scarecrow',body:1,hist:'Harvest Classic collection reward'}];
   if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}].concat(ppRewardItems('top'),proLineItems('top'));   // CS411
@@ -15466,7 +15468,11 @@ function ftPins(){
       go:()=>{ S.overlay='challenges'; render(); }, short:'Quests'}); }
   try{ if(puttOn()){ const m=window.RTT_PUTT.summary(puttHost()), d=m.daily||{};
     pins.push({id:'dhole', icon:'green', name:'Daily Hole', sub: d.done?`${esc(d.name||'Done')} · ${d.s} on a par ${d.par}`:`${esc(d.name||'Today\'s hole')} · +${window.RTT_PUTT.COINS.daily} coins`,
-      state: d.done?'done':'ready', val: d.done?'Done':'Ready', go:openPuttDaily, short:'Hole'}); } }catch(e){}
+      state: d.done?'done':'ready', val: d.done?'Done':'Ready', go:openPuttDaily, short:'Hole'});
+    // the Daily Hole played, the next Tour hole is the pin's next step, with the reward it walks toward
+    const nx=m.next; if(d.done && nx && !nx.done && !nx.gate)
+      pins.push({id:'tourhole', icon:'green', name:'Putt Putt Tour', sub:`Hole ${nx.n} · ${esc(nx.line||nx.world)}`, state:'ready', val:'Play',
+        go:()=>{ try{ track('home_next_hole',{n:nx.n}); }catch(e){} openPutt({tour:'main'}); }, short:'Tour'}); } }catch(e){}
   return pins;
 }
 function ftPinTile(p){
@@ -15856,7 +15862,7 @@ function scrTitle(){
   pro.querySelector('.ft-dbtn').onclick=()=>ftGo('protour'); pro.querySelector('.ft-play').onclick=pp.go; root.appendChild(pro);
   if(putt){ let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
     const hearts=m?ftHearts(m.lives,m.max):'';
-    const door=$(`<div class="ft-door putt" data-side="putt"><button type="button" class="ft-dbtn" aria-label="Putt Putt: worlds, stars and the Members Tour"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt${puttNewTag()?'<span class="ft-new">New</span>':''}</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>`:''}</span><span class="ft-go">Into the world ›</span></button><button type="button" class="ft-play" aria-label="Play Putt Putt"><i class="ft-tri"></i><span>Play</span><small>${m?'Hole '+m.lv:'Putt Putt'}</small></button></div>`);
+    const door=$(`<div class="ft-door putt" data-side="putt"><button type="button" class="ft-dbtn" aria-label="Putt Putt: worlds, stars and the Members Tour"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt${puttNewTag()?'<span class="ft-new">New</span>':''}</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>${m.next&&m.next.line?`<span class="ft-chip rw">★ ${esc(m.next.line)}</span>`:''}`:''}</span><span class="ft-go">Into the world ›</span></button><button type="button" class="ft-play" aria-label="Play Putt Putt"><i class="ft-tri"></i><span>Play</span><small>${m?'Hole '+m.lv:'Putt Putt'}</small></button></div>`);
     door.querySelector('.ft-dbtn').onclick=()=>ftGo('putthub');
     door.querySelector('.ft-play').onclick=()=>{ try{ track('home_play_putt'); }catch(e){} openPutt(); }; root.appendChild(door); }
   // desktop: the seam leans toward the other side while you hover one
@@ -15970,6 +15976,7 @@ function scrPuttHub(){
     <div class="ft-pp-hero">
       <div class="ft-pp-art">${art}<div class="ft-k">${m.w?`World ${m.w} of ${m.worlds}`:`Hole ${m.lv} of ${m.levels}`}</div><b>${esc(m.world)}</b></div>
       <div class="ft-pp-prog">${ws?`<span class="st">★</span><span>${ws}</span>`:''}<div class="ft-pp-bar"><i style="width:${pct}%"></i></div><span class="dim">Hole ${m.lv} of ${m.levels}</span></div>
+      ${m.next&&m.next.line?`<div class="ft-pp-next">★ ${esc(m.next.line)}</div>`:''}
       <button type="button" class="ft-big">Into the world <small>${out?'Out of lives: the Daily Hole is free':'Hole '+m.lv}</small></button>
     </div>
     <div class="ft-pp-tiles">
@@ -16183,6 +16190,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-door.putt .ft-row{justify-content:flex-end}
 .ft-chip{display:inline-flex;align-items:center;gap:4px;font:700 11px var(--body);background:rgba(6,20,14,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(244,227,201,.14);border-radius:7px;padding:3px 7px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ft-chip.g{background:rgba(241,208,74,.92);color:#2a1a00;border:0}
+.ft-chip.rw{color:#ffe48a;border-color:rgba(241,208,74,.55);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .ft-heart{color:#ff4d6d;font-size:12px}
 .ft-hn{margin-left:3px;opacity:.85}
 .ft-go{display:none;margin-top:8px;font:800 14px var(--body);letter-spacing:1.5px;text-transform:uppercase;border-bottom:2px solid var(--gold);padding-bottom:3px}
@@ -16476,6 +16484,7 @@ body.ftmode .topmask{display:none}
 .ft-pp-art .ft-k{position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:999px;background:rgba(10,26,18,.78);border:1px solid rgba(226,190,104,.5)}
 .ft-pp-art b{font:400 36px/1.15 var(--display);text-transform:uppercase;text-shadow:0 3px 10px rgba(0,0,0,.6)}
 .ft-pp-prog{display:flex;align-items:center;gap:10px;font:400 17px var(--display);padding:0 4px}
+.ft-pp-next{font:800 13px var(--body);color:#ffe48a;padding:6px 4px 0}
 .ft-pp-prog .st{color:#ffd24a} .ft-pp-prog .dim{margin-left:auto;font:700 12px var(--body);color:var(--soft)}
 .ft-pp-bar{flex:1;height:9px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden} .ft-pp-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ffe07a,#ebb02e)}
 .ft-pp .ft-big{background:linear-gradient(#ffe07a,#ebb02e)!important;color:#2a1c05!important;box-shadow:0 3px 0 #a5700f,0 8px 18px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.75);width:100%;margin:0;border-radius:16px;padding:14px 18px;font:400 24px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}
@@ -23523,7 +23532,8 @@ function puttHost(){
     coins:function(n,label,o){ try{ if(sbSignedIn()) addBonusCoins(n,{label:label,silent:!!(o&&o.silent)}); else holdGuestCoins(n); }catch(e){} },
     // the game's own weekly challenges, daily quests and play streak hear about Putt Putt
     quest:function(metric,n){ try{ questWeekly(metric,n); }catch(e){} },
-    questDaily:function(){ try{ questDaily('putt'); }catch(e){} },
+    questDaily:function(k){ try{ questDaily(k==='tour'?'putttour':'putt'); }catch(e){} },   // 'tour': a Tour hole cleared at par or better
+    track:function(ev,props){ try{ track(ev,props); }catch(e){} },   // putt.js's funnel (pt): Daily played, next-hole card, Tour holes
     // the look the Daily Hole board draws a player's golfer from, as the other boards keep it
     boardLook:function(){ try{ return lookForBoard(); }catch(e){ return null; } },
     // the Daily Hole board's Tour Pass names and player cards (putt.js boardPro / playerCard): the same holder set as the

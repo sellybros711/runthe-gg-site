@@ -56,6 +56,7 @@ var GYMS = [
     say:['See the striped rock in there? It\'s thicker. Takes two trips before it gives.',
       'You can\'t walk every tile in one line. You\'ve got to cross your own path somewhere.',
       'The thick rock is where you cross. Plan the second trip before you take the first.'],
+    hint:'Your second trip over the thick rock doesn\'t have to cross anything. You can step to a tile beside it and come right back. Look for the tile your loop keeps missing.',
     rows:[
       '#########',
       '#########',

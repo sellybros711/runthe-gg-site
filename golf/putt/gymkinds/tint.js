@@ -56,6 +56,7 @@ var GYMS = [
     say:['Cracked crystal takes you once. Then it is gone.',
       'Count your crossings before you start. A crack you need twice is a crack you lose.',
       'Walk the whole hall in your head first. A broken crack never comes back.'],
+    hint:'Every crack is a one way door. Go into a side through its crack and find another way out. The open floor along the bottom of the hall can be that way.',
     rows:[
       '#########',
       '####C####',

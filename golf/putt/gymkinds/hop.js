@@ -53,6 +53,7 @@ var GYMS = [
     say:['On the glaze you keep sliding. Only something in the way stops you.',
       'A slide can end on a pad. Then the pad throws you on.',
       'Think about where you will stop before you step on the glaze.'],
+    hint:'A pad with nowhere to land just wobbles, and you stay standing on it. So a pad can be a place to stop, not only a way to fly.',
     rows:[
       '#########',
       '####C####',

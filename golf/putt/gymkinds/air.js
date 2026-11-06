@@ -60,6 +60,7 @@ var GYMS = [
     say:['The ice is the cheap way across. One breath and you go till something stops you.',
       'Walking the long way round costs you. Look for what stops a slide where you want it.',
       'A boulder in the right place is worth more than a tank.'],
+    hint:'Don\'t slide along the ice. Go straight across it, up or down. One breath hops a whole band and drops you on the dust past it.',
     rows:[
       '#########',
       '####C####',

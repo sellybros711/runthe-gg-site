@@ -251,6 +251,11 @@
     p_day: row.day, p_run: row.run, p_index: row.index, p_scenario: row.scenarioId, p_calls: row.calls,
     p_outcome: row.outcome, p_pitches: row.pitches, p_score: row.score,
   });
+  /* The box line beside a kept outing (supabase/166_shut_the_door_board_stats.sql): the daily's,
+     and one finished Survivor situation's. The server keeps the first and checks it against the
+     row's own pitches. {data} or {error}. */
+  const submitStats = (row) => act('shutdoor_post_stats', { p_day: row.day, p_stats: row.stats });
+  const survivorStats = (row) => act('shutdoor_survivor_stats', { p_day: row.day, p_run: row.run, p_index: row.index, p_stats: row.stats });
   async function survivorBoard(day, limit) {
     const r = await rpc('shutdoor_survivor_board', { p_day: day, p_limit: limit || 50 });
     return Array.isArray(r) ? r : null;
@@ -319,7 +324,7 @@
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,
-    vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, archiveSubmit,
+    vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, submitStats, survivorStats, archiveSubmit,
     plates, setPlate,
   };
 })();
