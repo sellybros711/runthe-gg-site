@@ -151,3 +151,38 @@ export function pinDay(page, at = LAB_DAY) {
     window.Date = D;
   }, at);
 }
+
+/* SHARDS, AND THE WHOLE RUN FROM THEM. A check whose ceilings are counts over its held set (camera, frame)
+   runs in CI as N shards (--shard I/N, each case in exactly one: case k of the selection goes to shard
+   k mod N) and then --combine, which holds their rows together as one run, to the ceilings as they are.
+     --rows-out F     a shard's rows, its case numbers and the code it ran (the tree), to F
+     --combine DIR    the shards' files in DIR, held as one run of the selection the flags pick
+   readShards is the guard that the shards add up: every file of the same check, code and flags, the
+   shards 0 to N-1 each once, no case in two of them, and together exactly the cases a whole run takes.
+   Anything else throws, so a missing, doubled or stale shard fails the combined check. */
+export const flagVal = (k) => val(k);
+export function writeShard(file, check, params, shard, idx, data) {
+  fs.writeFileSync(file, JSON.stringify({ check, tree: treeHash(), params, shard, idx, data }));
+}
+export function readShards(dir, check, params, wantIdx) {
+  const tree = treeHash();
+  const parts = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')));
+  const n = parts[0] ? parts[0].shard.n : 0;
+  for (const q of parts) {
+    if (q.check !== check) throw new Error(`--combine: a file of ${q.check}, not ${check}`);
+    if (q.tree !== tree) throw new Error(`--combine: shard ${q.shard.i} ran other code (tree ${String(q.tree).slice(0, 12)}, here ${tree.slice(0, 12)})`);
+    if (JSON.stringify(q.params) !== JSON.stringify(params)) throw new Error(`--combine: shard ${q.shard.i} ran other flags (${JSON.stringify(q.params)}, here ${JSON.stringify(params)})`);
+    if (q.shard.n !== n) throw new Error(`--combine: shard ${q.shard.i} is one of ${q.shard.n}, not ${n}`);
+  }
+  const got = parts.map((q) => q.shard.i).sort((a, b) => a - b);
+  if (!n || parts.length !== n || got.some((i, k) => i !== k)) throw new Error(`--combine: ${parts.length} files for ${n} shards (${got.join(', ')})`);
+  const want = new Set(wantIdx), seen = new Map();
+  for (const q of parts) for (const k of q.idx) {
+    if (!want.has(k)) throw new Error(`--combine: shard ${q.shard.i} ran case ${k}, which a whole run does not take`);
+    if (seen.has(k)) throw new Error(`--combine: case ${k} is in shard ${seen.get(k)} and shard ${q.shard.i}`);
+    seen.set(k, q.shard.i);
+  }
+  if (seen.size !== want.size) throw new Error(`--combine: the shards ran ${seen.size} of the ${want.size} cases`);
+  console.log(`combined ${n} shards: ${seen.size} cases, each in exactly one (tree ${tree.slice(0, 12)})`);
+  return parts.sort((a, b) => a.shard.i - b.shard.i);
+}

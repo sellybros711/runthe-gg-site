@@ -117,6 +117,7 @@ import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { treeHash } from '../lab/pipeline/checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -153,6 +154,97 @@ const watchdog = setInterval(() => {
 }, 5000);
 watchdog.unref();
 
+const argVal = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
+/* The N shards of UNITS (below): the heaviest first, each to the lightest shard so far, ties to the
+   lower shard; each shard's units in the whole run's order. */
+function shardPlan(n) {
+  const sh = Array.from({ length: n }, () => ({ secs: 0, units: [] }));
+  const order = UNITS.map((u, k) => k).sort((a, b) => UNITS[b][1] - UNITS[a][1] || a - b);
+  for (const k of order) { let best = 0; for (let j = 1; j < n; j++) if (sh[j].secs < sh[best].secs) best = j; sh[best].secs += UNITS[k][1]; sh[best].units.push(k); }
+  for (const x of sh) x.units = x.units.sort((a, b) => a - b).map((k) => UNITS[k]);
+  return sh;
+}
+/* The guard: the shards together are the whole run, each unit once. Throws on a gap or an overlap. */
+function coverCheck(lists) {
+  const seen = new Map(), names = UNITS.map((u) => u[0]);
+  if (new Set(names).size !== names.length) throw new Error('two units share a name');
+  lists.forEach((l, j) => { for (const nm of l) { if (!names.includes(nm)) throw new Error(`shard ${j}: unit "${nm}" is not in the run`); if (seen.has(nm)) throw new Error(`unit "${nm}" in shard ${seen.get(nm)} and shard ${j}`); seen.set(nm, j); } });
+  const gap = names.filter((nm) => !seen.has(nm));
+  if (gap.length) throw new Error(`not in any shard: ${gap.join('; ')}`);
+}
+/* THE FULL RUN, AS UNITS, AND ITS SHARDS. Each unit opens its own context (nothing carries from one to
+   the next but the browser), so a unit plays the same alone, in any shard, as in the whole run. The
+   seconds are each unit's wall time on CI (run 42131897257, 2026-11-05, 2,418 s in all), only to
+   balance the shards: --shard I/N takes the heaviest unit first, each to the lightest shard so far
+   (ties to the lower shard), and runs its own in the whole run's order. Every unit is in exactly one
+   shard, so the N shards together are the whole run.
+     --shard I/N      the I-th of N (0-based)
+     --plan N         print the N shards and check they cover every unit once, with no browser
+     --done-out F     what this run finished, for --combine
+     --combine DIR    the shards' files: fails unless every unit finished in exactly one shard of the
+                      same code with nothing failed (the guard that the shards add up to the run) */
+const UNITS = [
+  ['390x844 light, steps 1 to 14', 167, () => run(390, 844, 'light')],
+  ['1b the loading screen, 390x844', 6, () => bootStuck(390, 844)],
+  ['1440x900 dark, steps 1 to 14', 193, () => run(1440, 900, 'dark')],
+  ['15 the running game, 390x844', 65, () => runningGame(390, 844)],
+  ['18 the switch, 390x844', 79, () => halfSwitch(390, 844)],
+  ['16 home from the mound, 390x844', 65, () => homeTrip(390, 844)],
+  ['19 clips, 390x844', 170, () => clips(390, 844)],
+  ['19 clips, 1440x900', 202, () => clips(1440, 900)],
+  ['20 after the outing, 390x844 light', 24, () => postgame(390, 844, 'light')],
+  ['20 after the outing, 1440x900 dark', 35, () => postgame(1440, 900, 'dark')],
+  ['16 every window size', 73, () => sizeSweep()],
+  ['11 door_shut, 390x844', 89, () => ending(390, 844, 'door_shut', '&mockLesson=none'), '\nthe four endings'],
+  ['11 tie_held, 390x844', 89, () => ending(390, 844, 'tie_held', '&mockAuth=1')],
+  ['11 doors_open, 390x844', 89, () => ending(390, 844, 'doors_open', '&mockPro=none')],
+  ['11 walk_off, 390x844', 89, () => ending(390, 844, 'walk_off', '&mockProxy=1&mockNull=1&mockAuth=1')],
+  ['11 door_shut, 1440x900', 89, () => ending(1440, 900, 'door_shut', '&mockLesson=none')],
+  ['11 tie_held, 1440x900', 89, () => ending(1440, 900, 'tie_held', '&mockPro=none')],
+  ['11 doors_open, 1440x900', 89, () => ending(1440, 900, 'doors_open', '&mockAuth=1')],
+  ['11 walk_off, 1440x900', 89, () => ending(1440, 900, 'walk_off', '&mockPro=none')],
+  ['17 the modes, 390x844', 303, () => modes(390, 844, true)],
+  ['17 the modes, 1440x900', 144, () => modes(1440, 900, false)],
+  ['18 two halves, 390x844', 92, () => halves(390, 844, false)],
+  ['18 two halves, 1440x900', 78, () => halves(1440, 900, true)],
+  ['19 the voice of the ump, 390x844', 7, () => voicesWalk(390, 844)],
+];
+const MINE = new Set(), DONE = [];
+const SHARD = (() => { const v = argVal('--shard'); if (!v) return { i: 0, n: 1 }; const [i, n] = v.split('/').map(Number); if (!(n >= 1 && i >= 0 && i < n && Number.isInteger(i) && Number.isInteger(n))) throw new Error('--shard I/N: I from 0 to N-1'); return { i, n }; })();
+for (const [name] of shardPlan(SHARD.n)[SHARD.i].units) MINE.add(name);
+if (SHARD.n > 1) { const p = shardPlan(SHARD.n)[SHARD.i]; console.log(`shard ${SHARD.i} of ${SHARD.n} (0-based): ${p.units.length} of ${UNITS.length} units, about ${p.secs} of ${UNITS.reduce((a, u) => a + u[1], 0)} s: ${p.units.map((u) => u[0]).join('; ')}`); }
+
+if (argVal('--plan')) {
+  // (no browser: the plan, and the guard on it)
+  const n = +argVal('--plan'), plan = shardPlan(n);
+  coverCheck(plan.map((p) => p.units.map((u) => u[0])));
+  plan.forEach((p, j) => console.log(`shard ${j} of ${n}: about ${p.secs} s, ${p.units.length} units: ${p.units.map((u) => u[0]).join('; ')}`));
+  console.log(`ok: the ${n} shards cover all ${UNITS.length} units, each once`);
+  process.exit(0);
+}
+if (argVal('--combine')) {
+  // (no browser: the shards' records, held as one run)
+  const dir = argVal('--combine'), tree = treeHash(), names = UNITS.map((u) => u[0]);
+  const parts = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')));
+  let bad = 0;
+  const no = (m) => { bad++; console.log('FAIL ' + m); };
+  const n = parts[0] ? parts[0].shard.n : 0, got = parts.map((q) => q.shard.i).sort((x, y) => x - y);
+  if (!n || parts.length !== n || got.some((i, k) => i !== k)) no(`${parts.length} shard files for ${n} shards (${got.join(', ')})`);
+  for (const q of parts) {
+    if (q.tree !== tree) no(`shard ${q.shard.i} ran other code (tree ${String(q.tree).slice(0, 12)}, here ${tree.slice(0, 12)})`);
+    if (q.shard.n !== n) no(`shard ${q.shard.i} is one of ${q.shard.n}, not ${n}`);
+    if (JSON.stringify(q.units) !== JSON.stringify(names)) no(`shard ${q.shard.i} had another list of units`);
+    const want = shardPlan(n)[q.shard.i] ? shardPlan(n)[q.shard.i].units.map((u) => u[0]) : [];
+    const miss = want.filter((nm) => !q.done.includes(nm));
+    if (miss.length) no(`shard ${q.shard.i} did not finish: ${miss.join('; ')}`);
+  }
+  try { coverCheck(parts.map((q) => q.done)); } catch (e) { no(e.message); }
+  const ok_ = parts.reduce((a, q) => a + q.passes, 0), failed = parts.reduce((a, q) => a + q.fails, 0);
+  for (const q of parts) console.log(`  shard ${q.shard.i}: ${q.passes} ok, ${q.fails} failed, ${q.done.length} units`);
+  if (!bad) console.log(`ok: ${n} shards, every one of the ${UNITS.length} units finished once`);
+  console.log(`\n${ok_} ok, ${failed + bad} failed`);
+  process.exit(failed || bad ? 1 : 0);
+}
 const TYPES = { '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
 const server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -1810,7 +1902,15 @@ async function modes(w, h, full) {
   await page.fill('#au-email', 'mock@example.com');
   await page.fill('#au-pass', 'mockpass');
   await page.click('#au-form button[type=submit]');
-  await page.waitForSelector('#bd-you .bd-rank', { timeout: 30000 });
+  /* (on a timeout, say what the page shows before the throw: the sign-in's own error line, whether the
+     mock heard the sign-in, the screen and the panel, so a red run names its cause) */
+  await page.waitForSelector('#bd-you .bd-rank', { timeout: 30000 }).catch(async (e) => {
+    const at = await page.evaluate(() => ({ screen: document.body.dataset.screen, sheet: (document.querySelector('.sheet:not([hidden])') || {}).id || null,
+      auErr: (document.getElementById('au-err') || {}).textContent || null, signedIn: !!(window.STD_AUTH && window.STD_AUTH.state().signedIn),
+      you: (document.getElementById('bd-you') || {}).textContent, list: ((document.getElementById('bd-list') || {}).textContent || '').slice(0, 80) })).catch(() => null);
+    console.log(secs() + '  the board after the sign-in: ' + JSON.stringify(at));
+    throw e;
+  });
   ok(true, '17 signing in posts the daily once: the leaderboard shows your rank');
   const c2 = await oneCount(page, 's-board');
   ok(c2.head === 'leaderboard' && c2.times === 1, '17 signed in, the leaderboard: heading "' + c2.head + '", the count once ("' + c2.n + '", ' + c2.times + ' time)');
@@ -2389,41 +2489,18 @@ async function voicesWalk(w, h) {
   await ctx.close();
 }
 
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   /* STD_CLIPS=1: only the clips (19) at both sizes, for a local pass on them */
   if (process.env.STD_CLIPS === '1') { await clips(390, 844); await clips(1440, 900); throw 'quick'; }
   /* STD_POSTGAME=1: only the result's at bats and the board's line (20) at both sizes, light and dark */
   if (process.env.STD_POSTGAME === '1') { for (const t of ['light', 'dark']) { await postgame(390, 844, t); await postgame(1440, 900, t); } throw 'quick'; }
-  await run(390, 844, 'light');
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
-  if (process.env.STD_FIRST === '1') { await bootStuck(390, 844); throw 'quick'; }
-  if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
-  if (QUICK) { await run(1440, 900, 'dark'); await clips(390, 844); await postgame(390, 844, 'light'); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
-  await bootStuck(390, 844);
-  await run(1440, 900, 'dark');
-  await runningGame(390, 844);
-  await halfSwitch(390, 844);
-  await homeTrip(390, 844);
-  await clips(390, 844);
-  await clips(1440, 900);
-  await postgame(390, 844, 'light');
-  await postgame(1440, 900, 'dark');
-  await sizeSweep();
-  console.log('\nthe four endings');
-  await ending(390, 844, 'door_shut', '&mockLesson=none');
-  await ending(390, 844, 'tie_held', '&mockAuth=1');
-  await ending(390, 844, 'doors_open', '&mockPro=none');
-  await ending(390, 844, 'walk_off', '&mockProxy=1&mockNull=1&mockAuth=1');
-  await ending(1440, 900, 'door_shut', '&mockLesson=none');
-  await ending(1440, 900, 'tie_held', '&mockPro=none');
-  await ending(1440, 900, 'doors_open', '&mockAuth=1');
-  await ending(1440, 900, 'walk_off', '&mockPro=none');
-  await modes(390, 844, true);
-  await modes(1440, 900, false);
-  await halves(390, 844, false);
-  await halves(1440, 900, true);
-  await voicesWalk(390, 844);
+  if (process.env.STD_FIRST === '1') { await run(390, 844, 'light'); await bootStuck(390, 844); throw 'quick'; }
+  if (MODES) { await run(390, 844, 'light'); await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
+  if (QUICK) { await run(390, 844, 'light'); await run(1440, 900, 'dark'); await clips(390, 844); await postgame(390, 844, 'light'); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
+  for (const [name, , go, head] of UNITS) { if (!MINE.has(name)) continue; if (head) console.log(head); await go(); DONE.push(name); }
 } catch (e) {
   if (e === 'quick') e = null; else fails++;
   if (e) {
@@ -2434,5 +2511,7 @@ try {
 }
 await browser.close();
 server.close();
+const DONE_OUT = argVal('--done-out');
+if (DONE_OUT) fs.writeFileSync(DONE_OUT, JSON.stringify({ tree: treeHash(), shard: SHARD, units: UNITS.map((u) => u[0]), done: DONE, passes, fails }));
 console.log(`\n${passes} ok, ${fails} failed`);
 process.exit(fails ? 1 : 0);

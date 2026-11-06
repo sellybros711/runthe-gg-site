@@ -7,6 +7,10 @@
  *   node shut-the-door/lab/pipeline/check-camera.mjs --show N     print N of each kind of miss in full
  *   node shut-the-door/lab/pipeline/check-camera.mjs --sample N   about N cases (held at the ceilings' rate)
  *   node shut-the-door/lab/pipeline/check-camera.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ *   node shut-the-door/lab/pipeline/check-camera.mjs --stride 1 --shard I/N --rows-out F   one of N shards, its plays to F
+ *   node shut-the-door/lab/pipeline/check-camera.mjs --stride 1 --combine DIR   the shards' files, held as one run
+ *   (CI runs every case as shards and then --combine: the same plays, the same counts, the same verdict.
+ *   The distributions printed above the verdict come from each shard's sample of them, and hold nothing)
  *
  * The ceilings were measured on every case (--stride 1), the held set: that run is held to them as they
  * are, and the nightly runs it. A bare run (every 10th case) or any --sample is a subset of it, held to
@@ -42,7 +46,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
-import { selection, holding, capStr, openCheckpoint, pinDay } from './checkpoint.mjs';
+import { selection, holding, capStr, openCheckpoint, pinDay, flagVal, writeShard, readShards } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -73,7 +77,12 @@ function loadPlaywright() {
 }
 const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
 const TYPES = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary' };
-const server = http.createServer((req, res) => {
+const COMBINE = flagVal('--combine'), ROWS_OUT = flagVal('--rows-out');
+if (COMBINE && SEL.shard.n > 1) throw new Error('--combine takes the whole run: no --shard');
+// (the page is opened only when there is something to measure: not for --combine)
+let server = null, browser = null, page = null;
+if (!COMBINE) {
+server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (rel.endsWith('/')) rel += 'index.html';
   const f = path.join(ROOT, rel);
@@ -82,8 +91,8 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
-const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
+page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 page.on('pageerror', (e) => console.log('page error', String(e).slice(0, 300)));
 await page.route('**/*', (route) => {
   const u = new URL(route.request().url());
@@ -100,16 +109,18 @@ await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {};
 // (the plan module the page loaded, for warp and bagOf)
 const warpUrl = await page.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name).find((n) => /inplay-plan\.js/.test(n)));
 await page.evaluate(async (u) => { window.__plan = await import(u); }, warpUrl);
+}
 
-const cases = [];
+const cases = [], IDX = [];
 let k = 0;
-for (const c of inplayCases()) { const kk = k++; if (kk % STRIDE || Math.floor(kk / STRIDE) % SEL.shard.n !== SEL.shard.i) continue; if (ONLY && !`${c.pack} ${c.key}/${c.label} st ${c.st}`.includes(ONLY)) continue; if (cases.length >= LIMIT) break; cases.push(c); }
+for (const c of inplayCases()) { const kk = k++; if (kk % STRIDE || Math.floor(kk / STRIDE) % SEL.shard.n !== SEL.shard.i) continue; if (ONLY && !`${c.pack} ${c.key}/${c.label} st ${c.st}`.includes(ONLY)) continue; if (cases.length >= LIMIT) break; cases.push(c); IDX.push(kk); }
 const rows = [], dist = { ang: [], angJ: [], posJ: [], fovJ: [], shot: [], fov: [] };
 const CHUNK = 300;
-const CK = openCheckpoint('check-camera', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK });
-for (let i = 0; i < cases.length; i += CHUNK) {
+const CK = COMBINE ? null : openCheckpoint('check-camera', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK });
+const PARAMS = { STRIDE, LIMIT: String(LIMIT), ONLY, CHUNK };
+for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
   if (CK.has(i)) { const got = CK.get(i); rows.push(...got.out); for (const k2 of Object.keys(got.stats)) (dist[k2] ||= []).push(...got.stats[k2]); continue; }
-  const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, align: c.align, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
+  const part = cases.slice(i, i + CHUNK).map((c, j) => ({ k: IDX[i + j], pr: c.pr, hand: c.hand, align: c.align, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate(({ part, ASPECT, LIM }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [], warp = window.__plan.warp;
     const facts0 = ip.facts;
@@ -123,7 +134,7 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     for (const c of part) {
       ip.facts = { ...facts0, batter: { ...facts0.batter, bats: c.hand } };
       let run;
-      try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
+      try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ k: c.k, tag: c.tag, err: String(e) }); continue; }
       const plan = run.plan, ed = plan.edit, miss = {};
       const note = (what, at, info) => { if (!miss[what]) miss[what] = { at: +at.toFixed(3), ...info }; };
       const shots = [];
@@ -185,7 +196,7 @@ for (let i = 0; i < cases.length; i += CHUNK) {
         const th = plan.segs.find((sg) => sg.kind === 'throw' && (mid(a.s1, sg) || mid(b.s0, sg)));
         if (th && a.cam !== 'pitcher') note('mid-throw', b.f0 / 60, { from: a.cam, to: b.cam, cut: +a.s1.toFixed(2) + '>' + b.s0.toFixed(2), throw: th.t0.toFixed(2) + '-' + th.t1.toFixed(2) });
       }
-      out.push({ tag: c.tag, miss, edit: ed.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2) + (p.rate < 1 ? ' slow' : '')).join(' | ') });
+      out.push({ k: c.k, tag: c.tag, miss, edit: ed.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2) + (p.rate < 1 ? ' slow' : '')).join(' | ') });
       ip.end(st.camera);
     }
     ip.facts = facts0;
@@ -199,13 +210,30 @@ for (let i = 0; i < cases.length; i += CHUNK) {
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
 console.log('');
-CK.close();
+if (CK) CK.close();
+/* a shard's file: the plays with a miss or a throw (a clean play counts only as one of the cases), and
+   each distribution as its count, its max and a sample of at most 20,000 of it */
+const thinTo = (a, m) => { const b = a.slice().sort((x, y) => x - y), step = Math.max(1, Math.ceil(b.length / m)); return b.filter((_, j) => j % step === 0); };
+if (ROWS_OUT) writeShard(ROWS_OUT, 'check-camera', PARAMS, SEL.shard, IDX, {
+  rows: rows.filter((r) => r.err || (r.miss && Object.keys(r.miss).length)),
+  dist: Object.fromEntries(Object.entries(dist).map(([k2, a]) => [k2, { n: a.length, max: a.reduce((x, y) => Math.max(x, y), 0), s: thinTo(a, 20000) }])),
+});
+const DMAX = {}, DN = {};
+if (COMBINE) {
+  for (const q of readShards(COMBINE, 'check-camera', PARAMS, IDX)) {
+    rows.push(...q.data.rows);
+    for (const [k2, d] of Object.entries(q.data.dist)) { (dist[k2] ||= []).push(...d.s); DMAX[k2] = Math.max(DMAX[k2] || 0, d.max); DN[k2] = (DN[k2] || 0) + d.n; }
+  }
+  rows.sort((a, b) => a.k - b.k);
+}
+const dmax = (k2) => (k2 in DMAX ? DMAX[k2] : dist[k2].reduce((a, x) => Math.max(a, x), 0));
+const dn = (k2) => (k2 in DN ? DN[k2] : dist[k2].length);
 const HOLD = holding({ stride: STRIDE, heldStride: 1, n: cases.length, heldN: SEL.total, partial: LIMIT !== Infinity || ONLY != null, shard: SEL.shard });
 const pct = (a, q) => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.min(b.length - 1, Math.floor(b.length * q))] : 0; };
 console.log('per frame at 60 fps: median, 99th, 99.9th, max');
-for (const [k2, u] of [['ang', 'deg turn'], ['angJ', 'deg turn change'], ['posJ', 'ft travel change'], ['fovJ', 'log lens change']]) console.log(`  ${k2.padEnd(5)} ${pct(dist[k2], 0.5).toFixed(3)} ${pct(dist[k2], 0.99).toFixed(3)} ${pct(dist[k2], 0.999).toFixed(3)} ${dist[k2].reduce((a, x) => Math.max(a, x), 0).toFixed(3)}  (${u})`);
+for (const [k2, u] of [['ang', 'deg turn'], ['angJ', 'deg turn change'], ['posJ', 'ft travel change'], ['fovJ', 'log lens change']]) console.log(`  ${k2.padEnd(5)} ${pct(dist[k2], 0.5).toFixed(3)} ${pct(dist[k2], 0.99).toFixed(3)} ${pct(dist[k2], 0.999).toFixed(3)} ${dmax(k2).toFixed(3)}  (${u})`);
 console.log(`  lens: median ${pct(dist.fov, 0.5).toFixed(1)}, 90th ${pct(dist.fov, 0.9).toFixed(1)}, at 70 or more ${(dist.fov.filter((x) => x >= 70).length / Math.max(1, dist.fov.length) * 100).toFixed(1)}% of frames; by camera ${Object.keys(dist).filter((x) => x.startsWith('fov_')).map((x) => x.slice(4) + ' ' + pct(dist[x], 0.5).toFixed(1)).join(', ')}`);
-console.log(`  shots: ${dist.shot.length}, real seconds 10th ${pct(dist.shot, 0.1).toFixed(2)} median ${pct(dist.shot, 0.5).toFixed(2)}`);
+console.log(`  shots: ${dn('shot')}, real seconds 10th ${pct(dist.shot, 0.1).toFixed(2)} median ${pct(dist.shot, 0.5).toFixed(2)}`);
 let fails = 0;
 console.log('\nplays with a miss');
 for (const w of Object.keys(CEILING)) {
@@ -214,12 +242,12 @@ for (const w of Object.keys(CEILING)) {
   if (over) fails += Math.ceil(m.length - cap);
   const byCam = {};
   for (const r of m) { const c2 = r.miss[w].cam || r.miss[w].to || '-'; byCam[c2] = (byCam[c2] || 0) + 1; }
-  console.log(`  ${over ? 'FAIL' : 'ok  '} ${w.padEnd(9)} ${String(m.length).padStart(6)} of ${rows.length}${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  ${JSON.stringify(byCam)}`);
+  console.log(`  ${over ? 'FAIL' : 'ok  '} ${w.padEnd(9)} ${String(m.length).padStart(6)} of ${cases.length}${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  ${JSON.stringify(byCam)}`);
   for (const r of m.slice(0, SHOW)) console.log('     ', r.tag, JSON.stringify(r.miss[w]), '|', r.edit);
 }
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 console.log(`\n${cases.length} cases, ${fails} over the ceiling (${HOLD.label})`);
-await browser.close();
-server.close();
+if (browser) await browser.close();
+if (server) server.close();
 process.exit(fails || errs.length ? 1 : 0);
