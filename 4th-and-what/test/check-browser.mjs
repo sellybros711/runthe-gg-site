@@ -169,7 +169,15 @@ async function run(name, viewport, scale) {
   await page.click('#pLevel button[data-level="nfl"]'); await page.click('#pHash button[data-hash="mid"]');
   ok(await page.evaluate(() => window.FAW_APP.SC.level === 'nfl' && window.FAW_APP.SC.ballX === 80 / 3), 'and back to the NFL in the middle');
   await shot('0-pick');
+  /* the strip (the owner's mockup, 2026-11-06): a tap spots the ball; the tags and the yards to go follow */
+  const turf = await (await page.$('#pTurf')).boundingBox();
+  await page.mouse.click(turf.x + turf.width * 0.25, turf.y + turf.height / 2);
+  const st = await page.evaluate(() => ({ on: window.FAW_APP.SC.ballOn, ball: document.getElementById('pBallTxt').textContent, gain: document.getElementById('pGainTxt').textContent, togo: document.getElementById('pToGo').textContent }));
+  ok(st.on === 75 && st.ball === '(Own 25)' && /yds$/.test(st.togo), 'a tap on the field strip spots the ball: ' + st.ball + ' ' + st.gain + ' ' + st.togo);
+  await page.evaluate(() => { window.FAW_APP.SC.ballOn = 40; window.FAW_FLOW.refresh(); });
   await page.click('#pDists .dist[data-d="5"]');
+  ok(await page.isVisible('#vPlay') && (await page.getAttribute('#pDists .dist[data-d="5"]', 'aria-pressed')) === 'true' && (await page.textContent('#pToGo')) === '5 yds', 'a tile picks the distance and stays on the screen');
+  await page.click('#pGo');
   ok(await page.isVisible('#vStudio') && await page.isVisible('#sSnap') && !(await page.isVisible('.studiobar')) && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'draw it: the field, the tools and Snap it');
   ok((await page.textContent('#sSit')) === '4th & 5 · Opp 40', 'the situation is on the draw screen');
   await shot('0-draw');

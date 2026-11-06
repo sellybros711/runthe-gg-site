@@ -30,7 +30,7 @@
     var s = A.sitText();
     $('pSpot').textContent = A.ordinal(A.SC.down) + ' down · Ball on ' + (A.SC.ballOn <= 50 ? 'the opponent\'s ' + A.SC.ballOn : 'your ' + (100 - A.SC.ballOn));
     $('sSit').textContent = s.down + ' · ' + s.spot + (A.SC.level && A.SC.level !== 'nfl' ? ' · ' + A.levelShort(A.SC.level) : '');
-    renderLevel();
+    renderLevel(); renderStrip();
     $('pDown').value = String(A.SC.down); $('pSide').value = A.SC.ballOn <= 50 ? 'opp' : 'own'; $('pYard').value = String(A.SC.ballOn <= 50 ? A.SC.ballOn : 100 - A.SC.ballOn);
     renderDists();
   }
@@ -41,15 +41,54 @@
   }
   Array.prototype.forEach.call(document.querySelectorAll('#pLevel button'), function (b) { b.addEventListener('click', function () { A.setLevel(b.dataset.level); spotLine(); }); });
   Array.prototype.forEach.call(document.querySelectorAll('#pHash button'), function (b) { b.addEventListener('click', function () { A.setHash(b.dataset.hash); spotLine(); }); });
+  /* A tile picks the distance; Play now goes (the owner's mockup, 2026-11-06) */
   function renderDists() {
     var box = $('pDists'); box.innerHTML = '';
     C.DISTANCES.forEach(function (d) {
-      var goal = d >= A.SC.ballOn;
-      box.appendChild(el('button', { type: 'button', class: 'dist', 'data-d': String(d), on: { click: function () { pick(Math.min(d, A.SC.ballOn)); } } },
+      var goal = d >= A.SC.ballOn, cur = Math.min(d, A.SC.ballOn) === A.SC.distance;
+      box.appendChild(el('button', { type: 'button', class: 'dist', 'data-d': String(d), 'aria-pressed': String(cur), on: { click: function () { choose(Math.min(d, A.SC.ballOn)); } } },
         [el('small', { text: A.ordinal(A.SC.down) + ' and' }), el('b', { text: goal ? 'Goal' : String(d) })]));
     });
   }
-  function pick(d) { A.SC.distance = d; spotLine(); A.show('studio', { mode: 'game' }); }
+  function choose(d) { A.SC.distance = d; spotLine(); }
+  function pick(d) { if (d != null) A.SC.distance = d; spotLine(); A.show('studio', { mode: 'game' }); }
+  $('pGo').addEventListener('click', function () { pick(); });
+
+  /* THE STRIP: the whole field, your end zone on the left and theirs on the
+     right, the ball where it is and the line to gain in front of it. Tap or
+     drag it to spot the ball. Every number on it is the situation's. */
+  function spotWord(ballOn) { return ballOn === 50 ? 'Midfield' : ballOn < 50 ? 'Opp ' + ballOn : 'Own ' + (100 - ballOn); }
+  (function nums() {
+    var box = $('pNums'); if (!box) return;
+    for (var x = 10; x <= 90; x += 10) box.appendChild(el('span', { style: 'left:' + x + '%', text: String(x <= 50 ? x : 100 - x) }));
+  })();
+  function renderStrip() {
+    var bx = 100 - A.SC.ballOn, gx = Math.min(100, bx + A.SC.distance), goal = A.SC.distance >= A.SC.ballOn;
+    /* the ball's tag reads to its left and the line's to its right, kept inside the strip */
+    $('pBall').style.left = bx + '%'; $('pBallTag').style.left = Math.max(14, bx) + '%';
+    $('pGain').style.left = gx + '%'; $('pGainTag').style.left = Math.min(86, gx) + '%';
+    $('pToGo').style.left = bx + '%'; $('pToGo').style.width = (gx - bx) + '%';
+    $('pToGo').textContent = goal ? 'Goal' : A.SC.distance + ' yds';
+    $('pBallTxt').textContent = '(' + spotWord(A.SC.ballOn) + ')';
+    $('pGainTxt').textContent = goal ? '(Goal line)' : '(' + spotWord(A.SC.ballOn - A.SC.distance) + ')';
+    $('pGainTag').querySelector('b').textContent = goal ? 'Score' : '1st down';
+    $('pStrip').setAttribute('aria-valuenow', String(A.SC.ballOn)); $('pStrip').setAttribute('aria-valuetext', 'Ball on ' + spotWord(A.SC.ballOn));
+  }
+  function spotAt(clientX) {
+    var r = $('pTurf').getBoundingClientRect(), f = (clientX - r.left) / r.width;
+    var on = Math.round(100 - Math.max(0.01, Math.min(0.99, f)) * 100);
+    if (on === A.SC.ballOn) return;
+    A.SC.ballOn = on; A.SC.distance = Math.min(A.SC.distance, A.SC.ballOn); spotLine();
+  }
+  var sliding = false;
+  $('pStrip').addEventListener('pointerdown', function (ev) { sliding = true; this.setPointerCapture && this.setPointerCapture(ev.pointerId); spotAt(ev.clientX); });
+  $('pStrip').addEventListener('pointermove', function (ev) { if (sliding) spotAt(ev.clientX); });
+  $('pStrip').addEventListener('pointerup', function () { sliding = false; });
+  $('pStrip').addEventListener('pointercancel', function () { sliding = false; });
+  $('pStrip').addEventListener('keydown', function (ev) {
+    var k = ev.key === 'ArrowRight' ? -1 : ev.key === 'ArrowLeft' ? 1 : 0; if (!k) return;
+    ev.preventDefault(); A.SC.ballOn = Math.max(1, Math.min(99, A.SC.ballOn + k)); A.SC.distance = Math.min(A.SC.distance, A.SC.ballOn); spotLine();
+  });
   $('pMore').addEventListener('click', function () { $('pMoreBox').hidden = !$('pMoreBox').hidden; });
   ['pDown', 'pSide', 'pYard'].forEach(function (id) {
     $(id).addEventListener('change', function () {
