@@ -2761,19 +2761,19 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "131",
+      "v": "130",
       "sha": "5762a5af32f9aaa9"
     },
     "putt/land.js": {
-      "v": "19",
+      "v": "18",
       "sha": "3f18273969db3f5c"
     },
     "putt/hole3d.js": {
-      "v": "22",
+      "v": "21",
       "sha": "3ef298c2bc1b90e5"
     },
     "putt/trip3d.js": {
-      "v": "6",
+      "v": "5",
       "sha": "91e422df69ab73dd"
     },
     "putt/gyms.js": {
@@ -2845,11 +2845,11 @@
       "sha": "9352b4b52ceb5f6f"
     },
     "putt/trail.js": {
-      "v": "54",
+      "v": "53",
       "sha": "f28865666ab10e87"
     },
     "putt/mapland.js": {
-      "v": "11",
+      "v": "10",
       "sha": "849c4a327b462d6f"
     },
     "putt/clips.js": {
