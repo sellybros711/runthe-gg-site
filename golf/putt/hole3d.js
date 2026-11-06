@@ -268,6 +268,8 @@ function* steps(C, opt){
   if (!(SC && SC.noGround)){ ctx.fillStyle = (LD && LD.bg) || T.bg; ctx.fillRect(0, 0, W, Hh); }
   var rampOf = function(c, x, y){
     var n = h3(c.ti || x, c.tj || y, 3), m = c.m;
+    // Oz's carpet is the yellow brick road: bricks a foot and a half by three quarters, laid in courses, the mortar T.brick
+    if (m === 'carpet' && T.brick){ var bi = c.ti || x, bj = c.tj || y, row = Math.floor(bj / 3); if (((bj % 3) + 3) % 3 === 0 || (((bi + (row & 1) * 3) % 6) + 6) % 6 === 0) return R(T.brick); return R(h3(Math.floor((bi + (row & 1) * 3) / 6), row, 5) < 0.3 ? T.carpet2 : T.carpet); }
     if (m === 'carpet') return R(n < 0.16 ? T.carpet2 : T.carpet);
     if (m === 'skirt') return R(T.wallLo);
     if (m === 'ground') return R(h3((c.ti || x) >> 1, (c.tj || y) >> 1, 9) < 0.14 ? T.bg2 : T.bg);

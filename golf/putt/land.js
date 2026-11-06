@@ -5243,6 +5243,101 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ wfloor:['#9be86a', '#c0f58a', '#78c84a', 0.1, function(c, R){ var w = Math.sin(c.ti * 0.09 + Math.sin(c.tj * 0.07) * 2); if (w > 0.9) return R('#d8fca8'); var b = blot(c, 0.2, 109); return R(b > 0.66 ? '#c0f58a' : b < 0.3 ? '#78c84a' : '#9be86a'); }],
         wwall:['#ff8ad0', '#ffc8ec', '#e070b8', 0.16, function(c, R){ var z = c.z || 0, h = hash(c.ti, (z * 4) | 0, 101), w = Math.sin(c.ti * 0.2 + z * 1.4);
           if (z > 5.6) return R('#ffffff'); if (h > 0.93) return R(['#ffb030', '#9be86a', '#b894f0'][(h * 100 | 0) % 3]); return R(w > 0.5 ? '#ffc8ec' : w > -0.3 ? '#ff8ad0' : '#e070b8'); }] } }; };
+  /* ---------------- OZ IS A JOURNEY. The ship came down in the poppies by the yellow brick road (1 to 4), and the road runs
+     on through the cornfield, where a straw man watches from his pole (5 to 8), into the forest, tall round trees close
+     on every side (9 to 12), over the white wall into the China Country, little porcelain houses with blue roofs (13 to
+     16), and at last to the Emerald City, its green towers shining (17 and 18). The land round a hole is a soft meadow
+     scattered with poppies, and beyond it the poppy field rolls away red, the ground easing into it, never a cliff. The
+     sky is a clear blue with round white clouds. */
+  STOPS.oz = [[1, 'poppies'], [5, 'corn'], [9, 'forest'], [13, 'china'], [17, 'city']];
+  (function(){ BUILD.oz = function(L){ var s = L.stop; return s === 'city' ? ozCity(L) : s === 'china' ? ozChina(L) : s === 'forest' ? ozForest(L) : s === 'corn' ? ozCorn(L) : ozPoppies(L); }; })();
+
+  function ozEdge(L, x, y){ return 4.6 + fbm(x * 0.08, y * 0.08, L.seed + 71) * 3.4; }
+  // the paint: a meadow with a warped wash of light and dark grass and poppies dotted through it; past it the poppy field
+  function ozMats(o){ return {
+      omead:['#5aac44', '#72c454', '#3f8a32', 0.12, function(c, R){ if (c.rim === 1) return R('#8ad86a');
+        var b = blot(c, 0.18, 111), st = hash(c.ti, c.tj, 112); if (st > (o.corn ? 0.995 : 0.985)) return R('#e8262a'); if (st > 0.978 && !o.corn) return R('#ffe27a');
+        if (o.corn && b > 0.6) return R('#d8b45a'); return R(b > 0.66 ? '#72c454' : b < 0.26 ? '#3f8a32' : '#5aac44'); }],
+      opoppy:['#d8262a', '#ff4a3a', '#8a1418', 0.08, function(c, R){ var n = blot(c, 0.1, 114), st = hash(c.ti, c.tj, 115);
+        if (st > 0.96) return R('#1e1410'); if (n < 0.28) return R('#3f8a32'); return R(n > 0.7 ? '#ff4a3a' : n < 0.4 ? '#a81c20' : '#d8262a'); }] }; }
+  function ozBase(L, o){ var seed = L.seed;
+    function fall(x, y){ var c = L.clearAt(x, y), e = ozEdge(L, x, y); return sm(e, e + 3.5, c); }
+    return {
+      h:function(x, y){ var f = fall(x, y); return (fbm(x * 0.09, y * 0.09, seed) - 0.45) * 0.4 * sm(1.3, 4, L.clearAt(x, y)) - 0.5 * f; },
+      // the open poppy field is the first stop's; further on it is only patches of poppies in the meadow
+      mat:function(x, y){ var c = L.clearAt(x, y), e = ozEdge(L, x, y); if (c < e + 0.6) return ['omead', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (o.field || fbm(x * 0.05 + 3, y * 0.05, seed + 77) > 0.64) return ['opoppy', {}]; return ['omead', {}]; },
+      fill:{ on:['omead'], trees:o.trees == null ? 0.05 : o.trees, lows:0.14,
+        // a round tree of the land of Oz: a short brown trunk, a full round crown in two greens, an apple or two
+        tree:function(B, x, y, i){ var zb = B.gz(x, y), hh = 2.2 + hash(i, seed, 81) * 1.6, cr = 0.9 + hash(i, seed, 82) * 0.5;
+          B.solid(x - cr - 0.1, y - cr - 0.1, zb - 0.1, x + cr + 0.1, y + cr + 0.1, zb + hh + cr, function(px, py, pz){ var t = pz - zb, d = Math.hypot(px - x, py - y);
+            if (t < hh) return d < 0.22 ? '#6a4628' : null; var dc = Math.hypot(d, t - hh - cr * 0.1); if (dc > cr) return null;
+            if (hash(px * 5 | 0, py * 5 | 0, (pz * 5) | 0) > 0.985) return '#e8262a'; return (px - x) + (py - y) < -cr * 0.3 ? '#6ac44a' : '#3f8a32'; }); },
+        low:function(B, x, y, i){ if (hash(i, seed, 83) < 0.6) poppyAt(B, x, y, 0.5 + hash(i, seed, 84) * 0.4); else rockAt(B, x, y, 0.2 + hash(i, seed, 85) * 0.3, ['#9a9288', '#c8c0b4']); } },
+      // the sky: clear blue, round white clouds, and (at the city) a green glow along the horizon
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#5aa8f0'); g.addColorStop(1, '#bfe4ff'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        for (var i = 0; i < 6; i++){ var cx = hash(i, 1, seed) * V.W, cy = top * (0.2 + hash(i, 2, seed) * 0.5), cr = Math.max(4, V.W * (0.03 + hash(i, 3, seed) * 0.04));
+          ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.ellipse(cx, cy, cr * 1.8, cr * 0.8, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.ellipse(cx + cr * 0.8, cy - cr * 0.4, cr, cr * 0.7, 0, 0, 6.283); ctx.fill(); }
+        if (o.glow){ var gg = ctx.createLinearGradient(0, 0, 0, top); gg.addColorStop(0, 'rgba(47,179,106,0)'); gg.addColorStop(1, 'rgba(47,179,106,0.35)'); ctx.fillStyle = gg; ctx.fillRect(0, 0, V.W, top); } },
+      bg:'#4a9e3a', gain:2, mats:ozMats(o) }; }
+  // a clump of poppies: red cups on green stems
+  function poppyAt(B, X, Y, R){ var zb = B.gz(X, Y);
+    B.solid(X - R, Y - R, zb - 0.05, X + R, Y + R, zb + R * 1.3, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy);
+      if (d > R) return null; var cell = hash(Math.floor(px * 2.5), Math.floor(py * 2.5), 87), top = R * (0.8 + cell * 0.5);
+      if (t > top) return null; if (t > top - 0.25) return cell > 0.85 ? '#1e1410' : cell > 0.4 ? '#e8262a' : '#ff4a3a'; return cell > 0.5 ? '#3f8a32' : null; }); }
+  // a cornfield block: rows of tall stalks, gold tassels on top
+  function cornAt(B, X, Y, W, D){ var zb = B.gz(X, Y), H = 2.4;
+    B.solid(X - W / 2, Y - D / 2, zb - 0.1, X + W / 2, Y + D / 2, zb + H + 0.4, function(px, py, pz){ var t = pz - zb, row = ((px - X) * 1.6 % 1 + 1) % 1, k = hash(Math.floor(px * 1.6), Math.floor(py * 3), 88);
+      if (row > 0.45) return null; if (t > H - 0.1 + k * 0.4) return null; if (t > H - 0.4 + k * 0.4) return '#f0c232'; return k > 0.6 ? '#8ab040' : '#5a8a2a'; }); }
+  // a straw man on his pole in the corn, a blue coat, a round straw hat (his own look, nothing borrowed)
+  function strawAt(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 1.4, Y - 0.6, zb, X + 1.4, Y + 0.6, zb + 4.4, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+      if (Math.abs(dx) < 0.12 && Math.abs(dy) < 0.12 && t < 3.2) return '#6a4a2a';
+      if (t > 2.4 && t < 2.6 && Math.abs(dx) < 1.3 && Math.abs(dy) < 0.12) return '#6a4a2a';
+      if (t > 1.6 && t < 2.9 && Math.abs(dx) < 0.45 + (t > 2.4 ? 0.7 : 0) && Math.abs(dy) < 0.3) return t > 2.4 && Math.abs(dx) > 1.05 ? '#f0c232' : '#3a5ab8';
+      if (Math.hypot(dx, dy, t - 3.25) < 0.38) return '#f2dca0';
+      if (t > 3.5 && t < 3.7 && Math.hypot(dx, dy) < 0.7) return '#d8b45a'; if (t >= 3.7 && t < 4.1 && Math.hypot(dx, dy) < 0.32) return '#d8b45a'; return null; }); }
+  // a little house of the China Country: white porcelain walls, blue patterns, a round blue roof
+  function chinaAt(B, X, Y, R){ var zb = B.gz(X, Y); if (B.light) B.light(X, Y + R, zb + 1, '#c8dcff');
+    B.solid(X - R, Y - R, zb - 0.1, X + R, Y + R, zb + R * 2.4, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy);
+      if (t < R * 1.3){ if (d > R * 0.9) return null; if (d < R * 0.75) return null; if (dy > 0 && Math.abs(dx) < R * 0.25 && t < R * 0.8) return '#2a3a6a';
+        return Math.abs(t - R * 0.6) < 0.1 || (Math.sin(Math.atan2(dx, dy) * 6) > 0.85 && t > R * 0.9) ? '#2a5ab8' : '#f4f6fa'; }
+      var rr = R * Math.max(0, 1 - (t - R * 1.3) / (R * 1.1)); if (d > rr) return null; return (dx + dy) < -rr * 0.3 ? '#5a8ae0' : '#2a5ab8'; }); }
+  // a tower of the Emerald City: a round green tower with gold bands, a pointed green spire, glowing
+  function towerAt(B, X, Y, R, H){ var zb = B.gz(X, Y); if (B.light) B.light(X, Y + R, zb + H * 0.6, '#5affa0');
+    B.solid(X - R, Y - R, zb - 0.1, X + R, Y + R, zb + H + R * 2.6, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy);
+      if (t < H){ if (d > R) return null; if (d < R - 0.35) return null; if (Math.abs(t - H * 0.4) < 0.12 || Math.abs(t - H + 0.3) < 0.12) return '#f0c232';
+        if (dy > 0 && Math.abs(dx) < 0.3 && ((t * 1.2) | 0) % 3 === 1) return '#d8ffe8'; return (dx + dy) < -R * 0.3 ? '#5ad890' : '#2fb36a'; }
+      var rr = R * Math.max(0, 1 - (t - H) / (R * 2.6)); if (d > rr) return null; return t > H + R * 2.3 ? '#f0c232' : (dx + dy) < -rr * 0.3 ? '#9ff0c0' : '#1a8a4c'; }); }
+
+  // 1. THE POPPIES (and every Oz hole with no place): the meadow by the road, poppy clumps all round
+  function ozPoppies(L){ var O = ozBase(L, { trees:0.04, field:true }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.4, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.4 + hash(x | 0, y | 0, L.seed + 31 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ poppyAt(B, q.x, q.y, 1.1 + (k % 3) * 0.3); }); }; return O; }
+  // 2. THE CORNFIELD: blocks of corn behind and beside the hole, the straw man on his pole among them
+  function ozCorn(L){ var O = ozBase(L, { trees:0.03, corn:true }), sp = [], i;
+    for (i = 0; i < 3; i++){ var q = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.6 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 41 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ cornAt(B, q.x, q.y, 4.4, 3.4); if (k === 0) strawAt(B, q.x, q.y + 2.3); }); }; return O; }
+  // 3. THE FOREST: tall round trees close round the hole
+  function ozForest(L){ var O = ozBase(L, { trees:0.22 }); O.build = function(){}; return O; }
+  // 4. THE CHINA COUNTRY: little porcelain houses with blue roofs
+  function ozChina(L){ var O = ozBase(L, { trees:0.03 }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(2, function(x, y){ return L.north(x, y) * 0.6 + L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 51 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ chinaAt(B, q.x, q.y, 1.3 + (k % 2) * 0.4); }); }; return O; }
+  // 5. THE EMERALD CITY: its green towers standing behind the hole, glowing
+  function ozCity(L){ var O = ozBase(L, { trees:0.02, glow:true }), hq = L.spot(2.8, function(x, y){ return L.north(x, y) * 1.2; });
+    O.build = function(B){ if (hq){ towerAt(B, hq.x, hq.y, 1.8, 6); towerAt(B, hq.x - 4, hq.y + 0.8, 1.3, 4.2); towerAt(B, hq.x + 4, hq.y + 0.6, 1.4, 4.6); } }; return O; }
+
+  // the Throne Room: a great green hall in the palace of the Emerald City, emerald walls with gold seams, green lights
+  BUILD['s-throne'] = function(L){ var R0 = room(L, { floor:'tfloor', wall:'twall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ if (B.light){ B.light(L.cx, L.cy, 6.5, '#ffffff'); B.light(L.cx - 4, L.cy - 4, 4, '#5affa0'); B.light(L.cx + 4, L.cy - 4, 4, '#f0c232'); }
+        byWall(L, 6, 89, 2.6).forEach(function(q, k){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 3.8, k % 2 ? '#5affa0' : '#f0c232'); }); },
+      bg:'#0e3a20', gain:2,
+      mats:{ tfloor:['#2fb36a', '#5ad890', '#1a8a4c', 0.1, function(c, R){ var g = ((c.ti >> 2) + (c.tj >> 2)) & 1; if ((c.ti & 3) === 0 || (c.tj & 3) === 0) return R('#f0c232'); return R(g ? '#2fb36a' : '#1a8a4c'); }],
+        twall:['#2fb36a', '#5ad890', '#14683a', 0.16, function(c, R){ var z = c.z || 0, h = hash(c.ti, (z * 4) | 0, 103);
+          if (z > 5.6) return R('#f0c232'); if (h > 0.94) return R('#d8ffe8'); return R(((c.ti + ((z * 2) | 0)) % 5) === 0 ? '#f0c232' : h > 0.5 ? '#2fb36a' : '#1a8a4c'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();

@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -161,6 +161,11 @@ var KIT = {
   jellara:{ g:['#9be86a', '#b0f07e', '#86d858', 0.18], gpat:'jelLime', p:['#ffd0ec', '#ffe4f4', '#ffb8e0'], paved:true, tree:[], leaves:['#ff8ad0', '#9be86a', '#ffb030'], bark:'#227068', dens:0.001,
     low:['rockjel', 'rockjel', 'bush'], brk:'crate', haz:'slow', hazC:['#c8f0a0', '#a8d880'], waterC:['#3fd0b0', '#8af0d8'], bogC:['#c8f0a0', '#a8d880'], lm:['jelDome', 'jelBean', 'jelWobbler'], wall:['#ffb8e0', '#c8508a'],
     npc:{ skin:'tan', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'ponytail', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the goo keeper' },
+  // Oz: a meadow with poppies dotted through it, the walk the yellow brick road, round green trees, the poppy field for the
+  // water, a cornfield for the bog, crates to break
+  oz:{ g:['#5aac44', '#66b84e', '#4a9e3a', 0.18], gpat:'ozMeadow', p:['#f0c232', '#ffd84a', '#c8941e'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#3f8a32', '#5aac44', '#2f7a2a'], bark:'#6a4628',
+    low:['bush', 'bush', 'rock'], brk:'crate', haz:'slow', hazC:['#d8b45a', '#b8943a'], waterC:['#d8262a', '#ff4a3a'], bogC:['#d8b45a', '#b8943a'], lm:['ozTower', 'ozChina', 'ozStraw'], wall:['#2fb36a', '#14683a'],
+    npc:{ skin:'light', polo:'blue', hat:'blue', pants:'blue', hair:'brown', hairStyle:'short', cap:true, hatStyle:'bucket', shoes:'white', gender:'male' }, who:'the road mender' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -493,7 +498,10 @@ function plan(spec){
      starting path on your way to the next hole"). A landing walk (spec.landed, putt.js) is the new world's own: it sets off
      from the ship standing on its pad behind the start, and goes to the hole the usual way. It carries no chest and no
      golden ball, so a world's eighteen are still the eighteen walks into its holes. */
-  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5); place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); used.push({ x:lx, y:L + 5, r:5.5 }); }
+  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5);
+    // Oz: the ship came down hard in the poppies, so it lies on its side where it landed, with no pad under it
+    if (spec.theme === 'oz') place('ozCrash', lx, L + 5, 3, 5, { w:10, d:6 });
+    else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); } used.push({ x:lx, y:L + 5, r:5.5 }); }
   if (SPACE){ place('padRocket', archX, -5.5, 2.6, 19, { w:9, d:6 }); place('launchpad', archX, -5.5, 0.1, 0.3, { w:9, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }
   else place('arch', archX, 0, 0.1, 9);
   // the gym's walls, gate and posts are one build (BUILD.gym); as a thing it keeps everything else out and blocks the walk
@@ -808,7 +816,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -827,11 +835,12 @@ var SECRET_SAY = {
   saturn:'There\'s a storm room somewhere on this trail. The eye of it is calm.',
   crystara:'The crystal sings on this trail. Something hollow is under it.',
   jellara:'Something big wobbles under this trail. There is a way in, if you can find it.',
+  oz:'They say a green door on this trail leads into the palace. I never found it.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -1307,6 +1316,7 @@ var LIFE = {
   saturn:{ fly:['drone', 2], mote:[['snow', 30], ['spark', 12]] },
   crystara:{ fly:['drone', 1], mote:[['spark', 40], ['snow', 10]] },
   jellara:{ fly:['drone', 1], mote:[['petal', 20], ['spark', 14]] },
+  oz:{ fly:['crow', 2], mote:[['petal', 18], ['butter', 6]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -3866,6 +3876,52 @@ BUILD.jelBean = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy,
 BUILD.jelWobbler = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var k = Math.min(2, (tt / (t.h / 3)) | 0), zc = (k + 0.5) * t.h / 3, R = (t.w / 2 - 0.3) * (1 - k * 0.22);
   var d = Math.hypot(dx, dy, (tt - zc) * 1.5); if (d > R) return null; return dx + dy < -R * 0.4 && tt > zc ? '#ffffff' : k === 1 ? '#ff5fb8' : '#9be86a'; }); };
 LMSIZE.jelDome = [6, 5, 4]; LMSIZE.jelBean = [4, 4, 7]; LMSIZE.jelWobbler = [4, 4, 5];
+/* ---- Oz's stops on the walk, the same places its holes stand in (land.js): the poppies by the road, the cornfield, the
+   forest, the China Country and the Emerald City. The walk is the yellow brick road over a meadow dotted with poppies. */
+GPAT.ozMeadow = function(c){ var a = vn(c.ti * 0.04, c.tj * 0.04, 131), st = hash(c.ti, c.tj, 132), w = Math.sin(c.ti * 0.07 + Math.sin(c.tj * 0.05) * 2);
+  if (st > 0.988) return '#e8262a'; if (st > 0.982) return '#ffe27a'; if (w > 0.94) return '#78c85a'; return a > 0.7 ? '#66b84e' : a < 0.3 ? '#4a9e3a' : '#5aac44'; };
+GPAT.ozPoppy = function(c){ var a = vn(c.ti * 0.03, c.tj * 0.03, 133), st = hash(c.ti, c.tj, 134); if (a > 0.6){ if (st > 0.94) return '#1e1410'; return st > 0.5 ? '#e8262a' : st > 0.2 ? '#ff4a3a' : '#a81c20'; }
+  return GPAT.ozMeadow(c); };
+KIT['oz~poppies'] = kitFrom(KIT.oz, { gpat:'ozPoppy', nlm:2, lm:['ozStraw', 'ozChina'] });
+KIT['oz~corn'] = kitFrom(KIT.oz, { nlm:4, low:['bush', 'hay', 'bush'], lm:['cornfield', 'ozStraw', 'cornfield', 'cornfield'] });
+KIT['oz~forest'] = kitFrom(KIT.oz, { nlm:2, dens:0.02, lm:['ozStraw', 'ozChina'] });
+KIT['oz~china'] = kitFrom(KIT.oz, { nlm:5, lm:['ozChina', 'ozChina', 'ozChina', 'ozChina', 'ozChina'] });
+KIT['oz~city'] = kitFrom(KIT.oz, { nlm:4, lm:['ozTower', 'ozTower', 'ozChina', 'ozTower'] });
+LIFE_AS['oz~poppies'] = { fly:['crow', 2], mote:[['petal', 30]] };
+LIFE_AS['oz~corn'] = { fly:['crow', 4], mote:[['leaf', 14]] };
+LIFE_AS['oz~forest'] = { fly:['song', 3], mote:[['leaf', 16], ['firefly', 8]] };
+LIFE_AS['oz~china'] = { fly:['song', 2], mote:[['butter', 10]] };
+LIFE_AS['oz~city'] = { mote:[['spark', 50]] };
+// a tower of the Emerald City: round and green with gold bands, lit windows, a pointed green spire with a gold tip
+BUILD.ozTower = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2 - 0.4, Hs = t.h * 0.62, d = Math.hypot(dx, dy * t.w / t.d);
+  if (tt < Hs){ if (d > R) return null; if (Math.abs(tt - Hs * 0.45) < 0.15 || Math.abs(tt - Hs + 0.3) < 0.15) return '#f0c232'; if (dy > 0 && Math.abs(dx) < 0.3 && ((tt * 1.2) | 0) % 3 === 1) return '#d8ffe8';
+    return dx + dy < -R * 0.3 ? '#5ad890' : '#2fb36a'; }
+  var rr = R * Math.max(0, 1 - (tt - Hs) / (t.h - Hs)); if (d > rr) return null; return tt > t.h - 0.6 ? '#f0c232' : dx + dy < -rr * 0.3 ? '#9ff0c0' : '#1a8a4c'; }); };
+// a little house of the China Country: white porcelain walls with blue patterns, a door, a round blue roof
+BUILD.ozChina = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2 - 0.4, Hw = t.h * 0.55, d = Math.hypot(dx, dy * t.w / t.d);
+  if (tt < Hw){ if (d > R) return null; if (dy > 0 && Math.abs(dx) < R * 0.25 && tt < Hw * 0.7) return '#2a3a6a'; return Math.abs(tt - Hw * 0.5) < 0.12 || (Math.sin(Math.atan2(dx, dy) * 6) > 0.85 && tt > Hw * 0.7) ? '#2a5ab8' : '#f4f6fa'; }
+  var rr = R * Math.max(0, 1 - (tt - Hw) / (t.h - Hw)); if (d > rr) return null; return dx + dy < -rr * 0.3 ? '#5a8ae0' : '#2a5ab8'; }); };
+// a straw man on his pole: a pole and a cross bar, a blue coat, straw at his cuffs, a sack head, a round straw hat
+BUILD.ozStraw = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var H = t.h;
+  if (Math.abs(dx) < 0.14 && Math.abs(dy) < 0.14 && tt < H * 0.72) return '#6a4a2a';
+  if (Math.abs(tt - H * 0.56) < 0.12 && Math.abs(dx) < t.w / 2 - 0.3 && Math.abs(dy) < 0.14) return '#6a4a2a';
+  if (tt > H * 0.36 && tt < H * 0.66 && Math.abs(dy) < 0.35 && Math.abs(dx) < (tt > H * 0.52 ? t.w / 2 - 0.3 : 0.5)) return Math.abs(dx) > t.w / 2 - 0.7 ? '#f0c232' : '#3a5ab8';
+  if (Math.hypot(dx, dy, tt - H * 0.74) < 0.42) return '#f2dca0';
+  if (tt > H * 0.8 && tt < H * 0.84 && Math.hypot(dx, dy) < 0.8) return '#d8b45a'; if (tt >= H * 0.84 && tt < H * 0.94 && Math.hypot(dx, dy) < 0.36) return '#d8b45a'; return null; }); };
+/* the ship as it came down in Oz (the landed walk, spec.landed): the colony ship lying on its side half sunk in the poppies,
+   its nose up on a bank, the orange stripe round it, a scorched patch under its engines and poppies pressed flat round it.
+   Not a wreck to be afraid of: it is whole, only it landed in a field and not on a pad. */
+BUILD.ozCrash = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), L = 8, R = 1.3, tilt = 0.28;
+  B.solid(x - L / 2 - 1.6, y - 2.4, zb - 0.2, x + L / 2 + 1.6, y + 2.4, zb + 4.4, function(px, py, pz){ var u = px - x, w = py - y, tt = pz - zb;
+    var cz = R - 0.3 + u * tilt, r = Math.hypot(w, tt - cz), ax = u + L / 2;
+    if (tt < 0.25 && Math.hypot(u, w * 1.6) < L / 2 + 1.4) return Math.hypot(u + L / 2, w) < 1.8 ? '#4a3a2a' : hash(px * 3 | 0, py * 3 | 0, 9) > 0.6 ? '#e8262a' : '#3f8a32';
+    if (ax >= 0 && ax <= L - 1.4){ if (r > R) return null; if (Math.abs(ax - L * 0.45) < 0.3) return '#ff7a2a'; if (ax > L - 2.6 && w > 0.2 && Math.abs(tt - cz - 0.3) < 0.4) return '#2f5fb8';
+      return Math.abs(((ax * 1.1) % 1)) < 0.08 ? '#c8ccd8' : '#f2f4f8'; }
+    if (ax > L - 1.4 && ax < L + 0.4){ var nr = R * Math.sqrt(Math.max(0, 1 - Math.pow((ax - L + 1.4) / 1.8, 2))); if (r <= nr) return '#f2f4f8'; return null; }
+    if (ax < 0 && ax > -0.8 && r < R * 0.7 && r > R * 0.35) return '#3a3e48';
+    if (Math.abs(w) > R - 0.1 && Math.abs(w) < R + 0.8 && ax > 0.2 && ax < 2.4 && Math.abs(tt - cz) < 0.2) return '#ff7a2a';
+    return null; }, 0.25); };
+LMSIZE.ozTower = [4, 4, 11]; LMSIZE.ozChina = [5, 4, 5]; LMSIZE.ozStraw = [3, 2, 6]; LMSIZE.ozCrash = [10, 6, 5];
 // @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

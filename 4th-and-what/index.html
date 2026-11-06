@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 <header class="topbar">
@@ -121,20 +121,51 @@
 
   <!-- PLAY: the game. 4th and what? Pick it, draw it (the Studio in game mode), snap it. -->
   <section class="view game" id="vPlay" hidden>
-    <div class="pick">
-      <p class="kicker">You're going for it.</p>
-      <h1>4th and what?</h1>
-      <div class="levelrow">
-        <div class="seg" id="pLevel" role="group" aria-label="Level"><button type="button" data-level="hs">High School</button><button type="button" data-level="college">College</button><button type="button" data-level="nfl">NFL</button></div>
-        <div class="seg" id="pHash" role="group" aria-label="Ball on the"><button type="button" data-hash="left">Left hash</button><button type="button" data-hash="mid">Middle</button><button type="button" data-hash="right">Right hash</button></div>
+    <!-- Play's first screen, after the owner's mockup (2026-11-06): the stadium, the logo, the spot on
+         a strip of field, the distances, the level and the hash, then Play now -->
+    <div class="pick arena">
+      <div class="lights" aria-hidden="true"><i></i><i></i></div>
+      <svg class="xo left" viewBox="0 0 120 200" aria-hidden="true"><path d="M20 20l18 18M38 20L20 38M40 60l16 16M56 60L40 76M10 90l16 16M26 90L10 106"/><circle cx="30" cy="150" r="11"/><circle cx="70" cy="150" r="11"/><circle cx="50" cy="180" r="11"/><path d="M55 118c10-30 30-40 55-46M100 66l10 6-6 10"/></svg>
+      <svg class="xo right" viewBox="0 0 120 200" aria-hidden="true"><path d="M82 60l18 18M100 60L82 78M60 90l16 16M76 90L60 106M95 100l16 16M111 100L95 116"/><circle cx="50" cy="150" r="11"/><circle cx="90" cy="150" r="11"/><circle cx="70" cy="180" r="11"/><path d="M70 120C64 90 70 60 62 40M54 48l8-10 8 10"/></svg>
+      <div class="plogo">
+        <h1><span class="p4">4TH</span> <span class="pand">AND</span> <span class="pwhat">WHAT?</span></h1>
+        <p class="kicker">You're going for it.</p>
+      </div>
+      <div class="pspot">
+        <p class="pspoth">Set starting field position</p>
+        <p class="pspotk">&raquo; Choose your spot</p>
+        <div class="strip" id="pStrip" role="slider" tabindex="0" aria-label="Ball on" aria-valuemin="1" aria-valuemax="99">
+          <span class="ez own">Your<br>end</span>
+          <div class="turf" id="pTurf">
+            <div class="ynum" id="pNums"></div>
+            <span class="gain" id="pGain"></span>
+            <span class="tag ballTag" id="pBallTag"><b>Ball</b><small id="pBallTxt"></small></span>
+            <span class="tag gainTag" id="pGainTag"><b>1st down</b><small id="pGainTxt"></small></span>
+            <span class="toGo" id="pToGo"></span>
+            <span class="ball" id="pBall"></span>
+          </div>
+          <span class="ez opp">Opp<br>end</span>
+        </div>
       </div>
       <div class="dists" id="pDists"></div>
+      <div class="levelrow">
+        <div class="seg" id="pLevel" role="group" aria-label="Level"><button type="button" data-level="hs">High School</button><button type="button" data-level="college">College</button><button type="button" data-level="nfl">NFL</button></div>
+        <span class="lsep" aria-hidden="true"></span>
+        <div class="seg" id="pHash" role="group" aria-label="Ball on the"><button type="button" data-hash="left">Left hash</button><button type="button" data-hash="mid">Middle</button><button type="button" data-hash="right">Right hash</button></div>
+      </div>
+      <button type="button" class="playnow" id="pGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Play now</button>
       <p class="spotline"><span id="pSpot"></span> <button type="button" class="link" id="pMore">Change</button></p>
       <div class="pmore" id="pMoreBox" hidden>
         <label class="field"><span>Down</span><select id="pDown"></select></label>
         <label class="field"><span>Ball on</span><select id="pSide"><option value="opp">Opp</option><option value="own">Own</option></select></label>
         <label class="field"><span>Yard line</span><select id="pYard"></select></label>
       </div>
+      <nav class="pfeat" aria-label="More ways to play">
+        <button type="button" data-go="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Run real plays</button>
+        <button type="button" data-go="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4L1 9l11 5 9-4.1V16h2V9zM5 13.2V17c0 1.7 3.1 3 7 3s7-1.3 7-3v-3.8l-7 3.2z"/></svg>Learn playbooks</button>
+        <button type="button" data-go="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h3v10zm6.5 0V4h3v16zM17 20v-7h3v7z"/></svg>Test vs Defense</button>
+        <button type="button" data-go="trivia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3zm-1 4v1a2 2 0 0 0 2 2V7zm12 0v3a2 2 0 0 0 2-2V7z"/></svg>Improve your IQ</button>
+      </nav>
     </div>
   </section>
 
@@ -431,7 +462,7 @@
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=4"></script>
 <script src="game.js?v=4"></script>
-<script src="flow.js?v=4"></script>
+<script src="flow.js?v=5"></script>
 <script src="daily.js?v=4"></script>
 <script src="trivia.js?v=4"></script>
 <script src="library.js?v=3"></script>

@@ -7,6 +7,10 @@
  *   node shut-the-door/lab/pipeline/check-frame.mjs --sample N   about N cases, spread over all of them
  *   node shut-the-door/lab/pipeline/check-frame.mjs --stride N   every Nth case
  *   node shut-the-door/lab/pipeline/check-frame.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ *   node shut-the-door/lab/pipeline/check-frame.mjs --shard I/N --rows-out F   one of N shards, its moments to F
+ *   node shut-the-door/lab/pipeline/check-frame.mjs --combine DIR   the shards' files, held as one run
+ *   (CI runs every case as shards and then --combine: the same moments, the same counts and
+ *   percentiles, the same verdict)
  * (the ceilings and floors were measured on every case: a sample is held to the ceilings' rate, which
  * for a ceiling of 0 is 0, and to the same floors, a percentile being a rate already)
  *
@@ -31,7 +35,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
-import { selection, holding, capStr, openCheckpoint, pinDay } from './checkpoint.mjs';
+import { selection, holding, capStr, openCheckpoint, pinDay, flagVal, writeShard, readShards } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -65,7 +69,11 @@ function loadPlaywright() {
 }
 const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
 const TYPES = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary' };
-const server = http.createServer((req, res) => {
+const COMBINE = flagVal('--combine'), ROWS_OUT = flagVal('--rows-out');
+// (the page is opened only when there is something to measure: not for --combine)
+let server = null, browser = null, page = null;
+if (!COMBINE) {
+server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (rel.endsWith('/')) rel += 'index.html';
   const f = path.join(ROOT, rel);
@@ -74,8 +82,8 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
-const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
+page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 page.on('pageerror', (e) => console.log('page error', String(e).slice(0, 300)));
 await page.route('**/*', (route) => {
   const u = new URL(route.request().url());
@@ -89,19 +97,22 @@ await pinDay(page);
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {}; });
-if (process.env.SMALL) await page.evaluate((o) => { window.__SMALL = []; window.__SMALLT = o.t; window.__SMALLW = o.w; }, { t: +(process.env.SMALLT || 14), w: process.env.SMALLW || null });
+}
+if (process.env.SMALL && !COMBINE) await page.evaluate((o) => { window.__SMALL = []; window.__SMALLT = o.t; window.__SMALLW = o.w; }, { t: +(process.env.SMALLT || 14), w: process.env.SMALLW || null });
 
 const SEL = selection({ heldStride: 1, total: [...inplayCases()].length });
-const cases = [];
+if (COMBINE && SEL.shard.n > 1) throw new Error('--combine takes the whole run: no --shard');
+const cases = [], IDX = [];
 let kc = 0;
-for (const c of inplayCases()) { const kk = kc++; if (kk % SEL.stride || Math.floor(kk / SEL.stride) % SEL.shard.n !== SEL.shard.i) continue; if (cases.length >= LIMIT) break; cases.push(c); }
+for (const c of inplayCases()) { const kk = kc++; if (kk % SEL.stride || Math.floor(kk / SEL.stride) % SEL.shard.n !== SEL.shard.i) continue; if (cases.length >= LIMIT) break; cases.push(c); IDX.push(kk); }
 const HOLD = holding({ stride: SEL.stride, heldStride: 1, n: cases.length, heldN: SEL.total, partial: LIMIT !== Infinity || !!process.env.SMALL, shard: SEL.shard });
 const rows = [];
 const CHUNK = 500;
-const CK = openCheckpoint('check-frame', { STRIDE: SEL.stride, LIMIT: String(LIMIT), SHARD: SEL.shard, CHUNK, SMALL: process.env.SMALL || null });
-for (let i = 0; i < cases.length; i += CHUNK) {
-  if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
-  const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, align: c.align, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
+const PARAMS = { STRIDE: SEL.stride, LIMIT: String(LIMIT), CHUNK, SMALL: process.env.SMALL || null };
+const CK = COMBINE ? null : openCheckpoint('check-frame', { STRIDE: SEL.stride, LIMIT: String(LIMIT), SHARD: SEL.shard, CHUNK, SMALL: process.env.SMALL || null });
+for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
+  if (CK.has(i)) { for (const v of CK.get(i)) rows.push(v); continue; }
+  const part = cases.slice(i, i + CHUNK).map((c, j) => ({ k: IDX[i + j], pr: c.pr, hand: c.hand, align: c.align, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate(({ part, ASPECT, MARGIN }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
     const facts0 = ip.facts;
@@ -112,7 +123,7 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     for (const c of part) {
       ip.facts = { ...facts0, batter: { ...facts0.batter, bats: c.hand } };
       let run;
-      try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
+      try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ k: c.k, tag: c.tag, err: String(e) }); continue; }
       const plan = run.plan, moments = [];
       for (const e of plan.events) {
         if (e.kind === 'out') {
@@ -143,8 +154,8 @@ for (let i = 0; i < cases.length; i += CHUNK) {
       }
       for (const m of moments) {
         const pc = plan.edit.find((p) => m.s >= p.s0 - 1e-6 && m.s <= p.s1 + 1e-6);
-        if (!pc) { const end = plan.edit[plan.edit.length - 1].s1; out.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), miss: m.s > end ? 'after the cut ends' : 'off screen (a jump cut)', edit: plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | ') }); continue; }
-        if (pc.cam === 'pitcher') { out.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), miss: "in the pitcher's view" }); continue; }
+        if (!pc) { const end = plan.edit[plan.edit.length - 1].s1; out.push({ k: c.k, tag: c.tag, what: m.what, s: +m.s.toFixed(2), miss: m.s > end ? 'after the cut ends' : 'off screen (a jump cut)', edit: plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | ') }); continue; }
+        if (pc.cam === 'pitcher') { out.push({ k: c.k, tag: c.tag, what: m.what, s: +m.s.toFixed(2), miss: "in the pitcher's view" }); continue; }
         const k = ip.cameraAt(pc, m.s, ASPECT);
         cam.position.copy(V(k.pos)); cam.fov = k.fov; cam.aspect = ASPECT; cam.updateProjectionMatrix();
         cam.lookAt(V(k.look)); cam.updateMatrixWorld();
@@ -159,14 +170,14 @@ for (let i = 0; i < cases.length; i += CHUNK) {
         const man = m.pts.findIndex((p, i) => p.z === 6 && i > 0 && m.pts[i - 1].z === 0 && m.pts[i - 1].x === p.x && m.pts[i - 1].y === p.y);
         const tall = man > 0 && m.framed ? Math.abs(V(m.pts[man]).project(cam).y - V(m.pts[man - 1]).project(cam).y) / 2 * 457 : null;
         if (window.__SMALL && tall != null && tall < (window.__SMALLT || 14) && (!window.__SMALLW || m.what === window.__SMALLW)) window.__SMALL.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, tall: +tall.toFixed(1), k: { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, pts: m.pts, edit: plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | ') });
-        out.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, worst: +worst.toFixed(3), tall, miss: m.framed ? null : 'out of frame', at: bad, k: m.framed ? undefined : { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, m, edit: m.framed ? undefined : plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | '), when: m.framed ? undefined : moments.map((o) => o.what + '@' + o.s.toFixed(2)).join(' ') });
+        out.push({ k: c.k, tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, worst: +worst.toFixed(3), tall, miss: m.framed ? null : 'out of frame', at: bad, k: m.framed ? undefined : { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, m, edit: m.framed ? undefined : plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | '), when: m.framed ? undefined : moments.map((o) => o.what + '@' + o.s.toFixed(2)).join(' ') });
       }
       // a flash: a piece of the cut that runs backwards, or one under 0.2 s whose camera is neither
       // neighbour's (a cut there and straight back again is a blink on a phone, not a shot)
       const ed = plan.edit;
       for (let i = 1; i < ed.length; i++) {
         const p = ed[i], a = ed[i - 1], b = ed[i + 1];
-        if (p.s1 < p.s0 - 1e-6 || (p.s1 - p.s0 < 0.2 && p.cam !== a.cam && (!b || p.cam !== b.cam))) { out.push({ tag: c.tag, what: 'flash', s: +p.s0.toFixed(2), miss: 'a ' + (p.s1 - p.s0).toFixed(2) + ' s ' + p.cam + ' shot', edit: ed.map((x) => x.cam + ' ' + x.s0.toFixed(2) + '-' + x.s1.toFixed(2)).join(' | ') }); break; }
+        if (p.s1 < p.s0 - 1e-6 || (p.s1 - p.s0 < 0.2 && p.cam !== a.cam && (!b || p.cam !== b.cam))) { out.push({ k: c.k, tag: c.tag, what: 'flash', s: +p.s0.toFixed(2), miss: 'a ' + (p.s1 - p.s0).toFixed(2) + ' s ' + p.cam + ' shot', edit: ed.map((x) => x.cam + ' ' + x.s0.toFixed(2) + '-' + x.s1.toFixed(2)).join(' | ') }); break; }
       }
       // two things at once in two places (a run scores as the hitter reaches first): one camera can
       // hold only one, so a moment is covered when one within 0.8 s of it is on screen
@@ -177,13 +188,21 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     ip.facts = facts0;
     return out;
   }, { part, ASPECT, MARGIN });
-  rows.push(...got);
+  for (const v of got) rows.push(v);
   CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
 console.log('');
-CK.close();
-if (process.env.SMALL) for (const r of (await page.evaluate(() => window.__SMALL)).slice(0, +process.env.SMALL)) console.log('SMALL', JSON.stringify(r));
+if (CK) CK.close();
+/* a shard's file: every moment's what, height and camera (all the verdict reads), and the rest of a
+   moment only when it missed or threw */
+if (ROWS_OUT) writeShard(ROWS_OUT, 'check-frame', PARAMS, SEL.shard, IDX, rows.map((r) => (r.err || r.miss ? r : { k: r.k, what: r.what, tall: r.tall, cam: r.cam })));
+if (COMBINE) {
+  for (const q of readShards(COMBINE, 'check-frame', PARAMS, IDX)) for (const v of q.data) rows.push(v);
+  // (in the order a whole run takes them: by case, a case's moments as they came)
+  rows.sort((a, b) => a.k - b.k);
+}
+if (process.env.SMALL && !COMBINE) for (const r of (await page.evaluate(() => window.__SMALL)).slice(0, +process.env.SMALL)) console.log('SMALL', JSON.stringify(r));
 const by = {};
 for (const r of rows) if (!r.err) { const b = (by[r.what] ||= { n: 0, miss: {} }); b.n++; if (r.miss) b.miss[r.miss] = (b.miss[r.miss] || 0) + 1; }
 // (flashes are counted a play at a time, and shown when there are none)
@@ -213,6 +232,6 @@ const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 if (SHOW) for (const r of rows.filter((x) => x.miss).slice(0, SHOW)) console.log(JSON.stringify(r));
 console.log(`\n${cases.length} cases, ${rows.filter((r) => !r.err && r.what !== 'flash').length} moments, ${fails} over the ceiling (${HOLD.label})`);
-await browser.close();
-server.close();
+if (browser) await browser.close();
+if (server) server.close();
 process.exit(fails || errs.length ? 1 : 0);

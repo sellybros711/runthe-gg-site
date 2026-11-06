@@ -58,6 +58,7 @@ things in one commit: the edit, the bump, and the record.
 ```
 node scripts/check-cachebust.mjs            verify
 node scripts/check-cachebust.mjs --update   after bumping
+node scripts/rebump.mjs                     after git merge origin/main: resolves ?v= conflicts, re-bumps up the import chain, records (--self-test)
 ```
 
 A page that pins a module's `API_VERSION` (`BOARD_VERSION`, `NEED_BOARD` and the like) falls back to a
