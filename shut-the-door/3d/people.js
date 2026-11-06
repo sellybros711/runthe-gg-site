@@ -496,18 +496,20 @@ const SHOULDER = { swing: 120, twist: 70 };
     it 40 more in two frames. An arm inside its range is untouched. */
 function shoulderRange(p, s) {
   const B = p.bones, ua = B[`upperarm_${s}`], la = B[`lowerarm_${s}`], hand = B[`hand_${s}`];
-  const q0 = ua.quaternion.clone();
   const wrist = wpos(hand), handQ = wquat(hand);
-  limitSwing(p, `upperarm_${s}`, SHOULDER.swing);
-  limitTwist(p, `upperarm_${s}`, SHOULDER.twist);
-  if (ua.quaternion.angleTo(q0) < 1e-6) return;
+  // (each limit says whether it turned the joint: comparing quaternions read a bone a hair off unit
+  // length as 0.08 degrees moved, and redid an arm the range never touched)
+  const swung = limitSwing(p, `upperarm_${s}`, SHOULDER.swing);
+  const rolled = limitTwist(p, `upperarm_${s}`, SHOULDER.twist);
+  if (!swung && !rolled) return;
   aimBone(la, hand, wrist.sub(wpos(la)));
-  const pq = wquat(la).invert();
-  hand.quaternion.copy(pq.multiply(handQ));
+  // (the hand's facing in the world, through its own parent: a forearm twist bone may stand between)
+  hand.quaternion.copy(wquat(hand.parent).invert().multiply(handQ));
   hand.updateMatrixWorld(true);
 }
 
-/** Keep a joint's twist (about its own length, from the bind pose) inside maxDeg; its swing stays. */
+/** Keep a joint's twist (about its own length, from the bind pose) inside maxDeg; its swing stays.
+    True when it turned the joint back. */
 function limitTwist(p, name, maxDeg) {
   const bone = p.bones[name];
   if (!p.bindQ) p.bindQ = new Map(p.bind.map(([b, , q]) => [b, q]));
@@ -521,16 +523,18 @@ function limitTwist(p, name, maxDeg) {
   const sw = rel.clone().multiply(tw.clone().invert());
   const ang = 2 * Math.acos(Math.min(1, tw.w));
   const lim = THREE.MathUtils.degToRad(maxDeg);
-  if (ang <= lim) return;
+  if (ang <= lim) return false;
   tw = new THREE.Quaternion().slerp(tw, lim / ang);
   bone.quaternion.copy(q0).multiply(sw).multiply(tw);
   bone.updateMatrixWorld(true);
+  return true;
 }
 
 /** Turn the head (and a little of the neck) toward a world point, never more than a neck can:
     each joint adds at most its share of 30 degrees on top of the capture. */
 /** Keep a joint inside its range: its swing from the bind pose (about anything but its own length)
-    is scaled back to max degrees. The same limits check-deform.mjs judges. */
+    is scaled back to max degrees. The same limits check-deform.mjs judges. True when it turned the
+    joint back. */
 function limitSwing(p, name, maxDeg) {
   const bone = p.bones[name];
   if (!p.bindQ) p.bindQ = new Map(p.bind.map(([b, , q]) => [b, q]));
@@ -543,10 +547,11 @@ function limitSwing(p, name, maxDeg) {
   const sw = rel.clone().multiply(tw.clone().invert());
   const ang = 2 * Math.acos(Math.min(1, Math.abs(sw.w)));
   const lim = THREE.MathUtils.degToRad(maxDeg);
-  if (ang <= lim) return;
+  if (ang <= lim) return false;
   const swc = new THREE.Quaternion().slerp(sw.w < 0 ? new THREE.Quaternion(-sw.x, -sw.y, -sw.z, -sw.w) : sw, lim / ang);
   bone.quaternion.copy(q0).multiply(swc).multiply(tw);
   bone.updateMatrixWorld(true);
+  return true;
 }
 
 function lookAt(p, pt, w, neck = 36, head = 27) {
