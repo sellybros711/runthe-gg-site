@@ -99,8 +99,12 @@ async function run(name, viewport, scale) {
   await page.waitForSelector('#hdBox:not([hidden])', { timeout: 10000 });
   const hd = await page.evaluate(() => { const t = window.FAW_DAILY.today(), b = document.getElementById('hDaily').textContent;
     return { num: document.getElementById('hdNum').textContent, go: document.getElementById('hdGo').textContent, down: window.FAW_DAILY.core.downText(t),
-      spoils: b.indexOf(window.FAW_DAILY.core.teamsText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.downText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.spotText(t)) >= 0 }; });
-  ok(/Daily #\d+/.test(hd.num) && hd.go === 'Play today' && !hd.spoils, 'the banner is the way in, and says nothing of the situation: ' + hd.num);
+      sit: document.getElementById('hdSit').textContent, meta: document.getElementById('hdMeta').textContent,
+      want: window.FAW_DAILY.core.downText(t) + ' at ' + window.FAW_DAILY.core.spotText(t), teams: window.FAW_DAILY.core.teamsText(t),
+      spoils: b.indexOf(window.FAW_DAILY.core.realText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.verdictText(t)) >= 0,
+      corner: (() => { const r = document.getElementById('hdBox').getBoundingClientRect(), o = document.getElementById('hDaily').getBoundingClientRect(); return r.right > o.right - 30 && r.bottom > o.bottom - 30 && r.left > o.left + o.width / 4; })() }; });
+  ok(/Daily #\d+/.test(hd.num) && hd.go === 'Play today' && hd.sit === hd.want && hd.meta.indexOf(hd.teams) === 0 && !hd.spoils && hd.corner,
+    'the banner\'s corner card says the situation, not what happened: ' + hd.num + ' · ' + hd.sit + ' · ' + hd.meta);
   await shot('d-home');
   await page.click('#hDaily');
   ok(await page.isVisible('#vDaily') && /^Daily #\d+/.test(await page.textContent('#dNum')) && (await page.textContent('#dDown')) === hd.down, 'a click on the banner opens the situation: ' + await page.textContent('#dNum'));

@@ -160,9 +160,11 @@
     mine: function () { return rpc('faw_daily_my_stats', {}, true); }
   };
 
-  /* ---- Home: the banner is the way in (the owner, 2026-11-01: "it shouldnt
-     tell you the situation until you click into it"). It says which daily it
-     is and whether you have played it. Nothing about the situation. ---- */
+  /* ---- Home: the banner is the way in (the owner, 2026-11-01). Its corner
+     card (the owner, 2026-11-06: "move the play today to the bottom right. And
+     it can say the scenario there too") says which daily it is, the down and
+     the spot, the teams and the clock, and whether you have played it. What
+     really happened stays inside. ---- */
   function renderHome() {
     var box = $('hdBox'); if (!box) return;
     box.hidden = !today;
@@ -170,6 +172,8 @@
     if (!today) return;
     var k = kept();
     $('hdNum').textContent = "Today's 4th down · Daily #" + number;
+    $('hdSit').textContent = downText(today) + ' at ' + spotText(today);
+    $('hdMeta').textContent = teamsText(today) + ' · ' + clockText(today);
     $('hdGo').textContent = k ? (k.win ? 'You converted. See it' : 'You were stopped. See it') : 'Play today';
   }
   function openDaily() { if (today) A.show('daily'); }

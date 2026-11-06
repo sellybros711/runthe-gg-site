@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 <header class="topbar">
@@ -42,12 +42,15 @@ document.documentElement.setAttribute('data-theme', 'dark');
 
   <!-- HOME: where to go, to play or to build -->
   <section class="view home" id="vHome" hidden>
-    <!-- the banner is the way into the daily (the owner, 2026-11-01): no situation until you click in -->
+    <!-- the banner is the way into the daily (the owner, 2026-11-01). Since 2026-11-06 its corner card
+         says the day's situation (the owner: "it can say the scenario there too") -->
     <div class="banner" id="hDaily" role="button" tabindex="0" aria-label="Play today's 4th down">
       <canvas id="hField" aria-hidden="true"></canvas>
       <h1 class="bannerlogo"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></h1>
       <div class="bannergo" id="hdBox" hidden>
         <span class="dnum" id="hdNum"></span>
+        <span class="hdsit" id="hdSit"></span>
+        <span class="hdmeta" id="hdMeta"></span>
         <span class="btn gold big" id="hdGo">Play today</span>
       </div>
       <p class="heroname" id="hName"></p>
@@ -471,7 +474,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="game.js?v=4"></script>
 <script src="clip.js?v=1"></script>
 <script src="flow.js?v=7"></script>
-<script src="daily.js?v=4"></script>
+<script src="daily.js?v=5"></script>
 <script src="trivia.js?v=4"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
