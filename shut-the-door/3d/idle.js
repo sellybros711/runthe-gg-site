@@ -3,16 +3,19 @@
  * frozen. It needs to feel alive with slight movements when idle like people do").
  *
  * A small procedural layer laid OVER the set's own pose (stage.js preview), never instead of it:
- *   the batter    breathes, shifts his weight between his feet, waggles the bat in short bursts (a
- *                 circle of the barrel in his wrists, both hands on it), and his head settles
- *   the catcher   breathes, sways in his crouch, and works the mitt (a flick of the wrist now and then)
+ *   the batter    breathes, shifts his weight between his feet, rocks in time with his waggle, waggles
+ *                 the bat in short bursts (a circle of the barrel in his wrists, both hands on it), and
+ *                 his head settles
+ *   the catcher   breathes, sways and settles in his crouch, and works the mitt (a flick of the wrist
+ *                 now and then)
  *   the umpire    breathes and sways a little over his feet
  * Every planted foot stays exactly where the set put it (two bone IK, as motion.js plantFeet does), the
  * bat stays in both hands (it is carried with the bottom hand, the top hand follows it by IK).
  *
  * Nothing here decides anything. Each person has his own rates and phases, from a hash of his role,
- * the hitter and the pitch's number (seedFor), so nobody moves in step with anybody, and the same set
- * moves the same way every time. No Math.random.
+ * the hitter and the pitch's number (seedFor), and his own band of rates (LIFE), so nobody moves in
+ * step with anybody at any point of a long aim, and the same set moves the same way every time. No
+ * Math.random.
  *
  * THE GUARANTEE. The layer is a delta on the pose under it, with an amplitude: at 0 it changes nothing
  * at all (rest() puts back the set's own pose, value for value). stage.js plays it only at the set and
@@ -30,11 +33,23 @@ const D = THREE.MathUtils.degToRad;
 // of the time to the release: stage.js)
 export const IN = 1.6, OUT = 0.3;
 
-/* How much of each (degrees, metres, Hz). Small on purpose: a man waiting, not a man moving. */
+/* How much of each (degrees, metres, Hz). Small on purpose: a man waiting, not a man moving.
+ *
+ * OUT OF STEP, at any moment of a long aim. Over a few seconds a slow sway (a period of 6 s and more)
+ * is close to a straight line, and two straight lines move in step whatever their rates and phases, so
+ * no role's motion is made mostly of slow terms. Each role's hips carry one slow weight shift, kept
+ * small, and one quicker rhythm in a band of his own, about a cycle apart in 3 s from every other
+ * role's: the umpire near 0.25 Hz (his breath and his sway), the catcher settling in his crouch near
+ * 0.65 Hz, the batter rocking with his waggle near 0.95 Hz (the same rate and phase as the barrel).
+ * The breath is not a pure sine, so it carries its double too: no role's band sits on another's
+ * breath doubled (an umpire breathing at 0.3 Hz put a trace of 0.6 Hz in the catcher's band).
+ * The seed moves each rate by 8% at most, so the bands never meet (lab check-idle.mjs holds every 3 s
+ * window from 0 to 30 s under 0.9; 320 seeds measured at most 0.73).
+ * sway is [[metres, Hz] slow, [metres, Hz] quick]. */
 const LIFE = {
-  batter: { breath: 0.55, rate: 0.24, shift: 0.012, shiftRate: 0.15, head: 1.2, headRate: 0.11, wag: [5.5, 3.5], wagRate: 0.95, burstRate: 0.12 },
-  catcher: { breath: 0.7, rate: 0.27, shift: 0.009, shiftRate: 0.17, bob: 0.004, head: 0.8, headRate: 0.13, mitt: 7, mittRate: 0.21 },
-  umpire: { breath: 0.6, rate: 0.22, shift: 0.006, shiftRate: 0.12, bob: 0, head: 1.0, headRate: 0.09 },
+  batter: { breath: 0.55, rate: 0.27, sway: [[0.004, 0.1], [0.004, 0.95]], head: 1.2, headRate: 0.11, wag: [5.5, 3.5], wagRate: 0.95, burstRate: 0.12 },
+  catcher: { breath: 0.3, rate: 0.22, sway: [[0.0025, 0.07], [0.0055, 0.65]], bob: 0.001, head: 0.8, headRate: 0.13, mitt: 7, mittRate: 0.21 },
+  umpire: { breath: 0.6, rate: 0.25, sway: [[0.004, 0.1], [0.0025, 0.27]], bob: 0, head: 1.0, headRate: 0.09 },
 };
 
 /** A number in [0, 1) from a string (FNV-1a), and a stream of them. */
@@ -45,10 +60,11 @@ function hash(s) {
 }
 function stream(key) { let i = 0; return () => hash(key + '#' + (i++)); }
 
-/** Each person's own rates (0.85 to 1.15 of the table's) and phases. */
+/** Each person's own rates (0.92 to 1.08 of the table's: narrow, so a role keeps to its own band)
+    and phases. */
 export function seedFor(role, key) {
   const r = stream(role + ':' + key), out = { rate: [], phase: [] };
-  for (let i = 0; i < 8; i++) { out.rate.push(0.85 + 0.3 * r()); out.phase.push(2 * Math.PI * r()); }
+  for (let i = 0; i < 8; i++) { out.rate.push(0.92 + 0.16 * r()); out.phase.push(2 * Math.PI * r()); }
   return out;
 }
 
@@ -131,10 +147,12 @@ export function apply(p, role, seed, c, A) {
   // sway side to side; a catcher bobs a little in his crouch with his breath
   const br = breathOf(seed, L.rate, c);
   const along = role === 'batter' ? ax.fwd : ax.left;
-  const sh = L.shift * (0.75 * wave(seed, 1, L.shiftRate, c) + 0.25 * wave(seed, 2, L.shiftRate * 2.3, c));
+  // (the batter's rock is in time with his waggle: the same rate and phase)
+  const [slow, quick] = L.sway, top = slow[0] + quick[0];
+  const sh = slow[0] * wave(seed, 1, slow[1], c) + quick[0] * wave(seed, role === 'batter' ? 6 : 2, quick[1], c);
   const d = along.clone().multiplyScalar(A * sh);
   if (L.bob) d.y += A * L.bob * br;
-  sway(p, d, ax, A * D(role === 'batter' ? 1.2 : 0.8) * (sh / Math.max(1e-6, L.shift)));
+  sway(p, d, ax, A * D(role === 'batter' ? 1.2 : 0.8) * (sh / top));
   breathe(p, ax, A * L.breath * br);
   // the head settles: a slow, small turn and nod (on the neck, so a look at the ball is kept)
   if (B.head && L.head) {

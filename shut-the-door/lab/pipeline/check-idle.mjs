@@ -5,10 +5,13 @@
  * Plays the game's own 3D mound (3d/stage.js) in headless Chromium, without drawing, on one pack's
  * first left and right handed hitter:
  *   runs     with the mound on screen, the stage's own loop (idleRun) moves the batter, his bat, the
- *            catcher and the umpire: each moves, and no two in step (their motion correlates under 0.9)
+ *            catcher and the umpire: each moves
+ *   step     no two in step: on the life's own clock, stepped every 40 ms from 0 to 30 s, the closest
+ *            two of the three correlate under 0.9 in every 3 s window (one starting each second), so
+ *            the reading never depends on how fast the runner draws
  *   hush     with the meter up (stage.hush) the loop draws nothing
  *   planted  every foot stays on its spot (under 1 mm) and the bat stays in both hands (the top hand
- *            on the bat within 1 mm of where the set held it)
+ *            on the bat within 1 mm of where the set held it), on the stage's loop and over the 30 s
  *   exact    a pitch played from a set with the life on screen, against the same pitch with the life
  *            off: every bone of the three, the bat and the ball are the same, value for value, at
  *            every frame from the end of the ease (IDLE.OUT, at most half the time to the release)
@@ -109,7 +112,31 @@ const r = await page.evaluate(async ({ scn }) => {
     const range = (a) => Math.max(...a) - Math.min(...a);
     o.moves = Object.fromEntries(Object.entries(series).map(([k, a]) => [k, range(a)]));
     const corr = (a, b) => { const n = Math.min(a.length, b.length), ma = a.reduce((s, x) => s + x, 0) / n, mb = b.reduce((s, x) => s + x, 0) / n; let ab = 0, aa = 0, bb = 0; for (let i = 0; i < n; i++) { ab += (a[i] - ma) * (b[i] - mb); aa += (a[i] - ma) ** 2; bb += (b[i] - mb) ** 2; } return Math.abs(ab / Math.sqrt(aa * bb || 1)); };
-    o.corr = Math.max(corr(series.batter, series.catcher), corr(series.batter, series.umpire), corr(series.catcher, series.umpire));
+    // out of step, on the life's own clock (not the wall clock, so a slow runner reads the same): the
+    // set's life stepped every 40 ms from 0 to 30 s, and the closest two of the three correlated over
+    // every 3 s window, one starting each second; the worst window is the reading
+    const I0 = st.idle, STEP = 0.04, SPAN = 30, WIN = 75, HOP = 25;
+    const ds = { batter: [], catcher: [], umpire: [] };
+    for (let i = 0; i <= Math.round(SPAN / STEP); i++) {
+      I0.clock = i * STEP;
+      st.idleApply();
+      ds.batter.push(wp(B.bones.spine_03).x + wp(B.bones.pelvis).z);
+      ds.catcher.push(wp(P.catcher.bones.pelvis).x + wp(P.catcher.bones.hand_l).y);
+      ds.umpire.push(wp(P.umpire.bones.pelvis).x + wp(P.umpire.bones.head).z);
+      // planted over the whole span too
+      const feet = roles.flatMap((k) => ['l', 'r'].map((s) => wp(P[k].bones['foot_' + s])));
+      feet.forEach((f, j) => { footMax = Math.max(footMax, f.distanceTo(feet0[j])); });
+      const inv = B.bat.matrixWorld.clone().invert();
+      gripMax = Math.max(gripMax, wp(B.bones.hand_r).applyMatrix4(inv).distanceTo(top0));
+    }
+    const close = (a, b, c) => Math.max(corr(a, b), corr(a, c), corr(b, c));
+    o.windows = [];
+    for (let s = 0; s + WIN <= ds.batter.length; s += HOP) {
+      const w = (a) => a.slice(s, s + WIN);
+      o.windows.push([s * STEP, close(w(ds.batter), w(ds.catcher), w(ds.umpire))]);
+    }
+    o.corr = Math.max(...o.windows.map((w) => w[1]));
+    o.corrAt = o.windows.find((w) => w[1] === o.corr)[0];
     o.footMax = footMax; o.gripMax = gripMax;
     // hushed: nothing draws
     st.hush(true);
@@ -163,7 +190,8 @@ for (const o of r) {
   const tag = `${o.name} (${o.bats})`;
   ok(Object.values(o.moves).every((m) => m > 0.002) && o.drawsPerS > 5, `${tag} runs: the batter ${(o.moves.batter * 1000).toFixed(1)} mm, the bat's end ${(o.moves.bat * 1000).toFixed(1)} mm, the catcher ${(o.moves.catcher * 1000).toFixed(1)} mm, the umpire ${(o.moves.umpire * 1000).toFixed(1)} mm, ${o.drawsPerS.toFixed(1)} draws a second`);
   ok(o.drawsPerS <= 26, `${tag} capped: ${o.drawsPerS.toFixed(1)} draws a second (at most 25)`);
-  ok(o.corr < 0.9, `${tag} out of step: the closest two correlate ${o.corr.toFixed(2)}`);
+  ok(o.windows.length >= 28 && o.corr < 0.9, `${tag} out of step: over ${o.windows.length} windows of 3 s on the life's clock (0 to 30 s), the closest two correlate at most ${o.corr.toFixed(2)} (the window from ${o.corrAt.toFixed(0)} s)`);
+  console.log('     windows ' + o.windows.filter((w) => [0, 3, 6, 10, 20, 27].includes(Math.round(w[0]))).map((w) => `${w[0].toFixed(0)}s ${w[1].toFixed(2)}`).join(', '));
   ok(o.hushDraws === 0, `${tag} hush: ${o.hushDraws} draws with the meter up`);
   ok(o.footMax < 0.001 && o.gripMax < 0.001, `${tag} planted: feet ${(o.footMax * 1000).toFixed(2)} mm, top hand on the bat ${(o.gripMax * 1000).toFixed(2)} mm`);
   const e = o.exact;
