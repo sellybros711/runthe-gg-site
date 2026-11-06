@@ -6,9 +6,6 @@
   --teal: #19c6a7; --gold: #f5b72a; --gold2: #d99a10; --red: #ef4b3f; --blue: #3d8bff; --green: #36d399;
   --field: #2a6534;
 }
-:root[data-theme="light"] {
-  --bg: #eef2f6; --panel: #ffffff; --panel2: #f3f6fa; --edge: #d6dee8; --ink: #122033; --dim: #5d6f84;
-}
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
 body { overscroll-behavior: none; min-height: 100dvh; }
@@ -20,7 +17,6 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 
 /* ---------- the top bar ---------- */
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; padding: max(8px, env(safe-area-inset-top)) 16px 0; background: linear-gradient(#0b1828, #0a1420); border-bottom: 1px solid var(--edge); min-height: 58px; }
-:root[data-theme="light"] .topbar { background: #0f1c2b; }
 .logo { display: flex; align-items: baseline; text-decoration: none; font: italic 900 30px/1 'Barlow Condensed', 'Inter', sans-serif; letter-spacing: .01em; padding-bottom: 8px; white-space: nowrap; }
 .logo .l4 { color: var(--gold); }
 .logo .lamp { color: var(--teal); margin: 0 2px; }
@@ -576,7 +572,7 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 /* ---------- the Studio, after the owner's mockup (2026-11-06) ----------
    The night stadium of Play's first screen, the setup in a command deck,
    glass panels, a field that glows and one dock for tools and actions. The
-   Studio is always dark: it is a stadium at night, in either theme. */
+   Studio is a stadium at night. */
 .view.studio { --panel: #0b1a2b; --panel2: #10243a; --edge: #1f3d5a; --ink: #e9eff6; --dim: #8fa2b8; color: var(--ink);
   padding: 34px 14px 14px; border-radius: 18px; border: 1px solid #14304a;
   background: radial-gradient(40% 50% at 0% 100%, rgba(25, 198, 167, .18), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(245, 183, 42, .16), transparent 70%),
@@ -690,8 +686,8 @@ body.gamemode .view.studio { padding-top: 14px; }
 }
 
 /* ---------- No light frame around the stadium (the owner, 2026-11-06) ----------
-   Play's first screen and the Studio are a night stadium in either theme. While
-   one is on screen the page behind it is the stadium's own dark, and the
+   The game is always dark (the owner, 2026-11-06). While Play's first screen
+   or the Studio is on screen the page behind it is the stadium's own dark, and the
    stadium has no outline, so it reaches the edges instead of sitting in a frame. */
 html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPlay:not([hidden])) body, html:has(#vStudio:not([hidden])) body { background: #050c16; }
 .pick.arena, .view.studio { border-color: transparent; }

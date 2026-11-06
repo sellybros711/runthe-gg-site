@@ -61,6 +61,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   middle of the field stays the default.
 - **Test it forces each call** (`run(..., { call })`), still rolling the call first so the dice
   after it fall the same way. Results are stored per distance and flagged when the play changes.
+- **Always dark** (the owner, 2026-11-06: "make the whole game dark"). No light theme and no theme
+  button; the page ignores the suite's shared `runthegrid_theme` and never writes it.
 - **No guide opens by itself.** How it works is behind the `?` button.
 - **PXHD is borrowed, not copied** (`/setlist/pxhd.js`). Do not edit it from here; a change it
   needs goes to the agent that owns it.
