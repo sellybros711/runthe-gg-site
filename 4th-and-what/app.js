@@ -179,12 +179,6 @@
 
   /* ---------- the shell ---------- */
   $('bGuide').addEventListener('click', function () { var g = $('guide'); if (g.showModal) g.showModal(); else g.setAttribute('open', ''); });
-  $('themeBtn').addEventListener('click', function () {
-    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', next);
-    try { localStorage.setItem('runthegrid_theme', next); } catch (e) {}
-    var m = $('themeMeta'); if (m) m.setAttribute('content', next === 'dark' ? '#0b1522' : '#eef2f6');
-  });
   window.addEventListener('faw-pxhd', function () { if (window.FAW_RIG) window.FAW_RIG.init(window.FAW_PXHD); });
   if (window.FAW_PXHD && window.FAW_RIG) window.FAW_RIG.init(window.FAW_PXHD);
 
