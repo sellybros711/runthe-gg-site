@@ -16,6 +16,7 @@
  */
 import { cellPoint } from './pitch.js?v=16';
 import { foulLaunch } from './foul.js?v=2';
+import { stanceOff } from './stance.js?v=1';
 
 export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'hbp_fall', 'dirt'];
 
@@ -64,26 +65,28 @@ export function motion(play, batter) {
 /** FNV-1a of an id (a drawn pitch's game_pk:at_bat:pitch), for picks that must replay the same. */
 function hashId(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
 
-/* A hit by pitch reaches him (rules 11, contract.js THE REACH). The engine's hit by pitch crosses at
-   least far enough inside to touch the nearest drawn hitter; BODY_FAR is, for each tenth of the
-   hitter's zone height from BODY_LO tenths, the furthest any drawn hitter's body front sits from the
-   plate's centre (catcher's view feet), measured by shut-the-door/pipeline/hbp_reach.mjs on the 272
-   hitters of the 30 packs, 2026-11-06, with his feet 2.82 ft off the plate's centre (people.js
-   setupBatter). The scene's ball crosses at least that far inside, so it
-   meets whoever is batting. Only the drawn flight moves: the engine's crossing is the result. */
+/* A hit by pitch reaches him (rules 11 and 12, contract.js THE REACH). The engine's hit by pitch
+   crosses at least far enough inside to touch the nearest drawn hitter; BODY_FAR is, for each tenth of
+   the hitter's zone height from BODY_LO tenths, the furthest any drawn hitter's body front sits from
+   the plate's centre (catcher's view feet), measured by shut-the-door/pipeline/hbp_reach.mjs on the
+   272 hitters of the 30 packs, 2026-11-06, each where people.js stands him and taken back to the
+   league's stance (feet 2.82 ft off the plate's centre). A hitter with his own stance (stanceIn)
+   stands as much nearer or further (stance.js), and so does his body. The scene's
+   ball crosses at least that far inside, so it meets whoever is batting. Only the drawn flight
+   moves: the engine's crossing is the result. */
 const BODY_LO = -11;
 const BODY_FAR = [2.91, 2.86, 2.76, 2.45, 2.5, 2.51, 2.53, 2.47, 2.43, 2.38, 2.33, 2.27, 2.17, 2.23, 2.3, 2.35,
   2.44, 2.54, 2.57, 2.57, 2.56, 2.48, 2.45, 2.15, 1.59, 1.56, 1.61, 1.59, 1.57, 1.5, 1.54, 1.64];
-export function hbpCrossX(x, zn, bats) {
+export function hbpCrossX(x, zn, bats, off = 0) {
   const s = bats === 'L' ? 1 : -1;
-  const far = BODY_FAR[Math.max(0, Math.min(BODY_FAR.length - 1, Math.floor(zn * 10) - BODY_LO))];
+  const far = BODY_FAR[Math.max(0, Math.min(BODY_FAR.length - 1, Math.floor(zn * 10) - BODY_LO))] + off;
   return s * x >= far ? x : s * far;
 }
 
 /** From the engine's PitchResult (the game, phase C). actual.zn is normalised to this batter. */
 export function fromResult(r, batter) {
   const z = batter.szBot + r.actual.zn * (batter.szTop - batter.szBot);
-  const x = r.result === 'hit_by_pitch' ? hbpCrossX(r.actual.x, r.actual.zn, batter.bats) : r.actual.x;
+  const x = r.result === 'hit_by_pitch' ? hbpCrossX(r.actual.x, r.actual.zn, batter.bats, stanceOff(batter)) : r.actual.x;
   // the movement of the pitch he threw: his effort slice of his own pitches (pr.stuff), else his average
   const st = r.stuff || {};
   return { call: r.call, actual: { x, z }, velo: r.velo, pfxX: st.pfxX ?? null, pfxZ: st.pfxZ ?? null, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null, drawnId: r.drawn ? r.drawn.id : null, n: r.n ?? null,

@@ -109,6 +109,16 @@
  * the reach), in fixtures/replays-rules10-pre-hbp-reach.json. The pool was
  * not replayed.
  *
+ * RULES 12 (2026-11-07). The reach where he stands (contract.js hbpReachAt,
+ * engine.js 15): the drawn hitter measured at Statcast's average stance, moved by
+ * his own distance off the plate (the pack's stanceIn). A new outing's calls carry
+ * r 12. A row with r 11 replays under rules 11 exactly, on packs that now carry
+ * stanceIn: the self-test holds three rows made by main's engine before rules 12
+ * (at d60cd11c, on its packs), in fixtures/replays-rules11-pre-stance.json, each
+ * with a pitch the two reaches answer differently (two takes that reach the
+ * hitter under rules 12, one hit by pitch that does not). The pool was not
+ * replayed.
+ *
  * RULES 6 (2026-10-26). The runners read the ball (contract.js THE RUNNERS
  * READ THE BALL, engine.js 9). A new outing's calls carry r 6. A row with r 5
  * replays under rules 5 exactly (the self-test holds three, made by main's
@@ -553,6 +563,31 @@ function selfTest() {
         parts = !o11.log[i0] || o11.log[i0].result !== 'hit_by_pitch';
       } catch (e) { parts = true; }
       say(a.ok && same && o.rules === G.DRAWN_RULES && short.length > 0 && parts, `${row.scenario_id}: a rules 10 row from before the reach replays exactly, ${short.length} hit by pitch short of the batter included (${row.pitches} pitches); as rules 11 it parts` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 12: rules 11 rows made before it (main's engine at d60cd11c, on its packs, before stanceIn),
+     replay exactly as rules 11 on today's packs; as rules 12 they part where the row's parts says,
+     the pitch the two reaches answer differently, and nowhere before it */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules11-pre-stance.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const i0 = row.parts, x = o.log[i0], b = x && p.pack.scenario.batters[p.model.who(o.before[i0])];
+      const ins = x ? K.insideFt(x.actual.x, b.bats) : 0;
+      // the pitch at parts: between the two reaches, for a hitter whose stance the pack carries or not
+      const between = !!x && (ins >= K.hbpReach(x.actual.zn)) !== (ins >= K.hbpReachAt(x.actual.zn, b.stanceIn ?? null));
+      let parts = false;
+      try {
+        const o12 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.STANCE_RULES })), { mode: 'daily', model: p.model });
+        parts = o12.log.slice(0, i0).every((y, i) => y.result === o.log[i].result) && (!o12.log[i0] || o12.log[i0].result !== x.result);
+      } catch (e) { parts = false; }
+      say(a.ok && same && o.rules === G.HBP_RULES && between && parts, `${row.scenario_id}: a rules 11 row from before the stance replays exactly (${row.pitches} pitches); as rules 12 it parts at pitch ${i0 + 1}, ${x ? x.result : '?'} ${ins.toFixed(2)} ft inside for ${b ? b.name : '?'}` + (a.ok ? '' : ': ' + a.why));
     }
   }
   /* the height zones (2026-11-03): rules 10 rows on the four Retrosheet packs, made on main's packs at

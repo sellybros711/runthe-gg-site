@@ -134,6 +134,10 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
         const g = headGap();
         if (g < near) { near = g; nearAt = Math.round(s * 100) / 100; }
       }
+      // (the cost of a frame's pose, JS only: reported, not judged)
+      const c0 = performance.now();
+      for (let j = 0; j < 60; j++) { Wk.clock = (j / 60) * Wk.dur; st.walkApply(); }
+      o.layMs = (performance.now() - c0) / 60;
       Wk.clock = Wk.dur; st.walkApply();
       o.lands = diff(dump(), set);
       o.skate = skate; o.jolt = jolt; o.joltAt = joltAt; o.near = near; o.nearAt = nearAt; o.gapSet = gapSet;
@@ -225,6 +229,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
   ok(hs.every((o) => o.near >= CLEAR_M), `${tag} clear: the barrel at least ${cl.near.toFixed(3)} m from his head's centre (${cl.name} at ${cl.nearAt} s; his stance ${cl.gapSet.toFixed(3)}; held to ${CLEAR_M})`);
   ok(r.tap.ended && r.tap.skipped && r.tap.diff === 0 && r.key.ended && r.key.diff === 0, `${tag} skip: a tap and a key end it in the set's pose (${JSON.stringify([r.tap, r.key])})`);
   ok(r.pitch.same && r.pitch.walkOver && r.pitch.frames > 10, `${tag} pitch: a pitch thrown mid walk is the plain set's, frame for frame (${r.pitch.frames} frames)`);
+  console.log(`     ${tag} cost: the walk's pose ${(hs.reduce((a, o) => a + o.layMs, 0) / hs.length).toFixed(2)} ms of JS a frame here (reported only)`);
   ok(r.quiet, `${tag} quiet: no walk under reduced motion`);
   ok(errors.length === 0, `${tag} no page error` + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
   await page.close();
