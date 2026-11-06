@@ -62,10 +62,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=131"></script>
-<script defer src="putt/land.js?v=19"></script>
-<script defer src="putt/hole3d.js?v=22"></script>
-<script defer src="putt/trip3d.js?v=6"></script>
+<script defer src="putt/putt.js?v=132"></script>
+<script defer src="putt/land.js?v=20"></script>
+<script defer src="putt/hole3d.js?v=23"></script>
+<script defer src="putt/trip3d.js?v=7"></script>
 <script defer src="putt/gyms.js?v=4"></script>
 <script defer src="putt/gymkinds/push.js?v=3"></script>
 <script defer src="putt/gymkinds/trickshot.js?v=2"></script>
@@ -83,12 +83,13 @@
 <script defer src="putt/gymkinds/orbit.js?v=2"></script>
 <script defer src="putt/gymkinds/tint.js?v=2"></script>
 <script defer src="putt/gymkinds/hop.js?v=1"></script>
-<script defer src="putt/trail.js?v=54"></script>
-<script defer src="putt/mapland.js?v=11"></script>
+<script defer src="putt/gymkinds/twister.js?v=1"></script>
+<script defer src="putt/trail.js?v=55"></script>
+<script defer src="putt/mapland.js?v=12"></script>
 <!-- Share clips of a hole's putts from the card after it (reads putt.js, never changes it). -->
 <script defer src="putt/clips.js?v=2"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=28"></script>
+<script defer src="golfer3d.js?v=29"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11355,6 +11356,8 @@ const PP_REWARDS=[
  {cat:'ew',id:'ppcrystalspecs',name:'Crystal Specs',hist:'A Putt Putt world prize'},
  {cat:'ball',id:'ppjelly',name:'Jelly Ball',hist:'A Putt Putt world prize',col:'#ff8ad0',tracer:{g:'rgba(255,138,208,.55)',c:'#9be86a'}},
  {cat:'cleats',id:'ppwobbleboots',name:'Wobble Boots',hist:'A Putt Putt world prize'},
+ {cat:'ew',id:'ppemeraldspecs',name:'Emerald Spectacles',hist:'A Putt Putt world prize'},
+ {cat:'cleats',id:'ppsilvershoes',name:'Silver Shoes',hist:'A Putt Putt world prize'},
  {cat:'putter',id:'pptusk',name:'Mammoth Tusk Putter',hist:'A Putt Putt world prize'},
  {cat:'ew',id:'ppsnowgoggles',name:'Snow Goggles',hist:'A Putt Putt world prize'},
  {cat:'hw',id:'pphallowscrown',name:'Hallows Crown',hist:'A Members Tour prize'},
@@ -12122,7 +12125,7 @@ Object.assign(COS_BOOST,{
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
   'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'hw:ppastrohelmet':{sht:2},
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
-  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}, 'bl:ppprism':{sht:2}, 'ew:ppcrystalspecs':{acc:2}, 'bl:ppjelly':{scr:2}, 'ct:ppwobbleboots':{sht:2}
+  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}, 'bl:ppprism':{sht:2}, 'ew:ppcrystalspecs':{acc:2}, 'bl:ppjelly':{scr:2}, 'ct:ppwobbleboots':{sht:2}, 'ew:ppemeraldspecs':{app:2}, 'ct:ppsilvershoes':{acc:2}
 });
 // THE PRO SHOP LINE (PRO_LINE): the ladder's power for its rarity, a common 1 point and a rare 2, leaning on the stats gear
 // touches least (Bunker, Short Game, Accuracy, Scrambling). Its outerwear and legwear are style and carry none.
@@ -15393,9 +15396,9 @@ function replayTour(){
 const FT_SCREENS=['title','protour','putthub','me'];
 const FT_HUBS=['protour','putthub','me'];
 const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
-const FT_PLATE_V=6;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
+const FT_PLATE_V=7;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
 // the worlds that have a picture for the home's Putt Putt side. A world added without one shows the Clubhouse
-const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars','saturn','crystara','jellara'];
+const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars','saturn','crystara','jellara','oz'];
 // THE FIRST TEE IS THE HOME, for everybody (live since 2026-10-18; the classic home and the PUTT_LIVE switch were
 // removed the same day, at the owner's call). It does not wait for putt.js: its Putt Putt side is drawn once the module
 // has run.
@@ -18334,6 +18337,8 @@ PXG_EYEWEAR.ppsnowgoggles=pxgRows([[12,15,'###############'],[13,14,'#@@@%%%%%%%
 PXG_EYEWEAR.pptitangoggles=PXG_EYEWEAR.ppsnowgoggles;
 PXG_EYEWEAR.ppcrystalspecs=PXG_EYEWEAR.pppixelshades;
 PXG_EW_PAL.ppcrystalspecs=Object.assign({},PXG_EW_PAL.pppixelshades,{'%':'#c8a8ff',Q:'#9ff0ff'});
+PXG_EYEWEAR.ppemeraldspecs=PXG_EYEWEAR.pppixelshades;
+PXG_EW_PAL.ppemeraldspecs=Object.assign({},PXG_EW_PAL.pppixelshades,{'@':'#c8ffe0','%':'#2fb36a','&':'#14683a','*':'#5affa0','+':'#1a8a4c',P:'#e8fff0',E:'#0e3a20',Q:'#4ad88a',O:'#1a8a4c'});
 PXG_EW_PAL.pptitangoggles={'#':'#181019','@':'#fff2d0','%':'#e8c88c','&':'#b8905a','*':'#8a6a3a','+':'#ffd98a','=':'#fff2d0','~':'#a87a40',f:'#ffffff',P:'#ffd0a0',Q:'#ffa860',R:'#e8742a',O:'#a83a14'};
 PXG_EW_PAL.ppsnowgoggles={'#':'#181019','@':'#ffffff','%':'#e6eef8','&':'#b4c4da','*':'#8496b4','+':'#d8eefa','=':'#ffffff','~':'#94b8d4',f:'#ffffff',P:'#e4f4ff',Q:'#a6d8f6',R:'#8fa6f0',O:'#8a62dc'};
 // Phantom Mask
@@ -18382,6 +18387,8 @@ PXG_CLEATS.ppdinoclaw=pxgRows([[50,15,'kgTTk.....kgTTk'],[51,13,'kgTgTgTbk.kgTgT
 PXG_CLEATS.ppmarsboots=pxgRows([[49,15,'kbbk.......kbbk'],[50,15,'kWWk.......kWWk'],[51,13,'kWWWgWWWk.kWWWgWWWk'],[52,13,'kWWWWWWok.kWWWWWWok'],[53,13,'kWWWWWWWk.kWWWWWWWk'],[54,13,'ksssssssk.ksssssssk'],[55,13,'krsrsrsrk.krsrsrsrk']]);
 PXG_CLEATS_PAL.ppmarsboots={k:'#181019',W:'#f4f2ee',g:'#c8c4bc',b:'#2f6fe0',o:'#ff8a3a',s:'#b84a26',r:'#6a2410'};
 PXG_CLEATS.ppwobbleboots=PXG_CLEATS.ppmarsboots;
+PXG_CLEATS.ppsilvershoes=PXG_CLEATS.ppmarsboots;
+PXG_CLEATS_PAL.ppsilvershoes={k:'#2a2c34',W:'#d8dce6',g:'#ffffff',b:'#9aa0ae',o:'#ffffff',s:'#8a909e',r:'#5a5e6a',f:'#ffffff'};
 PXG_CLEATS_PAL.ppwobbleboots={k:'#14302c',W:'#ff8ad0',g:'#ffc8ec',b:'#ff5fb8',o:'#ffffff',s:'#9be86a',r:'#5ab83a',f:'#fff0f8'};
 PXG_CLEATS_PAL.ppdinoclaw={k:'#181019',g:'#7ccc4a',T:'#3e8a34',b:'#235224',f:'#efe6c4',F:'#a89c74',c:'#fffaf0',s:'#14301a'};
 // Lollipop Putter

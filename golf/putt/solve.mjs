@@ -55,6 +55,8 @@ export function geodesic(C, avoid){
   (C.hops || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y); if (e < 0) return;
     for (let a = 0; a < 360; a += 10) for (let k = 2; k <= P.HOP_MAX; k += 1){ const x = q.x + Math.cos(a * Math.PI / 180) * k, y = q.y + Math.sin(a * Math.PI / 180) * k, o = idx(x, y);
       if (o >= 0 && pass[o]) back.push([o, e, k * 0.6]); } });
+  // a cyclone (Oz) carries the ball from its funnel to its landing spot, whatever the pace: the landing leads back to the funnel
+  (C.cyclones || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y), a = near(q.tx, q.ty); if (e >= 0 && a >= 0) back.push([a, e, 2]); });
   const outOf = new Map(); back.forEach(([a, e, w]) => { if (!outOf.has(a)) outOf.set(a, []); outOf.get(a).push([e, w]); });
   const start = near(C.cup[0], C.cup[1]); if (start < 0) return () => 1e9;
   // a Dijkstra over the grid with the jumps as extra edges (a binary heap keeps it quick)
@@ -94,6 +96,9 @@ export function solve(C, cap, stats, avoid){
   // strike moments on a moving hole: a step that is not a fraction of any common period, so a windmill
   // turning once a second is not met at the same two phases over and over
   // the line is kept at full precision: on a moving hole a rounded strike time or aim is a different putt
+  /* a cyclone (Oz) sets down every putt that reaches it in one place, so the first few ways there are often wild banks into
+     it that a person's error puts wet, and the safe way in, found later in the fan, would never be kept: such a hole keeps more */
+  const keepWays = (C.cyclones || []).length ? 60 : 4;
   const geo = geodesic(C, avoid), T0 = timed(C) ? [0, 0.35, 0.7, 1.05, 1.4, 1.75, 2.1] : [0];
   let frontier = [{ x:C.tee[0], y:C.tee[1], t:0, line:[] }], total = 0;
   for (let s = 1; s <= cap; s++){
@@ -111,7 +116,7 @@ export function solve(C, cap, stats, avoid){
           if (r.water || r.out) continue;
           // a few ways of reaching each place are kept, so the safe one is still there when the first was not
           const key = Math.round(r.rest[0] * 3) + ',' + Math.round(r.rest[1] * 3) + ',' + (timed(C) ? Math.round(r.t) : 0);
-          let g = byKey.get(key); if (!g){ g = []; byKey.set(key, g); } if (g.length >= 4) continue;
+          let g = byKey.get(key); if (!g){ g = []; byKey.set(key, g); } if (g.length >= keepWays) continue;
           g.push({ x:r.rest[0], y:r.rest[1], t:t0 + r.t + 2, d:geo(r.rest[0], r.rest[1]), line:f.line.concat([[ang, ft, t0]]), from:f, shot:[ang, ft, t0] });
         }
       }

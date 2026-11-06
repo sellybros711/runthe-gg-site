@@ -48,6 +48,14 @@ function jelFar(n){ var w = fbm([n[0] * 1.4 - 1.7, n[1] * 1.4 + 2.2, n[2] * 1.4]
   c = lerpV(c, lerpV([110, 196, 70], [170, 240, 118], smooth((sw - 0.5) / 0.12)), smooth((sw - 0.43) / 0.07));
   c = lerpV(c, [255, 128, 204], smooth((pk - 0.5) / 0.1) * smooth((sw - 0.4) / 0.1) * 0.9);
   return lerpV(c, [236, 255, 246], smooth((st - 0.9) / 0.08) * 0.6); }
+/* Oz from afar: a green world of soft warped meadow in many greens, rivers of red poppy fields winding through it, golden
+   fields of corn here and there, and the white of clouds drifting over (warped noise, never a facet or a grid) */
+function ozFar(n){ var w = fbm([n[0] * 1.5 + 4.1, n[1] * 1.5 - 1.3, n[2] * 1.5], 3), q = [n[0] * 2.2 + w * 2.2, n[1] * 2.2 - w * 1.9, n[2] * 2.2 + w * 2.4];
+  var sw = fbm(q, 4), pp = 1 - Math.abs(fbm([q[0] * 1.7 - sw, q[1] * 1.7 + 2.2, q[2] * 1.7 + sw], 3) * 2 - 1), gd = fbm([q[0] * 2.6 + 9, q[1] * 2.6, q[2] * 2.6 - 4], 2);
+  var c = lerpV([46, 120, 48], [118, 196, 84], smooth((sw - 0.32) / 0.3));
+  c = lerpV(c, [222, 196, 92], smooth((gd - 0.66) / 0.08) * 0.6);
+  c = lerpV(c, [204, 48, 48], smooth((pp - 0.93) / 0.05) * 0.8);
+  var cl = fbm([n[0] * 3.2 + 7, n[1] * 4.6, n[2] * 3.2], 3); return lerpV(c, [246, 248, 252], smooth((cl - 0.6) / 0.1) * 0.85); }
 function hex(c){ return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; }
 function rotX(a){ var c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; }
 function rotY(a){ var c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c]; }
@@ -171,7 +179,10 @@ var PLANETS = {
   // Crystara: a planet of living crystal, faceted in violet and cyan from afar; the ship comes down on a field of clear crystal
   crystara:{ R:260, paint:null, air:null },
   // Jellara: a wobbling jelly planet, lime and pink jelly over a teal goo sea; the ship comes down on a bank of lime jelly
-  jellara:{ R:250, paint:null, air:null }
+  jellara:{ R:250, paint:null, air:null },
+  // Oz: green meadows with poppy fields winding through them; the ship comes down in the poppies by the yellow brick road,
+  // under a blue sky (the trip there is the one that goes wrong: CRASH below)
+  oz:{ R:270, paint:null, air:'#9fd4ff' }
 };
 // the Moon's craters: a few big ones seen from afar, and a field of smaller ones round the landing spot (its underside, -y)
 var CRATERS = []; for (var ci = 0; ci < 46; ci++){ var th = hash(ci, 1, 7) * 6.283, ph = Math.acos(1 - 2 * hash(ci, 2, 7)); CRATERS.push([Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th), 0.05 + hash(ci, 3, 7) * 0.2]); }
@@ -209,6 +220,11 @@ function play(host, o, cb){
   setRes(150);
   var done = false, t0 = 0, DUR = reduce ? 1.8 : 10.8, frames = 0, ftime = 0;
   var FROMK = o.from || 'earth', TOK = o.to || 'moon', VEH = o.vehicle === 'ship' ? SHIP : ROCKET;
+  /* THE TRIP THAT GOES WRONG (Oz, the owner's brief: "a normal seeming ship flight malfunctions and crash lands in a poppy
+     field by the yellow brick road"). It leaves as every leg does. Past the climb the engines sputter (the flame cuts in and
+     out), smoke pours from a pod and the ship spins; it comes down leaning and turning, bumps down on its side in the poppies
+     beside the road with a puff of petals, and a thread of smoke rises from it. Never a fireball: a bumpy landing. */
+  var CRASH = TOK === 'oz';
   bake(); var Re = PLANETS[o.from || 'earth'].R, Rm = PLANETS[o.to || 'moon'].R, CE = V(0, -Re, 0), HM = 2700, CM = V(0, HM + Rm, 0);
   var stars = []; for (var s = 0; s < 260; s++){ var a = hash(s, 1, 3) * 6.283, b = Math.acos(1 - 2 * hash(s, 2, 3)); stars.push([Math.sin(b) * Math.cos(a), Math.cos(b), Math.sin(b) * Math.sin(a), hash(s, 4, 3)]); }
   var trees = []; for (var tq = 0; tq < 14; tq++){ var ta = hash(tq, 5, 9) * 6.283, tr = 9 + hash(tq, 6, 9) * 14; trees.push(V(Math.cos(ta) * tr, 0, Math.sin(ta) * tr)); }
@@ -222,10 +238,19 @@ function play(host, o, cb){
     if (t >= 6.6){ var u = smooth((t - 6.6) / 2.4), y0 = 19.4 * Math.exp(1.85 * 2.4); y = lerp(y0, HM, 1 - Math.pow(1 - u, 2.2)); }
     flip = smooth((t - 7.7) / 0.9) * Math.PI; if (t > 9.0) y = HM;
     tilt = t > 4.2 && t < 7.6 ? Math.sin(t * 3.1) * 0.03 : 0;
-    var M = mm(rotX(flip), rotY(t * 0.25 + (t > 4.2 ? (t - 4.2) * 0.6 : 0)));
+    var spin = 0, lean = 0, sput = false, bump = 0;
+    if (CRASH){ var tr = smooth((t - 5.6) / 0.6);
+      spin = t > 5.6 ? Math.min(t - 5.6, 3.4) * 2.6 * tr : 0;                                          // the spin, slowing to a stop as it lands
+      if (t > 9.0) spin = 3.4 * 2.6;
+      tilt += t > 5.6 && t < 9.0 ? Math.sin(t * 4.3) * 0.16 * tr : 0;                                  // the wobble
+      lean = smooth((t - 8.2) / 1.0) * 0.42;                                                           // it comes down leaning, and stays leaning
+      sput = t > 5.6 && t < 9.0 && Math.sin(t * 23) + Math.sin(t * 9.7) > 0.4;                         // the engines cut in and out
+      if (t > 9.0 && t < 9.5) bump = Math.abs(Math.sin((t - 9.0) / 0.5 * Math.PI)) * 0.9; }          // one bump as it hits
+    var M = mm(rotX(flip), rotY(t * 0.25 + (t > 4.2 ? (t - 4.2) * 0.6 : 0) + spin));
     if (tilt) M = mm([1, 0, 0, 0, Math.cos(tilt), -Math.sin(tilt), 0, Math.sin(tilt), Math.cos(tilt)], M);
-    var base = flip > 1.6 ? V(0, y - 0.75, 0) : V(0, y + 1.05, 0);              // the nozzle or (flipped) the legs sit on the ground
-    return { p:base, y:y, M:M, flip:flip, burn:t > 2.35 && !(t > 6.9 && t < 7.7) && t < 9.05, retro:t > 8.0 }; }
+    if (lean) M = mm([Math.cos(lean), -Math.sin(lean), 0, Math.sin(lean), Math.cos(lean), 0, 0, 0, 1], M);
+    var base = flip > 1.6 ? V(0, y - 0.75 - bump + lean * 0.9, 0) : V(0, y + 1.05, 0);              // the nozzle or (flipped) the legs sit on the ground
+    return { p:base, y:y, M:M, flip:flip, burn:t > 2.35 && !(t > 6.9 && t < 7.7) && t < 9.05 && !sput, retro:t > 8.0, trouble:CRASH && t > 5.6 && t < 9.0, crashed:CRASH && t >= 9.0 }; }
   function camAt(t, rk){ var P = rk.p, shake = 0;
     if (t < 4.2){ var lift = clamp((t - 2.4) / 1.8, 0, 1); shake = t > 2.3 ? 0.08 * (1 - lift * 0.4) : 0;
       var pos = lerpV(V(7.5, 1.4, 9.5), V(9, 3, 12), lift), tg = V(0, Math.min(3.4 + P[1] * 0.9, P[1] + 3.4), 0);
@@ -233,7 +258,8 @@ function play(host, o, cb){
     if (t < 7.6){ // the chase: above and behind, looking down past the rocket at the Earth falling away, then round in front to the Moon
       var s2 = smooth((t - 5.6) / 1.6), off = lerpV(V(4.5, 8, 11), V(5, -13, 7.5), s2), roll = Math.sin(t * 2.3) * 0.06;
       var pos2 = add(P, off), tg2 = add(P, lerpV(V(0, 1.5, 0), V(0, 26, 0), s2 * s2)), up2 = norm(lerpV(V(Math.sin(roll), 1, 0), V(Math.sin(roll), 0.15, 1), s2));
-      return { pos:add(pos2, V(Math.sin(t * 29) * 0.05, Math.sin(t * 31) * 0.05, 0)), tg:tg2, up:up2, fov:lerp(58, 64, s2) }; }
+      var sk = CRASH && t > 5.6 ? 0.22 : 0.05;
+      return { pos:add(pos2, V(Math.sin(t * 29) * sk, Math.sin(t * 31) * sk, 0)), tg:tg2, up:up2, fov:lerp(58, 64, s2) }; }
     // the landing: the Moon's underside is the ground now, so the camera's up is -y
     var s3 = smooth((t - 7.6) / 1.6), dist = lerp(16, 13, s3), pos3 = V(dist * 0.6, rk.y + lerp(-14, -3.2, s3), dist * 0.85), tg3 = V(0, rk.y - 3.4, 0);
     if (t < 9) tg3 = lerpV(add(P, V(0, -3, 0)), tg3, s3);
@@ -307,6 +333,20 @@ function play(host, o, cb){
           var bx3 = (qx2 + hash(qx2, qz2, 73)) * 2.3, bz3 = (qz2 + hash(qx2, qz2, 74)) * 2.3, br3 = 0.2 + hash(qx2, qz2, 75) * 0.4, bd3 = Math.hypot(gx - bx3, (gz - bz3) * 1.15) / br3;
           if (bd3 < 1){ col = bd3 < 0.45 && (gx - bx3) + (gz - bz3) < 0 ? [255, 255, 255] : [255, 138, 208]; nn = norm(add(nn, mul(norm(V(gx - bx3, 0.01, gz - bz3)), 0.7 * bd3))); } } }
       return [col, nn]; }
+    /* Oz: from afar the green world of ozFar; near the ground a red poppy field, thick with flowers, a meadow showing
+       through in warped soft patches, and the yellow brick road curving past beside the landing spot */
+    if (kind === 'oz'){ var fo = clamp((tt - 25) / 80, 0, 1), farO = ozFar(ne);
+      var mw = fbm([gx * 0.08 + 1.3, 2.1, gz * 0.08], 3), ms = fbm([gx * 0.12 + mw * 2.4, 5.3, gz * 0.12 - mw * 2], 3);
+      var nearO = lerpV([62, 140, 52], [104, 180, 72], smooth((ms - 0.35) / 0.3));
+      if (near && tt < 160){ var pf = smooth((fbm([gx * 0.05 - 3, 7.7, gz * 0.05], 3) - 0.38) / 0.12), pcx = Math.floor(gx / 1.1), pcz = Math.floor(gz / 1.1);
+        for (var oi = -1; oi <= 1; oi++) for (var oj = -1; oj <= 1; oj++){ var ox = pcx + oi, oz2 = pcz + oj; if (hash(ox, oz2, 81) > 0.15 + pf * 0.5) continue;
+          var opx = (ox + hash(ox, oz2, 82)) * 1.1, opz = (oz2 + hash(ox, oz2, 83)) * 1.1, opr = 0.22 + hash(ox, oz2, 84) * 0.22, od = Math.hypot(gx - opx, (gz - opz) * 1.1) / opr;
+          if (od < 1){ nearO = od < 0.3 ? [40, 24, 16] : (gx - opx) + (gz - opz) < 0 ? [255, 92, 70] : [214, 34, 40]; nn = norm(add(nn, mul(norm(V(gx - opx, 0.01, gz - opz)), 0.5 * od))); } }
+        // the yellow brick road, curving past at a safe distance from where the ship comes down
+        var rc = 7.5 + Math.sin(gx * 0.06) * 3, rdd = Math.abs(gz - rc);
+        if (rdd < 1.7){ var bj = Math.floor((gz - rc + 1.7) / 0.55), bi = Math.floor((gx + (bj & 1) * 0.45) / 0.9), mo = (((gz - rc + 1.7) / 0.55) % 1) < 0.12 || (((gx + (bj & 1) * 0.45) / 0.9) % 1 + 1) % 1 < 0.1;
+          nearO = rdd > 1.5 ? [184, 132, 30] : mo ? [196, 148, 40] : hash(bi, bj, 85) < 0.3 ? [230, 182, 40] : [240, 194, 50]; nn = ne; } }
+      col = lerpV(nearO, farO, fo); return [col, nn]; }
     if (kind === 'mars'){ var uvr = sphUV(ne), tr = (Math.floor(uvr[1] * TEX.EH) * TEX.EW + Math.floor(uvr[0] * TEX.EW)) * 3, fr = clamp((tt - 25) / 80, 0, 1);
       col = lerpV([200, 104, 58], [TEX.mars[tr], TEX.mars[tr + 1], TEX.mars[tr + 2]], fr);
       if (near && tt < 140){ var rip = Math.sin(gx * 1.3 + gz * 0.4 + noise3(gx * 0.2, 0, gz * 0.2) * 4), mott = noise3(gx * 0.35, 3, gz * 0.35);
@@ -337,7 +377,7 @@ function play(host, o, cb){
     var rk = rocketAt(t), cam = camAt(t, rk), sun = sunAt(t), f = norm(sub(cam.tg, cam.pos)), r = norm(cross(f, cam.up)), u = cross(r, f), foc = (W / 2) / Math.tan(cam.fov * Math.PI / 360);
     var GIF = !PLANETS[TOK].giant && !!PLANETS[FROMK].giant, GI = PLANETS[TOK].giant || PLANETS[FROMK].giant, GC = GI ? add(GIF ? CE : CM, GI.off) : null, GN = GI ? norm(V(0.25, 0.94, 0.22)) : null;
     var alt = len(sub(cam.pos, CE)) - Re, sky = FROMK === 'earth' ? smooth(alt / 260) : 1, padOn = alt < 120, altM = len(sub(cam.pos, CM)) - Rm, nearMoon = altM < 260,
-      air = TOK === 'mars' ? 1 - smooth(altM / 90) : 0, upM = norm(sub(cam.pos, CM)), airF = FROMK === 'mars' ? 1 - smooth(alt / 90) : 0, upE = norm(sub(cam.pos, CE));
+      air = TOK === 'mars' || TOK === 'oz' ? 1 - smooth(altM / 90) : 0, upM = norm(sub(cam.pos, CM)), airF = FROMK === 'mars' ? 1 - smooth(alt / 90) : 0, upE = norm(sub(cam.pos, CE));
     var models = [];
     if (padOn){ models.push([PAD, V(0, 0, 0), I3, 2], [TOWER, V(-3.6, 0, 0), I3, 3], [ARM, V(-2.4, 6.6, 0), I3, 3], [TANK, V(4.2, 0, -3.4), I3, 4], [TANK, V(5.6, 0, -0.8), I3, 4]);
       if (FROMK === 'earth') trees.forEach(function(p){ models.push([TREE, p, I3, 5]); }); }
@@ -367,7 +407,7 @@ function play(host, o, cb){
       else { // the sky: blue low down, black above the air, the stars coming out as it darkens, and the Earth's thin blue rim
         var g = clamp(dot(rd, norm(sub(cam.pos, CE))) * 0.5 + 0.5, 0, 1); out = lerpV([150 + 40 * (1 - g), 200 + 20 * (1 - g), 255], [5, 7, 18], sky);
         if (sky > 0.25){ for (var si = 0; si < 0; si++); }
-        if (air > 0){ var gm = clamp(dot(rd, upM), 0, 1); out = lerpV(out, lerpV([236, 182, 140], [176, 108, 80], Math.sqrt(gm)), air); }
+        if (air > 0){ var gm = clamp(dot(rd, upM), 0, 1); out = lerpV(out, TOK === 'oz' ? lerpV([196, 230, 255], [70, 150, 236], Math.sqrt(gm)) : lerpV([236, 182, 140], [176, 108, 80], Math.sqrt(gm)), air); }
         if (airF > 0){ var gf = clamp(dot(rd, upE), 0, 1); out = lerpV(out, lerpV([236, 182, 140], [176, 108, 80], Math.sqrt(gf)), airF); }
         var oc = sub(cam.pos, CE), bb = dot(oc, rd), dmin = Math.sqrt(Math.max(0, dot(oc, oc) - bb * bb)); if (FROMK === 'earth' && bb < 0 && dmin < Re * 1.05 && alt > 60){ var gl = 1 - (dmin - Re) / (Re * 0.05); out = lerpV(out, [110, 190, 255], clamp(gl, 0, 1) * 0.8); }
         best = 1e12; id = 0; }
@@ -399,17 +439,26 @@ function play(host, o, cb){
     if (FROMK === 'earth' && t < 2.35 && Math.floor(t * 12) !== Math.floor((t - dt) * 12)) parts.push({ p:V(-2.4 + hash(t, 1, 1), 6.2, (hash(t, 2, 1) - 0.5)), v:V(1.2, 0.6, 0.4), r:0.3, life:1.2, age:0, kind:'vapour', c:[245, 248, 252], a:0.8 });
     if (t > 2.3 && t < 4.6){ for (var s = 0, ns = many(90); s < ns; s++){ var an = hash(s, t * 1e3, 7) * 6.283, spd = 4 + hash(s, t * 1e3, 8) * 6;
       parts.push({ p:V(Math.cos(an) * 1.2, 0.6, Math.sin(an) * 1.2), v:V(Math.cos(an) * spd, 0.4 + hash(s, t, 9) * 1.2, Math.sin(an) * spd), r:0.9, life:3, age:0, kind:'smoke', c:FROMK === 'moon' ? [190, 188, 184] : FROMK === 'mars' ? [214, 150, 112] : FROMK === 'saturn' ? [220, 222, 240] : FROMK === 'crystara' ? [210, 240, 255] : [232, 232, 238], a:0.85 }); } }
-    if (t > 8.7 && t < 9.4){ for (var d = 0, nd = many(70); d < nd; d++){ var a2 = hash(d, t * 1e3, 17) * 6.283, s2 = 3 + hash(d, t * 1e3, 18) * 5;
+    if (rk.trouble || (rk.crashed && t < DUR)){ var pod = add(rk.p, mv(rk.M, V(1.55, rk.crashed ? 1.8 : 0.2, 0))), nsm = many(rk.crashed ? 4 : 26);
+      for (var sm2 = 0; sm2 < nsm; sm2++){ var sj = V((hash(sm2, t * 1e3, 41) - 0.5) * 0.6, (hash(sm2, t * 1e3, 42) - 0.5) * 0.6, (hash(sm2, t * 1e3, 43) - 0.5) * 0.6);
+        parts.push({ p:add(pod, sj), v:rk.crashed ? V(sj[0], -1.2, sj[2]) : mul(sj, 3), r:0.3, life:rk.crashed ? 2.0 : 1.4, age:0, kind:'puff', c:rk.crashed ? [206, 208, 216] : [168, 170, 182], a:0.75 }); } }
+    if (CRASH && t > 9.0 && t < 9.5){ for (var pe2 = 0, npe = many(60); pe2 < npe; pe2++){ var pa = hash(pe2, t * 1e3, 47) * 6.283, ps = 2 + hash(pe2, t * 1e3, 48) * 6;
+      parts.push({ p:V(Math.cos(pa) * 1.2, HM - 0.2, Math.sin(pa) * 1.2), v:V(Math.cos(pa) * ps, -1.5 - hash(pe2, t, 49) * 2.5, Math.sin(pa) * ps), r:0.16, life:1.4, age:0, kind:'petal', c:hash(pe2, t, 50) < 0.7 ? [232, 38, 42] : [90, 160, 60], a:0.9 }); } }
+    if (t > 8.7 && t < 9.4 && !CRASH){ for (var d = 0, nd = many(70); d < nd; d++){ var a2 = hash(d, t * 1e3, 17) * 6.283, s2 = 3 + hash(d, t * 1e3, 18) * 5;
       parts.push({ p:V(Math.cos(a2) * 0.8, HM - 0.15, Math.sin(a2) * 0.8), v:V(Math.cos(a2) * s2, -0.6 - hash(d, t, 19), Math.sin(a2) * s2), r:0.35, life:1.5, age:0, kind:'dust', c:TOK === 'mars' ? [206, 122, 80] : TOK === 'saturn' ? [230, 236, 250] : TOK === 'crystara' ? [200, 240, 255] : TOK === 'jellara' ? [255, 190, 230] : [196, 192, 184], a:0.7 }); } }
     parts.forEach(function(p){ p.age += dt; if (p.lp) p.lp = add(p.lp, mul(p.lv, dt)); else p.p = add(p.p, mul(p.v, dt)); var k = p.age / p.life;
       if (p.kind === 'fire'){ p.c = k < 0.25 ? [255, 255, 220] : k < 0.5 ? [255, 214, 80] : k < 0.75 ? [255, 140, 40] : [200, 70, 30]; p.r = 0.4 + k * 0.5; }
       else if (p.kind === 'smoke'){ p.v = mul(p.v, 1 - dt * 0.9); p.r = 0.9 + k * 3.2; p.a = 0.85 * (1 - k); }
+      else if (p.kind === 'puff'){ p.v = mul(p.v, 1 - dt * 0.8); p.r = 0.3 + k * 1.6; p.a = 0.75 * (1 - k); }
+      else if (p.kind === 'petal'){ p.v = mul(p.v, 1 - dt * 2); p.a = 0.9 * (1 - k); }
       else if (p.kind === 'dust'){ p.v = mul(p.v, 1 - dt * 1.4); p.r = 0.35 + k * 1.1; p.a = 0.7 * (1 - k); }
       else { p.r = 0.3 + k * 0.8; p.a = 0.8 * (1 - k); } });
     parts = parts.filter(function(p){ return p.age < p.life; }); if (parts.length > 700) parts.splice(0, parts.length - 700); }
 
   // the countdown, painted big over the picture
-  function overlay(t){ if (t >= 2.6) return; var s = cv.width / 390; ctx.font = 'bold ' + Math.round(64 * s) + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center';
+  function overlay(t){ if (CRASH && t > 6.0 && t < 7.3){ var s9 = cv.width / 390; ctx.font = 'bold ' + Math.round(54 * s9) + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center';
+      var wob = Math.sin(t * 18) * 4 * s9; ctx.lineWidth = 6 * s9; ctx.strokeStyle = '#1a1018'; ctx.strokeText('UH OH!', cv.width / 2 + wob, cv.height * 0.22); ctx.fillStyle = '#ffd84a'; ctx.fillText('UH OH!', cv.width / 2 + wob, cv.height * 0.22); }
+    if (t >= 2.6) return; var s = cv.width / 390; ctx.font = 'bold ' + Math.round(64 * s) + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center';
     var txt = t < 0.8 ? '3' : t < 1.6 ? '2' : t < 2.3 ? '1' : 'LIFTOFF'; ctx.lineWidth = 6 * s; ctx.strokeStyle = '#1a1018'; ctx.strokeText(txt, cv.width / 2, cv.height * 0.24); ctx.fillStyle = '#ffffff'; ctx.fillText(txt, cv.width / 2, cv.height * 0.24); }
 
   if (o.still) return { at:function(t){ parts = []; for (var e = Math.max(0, t - 2.5); e < t; e += 1 / 30){ emit(e, 1 / 30, rocketAt(e)); } var rk = render(t); overlay(t); if (t > 9.4) wrap.classList.add('cap'); return rk; }, close:finish, cam:function(t){ var rk = rocketAt(t); return { rk:rk, cam:camAt(t, rk) }; } };
