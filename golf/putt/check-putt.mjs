@@ -1148,6 +1148,14 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       claim(tp.kept && tp.paidAgain === 0, `${gid}: opened again it shows solved, and the vault never pays twice (${JSON.stringify([tp.kept, tp.paidAgain])})`); }
     }   // end of the rooms
     if (RUN_PAGE){   // ---- the page, part two
+    /* A SPACE WORLD'S GREETER TALKS AFTER THE LANDING (the owner, 2026-11-06: "The people with exclamation marks dont
+       talk to you on mobile"). On a space crossing the greeter waited for him to pass the launch pad, which he flies from,
+       never past: they stood with their mark up for good. They are on the landed walk now, and nowhere on the crossing. */
+    const sg = await pg.evaluate(() => { const TR = window.RTT_PUTT._trailPlan, out = []; const K = 18;
+      for (let f = K; f < 400; f += K){ let a, b2; try{ a = TR(f); b2 = TR(f, 'main', true); }catch(e){ break; } if (!a || !a.spec || a.spec.to !== f + 1 || !window.RTT_PUTT._state || f >= window.RTT_PUTT.LEVELS.length) break;
+        if (!a.spec.space) continue; out.push({ f, cross:!!a.host, landed:!!b2.host, landedGate:!!b2.gate }); }
+      return out; });
+    claim(sg.length >= 5 && sg.every(o => !o.cross && o.landed && !o.landedGate), `a space world's greeter waits on the landed walk, where no gate holds them, and not on the crossing that ends at the launch pad (${JSON.stringify(sg)})`);
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.
