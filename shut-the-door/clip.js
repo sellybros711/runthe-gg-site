@@ -9,10 +9,15 @@
  *   STD_CLIP.encode(spec)        the link's value (the ?clip= param)
  *   STD_CLIP.decode(text)        the spec, or null for anything malformed
  *   STD_CLIP.replay(E, pack, model, spec)
- *                                the pitch played again on its own outing: { before, pr, final, after }
+ *                                the pitch played again on its own outing: { before, pr, final, after },
+ *                                and for an at bat each of its pitches the same way, in order (pitches)
  *
  * spec: { mode: 'd' | 'a' | 'p' | 's' (daily, archive, practice, Survivor), day: 'YYYY-MM-DD',
- *         pack: scenario id, seed (p and s only), rules, calls: [kept calls, engine.js keptCall] }
+ *         pack: scenario id, seed (p and s only), rules, calls: [kept calls, engine.js keptCall],
+ *         from: an at bat's first pitch (1 based), only on an at bat's clip }
+ * A pitch's clip is its calls to that pitch. An at bat's (the owner, 2026-11-06: "share clips of any
+ * pitch or at bat") is its calls to the at bat's last pitch, and from: the at bat is pitches from to
+ * the last, the plate appearance postgame.js atBats draws on the result.
  *
  * THE FORMAT (version 1), dots between the fields:
  *   1.<mode>.<day YYYYMMDD>.<rules>.<pack>[.<seed base 36>].<call>.<call>...
@@ -20,6 +25,11 @@
  *   q<n> release (n = q x 100), e<n> effort, a<u>_<v> the free aim point (x 100, signed),
  *   c a challenge made on it (ch 1), s a quick delivery (ss 1), p<n> pickoff throws after it (pa)
  *   e.g. 1.d.20261105.10.std-2025-ws7-yamamoto.FF12q62a3_-4.SL7q85e40c
+ * THE AT BAT (version 2): the same, with the at bat's first pitch after the header:
+ *   2.<mode>.<day YYYYMMDD>.<rules>.<pack>[.<seed base 36>].<from>.<call>.<call>...
+ *   e.g. 2.d.20261105.10.std-2025-ws7-yamamoto.3.FF12q62.SL7q85.CU18q40.FF6q71
+ * An at bat's link is one number longer than the link of its last pitch. A pitch's link stays version
+ * 1, so every pitch link made before the at bat stays the link it was and plays exactly as it did.
  * The rules ride once in the header: every call of a rules 2 and later outing carries the same r, a
  * rules 1 call carries none (engine.js keptCall). The replay takes the rules from the calls, as a
  * resume does, so a clip of an old outing plays under the rules it was played under, and a link from
@@ -31,7 +41,8 @@
 const NODE = typeof module !== 'undefined' && module.exports;
 const K = NODE ? require('./contract.js') : window.STD_CONTRACT;
 
-const V = 1;
+const V = 1;            // a pitch
+const V_AB = 2;         // an at bat
 const MODES = ['d', 'a', 'p', 's'];
 const MODE_OF = { daily: 'd', archive: 'a', practice: 'p', survivor: 's' };
 const MAX_CALLS = 160;
@@ -55,8 +66,10 @@ function encodeCall(c) {
 
 function encode(spec) {
   const day = String(spec.day || '').replace(/-/g, '');
-  const head = [V, spec.mode, day, spec.rules, spec.pack];
+  const ab = spec.from != null;
+  const head = [ab ? V_AB : V, spec.mode, day, spec.rules, spec.pack];
   if (spec.mode === 'p' || spec.mode === 's') head.push((spec.seed >>> 0).toString(36));
+  if (ab) head.push(spec.from);
   return head.concat(spec.calls.map(encodeCall)).join('.');
 }
 
@@ -96,7 +109,8 @@ function decodeCall(text, rules) {
 function decode(text) {
   if (typeof text !== 'string' || text.length > 4000) return null;
   const f = text.trim().split('.');
-  if (f.length < 6 || f[0] !== String(V) || !MODES.includes(f[1])) return null;
+  const ab = f[0] === String(V_AB);
+  if (f.length < (ab ? 7 : 6) || !(ab || f[0] === String(V)) || !MODES.includes(f[1])) return null;
   const mode = f[1];
   if (!/^\d{8}$/.test(f[2])) return null;
   const day = f[2].slice(0, 4) + '-' + f[2].slice(4, 6) + '-' + f[2].slice(6, 8);
@@ -114,17 +128,28 @@ function decode(text) {
     spec.seed = seed;
     at = 6;
   }
+  let from = null;
+  if (ab) {
+    if (!/^[1-9]\d{0,2}$/.test(f[at] || '')) return null;
+    from = +f[at];
+    at++;
+  }
   const raw = f.slice(at);
   if (!raw.length || raw.length > MAX_CALLS) return null;
+  if (ab && from > raw.length) return null;
   const calls = [];
   for (const r of raw) { const c = decodeCall(r, rules); if (!c) return null; calls.push(c); }
   spec.calls = calls;
+  if (ab) spec.from = from;
   return spec;
 }
 
-/* The spec of pitch n (1 based) of an outing: its mode, day, seed and rules, and its first n calls. */
-function specOf(o, day, n) {
-  return { mode: MODE_OF[o.mode] || 'p', day, rules: o.rules, pack: o.pack.scenario.id, seed: o.seed, calls: o.calls.slice(0, n).map((c) => Object.assign({}, c)) };
+/* The spec of pitch n (1 based) of an outing: its mode, day, seed and rules, and its first n calls.
+   With from (1 based, at most n), the at bat of pitches from to n. */
+function specOf(o, day, n, from) {
+  const spec = { mode: MODE_OF[o.mode] || 'p', day, rules: o.rules, pack: o.pack.scenario.id, seed: o.seed, calls: o.calls.slice(0, n).map((c) => Object.assign({}, c)) };
+  if (from != null) spec.from = from;
+  return spec;
 }
 
 /* The seed a spec plays on: the day's for a daily or an archive day, else its own. */
@@ -139,6 +164,7 @@ function seedOf(E, spec) { return spec.mode === 'd' || spec.mode === 'a' ? E.see
 function replay(E, pack, model, spec) {
   const calls = spec.calls;
   if (E.rulesOf(calls) !== (spec.rules >= 2 ? spec.rules : 1)) throw new Error('the clip\'s rules do not match its calls');
+  if (spec.from != null) return replayAtBat(E, pack, model, spec);
   const o = E.createOuting(pack, { seed: seedOf(E, spec), mode: 'practice', model, rules: E.rulesOf(calls), outingId: 'clip' });
   for (let i = 0; i < calls.length - 1; i++) {
     if (o.status !== 'live') throw new Error('the outing ended before pitch ' + calls.length);
@@ -159,7 +185,54 @@ function replay(E, pack, model, spec) {
   return { before: JSON.parse(JSON.stringify(before)), pr, final, after: JSON.parse(JSON.stringify(E.publicState(o))) };
 }
 
-const api = Object.freeze({ V, MODE_OF, encode, decode, specOf, seedOf, replay });
+/* A plate appearance ends on the pitch that ends it, or a half ended after it (a runner caught or picked
+   off): postgame.js atBats, the same rule, so the at bat here is the card's on the result. */
+function endsPa(p) { return !!(p.paOver || p.halfOver || (p.pickoffs && p.pickoffs.some((e) => e.halfOver))); }
+const copy = (x) => JSON.parse(JSON.stringify(x));
+
+/* The at bat again: every call before it as it was, then each of its pitches in order, each as the
+   one pitch's clip has it (before, pr as the field saw it, final as it stands, after). The pickoff
+   throws after a pitch are made, unseen, so the next pitch is thrown in the state it was. The span
+   must be one plate appearance, whole: it starts on the outing's first pitch or after one that ended
+   a plate appearance, nothing in it ends one but its last pitch, and that one does (or the outing is
+   over). Anything else throws. The top level is the clip's whole: the state before its first pitch,
+   its last pitch, and the state after. */
+function replayAtBat(E, pack, model, spec) {
+  const calls = spec.calls, from = spec.from;
+  if (!(Number.isInteger(from) && from >= 1 && from <= calls.length)) throw new Error('the at bat is not in the clip');
+  const o = E.createOuting(pack, { seed: seedOf(E, spec), mode: 'practice', model, rules: E.rulesOf(calls), outingId: 'clip' });
+  for (let i = 0; i < from - 1; i++) {
+    if (o.status !== 'live') throw new Error('the outing ended before pitch ' + from);
+    E.throwPitch(o, calls[i]);
+  }
+  if (from > 1 && !endsPa(o.log[from - 2])) throw new Error('pitch ' + from + ' does not start an at bat');
+  const pitches = [];
+  for (let i = from - 1; i < calls.length; i++) {
+    if (o.status !== 'live') throw new Error('the outing ended before pitch ' + (i + 1));
+    const before = copy(E.publicState(o));
+    const c = Object.assign({}, calls[i]);
+    const ch = c.ch === 1, pa = c.pa || 0;
+    delete c.ch; delete c.pa;
+    const pr = copy(E.throwPitch(o, c).pitchResult);
+    let final = pr;
+    if (ch) {
+      if (!E.challengeLive(o)) throw new Error('a challenge on a pitch with none to make');
+      final = copy(E.challengePitch(o).pitchResult);
+    }
+    for (let k = 0; k < pa; k++) {
+      if (!E.pickoffLive(o)) throw new Error('a pickoff with none to make');
+      E.pickoff(o);
+    }
+    const ends = endsPa(o.log[o.log.length - 1]);
+    if (i < calls.length - 1 && ends) throw new Error('the at bat ended at pitch ' + (i + 1));
+    if (i === calls.length - 1 && !ends && o.status === 'live') throw new Error('the at bat goes on past pitch ' + (i + 1));
+    pitches.push({ before, pr, final, after: copy(E.publicState(o)) });
+  }
+  const last = pitches[pitches.length - 1];
+  return { before: pitches[0].before, pr: last.pr, final: last.final, after: last.after, from, pitches };
+}
+
+const api = Object.freeze({ V, V_AB, MODE_OF, encode, decode, specOf, seedOf, replay, endsPa });
 if (NODE) module.exports = api;
 if (typeof window !== 'undefined') window.STD_CLIP = api;
 })();
