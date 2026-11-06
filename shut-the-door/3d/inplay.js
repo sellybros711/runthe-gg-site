@@ -12,7 +12,7 @@
  *     run.land { s, real, how, fair } (the ball's first landing, catch, pick up or home run)
  *   ip.prime()                                                    its textures up to the GPU at load (stage.js)
  *   ip.update(s, camera)                                          every frame after contact (s: plan time)
- *   ip.fieldAt(s)                                                 the runners for the scorebar diamond
+ *   ip.fieldAt(s)                                                 the runners for the scorebar diamond, and .ball
  *   ip.end(camera)                                                back to the set (the next pitch)
  */
 import * as THREE from 'three';
@@ -1270,6 +1270,9 @@ export class InPlay {
       if (scored) p = 4;
       list.push({ p, out, alpha: out ? Math.max(0.35, 1 - (s - r.outAt) / 0.6) : scored ? 0.5 : 1, from: r.from, to: r.to });
     }
+    // (the ball too, field feet, for the HUD's live minimap (minimap.js live): read only, the plan's ball at s)
+    const b = A.plan.ballAt(A.plan.dur != null ? Math.min(s, A.plan.dur) : s);
+    if (b) list.ball = { x: b.x, y: b.y, z: b.z };
     return list;
   }
 

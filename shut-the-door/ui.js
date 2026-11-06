@@ -1650,7 +1650,10 @@ function fire(call) {
       var sl = stealText(pr.steal);
       if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); if (SFX) SFX.ump(pr.steal.result === 'out' ? 'out' : 'safe'); }
     });
-    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: pitchSounds(pr), field: hudRunners } };
+    /* the minimap follows the 3D play (its runners and the ball), only reading it; with no 3D it is as it was */
+    var mmLive = !!(S.mini && S.scene.is3d && !reducedMotion()), inPlay = pr.result === 'in_play';
+    var field = mmLive ? function (l) { hudRunners(l); if (l) S.mini.live(l, inPlay); } : hudRunners;
+    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: pitchSounds(pr), field: field } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       rv.now();
       S.lastMarker = S.scene.toScreen(pr.actual);
@@ -1660,6 +1663,7 @@ function fire(call) {
       meterDone();
       hudRunners(null);
       if (S.mini) S.mini.show(pr);
+      if (mmLive) S.mini.settle((pr.halfOver ? halfEndState(res.state, pr.halfOver) : res.state).bases);
       return byBatter ? absReplay(pr, batter).then(function () {
         var t = playText(pr, batter, res.state);
         pbp(t.tag, t.rest + absNote(pr));
@@ -1789,6 +1793,7 @@ function pickoffIt() {
     $('m-scene').classList.remove('flying', 'po-off');
     hudRunners(null);
     S.outing = res.state;
+    if (S.mini && S.scene.is3d && !reducedMotion()) S.mini.settle(ev.halfOver ? 0 : res.state.bases);
     var t = pickoffText(ev, res.state);
     pbp(t.tag, t.rest);
     if (ev.out) baseOut(ev.base);
