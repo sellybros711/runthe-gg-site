@@ -1,7 +1,8 @@
 /* How far inside a pitch must cross to reach the batter's body: measured on the 3D hitter.
  *
- *   node shut-the-door/pipeline/hbp_reach.mjs            print the tables (contract.js HBP.REACH, 3d/play.js BODY_FAR)
+ *   node shut-the-door/pipeline/hbp_reach.mjs            print the tables (contract.js HBP.REACH12, 3d/play.js BODY_FAR)
  *   node shut-the-door/pipeline/hbp_reach.mjs --packs N  the first N packs only
+ *   node shut-the-door/pipeline/hbp_reach.mjs --out F    every hitter's nearest body by band, to F
  *
  * Rules 11 (contract.js THE REACH): a pitch is a hit by pitch only when its crossing reaches the
  * batter. The batter is the one the game draws: people.js places him with his feet straddling a
@@ -32,6 +33,16 @@
  * edge a second before release, Statcast's league average stance): every band 0.13 ft nearer, in his
  * zone's height the nearest body 2.01 ft, a ball reaching it from 1.89 ft. contract.js keeps the
  * 2.95 ft table until the rules that take the new one.
+ *
+ * Rules 12 (contract.js hbpReachAt): each hitter stands where his own Statcast stance puts him (the
+ * pack's stanceIn, people.js via 3d/stance.js), and each vertex is taken back by his stance's offset,
+ * so REACH12 and BODY_FAR are the body against where he stands (the engine and the scene add the
+ * offset back). Every visible mesh of him is read: his skin (arms and hands), the uniform, the batting
+ * gloves, the helmet. It also says which part is nearest in each band (by the bone that moves the
+ * nearest vertex most). Run 2026-11-06, 272 hitters, 84 at their own stance: the table is the 2.82 ft
+ * run's to the hundredth, so the body moves with the stance as one piece; the nearest part a leg to
+ * zn 0.7, the trunk at 0.8, an arm (the upper arm and deltoid) from 0.9 to 1.2, the head and helmet
+ * above. The hands are measured and never the nearest: in his take they are up by his back shoulder.
  */
 import fs from 'node:fs';
 import path from 'node:path';

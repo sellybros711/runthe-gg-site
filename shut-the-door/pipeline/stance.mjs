@@ -22,9 +22,11 @@
  * Only rules 12 reads it (contract.js hbpReachAt): the reach moves with where he stands. The 3D stands
  * him there (people.js setupBatter). Then build_schedule.mjs moves the pack's v, and SCHEDULE_V in api.js.
  *
- * Run 2026-11-06 on the 30 packs: 272 hitters, 70 at their own season's stance, 17 at a near one (the
- * 2021 and 2022 packs, from 2023), 185 at the league average. The 2024 league (691 hitter sides,
- * MIN_SWINGS 1) averages 27.6 in, the hitters with a 2024 hit by pitch 27.6 in.
+ * Run 2026-11-06 on the 30 packs: 272 hitters, 70 at their own season's stance, 16 at a near one (the
+ * 2021 and 2022 packs, from 2023), 186 at the league average. The pack hitters with a stance
+ * range 22.1 in (Anthony Rizzo, 2024) to 35.5 in (Paul Goldschmidt, 2023), mean 27.9 in. The 2024
+ * league (691 hitter sides, MIN_SWINGS 1) averages 27.6 in, and so do the hitters of 2024's 2,020
+ * hit by pitches (Baseball Savant).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -76,7 +78,7 @@ const S = new Map();
 for (const y of SEASONS) S.set(y, season(y));
 
 /** His stance for a pack of season y, batting from side: { in, year, src } or null. */
-export function stanceOf(id, side, y) {
+function stanceOf(id, side, y) {
   if (S.get(y) && S.get(y).has(`${id}|${side}`)) return { in: S.get(y).get(`${id}|${side}`), year: y, src: 'season' };
   for (let d = 1; d <= NEAR; d++) for (const z of [y + d, y - d]) {
     if (S.get(z) && S.get(z).has(`${id}|${side}`)) return { in: S.get(z).get(`${id}|${side}`), year: z, src: 'near' };

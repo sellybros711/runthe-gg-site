@@ -974,7 +974,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
     G.RULES === 12 && G.STANCE_RULES === 12 && K.HBP.STANCE_IN === IP.STANCE_IN && IP.STANCE_X === 2.82
     && K.HBP.REACH12.length === K.HBP.REACH.length && K.HBP.REACH12.every((x, i) => x < K.HBP.REACH[i] && x > K.GRID.ZONE_HALF_FT)
     && K.hbpReachAt(0.5, null) === K.HBP.REACH12[16] && K.hbpReachAt(0.5, 28) === K.hbpReachAt(0.5, null)
-    && Math.abs(K.hbpReachAt(0.5, 34) - K.hbpReachAt(0.5, 28) - 0.5) < 1e-12 && Math.abs(K.hbpReachAt(1.1, 22) - K.HBP.REACH12[22] + 0.5) < 1e-12
+    && Math.abs(K.hbpReachAt(0.5, 34) - K.hbpReachAt(0.5, 28) - 0.5) < 1e-12 && Math.abs(K.hbpReachAt(0.5, 22) - K.HBP.REACH12[16] + 0.5) < 1e-12
     && Math.abs(IP.stanceX({ stanceIn: 34 }) - 3.32) < 1e-12 && IP.stanceX({}) === 2.82 && IP.stanceX({ stanceIn: null }) === 2.82
     && K.hbpReachAt(-3, null) === K.HBP.REACH12[0] && K.hbpReachAt(5, null) === K.HBP.REACH12[K.HBP.REACH12.length - 1]
     && K.hbpReachAt(1.5, 16) === K.GRID.ZONE_HALF_FT && K.hbpReachAt(0.5, 16) > K.GRID.ZONE_HALF_FT);
