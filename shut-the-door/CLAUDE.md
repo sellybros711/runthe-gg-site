@@ -97,8 +97,12 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
   (`fixtures/replays-rules8-pre-abs-touch.json`). Rules 10 (2026-11-03, CONTRACT.md 5l) is rules 9
   with the touch on the zone as drawn (`contract.js touchDist`, `zoneDist` plus the ball's radius): a
   ball the grid shows touching the box is a strike. A call with `r: 9` replays as rules 9
-  (`fixtures/replays-rules9-pre-drawn-touch.json`).
-  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`, `ABS_TOUCH_FROM`, `DRAWN_TOUCH_FROM`). The strengths live in `grade.js R2`; change them only
+  (`fixtures/replays-rules9-pre-drawn-touch.json`). Rules 11 (2026-11-06, CONTRACT.md 5m) is rules 10
+  plus the reach: a hit by pitch only when the ball's centre crosses at least `contract.js hbpReach(zn)`
+  inside (the 3D hitter's body less a ball, `pipeline/hbp_reach.mjs`); short of it the hit by pitch's
+  slice of the same draw is a take called where it crossed, and the grade moves the same share. A
+  call with `r: 10` replays as rules 10 (`fixtures/replays-rules10-pre-hbp-reach.json`).
+  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`, `ABS_TOUCH_FROM`, `DRAWN_TOUCH_FROM`, `HBP_REACH_FROM`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a
