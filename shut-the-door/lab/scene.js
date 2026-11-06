@@ -19,12 +19,12 @@
  */
 import * as THREE from 'three';
 import { preload } from '../3d/load.js?v=9';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=14';
-import { People } from '../3d/people.js?v=46';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=19';
+import { People } from '../3d/people.js?v=47';
 import { Pitch } from '../3d/pitch.js?v=16';
-import { labPlay, motion, describe } from '../3d/play.js?v=17';
+import { labPlay, motion, describe } from '../3d/play.js?v=18';
 import { FT, P, smooth } from '../3d/units.js?v=1';
-import { InPlay } from '../3d/inplay.js?v=50';
+import { InPlay } from '../3d/inplay.js?v=57';
 import { crowdClock } from '../3d/crowd.js?v=2';
 
 const Q = new URLSearchParams(location.search);

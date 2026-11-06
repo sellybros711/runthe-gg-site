@@ -36,6 +36,9 @@ export const BALL_R = 0.12;
 export const WALL_H = 8;
 export const BASE = [{ x: 0, y: 0 }, { x: 63.64, y: 63.64 }, { x: 0, y: 127.28 }, { x: -63.64, y: 63.64 }, { x: 0, y: 0 }];
 export const MOUND = { x: 0, y: 60.5 };
+// where the batter's feet straddle, feet off the plate's centre on his side (people.js setupBatter
+// stands him there and has the source; the batter's run to first starts there)
+export const STANCE_X = 2.82;
 export const NAME = { 1: 'P', 2: 'C', 3: '1B', 4: '2B', 5: '3B', 6: 'SS', 7: 'LF', 8: 'CF', 9: 'RF' };
 const OF = [7, 8, 9], IF = [3, 4, 5, 6];
 const HITS = { single: 1, double: 2, triple: 3, home_run: 4 };
@@ -1290,7 +1293,7 @@ function throwBall(ctx, from, to, rel, a, b, fly) {
 function runnerEta(ctx, o) {
   if (!(o.from >= 1 && o.base > o.from || o.from === 0 && o.base > 1)) return false;
   const bat = o.from === 0, v = bat ? 26.5 : 27;
-  let d = 0, prev = bat ? { x: ctx.bats === 'L' ? 2.95 : -2.95, y: 0.4 } : leadOff(o.from);
+  let d = 0, prev = bat ? { x: ctx.bats === 'L' ? STANCE_X : -STANCE_X, y: 0.4 } : leadOff(o.from);
   for (const q of bat ? [...roundFirst(), ...basePath(1, o.base)] : basePath(o.from, o.base)) { d += dist(prev, q); prev = q; }
   const go = ctx.catchAt && ctx.kind === 'air_out' ? ctx.catchAt.s + 0.08 : bat ? 0.28 : 0.15;
   o.eta = go + runTime(d, v, 16, true, false);
@@ -1623,7 +1626,7 @@ function basePath(a, b, start) {
 function planRunners(ctx) {
   const { p, moves, kind, before, o, pr } = ctx;
   const bats = ctx.bats;
-  const box = { x: bats === 'L' ? 2.95 : -2.95, y: 0.4 };
+  const box = { x: bats === 'L' ? STANCE_X : -STANCE_X, y: 0.4 };
   const hr = kind === 'hr';
   const putMap = new Map((ctx.putouts || []).map((x) => [x.from, x]));
   // the outfield catch decides when runners may go (they tag up), and when the batter is out
@@ -1888,15 +1891,31 @@ function planRest(ctx) {
   for (const n of Object.keys(T)) if (T[n].legs.length || T[n].acts.length) busy.add(+n);
   const ball = ctx.firstTouch ? ctx.firstTouch.at : { x: 0, y: 150 };
   const tB = ctx.firstTouch ? ctx.firstTouch.s : 2;
+  // one man to a bag: a bag already taken by a fielder in the play (he covers it, or his run ends on
+  // it) is left to him, and second goes to one middle infielder only, the shortstop on a ball to the
+  // right side and the second baseman on one to the left, the other when that one is in the play
+  // (both went to second on every ball to the right side, and the spare one on a play the other
+  // was already covering)
+  const taken = new Set([1, 2, 3].filter((b) => [...busy].some((k) => T[k].acts.some((a) => a.kind === 'cover' && a.base === b) || dist(T[k].end, BASE[b]) < 3)));
+  const second = (ctx.spray < 0 ? [4, 6] : [6, 4]).find((k) => !busy.has(k));
   for (let n = 1; n <= 9; n++) {
     if (busy.has(n)) continue;
     const sp = SPEED(n), tr = T[n];
     if (n === 2) continue;   // the real catcher stays at the plate
     if (IF.includes(n)) {
       // a few steps toward the ball, then to his base if a runner may come to it
-      const b = n === 3 ? 1 : n === 5 ? 3 : n === 6 && ctx.spray < 0 ? null : 2;
-      if (b && (kind !== 'air_out' || n === 3)) { const arr = tr.run(sp.react + 0.1, [basePoint(b, 'bag')], { toRest: true }); tr.act(arr, 'cover', { base: b }); }
-      else tr.run(sp.react, [lerp(F[n], ball, 8 / Math.max(8, dist(F[n], ball)))], { toRest: true, v: 10 });
+      const b = n === 3 ? 1 : n === 5 ? 3 : n === second ? 2 : null;
+      if (b && !taken.has(b) && (kind !== 'air_out' || n === 3)) { taken.add(b); const arr = tr.run(sp.react + 0.1, [basePoint(b, 'bag')], { toRest: true }); tr.act(arr, 'cover', { base: b }); }
+      else {
+        // (and stops 5 ft short of a bag: a middle infielder played up the middle, behind second, took
+        // his steps onto the bag his partner covers)
+        let q = lerp(F[n], ball, 8 / Math.max(8, dist(F[n], ball)));
+        for (const g of BASE.slice(1, 4)) {
+          const d = dist(q, g);
+          if (d < 5) { const u = d > 0.1 ? q : F[n], k = dist(u, g) || 1; q = { x: g.x + (u.x - g.x) * 5 / k, y: g.y + (u.y - g.y) * 5 / k }; }
+        }
+        tr.run(sp.react, [q], { toRest: true, v: 10 });
+      }
     } else if (n === 1) {
       // backs up a base or drifts toward the line
       tr.run(0.4, [{ x: 4, y: 52 }], { v: 8, toRest: true });
@@ -1906,6 +1925,18 @@ function planRest(ctx) {
       if (go > 4) tr.run(sp.react + 0.15, [lerp(F[n], ball, go / d)], { toRest: true, v: kind === 'ground_play' ? 14 : 22 });
     }
     void tB;
+  }
+  // a diver with nothing more to do gets up and steps off a bag another man holds (a shortstop laid
+  // out by second got up on the bag the second baseman was covering)
+  for (const n of busy) {
+    const tr = T[n], last = tr.acts[tr.acts.length - 1];
+    if (!last || last.kind !== 'dive') continue;
+    for (let b = 1; b <= 3; b++) {
+      const g = BASE[b], e = tr.end, d = dist(e, g);
+      if (d >= 5 || !Object.keys(T).some((k) => +k !== n && dist(T[k].end, g) < 3)) continue;
+      const u = d > 0.1 ? e : { x: g.x + 1, y: g.y }, k = dist(u, g);
+      tr.run(tr.free, [{ x: g.x + (u.x - g.x) * 5 / k, y: g.y + (u.y - g.y) * 5 / k }], { toRest: true, v: 6 });
+    }
   }
 }
 
@@ -2333,6 +2364,21 @@ export function passing(plan) {
   return null;
 }
 
+/** Two fielders standing still on one bag at once (within 3 ft of it, both under 2 ft/s), the
+    first such moment, or null. A man running across a bag another holds is not standing on it. */
+export function stillOnBag(plan) {
+  const end = plan.realDur || 8;
+  for (let t = 0; t <= end; t += 0.1) for (const base of [1, 2, 3]) {
+    const on = [];
+    for (let n = 1; n <= 9; n++) {
+      const f = plan.fielders[n]; if (!f) continue;
+      const q = f.at(t);
+      if (Math.hypot(q.x - BASE[base].x, q.y - BASE[base].y) < 3 && !(q.spd > 2)) on.push(n);
+    }
+    if (on.length > 1) return { a: on[0], b: on[1], base, t };
+  }
+  return null;
+}
 export function verify(pr, plan) {
   const bad = [];
   const o = plan.outcome, ip = pr.inPlay || {};
@@ -2365,6 +2411,9 @@ export function verify(pr, plan) {
   for (const sg of plan.segs) if (sg.kind === 'throw') { const b = ballAt(plan, sg.t0 - 1e-3); if (b.by !== sg.from) bad.push(`a throw from ${NAME[sg.from]} at ${sg.t0.toFixed(2)} s while ${b.by ? NAME[b.by] : 'nobody'} has the ball`); }
   // a tag is made with the ball: the man who tags holds it as he does
   for (const e of plan.events) if (e.kind === 'out' && !e.force && e.by) { const b = ballAt(plan, e.s); if (b.by !== e.by) bad.push(`${NAME[e.by]} tags the runner from ${e.runner} at ${e.s.toFixed(2)} s while ${b.by ? NAME[b.by] : 'nobody'} has the ball`); }
+  // one man to a bag: two fielders never stand on one bag together (stillOnBag())
+  const two = stillOnBag(plan);
+  if (two) bad.push(`${NAME[two.a]} and ${NAME[two.b]} both stand on ${two.base} at ${two.t.toFixed(2)} s`);
   // the ball
   if (label === 'home_run') {
     if (o.ball !== 'over' || !o.wall || o.wall.z <= WALL_H + BALL_R) bad.push('home run does not clear the wall');

@@ -18,12 +18,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=29';
+import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=30';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=14';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=35';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=36';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=46';
+import { kitFor } from './people.js?v=47';
 import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 

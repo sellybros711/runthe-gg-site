@@ -30,7 +30,7 @@
 import * as THREE from 'three';
 import { P, FT } from './units.js?v=1';
 import { assetUrl } from './load.js?v=9';
-import { BASE, MOUND } from './inplay-plan.js?v=29';
+import { BASE, MOUND } from './inplay-plan.js?v=30';
 
 const MASK_FT = 120;        // the mask covers 120 x 120 ft centred on the plate
 const MASK_PX = 2048;

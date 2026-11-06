@@ -68,11 +68,12 @@ function hashId(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.c
    least far enough inside to touch the nearest drawn hitter; BODY_FAR is, for each tenth of the
    hitter's zone height from BODY_LO tenths, the furthest any drawn hitter's body front sits from the
    plate's centre (catcher's view feet), measured by shut-the-door/pipeline/hbp_reach.mjs on the 272
-   hitters of the 30 packs, 2026-11-05. The scene's ball crosses at least that far inside, so it
+   hitters of the 30 packs, 2026-11-06, with his feet 2.82 ft off the plate's centre (people.js
+   setupBatter). The scene's ball crosses at least that far inside, so it
    meets whoever is batting. Only the drawn flight moves: the engine's crossing is the result. */
 const BODY_LO = -11;
-const BODY_FAR = [3.04, 2.99, 2.89, 2.58, 2.63, 2.64, 2.66, 2.6, 2.56, 2.51, 2.46, 2.4, 2.3, 2.36, 2.43, 2.48,
-  2.57, 2.67, 2.7, 2.7, 2.69, 2.61, 2.58, 2.28, 1.72, 1.69, 1.74, 1.72, 1.7, 1.63, 1.67, 1.77];
+const BODY_FAR = [2.91, 2.86, 2.76, 2.45, 2.5, 2.51, 2.53, 2.47, 2.43, 2.38, 2.33, 2.27, 2.17, 2.23, 2.3, 2.35,
+  2.44, 2.54, 2.57, 2.57, 2.56, 2.48, 2.45, 2.15, 1.59, 1.56, 1.61, 1.59, 1.57, 1.5, 1.54, 1.64];
 export function hbpCrossX(x, zn, bats) {
   const s = bats === 'L' ? 1 : -1;
   const far = BODY_FAR[Math.max(0, Math.min(BODY_FAR.length - 1, Math.floor(zn * 10) - BODY_LO))];

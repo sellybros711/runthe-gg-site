@@ -15,6 +15,7 @@ import { measureHead, wear, wornShade } from './headgear.js?v=5';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=9';
+import { STANCE_X } from './inplay-plan.js?v=30';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -706,8 +707,12 @@ export class People {
     pose(b, { [b.clip]: [0, 1] });
     const f0 = wpos(b.bones[`foot_${front}`]), back0 = wpos(b.bones[`foot_${lefty ? 'l' : 'r'}`]);
     const mid = wpos(b.bones[`foot_${front}`]).add(wpos(b.bones[`foot_${lefty ? 'l' : 'r'}`])).multiplyScalar(0.5);
-    // the feet straddle a point 2.9 ft off the plate's centre on his side, level with the plate
-    const want = P(lefty ? 2.95 : -2.95, 0.55, 0);
+    // the feet straddle a point 2.82 ft off the plate's centre on his side, level with the plate. That
+    // puts the midpoint of his hips 28 in off the plate's inside edge (36.5 in from its centre) a second
+    // before the release, where Statcast's batting stance measures the average big league hitter (MLB
+    // glossary, Batting Stance: distance off plate, the hips' midpoint from the inside edge, one second
+    // before release; the league average 28 in). At 2.95 ft his hips stood 29.6 in off it
+    const want = P(lefty ? STANCE_X : -STANCE_X, 0.55, 0);
     b.root.position.x += want.x - mid.x; b.root.position.z += want.z - mid.z;
     b.root.updateMatrixWorld(true);
     ground(b);
