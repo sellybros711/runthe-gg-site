@@ -1905,6 +1905,18 @@ async function modes(w, h, full) {
   await shotM(page, 'board-signed-out');
   await page.click('#bd-signin');
   await page.waitForSelector('#sheet-auth.on #au-form');
+  /* the sheet's first field takes the focus on a timer (menus.js openSheet). It once landed late, between
+     this check's tap in the password and its typing, so the password went on the end of the email and the
+     sign-in said "fill in every field" (CI, 2026-11-06). A reader already in the sheet keeps the focus:
+     opened again with the focus put in the password in the same task, it is still there after the timer */
+  const kept = await page.evaluate(async () => {
+    window.STD_MENUS.close(true); window.STD_MENUS.show('auth');
+    document.getElementById('au-pass').focus();
+    await new Promise((r) => setTimeout(r, 150));
+    return document.activeElement && document.activeElement.id;
+  });
+  ok(kept === 'au-pass', '17 a field you are in keeps the focus when the sheet opens (' + kept + ')');
+  await page.waitForSelector('#sheet-auth.on #au-form');
   await page.fill('#au-email', 'mock@example.com');
   await page.fill('#au-pass', 'mockpass');
   await page.click('#au-form button[type=submit]');
