@@ -34,7 +34,7 @@
  *
  * THE NEXT HITTER WALKS UP (walkin.js). Between at bats, a new hitter set after a pitch has been
  * played walks in from the on deck side and settles into his stance (about 2 to 3 s), drawn every
- * frame. Any tap but the header or a sheet, or a key, skips straight to the stance, and play() and
+ * frame (an at bat that ends on a ball in play cuts back to an empty box: batterAway). Any tap but the header or a sheet, or a key, skips straight to the stance, and play() and
  * pickoff() always start from it (the walk ends first), so the first pitch is never thrown mid walk
  * and the delivery, its timing and the plate are as without it. Never under reduced motion, never
  * under the checks' stepped clock unless they ask (STD_STAGE_TEST.walk). Nothing pops up: motion only.
@@ -322,6 +322,7 @@ class Stage {
   }
 
   setBatter(b) {
+    if (this.away) this.batterAway(false);
     // the same hitter again (the home screen dressed him already): only the frame, from the set (a
     // play may have run since: framed where it ended, a hitter knocked down was framed lying there)
     if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) {
@@ -592,6 +593,17 @@ class Stage {
   idleLay(life, k) {
     if (!(k > 0)) return;
     for (const r of IDLE_ROLES) if (this.people[r]) IDLE.apply(this.people[r], r, life.seeds[r], life.clock, life.A * k);
+  }
+
+  /** The hitter off the field: an at bat that ends on a ball in play cuts back from the broadcast to an
+      empty box (he ran, or walked off, while the broadcast was on), so the next hitter walks into it. He
+      comes back with the next setBatter, play or pickoff. */
+  batterAway(on) {
+    const b = this.people && this.people.batter;
+    if (!b) return;
+    this.away = !!on;
+    b.root.visible = !on;
+    if (b.bat) b.bat.visible = !on;
   }
 
   /** THE NEXT HITTER WALKS UP (walkin.js, the header). walkStart begins it on the set just posed;
@@ -973,6 +985,7 @@ class Stage {
   /** A pickoff throw between pitches, to its end, then back to the set (the header). */
   pickoff(opts) {
     this.walkEnd();
+    if (this.away) this.batterAway(false);
     const p = this.playing = this.pickoffOnce(opts);
     const clear = () => { if (this.playing === p) this.playing = null; };
     p.then(clear, clear);
@@ -1057,6 +1070,7 @@ class Stage {
   play(opts) {
     // the pitch starts from his stance: a walk up still on ends there first
     this.walkEnd();
+    if (this.away) this.batterAway(false);
     this.pitched = true;
     const p = this.playing = this.playOnce(opts);
     const clear = () => { if (this.playing === p) this.playing = null; };
@@ -1176,7 +1190,7 @@ class Stage {
             // mound, as television does, rather than leave the canvas on a long lens full of grass until
             // the next hitter (after the outing's last play nothing else would bring the set back)
             // (a foul ends on his own view already, the hitter back in his box: the set comes with the next pitch)
-            if (run) { this.inplay.end(this.camera); if (!foulCut) this.preview(); this.render(); }
+            if (run) { this.inplay.end(this.camera); if (!foulCut) this.preview(); this.batterAway(!foulCut && !!pr.paOver); this.render(); }
           }
         } catch (e) { console.error('the end of the pitch failed', e); trace.error = String(e && e.message || e); }
         this.judgeTier(gaps);
