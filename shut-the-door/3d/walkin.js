@@ -37,7 +37,7 @@
  *   restoreSet(w)                               the set's pose back, value for value
  */
 import * as THREE from 'three';
-import { wpos, twoBoneIK, rotateWorld } from './rig.js?v=1';
+import { wpos, twoBoneIK, rotateWorld, aimBone } from './rig.js?v=1';
 import { FT, smooth, clamp01 } from './units.js?v=1';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -56,7 +56,11 @@ const STEP = { len: 0.37, side: 0.055, reach: 0.45, swing: 0.8, swingMax: 0.42, 
    knee's bend under the IK, the trunk a little turn, the arms a walk's swing, the arm with the bat less */
 const STRIDE = { leg: 0.6, trunk: 0.35, head: 0.3, arm: 0.4, batArm: 0.22, fingers: 0 };
 // the elbows of a jog are bent near square; a walk's hang lower: this much of the way to straight
-const ELBOW_OPEN = 0.45;
+const ELBOW_OPEN = 0.6;
+/* a jog carries the upper arms forward and up, the hands out in front of him; a walk's hang down at his
+   sides. Each upper arm is aimed down, keeping this share of the clip's swing ahead and behind, a
+   little out from his side (ARM_OUT, a share of straight down) */
+const ARM_SWING = 0.55, ARM_OUT = 0.14;
 // the next batter's circle, degrees round from centre field toward his own side (field.js)
 const ON_DECK = 125;
 // the bat carried in the bottom hand with the barrel up, tipped this far ahead of upright and a
@@ -301,6 +305,7 @@ function startFt(w, cam) {
 function carryOf(w) {
   poseCycle(w, 0);
   placeRoot(w, w.heading, w.end);
+  armsDown(w);
   const H = w.hand.matrixWorld;
   const bat = new THREE.Matrix4().multiplyMatrices(H, w.batIn);
   const pos = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
@@ -359,6 +364,17 @@ function feetTo(w, s, wgt) {
   }
 }
 
+/** The upper arms hung at his sides, swinging ahead and behind as the clip does (ARM_SWING). */
+function armsDown(w) {
+  const B = w.p.bones, left = new THREE.Vector3().crossVectors(UP, w.dir);
+  for (const f of ['l', 'r']) {
+    const S = wpos(B['upperarm_' + f]), E = wpos(B['lowerarm_' + f]);
+    const d = E.sub(S).normalize();
+    const want = UP.clone().negate().addScaledVector(w.dir, d.dot(w.dir) * ARM_SWING).addScaledVector(left, (f === 'l' ? 1 : -1) * ARM_OUT);
+    aimBone(B['upperarm_' + f], B['lowerarm_' + f], want.normalize());
+  }
+}
+
 /** Pose him s seconds into the walk. Returns false once the walk is over (he is in his stance, the
     set's own pose, put back value for value). */
 export function lay(w, s) {
@@ -372,6 +388,7 @@ export function lay(w, s) {
   // (he turns from his heading to his stance's facing as he settles)
   const turn = Math.atan2(Math.sin(w.yawSet - w.heading), Math.cos(w.yawSet - w.heading));
   placeRoot(w, w.heading + turn * smooth(clamp01(k * 1.4)), at);
+  armsDown(w);
   // his hips low enough for both legs to reach their spots (a straight leg at most LEG_MAX of its length)
   let drop = 0;
   for (const f of ['l', 'r']) {
