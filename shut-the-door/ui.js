@@ -2567,10 +2567,10 @@ function pitchRow(p, clip, sel) {
     (clip ? '<button class="pc-clip" type="button" data-clip="' + p.n + '" aria-label="' + esc('Clip ' + title) + '"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip</button>' : '') +
     '</div>';
 }
-/* the at bat's own Clip, under the detail: every pitch of it in order, one video (clip-ui.js) */
+/* the at bat's own Clip, under its pitches: every pitch of it in order, one video (clip-ui.js) */
 function abClipBtn(ab) {
   return '<button class="ab-clip" type="button" data-abclip="' + (ab.from + 1) + '" data-abto="' + ab.to + '" aria-label="' + esc('Clip the at bat: ' + (ab.name || 'this hitter') + ', ' + plural(ab.pitches.length, 'pitch', 'pitches')) + '">' +
-    '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip at bat</button>';
+    '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip at bat<small>' + esc(plural(ab.pitches.length, 'pitch', 'pitches')) + '</small></button>';
 }
 /* the picked pitch, beside the zone */
 function pitchDetail(ab, p) {
@@ -2599,8 +2599,8 @@ function abCard(ab, real, i, col, bat) {
   if (!ab) return '<article class="cmp-bat ab never"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head + vs + '</article>';
   return '<article class="cmp-bat ab" data-ab="' + i + '"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head +
     '<div class="ab-body">' + kzoneSVG(ab).replace('data-pick="' + pick + '"', 'data-pick="' + pick + '" data-on="1"') +
-    '<div class="ab-side"><div class="ab-dt" aria-live="polite">' + pitchDetail(ab, cur) + '</div>' + (clip ? abClipBtn(ab) : '') + '</div></div>' +
-    '<div class="ab-list">' + ab.pitches.map(function (p) { return pitchRow(p, clip, p.n === pick); }).join('') + '</div>' + vs + '</article>';
+    '<div class="ab-dt" aria-live="polite">' + pitchDetail(ab, cur) + '</div></div>' +
+    '<div class="ab-list">' + ab.pitches.map(function (p) { return pitchRow(p, clip, p.n === pick); }).join('') + (clip ? abClipBtn(ab) : '') + '</div>' + vs + '</article>';
 }
 /* a tap on a pitch (its row or its mark): light it and show its detail. Nothing else moves */
 function pickPitch(card, n) {
