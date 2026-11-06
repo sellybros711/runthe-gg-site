@@ -1116,7 +1116,7 @@
      the page's PXG_EW_PAL): the frame, the lens, a strap, a trim and the inside of a mask. The Phantom Mask is its
      own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
   const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
-    ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'},
+    ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'}, ppemeraldspecs:{as:'shades',frame:'%',lens:'Q'},
     ppphantommask:{as:'mask',frame:'%',trim:'*',inner:'a',mark:'=',strap:'+'} };
   function ewColoursPP(d,EP){ const o={}; for(const k of ['frame','lens','strap','trim','inner','mark']) if(d[k]&&EP[d[k]]) o[k]='x:'+EP[d[k]];
     o.lens=o.lens||'x:#14161e'; o.frame=o.frame||'x:#26272d'; return o; }
@@ -1665,6 +1665,15 @@
       push(ellipsoid(Q(2.6,3.3,-1.6*s),AXs,[1.2,0.7,0.6],X(P.f),{gloss:3,noCast:1}));                           // its shine
       push(ellipsoid(Q(-0.2,6.6),AXs,[3.9,0.7,3.95],X(P.b),{gloss:2,cut:l=>Math.hypot(l[0],l[2])>0.78}));   // the ankle band
       push(ellipsoid(Q(-0.2,7.3),AXs,[3.1,0.5,3.15],X('#14302c'),{noCast:1})); },
+    // Silver Shoes (Oz's world prize): a low shoe of polished silver on a thin silver sole, a bright shine on the toe and a
+    // little silver buckle on the front
+    ppsilvershoes(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.6,0.45),AXs,[5.7,0.6,3.3],X(P.s),{gloss:3}));                                          // the thin sole
+      push(ellipsoid(Q(3.8,1.6),AXs,[2.8,1.25,3.0],X(P.W),{gloss:3}));                                         // the toe
+      push(ellipsoid(Q(0.9,2.1),AXs,[3.3,1.7,2.95],X(P.W),{gloss:3}));
+      push(ellipsoid(Q(-0.2,3.4),AXs,[3.5,2.2,3.5],X(P.W),{gloss:3}));                                         // the heel, low
+      push(ellipsoid(Q(2.8,2.6,-1.4*s),AXs,[1.1,0.6,0.55],X(P.g),{gloss:3,noCast:1}));                          // its shine
+      push(ellipsoid(Q(2.4,2.7,2.85*s),AXs,[0.6,0.5,0.25],X(P.b),{gloss:3,noCast:1})); },                       // the buckle
     // Mars Boots (Red Planet's world prize): a padded white surface boot on a thick rust tread, a blue band at the ankle
     ppmarsboots(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
       push(ellipsoid(Q(1.6,0.55),AXs,[5.8,0.8,3.4],X(P.s),{gloss:0}));                                         // the rust tread
@@ -1739,6 +1748,8 @@
     ppwobbleboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:3,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45)); push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'x:'+P.W,{gloss:3}));
       push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },
+    ppsilvershoes(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:3,bias:.15}));
+      push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(ellipsoid(add(ank,sc(sax[1],0.2)),sax,[2.65,1.6,2.75],'x:'+P.W,{gloss:3})); },
     ppmarsboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:2,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45)); push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'x:'+P.W,{gloss:2}));
       push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },
