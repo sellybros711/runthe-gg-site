@@ -35,7 +35,25 @@
     try { await nav.clipboard.writeText(t); return 'copied'; } catch (e) { return 'failed'; }
   }
 
-  var API = { text: text, send: send, URL: URL_ };
+  /* the video of the snap (clip.js) and the line, through the phone's share
+     sheet; where files cannot be shared, the video is saved and the line copied */
+  async function sendVideo(clip, t, name) {
+    var nav = root.navigator, file = null;
+    try { file = new root.File([clip.blob], name + '.' + clip.ext, { type: clip.type }); } catch (e) { file = null; }
+    if (file && nav && nav.share && nav.canShare && nav.canShare({ files: [file] })) {
+      try { await nav.share({ files: [file], text: t }); return 'shared'; }
+      catch (e) { if (e && e.name === 'AbortError') return 'cancelled'; }
+    }
+    try {
+      var u = root.URL.createObjectURL(clip.blob), a = root.document.createElement('a');
+      a.href = u; a.download = name + '.' + clip.ext; a.click();
+      setTimeout(function () { root.URL.revokeObjectURL(u); }, 2000);
+    } catch (e) { return send(t); }
+    try { await nav.clipboard.writeText(t); } catch (e) {}
+    return 'saved';
+  }
+
+  var API = { text: text, send: send, sendVideo: sendVideo, URL: URL_ };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.FAW_SHARE = API;
 })(typeof window !== 'undefined' ? window : this);

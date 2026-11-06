@@ -39,6 +39,7 @@ the defensive calls, the look, and the owner's decisions. Read
 | `data/fourths.json` | The daily's plays: every crucial 4th down go-for-it since 1999, from nflverse play-by-play (CC-BY 4.0), built by `build/fourths.mjs` |
 | `trivia.js` | Daily Defense: one play a day, pick the call that stops it; the engine snaps it against every call to answer |
 | `data/defense.json` | Daily Defense's schedule: the play and distance each day, only days with a clear answer, built by `build/trivia.mjs` |
+| `clip.js` | The video of a snap for Share: the stadium replay recorded with the logo, the situation, the captions and the result |
 | `flow.js` | Play, the video game: 4th and what?, draw it (the Studio in game mode), snap it in 3D, the result card and its Save card |
 | `app.js` | the shell: the six views, the situation, the Studio's draft, the account, the save box |
 | `studio.js` | the Coach Studio: Move, Route, Block, Run, Read, Motion, Erase, the players panel, the card, flip |
