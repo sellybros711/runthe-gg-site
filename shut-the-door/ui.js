@@ -2600,7 +2600,7 @@ function abCard(ab, real, i, col, bat) {
   return '<article class="cmp-bat ab" data-ab="' + i + '"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head +
     '<div class="ab-body">' + kzoneSVG(ab).replace('data-pick="' + pick + '"', 'data-pick="' + pick + '" data-on="1"') +
     '<div class="ab-dt" aria-live="polite">' + pitchDetail(ab, cur) + '</div></div>' +
-    '<div class="ab-list">' + ab.pitches.map(function (p) { return pitchRow(p, clip, p.n === pick); }).join('') + (clip ? abClipBtn(ab) : '') + '</div>' + vs + '</article>';
+    '<div class="ab-list">' + ab.pitches.map(function (p) { return pitchRow(p, clip, p.n === pick); }).join('') + '</div>' + (clip ? abClipBtn(ab) : '') + vs + '</article>';
 }
 /* a tap on a pitch (its row or its mark): light it and show its detail. Nothing else moves */
 function pickPitch(card, n) {
