@@ -4346,6 +4346,10 @@ function chestLuck(key, id, base){ var k = chestRoll(key, id), h = S.host || {},
   return { coins:0, msg:'' }; }
 function trailSpec(tid, from, landed){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
+  /* A SPACE WORLD'S GREETER WAITS ON THE FAR SIDE (the owner, 2026-11-06, of a phone screenshot: "The people with
+     exclamation marks dont talk to you on mobile"). On a crossing the greeter waits for him to pass the gate, and a space
+     crossing's gate is the launch pad at its far end: he flies from it, never past it, so the greeter stood there for good.
+     A world reached by ship or rocket has its greeter on the landed walk instead, the first thing after the landing.
   /* landed: the walk on the far side of a space crossing, from the ship to the hole (trail.js, spec.landed): the new world's
      own walk, not a crossing, with no hole behind it and nothing to find on it */
   landed = !!landed && from >= 1 && from % K === 0 && tid === 'main' && !!SPACE_TRIP[th];
@@ -4354,7 +4358,7 @@ function trailSpec(tid, from, landed){
   var leg = (to - 1) % K + 1, st = !cross && tid === 'main' ? stopOf(th, leg) : '', kitAs = st ? th + '~' + st : null;   // the walk goes where its holes go (land.js, STOPS)
   // a world with gyms (gyms.js) carries them on its two trails and none of the small puzzles on the rest
   var gd = !cross && tid === 'main' ? gymAt(th, leg) : null;
-  return { gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:!landed && tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, landed:landed, key:tid + ':' + to + (landed ? ':landed' : ''), tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to + (landed ? ':landed' : '')), theme:th, theme0:th0, cross:cross, space:cross && tid === 'main' && SPACE_TRIP[th] ? SPACE_TRIP[th] : null, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:landed ? {} : trailLoot(tid, to), holeTo:to <= TR.levels.length && !(cross && tid === 'main' && SPACE_TRIP[th]) ? courseFoot(to, tid) : null, holeFrom:from >= 1 && !landed ? courseFoot(from, tid) : null, greet:from % K === 0 && !landed ? greetSpec(tid, w, to) : null };
+  return { gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:!landed && tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, landed:landed, key:tid + ':' + to + (landed ? ':landed' : ''), tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to + (landed ? ':landed' : '')), theme:th, theme0:th0, cross:cross, space:cross && tid === 'main' && SPACE_TRIP[th] ? SPACE_TRIP[th] : null, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:landed ? {} : trailLoot(tid, to), holeTo:to <= TR.levels.length && !(cross && tid === 'main' && SPACE_TRIP[th]) ? courseFoot(to, tid) : null, holeFrom:from >= 1 && !landed ? courseFoot(from, tid) : null, greet:from % K === 0 && (tid === 'main' && SPACE_TRIP[th] ? landed : !landed) ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
    hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
@@ -5981,7 +5985,7 @@ RTT_PUTT.heart = function(n){ return heartSvg(n == null ? PER_HEART : n); };   /
 RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
 RTT_PUTT._trailPic = function(){ var k = S && S.trailTo ? trailKey(trailSpec(S.trailTo.tid, S.trailTo.to - 1)) : null; return k ? TRC[k] : null; };
-RTT_PUTT._trailPlan = function(from, tid){ return trailPlan(trailSpec(tid || 'main', from)); };
+RTT_PUTT._trailPlan = function(from, tid, landed){ return trailPlan(trailSpec(tid || 'main', from, landed)); };
 RTT_PUTT._trailLeft = function(n, tid){ return trailLeft(tid || 'main', n); };
 RTT_PUTT._secretFrom = secretFrom;
 RTT_PUTT._holeTips = function(n, tid){ var L = tourOf(tid || 'main').levels[n - 1]; return holeTips(n, tid || 'main', L ? threeOf(L) : null); };

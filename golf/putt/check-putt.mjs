@@ -1148,6 +1148,14 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       claim(tp.kept && tp.paidAgain === 0, `${gid}: opened again it shows solved, and the vault never pays twice (${JSON.stringify([tp.kept, tp.paidAgain])})`); }
     }   // end of the rooms
     if (RUN_PAGE){   // ---- the page, part two
+    /* A SPACE WORLD'S GREETER TALKS AFTER THE LANDING (the owner, 2026-11-06: "The people with exclamation marks dont
+       talk to you on mobile"). On a space crossing the greeter waited for him to pass the launch pad, which he flies from,
+       never past: they stood with their mark up for good. They are on the landed walk now, and nowhere on the crossing. */
+    const sg = await pg.evaluate(() => { const TR = window.RTT_PUTT._trailPlan, out = []; const K = 18;
+      for (let f = K; f < 400; f += K){ let a, b2; try{ a = TR(f); b2 = TR(f, 'main', true); }catch(e){ break; } if (!a || !a.spec || a.spec.to !== f + 1 || !window.RTT_PUTT._state || f >= window.RTT_PUTT.LEVELS.length) break;
+        if (!a.spec.space) continue; out.push({ f, cross:!!a.host, landed:!!b2.host, landedGate:!!b2.gate }); }
+      return out; });
+    claim(sg.length >= 5 && sg.every(o => !o.cross && o.landed && !o.landedGate), `a space world's greeter waits on the landed walk, where no gate holds them, and not on the crossing that ends at the launch pad (${JSON.stringify(sg)})`);
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.
@@ -1175,7 +1183,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       const L3 = T().life(), P3 = T().plan(); out.ships = L3.ships.length; out.afloat = L3.ships.every(q => q.y < P3.b[1] || q.y > P3.b[3] || P3.seaAt(q.x, q.y));
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
-      out.greeters = []; for (let w = 0; w < 16; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      out.greeters = []; for (let w = 0; w < 16; w++){ let P = window.RTT_PUTT._trailPlan(w * 18); if (P.spec.space) P = window.RTT_PUTT._trailPlan(w * 18, 'main', true); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }   // a space world's greeter is on its landed walk
       for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       out.secrets = []; out.secretElse = []; out.secretAt = [];
