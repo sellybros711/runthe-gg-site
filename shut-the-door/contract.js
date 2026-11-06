@@ -218,6 +218,31 @@ function absDist(x, zn, zoneFt) {
 function touchDist(x, zn, zoneFt) {
   return zoneDist(x, zn, zoneFt) + BALL_IN;
 }
+/* THE REACH (rules 11, 2026-11-06, the owner's call after QA: a hit by pitch on a fastball just off
+   the black, the ball passing in front of the hitter). The outcome row is the cell's, and the inside
+   column runs out forever, so its real hit by pitch rate (the pitches that hit real hitters, far
+   inside) was played on balls an inch off the plate. From rules 11 a pitch is a hit by pitch only
+   when its crossing reaches the batter's body: insideFt (the ball's centre, feet from the plate's
+   centre toward his side) at least hbpReach(zn).
+   HBP.REACH: MEASURED on the hitter the 3D draws (pipeline/hbp_reach.mjs, 2026-11-05: every hitter
+   of the 30 packs, 272, posed in his take where people.js stands him, his feet straddling 2.95 ft
+   off the plate's centre): for each tenth of his zone's height (zn, from LO tenths), the nearest
+   any hitter's body comes to the plate's centre in that band or the band either side, less a ball's
+   radius (BALL_IN). In his zone's height his front hip and thigh, 2.14 ft (so 2.02 ft); his hands
+   above the zone, 1.48 ft; the helmet's bill at head height, 1.10 ft; his legs below, 2.01 ft.
+   Past the table's ends the end band's number holds. A ball short of it cannot touch him. */
+const HBP = Object.freeze({
+  LO: -11,
+  REACH: Object.freeze([1.89, 1.88, 1.88, 1.88, 1.91, 1.98, 2.29, 2.22, 2.16, 2.04, 2.02, 2.02, 2.02, 2.02, 2.04, 2.08,
+    2.14, 2.17, 2.13, 1.45, 1.35, 1.26, 1.18, 1.13, 1.06, 0.98, 0.97, 0.97, 0.97, 1, 1.01, 1.05]),
+});
+function hbpReach(zn) {
+  const i = Math.max(0, Math.min(HBP.REACH.length - 1, Math.floor(zn * 10) - HBP.LO));
+  return HBP.REACH[i];
+}
+/* How far inside the ball's centre crossed, feet: toward the batter's side positive (catcher's view:
+   a right handed batter stands at -x). */
+function insideFt(x, bats) { return bats === 'L' ? x : -x; }
 function calledStrikeP(d) {
   const D = UMPIRE.D, P = UMPIRE.P;
   if (d <= D[0]) return P[0];
@@ -478,7 +503,7 @@ const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
-  UMPIRE, zoneDist, BALL_IN, absDist, touchDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
+  UMPIRE, zoneDist, BALL_IN, absDist, touchDist, HBP, hbpReach, insideFt, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

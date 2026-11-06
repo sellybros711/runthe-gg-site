@@ -60,6 +60,10 @@
  *      Survivor board, one run a day and when the next opens) and the
  *      archive (only when entitlements say Pro)
  *
+ *  21. the live minimap: while a ball is in play on the 3D mound its runner and ball dots move frame
+ *      by frame (inplay.js fieldAt, only read), and after the play they go and the lit bases are the
+ *      engine's. Through the mock's walk-off, at 390x844 light and 1440x900 dark (STD_MINIMAP=1 alone)
+ *
  *  19. clips: a Clip on every pitch of the result, never open by itself, the replay plays to its end
  *      (and records where it can), and its link opens the viewer on a page of its own, writing nothing
  *
@@ -113,10 +117,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
-import os from 'node:os';
-import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { treeHash } from '../lab/pipeline/checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -153,6 +157,99 @@ const watchdog = setInterval(() => {
 }, 5000);
 watchdog.unref();
 
+const argVal = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
+/* The N shards of UNITS (below): the heaviest first, each to the lightest shard so far, ties to the
+   lower shard; each shard's units in the whole run's order. */
+function shardPlan(n) {
+  const sh = Array.from({ length: n }, () => ({ secs: 0, units: [] }));
+  const order = UNITS.map((u, k) => k).sort((a, b) => UNITS[b][1] - UNITS[a][1] || a - b);
+  for (const k of order) { let best = 0; for (let j = 1; j < n; j++) if (sh[j].secs < sh[best].secs) best = j; sh[best].secs += UNITS[k][1]; sh[best].units.push(k); }
+  for (const x of sh) x.units = x.units.sort((a, b) => a - b).map((k) => UNITS[k]);
+  return sh;
+}
+/* The guard: the shards together are the whole run, each unit once. Throws on a gap or an overlap. */
+function coverCheck(lists) {
+  const seen = new Map(), names = UNITS.map((u) => u[0]);
+  if (new Set(names).size !== names.length) throw new Error('two units share a name');
+  lists.forEach((l, j) => { for (const nm of l) { if (!names.includes(nm)) throw new Error(`shard ${j}: unit "${nm}" is not in the run`); if (seen.has(nm)) throw new Error(`unit "${nm}" in shard ${seen.get(nm)} and shard ${j}`); seen.set(nm, j); } });
+  const gap = names.filter((nm) => !seen.has(nm));
+  if (gap.length) throw new Error(`not in any shard: ${gap.join('; ')}`);
+}
+/* THE FULL RUN, AS UNITS, AND ITS SHARDS. Each unit opens its own context (nothing carries from one to
+   the next but the browser), so a unit plays the same alone, in any shard, as in the whole run. The
+   seconds are each unit's wall time on CI (run 42131897257, 2026-11-05, 2,418 s in all), only to
+   balance the shards: --shard I/N takes the heaviest unit first, each to the lightest shard so far
+   (ties to the lower shard), and runs its own in the whole run's order. Every unit is in exactly one
+   shard, so the N shards together are the whole run.
+     --shard I/N      the I-th of N (0-based)
+     --plan N         print the N shards and check they cover every unit once, with no browser
+     --done-out F     what this run finished, for --combine
+     --combine DIR    the shards' files: fails unless every unit finished in exactly one shard of the
+                      same code with nothing failed (the guard that the shards add up to the run) */
+const UNITS = [
+  ['390x844 light, steps 1 to 14', 167, () => run(390, 844, 'light')],
+  ['1b the loading screen, 390x844', 6, () => bootStuck(390, 844)],
+  ['1440x900 dark, steps 1 to 14', 193, () => run(1440, 900, 'dark')],
+  ['15 the running game, 390x844', 65, () => runningGame(390, 844)],
+  ['18 the switch, 390x844', 79, () => halfSwitch(390, 844)],
+  ['16 home from the mound, 390x844', 65, () => homeTrip(390, 844)],
+  ['19 clips, 390x844', 170, () => clips(390, 844)],
+  ['19 clips, 1440x900', 202, () => clips(1440, 900)],
+  ['20 after the outing, 390x844 light', 24, () => postgame(390, 844, 'light')],
+  ['20 after the outing, 1440x900 dark', 35, () => postgame(1440, 900, 'dark')],
+  ['16 every window size', 73, () => sizeSweep()],
+  ['11 door_shut, 390x844', 89, () => ending(390, 844, 'door_shut', '&mockLesson=none'), '\nthe four endings'],
+  ['11 tie_held, 390x844', 89, () => ending(390, 844, 'tie_held', '&mockAuth=1')],
+  ['11 doors_open, 390x844', 89, () => ending(390, 844, 'doors_open', '&mockPro=none')],
+  ['11 walk_off, 390x844', 89, () => ending(390, 844, 'walk_off', '&mockProxy=1&mockNull=1&mockAuth=1')],
+  ['11 door_shut, 1440x900', 89, () => ending(1440, 900, 'door_shut', '&mockLesson=none')],
+  ['11 tie_held, 1440x900', 89, () => ending(1440, 900, 'tie_held', '&mockPro=none')],
+  ['11 doors_open, 1440x900', 89, () => ending(1440, 900, 'doors_open', '&mockAuth=1')],
+  ['11 walk_off, 1440x900', 89, () => ending(1440, 900, 'walk_off', '&mockPro=none')],
+  ['17 the modes, 390x844', 303, () => modes(390, 844, true)],
+  ['17 the modes, 1440x900', 144, () => modes(1440, 900, false)],
+  ['18 two halves, 390x844', 92, () => halves(390, 844, false)],
+  ['18 two halves, 1440x900', 78, () => halves(1440, 900, true)],
+  ['19 the voice of the ump, 390x844', 7, () => voicesWalk(390, 844)],
+  ['21 the live minimap, 390x844 light', 60, () => liveMinimap(390, 844, 'light')],
+  ['21 the live minimap, 1440x900 dark', 60, () => liveMinimap(1440, 900, 'dark')],
+];
+const MINE = new Set(), DONE = [];
+const SHARD = (() => { const v = argVal('--shard'); if (!v) return { i: 0, n: 1 }; const [i, n] = v.split('/').map(Number); if (!(n >= 1 && i >= 0 && i < n && Number.isInteger(i) && Number.isInteger(n))) throw new Error('--shard I/N: I from 0 to N-1'); return { i, n }; })();
+for (const [name] of shardPlan(SHARD.n)[SHARD.i].units) MINE.add(name);
+if (SHARD.n > 1) { const p = shardPlan(SHARD.n)[SHARD.i]; console.log(`shard ${SHARD.i} of ${SHARD.n} (0-based): ${p.units.length} of ${UNITS.length} units, about ${p.secs} of ${UNITS.reduce((a, u) => a + u[1], 0)} s: ${p.units.map((u) => u[0]).join('; ')}`); }
+
+if (argVal('--plan')) {
+  // (no browser: the plan, and the guard on it)
+  const n = +argVal('--plan'), plan = shardPlan(n);
+  coverCheck(plan.map((p) => p.units.map((u) => u[0])));
+  plan.forEach((p, j) => console.log(`shard ${j} of ${n}: about ${p.secs} s, ${p.units.length} units: ${p.units.map((u) => u[0]).join('; ')}`));
+  console.log(`ok: the ${n} shards cover all ${UNITS.length} units, each once`);
+  process.exit(0);
+}
+if (argVal('--combine')) {
+  // (no browser: the shards' records, held as one run)
+  const dir = argVal('--combine'), tree = treeHash(), names = UNITS.map((u) => u[0]);
+  const parts = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')));
+  let bad = 0;
+  const no = (m) => { bad++; console.log('FAIL ' + m); };
+  const n = parts[0] ? parts[0].shard.n : 0, got = parts.map((q) => q.shard.i).sort((x, y) => x - y);
+  if (!n || parts.length !== n || got.some((i, k) => i !== k)) no(`${parts.length} shard files for ${n} shards (${got.join(', ')})`);
+  for (const q of parts) {
+    if (q.tree !== tree) no(`shard ${q.shard.i} ran other code (tree ${String(q.tree).slice(0, 12)}, here ${tree.slice(0, 12)})`);
+    if (q.shard.n !== n) no(`shard ${q.shard.i} is one of ${q.shard.n}, not ${n}`);
+    if (JSON.stringify(q.units) !== JSON.stringify(names)) no(`shard ${q.shard.i} had another list of units`);
+    const want = shardPlan(n)[q.shard.i] ? shardPlan(n)[q.shard.i].units.map((u) => u[0]) : [];
+    const miss = want.filter((nm) => !q.done.includes(nm));
+    if (miss.length) no(`shard ${q.shard.i} did not finish: ${miss.join('; ')}`);
+  }
+  try { coverCheck(parts.map((q) => q.done)); } catch (e) { no(e.message); }
+  const ok_ = parts.reduce((a, q) => a + q.passes, 0), failed = parts.reduce((a, q) => a + q.fails, 0);
+  for (const q of parts) console.log(`  shard ${q.shard.i}: ${q.passes} ok, ${q.fails} failed, ${q.done.length} units`);
+  if (!bad) console.log(`ok: ${n} shards, every one of the ${UNITS.length} units finished once`);
+  console.log(`\n${ok_} ok, ${failed + bad} failed`);
+  process.exit(failed || bad ? 1 : 0);
+}
 const TYPES = { '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
 const server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -1597,25 +1694,24 @@ const SHORT = [[360, 640], [320, 568]];
    than its room loses both ends. Measured with the real Inter the page loads (the rest of the check
    serves the fonts empty), at the browser check's sizes and the common iPhones. */
 const CHAL = [[320, 568], [375, 667], [375, 553], [390, 844], [393, 852], [430, 932], [844, 390], [768, 1024], [1440, 900]];
-/* Inter as Google serves it to Chromium (one variable woff2 for latin), fetched once and kept in the
-   temp folder; without the network, the Inter a machine has installed (static weights). null when
-   neither is there, and the label check then fails rather than measure another font. */
+/* Inter as Google serves it to Chromium (one variable woff2 for latin, every weight), kept in the repo
+   (test/fonts, with its OFL), so the check never reaches for the network: the curl to Google Fonts failed
+   through its retries on CI (#948, 2026-11-06) and the label went unmeasured. The file is held to the
+   SHA-256 of the one Google served (fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7,
+   2026-11-06), so it is the real Inter and not some other font under its name; the page then has to load
+   it as Inter (the label check reads document.fonts). Without it, the Inter a machine has installed
+   (static weights). null when neither is there, and the label check then fails rather than measure
+   another font. */
+const INTER_SHA256 = '3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62';
 function realInter() {
-  const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
-  const dir = path.join(os.tmpdir(), 'std-check-inter'), file = path.join(dir, 'inter-latin.woff2');
+  const file = path.join(ROOT, 'shut-the-door', 'test', 'fonts', 'inter-latin.woff2');
   const face = (w, url, fmt) => `@font-face{font-family:'Inter';font-style:normal;font-weight:${w};src:url(${url}) format('${fmt}');}`;
   const W = [400, 500, 600, 700];
   try {
-    if (!fs.existsSync(file)) {
-      const css = execFileSync('curl', ['-sSf', '--max-time', '20', '-A', UA, 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'], { encoding: 'utf8' });
-      const latin = css.split('/* latin */')[1];
-      const url = latin && (latin.match(/url\((https:[^)]+\.woff2)\)/) || [])[1];
-      if (!url) throw new Error('no latin face');
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(file + '.part', execFileSync('curl', ['-sSf', '--max-time', '30', url]));
-      fs.renameSync(file + '.part', file);
+    const buf = fs.readFileSync(file);
+    if (crypto.createHash('sha256').update(buf).digest('hex') === INTER_SHA256) {
+      return { from: 'Google Fonts\' Inter, kept in test/fonts', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/latin.woff2', 'woff2')).join('\n'), files: { 'latin.woff2': buf }, type: 'font/woff2' };
     }
-    return { from: 'Google Fonts', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/latin.woff2', 'woff2')).join('\n'), files: { 'latin.woff2': fs.readFileSync(file) }, type: 'font/woff2' };
   } catch (e) {}
   const sys = '/usr/share/fonts/opentype/inter', N = { 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold' };
   if (W.every((w) => fs.existsSync(path.join(sys, 'Inter-' + N[w] + '.otf')))) {
@@ -1702,7 +1798,7 @@ async function sizeSweep() {
   }
   /* the challenge button as the game shows it (ui.js absButton: the button unhidden, the pad abs-live),
      put back after: the full word CHALLENGE inside its button, on one line, 38 px tall at least */
-  ok(!!inter, '16 the real Inter for the challenge label' + (inter ? ' (' + inter.from + ')' : ': neither Google Fonts nor an installed Inter'));
+  ok(!!inter, '16 the real Inter for the challenge label' + (inter ? ' (' + inter.from + ')' : ': neither the kept Inter (test/fonts, its SHA-256) nor an installed Inter'));
   for (const [w, h] of inter ? CHAL : []) {
     await page.setViewportSize({ width: w, height: h });
     await page.waitForTimeout(400);
@@ -1807,10 +1903,30 @@ async function modes(w, h, full) {
   await shotM(page, 'board-signed-out');
   await page.click('#bd-signin');
   await page.waitForSelector('#sheet-auth.on #au-form');
+  /* the sheet's first field takes the focus on a timer (menus.js openSheet). It once landed late, between
+     this check's tap in the password and its typing, so the password went on the end of the email and the
+     sign-in said "fill in every field" (CI, 2026-11-06). A reader already in the sheet keeps the focus:
+     opened again with the focus put in the password in the same task, it is still there after the timer */
+  const kept = await page.evaluate(async () => {
+    window.STD_MENUS.close(true); window.STD_MENUS.show('auth');
+    document.getElementById('au-pass').focus();
+    await new Promise((r) => setTimeout(r, 150));
+    return document.activeElement && document.activeElement.id;
+  });
+  ok(kept === 'au-pass', '17 a field you are in keeps the focus when the sheet opens (' + kept + ')');
+  await page.waitForSelector('#sheet-auth.on #au-form');
   await page.fill('#au-email', 'mock@example.com');
   await page.fill('#au-pass', 'mockpass');
   await page.click('#au-form button[type=submit]');
-  await page.waitForSelector('#bd-you .bd-rank', { timeout: 30000 });
+  /* (on a timeout, say what the page shows before the throw: the sign-in's own error line, whether the
+     mock heard the sign-in, the screen and the panel, so a red run names its cause) */
+  await page.waitForSelector('#bd-you .bd-rank', { timeout: 30000 }).catch(async (e) => {
+    const at = await page.evaluate(() => ({ screen: document.body.dataset.screen, sheet: (document.querySelector('.sheet:not([hidden])') || {}).id || null,
+      auErr: (document.getElementById('au-err') || {}).textContent || null, signedIn: !!(window.STD_AUTH && window.STD_AUTH.state().signedIn),
+      you: (document.getElementById('bd-you') || {}).textContent, list: ((document.getElementById('bd-list') || {}).textContent || '').slice(0, 80) })).catch(() => null);
+    console.log(secs() + '  the board after the sign-in: ' + JSON.stringify(at));
+    throw e;
+  });
   ok(true, '17 signing in posts the daily once: the leaderboard shows your rank');
   const c2 = await oneCount(page, 's-board');
   ok(c2.head === 'leaderboard' && c2.times === 1, '17 signed in, the leaderboard: heading "' + c2.head + '", the count once ("' + c2.n + '", ' + c2.times + ' time)');
@@ -2338,6 +2454,72 @@ async function postgame(w, h, theme) {
   await ctx.close();
 }
 
+/* 21. THE LIVE MINIMAP (the owner, 2026-11-06). While a ball is in play on the 3D mound, the minimap's
+   runners and its ball move with the 3D play (inplay.js fieldAt, only read), frame by frame. After the
+   play the moving dots go and the taken bases light, and they are the engine's bases. Nothing else
+   shows between pitches. Through the mock's walk-off: a single, a single with a runner on, a home run. */
+async function liveMinimap(w, h, theme) {
+  const tag = w + 'x' + h + ' ' + theme;
+  console.log('\nthe live minimap, ' + tag);
+  step(tag + ' 21 the live minimap', 600);
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=walk_off', { meterOff: true, theme });
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell');
+  const is3d = await stageReady(page);
+  ok(is3d, '21 on the 3D mound');
+  if (!is3d) { await ctx.close(); return; }
+  const types = await page.evaluate(() => window.STD_UI.state.scn.pitcher.arsenal.map((a) => a.type));
+  let plays = 0, ranWith = 0;
+  for (let i = 0; i < 6; i++) {
+    if (await page.evaluate(() => document.getElementById('s-result').classList.contains('on'))) break;
+    const before = await page.evaluate(() => window.STD_UI.state.outing.bases);
+    // every animation frame of the pitch: where the minimap's runner and ball dots are drawn
+    await page.evaluate(() => {
+      window.STD_CHECK_MM = { frames: [], done: false, pr: null };
+      const API = window.STD_API;
+      if (!API.mmWrapped) { const go = API.throwPitch; API.throwPitch = function () { return go.apply(this, arguments).then((res) => { window.STD_CHECK_MM.pr = res.pitchResult; return res; }); }; API.mmWrapped = true; }
+      let seen = false;
+      const tick = () => {
+        const S = window.STD_UI.state, el = document.getElementById('m-mini'), g = el.querySelector('.mm-live');
+        if (S.busy) {
+          seen = true;
+          const xy = (c) => c.getAttribute('cx') + ',' + c.getAttribute('cy');
+          const b = g.querySelector('.mm-ball');
+          window.STD_CHECK_MM.frames.push({ run: [...g.querySelectorAll('.mm-run')].map(xy), ball: b ? xy(b) : null, shown: !el.hidden });
+        } else if (seen) { window.STD_CHECK_MM.done = true; return; }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await aimAndThrow(page, types, { type: types[0], cell: 12 });
+    await page.waitForFunction(() => window.STD_CHECK_MM.done, null, { timeout: PITCH_MS });
+    const r = await page.evaluate(() => {
+      const S = window.STD_UI.state, pr = window.STD_CHECK_MM.pr, el = document.getElementById('m-mini');
+      const lit = [...el.querySelectorAll('.mm-base')].reduce((a, b, k) => a | (b.classList.contains('on') ? 1 << k : 0), 0);
+      const m = el.getBoundingClientRect();
+      return { frames: window.STD_CHECK_MM.frames, result: pr.result, bases: S.outing.bases, lit, left: el.querySelectorAll('.mm-run, .mm-ball').length,
+        inView: m.left >= 0 && m.right <= innerWidth + 0.5 && m.top >= 0, side: document.documentElement.scrollWidth <= innerWidth + 1 };
+    });
+    if (r.result !== 'in_play') continue;
+    plays++;
+    const live = r.frames.filter((f) => f.ball), balls = new Set(live.map((f) => f.ball)).size;
+    ok(live.length > 5 && balls > 5, '21 pitch ' + (i + 1) + ': the ball dot follows the ball (' + balls + ' places over ' + live.length + ' frames)');
+    ok(live.some((f) => f.shown), '21 pitch ' + (i + 1) + ': the minimap shows while the ball is in play');
+    const withRun = live.filter((f) => f.run.length);
+    if (withRun.length) {
+      const first = new Set(withRun.map((f) => f.run[0])).size;
+      ok(first > 3, '21 pitch ' + (i + 1) + ': the batter\'s dot runs (' + first + ' places)');
+      if (before) { ranWith++; ok(withRun.some((f) => f.run.length >= 2) && new Set(withRun.map((f) => f.run.join(' '))).size > 3, '21 pitch ' + (i + 1) + ': with a runner on, the runners\' dots move together (bases ' + before + ' before)'); }
+    } else ok(false, '21 pitch ' + (i + 1) + ': no runner dot during the play');
+    ok(r.left === 0 && r.lit === r.bases, '21 pitch ' + (i + 1) + ': after the play the moving dots are gone and the lit bases are the engine\'s (' + r.lit + ' lit, the engine ' + r.bases + ')');
+    ok(r.inView && r.side, '21 pitch ' + (i + 1) + ': the minimap is on screen, no sideways scroll');
+  }
+  ok(plays >= 2 && ranWith >= 1, '21 the walk-off put ' + plays + ' balls in play, ' + ranWith + ' with a runner on');
+  ok(errors.length === 0, '21 the live minimap: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 /* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
    made here), the consent before the send, the send, then the owner's review: waiting, approve, approved */
 function tinyWav(ms) {
@@ -2389,41 +2571,20 @@ async function voicesWalk(w, h) {
   await ctx.close();
 }
 
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   /* STD_CLIPS=1: only the clips (19) at both sizes, for a local pass on them */
   if (process.env.STD_CLIPS === '1') { await clips(390, 844); await clips(1440, 900); throw 'quick'; }
   /* STD_POSTGAME=1: only the result's at bats and the board's line (20) at both sizes, light and dark */
   if (process.env.STD_POSTGAME === '1') { for (const t of ['light', 'dark']) { await postgame(390, 844, t); await postgame(1440, 900, t); } throw 'quick'; }
-  await run(390, 844, 'light');
+  /* STD_MINIMAP=1: only the live minimap (21) at both sizes, light and dark */
+  if (process.env.STD_MINIMAP === '1') { for (const t of ['light', 'dark']) { await liveMinimap(390, 844, t); await liveMinimap(1440, 900, t); } throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
-  if (process.env.STD_FIRST === '1') { await bootStuck(390, 844); throw 'quick'; }
-  if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
-  if (QUICK) { await run(1440, 900, 'dark'); await clips(390, 844); await postgame(390, 844, 'light'); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
-  await bootStuck(390, 844);
-  await run(1440, 900, 'dark');
-  await runningGame(390, 844);
-  await halfSwitch(390, 844);
-  await homeTrip(390, 844);
-  await clips(390, 844);
-  await clips(1440, 900);
-  await postgame(390, 844, 'light');
-  await postgame(1440, 900, 'dark');
-  await sizeSweep();
-  console.log('\nthe four endings');
-  await ending(390, 844, 'door_shut', '&mockLesson=none');
-  await ending(390, 844, 'tie_held', '&mockAuth=1');
-  await ending(390, 844, 'doors_open', '&mockPro=none');
-  await ending(390, 844, 'walk_off', '&mockProxy=1&mockNull=1&mockAuth=1');
-  await ending(1440, 900, 'door_shut', '&mockLesson=none');
-  await ending(1440, 900, 'tie_held', '&mockPro=none');
-  await ending(1440, 900, 'doors_open', '&mockAuth=1');
-  await ending(1440, 900, 'walk_off', '&mockPro=none');
-  await modes(390, 844, true);
-  await modes(1440, 900, false);
-  await halves(390, 844, false);
-  await halves(1440, 900, true);
-  await voicesWalk(390, 844);
+  if (process.env.STD_FIRST === '1') { await run(390, 844, 'light'); await bootStuck(390, 844); throw 'quick'; }
+  if (MODES) { await run(390, 844, 'light'); await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
+  if (QUICK) { await run(390, 844, 'light'); await run(1440, 900, 'dark'); await clips(390, 844); await postgame(390, 844, 'light'); await voicesWalk(390, 844); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
+  for (const [name, , go, head] of UNITS) { if (!MINE.has(name)) continue; if (head) console.log(head); await go(); DONE.push(name); }
 } catch (e) {
   if (e === 'quick') e = null; else fails++;
   if (e) {
@@ -2434,5 +2595,7 @@ try {
 }
 await browser.close();
 server.close();
+const DONE_OUT = argVal('--done-out');
+if (DONE_OUT) fs.writeFileSync(DONE_OUT, JSON.stringify({ tree: treeHash(), shard: SHARD, units: UNITS.map((u) => u[0]), done: DONE, passes, fails }));
 console.log(`\n${passes} ok, ${fails} failed`);
 process.exit(fails ? 1 : 0);

@@ -44,10 +44,12 @@ export const FPS = 60, KINK = 8, BRAKE = 90, PUSH = 45, MOVED_FT = 0.01;
 // measured on every case, 2026-11-04 (165,935 plays). Main before it, drawn straight: kink fielder 165,935
 // (every play), kink runner 165,935, kink umpire 36,477, brake fielder 4,866, brake runner 10,133, push 0,
 // moved 0. A ceiling that only comes down
+// (kink fielder 81,432 to 76,958, 2026-11-06: a timed run with time to spare jogs, its push and pull up
+// scaled to its pace, inplay-plan.js Track.arrive)
 const CEILING = {
   'brake fielder': 3857,
   'brake runner': 6849,
-  'kink fielder': 81432,
+  'kink fielder': 76958,
   'kink runner': 102480,
 };
 

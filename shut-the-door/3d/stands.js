@@ -9,10 +9,10 @@
  */
 import * as THREE from 'three';
 import { FT } from './units.js?v=1';
-import { BACKSTOP_FT } from './field.js?v=14';
+import { BACKSTOP_FT } from './field.js?v=19';
 import { assetUrl } from './load.js?v=9';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { buildCrowd } from './crowd.js?v=1';
+import { buildCrowd } from './crowd.js?v=3';
 
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
@@ -64,6 +64,11 @@ export function buildStands(scene, tex, renderer) {
     group.add(pole);
   }
 
+  // ---- the seating bowl behind the plate, for the pitcher's view (named: the broadcast hides it, as the
+  // ballpark's own bowl closes the ring there, ballpark.js; inplay.js)
+  const bowl = new THREE.Group();
+  bowl.name = 'standsBowl';
+  group.add(bowl);
   // ---- the seating bowl: concrete treads and risers, 34 rows
   const ROWS = 34, rowD = 0.86, rowH = 0.43, base = wallH + 0.1;
   const conc = tex.load(assetUrl('tex/concrete_color.webp')); conc.colorSpace = THREE.SRGBColorSpace;
@@ -77,15 +82,15 @@ export function buildStands(scene, tex, renderer) {
     concG.push(new THREE.CylinderGeometry(rad, rad, rowH, seg, 1, true, a0, aL).translate(0, y - rowH / 2, 0));
     concG.push(new THREE.RingGeometry(rad, rad + rowD, seg, 1, Math.PI / 2 - aL / 2, aL).rotateX(-Math.PI / 2).translate(0, y, 0));
   }
-  group.add(new THREE.Mesh(mergeGeometries(concG.map((g) => g.toNonIndexed())), bowlMat));
+  bowl.add(new THREE.Mesh(mergeGeometries(concG.map((g) => g.toNonIndexed())), bowlMat));
   // the suite level above the bowl: a dark glass band and a fascia
   const topY = base + ROWS * rowH, topR = R0 + 0.6 + ROWS * rowD;
   const fascia = new THREE.Mesh(new THREE.CylinderGeometry(topR, topR, 1.6, seg, 1, true, a0, aL), new THREE.MeshStandardMaterial({ color: 0x1b2633, roughness: 0.4 }));
-  fascia.position.y = topY + 0.8; group.add(fascia);
+  fascia.position.y = topY + 0.8; bowl.add(fascia);
   const glass = new THREE.Mesh(new THREE.CylinderGeometry(topR + 2, topR + 2, 4, seg, 1, true, a0, aL), new THREE.MeshStandardMaterial({ color: 0x223040, roughness: 0.08, metalness: 0.6 }));
-  glass.position.y = topY + 3.6; group.add(glass);
+  glass.position.y = topY + 3.6; bowl.add(glass);
   const upper = new THREE.Mesh(new THREE.CylinderGeometry(topR + 3, topR + 26, 22, seg, 1, true, a0, aL), new THREE.MeshStandardMaterial({ color: 0x5b6470, roughness: 0.9 }));
-  upper.position.y = topY + 5.6 + 11; group.add(upper);
+  upper.position.y = topY + 5.6 + 11; bowl.add(upper);
 
   // ---- the seats: no crowd. A repeated crowd reads as fake far sooner than empty seats do, so the
   // rows are real seats (a pan and a back each), dark, one instanced mesh
@@ -114,7 +119,7 @@ export function buildStands(scene, tex, renderer) {
     seatMesh.setColorAt(k, new THREE.Color(it.shade, it.shade, it.shade));
   });
   seatMesh.receiveShadow = true;
-  group.add(seatMesh);
+  bowl.add(seatMesh);
 
   // ---- the fans: in about six seats in seven (their own stream, so the seats keep their shades)
   const rf = rng(41), fans = [];
@@ -123,7 +128,7 @@ export function buildStands(scene, tex, renderer) {
     const a = it.a + (rf() - 0.5) * 0.1 / it.rad, rr = it.rad + (rf() - 0.5) * 0.08;   // not quite in the middle of his seat
     fans.push({ x: Math.sin(a) * rr, y: it.y, z: -Math.cos(a) * rr, yaw: -a + (rf() - 0.5) * 0.3, s: 0.9 + rf() * 0.2 });
   }
-  group.add(buildCrowd(fans, { sectors: 1, blur: 1.5, lift: 0.02 }));
+  bowl.add(buildCrowd(fans, { sectors: 1, blur: 1.5, lift: 0.02 }));
   group.userData.tick = () => {};
   return group;
 }

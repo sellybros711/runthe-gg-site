@@ -60,9 +60,8 @@ jobs:
           node-version: '20'
       - name: Install Playwright
         if: matrix.name != 'inplay'
-        run: |
-          npm install --no-save playwright@1.49.1
-          npx playwright install --with-deps chromium
+        timeout-minutes: 14
+        uses: ./.github/actions/playwright
       - name: The checkpoint of an earlier attempt of this commit, if any
         uses: actions/cache/restore@v4
         with:

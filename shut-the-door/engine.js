@@ -117,8 +117,12 @@ const MT = NODE ? require('./meter.js') : (window.STD_METER || null);
    13: rules 10 (grade.js DRAWN_RULES): the touch is measured on the zone as drawn (contract.js
    touchDist), so a ball the grid shows touching the box is a strike on a challenge. A call with
    r 9 or before replays exactly as under 12. pr.abs carries t, the ball's edge to the zone the
-   ABS read (rules 9 on). */
-const ENGINE_VERSION = 13;
+   ABS read (rules 9 on).
+   14: rules 11 (grade.js HBP_RULES): a hit by pitch only when the crossing reaches the batter's body
+   (contract.js THE REACH). Where the row says hit by pitch and the ball crossed short of it, the
+   pitch is a take there, called where it crossed, read inside the hit by pitch's slice of the same
+   library draw. A call with r 10 or before replays exactly as under 13. */
+const ENGINE_VERSION = 14;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread.
    3: the hold table is solved with runs on a legal third out (rules 3), and
@@ -205,7 +209,7 @@ function createOuting(pack, opts) {
   if (!pack || pack.v !== PACK_VERSION) throw new Error('pack format ' + (pack && pack.v) + ', engine reads ' + PACK_VERSION);
   const sc = pack.scenario;
   const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.STEAL_RULES, G.FULL_RULES, G.TOUCH_RULES, G.DRAWN_RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
+  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.STEAL_RULES, G.FULL_RULES, G.TOUCH_RULES, G.DRAWN_RULES, G.HBP_RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
   // rules 7 and before play the first half alone, as they were played (grade.js THE HALVES)
   let model = opts.model || new G.Model(pack);
   if (rules < G.FULL_RULES) model = model.singleModel();
@@ -342,6 +346,13 @@ function throwPitch(o, call) {
   const dAbs = !abs ? null : o.rules >= G.DRAWN_RULES ? K.touchDist(actual.x, actual.zn, pack.kernelZoneFt)
     : o.rules >= G.TOUCH_RULES ? K.absDist(actual.x, actual.zn, pack.kernelZoneFt) : dIn;
   if (abs && k <= 1 && row[0] + row[1] > 0) k = u / (row[0] + row[1]) < K.calledStrikeP(dIn) ? 1 : 0;
+  // rules 11 (THE REACH, contract.js hbpReach): a hit by pitch only when the ball reaches him. Short
+  // of it, the pitch is a take where it crossed: the same library draw, read inside the hit by
+  // pitch's slice, called by the umpire's chance there. No other key moves
+  else if (o.rules >= G.HBP_RULES && k === G.KEYS.indexOf('hit_by_pitch')
+    && K.insideFt(actual.x, sc.batters[who].bats) < K.hbpReach(actual.zn)) {
+    k = (u - (acc - row[k])) / row[k] < K.calledStrikeP(dIn) ? 1 : 0;
+  }
   let ref = entry.x[actualCell][k];
   if (abs && (ref == null || ref < 0)) ref = nearestRef(entry, actualCell, k);
   if (ref == null || ref < 0) throw new Error(`no real pitch for ${G.KEYS[k]} at cell ${actualCell}`);

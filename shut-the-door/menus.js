@@ -30,7 +30,14 @@ function openSheet(id, after) {
   open = id;
   onClose = after || null;
   var f = el.querySelector('[data-autofocus]') || el.querySelector('.sh-x');
-  if (f) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 30);
+  /* the first field takes the focus a moment after the sheet opens, unless the reader is already in
+     the sheet: a late timer (a busy phone, or the check's clock) moved the focus out of the password
+     between a tap and its typing, so the password went on the end of the email and the sign in said
+     "fill in every field" (the browser check's sign-in, 2026-11-06) */
+  if (f) setTimeout(function () {
+    if (open !== id || el.contains(document.activeElement)) return;
+    try { f.focus({ preventScroll: true }); } catch (e) {}
+  }, 30);
   if (api.onChange) api.onChange();
 }
 function closeSheet(silent) {

@@ -46,9 +46,11 @@ TEAM_COLORS = {
     'New York Mets': ['#002d72', '#ff5910'], 'Oakland Athletics': ['#003831', '#efb21e'],
     'Chicago Cubs': ['#0e3386', '#cc3433'], 'Milwaukee Brewers': ['#12284b', '#ffc52f'],
     'Houston Astros': ['#002d62', '#eb6e1f'], 'New York Yankees': ['#0c2340', '#c4ced3'],
+    'Boston Red Sox': ['#bd3039', '#0c2340'],
 }
 RETRO_TEAM = {'OAK': 'Oakland Athletics', 'NYA': 'New York Yankees', 'LAN': 'Los Angeles Dodgers',
-              'ARI': 'Arizona Diamondbacks'}
+              'ARI': 'Arizona Diamondbacks',
+              'HOU': 'Houston Astros', 'BOS': 'Boston Red Sox'}
 
 _SEASONS = {}
 
