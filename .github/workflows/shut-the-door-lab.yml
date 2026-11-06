@@ -35,6 +35,7 @@ on:
       - 'shut-the-door/**'
       - '.github/workflows/shut-the-door-lab.yml'
       - 'scripts/install-playwright.sh'
+      - '.github/actions/playwright/**'
   workflow_dispatch: {}
 
 concurrency:
@@ -113,7 +114,7 @@ jobs:
       - name: Install Playwright
         if: matrix.browser
         timeout-minutes: 14
-        run: bash scripts/install-playwright.sh
+        uses: ./.github/actions/playwright
       - name: check-${{ matrix.name }}
         run: |
           set -o pipefail

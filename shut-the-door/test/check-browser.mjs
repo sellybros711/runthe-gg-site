@@ -117,8 +117,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
-import os from 'node:os';
-import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { treeHash } from '../lab/pipeline/checkpoint.mjs';
@@ -1695,25 +1694,24 @@ const SHORT = [[360, 640], [320, 568]];
    than its room loses both ends. Measured with the real Inter the page loads (the rest of the check
    serves the fonts empty), at the browser check's sizes and the common iPhones. */
 const CHAL = [[320, 568], [375, 667], [375, 553], [390, 844], [393, 852], [430, 932], [844, 390], [768, 1024], [1440, 900]];
-/* Inter as Google serves it to Chromium (one variable woff2 for latin), fetched once and kept in the
-   temp folder; without the network, the Inter a machine has installed (static weights). null when
-   neither is there, and the label check then fails rather than measure another font. */
+/* Inter as Google serves it to Chromium (one variable woff2 for latin, every weight), kept in the repo
+   (test/fonts, with its OFL), so the check never reaches for the network: the curl to Google Fonts failed
+   through its retries on CI (#948, 2026-11-06) and the label went unmeasured. The file is held to the
+   SHA-256 of the one Google served (fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7,
+   2026-11-06), so it is the real Inter and not some other font under its name; the page then has to load
+   it as Inter (the label check reads document.fonts). Without it, the Inter a machine has installed
+   (static weights). null when neither is there, and the label check then fails rather than measure
+   another font. */
+const INTER_SHA256 = '3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62';
 function realInter() {
-  const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
-  const dir = path.join(os.tmpdir(), 'std-check-inter'), file = path.join(dir, 'inter-latin.woff2');
+  const file = path.join(ROOT, 'shut-the-door', 'test', 'fonts', 'inter-latin.woff2');
   const face = (w, url, fmt) => `@font-face{font-family:'Inter';font-style:normal;font-weight:${w};src:url(${url}) format('${fmt}');}`;
   const W = [400, 500, 600, 700];
   try {
-    if (!fs.existsSync(file)) {
-      const css = execFileSync('curl', ['-sSf', '--retry', '4', '--retry-all-errors', '--retry-delay', '3', '--max-time', '20', '-A', UA, 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'], { encoding: 'utf8' });
-      const latin = css.split('/* latin */')[1];
-      const url = latin && (latin.match(/url\((https:[^)]+\.woff2)\)/) || [])[1];
-      if (!url) throw new Error('no latin face');
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(file + '.part', execFileSync('curl', ['-sSf', '--retry', '4', '--retry-all-errors', '--retry-delay', '3', '--max-time', '30', url]));
-      fs.renameSync(file + '.part', file);
+    const buf = fs.readFileSync(file);
+    if (crypto.createHash('sha256').update(buf).digest('hex') === INTER_SHA256) {
+      return { from: 'Google Fonts\' Inter, kept in test/fonts', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/latin.woff2', 'woff2')).join('\n'), files: { 'latin.woff2': buf }, type: 'font/woff2' };
     }
-    return { from: 'Google Fonts', css: W.map((w) => face(w, 'https://fonts.gstatic.com/std-inter/latin.woff2', 'woff2')).join('\n'), files: { 'latin.woff2': fs.readFileSync(file) }, type: 'font/woff2' };
   } catch (e) {}
   const sys = '/usr/share/fonts/opentype/inter', N = { 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold' };
   if (W.every((w) => fs.existsSync(path.join(sys, 'Inter-' + N[w] + '.otf')))) {
@@ -1800,7 +1798,7 @@ async function sizeSweep() {
   }
   /* the challenge button as the game shows it (ui.js absButton: the button unhidden, the pad abs-live),
      put back after: the full word CHALLENGE inside its button, on one line, 38 px tall at least */
-  ok(!!inter, '16 the real Inter for the challenge label' + (inter ? ' (' + inter.from + ')' : ': neither Google Fonts nor an installed Inter'));
+  ok(!!inter, '16 the real Inter for the challenge label' + (inter ? ' (' + inter.from + ')' : ': neither the kept Inter (test/fonts, its SHA-256) nor an installed Inter'));
   for (const [w, h] of inter ? CHAL : []) {
     await page.setViewportSize({ width: w, height: h });
     await page.waitForTimeout(400);
@@ -1904,6 +1902,18 @@ async function modes(w, h, full) {
   ok(c1.head === 'leaderboard' && c1.times === 1, '17 the guest\'s leaderboard: heading "' + c1.head + '", the count once ("' + c1.n + '", ' + c1.times + ' time)');
   await shotM(page, 'board-signed-out');
   await page.click('#bd-signin');
+  await page.waitForSelector('#sheet-auth.on #au-form');
+  /* the sheet's first field takes the focus on a timer (menus.js openSheet). It once landed late, between
+     this check's tap in the password and its typing, so the password went on the end of the email and the
+     sign-in said "fill in every field" (CI, 2026-11-06). A reader already in the sheet keeps the focus:
+     opened again with the focus put in the password in the same task, it is still there after the timer */
+  const kept = await page.evaluate(async () => {
+    window.STD_MENUS.close(true); window.STD_MENUS.show('auth');
+    document.getElementById('au-pass').focus();
+    await new Promise((r) => setTimeout(r, 150));
+    return document.activeElement && document.activeElement.id;
+  });
+  ok(kept === 'au-pass', '17 a field you are in keeps the focus when the sheet opens (' + kept + ')');
   await page.waitForSelector('#sheet-auth.on #au-form');
   await page.fill('#au-email', 'mock@example.com');
   await page.fill('#au-pass', 'mockpass');

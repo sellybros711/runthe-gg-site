@@ -22,7 +22,7 @@ import { FT } from './units.js?v=1';
 import { assetUrl } from './load.js?v=9';
 import { BASE, MOUND, WALL_H, wallDist } from './inplay-plan.js?v=33';
 import { MOUND_C } from './field.js?v=19';
-import { foulFront, frontTop, netTop, NET_TO, NET_ARC } from './foul.js?v=2';
+import { foulFront, frontTop, netTop, NET_TO, NET_ARC, BACKSTOP } from './foul.js?v=2';
 import { buildCrowd, crowdClub, crowdImpostor, LOD, FAN_VIS, CROWD_SUN } from './crowd.js?v=3';
 import { clubNamed, battingClub } from './clubs.js?v=3';
 export { MOUND_C };
@@ -36,15 +36,44 @@ const D2R = Math.PI / 180;
 export function frontAt(th) {
   return Math.abs(th) <= 45 ? wallDist(th) : foulFront(th);
 }
+/* THE SEATS' FRONT. The low wall swings from 45 ft off the line round to the backstop as a blend of the
+   two distances (foul.js foulFront, which the flight bounces off): it dips to 51.5 ft at 110 degrees and
+   swings back out to 56, a bulge toward the plate between two bends the other way. Every row stood a
+   fixed depth behind it, and a row 30 or 58 ft back folded that bulge into ripples: the rows ran in an S
+   where the foul ground rounds into the backstop (the owner's high home camera, site PR #934). The seats
+   stand behind the shape a bowl has instead: the line 45 ft off the foul line, then the backstop's 56 ft
+   arc, the corner between them rounded over SEAT_K ft (a polynomial smooth max, so it touches nothing
+   away from the corner), and never in front of the wall. Each row then bends once: along the line, the
+   corner, round the plate. Where the wall dips the first tread starts up to 5.3 ft further back, a wider
+   step at the wall's foot. The depths stay radial, so the park keeps its place. */
+const SEAT_K = 12;
+function seatFront(th) {
+  const a = Math.abs(th);
+  if (a <= 45.5) return frontAt(th);
+  const s = Math.sin((a - 45) * D2R) || 1e-3;
+  // the line's own side only (its nearest point to the plate is at 135 degrees), then below the arc
+  const line = a < 135 ? Math.min(330, 45 / s) : 45 - 2 * (a - 135);
+  const x = Math.abs(line - BACKSTOP), m = Math.max(line, BACKSTOP) + (x < SEAT_K ? (SEAT_K / 4) * (1 - x / SEAT_K) ** 2 : 0);
+  return Math.max(frontAt(th), m);
+}
+/** How far from the plate a point `back` ft behind the front of the stands is at th: on the wall itself
+    (back 0) the wall's line, from the first tread back (1.5 ft) the seats' front, eased between. */
+export function backAt(th, back) {
+  const f = frontAt(th);
+  return f + back + (seatFront(th) - f) * Math.min(1, Math.max(0, back / 1.5));
+}
 
 /* THE PARK'S PLAN (degrees th round from centre field, + toward right field; feet). A generic park, not
    any real one: the outfield bleachers with the batter's eye in the middle (18 degrees), the bullpen in a
    pocket behind the left centre wall, the scoreboard over the right centre bleachers, an upper deck from
    50 degrees round to the plate, dugouts in the foul wall between the plate and the bags, three light
-   towers a side. */
+   towers a side: [th, back, top] (feet back of the front, up from the field). The two over the bleachers
+   stand just behind them (their back is 70 ft); the four over the upper deck stand 12 ft behind its roof,
+   which runs from 124 to 150 ft back, 106 to 110 up (they stood at 140, so their poles came up through
+   the roof, site PR #934). */
 export const PARK = {
   eye: 9, pen: [-34, -22], penDepth: 40, board: [14, 30], upper: 50, dugout: [76, 100],
-  towers: [[-38, 72, 140], [38, 72, 140], [-84, 140, 175], [84, 140, 175], [-116, 140, 175], [116, 140, 175]],
+  towers: [[-38, 72, 140], [38, 72, 140], [-84, 162, 175], [84, 162, 175], [-116, 162, 175], [116, 162, 175]],
 };
 // the structure's colours (sRGB hex)
 const COL = { eye: 0x0b130f, dark: 0x15191d, roof: 0x8d949c, glass: 0x2b3b4e, steel: 0x9aa1a8, pole: 0xe8c21a };
@@ -89,7 +118,7 @@ function rowPoints(rows) {
 }
 // the seat texture: SEATS seats a tile across (the last of them an aisle's steps), 32 rows a tile down
 const SEAT_W = 1.8, SEATS = 16, AISLE = 15;
-const seatU = (th, b) => ((frontAt(th) + b) * th * D2R) / SEAT_W;
+const seatU = (th, b) => (backAt(th, b) * th * D2R) / SEAT_W;
 const isAisle = (th, b) => { const u = seatU(th, b), i = Math.floor(u) % SEATS; return (i < 0 ? i + SEATS : i) === AISLE; };
 /* THE TUNNELS (vomitories): a portal in the lower bowl over rows PORTAL[0] to PORTAL[1], 7 ft wide, every
    PORTAL_EVERY ft round the bowl (not in the batter's eye, the bullpen or at a pole). */
@@ -98,13 +127,13 @@ const PORTALS = [];
 for (const sd of [-1, 1]) {
   let walked = PORTAL_EVERY / 2;
   for (let a = PARK.eye; a <= 178; a += 0.25) {
-    walked += (frontAt(a) + 30) * 0.25 * D2R;
+    walked += backAt(a, 30) * 0.25 * D2R;
     const th = sd * a;
     if (walked < PORTAL_EVERY || Math.abs(a) < PARK.eye + 4 || (th >= PARK.pen[0] - 4 && th <= PARK.pen[1] + 4) || Math.abs(a - 45.5) < 3) continue;
     PORTALS.push(th); walked = 0;
   }
 }
-const inPortal = (th, b, k) => k >= PORTAL[0] - 1 && k <= PORTAL[1] && PORTALS.some((p) => Math.abs(th - p) * D2R * (frontAt(th) + b) < PORTAL_W / 2 + 1.0);
+const inPortal = (th, b, k) => k >= PORTAL[0] - 1 && k <= PORTAL[1] && PORTALS.some((p) => Math.abs(th - p) * D2R * backAt(th, b) < PORTAL_W / 2 + 1.0);
 
 /* Where the fans sit: every seat of the lower bowl and the upper deck (1.8 ft a seat, on the rows above),
    about four in five filled, emptier in patches (a value noise round the park), facing the plate. None in
@@ -124,7 +153,7 @@ function crowdSpots() {
     let th = -180 + r() * 0.5;
     while (th < 180) {
       const row = rowOf(th, k);
-      const d = frontAt(th) + (row ? row.b : 60);
+      const d = backAt(th, row ? row.b : 60);
       if (row) {
         const b = row.b + row.depth * 0.42;
         if (!isAisle(th, b) && !(k < 21 && inPortal(th, b, row.k)) && r() < 0.9 - 0.4 * patch(th, k)) {
@@ -137,7 +166,7 @@ function crowdSpots() {
   }
   return out;
 }
-const at0 = (th, back, h) => { const d = frontAt(th) + back; return W(Math.sin(th * D2R) * d, Math.cos(th * D2R) * d, h); };
+const at0 = (th, back, h) => { const d = backAt(th, back); return W(Math.sin(th * D2R) * d, Math.cos(th * D2R) * d, h); };
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
 /* The park's materials: few, shared. */
@@ -290,7 +319,7 @@ export function buildBallpark(scene, renderer) {
   // th from a to b (degrees), every step and both ends
   const span = (a0, b0, step) => { const out = []; for (let th = a0; th < b0 - 1e-6; th += step) out.push(th); out.push(b0); return out; };
   const ring = span(-180, 180, 1);
-  const at = (th, back, up) => { const d = frontAt(th) + back, u = { x: Math.sin(th * D2R), y: Math.cos(th * D2R) }; return W(u.x * d, u.y * d, h0At(th) + up); };
+  const at = (th, back, up) => { const d = backAt(th, back), u = { x: Math.sin(th * D2R), y: Math.cos(th * D2R) }; return W(u.x * d, u.y * d, h0At(th) + up); };
   // a strip round the ring: rows of (back, up) at each step, quads between neighbouring steps
   const strip = (ths, rowsAt, opts = {}) => {
     const pos = [], uv = [], idx = [], col = [];
@@ -301,7 +330,7 @@ export function buildBallpark(scene, renderer) {
       const base = pos.length / 3;
       rows.forEach(([b, up, c], k) => {
         pos.push(...at(th, b, up).toArray());
-        uv.push(opts.uOf ? opts.uOf(th, b) : ((frontAt(th) + b) * th * D2R) / (opts.uw || 6), opts.vOf ? opts.vOf(b, up, k, c) : k);
+        uv.push(opts.uOf ? opts.uOf(th, b) : (backAt(th, b) * th * D2R) / (opts.uw || 6), opts.vOf ? opts.vOf(b, up, k, c) : k);
         if (opts.colors) col.push(...(c || [1, 1, 1]));
       });
       if (prev >= 0) for (let k = 0; k < rows.length - 1; k++) idx.push(prev + k, base + k, prev + k + 1, prev + k + 1, base + k, base + k + 1);
@@ -365,7 +394,7 @@ export function buildBallpark(scene, renderer) {
     by.dark.push(strip(ths, DUG));
     by.bench.push(strip(ths, (th) => { const z = -h0At(th); return [[6.6, z + 0.05], [6.6, z + 1.5], [8.6, z + 1.5], [8.6, z + 3.2]]; }));
     for (const e of [lo, hi]) by.conc.push(face(e, DUG(e)));
-    const mid = sd * (PARK.dugout[0] + PARK.dugout[1]) / 2, w = (3 / (frontAt(mid) + 9)) / D2R;
+    const mid = sd * (PARK.dugout[0] + PARK.dugout[1]) / 2, w = (3 / backAt(mid, 9)) / D2R;
     by.tunnel.push(strip(span(mid - w, mid + w, w), (th) => { const z = -h0At(th); return [[8.95, z + 0.05], [8.95, z + 3.0]]; }));
   }
   // the dugouts' roof lip in the club's colour
@@ -378,7 +407,9 @@ export function buildBallpark(scene, renderer) {
   // walkway at CONC ft and the suites' glass. Round the whole ring but the batter's eye; set back at the
   // bullpen. Cut where its profile changes (the poles, the bullpen, the eye), and each cut walled.
   const vSeat = (b, up, k, v) => v / 32;
-  const bowlPts = (th) => [[0, 0, -0.1], ...rowPoints(bowlRows(th)), [64, CONC, 21.2]];
+  // (the first tread's lip, from the wall's top: where the seats' front stands back of a dip in the wall
+  // it widens to a step at the wall's foot, in the tread's colour, not a stretch of the seat backs' edge)
+  const bowlPts = (th) => [[0, 0, -0.1 * Math.max(0, 1 - (seatFront(th) - frontAt(th)) / 1.5)], ...rowPoints(bowlRows(th)), [64, CONC, 21.2]];
   const inner = (rows) => rows.map(([b, up, v]) => [b, up, v]);
   const segs = [[-180, -45.5 - 1e-3], [-45.5, PARK.pen[0]], [PARK.pen[0] + 1e-3, PARK.pen[1] - 1e-3], [PARK.pen[1], -PARK.eye], [PARK.eye, 45.5], [45.5 + 1e-3, 180]];
   for (const [a0, b0] of segs) {
@@ -393,7 +424,7 @@ export function buildBallpark(scene, renderer) {
   for (const p of PORTALS) {
     const rows = bowlRows(p), r0 = rows[PORTAL[0]], r1 = rows[PORTAL[1] + 1];
     const bF = r0.b, bB = r1.b, f0 = r0.f, top = rows[PORTAL[1]].f + r0.rise + SEAT_UP + 0.2;
-    const w = (PORTAL_W / 2) / (frontAt(p) + bF) / D2R;
+    const w = (PORTAL_W / 2) / backAt(p, bF) / D2R;
     by.tunnel.push(strip([p - w, p + w], () => [[bF, f0], [bF, top]]));
     by.portal.push(strip([p - w, p + w], () => [[bF - 0.3, top - 0.8], [bF - 0.3, top], [bB, top]]));
     for (const e of [p - w, p + w]) by.portal.push(cap(e, [[bF - 0.3, top], [bB, top]], h0At(e) + f0));
@@ -465,6 +496,22 @@ export function buildBallpark(scene, renderer) {
         by.steel.push(new THREE.CylinderGeometry(0.1 * FT, 0.14 * FT, len, 6).translate(q.x, foot * FT + len / 2, q.z));
       }
     }
+  }
+  // ITS END AT THE BACKSTOP: a terminal mast, three times a pole's girth and standing over the net with
+  // a cap. The backstop's own net carries the netting on round behind the plate in the pitcher's view
+  // (stands.js), but the broadcast hides that net, whose mesh and poles stand across the plate from the
+  // high home camera (inplay.js; carried on round in the park instead, it put a pole up through the plate
+  // and the cable over the batter), so from there each line's net stopped 37 ft up on a pole as thin as
+  // the rest, as if in mid air (site PR #934). Extended netting ends on a mast like this.
+  const rod = (a, b, r) => {
+    const d = b.clone().sub(a), g = new THREE.CylinderGeometry(r, r, d.length(), 6);
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()));
+    return g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+  };
+  for (const sd of [-1, 1]) {
+    const th = sd * NET_ARC, h0 = h0At(th), top = netTop(NET_ARC) + 1.2;
+    by.steel.push(rod(at(th, 0, 0.35), at(th, 0, top - h0), 0.3 * FT));
+    by.steel.push(rod(at(th, 0, top - h0), at(th, 0, top - h0 + 0.35), 0.45 * FT));
   }
   const netMesh = new THREE.Mesh(mergeGeometries(netG), mats.net);
   netMesh.name = 'parkNet'; netMesh.renderOrder = 3;

@@ -38,12 +38,14 @@ on:
       - 'shut-the-door/**'
       - '.github/workflows/shut-the-door-browser.yml'
       - 'scripts/install-playwright.sh'
+      - '.github/actions/playwright/**'
   push:
     branches: [main]
     paths:
       - 'shut-the-door/**'
       - '.github/workflows/shut-the-door-browser.yml'
       - 'scripts/install-playwright.sh'
+      - '.github/actions/playwright/**'
   workflow_dispatch: {}
 
 concurrency:
@@ -68,7 +70,7 @@ jobs:
           node-version: '20'
       - name: Install Playwright
         timeout-minutes: 14
-        run: bash scripts/install-playwright.sh
+        uses: ./.github/actions/playwright
       # Each FAIL line and the tally also go up as annotations, so a red run says what broke on
       # the PR itself (and through the checks API) without opening the log.
       - name: The game in Chromium, a quarter of it
@@ -135,7 +137,7 @@ jobs:
           node-version: '20'
       - name: Install Playwright
         timeout-minutes: 14
-        run: bash scripts/install-playwright.sh
+        uses: ./.github/actions/playwright
       - name: Every contact meets the bat, every whiff misses it
         run: |
           set -o pipefail

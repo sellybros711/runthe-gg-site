@@ -12,7 +12,7 @@ import { capFor, frontFor } from './uniforms.js?v=2';
 import * as G from './gear3d.js?v=4';
 import * as HG from './headgear.js?v=5';
 import { measureHead, wear, wornShade } from './headgear.js?v=5';
-import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
+import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld, aimBone } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=9';
 import { STANCE_X } from './inplay-plan.js?v=33';
@@ -484,7 +484,32 @@ function blockCrouch(p, k) {
   p.crouch = c0; p.feet = f0;
 }
 
-/** Keep a joint's twist (about its own length, from the bind pose) inside maxDeg; its swing stays. */
+/* The ball and socket of the shoulder from the bind pose (arms 45 degrees down and out): 120 of swing
+   and 70 of roll, as deform-probe.js LIMITS judges it. */
+const SHOULDER = { swing: 120, twist: 70 };
+
+/** Keep the shoulder's ball and socket inside its range, after the collar bone has taken its share
+    (motion.js clavicles). The elbow stays where the range leaves it, the forearm reaches on to the
+    wrist and the hand keeps its facing, so the mitt is where it was unless the wrist is out of reach.
+    The catcher's glove arm: a target high and inside a lefty is across his chest, past where the
+    shoulder goes from the deep set (site PR #837); the solve crossed the arm to 149 degrees and rolled
+    it 40 more in two frames. An arm inside its range is untouched. */
+function shoulderRange(p, s) {
+  const B = p.bones, ua = B[`upperarm_${s}`], la = B[`lowerarm_${s}`], hand = B[`hand_${s}`];
+  const wrist = wpos(hand), handQ = wquat(hand);
+  // (each limit says whether it turned the joint: comparing quaternions read a bone a hair off unit
+  // length as 0.08 degrees moved, and redid an arm the range never touched)
+  const swung = limitSwing(p, `upperarm_${s}`, SHOULDER.swing);
+  const rolled = limitTwist(p, `upperarm_${s}`, SHOULDER.twist);
+  if (!swung && !rolled) return;
+  aimBone(la, hand, wrist.sub(wpos(la)));
+  // (the hand's facing in the world, through its own parent: a forearm twist bone may stand between)
+  hand.quaternion.copy(wquat(hand.parent).invert().multiply(handQ));
+  hand.updateMatrixWorld(true);
+}
+
+/** Keep a joint's twist (about its own length, from the bind pose) inside maxDeg; its swing stays.
+    True when it turned the joint back. */
 function limitTwist(p, name, maxDeg) {
   const bone = p.bones[name];
   if (!p.bindQ) p.bindQ = new Map(p.bind.map(([b, , q]) => [b, q]));
@@ -498,16 +523,18 @@ function limitTwist(p, name, maxDeg) {
   const sw = rel.clone().multiply(tw.clone().invert());
   const ang = 2 * Math.acos(Math.min(1, tw.w));
   const lim = THREE.MathUtils.degToRad(maxDeg);
-  if (ang <= lim) return;
+  if (ang <= lim) return false;
   tw = new THREE.Quaternion().slerp(tw, lim / ang);
   bone.quaternion.copy(q0).multiply(sw).multiply(tw);
   bone.updateMatrixWorld(true);
+  return true;
 }
 
 /** Turn the head (and a little of the neck) toward a world point, never more than a neck can:
     each joint adds at most its share of 30 degrees on top of the capture. */
 /** Keep a joint inside its range: its swing from the bind pose (about anything but its own length)
-    is scaled back to max degrees. The same limits check-deform.mjs judges. */
+    is scaled back to max degrees. The same limits check-deform.mjs judges. True when it turned the
+    joint back. */
 function limitSwing(p, name, maxDeg) {
   const bone = p.bones[name];
   if (!p.bindQ) p.bindQ = new Map(p.bind.map(([b, , q]) => [b, q]));
@@ -520,10 +547,11 @@ function limitSwing(p, name, maxDeg) {
   const sw = rel.clone().multiply(tw.clone().invert());
   const ang = 2 * Math.acos(Math.min(1, Math.abs(sw.w)));
   const lim = THREE.MathUtils.degToRad(maxDeg);
-  if (ang <= lim) return;
+  if (ang <= lim) return false;
   const swc = new THREE.Quaternion().slerp(sw.w < 0 ? new THREE.Quaternion(-sw.x, -sw.y, -sw.z, -sw.w) : sw, lim / ang);
   bone.quaternion.copy(q0).multiply(swc).multiply(tw);
   bone.updateMatrixWorld(true);
+  return true;
 }
 
 function lookAt(p, pt, w, neck = 36, head = 27) {
@@ -1611,6 +1639,7 @@ export class People {
       }
       lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tBall - pt.tRel))), 0.4);
       clavicles(c);
+      shoulderRange(c, 'l');
       deltoids(c);
     }
     if (u) {

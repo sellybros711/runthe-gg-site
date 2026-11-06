@@ -1,0 +1,43 @@
+name: Playwright, cached
+description: >
+  Playwright's Chromium and the system packages it needs, from a cache when this runner image has
+  them, else installed by scripts/install-playwright.sh (bounded, with its retries) and kept. On a
+  hit nothing reaches apt's mirrors, whose stalls took the install step to its 14 minute limit.
+inputs:
+  version:
+    description: The Playwright version (scripts/install-playwright.sh pins the default).
+    default: ''
+runs:
+  using: composite
+  steps:
+    # The key is the runner image itself (ImageOS and ImageVersion, set on every GitHub hosted runner),
+    # the Playwright version and the script: the kept .deb files are exactly what that image lacked,
+    # so a new image or a new Playwright starts a new cache rather than install packages built for
+    # another one.
+    - id: key
+      shell: bash
+      run: |
+        v="${{ inputs.version }}"; [ -n "$v" ] || v=$(sed -n 's/^VERSION="\${1:-\(.*\)}"$/\1/p' scripts/install-playwright.sh)
+        echo "version=$v" >> "$GITHUB_OUTPUT"
+        echo "key=playwright-${ImageOS:-unknown}-${ImageVersion:-unknown}-$v-${{ hashFiles('scripts/install-playwright.sh') }}" >> "$GITHUB_OUTPUT"
+    - id: cache
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          ~/.cache/ms-playwright
+          ~/.cache/pw-apt
+        key: ${{ steps.key.outputs.key }}
+    - shell: bash
+      run: bash scripts/install-playwright.sh "${{ steps.key.outputs.version }}"
+      env:
+        PW_CACHED: ${{ steps.cache.outputs.cache-hit }}
+    # (saved straight after the install, so a check that fails later still leaves it for the next run;
+    # two jobs of one run racing to save the same key is harmless, the second is refused)
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      continue-on-error: true
+      with:
+        path: |
+          ~/.cache/ms-playwright
+          ~/.cache/pw-apt
+        key: ${{ steps.key.outputs.key }}
