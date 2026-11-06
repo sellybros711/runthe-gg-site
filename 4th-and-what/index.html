@@ -11,19 +11,15 @@
 <meta name="description" content="4th and What: design football plays, run them against a real defense, learn them and print them. A game and a coaching playbook.">
 <meta name="theme-color" content="#0b1522" id="themeMeta">
 <script>
-/* THEME BOOT, BEFORE FIRST PAINT. The key is shared across the suite, so a
-   player who set dark anywhere arrives dark. */
-(function () {
-  var t; try { t = localStorage.getItem('runthegrid_theme'); } catch (e) {}
-  if (t !== 'light' && t !== 'dark') t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', t);
-  var m = document.getElementById('themeMeta'); if (m) m.setAttribute('content', t === 'dark' ? '#0b1522' : '#eef2f6');
-})();
+/* ALWAYS DARK (the owner, 2026-11-06: "make the whole game dark"). The game is a
+   night stadium, so it ignores the suite's shared light or dark choice and
+   never writes it. */
+document.documentElement.setAttribute('data-theme', 'dark');
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 <header class="topbar">
@@ -39,7 +35,6 @@
   <div class="navr">
     <a class="home" href="/" aria-label="RunThe.GG home">RunThe.GG</a>
     <button class="icon" id="bGuide" type="button" aria-label="How it works">?</button>
-    <button class="icon" id="themeBtn" type="button" aria-label="Light or dark"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
   </div>
 </header>
 
@@ -223,39 +218,53 @@
 
   <!-- STUDIO: design a play -->
   <section class="view studio" id="vStudio" hidden>
-    <div class="studiobar">
-      <label class="field"><span>Formation</span><select id="sForm"></select></label>
-      <label class="field grow"><span>Play name</span><input id="sName" maxlength="80" autocomplete="off"></label>
-      <label class="field"><span>Tag</span><select id="sTag"><option value="pass">Pass</option><option value="run">Run</option><option value="rpo">RPO</option><option value="special">Special</option></select></label>
+    <!-- the command deck (the owner's mockup, 2026-11-06): the play's setup in one frame -->
+    <div class="studiobar deck">
+      <span class="decklabel"><i aria-hidden="true">///</i>Play setup command deck<i aria-hidden="true">///</i></span>
+      <label class="field"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v2h4v18H5V4h4zm2 2v2h2V4zM8 9v2h2V9zm6 0v2h2V9zm-6 5v2h2v-2zm6 0v2h2v-2z"/></svg>Formation</span><select id="sForm"></select></label>
+      <label class="field grow"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l3 3M6 3L3 6M17 17a3 3 0 1 0 0 .01M8 20c0-6 4-9 10-12M14 6h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Play name</span><input id="sName" maxlength="80" autocomplete="off"></label>
+      <label class="field"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11zm4 2.5A1.5 1.5 0 1 0 7 8.5 1.5 1.5 0 0 0 7 5.5z"/></svg>Tag</span><select id="sTag"><option value="pass">Pass</option><option value="run">Run</option><option value="rpo">RPO</option><option value="special">Special</option></select></label>
       <button type="button" class="star" id="sFav" aria-pressed="false" aria-label="Favorite">&#9733;</button>
       <button type="button" class="btn gold" id="sSave">Save Play</button>
+      <div class="decklevel">
+        <div class="seg" id="sLevel" role="group" aria-label="Level"><button type="button" data-level="hs">High School</button><button type="button" data-level="college">College</button><button type="button" data-level="nfl">NFL</button></div>
+        <div class="seg" id="sHash" role="group" aria-label="Ball on the"><button type="button" data-hash="left">Left hash</button><button type="button" data-hash="mid">Middle</button><button type="button" data-hash="right">Right hash</button></div>
+      </div>
     </div>
     <p class="suggest" id="sSuggest"></p>
     <aside class="panel lib">
       <div class="seg" role="tablist"><button type="button" class="on" data-lib="formations">Formations</button><button type="button" data-lib="concepts">Concepts</button></div>
+      <label class="libsearch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="sLibQ" type="search" placeholder="Search formations" aria-label="Search" autocomplete="off"></label>
       <div class="liblist" id="sLib"></div>
     </aside>
     <div class="center">
       <div class="gamebar"><button type="button" class="chip" id="sSit"></button><span class="hint">Draw it, then snap it.</span><button type="button" class="btn gold snap" id="sSnap">Snap it <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button></div>
       <div class="fieldwrap"><canvas id="sField" aria-label="The field. Draw your play here."></canvas></div>
       <p class="hint" id="sHint">Pick a tool. Drag from a player to draw.</p>
+      <div class="dock">
       <div class="toolbar" id="sTools" role="toolbar" aria-label="Tools">
-        <button type="button" class="tool" data-tool="move" aria-pressed="false">Move</button>
-        <button type="button" class="tool" data-tool="route" aria-pressed="true">Route</button>
-        <button type="button" class="tool" data-tool="block" aria-pressed="false">Block</button>
-        <button type="button" class="tool" data-tool="handoff" aria-pressed="false">Run</button>
-        <button type="button" class="tool" data-tool="read" aria-pressed="false">Read</button>
-        <button type="button" class="tool" data-tool="motion" aria-pressed="false">Motion</button>
-        <button type="button" class="tool" data-tool="erase" aria-pressed="false">Erase</button>
+        <button type="button" class="tool" data-tool="move" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 3h-2v6h6V9l3 3-3 3v-2h-6v6h2l-3 3-3-3h2v-6H5v2l-3-3 3-3v2h6V5H9z"/></svg>Move</button>
+        <button type="button" class="tool" data-tool="route" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L18 6M18 6h-6M18 6v6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Route</button>
+        <button type="button" class="tool" data-tool="block" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14M12 5v14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Block</button>
+        <button type="button" class="tool" data-tool="handoff" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="4" r="2"/><path d="M13 7l-4 3 1 4-3 5h2l3-4 2 2v5h2v-6l-2-2 1-3 2 2h3v-2h-2l-3-4z"/></svg>Run</button>
+        <button type="button" class="tool" data-tool="read" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>Read</button>
+        <button type="button" class="tool" data-tool="motion" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6l6 6-6 6M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Motion</button>
+        <button type="button" class="tool" data-tool="erase" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3l6 6-10 10H5l-2-2zm-7 16h12v2H8z"/></svg>Erase</button>
         <span class="sep"></span>
-        <button type="button" class="tool" id="sUndo">Undo</button>
-        <button type="button" class="tool" id="sClear">Clear</button>
-        <button type="button" class="tool" id="sFlip">Flip</button>
+        <button type="button" class="tool" id="sUndo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5L4 10l5 5v-3h6a3 3 0 0 1 0 6h-3v2h3a5 5 0 0 0 0-10H9z"/></svg>Undo</button>
+        <button type="button" class="tool" id="sClear"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7z"/></svg>Clear</button>
+        <button type="button" class="tool" id="sFlip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3 1.4-1.4L21 9l-5.6 5.4L14 13l3-3H4zm16 8H7l3 3-1.4 1.4L3 15l5.6-5.4L10 11l-3 3h13z"/></svg>Flip</button>
       </div>
       <div class="viewrow">
         <span>Field view</span>
         <div class="seg" id="sView"><button type="button" class="on" data-v="offense">Offense</button><button type="button" data-v="defense">Defense</button><button type="button" data-v="both">Both</button></div>
         <select id="sCall" aria-label="Defense to show" hidden></select>
+      </div>
+      <div class="dockacts">
+        <button type="button" class="btn dockbtn" id="sSaveB"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5zm2 2v5h9V5zm5 8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>Save to playbook</button>
+        <button type="button" class="btn dockbtn" id="sTest"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5zm0 3.2L7 7v4c0 3.5 2.2 6.6 5 7.9z"/></svg>Test vs Defense</button>
+        <button type="button" class="runplay" id="sRun"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Run play</button>
+      </div>
       </div>
     </div>
     <aside class="panel side">
@@ -271,8 +280,6 @@
       <label class="switch"><input type="checkbox" id="sPA"><i></i>Play Action</label>
       <label class="switch"><input type="checkbox" id="sShowD"><i></i>Show Defense</label>
       <div class="acts">
-        <button type="button" class="btn go" id="sRun">Run it</button>
-        <button type="button" class="btn" id="sTest">Test vs Defense</button>
         <button type="button" class="btn" id="sDownload">Download</button>
       </div>
       <p class="toast" id="sToast" hidden></p>
@@ -456,13 +463,14 @@
 <script src="turf.js?v=3"></script>
 <script src="rig.js?v=1"></script>
 <script src="stage.js?v=2"></script>
-<script src="share.js?v=1"></script>
+<script src="share.js?v=2"></script>
 <script src="play.js?v=2"></script>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 <script src="home.js?v=4"></script>
-<script src="studio.js?v=4"></script>
+<script src="studio.js?v=5"></script>
 <script src="game.js?v=4"></script>
-<script src="flow.js?v=5"></script>
+<script src="clip.js?v=1"></script>
+<script src="flow.js?v=7"></script>
 <script src="daily.js?v=4"></script>
 <script src="trivia.js?v=4"></script>
 <script src="library.js?v=3"></script>

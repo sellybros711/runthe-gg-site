@@ -190,6 +190,11 @@ async function run(name, viewport, scale) {
   await shot('0-card');
   const [cardDl] = await Promise.all([page.waitForEvent('download'), page.click('#rCardBtn')]);
   ok(/-card\.png$/.test(cardDl.suggestedFilename()), 'Save card downloads the card: ' + cardDl.suggestedFilename());
+  /* the clip (the owner, 2026-11-06): a video of the snap, recorded behind the card, is what Share sends */
+  const clip = await page.evaluate(async () => { const c = await window.FAW_CLIP.whenReady(); return c ? { size: c.blob.size, type: c.type } : null; });
+  ok(clip && clip.size > 20000 && /^video\//.test(clip.type), 'the snap is recorded as a video: ' + (clip ? clip.type + ', ' + Math.round(clip.size / 1024) + ' KB' : 'none'));
+  const [clipDl] = await Promise.all([page.waitForEvent('download'), page.click('#rShare')]);
+  ok(/\.(webm|mp4)$/.test(clipDl.suggestedFilename()), 'Share sends the video (saved where the browser cannot share a file): ' + clipDl.suggestedFilename());
   await page.click('#rAgain');
   await page.waitForTimeout(400); await page.click('#bSkip');
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });

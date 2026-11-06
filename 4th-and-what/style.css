@@ -6,9 +6,6 @@
   --teal: #19c6a7; --gold: #f5b72a; --gold2: #d99a10; --red: #ef4b3f; --blue: #3d8bff; --green: #36d399;
   --field: #2a6534;
 }
-:root[data-theme="light"] {
-  --bg: #eef2f6; --panel: #ffffff; --panel2: #f3f6fa; --edge: #d6dee8; --ink: #122033; --dim: #5d6f84;
-}
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
 body { overscroll-behavior: none; min-height: 100dvh; }
@@ -20,7 +17,6 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 
 /* ---------- the top bar ---------- */
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; padding: max(8px, env(safe-area-inset-top)) 16px 0; background: linear-gradient(#0b1828, #0a1420); border-bottom: 1px solid var(--edge); min-height: 58px; }
-:root[data-theme="light"] .topbar { background: #0f1c2b; }
 .logo { display: flex; align-items: baseline; text-decoration: none; font: italic 900 30px/1 'Barlow Condensed', 'Inter', sans-serif; letter-spacing: .01em; padding-bottom: 8px; white-space: nowrap; }
 .logo .l4 { color: var(--gold); }
 .logo .lamp { color: var(--teal); margin: 0 2px; }
@@ -572,3 +568,126 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
   .pfeat { grid-template-columns: 1fr 1fr; gap: 6px 0; margin: 18px -10px 0; }
   .pfeat button { font-size: 14px; border-left: 0; }
 }
+
+/* ---------- the Studio, after the owner's mockup (2026-11-06) ----------
+   The night stadium of Play's first screen, the setup in a command deck,
+   glass panels, a field that glows and one dock for tools and actions. The
+   Studio is a stadium at night. */
+.view.studio { --panel: #0b1a2b; --panel2: #10243a; --edge: #1f3d5a; --ink: #e9eff6; --dim: #8fa2b8; color: var(--ink);
+  padding: 34px 14px 14px; border-radius: 18px; border: 1px solid #14304a;
+  background: radial-gradient(40% 50% at 0% 100%, rgba(25, 198, 167, .18), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(245, 183, 42, .16), transparent 70%),
+    radial-gradient(60% 30% at 50% 0%, rgba(120, 190, 255, .12), transparent 70%), linear-gradient(#071321, #050c16 70%, #06140f); }
+.view.studio .panel { background: rgba(9, 22, 36, .85); border: 1px solid rgba(25, 198, 167, .4); box-shadow: inset 0 0 22px rgba(25, 198, 167, .08); }
+.view.studio .seg { background: rgba(4, 12, 22, .8); border-color: #1d3a55; }
+.view.studio .panel > .seg button.on { color: var(--teal); }
+.deck { position: relative; align-items: center; gap: 14px; padding: 22px 20px 16px; border: 2px solid transparent; border-radius: 16px;
+  background: linear-gradient(#0b1a2b, #08131f) padding-box, linear-gradient(90deg, var(--teal), #8fe7ff 30%, var(--gold) 70%, var(--teal)) border-box;
+  box-shadow: 0 0 24px rgba(25, 198, 167, .25); }
+.deck .decklabel { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); padding: 5px 40px; white-space: nowrap; background: #08121d;
+  border: 2px solid var(--gold); color: #fff; font: italic 900 17px/1 'Barlow Condensed', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); box-shadow: 0 0 14px rgba(245, 183, 42, .4); }
+.deck .decklabel i { color: var(--gold); margin: 0 10px; letter-spacing: -2px; }
+.deck .field > span { display: flex; align-items: center; gap: 6px; color: #fff; font: 900 16px/1 'Barlow Condensed', sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.deck .field > span svg { width: 18px; height: 18px; fill: var(--gold); color: var(--gold); }
+.deck input, .deck select { background: #0a1828; border: 2px solid rgba(25, 198, 167, .55); color: #fff; font-weight: 700; box-shadow: inset 0 0 10px rgba(25, 198, 167, .15); }
+.deck #sName { font: italic 900 22px/1 'Barlow Condensed', sans-serif; letter-spacing: .02em; }
+.deck .star { background: #0a1828; border: 2px solid rgba(25, 198, 167, .55); color: #dfe8f1; margin-bottom: 0; }
+.deck .star[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); }
+.deck .btn.gold { margin-bottom: 0; font: italic 900 20px/1 'Barlow Condensed', sans-serif; padding: 10px 20px; }
+.deck .decklevel { display: grid; gap: 6px; margin-left: auto; padding-left: 14px; border-left: 2px solid rgba(245, 183, 42, .6); }
+.deck .decklevel .seg button { padding: 6px 12px; color: #e9eff6; font-weight: 800; }
+.deck .decklevel .seg button[aria-pressed="true"] { background: var(--teal); color: #04241e; border-radius: 8px; }
+.view.studio .suggest { color: var(--dim); }
+.view.studio .lib .libsearch { display: flex; align-items: center; gap: 8px; margin: 10px 0; padding: 0 10px; border: 1px solid #2a4a66; border-radius: 9px; background: #07111c; }
+.view.studio .lib .libsearch svg { width: 18px; height: 18px; fill: var(--dim); flex: none; }
+.view.studio .lib .libsearch input { flex: 1; min-width: 0; border: 0; background: none; color: #fff; padding: 9px 0; font-size: 14px; outline: none; }
+.view.studio .libitem { background: rgba(16, 36, 58, .8); border-color: #1d3a55; color: #fff; }
+.view.studio .libitem b { font: 900 17px/1.1 'Barlow Condensed', sans-serif; }
+.view.studio .libitem[aria-pressed="true"] { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal), 0 0 14px rgba(25, 198, 167, .4); }
+.view.studio .addform { width: 100%; min-height: 40px; font: 900 16px/1 'Barlow Condensed', sans-serif; letter-spacing: .03em; color: #fff; background: rgba(16, 36, 58, .9); border-color: #2a4a66; }
+.view.studio .fieldwrap { border: 2px solid #49e07a; border-radius: 14px; box-shadow: 0 0 0 1px rgba(73, 224, 122, .3), 0 0 26px rgba(73, 224, 122, .35); }
+.view.studio .hint { color: var(--dim); }
+.dock { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dock .viewrow { order: -1; color: var(--dim); }
+.dock .viewrow .seg button.on { background: var(--teal); color: #04241e; border-radius: 7px; }
+.view.studio .toolbar { padding: 6px; border-radius: 12px; background: rgba(6, 16, 28, .85); border: 1px solid #1d3a55; gap: 4px; }
+.view.studio .tool { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 56px; padding: 6px 8px; background: rgba(16, 36, 58, .9); border-color: #1d3a55; color: #e9eff6; font-size: 12px; }
+.view.studio .tool svg { width: 22px; height: 22px; fill: currentColor; }
+.view.studio .tool[aria-pressed="true"] { background: var(--teal); color: #04241e; border-color: var(--teal); box-shadow: 0 0 14px rgba(25, 198, 167, .6); }
+.dockacts { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+.dockbtn { gap: 8px; background: rgba(10, 24, 40, .95); border: 2px solid #2a4a66; color: #fff; font: italic 900 17px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .02em;
+  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%); padding: 10px 22px; }
+.dockbtn svg { width: 20px; height: 20px; fill: #fff; }
+.runplay { display: inline-flex; align-items: center; gap: 10px; padding: 10px 34px; border: 3px solid #ffe27a; cursor: pointer; color: #141000;
+  font: italic 900 30px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; background: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c);
+  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%); filter: drop-shadow(0 0 16px rgba(245, 183, 42, .6)); }
+.runplay svg { width: 24px; height: 24px; fill: #141000; }
+.view.studio .prow .pchip { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .85); color: #fff;
+  font: 900 13px/1 'Inter', sans-serif; box-shadow: 0 0 10px rgba(255, 255, 255, .15); }
+.view.studio .prow { border-bottom-color: #1d3a55; }
+.view.studio .side h3 { color: var(--dim); font: 900 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.view.studio .switch { color: #fff; font: 900 17px/1 'Barlow Condensed', sans-serif; }
+/* Play's draw step is the same studio: the dock's actions are the Studio's, Snap it is Play's */
+body.gamemode .dockacts { display: none !important; }
+body.gamemode .view.studio { padding-top: 14px; }
+@media (max-width: 1180px) {
+  .deck .decklevel { margin-left: 0; padding-left: 0; border-left: 0; grid-auto-flow: column; }
+}
+@media (max-width: 760px) {
+  .view.studio { padding: 26px 8px 10px; }
+  .deck { padding: 18px 12px 12px; }
+  .deck .decklabel { font-size: 13px; padding: 4px 16px; }
+  .deck .decklabel i { display: none; }
+  .deck .decklevel { grid-auto-flow: row; width: 100%; }
+  .view.studio .tool { min-width: 46px; padding: 5px 6px; font-size: 11px; }
+  .view.studio .tool svg { width: 18px; height: 18px; }
+  .dockacts { width: 100%; margin-left: 0; }
+  .runplay { flex: 1; justify-content: center; font-size: 24px; }
+  .dockbtn { flex: 1; justify-content: center; padding: 8px 10px; font-size: 14px; }
+}
+
+/* ---------- Frames that never cut what is in them (the owner, 2026-11-06) ----------
+   The angled frames used to be clip-path on the element itself, which also cut
+   the text (half the ? of WHAT?) and the border on every slanted edge. Now the
+   element is a plain box and two layers behind it draw the shape: ::before is
+   the rim (the border box), ::after the fill (the padding box), both clipped to
+   --shape. The text sits on top and is never clipped. Glows are drop-shadows on
+   the element, so they follow the shape. */
+.plogo h1, .plogo .kicker, .pspoth, .arena .dist, .playnow, .deck .decklabel, .dockbtn, .runplay, .strip .ez.own, .strip .ez.opp {
+  --bw: 2px; isolation: isolate; clip-path: none; background: none; border: var(--bw) solid transparent; border-radius: 0; box-shadow: none; }
+.plogo h1, .plogo .kicker, .pspoth, .arena .dist, .playnow, .dockbtn, .runplay, .strip .ez.own, .strip .ez.opp { position: relative; }
+.plogo h1::before, .plogo .kicker::before, .pspoth::before, .arena .dist::before, .playnow::before, .deck .decklabel::before, .dockbtn::before, .runplay::before, .strip .ez.own::before, .strip .ez.opp::before,
+.plogo h1::after, .plogo .kicker::after, .pspoth::after, .arena .dist::after, .playnow::after, .deck .decklabel::after, .dockbtn::after, .runplay::after, .strip .ez.own::after, .strip .ez.opp::after {
+  content: ''; position: absolute; pointer-events: none; clip-path: var(--shape); }
+.plogo h1::before, .plogo .kicker::before, .pspoth::before, .arena .dist::before, .playnow::before, .deck .decklabel::before, .dockbtn::before, .runplay::before, .strip .ez.own::before, .strip .ez.opp::before {
+  inset: calc(-1 * var(--bw)); z-index: -2; background: var(--rim); }
+.plogo h1::after, .plogo .kicker::after, .pspoth::after, .arena .dist::after, .playnow::after, .deck .decklabel::after, .dockbtn::after, .runplay::after, .strip .ez.own::after, .strip .ez.opp::after {
+  inset: 0; z-index: -1; background: var(--fill); }
+.plogo h1 { --bw: 3px; --shape: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%); padding-right: 60px; padding-left: 52px;
+  --rim: linear-gradient(90deg, var(--teal), #8fe7ff 45%, var(--gold)); --fill: linear-gradient(#0b1a2b, #060f1b); }
+.plogo .kicker { --shape: polygon(4% 0, 100% 0, 96% 100%, 0 100%); --rim: rgba(245, 183, 42, .8); --fill: #08121d; }
+.pspoth { --shape: polygon(5% 0, 95% 0, 100% 100%, 0 100%); --rim: rgba(245, 183, 42, .85); --fill: #07111c; }
+.arena .dist { --shape: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0 50%); --rim: var(--teal);
+  --fill: repeating-linear-gradient(90deg, transparent 0 18%, rgba(255, 255, 255, .06) 18% 19%), linear-gradient(#2f7a3d, #1d5428);
+  filter: drop-shadow(0 0 8px rgba(25, 198, 167, .45)); }
+.arena .dist[aria-pressed="true"] { --rim: var(--gold); border-color: transparent; box-shadow: none; filter: drop-shadow(0 0 14px rgba(245, 183, 42, .85)); }
+.arena .dist:active { box-shadow: none; }
+.playnow { --bw: 3px; --shape: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%); --rim: #ffe27a; --fill: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c); }
+.deck .decklabel { --shape: polygon(6% 0, 94% 0, 100% 100%, 0 100%); --rim: var(--gold); --fill: #08121d; filter: drop-shadow(0 0 10px rgba(245, 183, 42, .45)); }
+.dockbtn { --shape: polygon(6% 0, 100% 0, 94% 100%, 0 100%); --rim: #2a4a66; --fill: #0b1929; }
+.dockbtn:hover { --rim: var(--teal); }
+.runplay { --bw: 3px; --shape: polygon(6% 0, 100% 0, 94% 100%, 0 100%); --rim: #ffe27a; --fill: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c); }
+.strip .ez.own { --shape: polygon(30% 0, 100% 0, 100% 100%, 0 100%, 0 30%); --rim: var(--teal);
+  --fill: radial-gradient(farthest-side, color-mix(in srgb, var(--teal) 8%, #07121e), color-mix(in srgb, var(--teal) 28%, #07121e)); }
+.strip .ez.opp { --shape: polygon(0 0, 70% 0, 100% 100%, 0 100%); --rim: var(--gold);
+  --fill: radial-gradient(farthest-side, color-mix(in srgb, var(--gold) 8%, #07121e), color-mix(in srgb, var(--gold) 28%, #07121e)); }
+@media (max-width: 760px) {
+  .plogo h1 { padding-left: 28px; padding-right: 36px; }
+}
+
+/* ---------- No light frame around the stadium (the owner, 2026-11-06) ----------
+   The game is always dark (the owner, 2026-11-06). While Play's first screen
+   or the Studio is on screen the page behind it is the stadium's own dark, and the
+   stadium has no outline, so it reaches the edges instead of sitting in a frame. */
+html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPlay:not([hidden])) body, html:has(#vStudio:not([hidden])) body { background: #050c16; }
+.pick.arena, .view.studio { border-color: transparent; }

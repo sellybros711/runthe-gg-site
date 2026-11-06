@@ -65,32 +65,36 @@
       "sha": "ff5a4357d74041fd"
     },
     "share.js": {
-      "v": "1",
-      "sha": "ddf3f027cc22c5ac"
+      "v": "2",
+      "sha": "62b4e1dcee456ae1"
     },
     "play.js": {
       "v": "2",
       "sha": "c8cdd974177fb9c4"
     },
     "app.js": {
-      "v": "6",
-      "sha": "7a5298961636970e"
+      "v": "7",
+      "sha": "764cea038ccbf86a"
     },
     "home.js": {
       "v": "4",
       "sha": "21a913ee097847a7"
     },
     "studio.js": {
-      "v": "4",
-      "sha": "9ce5a2bb030b3dbc"
+      "v": "5",
+      "sha": "ca3f7056b0b46104"
     },
     "game.js": {
       "v": "4",
       "sha": "3af1970ebee67474"
     },
+    "clip.js": {
+      "v": "1",
+      "sha": "42acc78a2a9a5a7b"
+    },
     "flow.js": {
-      "v": "5",
-      "sha": "599fc02b5c987704"
+      "v": "7",
+      "sha": "66ad153760f48c22"
     },
     "daily.js": {
       "v": "4",
