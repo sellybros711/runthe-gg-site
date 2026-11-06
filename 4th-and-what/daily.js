@@ -106,6 +106,11 @@
     if (p.ballOn === 50) return 'midfield';
     return 'the ' + (p.ballOn < 50 ? code(p.def, p.season) + ' ' + p.ballOn : code(p.off, p.season) + ' ' + (100 - p.ballOn));
   }
+  /* the stakes: the score and the clock in two short sentences, from the row */
+  function stakesText(p) {
+    var d = p.offScore - p.defScore, c = String(p.clock || '').replace(/^0(\d:)/, '$1');
+    return (d < 0 ? 'Down ' + (-d) + '.' : d > 0 ? 'Up ' + d + '.' : 'Tied.') + ' ' + (p.qtr >= 5 ? 'Overtime. ' + c + ' left.' : p.qtr === 4 ? c + ' to play.' : 'Q' + p.qtr + ', ' + c + ' left.');
+  }
   function downText(p) { return '4th & ' + (p.goal || p.togo >= p.ballOn ? 'Goal' : p.togo); }
   /* what really happened: the play-by-play line, without its clock and formation tags */
   function realText(p) {
@@ -128,7 +133,7 @@
 
   var CORE = { EPOCH: EPOCH, dayOf: dayOf, numberOf: numberOf, order: order, playFor: playFor, seedFor: seedFor,
     code: code, name: name, conf: conf, dateText: dateText, roundText: roundText, teamsText: teamsText, clockText: clockText,
-    scoreText: scoreText, spotText: spotText, downText: downText, realText: realText, verdictText: verdictText, shareText: shareText };
+    scoreText: scoreText, stakesText: stakesText, spotText: spotText, downText: downText, realText: realText, verdictText: verdictText, shareText: shareText };
   if (typeof module !== 'undefined' && module.exports) { module.exports = CORE; return; }
 
   /* ================= the page ================= */
@@ -189,7 +194,11 @@
     $('dRound').textContent = roundText(today) + ' · ' + dateText(today.date);
     $('dScore').textContent = scoreText(today);
     $('dClock').textContent = clockText(today);
-    $('dGo').textContent = k ? 'Practice it' : 'Draw your call';
+    $('dOffCode').textContent = code(today.off, today.season); $('dOffScore').textContent = String(today.offScore);
+    $('dDefCode').textContent = code(today.def, today.season); $('dDefScore').textContent = String(today.defScore);
+    $('dStakes').textContent = stakesText(today) + ' No punt. No kick. Your call.';
+    renderStrip();
+    $('dGoTxt').textContent = k ? 'Practice it' : 'Draw your call';
     $('dDone').hidden = !k;
     if (k) {
       $('dMine').textContent = (k.win ? 'You converted. ' : 'You were stopped. ') + (k.yards >= 0 ? 'Gained ' + k.yards + '.' : 'Lost ' + (-k.yards) + '.');
@@ -197,6 +206,16 @@
       $('dVerdict').textContent = verdictText(today);
     }
     renderStats();
+  }
+  /* the field under the scoreboard: the ball where it was, the line to gain in front */
+  function renderStrip() {
+    var nums = $('dNums');
+    if (!nums.firstChild) for (var x = 10; x <= 90; x += 10) { var n = document.createElement('span'); n.style.left = x + '%'; n.textContent = String(x <= 50 ? x : 100 - x); nums.appendChild(n); }
+    var bx = 100 - today.ballOn, goal = today.goal || today.togo >= today.ballOn, gx = goal ? 100 : Math.min(100, bx + today.togo);
+    $('dOwnEz').textContent = code(today.off, today.season); $('dOppEz').textContent = code(today.def, today.season);
+    $('dBall').style.left = bx + '%'; $('dGain').style.left = gx + '%';
+    $('dToGo').style.left = bx + '%'; $('dToGo').style.width = (gx - bx) + '%';
+    $('dToGo').textContent = goal ? 'Goal' : today.togo + (today.togo === 1 ? ' yd' : ' yds');
   }
   function renderStats() {
     var t = $('dStats'), r = $('rDayStats');

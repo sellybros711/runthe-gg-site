@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 <header class="topbar">
@@ -70,14 +70,27 @@ document.documentElement.setAttribute('data-theme', 'dark');
 
   <!-- DAILY: today's real 4th down, then draw your call (the Studio in game mode) -->
   <section class="view daily" id="vDaily" hidden>
-    <div class="dintro">
-      <p class="kicker" id="dNum"></p>
-      <p class="dteams big" id="dTeams"></p>
+    <!-- the daily's intro is a big moment (the owner, 2026-11-06: "more exciting to get you hyped to
+         play"): the night stadium, the scoreboard, the ball on the field, then the call to make -->
+    <div class="dintro arena">
+      <div class="lights" aria-hidden="true"><i></i><i></i></div>
+      <p class="dtag" id="dNum"></p>
+      <p class="dteams" id="dTeams"></p>
       <p class="dround" id="dRound"></p>
-      <div class="dbug"><span id="dScore"></span><span id="dClock"></span></div>
+      <div class="dboard" aria-label="Scoreboard">
+        <div class="dside off"><b id="dOffCode"></b><span id="dOffScore"></span><i>Ball</i></div>
+        <div class="dmid"><span class="dclock" id="dClock"></span><span class="dscore" id="dScore" hidden></span></div>
+        <div class="dside def"><b id="dDefCode"></b><span id="dDefScore"></span></div>
+      </div>
       <h1 id="dDown"></h1>
       <p class="dspot" id="dSpot"></p>
-      <button type="button" class="btn gold big" id="dGo">Draw your call</button>
+      <p class="dstakes" id="dStakes"></p>
+      <div class="strip dstrip" aria-hidden="true">
+        <span class="ez own" id="dOwnEz"></span>
+        <div class="turf"><div class="ynum" id="dNums"></div><span class="gain" id="dGain"></span><span class="toGo" id="dToGo"></span><span class="ball" id="dBall"></span></div>
+        <span class="ez opp" id="dOppEz"></span>
+      </div>
+      <button type="button" class="playnow" id="dGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span id="dGoTxt">Draw your call</span></button>
       <p class="dstats" id="dStats" hidden></p>
       <div class="ddone" id="dDone" hidden>
         <p class="dmine" id="dMine"></p>
@@ -242,9 +255,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
     </aside>
     <div class="center">
       <div class="gamebar"><button type="button" class="chip" id="sSit"></button><span class="hint">Draw it, then snap it.</span><button type="button" class="btn gold snap" id="sSnap">Snap it <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button></div>
-      <div class="fieldwrap"><canvas id="sField" aria-label="The field. Draw your play here."></canvas></div>
-      <p class="hint" id="sHint">Pick a tool. Drag from a player to draw.</p>
-      <div class="dock">
+      <!-- the tools sit above the field (the owner, 2026-11-06: "put this bar at the top") -->
       <div class="toolbar" id="sTools" role="toolbar" aria-label="Tools">
         <button type="button" class="tool" data-tool="move" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 3h-2v6h6V9l3 3-3 3v-2h-6v6h2l-3 3-3-3h2v-6H5v2l-3-3 3-3v2h6V5H9z"/></svg>Move</button>
         <button type="button" class="tool" data-tool="route" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L18 6M18 6h-6M18 6v6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Route</button>
@@ -258,6 +269,9 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <button type="button" class="tool" id="sClear"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7z"/></svg>Clear</button>
         <button type="button" class="tool" id="sFlip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3 1.4-1.4L21 9l-5.6 5.4L14 13l3-3H4zm16 8H7l3 3-1.4 1.4L3 15l5.6-5.4L10 11l-3 3h13z"/></svg>Flip</button>
       </div>
+      <p class="hint" id="sHint">Pick a tool. Drag from a player to draw.</p>
+      <div class="fieldwrap"><canvas id="sField" aria-label="The field. Draw your play here."></canvas></div>
+      <div class="dock">
       <div class="viewrow">
         <span>Field view</span>
         <div class="seg" id="sView"><button type="button" class="on" data-v="offense">Offense</button><button type="button" data-v="defense">Defense</button><button type="button" data-v="both">Both</button></div>
@@ -474,7 +488,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="game.js?v=4"></script>
 <script src="clip.js?v=1"></script>
 <script src="flow.js?v=7"></script>
-<script src="daily.js?v=5"></script>
+<script src="daily.js?v=6"></script>
 <script src="trivia.js?v=4"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
