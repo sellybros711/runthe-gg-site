@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import * as M from './materials.js?v=8';
-import { battingClub, clubNamed } from './clubs.js?v=2';
+import { battingClub, clubNamed } from './clubs.js?v=3';
 import { capFor, frontFor } from './uniforms.js?v=2';
 import * as G from './gear3d.js?v=4';
 import * as HG from './headgear.js?v=5';

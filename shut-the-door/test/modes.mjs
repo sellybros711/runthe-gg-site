@@ -133,10 +133,13 @@ check('the default is candidate A', M.defaultPack(sched, M.VOTE.EPOCH) === M.can
     if (k) want[id] = k;
   }
   check('plate.js keys every pack with a team by its closer\'s club', JSON.stringify(Object.keys(PC).sort().map((id) => id + ':' + PC[id])) === JSON.stringify(Object.keys(want).sort().map((id) => id + ':' + want[id])));
-  const sql = readFileSync(join(HERE, '..', '..', 'supabase', '162_shut_the_door_plates.sql'), 'utf8');
+  // the list is 162's rows plus the two proxy spots 167 added
+  const sql = ['162_shut_the_door_plates.sql', '167_shut_the_door_pack_clubs_proxy.sql']
+    .map((f) => readFileSync(join(HERE, '..', '..', 'supabase', f), 'utf8')).join('\n');
   const rows = {};
   for (const m of sql.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)'\)/g)) rows[m[1]] = m[2];
-  check('the server\'s shutdoor_pack_clubs is the same list', JSON.stringify(rows) === JSON.stringify(Object.fromEntries(Object.keys(PC).map((id) => [id, PC[id]]))));
+  const sorted = (o) => JSON.stringify(Object.keys(o).sort().map((id) => id + ':' + o[id]));
+  check('the server\'s shutdoor_pack_clubs is the same list', sorted(rows) === sorted(PC));
   check('every key is a club in clubs.js', Object.values(PC).every((k) => CLUBS.some((c) => key(c) === k)));
 }
 

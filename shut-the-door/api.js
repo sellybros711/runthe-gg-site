@@ -56,7 +56,7 @@
   const PG = () => (NODE ? require('./postgame.js') : window.STD_POSTGAME);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 20;
+  const SCHEDULE_V = 21;
   /* Rules 8 (the closer's outing to the end of the game, engine.js 11) starts with a whole day's
      daily, never partway through one: a daily of a day before this is played as rules 7 (the
      first half alone), so everybody on one day's board plays one game. Set it to the day after

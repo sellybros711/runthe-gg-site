@@ -101,9 +101,10 @@
   function chooseLocal(k) { var o = local(); o.plate = k || null; saveLocal(o); }
 
   /* Each situation's closer's club: the packs' pitcher.team keyed. The same list is the server's
-     shutdoor_pack_clubs (supabase/162); test/modes.mjs holds both to the packs. */
+     shutdoor_pack_clubs (supabase/162, plus 167); test/modes.mjs holds both to the packs. */
   var PACK_CLUBS = {
-    'std-1988-ws1-eckersley': 'athletics', 'std-2001-ws7-rivera': 'yankees', 'std-2008-alcs7-price': 'rays',
+    'std-1988-ws1-eckersley': 'athletics', 'std-2001-ws7-rivera': 'yankees', 'std-2005-nlcs5-lidge': 'astros',
+    'std-2007-ws4-papelbon': 'redsox', 'std-2008-alcs7-price': 'rays',
     'std-2008-krod-sea': 'angels', 'std-2008-ws5-lidge': 'phillies', 'std-2009-alcs6-rivera': 'yankees',
     'std-2010-hoffman-stl': 'brewers', 'std-2010-ws5-wilson': 'giants', 'std-2011-rivera-min': 'yankees',
     'std-2011-ws6-feliz': 'rangers', 'std-2012-ws4-romo': 'giants', 'std-2013-alcs6-uehara': 'redsox',

@@ -23,8 +23,8 @@ import { assetUrl } from './load.js?v=9';
 import { BASE, MOUND, WALL_H, wallDist } from './inplay-plan.js?v=33';
 import { MOUND_C } from './field.js?v=19';
 import { foulFront, frontTop, netTop, NET_TO, NET_ARC, BACKSTOP } from './foul.js?v=2';
-import { buildCrowd, crowdClub, crowdImpostor, LOD, FAN_VIS, CROWD_SUN } from './crowd.js?v=2';
-import { clubNamed, battingClub } from './clubs.js?v=2';
+import { buildCrowd, crowdClub, crowdImpostor, LOD, FAN_VIS, CROWD_SUN } from './crowd.js?v=3';
+import { clubNamed, battingClub } from './clubs.js?v=3';
 export { MOUND_C };
 
 const W = (x, y, h = 0) => new THREE.Vector3(-x * FT, h * FT, y * FT);   // field feet to world metres

@@ -2,7 +2,7 @@
  *
  * Team colours are facts; the hex values here are approximations for a fan project. They were not
  * checked against each club's official palette, so verify them before launch. Names are the current
- * club names. SERIES names the other club in a World Series or Wild Card game, whose title does not
+ * club names. SERIES names the other club in a postseason game (World Series, LCS, Wild Card), whose title does not
  * say it (the title names only the two clubs of a regular season game).
  *
  * Used by people.js (kitFor): the closer's club is the pack's pitcher.team, the hitters' club is the
@@ -53,6 +53,21 @@ export const SERIES = {
   'std-2022-ws6-pressly': { club: 'Philadelphia Phillies' },
   'std-2024-ws5-buehler': { club: 'New York Yankees' },
   'std-2025-ws7-yamamoto': { club: 'Toronto Blue Jays' },
+  'std-2005-nlcs5-lidge': { club: 'St. Louis Cardinals' },
+  'std-2007-ws4-papelbon': { club: 'Colorado Rockies' },
+  'std-2008-alcs7-price': { club: 'Boston Red Sox' },
+  'std-2008-ws5-lidge': { club: 'Tampa Bay Rays' },
+  'std-2009-alcs6-rivera': { club: 'Los Angeles Angels' },
+  'std-2010-ws5-wilson': { club: 'Texas Rangers' },
+  'std-2012-ws4-romo': { club: 'Detroit Tigers' },
+  'std-2013-alcs6-uehara': { club: 'Detroit Tigers' },
+  'std-2014-ws7-bumgarner': { club: 'Kansas City Royals' },
+  'std-2015-alcs6-davis': { club: 'Toronto Blue Jays' },
+  'std-2017-ws2-jansen': { club: 'Houston Astros' },
+  'std-2018-alcs4-kimbrel': { club: 'Houston Astros' },
+  'std-2021-nlcs6-smith': { club: 'Los Angeles Dodgers' },
+  'std-2023-ws1-sewald': { club: 'Texas Rangers' },
+  'std-2025-ws6-glasnow': { club: 'Toronto Blue Jays' },
 };
 
 const norm = (s) => String(s || '').trim().toLowerCase();
