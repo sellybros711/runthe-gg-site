@@ -318,6 +318,13 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .mm-dot { fill: var(--signal); stroke: #0b0f17; stroke-width: 4; opacity: .34; transform-box: fill-box; transform-origin: center; transition: opacity 1.2s ease-out; }
 .mm-dot.now { opacity: 1; animation: mmPop .3s ease-out; }
 @keyframes mmPop { from { transform: scale(.4); } to { transform: scale(1); } }
+/* the 3D play, live (minimap.js live): a white dot a runner (red once he is out), the ball a small orange
+   dot ringed white. After the play the dots go and the taken bases light, as the scorebar's do. */
+.mini svg.mm-lit .mm-base { fill-opacity: .4; transition: fill-opacity .3s; }
+.mini svg.mm-lit .mm-base.on { fill: #f4f5f7; fill-opacity: 1; }
+.mm-run { fill: #f4f5f7; stroke: #0b0f17; stroke-width: 4; }
+.mm-run.out { fill: var(--red); }
+.mm-ball { fill: var(--signal); stroke: #f4f5f7; stroke-width: 3.5; }
 
 /* the coach's mini grid (mound.js Grid), mirrored by screenCol(). The mound aims with aim.js */
 .grid { position: absolute; z-index: 3; }

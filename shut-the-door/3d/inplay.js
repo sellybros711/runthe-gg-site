@@ -12,18 +12,18 @@
  *     run.land { s, real, how, fair } (the ball's first landing, catch, pick up or home run)
  *   ip.prime()                                                    its textures up to the GPU at load (stage.js)
  *   ip.update(s, camera)                                          every frame after contact (s: plan time)
- *   ip.fieldAt(s)                                                 the runners for the scorebar diamond
+ *   ip.fieldAt(s)                                                 the runners for the scorebar diamond, and .ball
  *   ip.end(camera)                                                back to the set (the next pitch)
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=32';
+import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=33';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=14';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=38';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=39';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=49';
+import { kitFor } from './people.js?v=50';
 import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 
@@ -1270,6 +1270,9 @@ export class InPlay {
       if (scored) p = 4;
       list.push({ p, out, alpha: out ? Math.max(0.35, 1 - (s - r.outAt) / 0.6) : scored ? 0.5 : 1, from: r.from, to: r.to });
     }
+    // (the ball too, field feet, for the HUD's live minimap (minimap.js live): read only, the plan's ball at s)
+    const b = A.plan.ballAt(A.plan.dur != null ? Math.min(s, A.plan.dur) : s);
+    if (b) list.ball = { x: b.x, y: b.y, z: b.z };
     return list;
   }
 

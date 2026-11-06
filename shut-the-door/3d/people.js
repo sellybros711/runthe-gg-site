@@ -15,7 +15,7 @@ import { measureHead, wear, wornShade } from './headgear.js?v=5';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=9';
-import { STANCE_X } from './inplay-plan.js?v=32';
+import { STANCE_X } from './inplay-plan.js?v=33';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);

@@ -7,6 +7,12 @@
  *   var mini = STD_MINIMAP.create(el);  builds the field into el (a div over the scene)
  *   mini.show(pitchResult);             after a play: shows the field, and a dot if the ball was in play
  *   mini.reset();                       a new outing: the field goes, the dots go
+ *   mini.live(list, inPlay)             every frame of a 3D play: the runners and the ball move (list is
+ *                                       3d/inplay.js fieldAt: runners { p, out, alpha } and list.ball,
+ *                                       field feet). inPlay shows the field at contact. Read only.
+ *   mini.settle(bases)                  after a 3D play: the moving dots go, the engine's bases light
+ *                                       (the bases bit mask, 1 first, 2 second, 4 third)
+ * With no 3D (the 2D fallback, reduced motion) ui.js calls neither, and the minimap is as it was.
  *   STD_MINIMAP.spot(inPlay)            { x, y } in feet from home, or null. Pure. (tests use it)
  *
  * What the dot is made of, and what it is not:
@@ -28,7 +34,12 @@
   /* where each kind of ball usually comes down, in feet from home. The estimate is held to it. */
   var BAND = { line: [90, 330], fly: [120, 420], popup: [30, 140] };
   var FADE_MS = 1800;                  // a new dot stays bright this long, then fades
-  var NEW_DOT = { r: 20 };             // model units: 500 wide, drawn at about 0.15 px a unit on a phone
+  var NEW_DOT = { r: 20 };
+  var RUN_R = 17, BALL_R = 11;         // model units: the live runner and ball dots
+  var REACH = 425;                     // ft: a ball past the drawn field is held at its edge
+  /* the base paths in feet from home: home, first, second, third, home (inplay-plan.js BASE) */
+  var B = 90 * Math.SQRT1_2;
+  var PATH = [[0, 0], [B, B], [0, 2 * B], [-B, B], [0, 0]];             // model units: 500 wide, drawn at about 0.15 px a unit on a phone
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -54,6 +65,13 @@
   }
   function round1(v) { return Math.round(v * 10) / 10; }
 
+  /* a place on the paths (0 home, 1..3 the bases, 4 home again) in feet from home. Pure. */
+  function pathFt(p) {
+    p = clamp(+p || 0, 0, 4);
+    var k = Math.min(3, Math.floor(p)), t = p - k, a = PATH[k], c = PATH[k + 1];
+    return { x: round1(a[0] + (c[0] - a[0]) * t), y: round1(a[1] + (c[1] - a[1]) * t) };
+  }
+
   /* the field in feet, with y flipped for SVG (SVG y runs down; the field runs out from home) */
   function P(x, y) { return x + ' ' + (-y); }
   /* the static field. The fence is a quadratic through (0, FENCE) from the two corners: its control
@@ -62,7 +80,7 @@
     var lx = LINE * Math.SQRT1_2, ctrl = 2 * FENCE - lx;
     var inf = 95, in45 = inf * Math.SQRT1_2, b = 90 * Math.SQRT1_2;
     var fence = 'M' + P(-lx, lx) + ' Q' + P(0, ctrl) + ' ' + P(lx, lx);
-    var base = function (x, y) { return '<rect class="mm-base" x="-7" y="-7" width="14" height="14" transform="translate(' + x + ' ' + (-y) + ') rotate(45)"/>'; };
+    var base = function (x, y, n) { return '<rect class="mm-base" data-base="' + n + '" x="-7" y="-7" width="14" height="14" transform="translate(' + x + ' ' + (-y) + ') rotate(45)"/>'; };
     return '' +
       '<path class="mm-grass" d="M' + P(0, 0) + ' L' + P(-lx, lx) + ' Q' + P(0, ctrl) + ' ' + P(lx, lx) + ' Z"/>' +
       '<path class="mm-dirt" d="M' + P(0, 0) + ' L' + P(-in45, in45) + ' A' + inf + ' ' + inf + ' 0 0 1 ' + P(in45, in45) + ' Z"/>' +
@@ -70,7 +88,7 @@
       '<path class="mm-fence" d="' + fence + '"/>' +
       '<path class="mm-path" d="M' + P(0, 0) + ' L' + P(b, b) + ' L' + P(0, 2 * b) + ' L' + P(-b, b) + ' Z"/>' +
       '<circle class="mm-mound" cx="0" cy="-60.5" r="9"/>' +
-      base(b, b) + base(0, 2 * b) + base(-b, b) +
+      base(b, b, 1) + base(0, 2 * b, 2) + base(-b, b, 3) +
       '<path class="mm-plate" d="M-9 -2 L9 -2 L9 5 L0 11 L-9 5 Z"/>';
   }
 
@@ -79,15 +97,60 @@
     svg.setAttribute('viewBox', '-250 -430 500 470');
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('focusable', 'false');
-    svg.innerHTML = fieldMarkup() + '<g class="mm-dots"></g>';
+    svg.innerHTML = fieldMarkup() + '<g class="mm-dots"></g><g class="mm-live"></g>';
     el.appendChild(svg);
-    var dots = svg.querySelector('.mm-dots');
-    var timers = [];
+    var dots = svg.querySelector('.mm-dots'), liveG = svg.querySelector('.mm-live');
+    var bases = svg.querySelectorAll('.mm-base');
+    var timers = [], runs = [], ball = null;
+
+    function circle(cls, r) {
+      var c = document.createElementNS(NS, 'circle');
+      c.setAttribute('class', cls); c.setAttribute('r', r);
+      liveG.appendChild(c);
+      return c;
+    }
+    function clearLive() { liveG.innerHTML = ''; runs = []; ball = null; svg.classList.remove('mm-moving'); }
+    function light(mask) {
+      for (var i = 0; i < bases.length; i++) bases[i].classList.toggle('on', !!(mask & (1 << i)));
+    }
 
     function reset() {
       timers.forEach(clearTimeout); timers = [];
       dots.innerHTML = '';
+      clearLive();
+      light(0);
+      svg.classList.remove('mm-lit');
       el.hidden = true;
+    }
+
+    /* a frame of the 3D play: one dot a runner where he is on the paths, one for the ball. Only reads. */
+    function live(list, inPlay) {
+      if (!list) return;
+      if (inPlay) el.hidden = false;
+      if (el.hidden) return;
+      svg.classList.add('mm-lit', 'mm-moving');
+      light(0);
+      while (runs.length < list.length) runs.push(circle('mm-run', RUN_R));
+      while (runs.length > list.length) liveG.removeChild(runs.pop());
+      list.forEach(function (r, i) {
+        var q = pathFt(r.p), c = runs[i];
+        c.setAttribute('cx', q.x); c.setAttribute('cy', -q.y);
+        c.setAttribute('opacity', r.alpha == null ? 1 : r.alpha);
+        c.classList.toggle('out', !!r.out);
+      });
+      var b = list.ball;
+      if (b && isFinite(b.x) && isFinite(b.y)) {
+        if (!ball) ball = circle('mm-ball', BALL_R);
+        var d = Math.hypot(b.x, b.y), k = d > REACH ? REACH / d : 1;
+        ball.setAttribute('cx', round1(b.x * k)); ball.setAttribute('cy', round1(-b.y * k));
+      } else if (ball) { liveG.removeChild(ball); ball = null; }
+    }
+
+    /* the play is over: the moving dots go and the bases the engine says are taken light */
+    function settle(mask) {
+      clearLive();
+      svg.classList.add('mm-lit');
+      light(mask | 0);
     }
 
     /* after a play: the field shows, and a dot if the ball was in play and has a place on the field */
@@ -111,8 +174,8 @@
     }
 
     el.hidden = true;
-    return { show: show, reset: reset, dots: function () { return dots.querySelectorAll('.mm-dot').length; } };
+    return { show: show, reset: reset, live: live, settle: settle, dots: function () { return dots.querySelectorAll('.mm-dot').length; } };
   }
 
-  window.STD_MINIMAP = { create: create, spot: spot, estimateFt: estimateFt, FAIR: FAIR };
+  window.STD_MINIMAP = { create: create, spot: spot, estimateFt: estimateFt, pathFt: pathFt, FAIR: FAIR };
 })();
