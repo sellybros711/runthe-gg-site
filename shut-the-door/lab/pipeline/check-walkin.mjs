@@ -1,5 +1,5 @@
-/* The next hitter walks up (3d/walkin.js): he walks into the picture, settles into his own stance, and
- * the pitch to him is exactly as without the walk.
+/* The change of hitter (3d/walkin.js): the next hitter walks into the picture and settles into his own
+ * stance, after a strikeout the last one walks out of it first, and the pitch is exactly as without them.
  *
  *   node shut-the-door/lab/pipeline/check-walkin.mjs
  *
@@ -7,19 +7,30 @@
  * 1440x900, on every hitter of one pack (both hands), on the walk's own clock stepped 1/60 s:
  *   starts   a new hitter after a pitch walks up; the first hitter of an outing (no pitch yet) and
  *            the same hitter again do not
- *   length   it lasts DUR_MIN to DUR_MAX seconds
+ *   length   it lasts DUR_MIN to DUR_MAX seconds (a walk in alone; on a phone the frame is tight, so he
+ *            comes into it close to the box)
  *   enters   at its first frame his head, hips and feet are all off the canvas (he walks in, never
  *            appears in the picture)
  *   lands    at its end every bone, his place and facing and the bat are the set's own, value for value
  *            (the set posed again with the walk off)
- *   skate    while he walks, his planted foot (the lower one, within PLANT_M of the ground) moves over
- *            the ground under SKATE m/s, at its worst over the cruise
+ *   skate    while he walks, a planted foot (within PLANT_M of the ground for PLANT_N frames running)
+ *            moves over the ground under SKATE m/s, away from its touch down and push off
  *   smooth   no hand, foot, head or the bat's end moves more than JOLT m in a step of 1/60 s (a pop)
+ *   bat      on every frame of every walk in and walk off (a right and a left handed hitter at each size):
+ *            the bat's handle stays in his bottom hand (its distance from the hand within HANDLE_M of the
+ *            stance's); it never points at the plate, ahead of him or out to his side (within LEVEL_DEG of
+ *            level, its barrel must point back of him); carried in one hand (his hands GRIP_OFF apart, the
+ *            two handed weight it is laid with under 0.05) its barrel is within DOWN_DEG of straight down; and it turns at
+ *            most ROT_DEG in a step of 1/60 s (a snap fails)
  *   clear    the bat's barrel stays CLEAR_M from the centre of his head (a helmet's half width, the
  *            barrel's radius and a margin): it turns into his grip behind his head, never through his helmet
  *   skip     a tap on the canvas mid walk ends it there, in the set's pose exactly; a key the same
  *   pitch    a pitch played mid walk starts from the stance: its trace is the same pitch's from the
  *            plain set, value for value
+ *   walk out after a strikeout (a right and a left handed hitter striking out): the ghost takes his pose
+ *            exactly, walks out of the frame and goes; nothing on him moves more than JOLT in a step;
+ *            the two hitters keep SEP_M apart (pelvis to pelvis: their arms never meet); all of it,
+ *            out and in, is over in TOTAL_MAX seconds and ends in the next hitter's set exactly
  *   quiet    reduced motion: no walk
  *   body     the skin, the collar, the spine, neck and shoulder joints, the shoulders' width and the
  *            pelvis' tilt held to check-deform's own limits (its probe, deform-probe.js) through the
@@ -33,7 +44,7 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const TOTAL_MAX = 3.5, CLEAR_M = 0.18, DUR_MIN = 1.8, DUR_MAX = 3.3, SKATE = 0.35, PLANT_M = 0.03, JOLT = 0.12;
+const PLANT_N = 10, PLANT_EDGE = 3, SEP_M = 0.7, HANDLE_M = 0.03, LEVEL_DEG = 25, DOWN_DEG = 55, ROT_DEG = 8, TOTAL_MAX = 3.5, CLEAR_M = 0.18, DUR_MIN = 1.2, DUR_MAX = 3.3, SKATE = 0.35, PLANT_M = 0.03, JOLT = 0.12;
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) { /* next */ } }
@@ -68,7 +79,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
   await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 180000 });
   await page.evaluate(() => window.STD_STAGE.current.inplay.motion);
   await page.waitForFunction(() => { const s = window.STD_STAGE.current; return s.walkClips && s.ghost3d; }, null, { timeout: 180000 });
-  const r = await page.evaluate(async ({ scn, W, H, PLANT_M }) => {
+  const r = await page.evaluate(async ({ scn, W, H, PLANT_M, LEVEL_DEG, PLANT_N, PLANT_EDGE }) => {
     const st = window.STD_STAGE.current, C = window.STD_CONTRACT;
     const cv = st.canvas;
     // the draws skipped; the canvas reads as shown at the page's size (the home screen hides it)
@@ -97,6 +108,25 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
     };
     const setOf = (b, prev) => { upAfter(b, prev, false); return dump(); };
     const walkOf = (b, prev) => upAfter(b, prev, true);
+    // the bat on one frame against its rules (bat above); m: the running worst, set: the stance's handle gap
+    const WI = await import('./3d/walkin.js?v=1');
+    const batTrack = (P, w, s, m) => {
+      const bat = P.bat, hand = P.bones['hand_' + (P.bottom || 'l')], top = P.bones['hand_' + ((P.bottom || 'l') === 'l' ? 'r' : 'l')];
+      bat.updateMatrixWorld(true);
+      const handle = new V(0, 0.055, 0).applyMatrix4(bat.matrixWorld), hp = hand.getWorldPosition(new V());
+      const gapH = handle.distanceTo(hp);
+      if (m.handle0 == null) m.handle0 = gapH;
+      m.handle = Math.max(m.handle || 0, Math.abs(gapH - m.handle0));
+      const q = bat.getWorldQuaternion(new bat.quaternion.constructor()), b = new V(0, 1, 0).applyQuaternion(q);
+      const left = P.bones.thigh_l.getWorldPosition(new V()).sub(P.bones.thigh_r.getWorldPosition(new V())).setY(0).normalize();
+      const fwd = new V().crossVectors(left, new V(0, 1, 0)).normalize();
+      const level = Math.asin(Math.abs(b.y)) * 180 / Math.PI, h = b.clone().setY(0).normalize();
+      if (level < LEVEL_DEG && h.dot(fwd) > -0.3) { m.bad = (m.bad || 0) + 1; if (!m.badAt) m.badAt = Math.round(s * 100) / 100; }
+      const hold = w.batK ?? WI.holdWeight(w, s), gap = hp.distanceTo(top.getWorldPosition(new V()));
+      if (hold < 0.05 && gap > 0.3) { const down = Math.acos(Math.max(-1, Math.min(1, -b.y))) * 180 / Math.PI; if (down > (m.down || 0)) { m.down = down; m.downAt = Math.round(s * 100) / 100; } }
+      if (m.q) { const r = m.q.angleTo(q) * 180 / Math.PI; if (r > (m.rot || 0)) { m.rot = r; m.rotAt = Math.round(s * 100) / 100; } }
+      m.q = q;
+    };
     const onCanvas = (p) => { const v = p.clone().project(st.cam0); return v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1; };
     const res = { hitters: [] };
     const bs = scn.batters;
@@ -112,6 +142,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
       o.dur = Wk.dur;
       o.enters = ['head', 'pelvis', 'foot_l', 'foot_r'].every((k) => !onCanvas(wp(B.bones[k])));
       const pts = () => [...['hand_l', 'hand_r', 'foot_l', 'foot_r', 'head'].map((k) => wp(B.bones[k])), new V(0, 0.84, 0).applyMatrix4(B.bat.matrixWorld)];
+      const series = [];
       let prevPts = null, prevFeet = null, skate = 0, jolt = 0, joltAt = null, near = Infinity, nearAt = null;
       // the barrel (from 0.3 m up the bat to its end) to the centre of his head
       const headGap = () => {
@@ -122,18 +153,33 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
       st.walkLift();
       const gapSet = headGap();
       const dt = 1 / 60, w = Wk.in;
+      o.bat = {};
       for (let s = 0; s <= Wk.dur + 1e-9; s += dt) {
         Wk.clock = s; st.walkApply();
+        if (s < Wk.dur) batTrack(B, w, s, o.bat);
         const P = pts();
         if (prevPts) P.forEach((p, k) => { const d = p.distanceTo(prevPts[k]); if (d > jolt) { jolt = d; joltAt = Math.round(s * 100) / 100 + ' ' + k; } });
         prevPts = P;
         const feet = ['l', 'r'].map((x) => wp(B.bones['foot_' + x]));
-        const lo = feet[0].y < feet[1].y ? 0 : 1, ground = w.set.ankle;
-        const loP = prevFeet ? (prevFeet[0].y < prevFeet[1].y ? 0 : 1) : -1;
-        if (prevFeet && lo === loP && s < Wk.dur - 0.5 && feet[lo].y - ground < PLANT_M && prevFeet[lo].y - ground < PLANT_M) { const v = Math.hypot(feet[lo].x - prevFeet[lo].x, feet[lo].z - prevFeet[lo].z) / dt; if (v > skate) { skate = v; o.skAt = Math.round(s * 1000) / 1000 + ' ' + lo; } }
+        if (s < Wk.dur - 0.5) series.push({ s, feet });
         prevFeet = feet;
         const g = headGap();
         if (g < near) { near = g; nearAt = Math.round(s * 100) / 100; }
+      }
+      // a planted foot: one within PLANT_M of the ground (the set's ankle) for at least PLANT_N frames in
+      // a row; its speed over the ground in the middle of that (PLANT_EDGE frames in from each end: the
+      // heel's touch down and the toe's push off roll the foot, they do not slide it)
+      for (const k of [0, 1]) {
+        let run = [];
+        const flush = () => {
+          if (run.length >= PLANT_N) for (let j = PLANT_EDGE + 1; j < run.length - PLANT_EDGE; j++) {
+            const a = run[j - 1].feet[k], b = run[j].feet[k], v = Math.hypot(b.x - a.x, b.z - a.z) / dt;
+            if (v > skate) { skate = v; o.skAt = Math.round(run[j].s * 1000) / 1000 + ' ' + k; }
+          }
+          run = [];
+        };
+        for (const f of series) { if (f.feet[k].y - Wk.in.set.ankle < PLANT_M) run.push(f); else flush(); }
+        flush();
       }
       // (the cost of a frame's pose, JS only: reported, not judged)
       const c0 = performance.now();
@@ -178,11 +224,13 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
     await st.play({ pr, quick: true });
     const mid = st.trace.s;
     res.pitch = { frames: plain.length, same: JSON.stringify(plain) === JSON.stringify(mid), walkOver: !st.walk };
-    // a strikeout ends the at bat: the hitter walks out (the ghost) and the next one walks in
-    {
+    // a strikeout ends the at bat: the hitter walks out (the ghost) and the next one walks in; for a
+    // right and a left handed hitter striking out, each followed by the next in the order
+    res.outs = [];
+    for (const hand of ['R', 'L']) {
       window.STD_STAGE_TEST = { step: 1 / 30, renderEvery: 1 };
-      const A = bs[2], Bn = bs[3];
-      setOf(A, bs[1]);
+      const ai = bs.findIndex((x) => x.bats === hand), A = bs[ai], Bn = bs[(ai + 1) % bs.length], prevA = bs[(ai + bs.length - 1) % bs.length];
+      setOf(A, prevA);
       st.ghostFor = null; st.ghostDress();
       await new Promise((r) => { const f = () => (st.ghostFor === A.id ? r() : setTimeout(f, 50)); f(); });
       const k = { n: 2, call: { type: scn.pitcher.arsenal[0].type, cell: 22 }, actual: { x: 0.1, zn: -0.05 }, actualCell: C.cellAt(0.1, -0.05), velo: scn.pitcher.arsenal[0].velo, batter: 'swing', result: 'swinging_strike',
@@ -193,32 +241,39 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
       // the swap: the ghost takes his pose exactly, before anything moves
       const before = B.bind.map(([b]) => b.getWorldPosition(new V()));
       st.setBatter(Bn); st.draw();
-      const Wk = st.walk; const out = { started: !!(Wk && Wk.out) };
+      const Wk = st.walk; const out = { name: A.name, next: Bn.name, hand, started: !!(Wk && Wk.out) };
       if (Wk) { cancelAnimationFrame(Wk.raf); Wk.raf = 0; }
       if (out.started) {
         Wk.clock = 0; st.walkApply();
         const gb = G.bind.map(([b]) => b.getWorldPosition(new V()));
         out.swap = Math.max(...gb.map((v, i) => v.distanceTo(before[i])));
         out.shown = G.root.visible;
-        let prev = null, jolt = 0, joltAt = null;
+        let prev = null, jolt = 0, joltAt = null, sep = Infinity;
+        out.bat = {}; out.batIn = {};
         for (let s = 0; s <= Wk.dur + 1e-9; s += 1 / 60) {
           Wk.clock = s; st.walkApply();
           const P = [...['hand_l', 'hand_r', 'foot_l', 'foot_r', 'head'].map((x) => G.bones[x].getWorldPosition(new V())), new V(0, 0.84, 0).applyMatrix4(G.bat.matrixWorld)];
           if (prev && G.root.visible) P.forEach((p, i) => { const d = p.distanceTo(prev[i]); if (d > jolt) { jolt = d; joltAt = Math.round(s * 100) / 100 + ' ' + i; } });
           prev = P;
+          if (G.root.visible && s < Wk.out.dur) {
+            batTrack(G, Wk.out, s, out.bat);
+            const a = G.bones.pelvis.getWorldPosition(new V()).setY(0), c = B.bones.pelvis.getWorldPosition(new V()).setY(0);
+            sep = Math.min(sep, a.distanceTo(c));
+          }
+          if (Wk.in && s < Wk.dur) batTrack(B, Wk.in, Math.max(0, s - Wk.inAt), out.batIn);
         }
-        out.jolt = jolt; out.joltAt = joltAt; out.dur = Wk.dur; out.outDur = Wk.out.dur; out.leaves = !!Wk.out.leaves;
+        out.jolt = jolt; out.joltAt = joltAt; out.dur = Wk.dur; out.outDur = Wk.out.dur; out.leaves = !!Wk.out.leaves; out.sep = sep;
         Wk.clock = Wk.dur; st.walkApply();
         st.walkEnd();
         out.hidden = !G.root.visible;
         out.total = st.walked.dur;
         out.endDiff = diff(dump(), setOf(Bn, A));
       }
-      res.out = out;
+      res.outs.push(out);
     }
     window.STD_CHECK_UP = (b, prev) => !walkOf(b, prev);
     return res;
-  }, { scn, W, H, PLANT_M });
+  }, { scn, W, H, PLANT_M, LEVEL_DEG, PLANT_N, PLANT_EDGE });
   // reduced motion: no walk
   await page.emulateMedia({ reducedMotion: 'reduce' });
   r.quiet = await page.evaluate(({ scn }) => { window.STD_STAGE_TEST = { step: 1 / 60, renderEvery: 1, walk: true }; return window.STD_CHECK_UP(scn.batters[0], scn.batters[1]); }, { scn });
@@ -262,18 +317,31 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
   ok(hs.every((o) => o.enters), `${tag} enters: off the canvas at the first frame` + (hs.some((o) => !o.enters) ? ` (in view: ${hs.filter((o) => !o.enters).map((o) => o.name).join(', ')})` : ''));
   ok(hs.every((o) => o.lands === 0 && o.endDiff === 0), `${tag} lands: the set's pose at the end, value for value (worst ${Math.max(...hs.map((o) => Math.max(o.lands, o.endDiff)))})`);
   const sk = worst('skate'), jo = worst('jolt');
-  ok(sk.skate < SKATE, `${tag} skate: planted foot at most ${sk.skate.toFixed(3)} m/s over the ground (${sk.name}; held under ${SKATE})`);
+  ok(sk.skate < SKATE, `${tag} skate: planted foot at most ${sk.skate.toFixed(3)} m/s over the ground (${sk.name} at ${sk.skAt}; held under ${SKATE})`);
   ok(jo.jolt < JOLT, `${tag} smooth: at most ${jo.jolt.toFixed(3)} m in a 1/60 s step (${jo.name} at ${jo.joltAt}; held under ${JOLT})`);
   const cl = hs.reduce((m, o) => (o.near < m.near ? o : m), hs[0]);
   ok(hs.every((o) => o.near >= CLEAR_M), `${tag} clear: the barrel at least ${cl.near.toFixed(3)} m from his head's centre (${cl.name} at ${cl.nearAt} s; his stance ${cl.gapSet.toFixed(3)}; held to ${CLEAR_M})`);
   ok(r.tap.ended && r.tap.skipped && r.tap.diff === 0 && r.key.ended && r.key.diff === 0, `${tag} skip: a tap and a key end it in the set's pose (${JSON.stringify([r.tap, r.key])})`);
   ok(r.pitch.same && r.pitch.walkOver && r.pitch.frames > 10, `${tag} pitch: a pitch thrown mid walk is the plain set's, frame for frame (${r.pitch.frames} frames)`);
   console.log(`     ${tag} cost: the walk's pose ${(hs.reduce((a, o) => a + o.layMs, 0) / hs.length).toFixed(2)} ms of JS a frame here (reported only)`);
-  const O = r.out;
-  ok(O.started && O.shown && O.swap < 1e-6, `${tag} walk out: after a strikeout the hitter walks out on the ghost, taking his pose exactly (${O.swap})`);
-  ok(O.started && O.leaves && O.hidden, `${tag} walk out: he is out of the frame in ${O.outDur && O.outDur.toFixed(2)} s, then the ghost goes`);
-  ok(O.started && O.jolt < JOLT, `${tag} walk out: at most ${O.jolt && O.jolt.toFixed(3)} m in a 1/60 s step (at ${O.joltAt}; held under ${JOLT})`);
-  ok(O.started && O.total <= TOTAL_MAX, `${tag} walk out and in: ${O.total && O.total.toFixed(2)} s in all (held to ${TOTAL_MAX})`);
+  const batOk = (m) => m.handle <= HANDLE_M && !m.bad && (m.down || 0) <= DOWN_DEG && (m.rot || 0) <= ROT_DEG;
+  const batSay = (m) => `handle ${(m.handle * 100).toFixed(1)} cm, ${m.bad || 0} frames level ahead or aside${m.badAt != null ? ' (first at ' + m.badAt + ' s)' : ''}, carried ${(m.down || 0).toFixed(0)} deg off down${m.downAt != null ? ' at ' + m.downAt + ' s' : ''}, turn ${(m.rot || 0).toFixed(1)} deg a step at ${m.rotAt} s`;
+  for (const hand of ['R', 'L']) {
+    const hh = hs.filter((o) => o.bats === hand);
+    const worst = hh.reduce((m, o) => (!batOk(o.bat) || (o.bat.rot || 0) > (m.bat.rot || 0) ? o : m), hh[0]);
+    ok(hh.every((o) => batOk(o.bat)), `${tag} bat, walk in (${hand}, ${hh.length} hitters): worst ${worst.name}: ${batSay(worst.bat)}`);
+  }
+  for (const O of r.outs) {
+    const who = `${O.name} (${O.hand}) then ${O.next}`;
+    ok(O.started && O.shown && O.swap < 1e-6, `${tag} walk out: ${who}: after a strikeout he walks out on the ghost, taking his pose exactly (${O.swap})`);
+    ok(O.started && O.leaves && O.hidden, `${tag} walk out: ${who}: out of the frame in ${O.outDur && O.outDur.toFixed(2)} s, then the ghost goes`);
+    ok(O.started && O.jolt < JOLT, `${tag} walk out: ${who}: at most ${O.jolt && O.jolt.toFixed(3)} m in a 1/60 s step (at ${O.joltAt}; held under ${JOLT})`);
+    ok(O.started && O.sep >= SEP_M, `${tag} walk out: ${who}: the two hitters at least ${O.sep && O.sep.toFixed(2)} m apart (held to ${SEP_M})`);
+    ok(O.started && batOk(O.bat), `${tag} bat, walk out: ${who}: ${O.bat ? batSay(O.bat) : ''}`);
+    ok(O.started && batOk(O.batIn), `${tag} bat, walk in after it: ${who}: ${O.batIn ? batSay(O.batIn) : ''}`);
+    ok(O.started && O.total <= TOTAL_MAX, `${tag} walk out and in: ${who}: ${O.total && O.total.toFixed(2)} s in all (held to ${TOTAL_MAX})`);
+    ok(O.started && O.endDiff === 0, `${tag} walk out and in: ${who}: the set's pose at the end, value for value (${O.endDiff})`);
+  }
   ok(r.quiet, `${tag} quiet: no walk under reduced motion`);
   ok(errors.length === 0, `${tag} no page error` + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
   await page.close();

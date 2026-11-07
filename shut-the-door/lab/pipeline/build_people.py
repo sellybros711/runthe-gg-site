@@ -284,7 +284,7 @@ PEOPLE = {
     ),
     # The walk up between at bats (3d/walkin.js), on the batter's body and rig: Mixamo's Baseball Walk Out
     # (from his stance, out of the box) and Baseball Walk In (into the box, to his stance), the owner's
-    # 2026-10-19 downloads (60 fps, every second frame). Motion only, and only the rig is built (no
+    # 2026-10-19 downloads, and Walking (the walk to and from them), 2026-11-06 (60 fps, every second frame). Motion only, and only the rig is built (no
     # skin, clothes or textures: the scene lays the clips on the batter's own bones by name). As the
     # swings: as captured for a right handed hitter (R), mirrored for a left. The bat rides in his
     # bottom hand (the scene's), so that hand grips and the top hand grips only while it is on the bat.
@@ -295,6 +295,9 @@ PEOPLE = {
         clips=[(n + sfx, f, a, b, mir, hands) for (n, f, a, b) in (
             ('walkIn', 'mixamo/Baseball Walk In.fbx', 1, 326),
             ('walkOut', 'mixamo/Baseball Walk Out.fbx', 1, 241),
+            # the owner's 2026-11-06 download: one cycle of Mixamo's Walking (two steps; the last frame is
+            # the first again), its travel kept (the scene takes it out and walks him by the distance)
+            ('walk', 'mixamo/Walking.fbx', 1, 62),
         ) for (sfx, mir, hands) in (('', True, {'l': 'relaxed', 'r': 'grip'}), ('R', False, {'l': 'grip', 'r': 'relaxed'}))],
     ),
     'umpire': dict(

@@ -619,8 +619,8 @@ class Stage {
   /** THE CHANGE OF HITTER (walkin.js, the header). walkStart begins it on the set just posed:
       after a strikeout the last hitter walks out of the box on a second body (the ghost: the same
       batter.glb, dressed as him beforehand and given his pose at the swap, so nothing changes on
-      screen), and the new hitter walks in on the batter's own body at the same time, out of sight
-      until the last one has walked out of the frame (walkin.js planIn's lead). walkApply
+      screen), and the new hitter walks in on the batter's own body at the same time, starting far
+      enough out to keep clear of the last one (walkin.js planIn, WALK.sep). walkApply
       lays both at each draw (the walk in planned on the first, from the set's pose and the set's
       camera); walkRun draws every frame while it lasts, its clock moving only on a shown canvas and
       page (at most MAX_STEP a frame); walkEnd puts the set's pose back exactly, hides the ghost and
@@ -722,7 +722,7 @@ class Stage {
     const W = this.walk;
     if (!W || this.playing) return;
     if (!W.in) {
-      try { W.in = WALKIN.planIn(this.people.batter, this.walkClips, this.cam0, W.out ? W.out.dur : 0); } catch (e) { console.error('the walk up could not be planned', e); this.walkEnd(); return; }
+      try { W.in = WALKIN.planIn(this.people.batter, this.walkClips, this.cam0, W.out); } catch (e) { console.error('the walk up could not be planned', e); this.walkEnd(); return; }
       W.dur = Math.max(W.inAt + W.in.dur, W.out ? W.out.dur : 0);
     }
     W.laid = WALKIN.lay(W.in, Math.max(0, W.clock - W.inAt));

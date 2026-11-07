@@ -50,7 +50,7 @@ export const ASSETS = {
   'tex/skin_dark.webp': 'd047351cdc',
   'umpire.glb': 'b1e5e370b6',
   'uniform.json': '79df4a0dd5',
-  'walkup.glb': 'a4030f06df'
+  'walkup.glb': '0c0a0e8f94'
 };
 /* stamp:end */
 

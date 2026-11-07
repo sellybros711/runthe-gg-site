@@ -111,7 +111,7 @@ commercial. They do not let the raw files be redistributed on their own. So:
 - the raw FBX files are never committed, here or anywhere public. They stay outside the repo, and
   `shut-the-door/.gitignore` refuses any `*.fbx` under this folder;
 - only the retargeted, baked clips inside our own `batter.glb`, `catcher.glb`, `umpire.glb`,
-  `fielder.glb` and `fparm.glb` (those two motion only, no mesh) ship:
+  `fielder.glb`, `fparm.glb` and `walkup.glb` (those three motion only, no mesh) ship:
   fitted to the MakeHuman rig (rest pose aligned, limbs only, the collar bones left to `people.js`),
   resampled to 30 fps and compressed with the meshes. They cannot be pulled back out as Mixamo files.
 
@@ -125,6 +125,9 @@ commercial. They do not let the raw files be redistributed on their own. So:
 | `idle` (umpire) | Crouching Idle (1-151) | life in the slot stance | the stance's depth and lean are our own posing over it; the twist bones of the upper arms held at rest |
 | `call` (umpire) | Baseball Umpire (1-158) | rising into the strike call | blended in from the stance |
 | `throw` (`fparm.glb`, first person) | Baseball Pitching, the 2026-10-25 download (30 fps, file frames 32.8-65.8 around release at 47.8) | the pitcher's own throwing arm in first person (`firstperson.js`): shoulder, elbow, wrist and the hand's turn, nothing else | `lab/pipeline/fparm.py`: relative to his eyes, facing the plate, scaled to a 0.57 m arm, keyed at 60 fps; fitted at run time to his arm angle, mirrored for a lefty and turned to keep clear of the zone and the HUD |
+| `walkIn`, `walkInR` (`walkup.glb`) | Baseball Walk In (1-326), the owner's 2026-10-19 download | the next hitter's walk into the box (`3d/walkin.js`): from his join onto it mid stride to his last step at the box, both hands on the bat; the clip is turned and moved once so its stance stands on his set's feet, then blended into his own stance | on the batter's rig only (`build_people.py` 'walkup', no mesh), mirrored for a lefty, as is for a righty (R); the bottom hand's grip added |
+| `walkOut`, `walkOutR` (`walkup.glb`) | Baseball Walk Out (1-241), the owner's 2026-10-19 download | after a strikeout, the last hitter's walk out of the box toward the dugout on his side, on a second body (`3d/stage.js` ghost) | as above; turned about his feet toward the dugout at run time |
+| `walk`, `walkR` (`walkup.glb`) | Walking (1-62, one cycle, its travel kept), the owner's 2026-11-06 download | the walk to the box from out of the frame, and on from Walk Out until he is out of it | as above; looped by the distance walked at run time (its travel taken out), at 0.72 of its own pace |
 | `sprint` (fielder) | Sprint (1-17, a 30 fps file, every frame) | fielders and runners at full speed (a ball in play) | one stride cycle; its forward travel taken out at run time (in place, the bob kept) and its phase driven by the distance run (`fielders.js`) |
 | `run` (fielder) | Fast Run (1-17, 30 fps) | the same, between a jog and a sprint | as above, blended by speed |
 | `jog` (fielder) | Jog Forward (1-26, 30 fps) | starting off, backing up a play, the home run trot | as above |
