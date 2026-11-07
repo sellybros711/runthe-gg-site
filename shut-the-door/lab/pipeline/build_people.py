@@ -282,21 +282,20 @@ PEOPLE = {
                ('slide', 'mixamo/Running_Slide.fbx', 1, 56, False, 'relaxed', 1.0, {'inplace': True}),
                ('leap', 'mixamo/Goalkeeper_Catch.fbx', 55, 125, False, 'relaxed', 1.0, {'inplace': True})],
     ),
-    # The walk up between at bats (3d/walkin.js), on the batter's body and rig: Mixamo's Baseball Walk Out
-    # (from his stance, out of the box) and Baseball Walk In (into the box, to his stance), the owner's
-    # 2026-10-19 downloads, and Walking (the walk to and from them), 2026-11-06 (60 fps, every second frame). Motion only, and only the rig is built (no
-    # skin, clothes or textures: the scene lays the clips on the batter's own bones by name). As the
-    # swings: as captured for a right handed hitter (R), mirrored for a left. The bat rides in his
-    # bottom hand (the scene's), so that hand grips and the top hand grips only while it is on the bat.
+    # The walk up between at bats (3d/walkin.js), on the batter's body and rig: Mixamo's Walking (the walk
+    # to the box, the owner's 2026-11-06 download) and Baseball Step In (the step into the box and up to
+    # his stance, 2026-10-19), 60 fps, every second frame. Motion only, and only the rig is built (no skin,
+    # clothes or textures: the scene lays the clips on the batter's own bones by name). As the swings: as
+    # captured for a right handed hitter (R), mirrored for a left. The bat rides in his bottom hand (the
+    # scene's), so that hand grips.
     'walkup': dict(
         name='walkup',
         shape=dict(age=0.52, muscle=0.78, weight=0.55, height=0.78, race={'caucasian': 0.6, 'african': 0.2, 'asian': 0.2}),
         rig_only=True,
         clips=[(n + sfx, f, a, b, mir, hands) for (n, f, a, b) in (
-            ('walkIn', 'mixamo/Baseball Walk In.fbx', 1, 326),
-            ('walkOut', 'mixamo/Baseball Walk Out.fbx', 1, 241),
-            # the owner's 2026-11-06 download: one cycle of Mixamo's Walking (two steps; the last frame is
-            # the first again), its travel kept (the scene takes it out and walks him by the distance)
+            ('stepIn', 'mixamo/Baseball Step In.fbx', 1, 226),
+            # one cycle of Walking (two steps; the last frame is the first again), its travel kept (the
+            # scene takes it out and walks him by the distance)
             ('walk', 'mixamo/Walking.fbx', 1, 62),
         ) for (sfx, mir, hands) in (('', True, {'l': 'relaxed', 'r': 'grip'}), ('R', False, {'l': 'grip', 'r': 'relaxed'}))],
     ),

@@ -1,5 +1,5 @@
-/* The change of hitter (3d/walkin.js): the next hitter walks into the picture and settles into his own
- * stance, after a strikeout the last one walks out of it first, and the pitch is exactly as without them.
+/* The next hitter walks up (3d/walkin.js): he walks into the picture, steps into the box and settles into
+ * his own stance, and the pitch to him is exactly as without the walk.
  *
  *   node shut-the-door/lab/pipeline/check-walkin.mjs
  *
@@ -16,7 +16,7 @@
  *   skate    while he walks, a planted foot (within PLANT_M of the ground for PLANT_N frames running)
  *            moves over the ground under SKATE m/s, away from its touch down and push off
  *   smooth   no hand, foot, head or the bat's end moves more than JOLT m in a step of 1/60 s (a pop)
- *   bat      on every frame of every walk in and walk off (a right and a left handed hitter at each size):
+ *   bat      on every frame of every walk in (a right and a left handed hitter at each size, every hitter):
  *            the bat's handle stays in his bottom hand (its distance from the hand within HANDLE_M of the
  *            stance's); it never points at the plate, ahead of him or out to his side (within LEVEL_DEG of
  *            level, its barrel must point back of him); carried in one hand (his hands GRIP_OFF apart, the
@@ -27,10 +27,9 @@
  *   skip     a tap on the canvas mid walk ends it there, in the set's pose exactly; a key the same
  *   pitch    a pitch played mid walk starts from the stance: its trace is the same pitch's from the
  *            plain set, value for value
- *   walk out after a strikeout (a right and a left handed hitter striking out): the ghost takes his pose
- *            exactly, walks out of the frame and goes; nothing on him moves more than JOLT in a step;
- *            the two hitters keep SEP_M apart (pelvis to pelvis: their arms never meet); all of it,
- *            out and in, is over in TOTAL_MAX seconds and ends in the next hitter's set exactly
+ *   strikeout after a strikeout (a right and a left handed hitter): the box cuts to empty and the next
+ *            hitter walks in on the one batter body, the bat rules above on every frame, over in
+ *            TOTAL_MAX seconds and ending in his set exactly
  *   quiet    reduced motion: no walk
  *   body     the skin, the collar, the spine, neck and shoulder joints, the shoulders' width and the
  *            pelvis' tilt held to check-deform's own limits (its probe, deform-probe.js) through the
@@ -44,7 +43,7 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const PLANT_N = 10, PLANT_EDGE = 3, SEP_M = 0.7, HANDLE_M = 0.03, LEVEL_DEG = 25, DOWN_DEG = 55, ROT_DEG = 8, TOTAL_MAX = 3.5, CLEAR_M = 0.18, DUR_MIN = 1.2, DUR_MAX = 3.3, SKATE = 0.35, PLANT_M = 0.03, JOLT = 0.12;
+const PLANT_N = 10, PLANT_EDGE = 3, HANDLE_M = 0.03, LEVEL_DEG = 25, DOWN_DEG = 55, ROT_DEG = 8, TOTAL_MAX = 3.5, CLEAR_M = 0.18, DUR_MIN = 1.2, DUR_MAX = 3.5, SKATE = 0.35, PLANT_M = 0.03, JOLT = 0.12;
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) { /* next */ } }
@@ -78,7 +77,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
   await page.goto(BASE);
   await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 180000 });
   await page.evaluate(() => window.STD_STAGE.current.inplay.motion);
-  await page.waitForFunction(() => { const s = window.STD_STAGE.current; return s.walkClips && s.ghost3d; }, null, { timeout: 180000 });
+  await page.waitForFunction(() => { const s = window.STD_STAGE.current; return s.walkClips; }, null, { timeout: 180000 });
   const r = await page.evaluate(async ({ scn, W, H, PLANT_M, LEVEL_DEG, PLANT_N, PLANT_EDGE }) => {
     const st = window.STD_STAGE.current, C = window.STD_CONTRACT;
     const cv = st.canvas;
@@ -224,48 +223,28 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
     await st.play({ pr, quick: true });
     const mid = st.trace.s;
     res.pitch = { frames: plain.length, same: JSON.stringify(plain) === JSON.stringify(mid), walkOver: !st.walk };
-    // a strikeout ends the at bat: the hitter walks out (the ghost) and the next one walks in; for a
-    // right and a left handed hitter striking out, each followed by the next in the order
+    // a strikeout ends the at bat (a right and a left handed hitter striking out): the box cuts to
+    // empty and the next hitter walks in, on the one batter body (nothing else walks off)
     res.outs = [];
     for (const hand of ['R', 'L']) {
       window.STD_STAGE_TEST = { step: 1 / 30, renderEvery: 1 };
       const ai = bs.findIndex((x) => x.bats === hand), A = bs[ai], Bn = bs[(ai + 1) % bs.length], prevA = bs[(ai + bs.length - 1) % bs.length];
       setOf(A, prevA);
-      st.ghostFor = null; st.ghostDress();
-      await new Promise((r) => { const f = () => (st.ghostFor === A.id ? r() : setTimeout(f, 50)); f(); });
       const k = { n: 2, call: { type: scn.pitcher.arsenal[0].type, cell: 22 }, actual: { x: 0.1, zn: -0.05 }, actualCell: C.cellAt(0.1, -0.05), velo: scn.pitcher.arsenal[0].velo, batter: 'swing', result: 'swinging_strike',
         inPlay: null, countBefore: { b: 0, s: 2 }, count: { b: 0, s: 3 }, outs: 1, bases: 0, runnerMoves: [], runs: 0, paOver: true };
       await st.play({ pr: k, quick: true });
       window.STD_STAGE_TEST = { step: 1 / 60, renderEvery: 1, walk: true };
-      const G = st.ghost3d.batter, B = st.people.batter;
-      // the swap: the ghost takes his pose exactly, before anything moves
-      const before = B.bind.map(([b]) => b.getWorldPosition(new V()));
+      const B = st.people.batter;
       st.setBatter(Bn); st.draw();
-      const Wk = st.walk; const out = { name: A.name, next: Bn.name, hand, started: !!(Wk && Wk.out) };
+      const Wk = st.walk; const out = { name: A.name, next: Bn.name, hand, started: !!Wk };
       if (Wk) { cancelAnimationFrame(Wk.raf); Wk.raf = 0; }
       if (out.started) {
         Wk.clock = 0; st.walkApply();
-        const gb = G.bind.map(([b]) => b.getWorldPosition(new V()));
-        out.swap = Math.max(...gb.map((v, i) => v.distanceTo(before[i])));
-        out.shown = G.root.visible;
-        let prev = null, jolt = 0, joltAt = null, sep = Infinity;
-        out.bat = {}; out.batIn = {};
-        for (let s = 0; s <= Wk.dur + 1e-9; s += 1 / 60) {
-          Wk.clock = s; st.walkApply();
-          const P = [...['hand_l', 'hand_r', 'foot_l', 'foot_r', 'head'].map((x) => G.bones[x].getWorldPosition(new V())), new V(0, 0.84, 0).applyMatrix4(G.bat.matrixWorld)];
-          if (prev && G.root.visible) P.forEach((p, i) => { const d = p.distanceTo(prev[i]); if (d > jolt) { jolt = d; joltAt = Math.round(s * 100) / 100 + ' ' + i; } });
-          prev = P;
-          if (G.root.visible && s < Wk.out.dur) {
-            batTrack(G, Wk.out, s, out.bat);
-            const a = G.bones.pelvis.getWorldPosition(new V()).setY(0), c = B.bones.pelvis.getWorldPosition(new V()).setY(0);
-            sep = Math.min(sep, a.distanceTo(c));
-          }
-          if (Wk.in && s < Wk.dur) batTrack(B, Wk.in, Math.max(0, s - Wk.inAt), out.batIn);
-        }
-        out.jolt = jolt; out.joltAt = joltAt; out.dur = Wk.dur; out.outDur = Wk.out.dur; out.leaves = !!Wk.out.leaves; out.sep = sep;
+        out.second = !!st.ghost3d;
+        out.batIn = {};
+        for (let s = 0; s < Wk.dur; s += 1 / 60) { Wk.clock = s; st.walkApply(); batTrack(B, Wk.in, s, out.batIn); }
         Wk.clock = Wk.dur; st.walkApply();
         st.walkEnd();
-        out.hidden = !G.root.visible;
         out.total = st.walked.dur;
         out.endDiff = diff(dump(), setOf(Bn, A));
       }
@@ -332,15 +311,11 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
     ok(hh.every((o) => batOk(o.bat)), `${tag} bat, walk in (${hand}, ${hh.length} hitters): worst ${worst.name}: ${batSay(worst.bat)}`);
   }
   for (const O of r.outs) {
-    const who = `${O.name} (${O.hand}) then ${O.next}`;
-    ok(O.started && O.shown && O.swap < 1e-6, `${tag} walk out: ${who}: after a strikeout he walks out on the ghost, taking his pose exactly (${O.swap})`);
-    ok(O.started && O.leaves && O.hidden, `${tag} walk out: ${who}: out of the frame in ${O.outDur && O.outDur.toFixed(2)} s, then the ghost goes`);
-    ok(O.started && O.jolt < JOLT, `${tag} walk out: ${who}: at most ${O.jolt && O.jolt.toFixed(3)} m in a 1/60 s step (at ${O.joltAt}; held under ${JOLT})`);
-    ok(O.started && O.sep >= SEP_M, `${tag} walk out: ${who}: the two hitters at least ${O.sep && O.sep.toFixed(2)} m apart (held to ${SEP_M})`);
-    ok(O.started && batOk(O.bat), `${tag} bat, walk out: ${who}: ${O.bat ? batSay(O.bat) : ''}`);
-    ok(O.started && batOk(O.batIn), `${tag} bat, walk in after it: ${who}: ${O.batIn ? batSay(O.batIn) : ''}`);
-    ok(O.started && O.total <= TOTAL_MAX, `${tag} walk out and in: ${who}: ${O.total && O.total.toFixed(2)} s in all (held to ${TOTAL_MAX})`);
-    ok(O.started && O.endDiff === 0, `${tag} walk out and in: ${who}: the set's pose at the end, value for value (${O.endDiff})`);
+    const who = `${O.name} (${O.hand}) strikes out, then ${O.next}`;
+    ok(O.started && !O.second, `${tag} after a strikeout: ${who}: the box cuts to empty and he walks in, on the one batter body`);
+    ok(O.started && batOk(O.batIn), `${tag} bat, walk in after a strikeout: ${who}: ${O.batIn ? batSay(O.batIn) : ''}`);
+    ok(O.started && O.total <= TOTAL_MAX, `${tag} after a strikeout: ${who}: ${O.total && O.total.toFixed(2)} s (held to ${TOTAL_MAX})`);
+    ok(O.started && O.endDiff === 0, `${tag} after a strikeout: ${who}: the set's pose at the end, value for value (${O.endDiff})`);
   }
   ok(r.quiet, `${tag} quiet: no walk under reduced motion`);
   ok(errors.length === 0, `${tag} no page error` + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
