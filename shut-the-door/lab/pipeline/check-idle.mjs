@@ -86,6 +86,9 @@ const r = await page.evaluate(async ({ scn }) => {
     window.STD_STAGE_TEST = undefined;
     st.dirty = true;
     st.setBatter(b);
+    // (a new hitter after a pitch walks up first, stage.js walkStart; this is the life at the set, so the
+    // walk is skipped to his stance, as a tap does. check-walkin.mjs holds the walk itself)
+    st.walkEnd();
     st.draw();
     // the set as posed, then the life over it for 3 s of the stage's own loop
     st.idleLift();
