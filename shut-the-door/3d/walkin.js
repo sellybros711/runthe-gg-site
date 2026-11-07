@@ -220,25 +220,13 @@ function track(p, c, t, r) {
 
 /** The bat's two holds, mixed by k (0: carried in one hand, 1: both hands, the stance's turn). The
     handle always where the stance holds it in the bottom hand. */
-function layBat(w, k, exact = 0) {
+function layBat(w, k) {
   const p = w.p;
   if (!p.bat || !w.batIn) return;
-  const hand = w.hand, top = p.bones['hand_' + (hand === p.bones.hand_l ? 'r' : 'l')];
-  // both hands: the stance's hold in the bottom hand, turned about the handle so it runs through the top hand
-  const handle = w.handleIn;
-  _m.multiplyMatrices(hand.matrixWorld, w.batIn);
-  const posB = new THREE.Vector3(), qB = new THREE.Quaternion(), sc = new THREE.Vector3();
-  _m.decompose(posB, qB, sc);
-  const G = handle.clone().applyMatrix4(hand.matrixWorld);
-  const a = wpos(hand), d = wpos(top).sub(a);
-  if (d.lengthSq() > 1e-8) {
-    const axis = UP.clone().applyQuaternion(qB), want = d.normalize();
-    // (by the two handed weight, which is eased over time; and none while the top hand is not up the
-    // handle from the bottom one, as it always is on the bat: no turn ever flips over)
-    const kk = k * smooth(clamp01(want.dot(axis) * 2));
-    // (and none as he settles into the set: there the stance's own hold, exactly)
-    qB.premultiply(_q.setFromUnitVectors(axis, want).slerp(_q2.identity(), Math.max(1 - kk, exact)));
-  }
+  const hand = w.hand;
+  const sc = new THREE.Vector3().setFromMatrixScale(p.bat.matrixWorld);
+  // the handle, where the stance holds it in the bottom hand
+  const G = w.handleIn.clone().applyMatrix4(hand.matrixWorld);
   // carried: barrel down, a little back of his facing, swinging with his forearm
   const left = wpos(p.bones.thigh_l).sub(wpos(p.bones.thigh_r)).setY(0).normalize();
   const fwd = new THREE.Vector3().crossVectors(left, UP).normalize();
@@ -247,23 +235,26 @@ function layBat(w, k, exact = 0) {
   const swing = Math.atan2(fa.dot(fwd), Math.abs(fa.y));
   const back = Math.max(GRIP.min, Math.min(GRIP.max, GRIP.back - GRIP.swing * swing / D2R)) * D2R;
   const dirA = UP.clone().multiplyScalar(-Math.cos(back)).addScaledVector(fwd, -Math.sin(back));
-  // (between the two the barrel goes round behind him, back and a little up by his side, never round
-  // in front of him toward the plate: carried (qA), to back (qM), to both hands (qB). qA and qM are
-  // built from their barrel's way and the both handed hold's own roll (the bat's local x as qB has it,
-  // squared to the barrel), never as the shortest turn from another hold: near a half turn that has no
-  // one way to go, and the bat spun round in a frame)
-  const xB = new THREE.Vector3(1, 0, 0).applyQuaternion(qB);
-  // (back, a little up, and out to the side of the bottom hand, clear of his head)
-  const out = left.clone().multiplyScalar(hand === p.bones.hand_l ? 1 : -1);
-  const dirM = fwd.clone().negate().addScaledVector(UP, 0.35).addScaledVector(out, 0.3).normalize();
-  const qM = holdAlong(dirM, xB, left), qA = holdAlong(dirA, xB, left);
-  const q = k < 0.5 ? qA.slerp(qM, k * 2) : qM.slerp(qB, (k - 0.5) * 2);
+  // the lift, the way a hitter brings the bat up: from hanging (qA) the barrel goes back and up toward
+  // his back shoulder, away from the plate and the pitcher (qM), and into the stance's own angle as the
+  // set has it (qS), never round in front of him or low across his legs, whatever the clip's hands do
+  // on the way. Each hold is built from its barrel's way and the stance's roll (the set bat's local x,
+  // squared to the barrel), never as the shortest turn from another hold, which near a half turn has no
+  // one way to go
+  const qS = w.set.bat[1], xS = new THREE.Vector3(1, 0, 0).applyQuaternion(qS);
+  const dirM = CATCHER.clone().addScaledVector(w.awayS, LIFT.away).addScaledVector(UP, LIFT.up).normalize();
+  const qM = holdAlong(dirM, xS, left), qA = holdAlong(dirA, xS, left);
+  const q = k < 0.5 ? qA.slerp(qM, k * 2) : qM.slerp(qS, (k - 0.5) * 2);
   w.batK = k;
-  // the handle in the hand
   p.bat.quaternion.copy(q);
   p.bat.position.copy(G).addScaledVector(UP.clone().applyQuaternion(q), -HANDLE * sc.y);
   p.bat.updateMatrixWorld(true);
 }
+// the lift's way point: toward the catcher (his back shoulder's side), up by `up`, and away from the
+// plate by `away` (a little: his hands are in front of him as they meet, and a barrel straight back from
+// there would run through his hips)
+const CATCHER = new THREE.Vector3(0, 0, -1);
+const LIFT = { away: 0.15, up: 0.7 };
 
 /** A bat's turn with its barrel (local +y) along dir and its local x as near the way x as can be
     (squared to dir; if x runs along dir, the way alt instead). */
@@ -381,6 +372,9 @@ function holdOf(w) {
   w.batIn = new THREE.Matrix4().copy(w.hand.matrixWorld).invert().multiply(p.bat.matrixWorld);
   const sc = new THREE.Vector3().setFromMatrixScale(p.bat.matrixWorld);
   void sc;
+  // his set's back (away from the plate): the stance's facing turned round
+  const ls = wpos(p.bones.thigh_l).sub(wpos(p.bones.thigh_r)).setY(0).normalize();
+  w.awayS = new THREE.Vector3().crossVectors(ls, UP).normalize().negate();
   w.handleIn = new THREE.Vector3(0, HANDLE, 0).applyMatrix4(p.bat.matrixWorld).applyMatrix4(new THREE.Matrix4().copy(w.hand.matrixWorld).invert());
 }
 
@@ -447,7 +441,7 @@ export function lay(w, s) {
     // (the feet held and stepping into the stance's spots all through the settle, let go only in its
     // last moment, where the set has them on those spots)
     holdFeet(w, s, 1 - smooth(clamp01((s - (w.dur - 0.12)) / 0.12)));
-    layBat(w, Math.max(holdAt(w, s), k), k);
+    layBat(w, Math.max(holdAt(w, s), k));
     return true;
   }
   return false;

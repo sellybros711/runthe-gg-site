@@ -20,8 +20,12 @@
  *            the bat's handle stays in his bottom hand (its distance from the hand within HANDLE_M of the
  *            stance's); it never points at the plate, ahead of him or out to his side (within LEVEL_DEG of
  *            level, its barrel must point back of him); carried in one hand (his hands GRIP_OFF apart, the
- *            two handed weight it is laid with under 0.05) its barrel is within DOWN_DEG of straight down; and it turns at
- *            most ROT_DEG in a step of 1/60 s (a snap fails)
+ *            two handed weight it is laid with under 0.05) its barrel is within DOWN_DEG of straight down; as it
+ *            is lifted into the stance (the weight between 0.02 and 0.98) the barrel never points ahead of him
+ *            (its share along his facing over FRONT: toward the plate), toward the pitcher (over PITCHER),
+ *            nor low across his legs (below his knees and ahead of him), nor through his trunk (the barrel
+ *            within TORSO_M of the line from his pelvis to his upper spine), so it comes up toward his back
+ *            shoulder; and it turns at most ROT_DEG in a step of 1/60 s (a snap fails)
  *   clear    the bat's barrel stays CLEAR_M from the centre of his head (a helmet's half width, the
  *            barrel's radius and a margin): it turns into his grip behind his head, never through his helmet
  *   skip     a tap on the canvas mid walk ends it there, in the set's pose exactly; a key the same
@@ -43,7 +47,7 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const PLANT_N = 10, PLANT_EDGE = 3, HANDLE_M = 0.03, LEVEL_DEG = 25, DOWN_DEG = 55, ROT_DEG = 8, TOTAL_MAX = 3.5, CLEAR_M = 0.18, DUR_MIN = 1.2, DUR_MAX = 3.5, SKATE = 0.35, PLANT_M = 0.03, JOLT = 0.12;
+const TORSO_M = 0.14, FRONT = 0.3, PITCHER = 0.45, PLANT_N = 10, PLANT_EDGE = 3, HANDLE_M = 0.03, LEVEL_DEG = 25, DOWN_DEG = 55, ROT_DEG = 8, TOTAL_MAX = 3.5, CLEAR_M = 0.18, DUR_MIN = 1.2, DUR_MAX = 3.5, SKATE = 0.35, PLANT_M = 0.03, JOLT = 0.12;
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) { /* next */ } }
@@ -78,7 +82,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
   await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 180000 });
   await page.evaluate(() => window.STD_STAGE.current.inplay.motion);
   await page.waitForFunction(() => { const s = window.STD_STAGE.current; return s.walkClips; }, null, { timeout: 180000 });
-  const r = await page.evaluate(async ({ scn, W, H, PLANT_M, LEVEL_DEG, PLANT_N, PLANT_EDGE }) => {
+  const r = await page.evaluate(async ({ scn, W, H, PLANT_M, LEVEL_DEG, PLANT_N, PLANT_EDGE, FRONT, PITCHER }) => {
     const st = window.STD_STAGE.current, C = window.STD_CONTRACT;
     const cv = st.canvas;
     // the draws skipped; the canvas reads as shown at the page's size (the home screen hides it)
@@ -123,6 +127,18 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
       if (level < LEVEL_DEG && h.dot(fwd) > -0.3) { m.bad = (m.bad || 0) + 1; if (!m.badAt) m.badAt = Math.round(s * 100) / 100; }
       const hold = w.batK ?? WI.holdWeight(w, s), gap = hp.distanceTo(top.getWorldPosition(new V()));
       if (hold < 0.05 && gap > 0.3) { const down = Math.acos(Math.max(-1, Math.min(1, -b.y))) * 180 / Math.PI; if (down > (m.down || 0)) { m.down = down; m.downAt = Math.round(s * 100) / 100; } }
+      // the lift (the two handed weight between 0.02 and 0.98): never ahead of him (toward the plate) or
+      // toward the pitcher, nor below his knees in front of him
+      if (hold > 0.02 && hold < 0.98) {
+        const tip = new V(0, 0.84, 0).applyMatrix4(bat.matrixWorld), knee = Math.max(P.bones.calf_l.getWorldPosition(new V()).y, P.bones.calf_r.getWorldPosition(new V()).y);
+        const ahead = b.dot(fwd), pitcher = b.z;
+        if (ahead > FRONT || pitcher > PITCHER || (tip.y < knee && ahead > 0)) { m.front = (m.front || 0) + 1; if (m.frontAt == null) m.frontAt = Math.round(s * 100) / 100 + ' s, ahead ' + ahead.toFixed(2) + ', toward the pitcher ' + pitcher.toFixed(2); }
+        // and never through his trunk: the barrel (from 0.2 m up the bat) clear of the line from his
+        // pelvis to his upper spine by TORSO_M
+        const segGap = (a0, a1, b0, b1) => { let best = Infinity; for (let i = 0; i <= 12; i++) { const pa = a0.clone().lerp(a1, i / 12); const ab = b1.clone().sub(b0), t = Math.max(0, Math.min(1, pa.clone().sub(b0).dot(ab) / ab.lengthSq())); best = Math.min(best, pa.distanceTo(b0.clone().addScaledVector(ab, t))); } return best; };
+        const g = segGap(new V(0, 0.2, 0).applyMatrix4(bat.matrixWorld), tip, P.bones.pelvis.getWorldPosition(new V()), P.bones.spine_03.getWorldPosition(new V()));
+        if (g < (m.torso ?? Infinity)) { m.torso = g; m.torsoAt = Math.round(s * 100) / 100; }
+      }
       if (m.q) { const r = m.q.angleTo(q) * 180 / Math.PI; if (r > (m.rot || 0)) { m.rot = r; m.rotAt = Math.round(s * 100) / 100; } }
       m.q = q;
     };
@@ -252,7 +268,7 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
     }
     window.STD_CHECK_UP = (b, prev) => !walkOf(b, prev);
     return res;
-  }, { scn, W, H, PLANT_M, LEVEL_DEG, PLANT_N, PLANT_EDGE });
+  }, { scn, W, H, PLANT_M, LEVEL_DEG, PLANT_N, PLANT_EDGE, FRONT, PITCHER });
   // reduced motion: no walk
   await page.emulateMedia({ reducedMotion: 'reduce' });
   r.quiet = await page.evaluate(({ scn }) => { window.STD_STAGE_TEST = { step: 1 / 60, renderEvery: 1, walk: true }; return window.STD_CHECK_UP(scn.batters[0], scn.batters[1]); }, { scn });
@@ -303,8 +319,8 @@ for (const [W, H] of [[390, 844], [1440, 900]]) {
   ok(r.tap.ended && r.tap.skipped && r.tap.diff === 0 && r.key.ended && r.key.diff === 0, `${tag} skip: a tap and a key end it in the set's pose (${JSON.stringify([r.tap, r.key])})`);
   ok(r.pitch.same && r.pitch.walkOver && r.pitch.frames > 10, `${tag} pitch: a pitch thrown mid walk is the plain set's, frame for frame (${r.pitch.frames} frames)`);
   console.log(`     ${tag} cost: the walk's pose ${(hs.reduce((a, o) => a + o.layMs, 0) / hs.length).toFixed(2)} ms of JS a frame here (reported only)`);
-  const batOk = (m) => m.handle <= HANDLE_M && !m.bad && (m.down || 0) <= DOWN_DEG && (m.rot || 0) <= ROT_DEG;
-  const batSay = (m) => `handle ${(m.handle * 100).toFixed(1)} cm, ${m.bad || 0} frames level ahead or aside${m.badAt != null ? ' (first at ' + m.badAt + ' s)' : ''}, carried ${(m.down || 0).toFixed(0)} deg off down${m.downAt != null ? ' at ' + m.downAt + ' s' : ''}, turn ${(m.rot || 0).toFixed(1)} deg a step at ${m.rotAt} s`;
+  const batOk = (m) => m.handle <= HANDLE_M && !m.bad && !m.front && (m.torso ?? 1) >= TORSO_M && (m.down || 0) <= DOWN_DEG && (m.rot || 0) <= ROT_DEG;
+  const batSay = (m) => `handle ${(m.handle * 100).toFixed(1)} cm, lift: ${m.front || 0} frames ahead, toward the pitcher or low in front${m.frontAt != null ? ' (first at ' + m.frontAt + ')' : ''}, trunk clear by ${m.torso != null ? (m.torso * 100).toFixed(0) + ' cm at ' + m.torsoAt + ' s' : '-'}, ${m.bad || 0} frames level ahead or aside${m.badAt != null ? ' (first at ' + m.badAt + ' s)' : ''}, carried ${(m.down || 0).toFixed(0)} deg off down${m.downAt != null ? ' at ' + m.downAt + ' s' : ''}, turn ${(m.rot || 0).toFixed(1)} deg a step at ${m.rotAt} s`;
   for (const hand of ['R', 'L']) {
     const hh = hs.filter((o) => o.bats === hand);
     const worst = hh.reduce((m, o) => (!batOk(o.bat) || (o.bat.rot || 0) > (m.bat.rot || 0) ? o : m), hh[0]);
