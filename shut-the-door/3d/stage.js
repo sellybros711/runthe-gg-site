@@ -87,18 +87,18 @@
  * broadcast's textures at load (inplay.js prime) so the stall is shorter too.
  */
 import * as THREE from 'three';
-import { preload, assetUrl } from './load.js?v=10';
+import { preload, assetUrl } from './load.js?v=11';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=24';
-import { People } from './people.js?v=57';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=25';
+import { People } from './people.js?v=58';
 import { Pitch, releaseOf } from './pitch.js?v=16';
 import { fromResult, motion } from './play.js?v=24';
 import { look } from './looks.js?v=6';
 import { P, smooth } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=68';
+import { InPlay } from './inplay.js?v=69';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=14';
-import { FirstPerson } from './firstperson.js?v=31';
+import { FirstPerson } from './firstperson.js?v=32';
 import * as IDLE from './idle.js?v=2';
 import * as WALKIN from './walkin.js?v=1';
 
