@@ -683,8 +683,10 @@ class Stage {
   keepSet() {
     const b = this.people && this.people.batter;
     if (!b || !this.facts.batter) return;
+    // (the set under the life, then the life laid again as it was: the pitch eases out of it)
     this.idleLift();
     this.lastSet = { id: this.facts.batter.id, set: WALKIN.setOf(b) };
+    this.idleApply();
   }
 
   /** The walk out after a strikeout: the ghost, dressed as the hitter who struck out, takes his pose
