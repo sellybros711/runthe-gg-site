@@ -23,13 +23,14 @@
  *   the feet     a planted foot stays where it came down (two bone IK where a step or a crossfade would
  *                slide it), and a foot the clip skims over the dirt lifts into a small step (footTable)
  *   the bat      held by its handle in his bottom hand all the way, the handle where his stance holds
- *                it in that hand. Carried in one hand it hangs barrel down and a little back, swinging
- *                with his forearm (carry); with both hands on it (the hands within GRIP.on of each
- *                other) it runs through both, at his stance's turn in the bottom hand (twoHands), which
- *                IS the stance's own angle when he is set. Between the two the turn is eased by a
- *                weight from his hands' gap, smoothed over GRIP.smooth seconds (planned with the walk:
- *                a pure function of its clock), so it never jumps, and the barrel goes round behind him
- *                (back and a little up, by his side), never round in front toward the plate
+ *                it in that hand. As the owner's photos of hitters stepping in have it: carried loose in
+ *                that hand, the barrel out in front of him and to that side, from down toward the ground
+ *                to about 30 degrees over level, going with his forearm (CARRY); then, as the other hand
+ *                joins and the hands rise to his back shoulder in front of his chest, the barrel tips up
+ *                through upright and settles back into the stance's own angle as the set has it (the
+ *                lift, by a weight from his hands' gap smoothed over GRIP.smooth seconds: planned with the
+ *                walk, a pure function of its clock, so it never jumps). Never through his body:
+ *                lab/pipeline/check-walkin.mjs holds the bat clear of his limbs, trunk and head
  *
  *   const C = clipsOf(gltf)                       the clips, sampled by bone name
  *   const w = planIn(p, C, cam)                   p: the batter, cam: the set's camera
@@ -56,9 +57,8 @@ const stepDur = () => (IN.raise - IN.join) / IN.speed + (IN.end - IN.raise) / IN
 /* Walking: its clock against real time (its own pace is 1.8 m/s; this is a walk up to the box) */
 export const WALK = { rate: 0.8 };
 /* the bat: the hands within `on` of each other hold it together, by `off` one hand alone; the weight
-   between is smoothed over `smooth` seconds. Carried, it hangs `back` degrees back of straight down,
-   moved by `swing` of the forearm's own swing, never less than `min` nor more than `max` back */
-export const GRIP = { on: 0.16, off: 0.3, smooth: 1.0, back: 16, swing: 0.6, min: 4, max: 42 };
+   between is smoothed over `smooth` seconds */
+export const GRIP = { on: 0.16, off: 0.3, smooth: 1.0 };
 // the bat's handle (where the bottom hand holds it), along its own axis from its origin (m)
 const HANDLE = 0.055;
 
@@ -227,34 +227,37 @@ function layBat(w, k) {
   const sc = new THREE.Vector3().setFromMatrixScale(p.bat.matrixWorld);
   // the handle, where the stance holds it in the bottom hand
   const G = w.handleIn.clone().applyMatrix4(hand.matrixWorld);
-  // carried: barrel down, a little back of his facing, swinging with his forearm
+  // carried, as the owner's photos of hitters stepping in have it (2026-11-08: a Rays hitter, Derek
+  // Jeter): in his bottom hand, loose, the arm relaxed and out from his body, the barrel out in front of
+  // him and to that hand's side, from down toward the ground (Jeter's, by the plate) to up and out
+  // (the Rays hitter's, about 30 degrees over level), going with his forearm as it swings
   const left = wpos(p.bones.thigh_l).sub(wpos(p.bones.thigh_r)).setY(0).normalize();
   const fwd = new THREE.Vector3().crossVectors(left, UP).normalize();
   const fa = wpos(hand).sub(wpos(p.bones['lowerarm_' + hand.name.slice(-1)]));
   // the forearm ahead of straight down (radians, -90 to 90 degrees: a forearm raised never wraps round)
   const swing = Math.atan2(fa.dot(fwd), Math.abs(fa.y));
-  const back = Math.max(GRIP.min, Math.min(GRIP.max, GRIP.back - GRIP.swing * swing / D2R)) * D2R;
-  const dirA = UP.clone().multiplyScalar(-Math.cos(back)).addScaledVector(fwd, -Math.sin(back));
-  // the lift, the way a hitter brings the bat up: from hanging (qA) the barrel goes back and up toward
-  // his back shoulder, away from the plate and the pitcher (qM), and into the stance's own angle as the
-  // set has it (qS), never round in front of him or low across his legs, whatever the clip's hands do
-  // on the way. Each hold is built from its barrel's way and the stance's roll (the set bat's local x,
-  // squared to the barrel), never as the shortest turn from another hold, which near a half turn has no
-  // one way to go
+  const lift = Math.max(CARRY.min, Math.min(CARRY.max, CARRY.base + CARRY.swing * swing / D2R)) * D2R;
+  const out = left.clone().multiplyScalar(hand === p.bones.hand_l ? 1 : -1);
+  const dirA = fwd.clone().addScaledVector(out, CARRY.out).normalize().multiplyScalar(Math.cos(lift)).addScaledVector(UP, Math.sin(lift)).normalize();
+  // the lift, as the photos have it: the other hand joins, the hands rise to the back shoulder in front
+  // of his chest, and the barrel tips up through upright (qV, a little toward the plate: in front of
+  // him, clear of his head) and settles back into the stance's own angle as the set has it (qS). Each
+  // hold is built from its barrel's way and the stance's roll (the set bat's local x, squared to the
+  // barrel), never as the shortest turn from another hold, which near a half turn has no one way to go
   const qS = w.set.bat[1], xS = new THREE.Vector3(1, 0, 0).applyQuaternion(qS);
-  const dirM = CATCHER.clone().addScaledVector(w.awayS, LIFT.away).addScaledVector(UP, LIFT.up).normalize();
-  const qM = holdAlong(dirM, xS, left), qA = holdAlong(dirA, xS, left);
-  const q = k < 0.5 ? qA.slerp(qM, k * 2) : qM.slerp(qS, (k - 0.5) * 2);
+  const dirV = UP.clone().addScaledVector(w.awayS, -LIFT.ahead).normalize();
+  const qV = holdAlong(dirV, xS, left), qA = holdAlong(dirA, xS, left);
+  const q = k < 0.5 ? qA.slerp(qV, k * 2) : qV.slerp(qS, (k - 0.5) * 2);
   w.batK = k;
   p.bat.quaternion.copy(q);
   p.bat.position.copy(G).addScaledVector(UP.clone().applyQuaternion(q), -HANDLE * sc.y);
   p.bat.updateMatrixWorld(true);
 }
-// the lift's way point: toward the catcher (his back shoulder's side), up by `up`, and away from the
-// plate by `away` (a little: his hands are in front of him as they meet, and a barrel straight back from
-// there would run through his hips)
-const CATCHER = new THREE.Vector3(0, 0, -1);
-const LIFT = { away: 0.15, up: 0.7 };
+/* the carry: the barrel's angle over level (degrees: below it, down toward the ground) at rest, how much
+   of his forearm's swing it takes, its range, and how far out to the bottom hand's side it points */
+const CARRY = { base: -20, swing: 0.8, min: -55, max: 35, out: 0.45 };
+/* the lift's upright: tipped this much toward the plate (in front of him, clear of his head) */
+const LIFT = { ahead: 0.2 };
 
 /** A bat's turn with its barrel (local +y) along dir and its local x as near the way x as can be
     (squared to dir; if x runs along dir, the way alt instead). */
