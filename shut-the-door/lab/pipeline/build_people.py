@@ -9,7 +9,7 @@ ASSETS holds the downloads (see LICENSES.md for every source):
   ASSETS/mixamo/...            the owner's Mixamo FBX downloads (60 fps, the runs 30; never in the repo)
   ASSETS/polyhaven-textures/files/...   the CC0 Poly Haven cloth and leather maps
 OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into shut-the-door/3d/assets.
-who: batter catcher umpire fielder (all four when left out).
+who: batter catcher umpire fielder walkup (all five when left out).
 """
 import os, sys, math, json
 import numpy as np
@@ -25,7 +25,7 @@ import textures      # noqa: E402
 import uniform       # noqa: E402
 
 ASSETS, OUT = sys.argv[1], sys.argv[2]
-WHO = sys.argv[3:] or ['batter', 'catcher', 'umpire', 'fielder']
+WHO = sys.argv[3:] or ['batter', 'catcher', 'umpire', 'fielder', 'walkup']
 MHA = f'{ASSETS}/makehuman'
 BVH = f'{ASSETS}/cmu-bvh'
 PH = f'{ASSETS}/polyhaven-textures/files'
@@ -282,6 +282,23 @@ PEOPLE = {
                ('slide', 'mixamo/Running_Slide.fbx', 1, 56, False, 'relaxed', 1.0, {'inplace': True}),
                ('leap', 'mixamo/Goalkeeper_Catch.fbx', 55, 125, False, 'relaxed', 1.0, {'inplace': True})],
     ),
+    # The walk up between at bats (3d/walkin.js), on the batter's body and rig: Mixamo's Walking (the walk
+    # to the box, the owner's 2026-11-06 download) and Baseball Step In (the step into the box and up to
+    # his stance, 2026-10-19), 60 fps, every second frame. Motion only, and only the rig is built (no skin,
+    # clothes or textures: the scene lays the clips on the batter's own bones by name). As the swings: as
+    # captured for a right handed hitter (R), mirrored for a left. The bat rides in his bottom hand (the
+    # scene's), so that hand grips.
+    'walkup': dict(
+        name='walkup',
+        shape=dict(age=0.52, muscle=0.78, weight=0.55, height=0.78, race={'caucasian': 0.6, 'african': 0.2, 'asian': 0.2}),
+        rig_only=True,
+        clips=[(n + sfx, f, a, b, mir, hands) for (n, f, a, b) in (
+            ('stepIn', 'mixamo/Baseball Step In.fbx', 1, 226),
+            # one cycle of Walking (two steps; the last frame is the first again), its travel kept (the
+            # scene takes it out and walks him by the distance)
+            ('walk', 'mixamo/Walking.fbx', 1, 62),
+        ) for (sfx, mir, hands) in (('', True, {'l': 'relaxed', 'r': 'grip'}), ('R', False, {'l': 'grip', 'r': 'relaxed'}))],
+    ),
     'umpire': dict(
         name='umpire', skin='middleage_caucasian_male', skin_size=1024,
         shape=dict(age=0.68, muscle=0.5, weight=0.72, height=0.7, race={'caucasian': 0.7, 'african': 0.2, 'asian': 0.1}),
@@ -299,10 +316,20 @@ PEOPLE = {
 }
 
 
+def rig_only(cfg):
+    """The skeleton alone, as body() builds it (the same joints, twist and deltoid helpers), for motion."""
+    h = mh.Human(MHA, mh.macro_targets(f'{MHA}/targets', **cfg['shape']))
+    arm = h.build_armature(f'{MHA}/rigs/standard/rig.game_engine.json', cfg['name'])
+    h.load_weights(f'{MHA}/rigs/standard/weights.game_engine.json')
+    h.add_twist_bones()
+    h.add_deltoid_bones()
+    return h, arm, []
+
+
 def build(who):
     cfg = PEOPLE[who]
     reset()
-    h, arm, parts = body(cfg)
+    h, arm, parts = rig_only(cfg) if cfg.get('rig_only') else body(cfg)
     if cfg.get('gear'):
         # soft gear is lifted off the whole skin, including what the clothes hide
         saved, h.deleted = h.deleted, set()
@@ -319,7 +346,7 @@ def build(who):
             retarget.apply_fbx(arm, f'{ASSETS}/{path}', clip, a, b, mirror=mirror, hands=hands, **kw)
         else:
             retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands, **kw)
-    if cfg.get('motion_only'):
+    if cfg.get('motion_only') or cfg.get('rig_only'):
         # the skeleton and its clips only (the scene has the body already)
         for o in [o for o in bpy.data.objects if o.type != 'ARMATURE']:
             bpy.data.objects.remove(o, do_unlink=True)

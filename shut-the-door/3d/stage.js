@@ -32,6 +32,14 @@
  *                                    set; hooks.call at the call, hooks.field with the runners
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
  *
+ * THE NEXT HITTER WALKS UP (walkin.js). Between at bats, a new hitter set after a pitch has been
+ * played walks in from out of the frame (Mixamo's Walking), steps into the box (his Baseball Step In)
+ * and settles into his stance, drawn every
+ * frame (an at bat that ends on a ball in play cuts back to an empty box: batterAway). Any tap but the header or a sheet, or a key, skips straight to the stance, and play() and
+ * pickoff() always start from it (the walk ends first), so the first pitch is never thrown mid walk
+ * and the delivery, its timing and the plate are as without it. Never under reduced motion, never
+ * under the checks' stepped clock unless they ask (STD_STAGE_TEST.walk). Nothing pops up: motion only.
+ *
  * FIRST PERSON. You are the pitcher (firstperson.js): his glove low in his glove side corner at the
  * set, his head through the delivery after the throw (park.js pitcherEye), his arm and the ball
  * through the frame at release, the follow-through, and back to the set by the end of the pitch.
@@ -80,17 +88,20 @@
  * broadcast's textures at load (inplay.js prime) so the stall is shorter too.
  */
 import * as THREE from 'three';
-import { preload } from './load.js?v=9';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=23';
-import { People } from './people.js?v=56';
+import { preload, assetUrl } from './load.js?v=12';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=26';
+import { People } from './people.js?v=59';
 import { Pitch, releaseOf } from './pitch.js?v=16';
 import { fromResult, motion } from './play.js?v=24';
 import { look } from './looks.js?v=6';
 import { P, smooth } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=67';
+import { InPlay } from './inplay.js?v=70';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=14';
-import { FirstPerson } from './firstperson.js?v=30';
+import { FirstPerson } from './firstperson.js?v=33';
 import * as IDLE from './idle.js?v=2';
+import * as WALKIN from './walkin.js?v=1';
 
 const C = () => window.STD_CONTRACT;
 /* the quality tiers (Stage.judgeTier): the pixel ratio's cap and the sun's shadow map, best first.
@@ -282,6 +293,7 @@ class Stage {
     this.applyGhost();
     this.breathe();
     this.idleRun();
+    this.walkLoad();
     return this;
   }
 
@@ -292,6 +304,7 @@ class Stage {
   }
 
   applyScenario() {
+    this.walkEnd();
     if (this.people) {
       for (const p of [this.people.batter, this.people.catcher, this.people.umpire]) if (p) this.scene.remove(p.root);
       if (this.people.batter && this.people.batter.bat) this.scene.remove(this.people.batter.bat);
@@ -313,6 +326,7 @@ class Stage {
   }
 
   setBatter(b) {
+    if (this.away) this.batterAway(false);
     // the same hitter again (the home screen dressed him already): only the frame, from the set (a
     // play may have run since: framed where it ended, a hitter knocked down was framed lying there)
     if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) {
@@ -321,12 +335,16 @@ class Stage {
       this.idleRun();
       return;
     }
+    this.walkEnd();
     this.batterId = b.id;
     this.bat = b;
     this.zone = { szTop: b.szTop, szBot: b.szBot, bats: b.bats };
     this.eye.setSide(b.bats);
     if (this.facts) this.applyBatter();
     this.layout();
+    // a new hitter after a pitch has been played walks up to the plate (the first of an outing on
+    // the home screen is dressed there and stands in)
+    if (this.loaded && this.pitched && this.facts && this.facts.batter) this.walkStart();
     if (this.loaded) { this.breathe(); this.idleRun(); }
   }
 
@@ -389,6 +407,7 @@ class Stage {
 
   /** The set: everyone in their stance, the catcher set up on the target, no ball yet. */
   preview() {
+    if (this.walk) { this.walkLift(); this.walk.in = null; }
     if (this.inplay && this.inplay.active) this.inplay.end(this.camera);
     const f = this.facts.batter, c = C();
     const cell = this.cell == null ? 12 : this.cell;
@@ -403,6 +422,7 @@ class Stage {
   }
 
   setPitch(play) {
+    if (this.walk) { this.walkLift(); this.walk.in = null; }
     if (this.pitch) this.pitch.dispose();
     const m = motion(play, this.facts.batter);
     this.pitch = new Pitch({ scene: this.scene, facts: this.facts, play, batter: this.facts.batter, m, grid: false });
@@ -416,6 +436,9 @@ class Stage {
 
   pose(t) {
     this.t = t;
+    // (the walk's pose is laid over the set at each draw: put the set back first, and plan again from
+    // the set this pose makes)
+    if (this.walk) { this.walkLift(); this.walk.in = null; }
     // any pose but the set's own ends the life at the set (idleSet starts it again)
     if (this.idle) this.idle.on = false;
     this.eye.update(t);
@@ -426,6 +449,7 @@ class Stage {
 
   render() {
     this.idleApply();
+    this.walkApply();
     if (this.ghost && (this.ghost.on || this.ghost.busy())) { this.ghost.tick(); this.ghost.orient(this.camera, this.canvas.clientHeight); }
     // (a hidden branch of the scene draws nothing, but three.js still worked out every matrix in it on
     // each draw: on the mound the ballpark and the thirteen hidden fielders, runners and umpires, their
@@ -528,7 +552,7 @@ class Stage {
 
   idleApply() {
     const I = this.idle;
-    if (!I || !I.on || this.playing || this.dirty || I.laid === I.clock) return;
+    if (!I || !I.on || this.playing || this.dirty || this.walk || I.laid === I.clock) return;
     for (const sn of I.snaps) if (sn) IDLE.restore(sn);
     const A = IDLE.ampAt(I.clock);
     if (A > 0) IDLE_ROLES.forEach((r, i) => { if (I.snaps[i]) IDLE.apply(this.people[r], r, I.seeds[r], I.clock, A); });
@@ -543,12 +567,12 @@ class Stage {
   }
 
   idleRun() {
-    if (this.idleId || !this.idle || !this.idle.on || !this.idleOk()) return;
+    if (this.idleId || this.walk || !this.idle || !this.idle.on || !this.idleOk()) return;
     let last = 0;
     const step = (ms) => {
       this.idleId = 0;
       const I = this.idle;
-      if (!I || !I.on || this.playing || this.hushed || this.dirty || !this.canvas.clientWidth || document.hidden || !this.idleOk()) return;
+      if (!I || !I.on || this.playing || this.hushed || this.dirty || this.walk || !this.canvas.clientWidth || document.hidden || !this.idleOk()) return;
       const gap = this.tier >= TIERS.length - 1 ? IDLE_SLOW_MS : IDLE_MS;
       if (!last || ms - last >= gap - 2) {
         I.clock += last ? Math.min(0.1, (ms - last) / 1000) : 0;
@@ -573,6 +597,101 @@ class Stage {
   idleLay(life, k) {
     if (!(k > 0)) return;
     for (const r of IDLE_ROLES) if (this.people[r]) IDLE.apply(this.people[r], r, life.seeds[r], life.clock, life.A * k);
+  }
+
+  /** The hitter off the field: an at bat that ends on a ball in play cuts back from the broadcast to an
+      empty box (he ran, or walked off, while the broadcast was on), so the next hitter walks into it. He
+      comes back with the next setBatter, play or pickoff. */
+  batterAway(on) {
+    const b = this.people && this.people.batter;
+    if (!b) return;
+    this.away = !!on;
+    b.root.visible = !on;
+    if (b.bat) b.bat.visible = !on;
+  }
+
+  /** THE NEXT HITTER WALKS UP (walkin.js, the header). walkStart begins it on the set just posed;
+      walkApply lays it at each draw (planned on the first, from the set's pose and the set's camera);
+      walkRun draws every frame while it lasts, its clock moving only on a shown canvas and page (at
+      most MAX_STEP a frame); walkEnd puts the set's pose back exactly and hands over to the life at
+      the set, which eases in from nothing as at any new set. A tap or a key ends it (skip). */
+  walkOk() {
+    return !!this.loaded && !reducedMotion() && window.STD_STAGE_WALK !== false && (!TEST() || !!TEST().walk) && !!this.walkClips;
+  }
+
+  /** The clips (assets/walkup.glb), fetched after the scene is up (never fatal: no walk without them). */
+  walkLoad() {
+    if (this.walkLoading) return this.walkLoading;
+    const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    this.walkLoading = gl.loadAsync(assetUrl('walkup.glb')).then((g) => { this.walkClips = WALKIN.clipsOf(g); })
+      .catch((e) => { console.warn('the walk up is off', e); this.walkClips = null; });
+    return this.walkLoading;
+  }
+
+  walkStart() {
+    if (!this.walkOk() || !this.people || !this.people.batter || !this.people.batter.bat) return;
+    const skip = (e) => {
+      if (e && e.type === 'pointerdown' && e.target && e.target.closest && e.target.closest('header, .sheet')) return;
+      this.walkEnd();
+    };
+    this.walk = { clock: 0, in: null, laid: false, skip, id: this.facts.batter.id, frames: 0 };
+    document.addEventListener('pointerdown', skip, true);
+    document.addEventListener('keydown', skip, true);
+    this.walkRun();
+  }
+
+  walkApply() {
+    const W = this.walk;
+    if (!W || this.playing) return;
+    if (!W.in) {
+      try { W.in = WALKIN.planIn(this.people.batter, this.walkClips, this.cam0); } catch (e) { console.error('the walk up could not be planned', e); this.walkEnd(); return; }
+      W.dur = W.in.dur;
+    }
+    W.laid = WALKIN.lay(W.in, W.clock);
+  }
+
+  walkLift() {
+    const W = this.walk;
+    if (!W || !W.in || !W.laid) return;
+    WALKIN.restoreSet(W.in);
+    W.laid = false;
+  }
+
+  walkRun() {
+    if (!this.walk || this.walk.raf) return;
+    let last = 0;
+    const step = (ms) => {
+      const W = this.walk;
+      if (!W) return;
+      W.raf = 0;
+      if (this.playing) return;
+      const shown = !!this.canvas.clientWidth && !document.hidden;
+      if (shown) {
+        const st = TEST() && TEST().walk ? TEST().step : null;
+        W.clock += st != null ? st : last ? Math.min(MAX_STEP, Math.max(0, (ms - last) / 1000)) : 0;
+        W.frames++;
+      }
+      last = shown ? ms : 0;
+      if (W.dur != null && W.clock >= W.dur) { this.walkEnd(); return; }
+      if (shown) this.render();
+      W.raf = requestAnimationFrame(step);
+    };
+    this.walk.raf = requestAnimationFrame(step);
+  }
+
+  walkEnd() {
+    const W = this.walk;
+    if (!W) return;
+    if (W.raf) cancelAnimationFrame(W.raf);
+    document.removeEventListener('pointerdown', W.skip, true);
+    document.removeEventListener('keydown', W.skip, true);
+    this.walkLift();
+    this.walk = null;
+    // what the checks read back: how long it ran and whether a tap ended it
+    this.walked = { id: W.id, dur: W.dur ?? null, clock: W.clock, skipped: W.dur == null || W.clock < W.dur, frames: W.frames };
+    // the life at the set comes in from nothing, as at any new set
+    if (this.idle) { this.idle.clock = 0; this.idle.laid = -1; }
+    if (this.loaded && !this.playing) { this.soon(); this.idleRun(); }
   }
 
   /** The broadcast's cut is not his view: his glove and arm go while it is on (the park is drawn only
@@ -640,6 +759,7 @@ class Stage {
   layout() {
     const w = this.canvas.clientWidth || this.canvas.width, h = this.canvas.clientHeight || this.canvas.height;
     if (!w || !h) return;
+    if (this.walk) { this.walkLift(); this.walk.in = null; }
     this.renderer.setSize(w, h, false);
     this.eye.resize(w, h);
     this.camera.userData.cssH = h;
@@ -695,8 +815,9 @@ class Stage {
   /** Where each figure lands on the canvas in CSS px, from its skinned vertices, for the framing
       and the browser check: the batter (with his helmet), his bat, the catcher and the umpire. */
   figureBoxes(samples = 4000) {
-    // measured on the set's own pose, never the life laid over it (the next draw lays it again)
+    // measured on the set's own pose, never the life or the walk laid over it (the next draw lays it again)
     this.idleLift();
+    this.walkLift();
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight, v = new THREE.Vector3();
     const box = (objs) => {
       const b = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
@@ -874,6 +995,8 @@ class Stage {
 
   /** A pickoff throw between pitches, to its end, then back to the set (the header). */
   pickoff(opts) {
+    this.walkEnd();
+    if (this.away) this.batterAway(false);
     const p = this.playing = this.pickoffOnce(opts);
     const clear = () => { if (this.playing === p) this.playing = null; };
     p.then(clear, clear);
@@ -956,6 +1079,10 @@ class Stage {
 
   /** One pitch, to the end of its play (THE PLAY'S TIMELINE, in the header). */
   play(opts) {
+    // the pitch starts from his stance: a walk up still on ends there first
+    this.walkEnd();
+    if (this.away) this.batterAway(false);
+    this.pitched = true;
     const p = this.playing = this.playOnce(opts);
     const clear = () => { if (this.playing === p) this.playing = null; };
     p.then(clear, clear);
@@ -1074,7 +1201,7 @@ class Stage {
             // mound, as television does, rather than leave the canvas on a long lens full of grass until
             // the next hitter (after the outing's last play nothing else would bring the set back)
             // (a foul ends on his own view already, the hitter back in his box: the set comes with the next pitch)
-            if (run) { this.inplay.end(this.camera); if (!foulCut) this.preview(); this.render(); }
+            if (run) { this.inplay.end(this.camera); if (!foulCut) this.preview(); this.batterAway(!foulCut && !!pr.paOver); this.render(); }
           }
         } catch (e) { console.error('the end of the pitch failed', e); trace.error = String(e && e.message || e); }
         this.judgeTier(gaps);
