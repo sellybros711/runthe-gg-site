@@ -42,12 +42,12 @@
  */
 import * as THREE from 'three';
 import { smooth, clamp01 } from './units.js?v=1';
-import { spline, reducedMotion, SUN } from './park.js?v=25';
+import { spline, reducedMotion, SUN } from './park.js?v=26';
 import { baseball } from './gear3d.js?v=4';
 import { look, hash } from './looks.js?v=6';
 import { LOOKS } from './looks-data.js?v=2';
 import { skin as skinMaterial } from './materials.js?v=8';
-import { assetUrl } from './load.js?v=11';
+import { assetUrl } from './load.js?v=12';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { T_RELEASE } from './pitch.js?v=16';
 
