@@ -19,15 +19,24 @@ const RIG_CAST = {
     skin: '#5c4232', animal: { kind: 'ape', muzzle: '#b8977a', ears: 'side', inner: '#b8977a' },
     top: { c: '#5c4232', p: 'fur', c2: '#7a5c46' }, sleeve: '#5c4232', pants: '#5c4232', shoes: 'paws', hands: '#4a3428',
     brow: '#2a1c16', bushy: true, angry: true, eyes: '#3a2010' },
-  franky: { build: 'giant', scale: 1.04, body: { hn: 5, hw: 1.0, hh: 1.1, taper: 1.12, jaw: 1.02, head: 11.5, hunch: 2 }, skin: '#86b86e',
-    hair: { s: 'flat', c: '#1d1b22' }, bolts: true, top: { c: '#3a4050', p: 'jacket', c2: '#2c3140' }, sleeve: '#3a4050', pants: '#2c3140',
-    shoes: '#1a1820', brow: '#1d1b22', bushy: true, sad: true, blush: false },
+  /* Shelley, 1818: yellow skin, lustrous flowing black hair, a brown coat, a
+     stitched scar. NOT the flat head, the neck bolts or the green skin: those
+     are Universal's 1931 makeup (PD_SOURCES.md). */
+  franky: { build: 'giant', scale: 1.04, body: { hn: 3.2, hw: 1.0, hh: 1.1, taper: 0.98, jaw: 1.06, head: 11.5, hunch: 2 }, skin: '#d8c272',
+    hair: { s: 'flow', c: '#15131a', w: 1.15 }, scar: true, top: { c: '#6b4a2e', p: 'jacket', c2: '#553a22' }, sleeve: '#6b4a2e', pants: '#3a2c22',
+    shoes: '#1a1410', brow: '#15131a', bushy: true, sad: true, blush: false },
   popeye: { build: 'stocky', body: { hn: 2.6, hw: 0.98, hh: 0.98, taper: 0.92, jaw: 1.22, arm: 2.2, head: 11.5 }, skin: '#f0c098', popeye: true,
     hair: { s: 'bald', c: '#c86a3a' }, hat: { s: 'sailor', c: '#f6f3ec' }, pipe: true, nose: 1.4, beard: { s: 'stubble', c: '#8a5a3a' },
     top: { c: '#f6f3ec', collar: '#1f3f7a' }, sleeve: '#f6f3ec', forearm: 'skin', pants: '#1f3f7a', shoes: '#2a1c1c', belt: '#e8bc3a' },
-  dracula: { build: 'lanky', body: { hn: 2.4, hw: 0.9, hh: 1.1, taper: 1.05, jaw: 0.78, neck: 0.6 }, skin: '#e2dcea', hair: { s: 'slick', c: '#15121c' },
-    eyes: '#c0202a', fangs: true, top: { c: '#1a1620', p: 'vest', c2: '#f4f1ea', collar: '#c0202a', tie: '#c0202a' }, sleeve: '#1a1620', pants: '#1a1620',
-    shoes: '#0e0c12', cape: '#1a1620', blush: '#b890c0', angry: true, pointEars: true },
+  /* Stoker, 1897: a tall old man, a long white moustache, white brows that
+     meet over the nose, pointed ears, pallor, black from head to foot without
+     a speck of colour. The sharp white teeth over the lip are Stoker's too.
+     NOT the widow's peak, the red lined cape, the medallion or the white tie
+     (Universal 1931). */
+  dracula: { build: 'lanky', body: { hn: 2.4, hw: 0.9, hh: 1.1, taper: 1.05, jaw: 0.78, neck: 0.6 }, skin: '#ece4e2', hair: { s: 'short', c: '#d4d2cc', fringe: 0.72 },
+    beard: { s: 'handlebar', c: '#f4f2ec', ink: true }, brow: '#8e8a84', bushy: true, meetBrows: true, eyes: '#2a1a1c', fangs: true,
+    top: { c: '#1a1620', p: 'jacket', c2: '#120f17' }, sleeve: '#1a1620', pants: '#1a1620',
+    shoes: '#0e0c12', cape: '#1a1620', blush: false, angry: true, pointEars: true },
   liberty: { build: 'lanky', scale: 1.06, body: { hn: 2.2, hw: 0.95, hh: 1.04, taper: 0.95, jaw: 0.92, th: 13 }, skin: '#7cc6a4', hair: { s: 'long', c: '#5aa888' },
     hat: { s: 'spikes', c: '#7cc6a4' }, top: { c: '#7cc6a4', p: 'toga', c2: '#5aa888' }, sleeve: '#7cc6a4', skirt: { c: '#7cc6a4', long: true, flare: 1.1 },
     shoes: '#5aa888', eyes: '#2a6a50', brow: '#3a8a6a', blush: false, prop: { k: 'torch' } },
@@ -80,9 +89,9 @@ const RIG_CAST = {
   lupin: { build: 'lanky', body: { hn: 2.4, hw: 0.9, hh: 1.04, jaw: 0.86 }, skin: '#f2d0b0', hair: { s: 'slick', c: '#1d1614' }, monocle: true,
     beard: { s: 'mustache', c: '#1d1614' }, hat: { s: 'top', c: '#1d1b22', band: '#c0303a' }, top: { c: '#1d1b22', p: 'vest', c2: '#f4f1ea', tie: '#c0303a' },
     sleeve: '#1d1b22', pants: '#1d1b22', shoes: '#0e0c12', cape: '#1d1b22', prop: { k: 'cane', top: '#e6c04a' }, mood: 'smile' },
-  hyde: { build: 'stocky', body: { hn: 3, hw: 1.06, hh: 0.94, taper: 0.9, jaw: 1.25, hunch: 10, head: 11.5 }, skin: '#a8b894',
+  hyde: { build: 'stocky', body: { hn: 3, hw: 1.06, hh: 0.94, taper: 0.9, jaw: 1.25, hunch: 10, head: 11.5 }, skin: '#e6dccb',
     hair: { s: 'wild', c: '#5a5a58' }, hat: { s: 'top', c: '#2a2420', tall: 1.1 }, top: { c: '#6a4a30', p: 'coat', c2: '#5a3a24', c3: '#3a2418' },
-    sleeve: '#6a4a30', pants: '#3a2a20', shoes: '#1a1410', fangs: true, angry: true, bushy: true, eyes: '#c8a020', blush: false, prop: { k: 'cane', c: '#3a2418', top: '#9aa0a8' } },
+    sleeve: '#6a4a30', pants: '#3a2a20', shoes: '#1a1410', bushy: true, eyes: '#c8a020', blush: false, mood: 'smile', prop: { k: 'cane', c: '#3a2418', top: '#9aa0a8' } },
   scarecrow: { build: 'lanky', body: { hn: 2.6, hw: 1.0, hh: 0.96, taper: 0.96, jaw: 1.02 }, skin: '#e8d098', dotEyes: true, eyes: '#2a1c14', nose: 0.8,
     hat: { s: 'floppy', c: '#8a6a3a' }, hair: { s: 'wild', c: '#e8c050' }, top: { c: '#9a7644', p: 'rags', c2: '#e8c050' }, sleeve: '#9a7644',
     pants: '#8a6a3a', shoes: '#5a3a1a', hands: '#e8c050', blush: '#e89a4a', mood: 'smile' },
@@ -106,9 +115,9 @@ const RIG_CAST = {
   fairy: { build: 'small', body: { hn: 2, hw: 0.98, hh: 1.02, taper: 1.0, jaw: 0.86 }, skin: '#f8d8c0', hair: { s: 'bun', c: '#3ab0a8' },
     wings: { kind: 'fairy', c: '#c8ecf8' }, top: { c: '#9ad0f0' }, sleeve: 'skin', skirt: { c: '#9ad0f0', l: 6, flare: 1.6 }, pants: '#f8d8c0',
     shoes: '#f6f3ec', prop: { k: 'wand', c: '#f6e070' }, mood: 'smile' },
-  vampire: { build: 'kid', body: { hn: 2.6, hw: 0.92, hh: 1.08, taper: 1.12, jaw: 0.8 }, skin: '#a8a8b8', hair: { s: 'slick', c: '#1d1b22' }, pointEars: true,
-    eyes: '#c0202a', fangs: true, top: { c: '#3a3a48', p: 'jacket', c2: '#2a2a36', collar: '#1a1a22' }, sleeve: '#3a3a48', pants: '#2a2a36', shoes: '#141418',
-    cape: '#2a1a2a', blush: false, mood: 'plain' },
+  vampire: { build: 'kid', body: { hn: 2.6, hw: 0.92, hh: 1.08, taper: 1.12, jaw: 0.8 }, skin: '#c4c4cc', hair: { s: 'long', c: '#15131a' }, pointEars: true,
+    eyes: '#8a909a', fangs: true, top: { c: '#1d1b22', p: 'coat', c2: '#15131a', c3: '#0e0c12' }, sleeve: '#1d1b22', pants: '#1d1b22', shoes: '#141418',
+    cape: '#141218', blush: false, mood: 'plain' },
   pirate: { build: 'kid', body: { hn: 3.2, hw: 1.06, taper: 1.08, jaw: 1.1 }, skin: '#e0aa7e', hair: { s: 'short', c: '#2a1c14' }, patch: true,
     hat: { s: 'bandana', c: '#cc3030', dots: '#f6f2ea' }, top: { c: '#f6f2ea', p: 'stripes', c2: '#cc3030' }, sleeve: '#f6f2ea', forearm: 'skin',
     pants: '#3a2b26', shoes: '#5a3418', belt: '#2a1c14', buckle: '#e8bc3a', beard: { s: 'stubble', c: '#2a1c14' }, prop: { k: 'cutlass' } },
