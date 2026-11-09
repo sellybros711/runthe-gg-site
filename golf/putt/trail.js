@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -186,6 +186,11 @@ var KIT = {
   olympus:{ g:['#6aa856', '#7cba62', '#5a9648', 0.18], gpat:'olyMeadow', p:['#ece8de', '#ffffff', '#c8c4b8'], paved:true, tree:['broad', 'broad', 'pine'], leaves:['#346a2e', '#5a8a44', '#244a22'], bark:'#7a6a5a',
     low:['ocloud', 'rock', 'bush'], brk:'pot', haz:'slow', hazC:['#f0c05a', '#d8a040'], waterC:['#c4d2e8', '#ffffff'], seaC:['#c4d2e8', '#ffffff'], bogC:['#f0c05a', '#d8a040'], lm:['olyColumn', 'olyTripod', 'olyAnvil'], wall:['#f4f0e6', '#b8a878'],
     npc:{ skin:'light', polo:'white', hat:'white', pants:'white', hair:'brown', hairStyle:'curly', cap:false, shoes:'gold', gender:'female' }, who:'the Muse' },
+  // Wonderland: the loveliest garden, a lawn starred with daisies, a gravel path, broad old trees and clipped rose bushes, tall pale
+  // mushrooms, the Pool of Tears for water and treacle for the bog
+  wonderland:{ g:['#5aa850', '#6cbf5a', '#4a9444', 0.18], gpat:'wonLawn', p:['#d8c8a0', '#ece0c0', '#b8a880'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#2e6a2e', '#4a8a3e', '#1e4a22'], bark:'#4a3424',
+    low:['wrose', 'wmush', 'bush'], brk:'pot', haz:'slow', hazC:['#8a4a1a', '#6a3a14'], waterC:['#2a5a9a', '#9ac8f0'], seaC:['#2a5a9a', '#9ac8f0'], bogC:['#8a4a1a', '#6a3a14'], lm:['wonMushroom', 'wonCard', 'wonFountain'], wall:['#f4ecd8', '#c8283a'],
+    npc:{ skin:'light', polo:'white', hat:'red', pants:'black', hair:'brown', hairStyle:'short', cap:false, shoes:'black', gender:'male' }, who:'the gardener' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -521,10 +526,13 @@ function plan(spec){
   if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5);
     // Oz: the ship came down hard in the poppies, so it lies on its side where it landed, with no pad under it
     if (spec.theme === 'oz') place('ozCrash', lx, L + 5, 3, 5, { w:10, d:6 });
+    // Wonderland: down the rabbit hole, through the hall and out of the little door, so the walk sets off from the hall's end
+    else if (spec.vehicle === 'fall') place('wonLittleDoor', lx, L + 5, 3, 4, { w:7, d:3 });
     // the sea route (Cyclops Isle on): the Greek ship run up on the sand where it came ashore
     else if (spec.vehicle === 'sea') place('seaShip', lx, L + 5, 3, 7, { w:6, d:12, beach:true });
     else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); } used.push({ x:lx, y:L + 5, r:5.5 }); }
-  if (SPACE && spec.space === 'sea'){ place('seaShip', archX, -5.5, 3, 7, { w:6, d:12 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the sea route: the ship at its jetty
+  if (SPACE && spec.space === 'fall'){ place('wonRabbitHole', archX, -4.5, 3, 3, { w:7, d:5 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // down the rabbit hole
+  else if (SPACE && spec.space === 'sea'){ place('seaShip', archX, -5.5, 3, 7, { w:6, d:12 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the sea route: the ship at its jetty
   else if (SPACE){ place('padRocket', archX, -5.5, 2.6, 19, { w:9, d:6 }); place('launchpad', archX, -5.5, 0.1, 0.3, { w:9, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }
   else place('arch', archX, 0, 0.1, 9);
   // the gym's walls, gate and posts are one build (BUILD.gym); as a thing it keeps everything else out and blocks the walk
@@ -826,8 +834,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1 };
-var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6 };
+var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8 };
+var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -846,7 +854,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -870,11 +878,12 @@ var SECRET_SAY = {
   medusa:'Three old sisters live in a cave near here. They share one eye between them.',
   underworld:'They say Sleep has a cave near here, by the Lethe. Walk quietly.',
   olympus:'The smith of the gods works under this path. Listen for his hammer.',
+  wonderland:'Curiouser and curiouser. There is a secret hole on this trail.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave', underworld:'cave', olympus:'secretdoor' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave', underworld:'cave', wonderland:'secretdoor', olympus:'secretdoor' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -1355,6 +1364,7 @@ var LIFE = {
   medusa:{ fly:['owl', 2], mote:[['dust', 10], ['butter', 4]] },
   underworld:{ fly:['bat', 2], mote:[['spark', 10], ['dust', 8]] },
   olympus:{ fly:['song', 3], mote:[['butter', 8], ['spark', 8]] },
+  wonderland:{ fly:['song', 3], mote:[['petal', 10], ['butter', 8]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -1666,8 +1676,9 @@ function run(box, P, pic, api){
   // the local is the 3D golfer model, in the world's own clothes, standing and facing the path
   function npcFrame(t){ var G = window.RTT_G3D; if (!G || !G.frame) return null; var face = t.x < P.near(t.x, t.y)[0] ? 90 : -90; try{ return G.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, kitOf(t.th).npc), face, 'walk', 8); }catch(e){ return null; } }
   // one of the folk of Oz (FOLK3D) stands there instead: a little model of their own, facing the path like the local does
-  function drawFolk(t){ var f = t.x < P.near(t.x, t.y)[0] ? 1 : -1, id = P.spec.folk.id, F = FOLK3D[id]; if (!F) return; var key = 'folk:' + id + ':' + f;
-    var k = F.k || 1; drawSprite(big(key, prop(key, folkFn(id, f), 2 * F.r * k + 0.4, 2 * F.r * k + 0.4, F.h * k)), t.x, t.y, pic.zAt(t.x, t.y)); }
+  function drawFolk(t){ var f = t.x < P.near(t.x, t.y)[0] ? 1 : -1; folkAt(P.spec.folk.id, f, t.x, t.y); }
+  function folkSprite(id, f){ var F = FOLK3D[id]; if (!F) return null; var key = 'folk:' + id + ':' + f, k = F.k || 1; return big(key, prop(key, folkFn(id, f), 2 * F.r * k + 0.4, 2 * F.r * k + 0.4, F.h * k)); }
+  function folkAt(id, f, x, y){ var sp0 = folkSprite(id, f); if (sp0) drawSprite(sp0, x, y, pic.zAt(x, y)); }
   var IMG = {}; function img(u){ var im = IMG[u]; if (!im){ im = IMG[u] = new Image(); im.src = u; } return im; }
   /* A frame not yet decoded is never a blank: who drew a frame last keeps it on screen until the new one is ready,
      or the golfer blinks out for a frame every time his foot or his facing changes. */
@@ -1963,10 +1974,13 @@ function run(box, P, pic, api){
     dlg.querySelector('.pp-gdn b').textContent = greet.name; dlg.querySelector('.pp-gdn i').textContent = greet.role || ''; ui.appendChild(dlg);
     var pEl = dlg.querySelector('p'), mEl = dlg.querySelector('.pp-gdm');
     // their face: the profile picture of their look, as the player's own avatar is drawn; the 3D model if the page has none
-    var pu = api.portrait ? api.portrait(greet.look) : ''; if (pu){ var pp0 = dlg.querySelector('.pp-gdp'); pp0.innerHTML = ''; pp0.classList.add('pic'); pp0.style.backgroundImage = 'url(' + pu + ')'; }
+    // a host who is one of a book's folk (the White Rabbit) is their own little model, so their face is that model's
+    if (greet.folk && FOLK3D[greet.folk]){ try{ var fsp = folkSprite(greet.folk, 1), pc = dlg.querySelector('canvas'), x3 = pc.getContext('2d'), fw = fsp.cv.width, fh = fsp.cv.height, sq = Math.min(fw, fh * 0.45);
+      x3.imageSmoothingEnabled = false; x3.clearRect(0, 0, 64, 64); x3.drawImage(fsp.cv, (fw - sq) / 2, 0, sq, sq, 0, 0, 64, 64); }catch(e){} }
+    else { var pu = api.portrait ? api.portrait(greet.look) : ''; if (pu){ var pp0 = dlg.querySelector('.pp-gdp'); pp0.innerHTML = ''; pp0.classList.add('pic'); pp0.style.backgroundImage = 'url(' + pu + ')'; }
     else (function face(){ var f = null; try{ f = window.RTT_G3D.frame(greet.look, 180, 'walk', 8); }catch(e){} if (!f || !f.url) return;
       var im = new Image(); im.onload = function(){ var c = dlg && dlg.querySelector('canvas'); if (!c) return; var x2 = c.getContext('2d'), fs = f.fig || f.H * 0.6, sz = fs * 0.62;
-        x2.imageSmoothingEnabled = false; x2.clearRect(0, 0, 64, 64); x2.drawImage(im, f.ball[0] - sz / 2, f.ball[1] - fs * 1.06, sz, sz, 0, 0, 64, 64); }; im.src = f.url; })();
+        x2.imageSmoothingEnabled = false; x2.clearRect(0, 0, 64, 64); x2.drawImage(im, f.ball[0] - sz / 2, f.ball[1] - fs * 1.06, sz, sz, 0, 0, 64, 64); }; im.src = f.url; })(); }
     function show(){ clearInterval(tm); typed = 0; var t = pages[pg] || ''; pEl.textContent = ''; mEl.classList.remove('on');
       tm = setInterval(function(){ typed += 2; pEl.textContent = t.slice(0, typed); if (typed >= t.length){ clearInterval(tm); tm = null; mEl.classList.add('on'); } }, 28);
       api.sfx && api.sfx('blip'); }
@@ -2360,7 +2374,7 @@ function run(box, P, pic, api){
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc'){ if (P.spec.folk) drawFolk(t); else drawFigure(npcFrame(t), t.x, t.y); }
       else if (t.k === 'ship' || t.k === 'tumble' || t.k === 'ghost') drawLifeThing(t, tsec);
-      else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); drawFigure(hostFrame(), t.x, t.y, false, 'host');
+      else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); if (greet.folk && FOLK3D[greet.folk]) folkAt(greet.folk, hs.face[0] >= 0 ? 1 : -1, t.x, t.y); else drawFigure(hostFrame(), t.x, t.y, false, 'host');
         if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
           ctx.fillStyle = '#ffd24a'; ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] - 6 * es), 2 * es, 7 * es); ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] + 4 * es), 2 * es, 2 * es); } }
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
@@ -2445,7 +2459,7 @@ function run(box, P, pic, api){
     // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
     if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
-    label = P.gate && P.gate.pad ? (P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
+    label = P.gate && P.gate.pad ? (P.spec.space === 'fall' ? 'The rabbit hole' : P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
     cls(pin, 'on', false); cls(way, 'on', true); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
     put(way.style, 'left', Math.round(cxs + vx * s2) + 'px'); put(way.style, 'top', Math.round(cys + vy * s2) + 'px'); put(wayI.style, 'transform', 'rotate(' + Math.round(Math.atan2(vy, vx) * 180 / Math.PI + 90) + 'deg)');
@@ -4140,6 +4154,96 @@ BUILD.olyAnvil = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx,
   if (tt < 1.3) return Math.abs(dx) < 0.32 && Math.abs(dy) < 0.32 ? '#8a5a24' : null;
   if (tt < 1.8){ var hw = 0.8 + (dx < 0 ? (tt - 1.3) * 1.2 : 0); return dx > -hw && dx < 0.9 && Math.abs(dy) < 0.36 ? (tt > 1.7 ? '#e8b060' : '#c8863a') : null; } return null; }); };
 LMSIZE.olyColumn = [2, 2, 7]; LMSIZE.olyTripod = [2, 2, 3.4]; LMSIZE.olyAnvil = [2.4, 1.6, 2];
+/* ---- Wonderland's stops on the walk, the same places its holes stand in (land.js): the loveliest garden, the shore of the Pool of
+   Tears, the wood of tall mushrooms, the March Hare's tea table, the Queen's rose garden, the Mock Turtle's sea and the croquet
+   ground. The walk is a gravel path. Lewis Carroll's book as John Tenniel drew it, and nothing else. */
+GPAT.wonLawn = function(c){ var a = vn(c.ti * 0.04, c.tj * 0.04, 541), w = vn(c.ti * 0.012, c.tj * 0.012, 545), st = hash(c.ti, c.tj, 542);
+  if (st > 0.988) return '#ffffff'; if (st > 0.982) return '#ffd84a'; if (w > 0.68) return a > 0.5 ? '#52a04a' : '#4a9444'; return a > 0.7 ? '#6cbf5a' : a < 0.3 ? '#4a9444' : '#5aa850'; };
+GPAT.wonBeds = function(c){ var st = hash(c.ti, c.tj, 543), a = vn(c.ti * 0.035, c.tj * 0.035, 544); if (a > 0.66){ if (st > 0.8) return vn(c.ti * 0.2, c.tj * 0.2, 549) > 0.5 ? '#e8283a' : '#ffffff'; return st > 0.4 ? '#2a6a2e' : '#367a36'; } return GPAT.wonLawn(c); };
+GPAT.wonMoss = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 546), st = hash(c.ti, c.tj, 547); if (st > 0.99) return '#e2cfa0'; return a > 0.68 ? '#4e8c46' : a < 0.3 ? '#2e5e2c' : '#3e7a3a'; };
+// the croquet ground, mown in stripes that wave a little (a mown lawn, so its stripes are allowed; never a check)
+GPAT.wonStripe = function(c){ var wv = Math.sin(c.ti * 0.03) * 5 + (vn(c.ti * 0.03, c.tj * 0.03, 548) - 0.5) * 8, k = Math.floor((c.tj + wv) / 16) & 1, a = vn(c.ti * 0.1, c.tj * 0.1, 549);
+  return k ? (a > 0.62 ? '#7ccc68' : '#6cbf5a') : (a > 0.62 ? '#56a24c' : '#4e9846'); };
+KIT['wonderland~garden'] = kitFrom(KIT.wonderland, { gpat:'wonBeds', nlm:3, low:['wrose', 'bush', 'wrose'], lm:['wonFountain', 'wonCard', 'wonFountain'] });
+KIT['wonderland~shore'] = kitFrom(KIT.wonderland, { sea:true, nlm:3, dens:0.2, low:['rock', 'wrose', 'rock'], lm:['wonMushroom', 'wonFountain', 'wonCard'] });
+KIT['wonderland~wood'] = kitFrom(KIT.wonderland, { gpat:'wonMoss', nlm:3, dens:0.6, low:['wmush', 'wmush', 'bush'], lm:['wonMushroom', 'wonMushroom', 'wonRabbitHouse'] });
+KIT['wonderland~tea'] = kitFrom(KIT.wonderland, { nlm:3, low:['wrose', 'bush', 'wmush'], lm:['wonTeaTable', 'wonHareHouse', 'wonMushroom'] });
+KIT['wonderland~roses'] = kitFrom(KIT.wonderland, { gpat:'wonBeds', nlm:3, low:['wrose', 'wrose', 'bush'], lm:['wonCard', 'wonFountain', 'wonCard'] });
+KIT['wonderland~sea'] = kitFrom(KIT.wonderland, { sea:true, nlm:3, dens:0.15, low:['rock', 'rock', 'wrose'], lm:['wonRock', 'wonCard', 'wonRock'] });
+KIT['wonderland~croquet'] = kitFrom(KIT.wonderland, { gpat:'wonStripe', nlm:3, dens:0.2, low:['wrose', 'wrose', 'bush'], lm:['wonArch', 'wonCard', 'wonArch'] });
+LIFE_AS['wonderland~garden'] = { fly:['song', 3], mote:[['petal', 10], ['butter', 8]] };
+LIFE_AS['wonderland~shore'] = { fly:['gull', 2], mote:[['butter', 6]] };
+LIFE_AS['wonderland~wood'] = { fly:['song', 2], mote:[['firefly', 8], ['butter', 6]] };
+LIFE_AS['wonderland~tea'] = { fly:['song', 3], mote:[['butter', 8], ['petal', 4]] };
+LIFE_AS['wonderland~roses'] = { fly:['song', 2], mote:[['petal', 14], ['butter', 6]] };
+LIFE_AS['wonderland~sea'] = { fly:['gull', 3], mote:[['butter', 4]] };
+LIFE_AS['wonderland~croquet'] = { fly:['song', 2], mote:[['petal', 8], ['butter', 6]] };
+// a clipped rose bush of the Queen's garden: red roses on it, and a white one or two still being painted
+BUILD.wrose = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), r = 0.85;
+  B.solid(x - r - 0.1, y - r - 0.1, zb - 0.05, x + r + 0.1, y + r + 0.1, zb + r * 2, function(px, py, pz){ var d = Math.hypot((px - x) / r, (py - y) / r, (pz - zb - r * 0.8) / r); if (d > 1) return null;
+    var f = hash(px * 8 | 0, (py * 8 | 0) + (pz * 8 | 0) * 7, i); if (d > 0.8 && f > 0.8) return f > 0.97 ? '#ffffff' : '#d8183a'; return f < 0.3 ? '#1e4a22' : f < 0.65 ? '#2a6a2e' : '#367a36'; }, 0.125); };
+// a small pale mushroom of the wood
+BUILD.wmush = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), r = 0.55 + hash(i, 2, 551) * 0.25, H = r * 1.8;
+  B.solid(x - r * 1.5, y - r * 1.5, zb, x + r * 1.5, y + r * 1.5, zb + H + r, function(px, py, pz){ var d = Math.hypot(px - x, py - y), tt = pz - zb;
+    if (tt < H) return d < r * 0.32 ? (px > x ? '#d8ccb0' : '#f2ead8') : null; var cu = (tt - H) / (r * 0.85); if (cu > 1) return null;
+    var cr = r * 1.4 * Math.sqrt(Math.max(0, 1 - cu * cu)); if (d > cr) return null; return cu < 0.15 ? '#a88a5a' : cu > 0.7 ? '#f4e8c8' : '#e2cfa0'; }, 0.125); };
+// a tall mushroom as high as a house, Tenniel's plain pale cap
+BUILD.wonMushroom = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx, dy), H = t.h * 0.62;
+  if (tt < H) return d < 0.55 ? (dx > 0.2 ? '#d8ccb0' : '#f2ead8') : null; var cu = (tt - H) / (t.h - H); if (cu > 1) return null;
+  var cr = (t.w / 2) * Math.sqrt(Math.max(0, 1 - cu * cu)); if (d > cr) return null; return cu < 0.12 ? '#a88a5a' : cu > 0.72 ? '#f4e8c8' : (vn(dx * 2, dy * 2, i) > 0.6 ? '#ecdcb0' : '#e2cfa0'); }); };
+// a card soldier standing guard with his spear: a flat card on edge, black edged, red hearts, arms and legs at its edges
+BUILD.wonCard = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var red = hash(i, 1, 553) < 0.7;
+  if (Math.abs(dx - 1) < 0.07 && Math.abs(dy) < 0.07) return tt > t.h - 0.5 ? '#c8c8d0' : '#6a4a2a';   // the spear
+  if (tt < 0.9) return Math.abs(Math.abs(dx) - 0.35) < 0.1 && Math.abs(dy) < 0.1 ? '#1a1410' : null;
+  if (tt > t.h - 0.6) return Math.hypot(dx, dy) < 0.28 ? (tt > t.h - 0.2 ? '#4a3020' : '#f2d4b4') : null;
+  if (Math.abs(dy) > 0.1 || Math.abs(dx) > 0.8) return null; if (Math.abs(dx) > 0.72 || tt < 1 || tt > t.h - 0.7) return '#1a1410';
+  var hx = ((dx + 0.8) * 2.2) % 1 - 0.5, hy = ((tt - 1) * 1.4) % 1 - 0.5; return Math.abs(hx) + Math.abs(hy) < 0.28 ? (red ? '#c8102a' : '#1a1410') : '#fbf8f0'; }); };
+// a fountain of the garden: a stone basin, a column and a little bowl, and the water
+BUILD.wonFountain = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx, dy);
+  if (tt < 0.8) return d < t.w / 2 ? (d > t.w / 2 - 0.4 ? (tt > 0.65 ? '#e2ddd0' : '#c8c4b8') : tt > 0.6 ? (vn(dx * 3 + tt, dy * 3, i) > 0.6 ? '#bfe0ff' : '#5a8ac8') : null) : null;
+  if (tt < 2.2) return d < 0.3 ? '#d8d4ca' : null; if (tt < 2.6) return d < 0.9 ? (tt > 2.45 && d < 0.75 ? '#9ac8f0' : '#e2ddd0') : null; return d < 0.12 && tt < t.h ? '#e8f4ff' : null; }); };
+// the White Rabbit's house: a neat little cottage, white walls, a red roof and a brass plate on the door
+BUILD.wonRabbitHouse = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2, wallH = t.h * 0.5;
+  if (tt < wallH) { if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null; if (dy > hd - 0.3){ if (Math.abs(dx) < 0.6 && tt < 2.2) return Math.abs(dx) < 0.2 && Math.abs(tt - 1.6) < 0.12 ? '#e8c050' : '#6a3a1e'; if (Math.abs(Math.abs(dx) - 1.8) < 0.5 && tt > 1.2 && tt < 2.2) return '#a8c8e8'; } return '#f4efe2'; }
+  var rr = (t.h - tt) / (t.h - wallH) * (hd + 0.3); if (Math.abs(dy) > rr || Math.abs(dx) > hw + 0.3) return null; return Math.abs(dy) > rr - 0.25 ? '#8a1a1a' : '#b8282a'; }); };
+// the long tea table under the tree, laid with its white cloth, the cups and the pots, and the Dormouse's teapot
+BUILD.wonTeaTable = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2;
+  if (tt < 1.4) return Math.abs(Math.abs(dx) - (hw - 0.4)) < 0.14 && Math.abs(Math.abs(dy) - 0.6) < 0.14 ? '#5a3a24' : null;
+  if (tt < 1.6) return Math.abs(dx) < hw && Math.abs(dy) < 1 ? (Math.abs(dy) > 0.9 ? '#e8e4dc' : '#fbfaf6') : null;
+  var cu = ((dx + hw) * 0.9) % 1; if (Math.abs(dy) < 0.4 && tt < 1.9 && cu < 0.4) return (Math.floor((dx + hw) * 0.9) % 3) ? '#e8eef8' : '#3a5aa8';
+  if (Math.hypot(dx - 1, dy) < 0.45 && tt < 2.4) return tt > 2.25 ? '#3a5aa8' : '#f4f4fa'; return null; }); };
+// the March Hare's house: its chimneys shaped like ears and its roof thatched with fur
+BUILD.wonHareHouse = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.3, hd = t.d / 2 - 0.3;
+  if (tt < 3){ if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null; if (dy > hd - 0.3 && Math.abs(dx) < 0.6 && tt < 2.2) return '#5a3a24'; return '#e8d8b8'; }
+  var roof = 3 + (hd + 0.2 - Math.abs(dy)) * 1.2; if (tt < roof && Math.abs(dx) < hw + 0.2 && Math.abs(dy) < hd + 0.2) return vn(dx * 4, tt * 4 + dy, i) > 0.5 ? '#a87a4a' : '#8a5a34';
+  for (var s = -1; s <= 1; s += 2){ var ex = dx - s * 1.3, et = tt - (t.h - 1.4); if (Math.hypot(ex / 0.4, et / 1.4, dy / 0.3) < 1) return Math.abs(ex) < 0.15 ? '#e8a8a0' : '#b8a090'; } return null; }); };
+// a rock by the sea, where the Mock Turtle sits sighing
+BUILD.wonRock = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / (t.w / 2), dy / (t.d / 2), tt / t.h) + (vn(dx * 1.2, tt * 1.2, i) - 0.5) * 0.25; if (d > 1) return null;
+  return tt > t.h * 0.7 ? '#c8c2b4' : vn(dx * 3, dy * 3 + tt, i + 4) > 0.6 ? '#a8a294' : '#8a8478'; }); };
+// a croquet arch: a card soldier doubled over, his hands and feet on the lawn
+BUILD.wonArch = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, tt - 0.1); if (Math.abs(dy) > 0.18 || tt < 0.05) return null;
+  if (r > 1.5 || r < 1.1) return null; var a = Math.atan2(tt - 0.1, dx); return Math.abs(r - 1.3) < 0.08 && ((a * 8 | 0) & 1) ? '#c8102a' : r > 1.42 || r < 1.18 ? '#1a1410' : '#fbf8f0'; }); };
+/* DOWN THE RABBIT HOLE (the walk across to Wonderland, SPACE_TRIP 'fall'): on the top of Olympus a rabbit hole opens under a grassy
+   bank, roots about its mouth, and the White Rabbit stands by it looking at his watch. Walking to it starts the fall. */
+BUILD.wonRabbitHole = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 3.4, y - 2.6, zb - 0.4, x + 3.4, y + 2.6, zb + 3.2, function(px, py, pz){ var dx = px - x, dy = py - y, tt = pz - zb, bank = 2.4 - Math.hypot(dx / 3.2, (dy + 0.6) / 2.2) * 2.4;
+    if (tt < 0.1 && Math.hypot(dx / 1.3, (dy - 0.9) / 0.8) < 1) return '#140e08';   // the hole, black
+    if (dy > 0.2 && Math.hypot(dx / 1.4, (tt - 0.7) / 0.9) < 1 && dy < 1.6) return dy > 1.3 ? '#2a1a10' : null;   // its mouth in the bank
+    if (tt < bank){ if (tt > bank - 0.35) return hash(px * 6 | 0, py * 6 | 0, 3) > 0.5 ? '#6cbf5a' : '#5aa850'; return Math.abs(Math.sin(dx * 5 + tt * 3)) < 0.12 ? '#6a4a2a' : '#7a5a3a'; }
+    return null; }, 0.125); };
+// the hall's end on the far side of the fall: a panelled wall, the little door in it standing open on the garden, the golden key in
+// its lock, and the little glass table where the key and the bottle were
+BUILD.wonLittleDoor = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 3.4, y - 1.6, zb - 0.1, x + 3.4, y + 1.6, zb + 4.2, function(px, py, pz){ var dx = px - x, dy = py - y, tt = pz - zb;
+    if (Math.abs(dy) < 0.4 && Math.abs(dx) < 3.2){ if (Math.abs(dx) < 0.55 && tt < 1.1 + Math.sqrt(Math.max(0, 0.3 - dx * dx)) * 0.6) return null;   // the doorway, open
+      if (Math.abs(dx) < 0.75 && tt < 1.6) return '#c8a050'; if (tt > 3.8) return '#4a3226'; return Math.abs(((dx + 3.2) * 1.2) % 1 - 0.5) < 0.06 ? '#5a3e2a' : '#7a5a3e'; }
+    if (dy > 0.4 && dy < 1.4 && dx > 0.55 && dx < 0.65 && tt < 1.3) return '#7a4a24';   // the door itself, swung open
+    if (Math.hypot(dx + 2, dy - 1) < 0.5 && Math.abs(tt - 1.2) < 0.06) return '#dff0ff';   // the glass table's top
+    if (Math.abs(Math.abs(dx + 2) - 0.35) < 0.05 && Math.abs(dy - 1) < 0.05 && tt < 1.2) return '#bfe0f4';
+    if (Math.abs(dx + 2) < 0.18 && Math.abs(dy - 1) < 0.05 && Math.abs(tt - 1.3) < 0.05) return '#ffd84a';   // the golden key on it
+    return null; }, 0.125); };
+LMSIZE.wonMushroom = [4, 4, 6]; LMSIZE.wonCard = [2.2, 1, 4.2]; LMSIZE.wonFountain = [3, 3, 3.4]; LMSIZE.wonRabbitHouse = [6, 5, 6]; LMSIZE.wonTeaTable = [7, 2.2, 2.6];
+LMSIZE.wonHareHouse = [6, 5, 7]; LMSIZE.wonRock = [4, 3, 2.4]; LMSIZE.wonArch = [3.2, 1, 1.8];
 // @@WORLD STOPS END@@
 /* THE FOLK OF OZ (putt.js FOLK says who stands on which walk and what they say). Four of L. Frank Baum's 1900 characters,
    drawn the way the book and W. W. Denslow's 1900 plates draw them and in no other way (mythiball/PD_SOURCES.md has the
@@ -4245,6 +4349,89 @@ var FOLK3D = {
     if (t >= 2.36 && t < 3.15 && Math.hypot(u + 0.08 + (t - 2.36) * 0.1, v) < 0.24 * (1 - (t - 2.36) / 0.79)) return t < 2.43 ? '#5a5a66' : u + v > 0 ? '#2a2a34' : '#1c1c24';   // and its point, a grey band
     return null; } }
 };
+/* THE FOLK OF WONDERLAND (putt.js FOLK, and the White Rabbit, its host: GREETERS.wonderland.folk). Lewis Carroll's 1865 characters
+   drawn the way John Tenniel drew them, coloured as he coloured them for The Nursery Alice (1890), and in no other way: never a film's
+   look. Alice with long fair hair, no band in it, a plain yellow frock and a white pinafore, white stockings and black shoes; the White
+   Rabbit upright in his jacket and waistcoat, his watch in his paw; the Caterpillar on top of his mushroom, arms folded (no hookah);
+   the Cheshire Cat along the branch of a tree, grinning from ear to ear; the Hatter in his tall hat with its ticket, In this style 10/6,
+   a big bow tie and a teacup in his hand; and the Mock Turtle, a turtle's shell with a calf's head and hind hooves. */
+var FOLK_TICKET = ['#fbf8f0', '#1a1410'];
+Object.assign(FOLK3D, {
+  // Alice, a girl of seven: long fair hair down her back, a yellow frock, a white pinafore over it, white stockings, black shoes
+  alice:{ r:0.8, h:2.8, k:1.25, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.16 && el3(u, av, t, 0.08, 0.11, 0.07, 0.19, 0.09, 0.1) <= 1) return '#1a1410';   // black shoes
+    if (cap3(u, av, t, [0, 0.11, 0.12], [0, 0.11, 0.86], 0.06)) return '#f6f4ee';   // white stockings
+    if (t >= 0.8 && t < 1.46 && Math.hypot(u, v) < 0.22 + (1.46 - t) * 0.38){ return u > 0.04 && av < 0.2 + (1.46 - t) * 0.3 ? '#ffffff' : '#f0c830'; }   // the skirt, the pinafore over its front
+    if (el3(u, v, t, 0, 0, 1.62, 0.19, 0.23, 0.27) <= 1) return u > 0.06 && av < 0.16 ? '#ffffff' : (av > 0.15 && u > -0.06 && t > 1.7 ? '#ffffff' : '#f0c830');   // the bodice, the pinafore's bib and straps
+    if (cap3(u, av, t, [0, 0.25, 1.74], [0.08, 0.3, 1.3], 0.065)) return t > 1.6 ? '#f0c830' : '#f4d0b0';   // short puffed sleeves, then bare arms
+    if (el3(u, av, t, 0.08, 0.3, 1.26, 0.06, 0.06, 0.06) <= 1) return '#f4d0b0';
+    if (cap3(u, v, t, [0, 0, 1.78], [0, 0, 1.94], 0.065)) return '#f4d0b0';
+    var d = Math.hypot(u, v, t - 2.12);
+    if (u < 0.06 && t > 1.45 && t < 2.32 && Math.hypot(u + 0.06, v) < 0.27 + Math.max(0, 2.0 - t) * 0.08 && !(u > -0.02 && t < 1.95)) return vn(v * 30, t * 12, 9) > 0.5 ? '#f2d478' : '#e0b850';   // her long fair hair down her back
+    if (d <= 0.25){ if (u < 0.05 || t > 2.3) return vn(v * 30, t * 30, 8) > 0.5 ? '#f2d478' : '#e0b850';
+      if (u > 0.17 && Math.abs(av - 0.085) < 0.035 && Math.abs(t - 2.14) < 0.035) return '#2a3a6a'; if (u > 0.2 && av < 0.05 && Math.abs(t - 2.02) < 0.018) return '#c0505a'; return '#f4d0b0'; }
+    return null; } },
+  // the White Rabbit, upright: white fur, long ears pink inside, a pink eye; his jacket, his waistcoat and the watch held up in his paw
+  rabbit:{ r:0.8, h:3.2, k:1.2, at:function(u, v, t){ var av = Math.abs(v), chk = (Math.floor(u * 9 + 20) + Math.floor(t * 9)) & 1;
+    if (t < 0.18 && el3(u, av, t, 0.16, 0.13, 0.08, 0.26, 0.1, 0.1) <= 1) return '#f6f4ee';   // long white feet
+    if (cap3(u, av, t, [0, 0.13, 0.16], [0, 0.13, 0.8], 0.09)) return t > 0.6 ? '#7a5a8a' : '#f6f4ee';   // legs, his trousers to the knee
+    if (el3(u, v, t, 0, 0, 1.3, 0.24, 0.27, 0.56) <= 1){ if (u > 0.14 && av < 0.1) return Math.abs(t - 1.22) < 0.05 && v > 0 ? '#ffd84a' : '#e8c050';   // the waistcoat, its watch chain
+      return chk ? '#a83a2a' : '#8a2a1e'; }   // the checked jacket
+    if (cap3(u, av, t, [0, 0.27, 1.62], [0.24, 0.32, 1.3], 0.07)) return '#a83a2a';
+    if (el3(u, v, t, 0.3, 0.32, 1.28, 0.07, 0.07, 0.07) <= 1) return '#f6f4ee';   // paws
+    if (v > 0 && el3(u, v, t, 0.38, 0.3, 1.38, 0.05, 0.1, 0.1) <= 1) return Math.hypot(v - 0.3, t - 1.38) < 0.06 ? '#fbf8f0' : '#ffd84a';   // the watch, held up to look at
+    var d = el3(u, v, t, 0.04, 0, 2.02, 0.24, 0.2, 0.24);
+    if (d <= 1){ if (u > 0.18 && Math.abs(av - 0.1) < 0.04 && Math.abs(t - 2.07) < 0.04) return '#d84a6a'; if (u > 0.26 && av < 0.04 && Math.abs(t - 1.96) < 0.03) return '#e8a0b0'; return '#f6f4ee'; }
+    if (Math.abs(t - 1.74) < 0.06 && Math.hypot(u, v) < 0.2) return '#ffffff';   // his collar
+    if (cap3(u, av, t, [-0.02, 0.09, 2.18], [-0.1, 0.16, 3.0], 0.08)) return u > 0.0 && av < 0.15 ? '#f0a8b8' : '#f6f4ee';   // the long ears
+    return null; } },
+  // the Caterpillar, sitting on the top of his mushroom with his arms folded: a plain pale cap and stalk, a blue body in rings
+  caterpillar:{ r:1.2, h:3.6, at:function(u, v, t){ var av = Math.abs(v), rr = Math.hypot(u, v);
+    if (t < 1.6) return rr < 0.32 ? (u > 0.1 ? '#d8ccb0' : '#f2ead8') : null;   // the stalk
+    if (t < 2.1){ var cr = 1.15 * Math.sqrt(Math.max(0, 1 - Math.pow((t - 1.6) / 0.5, 2))); if (rr > cr) return null; return t < 1.66 ? '#a88a5a' : t > 2.0 ? '#f4e8c8' : '#e2cfa0'; }   // the cap
+    var segs = [[-0.5, 0, 2.18, 0.16], [-0.25, 0, 2.2, 0.19], [0, 0, 2.3, 0.2], [0.06, 0, 2.55, 0.19], [0.08, 0, 2.8, 0.18], [0.08, 0, 3.05, 0.17]];
+    for (var k = 0; k < segs.length; k++){ var q = segs[k]; if (Math.hypot(u - q[0], v - q[1], t - q[2]) < q[3]) return ((k & 1) ? '#4a72c8' : '#5a86dc'); }
+    if (cap3(u, av, t, [0.14, 0.18, 2.75], [0.2, 0.02, 2.72], 0.05)) return '#4a72c8';   // arms folded across him
+    var d = Math.hypot(u - 0.12, v, t - 3.3);
+    if (d < 0.2){ if (u > 0.24 && Math.abs(av - 0.07) < 0.03 && Math.abs(t - 3.34) < 0.03) return '#1a1410'; return '#7a9ae8'; }
+    return null; } },
+  // the Cheshire Cat along the branch of a tree, grinning from ear to ear: a striped tabby, its great white grin
+  cheshire:{ r:1.4, h:4.4, at:function(u, v, t){ var av = Math.abs(v);
+    if (Math.hypot(u + 0.9, v) < 0.38 && t < 4.2) return vn(t * 4, u * 4, 3) > 0.5 ? '#5a4030' : '#4a3424';   // the trunk
+    if (cap3(u, v, t, [-0.9, 0, 3.0], [1.2, 0, 3.2], 0.16)) return '#5a4030';   // the branch
+    if (el3(u, v, t, -0.9, 0, 4.1, 0.9, 0.9, 0.5) <= 1 + (vn(u * 3, v * 3 + t, 4) - 0.5) * 0.3) return vn(u * 4 + t, v * 4, 5) > 0.55 ? '#4a8a3e' : '#2e6a2e';   // leaves above
+    var stripe = Math.sin(u * 14 + t * 3) > 0.3;
+    if (el3(u, v, t, 0.2, 0, 3.42, 0.55, 0.26, 0.22) <= 1) return stripe ? '#6a5a4a' : '#9a8a72';   // the cat lying along it
+    if (cap3(u, v, t, [-0.35, 0, 3.4], [-0.5, 0.05, 2.7], 0.06)) return stripe ? '#6a5a4a' : '#9a8a72';   // the tail hanging down
+    var hd = el3(u, v, t, 0.82, 0, 3.6, 0.3, 0.34, 0.28);
+    if (hd <= 1){ var gr = u > 0.95 && Math.abs(t - 3.53 + av * av * 1.2) < 0.045 && av < 0.3; if (gr) return (Math.floor(v * 30) & 1) ? '#ffffff' : '#e8e8e0';   // the grin
+      if (u > 0.95 && Math.abs(av - 0.12) < 0.05 && Math.abs(t - 3.7) < 0.05) return '#e8c830'; return stripe ? '#7a6a58' : '#a89880'; }
+    if (cap3(u, av, t, [0.8, 0.18, 3.8], [0.78, 0.24, 3.98], 0.06)) return '#7a6a58';   // ears
+    return null; } },
+  // the Hatter: his tall hat with the ticket in its band (In this style 10/6), a big spotted bow tie, his coat, a teacup in his hand
+  hatter:{ r:0.8, h:4.6, at:function(u, v, t){ var av = Math.abs(v), chk = ((Math.floor(u * 8 + 20) + Math.floor(t * 8)) & 1);
+    if (t < 0.2 && el3(u, av, t, 0.1, 0.16, 0.09, 0.24, 0.1, 0.11) <= 1) return '#3a2a1a';
+    if (cap3(u, av, t, [0, 0.16, 0.18], [0, 0.16, 1.6], 0.12)) return chk ? '#c8a050' : '#8a6a3a';   // checked trousers
+    if (el3(u, v, t, 0, 0, 2.2, 0.27, 0.34, 0.66) <= 1) return u > 0.18 && av < 0.1 ? (t > 2.3 ? '#f4efe2' : '#e8c050') : '#3a5a4a';   // the coat, a waistcoat at the front
+    if (cap3(u, av, t, [0, 0.34, 2.62], [0.3, 0.36, 2.0], 0.09)) return '#3a5a4a';
+    if (v > 0 && el3(u, v, t, 0.38, 0.38, 2.02, 0.1, 0.1, 0.07) <= 1) return t > 2.04 ? '#a87a4a' : '#f4f4fa';   // the teacup
+    if (el3(u, av, t, 0.3, 0.13, 2.84, 0.06, 0.13, 0.08) <= 1) return hash((v * 40) | 0, (t * 40) | 0, 11) > 0.7 ? '#ffffff' : '#c8283a';   // the bow tie, spotted
+    var d = Math.hypot(u, v, t - 3.16);
+    if (d < 0.3){ if (u > 0.22 && Math.abs(av - 0.1) < 0.04 && Math.abs(t - 3.2) < 0.04) return '#1a1410'; if (u > 0.26 && av < 0.05 && Math.abs(t - 3.12) < 0.03) return '#e0b090'; if (u < -0.12 && t < 3.24) return '#a86a3a'; return '#f2d0b0'; }
+    if (t >= 3.36 && t < 3.42 && Math.hypot(u, v) < 0.48) return '#2a2a30';   // the brim
+    if (t >= 3.4 && t < 4.5 && Math.hypot(u, v) < 0.3 + (t - 3.4) * 0.05){ if (t < 3.6) { if (u > 0.2 && av < 0.12 && t > 3.44 && t < 3.58) return Math.abs(t - 3.51) < 0.02 && (Math.floor(v * 40) & 1) ? FOLK_TICKET[1] : FOLK_TICKET[0]; return '#5a4a3a'; } return u + v > 0 ? '#3a3a42' : '#2a2a30'; }   // the hat, its band and the 10/6 ticket
+    return null; } },
+  // the Mock Turtle, sitting sad on his rock: a turtle's shell and flippers, a calf's head and hind hooves (Tenniel's)
+  mockturtle:{ r:1.2, h:3, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.9) return el3(u, v, t, 0, 0, 0.2, 1.1, 0.9, 0.8) <= 1 + (vn(u * 2, v * 2 + t, 7) - 0.5) * 0.3 ? (vn(u * 3, t * 3, 6) > 0.5 ? '#a8a294' : '#8a8478') : null;   // his rock
+    if (t < 1.1 && el3(u, av, t, 0.4, 0.28, 0.98, 0.16, 0.1, 0.12) <= 1) return '#3a2a1a';   // hind hooves
+    if (el3(u, v, t, -0.08, 0, 1.6, 0.42, 0.44, 0.62) <= 1){ var sh = Math.sin(u * 9) * Math.sin(t * 9) > 0.3; return u < -0.1 ? (sh ? '#5a6a3a' : '#6a7a4a') : '#d8c8a0'; }   // the shell behind, the pale belly plate
+    if (cap3(u, av, t, [0.05, 0.4, 1.9], [0.32, 0.42, 1.5], 0.08)) return '#8a9a6a';   // flippers, one at his eye
+    var d = el3(u, v, t, 0.18, 0, 2.42, 0.26, 0.22, 0.24);
+    if (d <= 1){ if (u > 0.34 && av < 0.1 && t < 2.36) return '#c8a888'; if (u > 0.26 && Math.abs(av - 0.1) < 0.04 && Math.abs(t - 2.48) < 0.04) return '#1a1410'; return '#a87a5a'; }   // the calf's head
+    if (cap3(u, av, t, [0.1, 0.18, 2.55], [0.0, 0.34, 2.48], 0.05)) return '#a87a5a';   // ears
+    return null; } }
+});
 // a figure's build, facing f, turned 53 degrees toward the camera
 // (k: a figure drawn larger than life, so a little girl still reads on a phone)
 function folkFn(id, f){ var F = FOLK3D[id], ax = f * 0.6, ay = 0.8, k = F.k || 1, R = F.r * k + 0.2;

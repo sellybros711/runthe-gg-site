@@ -1632,7 +1632,20 @@
         out.push(ellipsoid(f,AXh,[hr*(0.34-k*0.06),hr*0.1,hr*0.05],k===2?wd:wg,{gloss:2,noCast:1})); } }                          // a wing, feather on feather
     return out; };
   HAT_OVER_HAIR.ppwingcap=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1};   // a modelled hat that is modelled on the course golfer too
+  /* THE HATTER'S TOP HAT (Wonderland): the Hatter's tall hat as Tenniel drew it, a crown a little wider at the top than at the brim,
+     a band round it, and in the band the card he never took out of it, In this style 10/6 (a hat for sale, not his own). Modelled
+     on the course golfer too, so it is worn on the trail. */
+  HAT_MODEL.pphattop=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const silk=X2((P&&P.W)||'#4a4a52'), lite=X2((P&&P.G)||'#5c5c66'), band=X2((P&&P.S)||'#8a6a3a'), card=X2((P&&P.g)||'#fbf8f0'), ink=X2((P&&P.k)||'#1a1410');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.34)),AXh,[hr*1.42,hr*0.07,hr*1.42],silk,{gloss:2}));                                     // the brim
+    for(let k=0;k<8;k++){ const r=hr*(0.98+k*0.022); out.push(ellipsoid(add(hc,sc(hup,hr*(0.42+k*0.2))),AXh,[r,hr*0.14,r],k===7?lite:silk,{gloss:2})); }   // the tall crown
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.62)),AXh,[hr*1.03,hr*0.13,hr*1.03],band,{gloss:1}));                                   // its band
+    const tk=add(hc,sc(hup,hr*0.72),sc(look,hr*0.98),sc(Lf,hr*0.3));
+    out.push(ellipsoid(tk,AXh,[hr*0.05,hr*0.22,hr*0.26],card,{gloss:1,noCast:1}));                                                // the 10/6 ticket
+    out.push(ellipsoid(add(tk,sc(look,hr*0.03)),AXh,[hr*0.02,hr*0.03,hr*0.16],ink,{gloss:1,noCast:1}));                         // and its writing
+    return out; };
+  HAT_OVER_HAIR.pphattop=1;
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1865,6 +1878,10 @@
     // the Ambrosia Ball: the food of the gods, gold with a honey glow, a swirl of paler gold through it and a bright gleam
     ppambrosia:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.2) return {c:P.W,gloss:3}; const w=Math.sin(p[1]*6+Math.atan2(p[2],p[0])*2+Math.sin(p[0]*3)*1.2);
       return {c:w>0.6?P.h:w<-0.7?P.b:P.C,gloss:2}; } },
+    // the Cheshire Ball: the Cat's own tabby stripes, grey brown, and his great white grin across the front
+    ppcheshire:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const ax=Math.abs(p[0]);
+      if(p[2]>0.55&&ax<0.62&&Math.abs(p[1]+0.12-ax*ax*0.7)<0.09) return {c:Math.floor(p[0]*14)&1?'#ffffff':'#e8e8e0',gloss:2};
+      const st=Math.sin(Math.atan2(p[2],p[0])*7+p[1]*3); return {c:st>0.4?P.b:st<-0.6?P.s:P.C,gloss:2}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};

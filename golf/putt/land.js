@@ -5769,6 +5769,135 @@ window.RTT_PUTT_LAND = (function(){
       bg:'#2a2018', gain:2,
       mats:{ hffloor:['#6a5a4a', '#7e6c58', '#4e4034', 0.12, function(c, R){ var b = blot(c, 0.2, 425); if (hash(c.ti, c.tj, 426) > 0.985) return R('#ff9a3a'); return R(b > 0.62 ? '#7e6c58' : b < 0.3 ? '#4e4034' : '#6a5a4a'); }],
         hfwall:['#5a4a3a', '#76624c', '#3a2e24', 0.18, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 427) + Math.sin(z * 2.2 + c.ti * 0.15) * 0.2; if (z > 5) return R('#3a2e24'); return R(q > 0.75 ? '#76624c' : q < 0.3 ? '#3a2e24' : '#5a4a3a'); }] } }; };
+  /* ---------------- WONDERLAND IS A JOURNEY (Lewis Carroll, 1865, as John Tenniel drew it). Out through the little door into the
+     loveliest garden, its lawn, its beds of bright flowers and its cool fountains (1 to 4), down to the shore of the Pool of Tears,
+     where the Caucus Race was run (5 and 6), into the wood of tall mushrooms where the White Rabbit's house stands, the Caterpillar
+     smokes on his mushroom and the Cheshire Cat grins from a tree (7 to 10), to the March Hare's house and its long tea table under
+     a tree (11 and 12), into the Queen's rose garden (13), down to the sea where the Mock Turtle sighs on his rock (14 and 15), and
+     to the court and the Queen's croquet ground, its lawn mown in stripes (16 to 18). The land round a hole is lawn, flower bed,
+     sand and wood washed in warped noise, never a grid; the croquet lawn's stripes are mown, so they are allowed, and they wave. */
+  STOPS.wonderland = [[1, 'garden'], [5, 'shore'], [7, 'wood'], [11, 'tea'], [13, 'roses'], [14, 'sea'], [16, 'croquet']];
+  (function(){ BUILD.wonderland = function(L){ var s = L.stop; return s === 'croquet' ? wonCroquet(L) : s === 'sea' ? wonSea(L) : s === 'roses' ? wonRoses(L) : s === 'tea' ? wonTea(L) : s === 'wood' ? wonWood(L) : s === 'shore' ? wonShore(L) : wonGarden(L); }; })();
+
+  function wonEdge(L, x, y){ return 4.4 + fbm(x * 0.07, y * 0.07, L.seed + 197) * 3.6; }
+  function wonMats(){ return {
+      wgrass:['#5aa850', '#6cbf5a', '#4a9444', 0.12, function(c, R){ if (c.rim === 1) return R('#7ccc68');
+        var b = blot(c, 0.16, 461), w = blot(c, 0.05, 467), st = hash(c.ti, c.tj, 462); if (st > 0.988) return R('#ffffff'); if (st > 0.982) return R('#ffd84a');
+        if (w > 0.64) return R(b > 0.55 ? '#52a04a' : '#4a9444'); return R(b > 0.66 ? '#6cbf5a' : b < 0.28 ? '#4a9444' : '#5aa850'); }],
+      wbed:['#367a36', '#e8283a', '#2a6a2e', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 463), b = blot(c, 0.2, 464), w = blot(c, 0.07, 469), fl = blot(c, 0.45, 468);
+        if (fl > 0.66 && st > 0.35) return R(w > 0.6 ? '#ffffff' : w > 0.4 ? '#e8283a' : '#ffd84a'); if (fl > 0.6) return R('#1e4a22'); return R(b > 0.6 ? '#3a8a3e' : b < 0.3 ? '#2a6a2e' : '#367a36'); }],
+      wpath:['#d8c8a0', '#ece0c0', '#b8a880', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 470), b = blot(c, 0.2, 471); if (st > 0.94) return R('#a89870'); return R(b > 0.6 ? '#ece0c0' : b < 0.3 ? '#c8b890' : '#d8c8a0'); }],
+      wsand:['#e8d8a8', '#f4e8c4', '#c8b888', 0.12, function(c, R){ var b = blot(c, 0.22, 472), st = hash(c.ti, c.tj, 473); if (st > 0.99) return R('#f6f0e6'); return R(b > 0.62 ? '#f4e8c4' : b < 0.3 ? '#d4c494' : '#e8d8a8'); }],
+      wmoss:['#3e7a3a', '#4e8c46', '#2e5e2c', 0.14, function(c, R){ var b = blot(c, 0.18, 474), w = blot(c, 0.06, 475), st = hash(c.ti, c.tj, 476); if (st > 0.99) return R('#e2cfa0');
+        if (w > 0.66) return R(b > 0.5 ? '#5a7a3a' : '#4a6a30'); return R(b > 0.64 ? '#4e8c46' : b < 0.3 ? '#2e5e2c' : '#3e7a3a'); }],
+      // the croquet lawn, mown in stripes: bands of light and dark green across the ground, their edges waving a little
+      wstripe:['#5aa850', '#7ccc68', '#4a9444', 0.1, function(c, R){ var wv = Math.sin(c.ti * 0.03) * 1.2 + (blot(c, 0.04, 477) - 0.5) * 2, k = Math.floor((c.tj + wv * 4) / 14) & 1, b = blot(c, 0.2, 478);
+        return R(k ? (b > 0.6 ? '#7ccc68' : '#6cbf5a') : (b > 0.6 ? '#56a24c' : '#4e9846')); }],
+      wsea:['#2a5a9a', '#9ac8f0', '#1a3a70', 0.06, function(c, R){ var w = blot(c, 0.06, 465), f = c.f || 0, b = blot(c, 0.14, 466);
+        if (f > 0.6 + w * 0.15) return R('#e8f4ff'); if (f > 0.35) return R('#9ac8f0'); return R(w > 0.66 ? '#5a8ac8' : b > 0.6 ? '#3a6aa8' : b < 0.3 ? '#1e4a88' : '#2a5a9a'); }] }; }
+  function wonBase(L, o){ var seed = L.seed;
+    function seaK(x, y){ if (!o.sea) return 0; var c = L.clearAt(x, y), e = wonEdge(L, x, y) + 3; return sm(e, e + 3.2, c); }
+    var lawn = o.stripes ? 'wstripe' : o.wood ? 'wmoss' : 'wgrass';
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = seaK(x, y), hill = (fbm(x * 0.08, y * 0.08, seed) - 0.45) * (o.hills || 0.5) * sm(1.3, 4, c); return hill - k * 1.1; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = wonEdge(L, x, y), k = seaK(x, y);
+        if (k > 0.55) return ['wsea', { f:sm(0.55, 0.62, k) < 1 ? 1 - (k - 0.55) / 0.07 : 0 }];
+        if (o.sea && k > 0.1) return ['wsand', {}];
+        if (c < e + 0.6) return [o.paved ? 'wpath' : lawn, { rim:c > e - 0.3 ? 1 : 0 }];
+        if (o.beds && fbm(x * 0.07 + 5, y * 0.07, seed + 187) > 0.58) return ['wbed', {}];
+        if (o.sandy && fbm(x * 0.06 + 2, y * 0.06, seed + 185) > 0.55) return ['wsand', {}];
+        return [lawn, {}]; },
+      fill:{ on:['wgrass', 'wmoss', 'wstripe'], trees:o.trees == null ? 0.04 : o.trees, lows:0.14, tree:function(B, x, y, i){ wonTreeAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 496); if (o.wood && k < 0.45) mushAt(B, x, y, 0.4 + hash(i, seed, 498) * 0.5, i + seed); else if (k < 0.7) roseBushAt(B, x, y, 0.45, i + seed); else bush(B, x, y, 0.4, ['#2a6a2e', '#367a36', '#4a9a46']); } },
+      // the sky of a summer afternoon: a clear blue, paler low down, and a few soft white clouds
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#5a9ae0'); g.addColorStop(0.75, '#a8d0f4'); g.addColorStop(1, o.sea ? '#d8ecfa' : '#e8f4fc'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        if (o.sea){ ctx.fillStyle = '#3a6aa8'; ctx.fillRect(0, top - Math.max(2, top * 0.12), V.W, Math.max(2, top * 0.12)); }
+        for (var i = 0; i < 5; i++){ var cx = hash(i, 1, seed) * V.W, cy = top * (0.3 + hash(i, 2, seed) * 0.4), cr = Math.max(4, V.W * (0.04 + hash(i, 3, seed) * 0.04));
+          ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.ellipse(cx, cy, cr * 2.2, cr * 0.6, 0, 0, 6.283); ctx.fill(); } },
+      bg:'#2a4a30', gain:2, mats:wonMats() }; }
+  // a broad old tree (the Cheshire Cat's kind): a short dark trunk and a wide round crown of soft lobes
+  function wonTreeAt(B, x, y, k){ var zb = B.gz(x, y), H = 2.6 + hash(k, 3, 481) * 1.2, R = 1.3 + hash(k, 4, 481) * 0.5;
+    B.solid(x - R - 0.3, y - R - 0.3, zb - 0.1, x + R + 0.3, y + R + 0.3, zb + H + R, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < H * 0.55) return d < 0.22 ? (vn(pz * 4, px * 3, 487) > 0.5 ? '#5a4030' : '#4a3424') : null; var e = Math.hypot((px - x) / R, (py - y) / R, (t - H) / (R * 0.9)) + (vn(px * 2.4, pz * 2.4 + py, 482) - 0.5) * 0.34; if (e > 1) return null;
+      var q = vn(px * 3 + py, pz * 3, 483); return q > 0.68 ? '#4a8a3e' : q < 0.3 ? '#1e4a22' : '#2e6a2e'; }); }
+  // a rose bush of the Queen's garden: a round clipped bush, red roses on it and a white one or two (being painted)
+  function roseBushAt(B, x, y, r, k){ var zb = B.gz(x, y);
+    B.solid(x - r - 0.1, y - r - 0.1, zb - 0.05, x + r + 0.1, y + r + 0.1, zb + r * 2, function(px, py, pz){ var d = Math.hypot((px - x) / r, (py - y) / r, (pz - zb - r * 0.8) / r); if (d > 1) return null;
+      var f = hash(px * 9 | 0, (py * 9 | 0) + (pz * 9 | 0) * 7, k); if (d > 0.82 && f > 0.82) return f > 0.97 ? '#ffffff' : '#d8183a'; return f < 0.3 ? '#1e4a22' : f < 0.65 ? '#2a6a2e' : '#367a36'; }); }
+  // a tall mushroom of the wood, Tenniel's kind: a pale plain cap on a white stalk, as big as a person or bigger
+  function mushAt(B, x, y, r, k){ var zb = B.gz(x, y), H = r * 2.2;
+    B.solid(x - r * 1.6, y - r * 1.6, zb, x + r * 1.6, y + r * 1.6, zb + H + r * 0.9, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < H) return d < r * 0.35 ? (px > x + r * 0.1 ? '#d8ccb0' : '#f2ead8') : null;
+      var cu = (t - H) / (r * 0.9); if (cu > 1) return null; var cr = r * 1.55 * Math.sqrt(Math.max(0, 1 - cu * cu)); if (d > cr) return null;
+      return cu < 0.15 ? '#a88a5a' : cu > 0.7 ? '#f4e8c8' : (vn(px * 3, py * 3, k) > 0.6 ? '#ecdcb0' : '#e2cfa0'); }); }
+  // a card soldier standing guard: a flat white card on edge, black edged, its red pips, arms and legs at its edges
+  function cardAt(B, x, y, k){ var zb = B.gz(x, y), red = hash(k, 1, 489) < 0.7;
+    B.solid(x - 0.6, y - 0.2, zb, x + 0.6, y + 0.2, zb + 2.3, function(px, py, pz){ var dx = px - x, t = pz - zb;
+      if (t < 0.5) return Math.abs(Math.abs(dx) - 0.22) < 0.07 && Math.abs(py - y) < 0.07 ? '#1a1410' : null;
+      if (t > 2.1) return Math.abs(dx) < 0.12 && Math.abs(py - y) < 0.12 ? '#f2d4b4' : null;
+      if (Math.abs(py - y) > 0.06 || Math.abs(dx) > 0.5) return null; if (Math.abs(dx) > 0.44 || t < 0.56 || t > 2.04) return '#1a1410';
+      var hx = ((dx + 0.5) * 3) % 1 - 0.5, hy = ((t - 0.5) * 2) % 1 - 0.5; return Math.abs(hx) + Math.abs(hy) < 0.28 ? (red ? '#c8102a' : '#1a1410') : '#fbf8f0'; }); }
+  // the long tea table under the tree, its white cloth and the cups and pots laid all along it
+  function teaTableAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3.2, y - 0.9, zb, x + 3.2, y + 0.9, zb + 1.7, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 1) return Math.abs(Math.abs(dx) - 2.8) < 0.1 && Math.abs(Math.abs(dy) - 0.6) < 0.1 ? '#5a3a24' : null;
+      if (t < 1.12) return Math.abs(dx) < 3.1 && Math.abs(dy) < 0.8 ? (Math.abs(dy) > 0.72 ? '#e8e4dc' : '#fbfaf6') : null;
+      var cu = ((dx + 3) * 1.4) % 1; if (Math.abs(dy) < 0.32 && t < 1.32 && cu < 0.36) return (Math.floor((dx + 3) * 1.4) % 3) ? '#e8eef8' : '#3a5aa8';
+      if (Math.abs(dx - 0.6) < 0.26 && Math.abs(dy) < 0.26 && t < 1.6) return t > 1.5 ? '#3a5aa8' : '#f4f4fa'; return null; }); }
+  // the March Hare's house: its chimneys shaped like ears and its roof thatched with fur
+  function hareHouseAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2.4, y - 1.8, zb, x + 2.4, y + 1.8, zb + 6.2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 2.6) return Math.abs(dx) < 2 && Math.abs(dy) < 1.4 ? (Math.abs(dx) < 0.4 && t < 1.8 && dy > 1.3 ? '#5a3a24' : Math.abs(Math.abs(dx) - 1.2) < 0.3 && t > 1.2 && t < 1.9 && dy > 1.3 ? '#a8c8e8' : '#e8d8b8') : null;
+      var roof = 2.6 + (1.6 - Math.abs(dy)) * 1.1; if (t < roof && Math.abs(dx) < 2.2 && Math.abs(dy) < 1.6) return vn(px * 5, pz * 5 + py, 491) > 0.5 ? '#a87a4a' : '#8a5a34';
+      for (var s = -1; s <= 1; s += 2){ var ex = dx - s * 0.9, et = t - 4.6; if (Math.hypot(ex / 0.32, et / 1.3, dy / 0.22) < 1) return Math.abs(ex) < 0.12 ? '#e8a8a0' : '#b8a090'; } return null; }); }
+  // a fountain of the garden, a stone basin and its cool water
+  function fountainAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 1.4, y - 1.4, zb, x + 1.4, y + 1.4, zb + 2.2, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < 0.6) return d < 1.35 ? (d > 1.1 ? '#c8c4b8' : t > 0.48 ? '#9ac8f0' : null) : null;
+      if (t < 1.6) return d < 0.18 ? '#c8c4b8' : null; if (t < 1.9) return d < 0.6 ? (t > 1.8 ? '#9ac8f0' : '#d8d4ca') : null; return d < 0.08 ? '#e8f4ff' : null; }); }
+  // a croquet arch: a card soldier doubled over, hands and feet on the lawn
+  function archAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.9, y - 0.25, zb, x + 0.9, y + 0.25, zb + 1.5, function(px, py, pz){ var dx = px - x, t = pz - zb, r = Math.hypot(dx, t - 0.1);
+      if (Math.abs(py - y) > 0.12) return null; if (r > 0.86 || r < 0.66 || t < 0.1) return null; var a = Math.atan2(t - 0.1, dx); return Math.abs(r - 0.76) < 0.05 && ((a * 6 | 0) & 1) ? '#c8102a' : '#fbf8f0'; }); }
+
+  // 1. THE LOVELIEST GARDEN: out through the little door, lawn and beds of bright flowers, rose bushes and the cool fountains
+  function wonGarden(L){ var O = wonBase(L, { beds:true, trees:0.04 }), sp = [], i;
+    for (i = 0; i < 7; i++){ var q = L.spot(1.2, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 461 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0 || k === 4) fountainAt(B, q.x, q.y); else roseBushAt(B, q.x, q.y, 0.6, k + 11); }); }; return O; }
+  // 2. THE SHORE OF THE POOL OF TEARS: sand and lawn down to the water, where the Caucus Race ran round in a ring
+  function wonShore(L){ var O = wonBase(L, { sea:true, sandy:true, trees:0.01, hills:0.3 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.2, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.4 + hash(x | 0, y | 0, L.seed + 471 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) rockAt(B, q.x, q.y, 0.6, ['#a8a294', '#c8c2b4']); else roseBushAt(B, q.x, q.y, 0.5, k + 21); }); }; return O; }
+  // 3. THE WOOD: moss and tall mushrooms under the trees, the White Rabbit's house and the Caterpillar's mushroom
+  function wonWood(L){ var O = wonBase(L, { wood:true, trees:0.12, hills:0.7 }), sp = [], i;
+    for (i = 0; i < 7; i++){ var q = L.spot(1, function(x, y){ return L.side(x) * 1.1 + hash(x | 0, y | 0, L.seed + 481 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 3 === 2) wonTreeAt(B, q.x, q.y, k + 31); else mushAt(B, q.x, q.y, 0.7 + (k % 2) * 0.5, k + 31); }); }; return O; }
+  // 4. THE MARCH HARE'S HOUSE: its ear chimneys and fur thatch, and the long tea table set out under the tree before it
+  function wonTea(L){ var O = wonBase(L, { trees:0.05 }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(2.2, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 491 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) hareHouseAt(B, q.x, q.y); else if (k === 1) teaTableAt(B, q.x, q.y); else wonTreeAt(B, q.x, q.y, k + 41); }); }; return O; }
+  // 5. THE QUEEN'S ROSE GARDEN: beds and bushes of roses, a card gardener or two at work with his paint
+  function wonRoses(L){ var O = wonBase(L, { beds:true, trees:0.02, paved:true }), sp = [], i;
+    for (i = 0; i < 8; i++){ var q = L.spot(0.9, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 501 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 3 === 0) cardAt(B, q.x, q.y, k + 51); else roseBushAt(B, q.x, q.y, 0.65, k + 51); }); }; return O; }
+  // 6. THE SEA: the shore of the Mock Turtle's sea, sand, rocks and the waves coming in
+  function wonSea(L){ var O = wonBase(L, { sea:true, sandy:true, trees:0.0, hills:0.3 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.4, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 511 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ rockAt(B, q.x, q.y, 0.6 + (k % 2) * 0.4, ['#8a8478', '#a8a294']); }); }; return O; }
+  // 7. THE CROQUET GROUND: the lawn mown in stripes, card soldiers bent into arches across it, rose bushes along its edge
+  function wonCroquet(L){ var O = wonBase(L, { stripes:true, trees:0.02 }), sp = [], i;
+    for (i = 0; i < 8; i++){ var q = L.spot(1, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 521 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 3 === 0) archAt(B, q.x, q.y, k); else if (k % 3 === 1) cardAt(B, q.x, q.y, k + 61); else roseBushAt(B, q.x, q.y, 0.6, k + 61); }); }; return O; }
+
+  // The Little Door: behind the low curtain in the hall, the door into the garden, and the hall's doors all round its walls
+  BUILD['s-door'] = function(L){ var R0 = room(L, { floor:'wdfloor', wall:'wdwall', wallH:6, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 3, 531, 3).forEach(function(q){ fountainAt(B, q[0], q[1]); }); byWall(L, 3, 533, 2.4).forEach(function(q, k){ roseBushAt(B, q[0], q[1], 0.6, k + 71); }); },
+      bg:'#2a1e18', gain:2,
+      mats:{ wdfloor:['#8a6a4a', '#a8845c', '#6a4e34', 0.12, function(c, R){ var b = blot(c, 0.2, 535), k = ((c.ti >> 4) + (c.tj >> 4)) & 1; return R(b > 0.62 ? '#a8845c' : b < 0.3 ? '#6a4e34' : k ? '#8a6a4a' : '#7e6040'); }],
+        wdwall:['#6a4a3a', '#8a6a52', '#4a3226', 0.18, function(c, R){ var z = c.z || 0, dw = ((c.ti % 40) + 40) % 40; if (z < 3.6 && dw > 12 && dw < 26) return R(z > 3.2 ? '#c8a050' : dw === 19 && z > 1.6 && z < 1.9 ? '#ffd84a' : '#7a4a24'); if (z > 5) return R('#4a3226');
+          var q = blot(c, 0.25, 537); return R(q > 0.7 ? '#8a6a52' : q < 0.3 ? '#4a3226' : '#6a4a3a'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
