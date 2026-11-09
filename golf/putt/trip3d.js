@@ -203,8 +203,36 @@ function bake(){ if (TEX) return TEX; var EW = 256, EH = 128, earth = new Uint8A
     mars[k3] = c3[0]; mars[k3 + 1] = c3[1]; mars[k3 + 2] = c3[2]; }
   return TEX = { EW:EW, EH:EH, earth:earth, mars:mars, MW:MW, MH:MH, mh:mh, ma:ma }; }
 
+// ---------------------------------------------------------------- rays: a sphere, a voxel model, a lit face (every trip's)
+function hitSphere(ro, rd, c, r){ var oc = sub(ro, c), b = dot(oc, rd), q = dot(oc, oc) - r * r, h = b * b - q; if (h < 0) return -1; h = Math.sqrt(h); var t1 = -b - h; return t1 > 0 ? t1 : (-b + h > 0 ? -b + h : -1); }
+/* one voxel model at (pos, M): walk the ray through its grid a cell at a time (Amanatides and Woo) and return the first solid
+   cube, its colour and the face it was entered by, as a normal in the world */
+// a ray through a voxel grid (Amanatides and Woo). lo is the camera in the model's own frame, worked out once a frame.
+function hitVox(m, lo, M, rd, tmax){
+  var ldx = M[0] * rd[0] + M[3] * rd[1] + M[6] * rd[2], ldy = M[1] * rd[0] + M[4] * rd[1] + M[7] * rd[2], ldz = M[2] * rd[0] + M[5] * rd[1] + M[8] * rd[2];
+  var vs = m.vs, ox = (lo[0] - m.o[0]) / vs, oy = (lo[1] - m.o[1]) / vs, oz = (lo[2] - m.o[2]) / vs, dx = ldx / vs, dy = ldy / vs, dz = ldz / vs, nx = m.nx, ny = m.ny, nz = m.nz;
+  var t0b = 0, t1b = tmax, ax = -1, ta, tb, tt;
+  if (Math.abs(dx) < 1e-12){ if (ox < 0 || ox > nx) return null; } else { ta = -ox / dx; tb = (nx - ox) / dx; if (ta > tb){ tt = ta; ta = tb; tb = tt; } if (ta > t0b){ t0b = ta; ax = 0; } if (tb < t1b) t1b = tb; if (t0b > t1b) return null; }
+  if (Math.abs(dy) < 1e-12){ if (oy < 0 || oy > ny) return null; } else { ta = -oy / dy; tb = (ny - oy) / dy; if (ta > tb){ tt = ta; ta = tb; tb = tt; } if (ta > t0b){ t0b = ta; ax = 1; } if (tb < t1b) t1b = tb; if (t0b > t1b) return null; }
+  if (Math.abs(dz) < 1e-12){ if (oz < 0 || oz > nz) return null; } else { ta = -oz / dz; tb = (nz - oz) / dz; if (ta > tb){ tt = ta; ta = tb; tb = tt; } if (ta > t0b){ t0b = ta; ax = 2; } if (tb < t1b) t1b = tb; if (t0b > t1b) return null; }
+  var px = ox + dx * (t0b + 1e-6), py = oy + dy * (t0b + 1e-6), pz = oz + dz * (t0b + 1e-6), i = clamp(Math.floor(px), 0, nx - 1), j = clamp(Math.floor(py), 0, ny - 1), k = clamp(Math.floor(pz), 0, nz - 1);
+  var sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1, sz = dz > 0 ? 1 : -1, tdx = Math.abs(1 / dx), tdy = Math.abs(1 / dy), tdz = Math.abs(1 / dz);
+  var tmx = t0b + ((sx > 0 ? i + 1 - px : px - i) * tdx), tmy = t0b + ((sy > 0 ? j + 1 - py : py - j) * tdy), tmz = t0b + ((sz > 0 ? k + 1 - pz : pz - k) * tdz), tcur = t0b, cc = m.c, nxy = nx * ny;
+  for (var n = 0; n < 220; n++){ var c = cc[k * nxy + j * nx + i];
+    if (c){ var nl = ax === 0 ? V(-sx, 0, 0) : ax === 1 ? V(0, -sy, 0) : ax === 2 ? V(0, 0, -sz) : V(0, 1, 0); return { t:tcur, col:c - 1, n:mv(M, nl) }; }
+    if (tmx < tmy && tmx < tmz){ i += sx; tcur = tmx; tmx += tdx; ax = 0; if (i < 0 || i >= nx) return null; }
+    else if (tmy < tmz){ j += sy; tcur = tmy; tmy += tdy; ax = 1; if (j < 0 || j >= ny) return null; }
+    else { k += sz; tcur = tmz; tmz += tdz; ax = 2; if (k < 0 || k >= nz) return null; }
+    if (tcur > t1b) return null; }
+  return null; }
+
+// a cube face lit the way the courses are: a few steps of tone from the light, never pure black
+function shade(rgb, n, sun, amb){ var l = dot(n, sun), k = l > 0.55 ? 1.12 : l > 0.15 ? 0.95 : l > -0.2 ? 0.74 : 0.56; k = k * (1 - amb) + amb;
+  return [Math.min(255, rgb[0] * k), Math.min(255, rgb[1] * k), Math.min(255, rgb[2] * k)]; }
+
 // ---------------------------------------------------------------- the player
 function play(host, o, cb){
+  if (o && o.vehicle === 'sea') return sail(host, o, cb);   // the Odyssey's islands are reached by sea (sail, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var wrap = document.createElement('div'); wrap.className = 'pp-trip';
@@ -267,32 +295,6 @@ function play(host, o, cb){
   function sunAt(t){ var s4 = smooth((t - 6.4) / 2); return norm(lerpV(V(-0.55, 0.72, 0.72), V(-0.55, -0.72, 0.72), s4)); }
 
   // ---- rays
-  function hitSphere(ro, rd, c, r){ var oc = sub(ro, c), b = dot(oc, rd), q = dot(oc, oc) - r * r, h = b * b - q; if (h < 0) return -1; h = Math.sqrt(h); var t1 = -b - h; return t1 > 0 ? t1 : (-b + h > 0 ? -b + h : -1); }
-  /* one voxel model at (pos, M): walk the ray through its grid a cell at a time (Amanatides and Woo) and return the first solid
-     cube, its colour and the face it was entered by, as a normal in the world */
-  // a ray through a voxel grid (Amanatides and Woo). lo is the camera in the model's own frame, worked out once a frame.
-  function hitVox(m, lo, M, rd, tmax){
-    var ldx = M[0] * rd[0] + M[3] * rd[1] + M[6] * rd[2], ldy = M[1] * rd[0] + M[4] * rd[1] + M[7] * rd[2], ldz = M[2] * rd[0] + M[5] * rd[1] + M[8] * rd[2];
-    var vs = m.vs, ox = (lo[0] - m.o[0]) / vs, oy = (lo[1] - m.o[1]) / vs, oz = (lo[2] - m.o[2]) / vs, dx = ldx / vs, dy = ldy / vs, dz = ldz / vs, nx = m.nx, ny = m.ny, nz = m.nz;
-    var t0b = 0, t1b = tmax, ax = -1, ta, tb, tt;
-    if (Math.abs(dx) < 1e-12){ if (ox < 0 || ox > nx) return null; } else { ta = -ox / dx; tb = (nx - ox) / dx; if (ta > tb){ tt = ta; ta = tb; tb = tt; } if (ta > t0b){ t0b = ta; ax = 0; } if (tb < t1b) t1b = tb; if (t0b > t1b) return null; }
-    if (Math.abs(dy) < 1e-12){ if (oy < 0 || oy > ny) return null; } else { ta = -oy / dy; tb = (ny - oy) / dy; if (ta > tb){ tt = ta; ta = tb; tb = tt; } if (ta > t0b){ t0b = ta; ax = 1; } if (tb < t1b) t1b = tb; if (t0b > t1b) return null; }
-    if (Math.abs(dz) < 1e-12){ if (oz < 0 || oz > nz) return null; } else { ta = -oz / dz; tb = (nz - oz) / dz; if (ta > tb){ tt = ta; ta = tb; tb = tt; } if (ta > t0b){ t0b = ta; ax = 2; } if (tb < t1b) t1b = tb; if (t0b > t1b) return null; }
-    var px = ox + dx * (t0b + 1e-6), py = oy + dy * (t0b + 1e-6), pz = oz + dz * (t0b + 1e-6), i = clamp(Math.floor(px), 0, nx - 1), j = clamp(Math.floor(py), 0, ny - 1), k = clamp(Math.floor(pz), 0, nz - 1);
-    var sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1, sz = dz > 0 ? 1 : -1, tdx = Math.abs(1 / dx), tdy = Math.abs(1 / dy), tdz = Math.abs(1 / dz);
-    var tmx = t0b + ((sx > 0 ? i + 1 - px : px - i) * tdx), tmy = t0b + ((sy > 0 ? j + 1 - py : py - j) * tdy), tmz = t0b + ((sz > 0 ? k + 1 - pz : pz - k) * tdz), tcur = t0b, cc = m.c, nxy = nx * ny;
-    for (var n = 0; n < 220; n++){ var c = cc[k * nxy + j * nx + i];
-      if (c){ var nl = ax === 0 ? V(-sx, 0, 0) : ax === 1 ? V(0, -sy, 0) : ax === 2 ? V(0, 0, -sz) : V(0, 1, 0); return { t:tcur, col:c - 1, n:mv(M, nl) }; }
-      if (tmx < tmy && tmx < tmz){ i += sx; tcur = tmx; tmx += tdx; ax = 0; if (i < 0 || i >= nx) return null; }
-      else if (tmy < tmz){ j += sy; tcur = tmy; tmy += tdy; ax = 1; if (j < 0 || j >= ny) return null; }
-      else { k += sz; tcur = tmz; tmz += tdz; ax = 2; if (k < 0 || k >= nz) return null; }
-      if (tcur > t1b) return null; }
-    return null; }
-
-  // a cube face lit the way the courses are: a few steps of tone from the light, never pure black
-  function shade(rgb, n, sun, amb){ var l = dot(n, sun), k = l > 0.55 ? 1.12 : l > 0.15 ? 0.95 : l > -0.2 ? 0.74 : 0.56; k = k * (1 - amb) + amb;
-    return [Math.min(255, rgb[0] * k), Math.min(255, rgb[1] * k), Math.min(255, rgb[2] * k)]; }
-
   /* WHAT A PLANET LOOKS LIKE where a ray meets it: its colour and its normal. The Earth: grass by the pad, its land and clouds
      from afar. The Moon: grey, its craters bent into the light, and a field of small ones near the ground. Mars: its rust and
      dark lowlands from afar, and near the ground the dust, scattered dark rocks and the odd crater. */
@@ -476,5 +478,203 @@ function play(host, o, cb){
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W, per:hist.map(function(v, i){ return Math.round(v / histn[i]); }) }; }, at:function(t){ var rk = render(t); overlay(t); return rk; } };
 }
 
-root.RTT_PUTT_TRIP = { play:play, PLANETS:PLANETS };
+// ================================================================ THE SEA ROUTE (the Odyssey, Worlds 18 on)
+/* BY SEA (the owner's brief for Cyclops Isle: "from Oz, a Greek ship (a single square sail and oars) sails out and Poseidon
+   sends a storm (waves, rain, lightning). It reaches the Cyclops' island"). The Odyssey's islands are reached by ship, the
+   way the space route is reached by rocket: sail(host, o, cb) plays one leg, from the shore o.from to the island o.to. The
+   sea, the sky and the land are warped noise, never a facet or a grid. The ship is a voxel model like the rocket: a dark
+   hull with an eye painted on its bow (Greek ships carried one), a single square sail on one mast and a bank of oars a side.
+
+   ISLES says what each island looks like and what happens on the way (storm: Poseidon rises and the storm comes and goes).
+   A later island adds a row here and nothing else. SHORES is where a leg can leave from that is not an island (Oz). */
+var ISLES = {
+  // Cyclops Isle: a green island of sheep and olive trees on a ring of pale sand, a grey crag with the Cyclops' cave in it
+  cyclops:{ sand:[232, 214, 160], low:[118, 160, 72], high:[92, 128, 58], rock:[150, 144, 132], storm:true, cave:true, sheep:true,
+    hills:[[4, -14, -100, 40, 30, 32, 'land'], [-22, -10, -92, 22, 20, 20, 'land'], [16, -6, -80, 12, 18, 11, 'crag']] }
+};
+var SHORES = {
+  // Oz: the green land of meadows behind, red poppy fields running through it
+  oz:{ low:[86, 160, 60], high:[60, 130, 48], dot:[214, 36, 40], sand:[220, 196, 120], hills:[[0, -22, 44, 90, 26, 22, 'land'], [-40, -12, 36, 30, 16, 14, 'land']] }
+};
+/* THE GREEK SHIP, in its own frame: x across, y up, the bow toward -z. A long low hull of dark wood, black along the water,
+   a red band under the gunwale, a ram at the bow and the stern curling up, an eye painted either side of the bow, one mast
+   amidships with its yard and a square sail of cream linen with two red stripes, bellied forward by the wind. */
+var GSHIP = (function(){ var vs = 0.125;
+  return voxels(44, 54, 84, vs, [-2.75, -0.9, -5.25], function(x, y, z){
+    var u = z / 4.6, w = 1.1 * Math.sqrt(Math.max(0, 1 - u * u)), bot = -0.55 + 0.45 * u * u, top = 0.75 + (z > 3 ? (z - 3) * (z - 3) * 0.9 : 0) + (z < -3.3 ? (-3.3 - z) * 0.5 : 0);
+    // the mast, its yard and the sail
+    if (Math.hypot(x, z + 0.2) < 0.14 && y > 0 && y < 5.7) return '#6a4426';
+    if (y > 5.15 && y < 5.4 && Math.abs(z + 0.2) < 0.14 && Math.abs(x) < 2.5) return '#6a4426';
+    var sz = -0.5 - 0.45 * (1 - (x / 2.3) * (x / 2.3)) * Math.sin(Math.PI * clamp((5.1 - y) / 2.9, 0, 1));
+    if (Math.abs(x) < 2.3 && y > 2.2 && y < 5.1 && Math.abs(z - sz) < 0.11) return Math.abs(Math.abs(x) - 0.75) < 0.18 ? '#c8643a' : y > 4.95 ? '#d8ccaa' : '#f2ead2';
+    // the stern post curling up and over
+    if (z > 4.1 && z < 5.2 && Math.abs(x) < 0.16){ var cr = Math.hypot(z - 4.2, y - 2.3); if (cr > 0.55 && cr < 0.82 && !(z < 4.2 && y < 2.3)) return '#3a2414'; }
+    // the ram at the bow, at the water
+    if (z < -4.3 && z > -5.2 && Math.abs(x) < 0.22 && y > -0.45 && y < 0.05) return '#8a6a3a';
+    if (z < -4.6 || z > 4.6 || Math.abs(x) > w || y < bot || y > top) return null;
+    var shell = Math.abs(x) > w - 0.2 || y < bot + 0.2;
+    if (!shell){ if (y > 0.35 && y < 0.5) return '#9a7044'; if (Math.abs(y - 0.95) < 0.12 && Math.abs(((z + 9) % 0.75) - 0.37) < 0.12) return '#6a4426'; return null; }   // the deck and the rowers' benches
+    // the eye on the bow, both sides
+    var ex = z + 3.55, ey = y - 0.25, er = Math.hypot(ex, ey * 1.3); if (er < 0.42) return er < 0.16 ? '#14100c' : er < 0.3 ? '#3a6ad0' : '#f6f0e0';
+    if (y > top - 0.22) return '#b84a2a';
+    if (y < 0.05) return '#1e1814';
+    return Math.abs(((y + 4) % 0.32) - 0.16) < 0.035 ? '#4a2e1a' : '#5e3c22'; }); })();
+// a bank of seven oars, out from the gunwale and down to the water, its blade at the end (one side; the other is it turned)
+var OARS = voxels(28, 14, 50, 0.125, [0, -1.25, -3.1], function(x, y, z){
+  for (var k = 0; k < 7; k++){ var zc = -2.6 + k * 0.78, t = x / 3.2, oy = 0.2 - t * 1.25, oz = zc;
+    if (Math.abs(z - oz) < 0.09 && Math.abs(y - oy) < 0.09 && x < 2.6) return '#8a6234';
+    if (x > 2.5 && x < 3.3 && Math.abs(z - oz) < 0.22 && Math.abs(y - (0.2 - t * 1.25)) < 0.07) return '#b8884a'; }
+  return null; });
+/* POSEIDON, god of the sea, risen to the waist out of it: tanned and broad, a wild mane and a long curling beard of sea green,
+   bright eyes under heavy brows, his golden trident held high in his right hand. Stern, never fierce, and he is gone again
+   once the storm has blown. From Homer and the vase painters: no fish tail, no crown of shells. */
+var POSEIDON = (function(){ var vs = 0.6, K = 1.6;   // built at K times the size it is drawn in below
+  return voxels(60, 66, 20, vs * K, [-18 * K, -3 * K, -6 * K], function(x, y, z){ x /= K; y /= K; z /= K;
+    var hair = function(){ return hash(Math.round(x * 2), Math.round(y * 2), Math.round(z * 2)) > 0.6 ? '#2a8a78' : (y > 23 ? '#5ad0b4' : '#3ab89a'); };
+    // the trident: a golden shaft, a cross bar and three prongs
+    if (Math.hypot(x - 12.5, z) < 0.55 && y > 4 && y < 34) return y > 30.5 ? '#f2d060' : '#e2b23b';
+    if (y > 30 && y < 31 && Math.abs(x - 12.5) < 2.6 && Math.abs(z) < 0.55) return '#e2b23b';
+    for (var pr = -1; pr <= 1; pr++){ var px = 12.5 + pr * 2.2, ty = pr ? 34.2 : 36; if (Math.hypot(x - px, z) < 0.5 && y > 30 && y < ty) return '#f2d060'; if (Math.abs(x - px) < 0.9 - (y - ty + 1) * 0.6 && y > ty - 1 && y < ty + 0.6 && Math.abs(z) < 0.5) return '#fff2a0'; }
+    // the raised right arm and its hand round the shaft, the left arm down into the sea
+    var ra = function(ax, ay, bx, by, r){ var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy, t = clamp(((x - ax) * dx + (y - ay) * dy) / L2, 0, 1); return Math.hypot(x - ax - dx * t, y - ay - dy * t, z) < r; };
+    if (Math.hypot(x - 12.5, y - 22, z) < 1.6) return '#c88a5a';
+    if (ra(6.5, 14, 11.5, 21.5, 1.6)) return '#d8a070';
+    if (ra(-6.5, 14, -9, 2, 1.7)) return '#d0986a';
+    // the head: a face in front, the mane all round it and behind
+    var hx = x, hy = y - 20.5, hz = z, hd = Math.hypot(hx / 3.6, hy / 4.2, hz / 3.6);
+    if (hd < 1){ if (hz > 1.2 && Math.abs(hx) < 2.9 && hy > -2.6 && hy < 2.6){
+        if (Math.abs(hy - 0.6) < 0.5 && Math.abs(Math.abs(hx) - 1.35) < 0.65) return Math.abs(Math.abs(hx) - 1.35) < 0.3 && hy < 0.85 ? '#1a3a5a' : '#ffffff';   // the eyes
+        if (hy > 1.3 && hy < 2.0 && Math.abs(hx) > 0.5 && Math.abs(hx) < 2.4) return '#1e6a5a';                                        // the brows
+        if (Math.abs(hx) < 0.45 && hy > -1.1 && hy < 0.6) return '#c08050';                                                             // the nose
+        if (hy < -1.2) return hair();                                                                                                     // the beard begins
+        return '#d8a070'; }
+      return hair(); }
+    var mane = Math.hypot(hx / 5.2, (hy - 0.6) / 5.4, (hz + 0.8) / 4.6) + (noise3(x * 0.5, y * 0.5, z * 0.5) - 0.5) * 0.35; if (mane < 1 && hz < 2.2) return hair();
+    // the beard: long and curling, down over the chest
+    var by = y - 14.5, bw = 2.9 - Math.max(0, -by) * 0.18 + Math.sin(y * 1.3) * 0.3; if (by > -7.5 && by < 4.2 && Math.abs(x) < bw && z > 1.4 && z < 3.6) return hair();
+    // the shoulders and chest, bare, with a sea green cloth over one shoulder
+    var ch = Math.hypot(x / 8.4, (y - 9) / 7.5, z / 3.4); if (ch < 1 && y < 16.5){ if (x < 0 && (x + 9 - (y - 3) * 0.55) > 0 && (x + 9 - (y - 3) * 0.55) < 3) return '#1e8a8a'; return y < 2 ? '#2a7a8a' : '#d8a070'; }
+    return null; }); })();
+
+function sail(host, o, cb){
+  o = o || {}; var ISL = ISLES[o.to]; if (!ISL) throw new Error('trip3d: no island ' + o.to);
+  var FR = ISLES[o.from] || SHORES[o.from] || SHORES.oz;
+  var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, Z, ID, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; Z = new Float32Array(W * H); ID = new Int8Array(W * H); }
+  setRes(150);
+  var done = false, t0 = 0, DUR = 10.8, frames = 0, ftime = 0, STORM = !!ISL.storm, FLASH = STORM ? [3.55, 4.7, 5.8] : [];
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+
+  // ---- the clock: how stormy it is, how far the ship has come, how it rides the waves
+  function stormAt(t){ return STORM ? smooth((t - 2.3) / 1.1) * (1 - smooth((t - 6.2) / 1.2)) : 0; }
+  function flashAt(t){ var f = 0; FLASH.forEach(function(ft){ var d = t - ft; if (d > 0 && d < 0.32) f = Math.max(f, d < 0.06 ? 1 : d < 0.12 ? 0.35 : d < 0.18 ? 0.8 : 1 - (d - 0.18) / 0.14); }); return f; }
+  function zsAt(t){ return t < 8 ? -6 * t : -(48 + 6 * (t - 8) - 0.95 * (t - 8) * (t - 8)); }
+  function shipAt(t){ var s = stormAt(t), amp = 0.035 + s * 0.16, roll = Math.sin(t * 1.7) * amp, pitch = Math.sin(t * 1.25 + 1) * amp * 0.8, heave = Math.sin(t * 2.1) * (0.08 + s * 0.45);
+    var M = mm([1, 0, 0, 0, Math.cos(pitch), -Math.sin(pitch), 0, Math.sin(pitch), Math.cos(pitch)], [Math.cos(roll), -Math.sin(roll), 0, Math.sin(roll), Math.cos(roll), 0, 0, 0, 1]);
+    var row = t > 9.6 ? 0 : Math.sin(t * 3.2), p = V(0, heave, zsAt(t)); return { p:p, M:M, row:row, s:s }; }
+  function poseAt(t){ return !STORM ? -80 : -74 + smooth((t - 2.2) / 1.1) * 66 - smooth((t - 6.0) / 1.1) * 70; }
+  function camAt(t, sh){ var P = sh.p, a = smooth(t / 2.6), b = smooth((t - 6.8) / 2.4), isl = ISL.hills[0];
+    var off = lerpV(lerpV(V(8.5, 3.4, -7), V(-6, 4.4, 11), a), V(3, 3.4, 13.5), b), tg0 = lerpV(add(P, V(0, 1.6, 0)), add(P, V(15, 8, -30)), smooth((t - 2.2) / 1.2));
+    var tg = lerpV(tg0, V(isl[0] * 0.5, 5, isl[2]), b), sk = sh.s * 0.25;
+    return { pos:add(add(P, off), V(Math.sin(t * 23) * sk, Math.sin(t * 29) * sk, 0)), tg:tg, up:V(Math.sin(t * 1.3) * sh.s * 0.05, 1, 0), fov:58 }; }
+  var sun = norm(V(-0.5, 0.65, 0.55));
+
+  // ---- the land: each hill an ellipsoid half sunk in the sea, painted by height and warped noise
+  function hitEll(ro, rd, h){ var sx = h[3], sy = h[4], sz = h[5], o2 = V((ro[0] - h[0]) / sx, (ro[1] - h[1]) / sy, (ro[2] - h[2]) / sz), d2 = V(rd[0] / sx, rd[1] / sy, rd[2] / sz);
+    var a = dot(d2, d2), b = dot(o2, d2), c = dot(o2, o2) - 1, q = b * b - a * c; if (q < 0) return -1; q = Math.sqrt(q); var t1 = (-b - q) / a; return t1 > 0 ? t1 : -1; }
+  function landCol(L, h, p, isle){ var n = norm(V((p[0] - h[0]) / (h[3] * h[3]), (p[1] - h[1]) / (h[4] * h[4]), (p[2] - h[2]) / (h[5] * h[5]))), y = p[1];
+    var w = fbm([p[0] * 0.06, y * 0.06, p[2] * 0.06], 3), q = fbm([p[0] * 0.14 + w * 3, y * 0.1, p[2] * 0.14 - w * 3], 2), col;
+    n = norm(add(n, V((q - 0.5) * 0.8, 0, (w - 0.5) * 0.8)));
+    if (h[6] === 'crag'){ col = lerpV(L.rock || [150, 144, 132], [196, 190, 176], smooth((q - 0.45) / 0.3));
+      if (isle && L.cave && n[2] > 0.55 && y < 6.5 && Math.abs(p[0] - h[0] + 1) < 4 - y * 0.35) col = [28, 22, 20];   // the cave's mouth
+      else if (q > 0.62) col = lerpV(col, L.high, 0.5); }
+    else { var sandy = y < 1.3 + (w - 0.5) * 1.6; col = sandy ? (y < 0.35 ? lerpV(L.sand, [180, 160, 110], 0.5) : L.sand) : lerpV(L.low, L.high, smooth((y - 3 + (q - 0.5) * 8) / 8));
+      if (!sandy && q > 0.66) col = lerpV(col, [56, 92, 44], 0.6);                                                       // olive groves
+      if (!sandy && L.dot && w > 0.58) col = lerpV(col, L.dot, 0.75);                                                    // Oz's poppies
+      if (!sandy && isle && L.sheep && q < 0.6){ var scx = Math.floor(p[0] / 2.4), scz = Math.floor(p[2] / 2.4);   // sheep grazing, a few to a hillside
+        if (hash(scx, scz, 71) > 0.8 && Math.hypot(p[0] - (scx + 0.3 + hash(scx, scz, 72) * 0.4) * 2.4, (p[2] - (scz + 0.3 + hash(scx, scz, 73) * 0.4) * 2.4) * 0.7) < 0.6) col = [246, 242, 230]; }
+      if (!sandy && y > 6 && q < 0.4) col = lerpV(col, L.rock || [150, 144, 132], 0.6); }
+    return [col, n]; }
+  function render(t){
+    var sh = shipAt(t), cam = camAt(t, sh), f = norm(sub(cam.tg, cam.pos)), r = norm(cross(f, cam.up)), u = cross(r, f), foc = (W / 2) / Math.tan(cam.fov * Math.PI / 360);
+    var s = sh.s, fl = flashAt(t), vis = lerp(520, 42, s), isl = ISL.hills, fro = FR.hills.map(function(h){ return h; }), zs = sh.p[2], sp = poseAt(t);
+    var skyTop = lerpV([96, 166, 236], [34, 40, 54], s), skyLow = lerpV([196, 226, 250], [86, 94, 106], s), horizon = lerpV([170, 206, 232], [70, 78, 90], s);
+    if (fl){ skyTop = lerpV(skyTop, [170, 180, 230], fl * 0.5); skyLow = lerpV(skyLow, [200, 206, 236], fl * 0.5); horizon = lerpV(horizon, [150, 156, 180], fl * 0.4); }
+    var shipM = sh.M, oA = sh.row * 0.32, oL = Math.sin(t * 3.2 + 1.57) * 0.14;
+    var models = [[GSHIP, sh.p, shipM, 1], [OARS, add(sh.p, mv(shipM, V(1.0, 0.55, 0))), mm(shipM, mm(rotY(oA), [Math.cos(oL), -Math.sin(oL), 0, Math.sin(oL), Math.cos(oL), 0, 0, 0, 1])), 2],
+      [OARS, add(sh.p, mv(shipM, V(-1.0, 0.55, 0))), mm(shipM, mm(rotY(Math.PI - oA), [Math.cos(oL), -Math.sin(oL), 0, Math.sin(oL), Math.cos(oL), 0, 0, 0, 1])), 2]];
+    if (sp > -60) models.push([POSEIDON, V(40, sp, zs - 56), rotY(-0.62), 3]);
+    models.forEach(function(Mo){ var m = Mo[0], x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, behind = false;
+      for (var c = 0; c < 8; c++){ var lc = V(m.o[0] + (c & 1 ? m.nx * m.vs : 0), m.o[1] + (c & 2 ? m.ny * m.vs : 0), m.o[2] + (c & 4 ? m.nz * m.vs : 0)), wc = add(Mo[1], mv(Mo[2], lc)), rel = sub(wc, cam.pos), z = dot(rel, f);
+        if (z < 0.05){ behind = true; break; } var sx = W / 2 + dot(rel, r) * foc / z, sy = H / 2 - dot(rel, u) * foc / z; x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); }
+      Mo[5] = mtv(Mo[2], sub(cam.pos, Mo[1])); Mo[4] = behind ? [0, 0, W, H] : [Math.floor(x0) - 1, Math.floor(y0) - 1, Math.ceil(x1) + 1, Math.ceil(y1) + 1]; });
+    models = models.filter(function(Mo){ var b = Mo[4]; return b[2] >= 0 && b[3] >= 0 && b[0] < W && b[1] < H; });
+    var amp = 0.35 + s * 1.4, tw = t * 1.6;
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++){
+      var px2 = (x + 0.5 - W / 2) / foc, py2 = (H / 2 - y - 0.5) / foc, rd = norm(add(f, add(mul(r, px2), mul(u, py2)))), best = 1e12, col = null, n = null, id = 0, o2 = (y * W + x) * 4, k, out;
+      // the land, ahead and behind
+      for (k = 0; k < isl.length + fro.length; k++){ var hh = k < isl.length ? isl[k] : fro[k - isl.length], th = hitEll(cam.pos, rd, hh); if (th > 0 && th < best){ var ph = add(cam.pos, mul(rd, th)); if (ph[1] < 0) continue;
+          var lc2 = landCol(k < isl.length ? ISL : FR, hh, ph, k < isl.length); best = th; col = lc2[0]; n = lc2[1]; id = k < isl.length ? 6 : 5; } }
+      // the sea
+      if (rd[1] < -1e-4){ var ts = -cam.pos[1] / rd[1]; if (ts > 0 && ts < best){ var pw = add(cam.pos, mul(rd, ts)), wx = pw[0], wz = pw[2];
+          var wp = fbm([wx * 0.035, t * 0.05, wz * 0.035], 2), a1 = wx * 0.7 + wz * 0.45 + wp * 9 - tw * 1.4, a2 = wx * -0.38 + wz * 0.85 + wp * 7 - tw * 1.1;
+          var gx = (Math.cos(a1) * 0.7 - Math.cos(a2) * 0.38 * 0.8) * amp * 0.3, gz = (Math.cos(a1) * 0.45 + Math.cos(a2) * 0.85 * 0.8) * amp * 0.3;
+          n = norm(V(-gx, 1, -gz)); var crest = Math.sin(a1) + Math.sin(a2) * 0.8 + (noise3(wx * 1.3, t * 0.7, wz * 0.5) - 0.5) * 0.7;
+          col = lerpV(lerpV([24, 96, 168], [52, 140, 200], smooth((wp - 0.3) / 0.4)), lerpV([30, 56, 72], [52, 84, 96], wp), s);
+          // the shallows and the surf round each island
+          for (k = 0; k < isl.length + fro.length; k++){ var hs = k < isl.length ? isl[k] : fro[k - isl.length], cy2 = Math.sqrt(Math.max(0, 1 - (hs[1] / hs[4]) * (hs[1] / hs[4]))), e = Math.hypot((wx - hs[0]) / (hs[3] * cy2), (wz - hs[2]) / (hs[5] * cy2));
+            if (e < 1.35){ col = lerpV(col, [72, 196, 200], smooth((1.35 - e) / 0.35) * 0.7 * (1 - s)); if (e < 1.08 + (wp - 0.5) * 0.1) col = lerpV(col, [240, 248, 250], 0.85); } }
+          if (crest > 1.75 - s * 0.35) col = lerpV(col, [236, 244, 248], smooth((crest - 1.75 + s * 0.35) / 0.2) * (0.4 + s * 0.4));   // white caps
+          best = ts; id = 4; } }
+      // the ship, its oars and the god
+      for (var mi = 0; mi < models.length; mi++){ var Mo = models[mi], b4 = Mo[4]; if (x < b4[0] || x > b4[2] || y < b4[1] || y > b4[3]) continue; var hv = hitVox(Mo[0], Mo[5], Mo[2], rd, best);
+        if (hv && hv.t < best){ var py3 = cam.pos[1] + rd[1] * hv.t; if (py3 < -0.05 && Mo[3] !== 3) continue; if (Mo[3] === 3 && py3 < 0) continue; best = hv.t; id = Mo[3]; col = [hv.col >> 16 & 255, hv.col >> 8 & 255, hv.col & 255]; n = hv.n; } }
+      if (col){ out = shade(col, n, sun, id === 4 ? 0.3 : 0.12); if (s) out = mul(out, 1 - s * 0.35); if (fl) out = lerpV(out, [230, 236, 255], fl * 0.18);
+        var fv = id === 3 ? vis * 2.6 : id === 5 ? lerp(520, 18, s) : id === 6 && STORM ? lerp(14, 520, smooth((t - 6.2) / 1.4)) : vis;
+        out = lerpV(out, horizon, 1 - Math.exp(-best / fv)); }   // the island is lost in haze until the storm has passed
+      else { // the sky: a wash from the horizon up, and clouds drifting, warped, thick and dark in the storm
+        var g = clamp(rd[1] * 2.2, 0, 1); out = lerpV(skyLow, skyTop, Math.sqrt(g));
+        if (rd[1] > 0.01){ var cp = mul(rd, 90 / rd[1]), cw2 = fbm([cp[0] * 0.006 + t * 0.03, 1.7, cp[2] * 0.006], 3), cl = fbm([cp[0] * 0.011 + cw2 * 2.6 + t * 0.05 * (1 + s * 3), 4.2, cp[2] * 0.011 - cw2 * 2.2], 4);
+          var cov = smooth((cl - (0.56 - s * 0.24)) / 0.14), ccol = lerpV([252, 252, 255], lerpV([70, 76, 90], [120, 126, 140], smooth((cl - 0.5) / 0.2)), s);
+          if (fl) ccol = lerpV(ccol, [236, 240, 255], fl * 0.6); out = lerpV(out, ccol, cov * clamp(rd[1] * 6, 0, 1)); }
+        else out = horizon; best = 1e12; }
+      D[o2] = out[0]; D[o2 + 1] = out[1]; D[o2 + 2] = out[2]; D[o2 + 3] = 255; Z[y * W + x] = best; ID[y * W + x] = id; }
+    // the outline round the ship and the god, as the courses are inked
+    for (var y2 = 1; y2 < H - 1; y2++) for (var x2 = 1; x2 < W - 1; x2++){ var k2 = y2 * W + x2, idc = ID[k2]; if (idc < 1 || idc > 3) continue;
+      var zc = Z[k2], edge = false, nb = [k2 - 1, k2 + 1, k2 - W, k2 + W]; for (var q2 = 0; q2 < 4; q2++){ var kk = nb[q2]; if (ID[kk] !== idc && Z[kk] > zc * 1.04){ edge = true; break; } }
+      if (edge){ var o3 = k2 * 4; D[o3] *= 0.32; D[o3 + 1] *= 0.3; D[o3 + 2] *= 0.36; } }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    weather(t, s, fl); return sh; }
+  /* the rain and the lightning, over the picture: streaks blown across on the wind, and a bolt that forks down to the sea */
+  function weather(t, s, fl){ var Wc = cv.width, Hc = cv.height, k = Wc / 390;
+    if (s > 0.02){ ctx.strokeStyle = 'rgba(214,226,240,' + (0.5 * s).toFixed(3) + ')'; ctx.lineWidth = Math.max(1, 1.3 * k); ctx.beginPath();
+      for (var i = 0; i < Math.round(160 * s); i++){ var rx = (hash(i, 1, 5) * Wc * 1.3 + t * 260 * k) % (Wc * 1.3) - Wc * 0.15, ry = (hash(i, 2, 5) * Hc + t * 1400 * k * (0.8 + hash(i, 3, 5) * 0.4)) % Hc;
+        ctx.moveTo(rx, ry); ctx.lineTo(rx - 9 * k, ry + 26 * k); } ctx.stroke(); }
+    FLASH.forEach(function(ft, fi){ var d = t - ft; if (d < 0 || d > 0.22) return; var bx0 = Wc * (0.2 + hash(fi, 7, 9) * 0.6), by = 0, segs = [[bx0, 0]];
+      while (by < Hc * 0.42){ by += Hc * 0.035; bx0 += (hash(fi, Math.round(by), 11) - 0.5) * 30 * k; segs.push([bx0, by]); }
+      ctx.lineCap = 'round'; [[7 * k, 'rgba(180,200,255,.35)'], [2.4 * k, '#ffffff']].forEach(function(st){ ctx.strokeStyle = st[1]; ctx.lineWidth = st[0]; ctx.beginPath(); segs.forEach(function(p, j){ j ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); }); });
+    if (STORM && t > 3.0 && t < 4.3){ var s9 = k, wob = Math.sin(t * 16) * 3 * s9; ctx.font = 'bold ' + Math.round(50 * s9) + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6 * s9;
+      ctx.strokeStyle = '#0e1a24'; ctx.strokeText('HOLD ON!', Wc / 2 + wob, Hc * 0.2); ctx.fillStyle = '#ffe27a'; ctx.fillText('HOLD ON!', Wc / 2 + wob, Hc * 0.2); } }
+
+  if (o.still) return { at:function(t){ var sh = render(t); if (t > 9.4) wrap.classList.add('cap'); return sh; }, close:finish };
+  if (reduce){ render(10.4); wrap.classList.add('cap'); setTimeout(finish, 1600); return; }
+  var last = 0;
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000; last = t;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 104) setRes(Math.max(104, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 9.4) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+
+root.RTT_PUTT_TRIP = { play:play, sail:sail, PLANETS:PLANETS, ISLES:ISLES };
 })();

@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -166,6 +166,11 @@ var KIT = {
   oz:{ g:['#5aac44', '#66b84e', '#4a9e3a', 0.18], gpat:'ozMeadow', p:['#f0c232', '#ffd84a', '#c8941e'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#3f8a32', '#5aac44', '#2f7a2a'], bark:'#6a4628',
     low:['bush', 'bush', 'rock'], brk:'crate', haz:'slow', hazC:['#d8b45a', '#b8943a'], waterC:['#d8262a', '#ff4a3a'], bogC:['#d8b45a', '#b8943a'], lm:['ozTower', 'ozChina', 'ozStraw'], wall:['#2fb36a', '#14683a'],
     npc:{ skin:'light', polo:'blue', hat:'blue', pants:'blue', hair:'brown', hairStyle:'short', cap:true, hatStyle:'bucket', shoes:'white', gender:'male' }, who:'the road mender' },
+  // Cyclops Isle: a dry summer meadow, a path of pale sand, olive trees (broad, silvery green), sheep and rocks, the thyme for
+  // the bog, the sea at the shore and below the cliffs
+  cyclops:{ g:['#b8b05a', '#c8c06a', '#a8a04e', 0.18], gpat:'cycMeadow', p:['#ecdcae', '#f6ead0', '#d8c490'], tree:['broad', 'broad', 'broad'], leaves:['#7a9058', '#b8c8a0', '#5a7040'], bark:'#6a5a4a',
+    low:['sheep', 'rock', 'bush'], brk:'pot', haz:'slow', hazC:['#9a7ab8', '#7a5a98'], waterC:['#1f7fc0', '#5ac8e0'], seaC:['#1f7fc0', '#5ac8e0'], bogC:['#9a7ab8', '#7a5a98'], lm:['cycFold', 'cycCrag', 'columns'], wall:['#f2ead8', '#a8987a'],
+    npc:{ skin:'tan', polo:'white', hat:'white', pants:'khaki', hair:'black', hairStyle:'curly', cap:false, shoes:'white', gender:'female' }, who:'the shepherd' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -501,8 +506,11 @@ function plan(spec){
   if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5);
     // Oz: the ship came down hard in the poppies, so it lies on its side where it landed, with no pad under it
     if (spec.theme === 'oz') place('ozCrash', lx, L + 5, 3, 5, { w:10, d:6 });
+    // the sea route (Cyclops Isle on): the Greek ship run up on the sand where it came ashore
+    else if (spec.vehicle === 'sea') place('seaShip', lx, L + 5, 3, 7, { w:6, d:12, beach:true });
     else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); } used.push({ x:lx, y:L + 5, r:5.5 }); }
-  if (SPACE){ place('padRocket', archX, -5.5, 2.6, 19, { w:9, d:6 }); place('launchpad', archX, -5.5, 0.1, 0.3, { w:9, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }
+  if (SPACE && spec.space === 'sea'){ place('seaShip', archX, -5.5, 3, 7, { w:6, d:12 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the sea route: the ship at its jetty
+  else if (SPACE){ place('padRocket', archX, -5.5, 2.6, 19, { w:9, d:6 }); place('launchpad', archX, -5.5, 0.1, 0.3, { w:9, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }
   else place('arch', archX, 0, 0.1, 9);
   // the gym's walls, gate and posts are one build (BUILD.gym); as a thing it keeps everything else out and blocks the walk
   if (GYM) place('gym', GYM.x0 + GYM.w / 2, GYM.y0 + GYM.d / 2, 0.1, 1.6, { w:GYM.w, d:GYM.d, th:themeAt(GYM.y0 + GYM.d / 2) });
@@ -803,8 +811,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
-var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
+var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8 };
+var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -823,7 +831,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -843,11 +851,12 @@ var SECRET_SAY = {
   crystara:'The crystal sings on this trail. Something hollow is under it.',
   jellara:'Something big wobbles under this trail. There is a way in, if you can find it.',
   oz:'They say a green door on this trail leads into the palace. I never found it.',
+  cyclops:'The sea runs into a cave under this trail. Some say a god lives down there.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -1324,6 +1333,7 @@ var LIFE = {
   crystara:{ fly:['drone', 1], mote:[['spark', 40], ['snow', 10]] },
   jellara:{ fly:['drone', 1], mote:[['petal', 20], ['spark', 14]] },
   oz:{ fly:['crow', 2], mote:[['petal', 18], ['butter', 6]] },
+  cyclops:{ fly:['gull', 3], mote:[['butter', 8], ['petal', 6]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -2413,7 +2423,7 @@ function run(box, P, pic, api){
     // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
     if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
-    label = P.gate && P.gate.pad ? (P.spec.space === 'ship' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
+    label = P.gate && P.gate.pad ? (P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
     cls(pin, 'on', false); cls(way, 'on', true); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
     put(way.style, 'left', Math.round(cxs + vx * s2) + 'px'); put(way.style, 'top', Math.round(cys + vy * s2) + 'px'); put(wayI.style, 'transform', 'rotate(' + Math.round(Math.atan2(vy, vx) * 180 / Math.PI + 90) + 'deg)');
@@ -3933,6 +3943,61 @@ BUILD.ozCrash = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), L = 8, R 
     if (Math.abs(w) > R - 0.1 && Math.abs(w) < R + 0.8 && ax > 0.2 && ax < 2.4 && Math.abs(tt - cz) < 0.2) return '#ff7a2a';
     return null; }, 0.25); };
 LMSIZE.ozTower = [4, 4, 11]; LMSIZE.ozChina = [5, 4, 5]; LMSIZE.ozStraw = [3, 2, 6]; LMSIZE.ozCrash = [10, 6, 5];
+/* ---- Cyclops Isle's stops on the walk, the same places its holes stand in (land.js): the shore where the ship ran up, the
+   meadows of sheep, the olive groves, the cliffs over the sea and the Cyclops' cave. The walk is a path of pale sand over a
+   dry summer meadow flecked with purple thyme. */
+GPAT.cycMeadow = function(c){ var a = vn(c.ti * 0.04, c.tj * 0.04, 141), w = vn(c.ti * 0.012, c.tj * 0.012, 145), st = hash(c.ti, c.tj, 142);
+  if (st > 0.989) return '#9a7ab8'; if (st > 0.984) return '#f2ead8'; if (w > 0.64) return a > 0.5 ? '#8aa848' : '#7a9a3e'; return a > 0.7 ? '#c8c06a' : a < 0.3 ? '#a8a04e' : '#b8b05a'; };
+GPAT.cycRock = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 143), st = hash(c.ti, c.tj, 144); if (a > 0.62) return st > 0.97 ? '#8aa848' : a > 0.75 ? '#b8b0a4' : '#9a948a'; return GPAT.cycMeadow(c); };
+KIT['cyclops~shore'] = kitFrom(KIT.cyclops, { sea:true, nlm:3, low:['rock', 'shell', 'sheep'], lm:['cycCrag', 'boat', 'cycCrag'], dens:0.2 });
+KIT['cyclops~meadow'] = kitFrom(KIT.cyclops, { nlm:4, low:['sheep', 'sheep', 'bush'], lm:['cycFold', 'cycFold', 'columns', 'cycFold'] });
+KIT['cyclops~grove'] = kitFrom(KIT.cyclops, { nlm:2, dens:0.9, low:['sheep', 'bush', 'rock'], lm:['columns', 'cycFold'] });
+KIT['cyclops~cliffs'] = kitFrom(KIT.cyclops, { sea:true, gpat:'cycRock', nlm:4, dens:0.15, low:['rock', 'rock', 'bush'], lm:['cycCrag', 'cycCrag', 'ruin', 'cycCrag'] });
+KIT['cyclops~cave'] = kitFrom(KIT.cyclops, { gpat:'cycRock', nlm:3, dens:0.2, low:['rock', 'sheep', 'rock'], lm:['cycCave', 'cycCrag', 'cycFold'] });
+LIFE_AS['cyclops~shore'] = { fly:['gull', 5], mote:[['petal', 6]] };
+LIFE_AS['cyclops~meadow'] = { fly:['song', 3], mote:[['butter', 12]] };
+LIFE_AS['cyclops~grove'] = { fly:['song', 4], mote:[['leaf', 12], ['butter', 6]] };
+LIFE_AS['cyclops~cliffs'] = { fly:['gull', 4], mote:[['petal', 4]] };
+LIFE_AS['cyclops~cave'] = { fly:['bat', 2], mote:[['ember', 10]] };
+// a sheep of the island, grazing: a white woolly body, a dark face down in the grass, four dark legs
+BUILD.sheep = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), dir = hash(i, 7, 151) < 0.5 ? -1 : 1;
+  B.solid(x - 0.95, y - 0.55, zb - 0.05, x + 0.95, y + 0.55, zb + 1.2, function(px, py, pz){ var dx = (px - x) * dir, dy = py - y, tt = pz - zb;
+    if (Math.hypot((dx + 0.05) / 0.6, dy / 0.42, (tt - 0.68) / 0.35) < 1 + (hash(px * 12 | 0, pz * 12 | 0, 152) - 0.5) * 0.2) return tt > 0.8 ? '#ffffff' : '#ece6d6';
+    if (Math.hypot((dx - 0.66) / 0.2, dy / 0.15, (tt - 0.5) / 0.18) < 1) return '#2a221e';
+    if (tt < 0.4 && Math.abs(dy) < 0.26 && Math.abs(dy) > 0.1 && (Math.abs(dx - 0.32) < 0.07 || Math.abs(dx + 0.38) < 0.07)) return '#2a221e'; return null; }, 0.125); };
+// a fold of dry stone walls, three sides, sheep inside it
+BUILD.cycFold = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.4, hd = t.d / 2 - 0.4, onW = (Math.abs(Math.abs(dx) - hw) < 0.35 && Math.abs(dy) < hd + 0.35) || (Math.abs(dy + hd) < 0.35 && Math.abs(dx) < hw + 0.35);
+    if (onW && tt < 1.1 + hash(dx * 3 | 0, dy * 3 | 0, i) * 0.2){ var q = hash(Math.floor(dx * 2.5 + 40), Math.floor(tt * 3) + Math.floor(dy * 2.5 + 40) * 7, 153); return q > 0.66 ? '#d8d0c2' : q > 0.33 ? '#b8b0a2' : '#9a9488'; }
+    for (var k = 0; k < 3; k++){ var sx = (hash(i, k, 154) - 0.5) * (t.w - 2.4), sy = (hash(i, k, 155) - 0.5) * (t.d - 2.4); if (Math.hypot((dx - sx) / 0.6, (dy - sy) / 0.42, (tt - 0.68) / 0.35) < 1) return tt > 0.8 ? '#ffffff' : '#ece6d6';
+      if (Math.hypot((dx - sx - 0.66) / 0.2, (dy - sy) / 0.15, (tt - 0.5) / 0.18) < 1) return '#2a221e'; }
+    return null; }); };
+// a crag of the island's grey rock, a ledge or two, thyme in its cracks
+BUILD.cycCrag = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, d = Math.hypot(dx / (t.w / 2), dy / (t.d / 2)) / (1 - u * 0.6) + (vn(dx * 0.7 + i, tt * 0.7, 156) - 0.5) * 0.4;
+  if (d > 1) return null; var q = vn(dx * 1.6 + i * 3, tt * 1.9 + dy, 157); return q > 0.74 ? '#8aa848' : q > 0.56 ? '#b8b0a4' : q < 0.3 ? '#6e6a62' : '#9a948a'; }); };
+// the Cyclops' crag with the mouth of his cave in it, a great round stone beside the door
+BUILD.cycCave = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, d = Math.hypot(dx / (t.w / 2), dy / (t.d / 2)) / (1 - u * 0.5) + (vn(dx * 0.6 + i, tt * 0.6, 158) - 0.5) * 0.3;
+    if (Math.hypot(dx - t.w * 0.36, dy - t.d * 0.3, tt - 1.6) < 1.6) return vn(dx * 2, tt * 2, 159) > 0.5 ? '#8a847a' : '#6e6a62';   // the door stone
+    if (d > 1) return null; if (dy > t.d * 0.18 && Math.abs(dx + 0.4) < 1.6 - tt * 0.25 && tt < 3.6) return '#1a1410';           // the mouth, dark
+    var q = vn(dx * 1.4, tt * 1.7 + dy, 160); return q > 0.75 ? '#8aa848' : q > 0.56 ? '#b8b0a4' : q < 0.3 ? '#6e6a62' : '#9a948a'; }); };
+/* THE GREEK SHIP (the sea route, putt.js's SPACE_TRIP 'sea'): the ship of the sea leg, trip3d.js's GSHIP, on the trail. At the
+   end of the last walk of the world it sails from it waits at a jetty of planks; on the far side it lies run up on the sand where
+   it came ashore. A long dark hull with an eye painted on the bow, one mast and a square sail of cream with two red stripes, a
+   row of oars along each side. The bow points up the screen. */
+BUILD.seaShip = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), beach = !!t.beach;
+  if (!beach) B.solid(x - 3.2, y - 6.8, zb - 0.2, x + 3.2, y + 6.8, zb + 0.35, function(px, py, pz){ var dx = Math.abs(px - x), dy = py - y;   // the jetty
+    if (dx > 3 || Math.abs(dy) > 6.6) return null; if (dx > 2.7 && ((dy + 7) % 2.4) < 0.4) return '#4a3424'; if (pz - zb > 0.25) return null; return Math.abs(((dy + 9) % 0.6) - 0.3) < 0.05 ? '#5e4430' : '#8a6a48'; }, 0.25);
+  var zh = zb + (beach ? 0.1 : 0.55);
+  B.solid(x - 3.4, y - 6.4, zh - 0.9, x + 3.4, y + 6.4, zh + 7.6, function(px, py, pz){ var dx = px - x, dy = py - y, tt = pz - zh, u = dy / 5.4, w = 1.3 * Math.sqrt(Math.max(0, 1 - u * u)), bot = -0.6 + 0.5 * u * u, top = 0.85 + (dy > 3.8 ? (dy - 3.8) * (dy - 3.8) * 0.9 : 0) + (dy < -4 ? (-4 - dy) * 0.5 : 0);
+    if (Math.hypot(dx, dy - 0.2) < 0.16 && tt > 0 && tt < 6.8) return '#6a4426';                                                         // the mast
+    if (tt > 6.2 && tt < 6.5 && Math.abs(dy - 0.2) < 0.16 && Math.abs(dx) < 2.9) return '#6a4426';                                    // the yard
+    if (Math.abs(dx) < 2.7 && tt > 2.6 && tt < 6.1 && Math.abs(dy - 0.55) < 0.14) return Math.abs(Math.abs(dx) - 0.9) < 0.2 ? '#c8643a' : '#f2ead2';   // the sail
+    if (dy > 4.9 && dy < 6.2 && Math.abs(dx) < 0.18){ var cr = Math.hypot(dy - 5, tt - 2.6); if (cr > 0.6 && cr < 0.95 && !(dy < 5 && tt < 2.6)) return '#3a2414'; }   // the stern post
+    for (var k = 0; k < 7; k++){ var oy = -3 + k * 0.92; if (Math.abs(dy - oy) < 0.1 && Math.abs(dx) > w - 0.1 && Math.abs(dx) < w + 1.8 && Math.abs(tt - (0.55 - (Math.abs(dx) - w) * 0.55)) < 0.12) return '#8a6234'; }   // the oars
+    if (dy < -5.4 || dy > 5.4 || Math.abs(dx) > w || tt < bot || tt > top) return null;
+    if (Math.abs(dx) < w - 0.22 && tt > bot + 0.22){ return tt > 0.38 && tt < 0.52 ? '#9a7044' : null; }                              // the deck
+    var ex = dy + 4.2, ey = tt - 0.3; if (Math.hypot(ex, ey * 1.3) < 0.48) return Math.hypot(ex, ey * 1.3) < 0.18 ? '#14100c' : Math.hypot(ex, ey * 1.3) < 0.34 ? '#3a6ad0' : '#f6f0e0';   // the eye on the bow
+    if (tt > top - 0.24) return '#b84a2a'; if (tt < 0.05) return '#1e1814'; return '#5e3c22'; }, 0.2); };
+LMSIZE.cycFold = [7, 5, 2]; LMSIZE.cycCrag = [5, 4, 6]; LMSIZE.cycCave = [10, 6, 8]; LMSIZE.seaShip = [7, 13, 8];
 // @@WORLD STOPS END@@
 /* THE FOLK OF OZ (putt.js FOLK says who stands on which walk and what they say). Four of L. Frank Baum's 1900 characters,
    drawn the way the book and W. W. Denslow's 1900 plates draw them and in no other way (mythiball/PD_SOURCES.md has the

@@ -5338,6 +5338,119 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ tfloor:['#2fb36a', '#5ad890', '#1a8a4c', 0.1, function(c, R){ var g = ((c.ti >> 2) + (c.tj >> 2)) & 1; if ((c.ti & 3) === 0 || (c.tj & 3) === 0) return R('#f0c232'); return R(g ? '#2fb36a' : '#1a8a4c'); }],
         twall:['#2fb36a', '#5ad890', '#14683a', 0.16, function(c, R){ var z = c.z || 0, h = hash(c.ti, (z * 4) | 0, 103);
           if (z > 5.6) return R('#f0c232'); if (h > 0.94) return R('#d8ffe8'); return R(((c.ti + ((z * 2) | 0)) % 5) === 0 ? '#f0c232' : h > 0.5 ? '#2fb36a' : '#1a8a4c'); }] } }; };
+  /* ---------------- CYCLOPS ISLE IS A JOURNEY. The ship ran up on the beach (1 to 4: the shore, white sand and the sea all along
+     one side), the way climbs into the meadows where the sheep graze behind stone walls (5 to 8), through the old olive groves
+     (9 to 12), out along the cliffs over the sea, grey rock and wild thyme (13 to 16), and into the Cyclops' cave itself, its
+     rough walls lit by his fire, racks of cheeses and pens of lambs along them (17 and 18). The land round a hole is a dry
+     summer meadow washed in warped noise; at the shore and on the cliffs it falls away to the sea, softly, never a sheer edge.
+     The sky is deep blue with a few white clouds. All from Homer: sheep, cheeses, olive wood, the cave and its great stone. */
+  STOPS.cyclops = [[1, 'shore'], [5, 'meadow'], [9, 'grove'], [13, 'cliffs'], [17, 'cave']];
+  (function(){ BUILD.cyclops = function(L){ var s = L.stop; return s === 'cave' ? cycCave(L) : s === 'cliffs' ? cycCliffs(L) : s === 'grove' ? cycGrove(L) : s === 'meadow' ? cycMeadow(L) : cycShore(L); }; })();
+
+  function cycEdge(L, x, y){ return 4.4 + fbm(x * 0.07, y * 0.07, L.seed + 73) * 3.6; }
+  // the paint: a dry meadow, gold and green in warped soft patches with purple thyme flecked through; pale sand; the sea, its
+  // blues stirred by warped noise and lit with foam where it meets the sand; grey rock
+  function cycMats(o){ return {
+      cmead:['#b8b05a', '#c8c06a', '#9aa04a', 0.12, function(c, R){ if (c.rim === 1) return R('#d4cc7a');
+        var b = blot(c, 0.16, 121), w = blot(c, 0.05, 127), st = hash(c.ti, c.tj, 122); if (st > 0.988) return R('#9a7ab8'); if (st > 0.982) return R('#f2ead8');
+        if (w > 0.62) return R(b > 0.55 ? '#8aa848' : '#7a9a3e'); return R(b > 0.66 ? '#c8c06a' : b < 0.28 ? '#9aa04a' : '#b8b05a'); }],
+      csand:['#ecdcae', '#f6ead0', '#d8c490', 0.08, function(c, R){ var b = blot(c, 0.2, 123), st = hash(c.ti, c.tj, 124); if (st > 0.992) return R('#ffffff'); return R(b > 0.6 ? '#f6ead0' : b < 0.3 ? '#d8c490' : '#ecdcae'); }],
+      csea:['#1f7fc0', '#4aa8e0', '#14588a', 0.06, function(c, R){ var w = blot(c, 0.06, 125), f = c.f || 0; if (f > 0.6 + w * 0.15) return R('#e8f6ff'); if (f > 0.35) return R('#5ac8e0');
+        var b = blot(c, 0.12, 126); return R(w > 0.6 ? '#3a98d8' : b > 0.55 ? '#1f7fc0' : '#1a6aa8'); }],
+      crock:['#9a948a', '#b8b0a4', '#6e6a62', 0.16, function(c, R){ var b = blot(c, 0.22, 128); if (hash(c.ti, c.tj, 129) > 0.985) return R('#8aa848'); return R(b > 0.62 ? '#b8b0a4' : b < 0.3 ? '#6e6a62' : '#9a948a'); }] }; }
+  function cycBase(L, o){ var seed = L.seed;
+    // the sea lies past the land on a shore or cliff stop, on the side away from the camera's walk in
+    function seaK(x, y){ if (!o.sea) return 0; var c = L.clearAt(x, y), e = cycEdge(L, x, y) + (o.sea === 'cliff' ? 1.5 : 3); return sm(e, e + (o.sea === 'cliff' ? 1.4 : 3.2), c); }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = seaK(x, y), hill = (fbm(x * 0.08, y * 0.08, seed) - 0.45) * 0.5 * sm(1.3, 4, c);
+        if (o.sea === 'cliff') return hill + (c > 3 ? 0.5 * sm(3, 6, c) : 0) - k * 3.2; return hill - k * 0.9; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = cycEdge(L, x, y), k = seaK(x, y);
+        if (k > 0.55) return ['csea', { f:sm(0.55, 0.62, k) < 1 ? 1 - (k - 0.55) / 0.07 : 0 }];
+        if (o.sea === 'shore' && k > 0.08) return ['csand', {}];
+        if (o.sea === 'cliff' && k > 0.15) return ['crock', {}];
+        if (c < e + 0.6) return ['cmead', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (o.rocky && fbm(x * 0.06 + 2, y * 0.06, seed + 79) > 0.6) return ['crock', {}];
+        return ['cmead', {}]; },
+      fill:{ on:['cmead'], trees:o.trees == null ? 0.06 : o.trees, lows:0.16, tree:function(B, x, y, i){ oliveAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 93); if (k < 0.35 && o.sheep !== false) sheepAt(B, x, y, i); else if (k < 0.7) rockAt(B, x, y, 0.25 + hash(i, seed, 94) * 0.35, ['#9a948a', '#b8b0a4']); else bush(B, x, y, 0.4, ['#9a7ab8', '#7a9a3e', '#8aa848']); } },
+      // the sky: deep blue at the top, pale at the horizon, a few round white clouds
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#2a7ad8'); g.addColorStop(1, '#bfe2ff'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        if (o.sea){ ctx.fillStyle = '#2a8ad0'; ctx.fillRect(0, top - Math.max(2, top * 0.12), V.W, Math.max(2, top * 0.12)); }
+        for (var i = 0; i < 5; i++){ var cx = hash(i, 1, seed) * V.W, cy = top * (0.15 + hash(i, 2, seed) * 0.45), cr = Math.max(4, V.W * (0.03 + hash(i, 3, seed) * 0.035));
+          ctx.fillStyle = 'rgba(255,255,255,0.88)'; ctx.beginPath(); ctx.ellipse(cx, cy, cr * 1.9, cr * 0.75, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.ellipse(cx - cr * 0.7, cy - cr * 0.35, cr, cr * 0.7, 0, 0, 6.283); ctx.fill(); } },
+      bg:'#b8b05a', gain:2, mats:cycMats(o) }; }
+  // an old olive tree: a short gnarled trunk, twisted and grey brown, a broad low crown of silvery green
+  function oliveAt(B, x, y, k){ var zb = B.gz(x, y), H = 2.6 + hash(k, 3, 81) * 0.9, R = 1.2 + hash(k, 4, 81) * 0.4, lean = (hash(k, 5, 81) - 0.5) * 0.8;
+    B.vox(x - R * 1.7, y - R * 1.5, zb - 0.1, x + R * 1.7, y + R * 1.5, zb + H + R, function(set){
+      B.tube(set, x, y, zb, x + lean, y, zb + H * 0.55, 0.32, 0.2, '#6a5a4a'); B.tube(set, x + lean, y, zb + H * 0.55, x + lean - 0.6, y - 0.2, zb + H * 0.8, 0.18, 0.12, '#7a6a58');
+      B.tube(set, x + lean, y, zb + H * 0.55, x + lean + 0.7, y + 0.1, zb + H * 0.85, 0.16, 0.1, '#7a6a58');
+      for (var i = 0; i < 5; i++){ var a = hash(i, k, 82) * 6.28, rr = R * (0.4 + hash(k, i, 83) * 0.5);
+        B.blob(set, x + lean + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.7, zb + H * 0.85 + (hash(i, k, 84) - 0.4) * R * 0.5, R * 0.75, R * 0.65, R * 0.45, function(px, py, pz){
+          var q = (Math.floor(px * 2.4) + Math.floor(pz * 2.4) + Math.floor(py * 2.4)) % 6; return q === 0 ? '#b8c8a0' : q === 1 ? '#5a7040' : q === 2 && hash(px * 9 | 0, pz * 9 | 0, 85) > 0.8 ? '#2a2a1e' : '#7a9058'; }); } }); }
+  // a sheep grazing: a white woolly body, a dark face down in the grass, four dark legs
+  function sheepAt(B, x, y, k){ var zb = B.gz(x, y), dir = hash(k, 7, 91) < 0.5 ? -1 : 1;
+    B.solid(x - 0.9, y - 0.5, zb - 0.05, x + 0.9, y + 0.5, zb + 1.1, function(px, py, pz){ var dx = (px - x) * dir, dy = py - y, t = pz - zb;
+      if (Math.hypot((dx + 0.05) / 0.55, dy / 0.38, (t - 0.62) / 0.32) < 1 + (hash(px * 12 | 0, pz * 12 | 0, 92) - 0.5) * 0.2) return t > 0.75 ? '#ffffff' : '#ece6d6';
+      if (Math.hypot((dx - 0.62) / 0.18, dy / 0.14, (t - 0.45) / 0.16) < 1) return '#2a221e';
+      if (t < 0.36 && Math.abs(dy) < 0.24 && Math.abs(dy) > 0.1 && (Math.abs(dx - 0.3) < 0.06 || Math.abs(dx + 0.35) < 0.06)) return '#2a221e'; return null; }); }
+  // a dry stone wall along a line, grey stones a stone high, the sheep's fold
+  function stoneWall(B, a, b){ if (B.clearAt(a[0], a[1]) < 1 || B.clearAt(b[0], b[1]) < 1) return; var zb = B.gz(a[0], a[1]);
+    B.solid(Math.min(a[0], b[0]) - 0.4, Math.min(a[1], b[1]) - 0.4, zb - 0.1, Math.max(a[0], b[0]) + 0.4, Math.max(a[1], b[1]) + 0.4, zb + 0.9, function(px, py, pz){
+      if (segD(px, py, a[0], a[1], b[0], b[1]) > 0.32 || pz - zb > 0.75 + hash(px * 3 | 0, py * 3 | 0, 95) * 0.15) return null; var q = hash(Math.floor(px * 2.5), Math.floor(pz * 3), 96); return q > 0.66 ? '#c8c0b2' : q > 0.33 ? '#a8a094' : '#8a847a'; }); }
+  // a grey crag of the island's rock, a ledge or two, thyme in its cracks
+  function cragAt(B, x, y, r, h){ var zb = B.gz(x, y);
+    B.solid(x - r, y - r, zb - 0.2, x + r, y + r, zb + h, function(px, py, pz){ var t = (pz - zb) / h, d = Math.hypot(px - x, (py - y) * 1.2) / (r * (1 - t * 0.55)) + (vn(px * 1.2 + pz * 0.7, py * 1.2, 5) - 0.5) * 0.35;
+      if (d > 1) return null; var q = vn(px * 2.6 + py * 1.3, pz * 3.2, 6); return q > 0.72 ? '#8aa848' : q > 0.55 ? '#b8b0a4' : q < 0.3 ? '#6e6a62' : '#9a948a'; }); }
+
+  // 1. THE SHORE: the beach, the sea along it, rocks at the water and an upturned boat
+  function cycShore(L){ var O = cycBase(L, { sea:'shore', trees:0.03 }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(1.2, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.4 + hash(x | 0, y | 0, L.seed + 61 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) boatAt(B, q.x, q.y); else rockAt(B, q.x, q.y, 0.6 + (k % 2) * 0.3, ['#9a948a', '#b8b0a4']); }); }; return O; }
+  // a little boat of the island drawn up on the sand, keel up
+  function boatAt(B, x, y){ var zb = B.gz(x, y); B.solid(x - 1.8, y - 0.8, zb - 0.1, x + 1.8, y + 0.8, zb + 0.8, function(px, py, pz){ var u = (px - x) / 1.7, w = (py - y) / 0.7, t = pz - zb;
+      if (Math.abs(u) > 1 || t > 0.7 * Math.sqrt(Math.max(0, 1 - u * u)) - Math.abs(w) * 0.35 || Math.abs(w) > Math.sqrt(Math.max(0, 1 - u * u))) return null; return Math.abs(t - 0.3) < 0.06 ? '#b84a2a' : '#5e3c22'; }); }
+  // 2. THE MEADOWS: the flock out on the grass, stone walls round their folds
+  function cycMeadow(L){ var O = cycBase(L, { trees:0.04 }), sp = [], i, walls = [];
+    for (i = 0; i < 7; i++){ var q = L.spot(0.9, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 71 + i) * 2; }); if (q) sp.push(q); }
+    for (i = 0; i < 2; i++){ var w = L.spotRect(6, 1, function(x, y){ return L.north(x, y) * 0.5 + hash(x | 0, y | 0, L.seed + 77 + i); }); if (w) walls.push(w); }
+    O.build = function(B){ sp.forEach(function(q, k){ sheepAt(B, q.x, q.y, k); }); walls.forEach(function(w){ stoneWall(B, [w.x - 2.8, w.y], [w.x + 2.8, w.y]); }); }; return O; }
+  // 3. THE OLIVE GROVES: old olive trees close round the hole
+  function cycGrove(L){ var O = cycBase(L, { trees:0.3 }); O.build = function(){}; return O; }
+  // 4. THE CLIFFS: grey crags, wild thyme, and the sea far below past the edge
+  function cycCliffs(L){ var O = cycBase(L, { sea:'cliff', trees:0.02, rocky:true }), sp = [], i;
+    for (i = 0; i < 3; i++){ var q = L.spot(1.8, function(x, y){ return L.north(x, y) * 0.6 + L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 81 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ cragAt(B, q.x, q.y, 1.6 + (k % 2) * 0.5, 2.6 + (k % 3) * 0.8); }); }; return O; }
+  /* 5. THE CAVE: inside the Cyclops' cave. Rough rock walls round the hole, his fire glowing, racks of cheeses and pens of
+     lambs along the walls, and at the back the great stone he rolls across the door */
+  function cycCave(L){ var R0 = room(L, { floor:'cvfloor', wall:'cvwall', wallH:8, gap:2.6 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ var f = byWall(L, 1, 41, 3.6)[0]; if (f){ var zf = B.gz(f[0], f[1]); if (B.light) B.light(f[0], f[1], zf + 1.4, '#ffb050');
+          B.solid(f[0] - 0.9, f[1] - 0.9, zf, f[0] + 0.9, f[1] + 0.9, zf + 1.4, function(px, py, pz){ var d = Math.hypot(px - f[0], py - f[1]), t = pz - zf;
+            if (t < 0.25) return d < 0.85 ? (d > 0.62 ? '#6e6a62' : '#3a2a1e') : null; if (d < 0.5 * (1 - (t - 0.25) / 1.1)) return t > 0.8 ? '#ffe27a' : t > 0.5 ? '#ffa030' : '#e8501a'; return null; }); }
+        byWall(L, 4, 43, 3.2).forEach(function(q, k){ var x = q[0], y = q[1], zb = B.gz(x, y);   // racks of cheeses: wooden shelves, round yellow cheeses on them
+          B.solid(x - 1.2, y - 0.4, zb, x + 1.2, y + 0.4, zb + 2.2, function(px, py, pz){ var t = pz - zb, dx = px - x;
+            if (Math.abs(Math.abs(dx) - 1.1) < 0.08) return '#5e3c22'; if (Math.abs(((t + 0.05) % 0.7) - 0.05) < 0.06 && t > 0.3) return '#7a5430';
+            var sh = Math.floor((t - 0.1) / 0.7), cy2 = sh * 0.7 + 0.42, ci = Math.round(dx / 0.6); if (sh >= 0 && sh < 3 && Math.abs(dx) < 0.95 && Math.hypot(dx - ci * 0.6, (t - cy2) * 1.5) < 0.26 && hash(ci, sh, k + 97) > 0.25) return t - cy2 > 0.05 ? '#ffe9a0' : '#f0c850'; return null; }); });
+        byWall(L, 3, 47, 2.4).forEach(function(q, k){ sheepAt(B, q[0], q[1], k + 5); });
+        var st = byWall(L, 1, 53, 4.2)[0]; if (st) cragAt(B, st[0], st[1], 2.2, 3.4); },
+      bg:'#1a1410', gain:2,
+      mats:{ cvfloor:['#5a5046', '#6a5e52', '#4a4238', 0.12, function(c, R){ var b = blot(c, 0.2, 131), st = hash(c.ti, c.tj, 132); if (st > 0.985) return R('#d8c890'); return R(b > 0.62 ? '#6a5e52' : b < 0.3 ? '#4a4238' : '#5a5046'); }],
+        cvwall:['#6e6a62', '#8a847a', '#4e4a44', 0.18, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 133) + Math.sin(z * 2.2 + c.ti * 0.15) * 0.2;
+          if (z > 6.8) return R('#3a3630'); return R(q > 0.75 ? '#8a847a' : q < 0.3 ? '#4e4a44' : '#6e6a62'); }] } }; }
+
+  // Poseidon's Grotto: a sea cave under the island, blue light rippling up off the water, shells and coral on its walls
+  BUILD['s-grotto'] = function(L){ var R0 = room(L, { floor:'gfloor', wall:'gwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ if (B.light){ B.light(L.cx, L.cy, 6, '#9ad8ff'); B.light(L.cx - 4, L.cy - 5, 3, '#5ac8e0'); B.light(L.cx + 4, L.cy - 5, 3, '#ffd860'); }
+        byWall(L, 6, 57, 2.6).forEach(function(q, k){ var x = q[0], y = q[1], zb = B.gz(x, y);   // coral and shells by the walls
+          B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 1.4, function(px, py, pz){ var t = pz - zb, d = Math.hypot(px - x, py - y);
+            if (k % 2){ return d < 0.5 * (1 - t / 0.7) && t < 0.7 ? (((Math.atan2(py - y, px - x) * 4) | 0) % 2 ? '#ffd8c8' : '#f0a890') : null; }
+            for (var b = 0; b < 3; b++){ var a = b * 2.1 + k, bx = x + Math.cos(a) * 0.3 * t, by = y + Math.sin(a) * 0.3 * t; if (Math.hypot(px - bx, py - by) < 0.12) return '#ff7a6a'; } return null; }); }); },
+      bg:'#0a1a2a', gain:2,
+      mats:{ gfloor:['#3a6a8a', '#4a8aa8', '#2a5a7a', 0.1, function(c, R){ var w = Math.sin(c.ti * 0.25 + Math.sin(c.tj * 0.2) * 2); if (w > 0.85) return R('#9ad8ff'); var b = blot(c, 0.2, 135); return R(b > 0.6 ? '#4a8aa8' : b < 0.3 ? '#2a5a7a' : '#3a6a8a'); }],
+        gwall:['#2a4a5a', '#3a6a7a', '#1a3a4a', 0.16, function(c, R){ var z = c.z || 0, h = hash(c.ti, (z * 4) | 0, 137); if (h > 0.97) return R('#ffd8c8'); if (h > 0.94) return R('#9ad8ff');
+          return R(Math.sin(c.ti * 0.3 + z * 1.8) > 0.3 ? '#3a6a7a' : '#2a4a5a'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
