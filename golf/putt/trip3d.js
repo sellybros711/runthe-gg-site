@@ -234,6 +234,7 @@ function shade(rgb, n, sun, amb){ var l = dot(n, sun), k = l > 0.55 ? 1.12 : l >
 function play(host, o, cb){
   if (o && o.vehicle === 'sea') return sail(host, o, cb);   // the Odyssey's islands are reached by sea (sail, below)
   if (o && o.vehicle === 'fall') return fall(host, o, cb);   // Wonderland is reached down the rabbit hole (fall, below)
+  if (o && o.vehicle === 'glass') return glassLeg(host, o, cb);   // the Looking-Glass is reached through the glass (glassLeg, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var wrap = document.createElement('div'); wrap.className = 'pp-trip';
@@ -901,5 +902,116 @@ function fall(host, o, cb){
   requestAnimationFrame(frame);
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
 }
-root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, PLANETS:PLANETS, ISLES:ISLES };
+/* THROUGH THE LOOKING-GLASS (SPACE_TRIP 'glass'): Lewis Carroll's first chapter of 1871. At the end of Wonderland's croquet ground
+   a drawing-room chimney-piece stands on the lawn, the fire in its grate, and over it the great looking-glass. The camera climbs up
+   to it, and the glass begins to melt away, just like a bright silvery mist ("LET'S PRETEND!"). Through it is the Looking-glass
+   room: the same room the other way about, the fire blazing in the grate behind, the chessmen walking about in the hearth, a
+   picture on the wall that seems to be alive. Down from the chimney-piece, across the room, out at the open window and up over
+   the country beyond: a great chessboard, its fields divided by little brooks and green hedges, every edge wandering and never
+   a straight line, a hill in the middle ("A GREAT GAME OF CHESS!"). Every surface is warped noise or drawn shapes, never a grid.
+   A tap skips it; with reduced motion putt.js shows a still of the glass instead (spaceTrip). */
+function glassLeg(host, o, cb){
+  var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; }
+  setRes(150);
+  var done = false, t0 = 0, DUR = 10.8, frames = 0, ftime = 0, MZ = -0.3, MY0 = 2.45, MY1 = 4.85, MX = 1.75;
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function vnz(x, y, z){ return noise3(x, y, z); }
+  // where the camera is and where it looks, phase by phase (ph 0 the lawn, 1 the Looking-glass room, 2 the country)
+  function camAt(t){
+    if (t < 4.1){ var a = smooth(t / 3.9); return { pos:lerpV(V(0.4, 2.4, 9.5), V(0, 3.65, MZ + 0.35 - smooth((t - 3.3) / 0.8) * 0.9), a), tg:lerpV(V(0, 2.2, 0), V(0, 3.65, -3), smooth(t / 2.6)), up:V(0, 1, 0), fov:60, ph:0 }; }
+    if (t < 7.7){ var u = t - 4.1, k = smooth(u / 3.6), turn = smooth((u - 0.4) / 1.4);
+      var pos = V(lerp(0, 0.6, k), lerp(3.65, 1.7, smooth(u / 1.6)), lerp(MZ - 0.6, -10.6, k));
+      var look = V(lerp(0, -1.2, turn * (1 - k)), lerp(1.4, 1.9, k), pos[2] - 4); if (u < 1.2) look = lerpV(V(0, 0.4, -2.2), look, smooth(u / 1.2)); return { pos:pos, tg:look, up:V(0, 1, 0), fov:64, ph:1 }; }
+    var w = t - 7.7, s2 = smooth(w / 3.1); return { pos:V(0.6, 1.7 + s2 * 9.5, -10.6 - w * 7), tg:V(0.6, 1.2 + s2 * 2, -22 - w * 7), up:V(0, 1, 0), fov:62, ph:2 }; }
+  function sky(rd){ var g = clamp(rd[1] * 2.4, 0, 1), c = lerpV([214, 232, 250], [86, 150, 226], Math.sqrt(g)); var cl = vnz(rd[0] * 3 / (rd[1] + 0.3), 4, rd[2] * 3 / (rd[1] + 0.3)); return cl > 0.66 && rd[1] > 0.05 ? lerpV(c, [255, 255, 255], 0.75) : c; }
+  // the croquet lawn of Wonderland, mown in waving stripes
+  function lawn(p){ var wv = Math.sin(p[0] * 0.4) * 0.8 + vnz(p[0] * 0.3, 1, p[2] * 0.3) * 1.5, k = Math.floor((p[2] + wv) / 1.6) & 1, b = vnz(p[0] * 0.9, 2, p[2] * 0.9);
+    return k ? lerpV([96, 176, 86], [120, 200, 104], b) : lerpV([78, 150, 70], [96, 168, 84], b); }
+  /* the chessboard country: two greens of field whose edges are warped noise, a dark hedgerow along each edge, the little brooks
+     wandering across, and a gentle hill */
+  function country(p, d){ var x = p[0] * 0.09, z = p[2] * 0.09, w = vnz(x * 0.5, 5, z * 0.5) - 0.5, f = vnz(x + w * 1.6, 7, z - w * 1.2), f2 = vnz(x * 1.3 - w, 8, z * 1.3 + w), bw = vnz(x * 0.4, 9, z * 0.4) - 0.5, br = Math.abs(vnz(x * 0.35 + bw, 11, z * 0.2) - 0.5), c;
+    var tone = (f > 0.5 ? 2 : 0) + (f2 > 0.5 ? 1 : 0), T4 = [[96, 168, 78], [128, 196, 96], [150, 206, 104], [176, 200, 98]];
+    if (br < 0.022) c = br < 0.012 ? [64, 124, 190] : [130, 176, 216]; else if (Math.abs(f - 0.5) < 0.026 || Math.abs(f2 - 0.5) < 0.022) c = [36, 84, 42];
+    else c = mul(T4[tone], 0.92 + 0.12 * vnz(p[0] * 0.4, 3, p[2] * 0.4));
+    if (hash(Math.floor(p[0] * 1.5), Math.floor(p[2] * 1.5), 17) > 0.994) c = [30, 70, 36];   // a tree in a hedgerow
+    return lerpV(c, [206, 228, 246], 1 - Math.exp(-d / 220)); }
+  function hill(x, z){ return 3.2 * Math.exp(-((x - 4) * (x - 4) + (z + 60) * (z + 60)) / 260); }
+  // the chimney-piece on the lawn (outside) or in the room: a white box with its shelf and its grate; the fire in it
+  function hitBox(ro, rd, b){ var tmin = -1e9, tmax = 1e9, n = null; for (var a = 0; a < 3; a++){ if (Math.abs(rd[a]) < 1e-9){ if (ro[a] < b[0][a] || ro[a] > b[1][a]) return null; continue; }
+      var t1 = (b[0][a] - ro[a]) / rd[a], t2 = (b[1][a] - ro[a]) / rd[a], s = -1; if (t1 > t2){ var q = t1; t1 = t2; t2 = q; s = 1; } if (t1 > tmin){ tmin = t1; n = [0, 0, 0]; n[a] = rd[a] > 0 ? -1 : 1; } if (t2 < tmax) tmax = t2; if (tmin > tmax) return null; }
+    return tmin > 1e-4 ? { t:tmin, n:n } : null; }
+  var MANTEL = [[-2.1, 0, -0.9], [2.1, 2.25, MZ]];
+  function mantelCol(p, n, t, fire){ if (p[1] > 2.05) return [244, 238, 226]; if (n[2] > 0.5 && Math.abs(p[0]) < 1.1 && p[1] < 1.5){ var fl = vnz(p[0] * 6, p[1] * 5 - t * 6, 3);   // the grate and its fire
+        if (p[1] < 0.25 + fl * (fire ? 0.9 : 0.5)) return fl > 0.55 ? [255, 214, 80] : [255, 130, 40]; return [26, 18, 14]; }
+    return lerpV([226, 220, 206], [240, 236, 226], vnz(p[0] * 2, p[1] * 2, 5)); }
+  // the chessmen walking about in the hearth of the Looking-glass room: a red King and Queen, white pawns, each two spheres
+  var MEN = [[-1.3, -1.8, 1, 1.3], [-0.6, -2.4, 1, 1.15], [0.5, -1.6, 0, 0.8], [1.1, -2.2, 0, 0.8], [1.6, -1.5, 0, 0.8], [0.1, -2.9, 1, 0.8]];
+  function hitSph(ro, rd, c, r){ var ox = ro[0] - c[0], oy = ro[1] - c[1], oz = ro[2] - c[2], b = ox * rd[0] + oy * rd[1] + oz * rd[2], cc = ox * ox + oy * oy + oz * oz - r * r, h = b * b - cc; if (h < 0) return -1; var tt = -b - Math.sqrt(h); return tt > 1e-4 ? tt : -1; }
+  function men(ro, rd, t, best){ var hit = null; for (var i = 0; i < MEN.length; i++){ var m = MEN[i], bob = Math.abs(Math.sin(t * 5 + i)) * 0.08, sc = m[3] * 0.5;
+      var parts = [[V(m[0], 0.32 * sc + bob, m[1]), 0.3 * sc], [V(m[0], 0.78 * sc + bob, m[1]), 0.18 * sc]];
+      for (var k = 0; k < 2; k++){ var tt = hitSph(ro, rd, parts[k][0], parts[k][1]); if (tt > 0 && tt < best){ best = tt; var p = add(ro, mul(rd, tt)); hit = { t:tt, n:norm(sub(p, parts[k][0])), col:m[2] ? [200, 40, 58] : [244, 240, 228] }; } } }
+    return hit; }
+  // the scene on the lawn side of the glass (and, reflected, in it)
+  function outside(ro, rd, t, refl){ var bh = hitBox(ro, rd, MANTEL), tg = rd[1] < -1e-3 ? -ro[1] / rd[1] : 1e9;
+    if (!refl && bh && bh.t < tg){ var p = add(ro, mul(rd, bh.t)); return mul(mantelCol(p, bh.n, t, false), 0.7 + 0.3 * Math.max(0, dot(bh.n, norm(V(0.4, 0.8, 0.6))))); }
+    if (tg < 1e9){ var g = add(ro, mul(rd, tg)); return lerpV(lawn(g), [200, 228, 246], 1 - Math.exp(-tg / 60)); } return sky(rd); }
+  // the Looking-glass room: a carpet in soft flowers, papered walls, the open window at the far end on the country
+  function room(ro, rd, t){ var bestT = 1e9, hit = null, k, RX = 5, RY = 4.6, RZ0 = -11, RZ1 = 0.5;
+    var cand = [[(-RX - ro[0]) / rd[0], 'w'], [(RX - ro[0]) / rd[0], 'w'], [(0 - ro[1]) / rd[1], 'f'], [(RY - ro[1]) / rd[1], 'c'], [(RZ0 - ro[2]) / rd[2], 'e'], [(RZ1 - ro[2]) / rd[2], 'b']];
+    for (k = 0; k < cand.length; k++){ var tc = cand[k][0]; if (tc > 1e-4 && tc < bestT && isFinite(tc)){ var pc = add(ro, mul(rd, tc)); if (pc[0] >= -RX - 0.01 && pc[0] <= RX + 0.01 && pc[1] >= -0.01 && pc[1] <= RY + 0.01 && pc[2] >= RZ0 - 0.01 && pc[2] <= RZ1 + 0.01){ bestT = tc; hit = [cand[k][1], pc]; } } }
+    var mn = men(ro, rd, t, bestT); if (mn) return mul(mn.col, 0.6 + 0.4 * Math.max(0, dot(mn.n, norm(V(0.3, 0.8, 0.5)))));
+    var bm = hitBox(ro, rd, [[-2.1, 0, -0.4], [2.1, 2.25, 0.5]]); if (bm && bm.t < bestT){ var pm = add(ro, mul(rd, bm.t)); return mantelCol(pm, [0, 0, -bm.n[2] || -1], t, true); }
+    if (!hit) return [40, 30, 24]; var p = hit[1], kd = hit[0], col;
+    if (kd === 'f'){ var fl = vnz(p[0] * 1.2, 1, p[2] * 1.2), ro2 = vnz(p[0] * 3.5, 2, p[2] * 3.5); col = ro2 > 0.8 ? (fl > 0.5 ? [214, 96, 90] : [226, 186, 100]) : lerpV([118, 36, 44], [138, 48, 54], fl);
+      var fire = Math.exp(-Math.hypot(p[0], p[2]) / 2.2); col = lerpV(col, [255, 190, 110], fire * 0.35); }
+    else if (kd === 'c') col = [236, 228, 212];
+    else if (kd === 'e'){ col = lerpV([214, 200, 170], [226, 214, 186], vnz(p[0], p[1], 6));
+      if (Math.abs(p[0] - 0.6) < 1.6 && p[1] > 0.6 && p[1] < 3.6){ if (Math.abs(p[0] - 0.6) > 1.45 || p[1] < 0.75 || p[1] > 3.45 || Math.abs(p[0] - 0.6) < 0.05) col = [244, 240, 230];   // the window, open on the country
+        else { col = rd[1] > -0.02 ? sky(rd) : country(add(ro, mul(rd, Math.max(1, (-0.5 - ro[1]) / rd[1]))), 40); } } }
+    else { col = lerpV([214, 200, 170], [226, 214, 186], vnz(p[2] * 0.8, p[1] * 0.8, 7)); if (Math.abs(Math.sin(p[2] * 3)) < 0.06) col = mul(col, 0.92);
+      if (p[1] > 1.4 && p[1] < 3 && Math.abs(p[2] + 5) < 1.2){ if (Math.abs(p[2] + 5) > 1.08 || p[1] < 1.52 || p[1] > 2.88) col = [200, 160, 64];   // a picture by the window
+        else { col = lerpV([150, 190, 230], [90, 150, 80], clamp((2.3 - p[1]) * 2, 0, 1)); if (Math.hypot(p[2] + 5 - Math.sin(t * 2) * 0.2, p[1] - 2.1) < 0.18) col = [240, 220, 180]; } } }   // its little figure moves
+    var lit = 0.68 + 0.32 * Math.exp(-Math.hypot(p[0], p[2]) / 6); return lerpV(mul(col, lit), [40, 30, 24], 1 - Math.exp(-bestT / 40)); }
+  function render(t){ var cam = camAt(t), f = norm(sub(cam.tg, cam.pos)), r = norm(cross(f, cam.up)), u = cross(r, f), foc = (W / 2) / Math.tan(cam.fov * Math.PI / 360), ro = cam.pos;
+    var mist = clamp((t - 2.4) / 1.4, 0, 1), white = t > 3.7 && t < 4.6 ? Math.max(0, 1 - Math.abs(t - 4.1) / 0.5) : 0, fade = t > 7.3 && t < 8.1 ? Math.max(0, 1 - Math.abs(t - 7.7) / 0.4) * 0.5 : 0;
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++){ var px2 = (x + 0.5 - W / 2) / foc, py2 = (H / 2 - y - 0.5) / foc, rd = norm(add(f, add(mul(r, px2), mul(u, py2)))), col, o2 = (y * W + x) * 4;
+      if (cam.ph === 0){ col = outside(ro, rd, t, false);
+        var tm = (MZ - ro[2]) / rd[2]; if (tm > 1e-4 && isFinite(tm)){ var pm = add(ro, mul(rd, tm)), bh = hitBox(ro, rd, MANTEL);
+          if (Math.abs(pm[0]) < MX + 0.18 && pm[1] > MY0 - 0.18 && pm[1] < MY1 + 0.18 && (!bh || bh.t > tm)){
+            if (Math.abs(pm[0]) > MX || pm[1] < MY0 || pm[1] > MY1) col = lerpV([200, 160, 64], [255, 220, 120], vnz(pm[0] * 6, pm[1] * 6, 8));   // the gilt frame
+            else { var rr = V(rd[0], rd[1], -rd[2]), rc = outside(pm, rr, t, true), sm2 = vnz(pm[0] * 2.2, pm[1] * 2.2 + t * 0.6, 9);
+              col = lerpV(lerpV(rc, [214, 224, 240], 0.25), sm2 > 0.5 ? [255, 255, 255] : [222, 230, 244], mist * (0.5 + 0.5 * sm2)); } } } }
+      else if (cam.ph === 1) col = room(ro, rd, t);
+      else { var tg2 = -1; if (rd[1] < -1e-3){ var tl = -ro[1] / rd[1]; for (var it = 0; it < 3; it++){ var gp = add(ro, mul(rd, tl)); tl = (hill(gp[0], gp[2]) - ro[1]) / rd[1]; } if (tl > 0) tg2 = tl; }
+        col = tg2 > 0 ? country(add(ro, mul(rd, tg2)), tg2) : sky(rd); }
+      if (white) col = lerpV(col, [246, 248, 255], white);
+      if (fade) col = lerpV(col, [246, 248, 255], fade);
+      D[o2] = col[0]; D[o2 + 1] = col[1]; D[o2 + 2] = col[2]; D[o2 + 3] = 255; }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    var Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    var say = function(txt, c1, c2, wob){ ctx.font = 'bold ' + Math.round(44 * k9) + 'px Anton, Impact, sans-serif'; var fit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText(txt).width)); ctx.font = 'bold ' + Math.round(44 * k9 * fit) + 'px Anton, Impact, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6 * k9; ctx.strokeStyle = c1; ctx.strokeText(txt, Wc / 2 + wob, Hc * 0.2); ctx.fillStyle = c2; ctx.fillText(txt, Wc / 2 + wob, Hc * 0.2); };
+    if (t > 1.6 && t < 3.6) say('LET’S PRETEND!', '#1a1a22', '#ffffff', Math.sin(t * 6) * 2 * k9);
+    else if (t > 8.2 && t < 10.2) say('A GREAT GAME OF CHESS!', '#1a1a22', '#ffd84a', Math.sin(t * 4) * 2 * k9);
+    return cam; }
+  if (o.still) return { at:function(t){ var c = render(t); if (t > 9.4) wrap.classList.add('cap'); return c; }, close:finish };
+  if (reduce){ render(3.4); wrap.classList.add('cap'); setTimeout(finish, 1600); return; }
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 104) setRes(Math.max(104, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 9.4) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, PLANETS:PLANETS, ISLES:ISLES };
 })();

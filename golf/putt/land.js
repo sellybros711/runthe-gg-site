@@ -5898,6 +5898,118 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ wdfloor:['#8a6a4a', '#a8845c', '#6a4e34', 0.12, function(c, R){ var b = blot(c, 0.2, 535), k = ((c.ti >> 4) + (c.tj >> 4)) & 1; return R(b > 0.62 ? '#a8845c' : b < 0.3 ? '#6a4e34' : k ? '#8a6a4a' : '#7e6040'); }],
         wdwall:['#6a4a3a', '#8a6a52', '#4a3226', 0.18, function(c, R){ var z = c.z || 0, dw = ((c.ti % 40) + 40) % 40; if (z < 3.6 && dw > 12 && dw < 26) return R(z > 3.2 ? '#c8a050' : dw === 19 && z > 1.6 && z < 1.9 ? '#ffd84a' : '#7a4a24'); if (z > 5) return R('#4a3226');
           var q = blot(c, 0.25, 537); return R(q > 0.7 ? '#8a6a52' : q < 0.3 ? '#4a3226' : '#6a4a3a'); }] } }; };
+  /* ---------------- THROUGH THE LOOKING-GLASS IS A JOURNEY (Lewis Carroll, 1871, as John Tenniel drew it). Out of the
+     Looking-glass House into its garden (1 and 2), the Garden of Live Flowers, the Tiger-lilies standing high (3 and 4), the
+     chessboard country seen from the little hill (5 to 7), the wood where things have no names (8 to 10), the river of Wool and
+     Water with its rushes (11 and 12), the town where the Lion and the Unicorn fight, by Humpty Dumpty's wall (13 to 15), and Queen
+     Alice's castle in the eighth square (16 to 18). The country is a great chessboard, but its squares are FIELDS: their edges are
+     warped noise, a hedgerow wandering along each, and the little brooks that cross it wander too. Never a grid, never a check. */
+  STOPS.lookingglass = [[1, 'house'], [3, 'garden'], [5, 'fields'], [8, 'wood'], [11, 'river'], [13, 'town'], [16, 'castle']];
+  (function(){ BUILD.lookingglass = function(L){ var s = L.stop; return s === 'castle' ? lgCastle(L) : s === 'town' ? lgTown(L) : s === 'river' ? lgRiver(L) : s === 'wood' ? lgWood(L) : s === 'fields' ? lgFields(L) : s === 'garden' ? lgGarden(L) : lgHouse(L); }; })();
+
+  function lgEdge(L, x, y){ return 4.4 + fbm(x * 0.07, y * 0.07, L.seed + 297) * 3.6; }
+  // the field a point is in: warped noise, so two fields meet along a wandering line (the hedgerow) and never a straight one
+  function lgField(x, y, seed){ var w = fbm(x * 0.03, y * 0.03, seed + 301) - 0.5; return fbm(x * 0.045 + w * 2.2, y * 0.045 - w * 1.6, seed + 303); }
+  function lgBrook(x, y, seed){ var w = fbm(x * 0.05, y * 0.05, seed + 305) - 0.5; return Math.abs(fbm(x * 0.02 + w, y * 0.035, seed + 307) - 0.5); }
+  function lgMats(){ return {
+      lgturf:['#68a652', '#78b860', '#5a9a4a', 0.12, function(c, R){ if (c.rim === 1) return R('#86c66c'); var b = blot(c, 0.16, 561), st = hash(c.ti, c.tj, 562);
+        if (st > 0.99) return R('#ffffff'); if (st > 0.985) return R('#ffd84a'); if (c.k) return R(b > 0.6 ? '#86c66c' : b < 0.3 ? '#6aaa54' : '#78b860'); return R(b > 0.6 ? '#68a652' : b < 0.3 ? '#528a42' : '#5e9a4a'); }],
+      lgrow:['#2e6e34', '#4e9a48', '#1a4022', 0.14, function(c, R){ var b = blot(c, 0.3, 563); return R(b > 0.62 ? '#4e9a48' : b < 0.3 ? '#1a4022' : '#2e6e34'); }],
+      lgbed:['#2e6e34', '#ff7a20', '#1e4a22', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 564), fl = blot(c, 0.45, 565), w = blot(c, 0.07, 566);
+        if (fl > 0.64 && st > 0.3) return R(w > 0.6 ? '#ffffff' : w > 0.38 ? '#ff7a20' : '#e8283a'); return R(fl > 0.58 ? '#1e4a22' : '#367a36'); }],
+      lgpath:['#d8cca8', '#e8dcbc', '#b8aa88', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 567), b = blot(c, 0.2, 568); if (st > 0.94) return R('#a89870'); return R(b > 0.6 ? '#e8dcbc' : b < 0.3 ? '#c8bc98' : '#d8cca8'); }],
+      lgmoss:['#3e7a3a', '#4e8c46', '#2e5e2c', 0.14, function(c, R){ var b = blot(c, 0.18, 569), st = hash(c.ti, c.tj, 570); if (st > 0.99) return R('#c8a060'); return R(b > 0.64 ? '#4e8c46' : b < 0.3 ? '#2e5e2c' : '#3e7a3a'); }],
+      lgrush:['#7a8a3a', '#9aaa4a', '#5a6a2a', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 571); return R(st > 0.8 ? '#5a4a2a' : st > 0.5 ? '#9aaa4a' : '#7a8a3a'); }],
+      lgwater:['#3a7ab8', '#a8d4f4', '#2a5a98', 0.06, function(c, R){ var w = blot(c, 0.06, 572), f = c.f || 0; if (f > 0.6 + w * 0.15) return R('#e8f4ff'); if (f > 0.35) return R('#a8d4f4'); return R(w > 0.66 ? '#5a9ad0' : '#3a7ab8'); }] }; }
+  function lgBase(L, o){ var seed = L.seed;
+    function riverK(x, y){ if (!o.river) return 0; var c = L.clearAt(x, y), e = lgEdge(L, x, y) + 3; return sm(e, e + 3.2, c); }
+    var lawn = o.wood ? 'lgmoss' : 'lgturf';
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = riverK(x, y), hill = (fbm(x * 0.08, y * 0.08, seed) - 0.45) * (o.hills || 0.5) * sm(1.3, 4, c), bk = 0;
+        if (o.brooks && c > lgEdge(L, x, y) + 1 && lgBrook(x, y, seed) < 0.018) bk = -0.4; return hill - k * 1.1 + bk; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = lgEdge(L, x, y), k = riverK(x, y);
+        if (k > 0.55) return ['lgwater', { f:k < 0.62 ? 1 - (k - 0.55) / 0.07 : 0 }];
+        if (o.river && k > 0.1) return ['lgrush', {}];
+        if (c < e + 0.6) return [o.paved ? 'lgpath' : lawn, { rim:c > e - 0.3 ? 1 : 0 }];
+        if (o.brooks && lgBrook(x, y, seed) < 0.018) return ['lgwater', { f:lgBrook(x, y, seed) > 0.012 ? 0.7 : 0 }];
+        var f = lgField(x, y, seed); if (Math.abs(f - 0.5) < 0.016) return ['lgrow', {}];
+        if (o.beds && fbm(x * 0.07 + 5, y * 0.07, seed + 287) > 0.6) return ['lgbed', {}];
+        return [lawn, { k:f > 0.5 ? 1 : 0 }]; },
+      fill:{ on:['lgturf', 'lgmoss'], trees:o.trees == null ? 0.04 : o.trees, lows:0.14, tree:function(B, x, y, i){ lgTreeAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 596); if (o.beds && k < 0.5) lilyAt(B, x, y, i + seed); else if (k < 0.7) pawnAt(B, x, y, i + seed); else bush(B, x, y, 0.4, ['#2a6a2e', '#367a36', '#4a9a46']); } },
+      // a summer afternoon's sky, clear blue paler low down, a few soft clouds
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#5a9ae0'); g.addColorStop(0.75, '#a8d0f4'); g.addColorStop(1, '#e8f4fc'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        for (var i = 0; i < 5; i++){ var cx = hash(i, 1, seed) * V.W, cy = top * (0.3 + hash(i, 2, seed) * 0.4), cr = Math.max(4, V.W * (0.04 + hash(i, 3, seed) * 0.04));
+          ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.ellipse(cx, cy, cr * 2.2, cr * 0.6, 0, 0, 6.283); ctx.fill(); } },
+      bg:'#2a4436', gain:2, mats:lgMats() }; }
+  function lgTreeAt(B, x, y, k){ var zb = B.gz(x, y), H = 2.6 + hash(k, 3, 581) * 1.2, R = 1.3 + hash(k, 4, 581) * 0.5;
+    B.solid(x - R - 0.3, y - R - 0.3, zb - 0.1, x + R + 0.3, y + R + 0.3, zb + H + R, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < H * 0.55) return d < 0.22 ? (vn(pz * 4, px * 3, 587) > 0.5 ? '#5a3a22' : '#4a3020') : null; var e = Math.hypot((px - x) / R, (py - y) / R, (t - H) / (R * 0.9)) + (vn(px * 2.4, pz * 2.4 + py, 582) - 0.5) * 0.34; if (e > 1) return null;
+      var q = vn(px * 3 + py, pz * 3, 583); return q > 0.68 ? '#4e9a48' : q < 0.3 ? '#1a4022' : '#2e6e34'; }); }
+  // a Tiger-lily of the Garden of Live Flowers: an orange flower with dark spots on its tall stem
+  function lilyAt(B, x, y, k){ var zb = B.gz(x, y), H = 0.9 + hash(k, 2, 591) * 0.4;
+    B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + H + 0.4, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < H) return d < 0.06 ? '#3a7a2e' : null; var fr = t - H, r = 0.1 + fr * 0.8; if (fr > 0.35 || d > r) return null; if (d < 0.06) return '#3a2a10'; return hash(px * 12 | 0, py * 12 | 0, k) > 0.85 ? '#5a1a0a' : '#ff7a20'; }); }
+  // a chessman standing in the grass, red or white: a pawn
+  function pawnAt(B, x, y, k){ var zb = B.gz(x, y), red = hash(k, 5, 593) < 0.5, c = red ? '#c8283a' : '#f4f0e4', dk = red ? '#8a1424' : '#b8b2a2';
+    B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + 1.5, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < 0.2) return d < 0.45 ? dk : null; if (t < 0.95) return d < 0.18 + (0.95 - t) * 0.18 ? (px > x + 0.08 ? dk : c) : null; if (t < 1.05) return d < 0.3 ? dk : null; return Math.hypot(d, t - 1.28) < 0.24 ? c : null; }); }
+  // a castle (a rook) as tall as a house, red or white
+  function rookAt(B, x, y, k){ var zb = B.gz(x, y), red = hash(k, 6, 594) < 0.5, c = red ? '#c8283a' : '#f4f0e4', dk = red ? '#8a1424' : '#b8b2a2';
+    B.solid(x - 1.3, y - 1.3, zb, x + 1.3, y + 1.3, zb + 4.4, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < 0.4) return d < 1.2 ? dk : null; if (t < 3.4) return d < 0.75 + (3.4 - t) * 0.05 ? (px > x + 0.3 ? dk : c) : null; if (t < 4.4) return d < 1 && (d > 0.7 || t < 3.8) && (t < 3.9 || (Math.floor((Math.atan2(py - y, px - x) + 3.15) * 2) & 1)) ? c : null; return null; }); }
+  // the Looking-glass House itself, from its garden: red brick, white windows, a slate roof
+  function lgHouseAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3.2, y - 2.4, zb, x + 3.2, y + 2.4, zb + 6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 3.4){ if (Math.abs(dx) > 3 || Math.abs(dy) > 2.2) return null; if (dy > 2.0 && Math.abs(Math.abs(dx) - 1.6) < 0.45 && t > 1.4 && t < 2.8) return '#a8c8e8'; if (dy > 2.0 && Math.abs(dx) < 0.45 && t < 2.2) return '#f4f0e4'; return ((t * 5 | 0) + (dx * 2.5 | 0)) % 6 === 0 ? '#d8ccb4' : '#a83e2a'; }
+      var roof = 3.4 + (2.4 - Math.abs(dy)) * 1.0; if (t < roof && Math.abs(dx) < 3.2 && Math.abs(dy) < 2.4) return Math.abs(dy) > 2.1 ? '#3a3a48' : '#4a4a5a'; return null; }); }
+  // a little boat drawn up among the rushes, its oars across it
+  function lgBoatAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2, y - 1, zb - 0.1, x + 2, y + 1, zb + 0.9, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, e = Math.hypot(dx / 1.9, dy / 0.8); if (e > 1) return null;
+      if (Math.abs(dy + dx * 0.3) < 0.06 && t > 0.6) return '#c8a060'; if (e > 0.82) return t > 0.55 ? '#e8dcc0' : '#7a5a3a'; return t < 0.2 ? '#5a3a22' : null; }); }
+  // a stretch of high narrow wall of red brick, coped with stone (Humpty Dumpty's)
+  function brickWallAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2.6, y - 0.4, zb, x + 2.6, y + 0.4, zb + 3, function(px, py, pz){ var dx = px - x, t = pz - zb; if (t > 2.75) return '#c8c2b4'; var row = Math.floor(t * 3), cx = ((dx * 1.5 + (row & 1) * 0.5) % 1 + 1) % 1;
+      return cx < 0.07 || (t * 3) % 1 < 0.1 ? '#d8ccb4' : '#a83e2a'; }); }
+
+  // 1. THE GARDEN OF THE LOOKING-GLASS HOUSE: the house behind, its lawn and borders, the first chessmen standing about
+  function lgHouse(L){ var O = lgBase(L, { beds:true, trees:0.03 }), sp = [], i;
+    for (i = 0; i < 6; i++){ var q = L.spot(i ? 1.2 : 3, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 561 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) lgHouseAt(B, q.x, q.y); else if (k % 2) pawnAt(B, q.x, q.y, k + 11); else bush(B, q.x, q.y, 0.6, ['#2a6a2e', '#367a36', '#4a9a46']); }); }; return O; }
+  // 2. THE GARDEN OF LIVE FLOWERS: beds of Tiger-lilies, roses and daisies, all of them talking at once
+  function lgGarden(L){ var O = lgBase(L, { beds:true, trees:0.02 }), sp = [], i;
+    for (i = 0; i < 8; i++){ var q = L.spot(0.9, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 571 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ lilyAt(B, q.x, q.y, k + 21); }); }; return O; }
+  // 3. THE CHESSBOARD COUNTRY: fields divided by wandering hedgerows, the little brooks running across, chessmen as big as houses
+  function lgFields(L){ var O = lgBase(L, { brooks:true, trees:0.02, hills:0.6 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.4, function(x, y){ return L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 581 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) rookAt(B, q.x, q.y, k + 31); else pawnAt(B, q.x, q.y, k + 31); }); }; return O; }
+  // 4. THE WOOD WHERE THINGS HAVE NO NAMES: moss and the cool shade of broad trees
+  function lgWood(L){ var O = lgBase(L, { wood:true, trees:0.12, hills:0.7 }), sp = [], i;
+    for (i = 0; i < 6; i++){ var q = L.spot(1, function(x, y){ return L.side(x) * 1.1 + hash(x | 0, y | 0, L.seed + 591 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ lgTreeAt(B, q.x, q.y, k + 41); }); }; return O; }
+  // 5. WOOL AND WATER: the river and its scented rushes, the Sheep's boat drawn up on the bank
+  function lgRiver(L){ var O = lgBase(L, { river:true, trees:0.01, hills:0.3 }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(1.6, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 601 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) lgBoatAt(B, q.x, q.y); else bush(B, q.x, q.y, 0.6, ['#5a6a2a', '#7a8a3a', '#9aaa4a']); }); }; return O; }
+  // 6. THE TOWN: Humpty Dumpty's wall, the fields round the town, the brooks
+  function lgTown(L){ var O = lgBase(L, { brooks:true, trees:0.03 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.6, function(x, y){ return L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 611 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2 === 0) brickWallAt(B, q.x, q.y); else pawnAt(B, q.x, q.y, k + 51); }); }; return O; }
+  // 7. QUEEN ALICE'S CASTLE: the eighth square, its lawn, flower beds and the great castles standing about
+  function lgCastle(L){ var O = lgBase(L, { beds:true, trees:0.02, paved:true }), sp = [], i;
+    for (i = 0; i < 6; i++){ var q = L.spot(1.4, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 621 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) rookAt(B, q.x, q.y, k + 61); else lilyAt(B, q.x, q.y, k + 61); }); }; return O; }
+
+  // The Sheep's Shop: a little dark shop, its shelves all round full of curious things, an arm-chair and the Sheep's knitting
+  BUILD['s-shop'] = function(L){ var R0 = room(L, { floor:'lsfloor', wall:'lswall', wallH:6, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 631, 2.4).forEach(function(q, k){ pawnAt(B, q[0], q[1], k + 71); }); },
+      bg:'#241a14', gain:2,
+      mats:{ lsfloor:['#6a5040', '#8a6a52', '#4a3a2a', 0.12, function(c, R){ var b = blot(c, 0.2, 635); return R(b > 0.62 ? '#8a6a52' : b < 0.3 ? '#4a3a2a' : '#6a5040'); }],
+        lswall:['#5a4030', '#7a5a42', '#3a2a1e', 0.18, function(c, R){ var z = c.z || 0, row = Math.floor(z * 1.2); if (z > 5) return R('#3a2a1e'); if (z > 0.6 && (z * 1.2) % 1 > 0.12){ var k = hash(c.ti >> 2, row, 637); return R(k > 0.8 ? '#c8283a' : k > 0.6 ? '#3a5aa8' : k > 0.45 ? '#e8c040' : k > 0.3 ? '#f4f0e4' : '#7a5a42'); }
+          return R('#5a3a22'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
