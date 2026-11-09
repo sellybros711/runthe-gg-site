@@ -7339,7 +7339,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1768255307,2026-06-19,2026,Madison Square Garden,New York,NY,1,1,Thatch,809,false,,940,5,67,0,69,false,false,,",",false,opener|closer|jam|peak,,"Before the first set, the PA played some highlights from the recent New York Knicks NBA Finals championship and ""Go New York Go.""",,Rocker
 1768255307,2026-06-19,2026,Madison Square Garden,New York,NY,1,2,Borne,725,false,,1082,3,56,0,57,true,false,"Layered and gritty, this version simmers beautifully in the slow-burn jam as Peter dominates on a variety of different keyboard sounds. Rick builds a peak ahead of a tempo shift and smooth -> to the live debut of ""POP.""",->,true,jam|peak,,,,Easy
 1768255307,2026-06-19,2026,Madison Square Garden,New York,NY,1,3,POP,1020,false,,302,0,1,0,,false,false,,",",false,encore,FTP.,,,Easy
-1768255307,2026-06-19,2026,Madison Square Garden,New York,NY,1,4,Savenger,1014,false,,793,0,1,0,,false,false,,",",false,,FTP.,,,Groove
+1768255307,2026-06-19,2026,Madison Square Garden,New York,NY,1,4,Savenger,1014,false,,793,0,1,0,,false,false,,",",false,opener,FTP.,,,Groove
 1768255307,2026-06-19,2026,Madison Square Garden,New York,NY,1,5,Peach,990,true,Future Islands,698,14,4,10,,false,false,,",",false,,Future Islands.,,,Groove
 1768255307,2026-06-19,2026,Madison Square Garden,New York,NY,1,6,Seekers on the Ridge pt I,609,false,,373,8,57,10,36,false,false,,>,true,,,,,Easy
 1768255307,2026-06-19,2026,Madison Square Garden,New York,NY,1,7,Seekers on the Ridge pt II,610,false,,322,8,57,10,,false,false,,",",false,,,,,Easy
@@ -7359,7 +7359,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1768255308,2026-06-20,2026,Madison Square Garden,New York,NY,2,7,Arrow,438,false,,1595,9,96,10,62,true,false,"Moving past an initial Type I peak, Rick and Cotter lock in on some fast-paced minor mode play. Peter makes a rare move to organ for some lead work, turning off the Leslie and stabbing into the jam with some more dissonant elements as the stream of notes from guitar and drums continue, unrelenting. Briefly returning to ""Arrow"" proper, the band avoids the ending and instead delivers another minute of fast-paced minor play before fading > to ""Fish in the Sea.""",>,true,opener|closer|jam,Unfinished.,,,Rocker
 1768255308,2026-06-20,2026,Madison Square Garden,New York,NY,2,8,Fish In The Sea,477,true,Fat Freddy's Drop,869,8,32,10,45,false,false,,",",false,opener|jam,Fat Freddy’s Drop. With Stuart Bogie on woodwinds.,,,Groove
 1768255308,2026-06-20,2026,Madison Square Garden,New York,NY,2,9,Big Modern!,945,false,,880,5,36,0,56,false,false,,>,true,opener|closer|jam|peak,,,,Groove
-1768255308,2026-06-20,2026,Madison Square Garden,New York,NY,2,10,Good Times // End Times,1022,false,,903,0,1,0,,false,false,,>,true,,FTP.,,,Groove
+1768255308,2026-06-20,2026,Madison Square Garden,New York,NY,2,10,Good Times // End Times,1022,false,,903,0,1,0,,false,false,,>,true,opener,FTP.,,,Groove
 1768255308,2026-06-20,2026,Madison Square Garden,New York,NY,2,11,(((postplace))),1024,false,,659,0,1,0,,false,false,,->,true,closer,FTP.,,,Space
 1768255308,2026-06-20,2026,Madison Square Garden,New York,NY,2,12,Big Modern!,945,false,,82,0,37,0,56,false,false,,,false,opener|closer|jam|peak,,,,Groove
 1768255308,2026-06-20,2026,Madison Square Garden,New York,NY,E,13,SALT,930,false,,518,2,27,0,40,false,false,,,false,opener|closer|encore,,,,Rocker
@@ -7418,7 +7418,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,1,Same Old Shenanigans,541,false,,1141,3,66,0,45,false,false,,",",false,closer,,This show was one set due to a weather delay.,,Easy
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,2,Your Direction,647,false,Vasudo,603,3,19,0,36,false,false,,->,true,ballad,,,,Ballad
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,3,Bloodbuzz Ohio,766,true,The National,695,25,13,20,,false,false,,",",false,,The National.,,,Easy
-1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,4,Savenger,1014,false,,746,5,2,0,,false,false,,",",false,,,,,Groove
+1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,4,Savenger,1014,false,,746,5,2,0,,false,false,,",",false,opener,,,,Groove
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,5,POP,1020,false,,295,5,2,0,,false,false,,",",false,encore,,,,Easy
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,6,Dustin Hoffman,970,false,,1099,3,21,0,43,false,false,,",",false,jam,,,,Groove
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,7,Turned Clouds,400,false,,723,17,122,10,,false,false,,",",false,,,,,Groove
@@ -7433,7 +7433,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450536,2026-06-28,2026,Merriweather Post Pavilion,Columbia,MD,1,5,Jed Stone,663,false,Vasudo,669,4,14,0,36,false,false,,",",false,closer|ballad,,,,Ballad
 1769450536,2026-06-28,2026,Merriweather Post Pavilion,Columbia,MD,1,6,Pancakes,723,false,Great Blue,772,6,73,0,62,false,false,,,false,opener|closer|jam,,,,Groove
 1769450536,2026-06-28,2026,Merriweather Post Pavilion,Columbia,MD,2,7,Hungersite,740,false,,816,4,88,0,62,false,false,,>,true,opener|jam|peak,,,,Anthem
-1769450536,2026-06-28,2026,Merriweather Post Pavilion,Columbia,MD,2,8,Good Times // End Times,1022,false,,887,5,2,0,,false,false,,>,true,,,,,Groove
+1769450536,2026-06-28,2026,Merriweather Post Pavilion,Columbia,MD,2,8,Good Times // End Times,1022,false,,887,5,2,0,,false,false,,>,true,opener,,,,Groove
 1769450536,2026-06-28,2026,Merriweather Post Pavilion,Columbia,MD,2,9,Slow Ready,422,false,,647,5,103,0,49,false,false,,->,true,,,,,Space
 1769450536,2026-06-28,2026,Merriweather Post Pavilion,Columbia,MD,2,10,Can't Get You Out Of My Head,426,true,Kylie Minogue,890,8,27,10,44,false,false,,->,true,jam,Kylie Minogue.,,,Groove
 1769450536,2026-06-28,2026,Merriweather Post Pavilion,Columbia,MD,2,11,Slow Ready,422,false,,172,0,104,0,49,false,false,,>,true,,,,,Space
@@ -7488,7 +7488,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,8,The Empress Of Organos,604,false,Vasudo,1097,4,102,0,58,true,false,"With an impending thunderstorm, the band lays waste to SPAC as they develop a thick and churning evil motif. The boil gets more and more forceful as the jam progresses, wrapping the nearly two-hour first set on an insane note.",,false,closer|jam,,,,Groove
 1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,2,9,Thatch,809,false,,1229,6,69,0,69,true,true,"Escapes typical ""Thatch"" play thanks to heavy synth pad work from Peter that inspires Cotter. Rick and Trevor poke through the space as they spar, hinting at bliss with a theme similar to the MPP ""Arcadia."" Imperceptibly infusing the jam with notes of unease, Rick inspires the band to go into a churning, evil mode akin to the 1/30/22 ""Wysteria."" Trevor continued his incredible play as Peter went in a jazzy direction on piano, the jam getting a lot of added depth as they raged through the darkness.",->,true,opener|closer|jam|peak,Unfinished.,,,Rocker
 1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,2,10,Good2B,1017,false,,810,6,9,0,44,false,false,,",",false,opener|jam|peak,,,,Groove
-1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,2,11,Good Times // End Times,1022,false,,943,3,3,0,,false,false,,>,true,,,,,Groove
+1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,2,11,Good Times // End Times,1022,false,,943,3,3,0,,false,false,,>,true,opener,,,,Groove
 1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,2,12,(((postplace))),1024,false,,262,3,3,0,,false,false,,",",false,closer,,,,Space
 1769450540,2026-07-03,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,2,13,So Ready,421,false,,1062,7,158,0,38,true,false,"Marc Brownstein joins the party on bass as Trevor becomes his DJ Marb Menthols alter ego on turntables. Short-lived due to the impending curfew, but a great time nonetheless.",,false,closer,With Marc Brownstein on bass and DJ Marb Menthols on turntables.,,,Groove
 1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,1,Same Old Shenanigans,541,false,,1184,5,67,0,45,false,false,,",",false,closer,,,,Easy
@@ -7496,7 +7496,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,3,Seekers on the Ridge pt I,609,false,,395,11,58,10,36,false,false,,>,true,,,,,Easy
 1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,4,Seekers on the Ridge pt II,610,false,,318,11,58,10,,false,false,,",",false,,,,,Easy
 1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,5,All I Need,414,false,,1315,8,160,10,72,true,false,"Very cool dark riffs are uncovered in the first jam, but Rick quickly pulls the ripcord in favour of the first second jam since 8/12/22. Though it's Cotter's first time playing it, he feels right at home in the propulsive groove as the band hits a more dynamic take on the 7/6/21 synth-led style. Rick eventually takes the lead and soars through an incredible and sustained bliss peak.",",",false,jam|peak,"Slow, melodic version.",,,Groove
-1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,6,Savenger,1014,false,,712,5,3,0,,false,false,,",",false,,,,,Groove
+1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,6,Savenger,1014,false,,712,5,3,0,,false,false,,",",false,opener,,,,Groove
 1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,1,7,Animal,764,false,,1659,3,82,0,47,true,true,"LONG version that begins with some raging Goontz. In the second half, the band uncovers a new kind of dance jam as Cotter drops an absolutely nasty groove. You will rage, guaranteed.",,false,opener|closer,,,,Groove
 1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,2,8,Dripfield,738,false,,1448,4,75,0,62,true,false,Patience and commitment to quieter dynamics take over as Rick softly vocalizes along to his melodies. The serene space eventually gives way to a cool ebb-and-flow pattern where the band flips between softer play and rocking power chords based around a triple-hit theme.,>,true,closer|jam|peak,Unfinished.,,,Space
 1769450541,2026-07-04,2026,Saratoga Performing Arts Center,Saratoga Springs,NY,2,9,Amongster,816,true,Polica,416,17,5,10,,false,false,,",",false,,Polica.,,,Space
@@ -7530,7 +7530,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450543,2026-08-14,2026,Greek Theatre,Los Angeles,CA,E,13,Shama Lama Ding Dong,545,true,Otis Day and The Knights,,7,53,0,,false,false,,,false,encore,Otis Day & The Knights.,,,Groove
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,1,1,Same Old Shenanigans,541,false,,1138,2,68,0,45,false,false,,",",false,closer,,"During Hot Tea, the venue PA went out for around a minute.",,Easy
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,1,2,Hot Love & The Lazy Poet,645,false,Vasudo,405,4,43,0,38,false,false,,->,true,opener,,,,Groove
-1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,1,3,Savenger,1014,false,,996,2,4,0,,false,false,,>,true,,,,,Groove
+1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,1,3,Savenger,1014,false,,996,2,4,0,,false,false,,>,true,opener,,,,Groove
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,1,4,Hot Love & The Lazy Poet,645,false,Vasudo,145,0,44,0,38,false,false,,",",false,opener,,,,Groove
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,1,5,POP,1020,false,,292,3,4,0,,false,false,,",",false,encore,,,,Easy
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,1,6,Seekers on the Ridge pt I,609,false,,409,2,59,0,36,false,false,,>,true,,,,,Easy
@@ -7542,7 +7542,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,2,12,Into the Myst,402,false,,916,6,86,0,57,false,false,,>,true,jam,Unfinished.,,,Space
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,2,13,Jed Stone,663,false,Vasudo,628,3,16,0,36,false,false,,>,true,closer|ballad,,,,Ballad
 1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,2,14,Sinnerman,739,true,Nina Simone,880,12,21,10,36,false,false,,,false,closer,Nina Simone.,,,Rocker
-1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,E,15,Good Times // End Times,1022,false,,723,3,4,0,,false,false,,,false,,,,,Groove
+1769450544,2026-08-15,2026,Frost Amphitheater,Stanford,CA,E,15,Good Times // End Times,1022,false,,723,3,4,0,,false,false,,,false,opener,,,,Groove
 1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,1,Royal,987,false,,553,6,16,0,38,false,false,,>,true,opener,,Peter teased Charge! before the first set.,,Rocker
 1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,2,Butter Rum,415,false,Vasudo,831,8,122,10,49,false,false,,",",false,,,,,Groove
 1769450545,2026-08-16,2026,The Grand Theatre at Grand Sierra Resort,Reno,NV,1,3,Please Forgive Me,685,true,David Gray,501,18,16,10,,false,false,,",",false,,David Gray.,,,Easy
@@ -7608,13 +7608,13 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,1,7,Madhuvan,512,false,,1107,4,187,0,75,false,false,,,false,opener|closer|jam,,,,Rocker
 1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,2,8,So Ready,421,false,,1003,3,160,0,38,false,false,,->,true,closer,Unfinished.,,,Groove
 1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,2,9,I Would Die 4 U,867,true,Prince,866,29,14,20,,false,false,,",",false,,Prince.,,,Groove
-1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,2,10,Good Times // End Times,1022,false,,925,4,5,0,,false,false,,>,true,,,,,Groove
+1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,2,10,Good Times // End Times,1022,false,,925,4,5,0,,false,false,,>,true,opener,,,,Groove
 1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,2,11,(((postplace))),1024,false,,445,3,5,0,,false,false,,>,true,closer,,,,Space
 1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,2,12,The Empress Of Organos,604,false,Vasudo,628,5,104,0,58,false,false,,>,true,closer|jam,,,,Groove
 1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,2,13,This Old Sea,572,false,,324,17,47,10,54,false,false,,,false,jam|ballad,,,,Ballad
 1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,E,14,The Way It Is,570,true,Bruce Hornsby,373,15,43,10,41,false,false,,->,true,,Bruce Hornsby. Unfinished.,,,Easy
 1769450725,2026-08-22,2026,Hayden Homes Amphitheater,Bend,OR,E,15,The Empress Of Organos,604,false,Vasudo,173,0,105,0,58,false,false,,,false,closer|jam,,,,Groove
-1769450726,2026-08-24,2026,Kettlehouse Amphitheater,Bonner,MT,1,1,Savenger,1014,false,,793,5,5,0,,false,false,,",",false,,,,,Groove
+1769450726,2026-08-24,2026,Kettlehouse Amphitheater,Bonner,MT,1,1,Savenger,1014,false,,793,5,5,0,,false,false,,",",false,opener,,,,Groove
 1769450726,2026-08-24,2026,Kettlehouse Amphitheater,Bonner,MT,1,2,I'm Writing A Novel,424,true,Father John Misty,503,25,20,20,,false,false,,",",false,,Father John Misty.,,,Easy
 1769450726,2026-08-24,2026,Kettlehouse Amphitheater,Bonner,MT,1,3,Royal,987,false,,719,4,17,0,38,false,false,,",",false,opener,,,,Rocker
 1769450726,2026-08-24,2026,Kettlehouse Amphitheater,Bonner,MT,1,4,Draconian Meter Maid,943,false,Swimmer,1004,11,25,10,47,false,false,,",",false,jam|peak,,,,Groove
@@ -7658,7 +7658,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450728,2026-08-28,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,5,Hot Love & The Lazy Poet,645,false,Vasudo,1046,4,46,0,38,false,false,,",",false,opener,,,,Groove
 1769450728,2026-08-28,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,6,Seekers on the Ridge pt I,609,false,,402,8,60,10,36,false,false,,>,true,,,,,Easy
 1769450728,2026-08-28,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,7,Seekers on the Ridge pt II,610,false,,316,8,60,10,,false,false,,",",false,,,,,Easy
-1769450728,2026-08-28,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,8,Good Times // End Times,1022,false,,860,3,6,0,,false,false,,",",false,,,,,Groove
+1769450728,2026-08-28,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,8,Good Times // End Times,1022,false,,860,3,6,0,,false,false,,",",false,opener,,,,Groove
 1769450728,2026-08-28,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,9,Hot Tea,408,false,Vasudo,956,8,169,10,58,false,false,,,false,closer,With Workin’ Day and Night teases.,,Night,Groove
 1769450728,2026-08-28,2026,Red Rocks Park and Amphitheater,Morrison,CO,2,10,Dripfield,738,false,,1715,4,77,0,62,false,false,,->,true,closer|jam|peak,Unfinished.,,,Space
 1769450728,2026-08-28,2026,Red Rocks Park and Amphitheater,Morrison,CO,2,11,Good2B,1017,false,,951,4,12,0,44,false,false,,>,true,opener|jam|peak,,,,Groove
@@ -7699,7 +7699,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1782144766,2026-09-01,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,1,Royal,987,false,,688,5,18,0,38,false,false,,",",false,opener,,"Arise was played for the first time since April 10, 2026 (57 shows). Factory Fiction was played for the first time since December 13, 2025 (59 shows). The encore break consisted of a looping drone before the band came back on to finish Factory Fiction.",,Rocker
 1782144766,2026-09-01,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,2,Yeti,416,false,Great Blue,642,4,133,0,50,false,false,,",",false,opener,,,,Groove
 1782144766,2026-09-01,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,3,Borne,725,false,,783,6,60,0,57,false,false,,->,true,jam|peak,,,,Easy
-1782144766,2026-09-01,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,4,Savenger,1014,false,,864,5,6,0,,false,false,,",",false,,,,,Groove
+1782144766,2026-09-01,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,4,Savenger,1014,false,,864,5,6,0,,false,false,,",",false,opener,,,,Groove
 1782144766,2026-09-01,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,5,Peach,990,true,Future Islands,561,12,6,10,,false,false,,",",false,,Future Islands.,,,Groove
 1782144766,2026-09-01,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,6,Jed Stone,663,false,Vasudo,665,5,18,0,36,false,false,,>,true,closer|ballad,,,,Ballad
 1782144766,2026-09-01,2026,Red Rocks Park and Amphitheater,Morrison,CO,1,7,Arrow,438,false,,933,7,100,0,62,false,false,,->,true,opener|closer|jam,With Rhapsody In Blue tease from Peter.,,Rhapsody In Blue,Rocker
@@ -7731,7 +7731,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1771450166,2026-09-24,2026,Kentucky Expo Center,Louisville,KY,1,5,Peach,990,true,Future Islands,,1,7,0,,false,false,,",",false,,Future Islands.,,,Groove
 1771450166,2026-09-24,2026,Kentucky Expo Center,Louisville,KY,1,6,Give It Time,931,false,,,4,45,0,,false,false,,",",false,closer|encore,,,,Anthem
 1771450166,2026-09-24,2026,Kentucky Expo Center,Louisville,KY,1,7,Hot Tea,408,false,Vasudo,,4,170,0,58,false,false,,,false,closer,,,,Groove
-1791039622,2026-10-02,2026,Brooklyn Academy of Music,Brooklyn,NY,1,1,Good Times // End Times,1022,false,,,5,7,0,,false,false,,,false,,,Goose was the musical guest on Jimmy Kimmel Live.,,Groove
+1791039622,2026-10-02,2026,Brooklyn Academy of Music,Brooklyn,NY,1,1,Good Times // End Times,1022,false,,,5,7,0,,false,false,,,false,opener,,Goose was the musical guest on Jimmy Kimmel Live.,,Groove
 1791132384,2026-10-03,2026,Brooklyn Bowl,Brooklyn,NY,1,1,Dustin Hoffman,970,false,,,1,28,0,43,false,false,,",",false,jam,,"Franklin's Tower was played for the first time since December 14, 2024 (129 shows).",,Groove
 1791132384,2026-10-03,2026,Brooklyn Bowl,Brooklyn,NY,1,2,Tumble,418,false,Vasudo,,6,140,0,71,false,false,,",",false,closer|jam|peak,,,,Groove
 1791132384,2026-10-03,2026,Brooklyn Bowl,Brooklyn,NY,1,3,Madalena,988,false,,,1,18,0,36,false,false,,",",false,ballad,,,,Ballad
@@ -7787,17 +7787,33 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1780327770,2026-11-06,2026,Miller High Life Theatre,Milwaukee,WI,2,13,Pancakes,723,false,Great Blue,1230,13,77,10,62,false,false,,>,true,opener|closer|jam,Unfinished.,,,Groove
 1780327770,2026-11-06,2026,Miller High Life Theatre,Milwaukee,WI,2,14,(((postplace))),1024,false,,472,6,7,0,,false,false,,,false,closer,,,,Space
 1780327770,2026-11-06,2026,Miller High Life Theatre,Milwaukee,WI,E,15,POP,1020,false,,282,10,7,10,,false,false,,,false,encore,,,,Easy
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,1,Dustin Hoffman,970,false,,,3,29,0,43,false,false,,",",false,jam,,Peter teased Charge! before the start of the second set.,,Groove
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,2,Strange Overtones,1004,true,Brian Eno & David Byrne,,11,7,10,,false,false,,->,true,,David Byrne & Brian Eno.,,,Groove
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,3,Earthling or Alien?,605,false,,,18,53,10,57,false,false,,->,true,jam|peak,,,,Groove
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,4,Spirit Of The Dark Horse,557,false,,,11,43,10,41,false,false,,",",false,,,,,Rocker
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,5,Madalena,988,false,,,3,19,0,36,false,false,,",",false,ballad,,,,Ballad
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,6,Echo of a Rose,463,false,Vasudo,,3,133,0,65,false,false,,>,true,jam,Fast version. Unfinished. With Low Rider tease from Peter.,,Low Rider,Groove
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,7,Jed Stone,663,false,Vasudo,,3,20,0,36,false,false,,,false,closer|ballad,,,,Ballad
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,8,Shama Lama Ding Dong,545,true,Otis Day and The Knights,,6,55,0,,false,false,,->,true,encore,Otis Day & The Knights. Unfinished.,,,Groove
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,9,Slow Ready,422,false,,,6,109,0,49,false,false,,",",false,,Jam only.,,,Space
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,10,Thatch,809,false,,,5,75,0,69,false,false,,>,true,opener|closer|jam|peak,Unfinished.,,,Rocker
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,11,Dripfield,738,false,,,10,78,10,62,false,false,,>,true,closer|jam|peak,Unfinished.,,,Space
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,12,Sinnerman,739,true,Nina Simone,,19,22,10,36,false,false,,,false,closer,Nina Simone.,,,Rocker
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,E,13,Slow Ready,422,false,,,0,110,0,49,false,false,,>,true,,,,,Space
-1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,E,14,SALT,930,false,,,16,29,10,40,false,false,,,false,opener|closer|encore,,,,Rocker
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,1,Dustin Hoffman,970,false,,967,3,29,0,43,false,false,,",",false,jam,,Peter teased Charge! before the start of the second set.,,Groove
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,2,Strange Overtones,1004,true,Brian Eno & David Byrne,612,11,7,10,,false,false,,->,true,,David Byrne & Brian Eno.,,,Groove
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,3,Earthling or Alien?,605,false,,991,18,53,10,57,false,false,,->,true,jam|peak,,,,Groove
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,4,Spirit Of The Dark Horse,557,false,,631,11,43,10,41,false,false,,",",false,,,,,Rocker
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,5,Madalena,988,false,,287,3,19,0,36,false,false,,",",false,ballad,,,,Ballad
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,6,Echo of a Rose,463,false,Vasudo,1002,3,133,0,65,false,false,,>,true,jam,Fast version. Unfinished. With Low Rider tease from Peter.,,Low Rider,Groove
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,1,7,Jed Stone,663,false,Vasudo,596,3,20,0,36,false,false,,,false,closer|ballad,,,,Ballad
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,8,Shama Lama Ding Dong,545,true,Otis Day and The Knights,364,6,55,0,,false,false,,->,true,encore,Otis Day & The Knights. Unfinished.,,,Groove
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,9,Slow Ready,422,false,,585,6,109,0,49,false,false,,",",false,,Jam only.,,,Space
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,10,Thatch,809,false,,1251,5,75,0,69,false,false,,>,true,opener|closer|jam|peak,Unfinished.,,,Rocker
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,11,Dripfield,738,false,,990,10,78,10,62,false,false,,>,true,closer|jam|peak,Unfinished.,,,Space
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,2,12,Sinnerman,739,true,Nina Simone,912,19,22,10,36,false,false,,,false,closer,Nina Simone.,,,Rocker
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,E,13,Slow Ready,422,false,,337,0,110,0,49,false,false,,>,true,,,,,Space
+1780327771,2026-11-07,2026,Miller High Life Theatre,Milwaukee,WI,E,14,SALT,930,false,,814,16,29,10,40,false,false,,,false,opener|closer|encore,,,,Rocker
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,1,1,Savenger,1014,false,,,8,7,10,,false,false,,",",false,opener,,"The W.S. Walcott Medicine Show was played for the first time since September 24, 2024 (157 shows).",,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,1,2,Time to Flee,404,false,,,18,113,10,56,false,false,,->,true,,Unfinished.,,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,1,3,The W.S. Walcott Medicine Show,582,true,The Band,,156,20,50,36,false,false,,->,true,,The Band.,,,Easy
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,1,4,All I Need,414,false,,,18,162,10,72,false,false,,->,true,jam|peak,"Slow, melodic version. Unfinished.",,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,1,5,A Western Sun,435,false,,,7,84,0,51,false,false,,>,true,ballad,,,,Ballad
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,1,6,Amongster,816,true,Polica,,23,6,20,,false,false,,",",false,,Polica.,,,Space
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,1,7,Rockdale,714,false,Vasudo,,4,91,0,59,false,false,,,false,opener|closer|jam,,,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,2,8,Good Times // End Times,1022,false,,,5,8,0,,false,false,,",",false,opener,,,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,2,9,Interlude II,409,false,,,9,16,10,,false,false,,>,true,,,,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,2,10,Turbulence & The Night Rays,646,false,Vasudo,,18,49,10,,false,false,,",",false,opener,,,,Rocker
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,2,11,Jive Lee,502,false,,,9,92,10,57,false,false,,",",false,closer|jam,,,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,2,12,This Old Sea,572,false,,,7,49,0,54,false,false,,",",false,jam|ballad,,,,Ballad
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,2,13,Tumble,418,false,Vasudo,,4,141,0,71,false,false,,->,true,closer|jam|peak,,,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,2,14,Can't Get You Out Of My Head,426,true,Kylie Minogue,,11,29,10,44,false,false,,->,true,jam,Kylie Minogue.,,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,2,15,Tumble,418,false,Vasudo,,0,142,0,71,false,false,,,false,closer|jam|peak,,,,Groove
+1780327772,2026-11-08,2026,Miller High Life Theatre,Milwaukee,WI,E,16,Don't Do It,460,true,The Band,,18,44,10,,false,false,,,false,closer|encore,The Band.,,,Groove
