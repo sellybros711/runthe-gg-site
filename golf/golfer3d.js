@@ -1674,6 +1674,14 @@
       push(ellipsoid(Q(-0.2,3.4),AXs,[3.5,2.2,3.5],X(P.W),{gloss:3}));                                         // the heel, low
       push(ellipsoid(Q(2.8,2.6,-1.4*s),AXs,[1.1,0.6,0.55],X(P.g),{gloss:3,noCast:1}));                          // its shine
       push(ellipsoid(Q(2.4,2.7,2.85*s),AXs,[0.6,0.5,0.25],X(P.b),{gloss:3,noCast:1})); },                       // the buckle
+    // Shepherd Sandals (Cyclops Isle's world prize): a sole of brown leather, straps across the foot and round the ankle, the
+    // way the Greek vase painters drew them
+    ppsandals(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.6,0.45),AXs,[5.8,0.6,3.3],X(P.s),{gloss:1}));                                          // the leather sole
+      push(ellipsoid(Q(3.4,1.3),AXs,[2.6,1.0,2.9],X(P.f),{gloss:1}));                                          // the foot, bare between the straps
+      for(const x of [3.9,2.0]) push(ellipsoid(Q(x,1.5),AXs,[0.55,1.05,3.0],X(P.W),{gloss:1}));                // the straps across it
+      push(ellipsoid(Q(0.2,2.2),AXs,[3.2,1.6,2.9],X(P.W),{gloss:1}));                                         // the heel strap
+      push(ellipsoid(Q(-0.2,3.6),AXs,[3.0,0.6,3.0],X(P.b),{gloss:1,noCast:1})); },                             // the ankle tie
     // Mars Boots (Red Planet's world prize): a padded white surface boot on a thick rust tread, a blue band at the ankle
     ppmarsboots(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
       push(ellipsoid(Q(1.6,0.55),AXs,[5.8,0.8,3.4],X(P.s),{gloss:0}));                                         // the rust tread
@@ -1750,6 +1758,8 @@
       push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },
     ppsilvershoes(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:3,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(ellipsoid(add(ank,sc(sax[1],0.2)),sax,[2.65,1.6,2.75],'x:'+P.W,{gloss:3})); },
+    ppsandals(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.f,{gloss:1,bias:.15}));
+      push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(over(sc0,sax,sr,'x:'+P.W,l=>l[1]>=-0.5&&Math.abs(Math.sin(l[0]*7))>0.75)); push(ellipsoid(add(ank,sc(sax[1],0.2)),sax,[2.6,0.6,2.7],'x:'+P.b,{gloss:1})); },
     ppmarsboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:2,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45)); push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'x:'+P.W,{gloss:2}));
       push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },
@@ -1798,6 +1808,9 @@
     // the Jelly Ball: a ball of clear pink jelly, a lime swirl through it and a bright shine
     ppjelly:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]+0.4,p[2]-0.75)<0.22) return {c:P.W,gloss:3}; const w=Math.sin(p[1]*5+Math.atan2(p[2],p[0])*2);
       return {c:w>0.7?P.h:w>0.3?P.C:w>-0.6?P.b:P.s,gloss:3}; } },
+    // the Fleece Ball: a ball of white wool, curl on curl, a little cream in the deep of the curls
+    ppfleece:{ f:(p,P)=>{ const c=Math.sin(p[0]*11+Math.sin(p[1]*9)*1.5)*Math.sin(p[1]*11+Math.sin(p[2]*9)*1.5)*Math.sin(p[2]*11+Math.sin(p[0]*9)*1.5);
+      return {c:c>0.25?P.W:c>-0.1?P.C:c>-0.4?P.h:P.s,gloss:0}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};

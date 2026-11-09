@@ -53,6 +53,7 @@ var PAL={
   saturn:{ g:['#d8b878','#e2c88c','#e8d2a0','#f0dfb4'], sp:[['#b8905a',.012],['#fff2d0',.012]], tree:'round', leaf:['#c8d8ee','#dceaf6','#a8c4e8','#ffffff'], trunk:'#6a6488', path:['#e8e6f6','#f4f2fc'], water:['#b8905a','#c8a060','#d8b878','#fff2d0'], shadow:.62 },
   crystara:{ g:['#0e0820','#1c1236','#2a1a4a','#9fd8e8'], sp:[['#ffffff',.01],['#b8a8ff',.01]], tree:'round', leaf:['#8a5ad8','#b894f0','#9ff0ff','#ffffff'], trunk:'#5a4a8a', path:['#eef8ff','#ffffff'], water:['#0a0618','#0e0820','#1c1236','#b8a8ff'], shadow:.6 },
   oz:{ g:['#3f8a32','#4a9e3a','#5aac44','#72c454'], sp:[['#e8262a',.02],['#ffe27a',.006]], tree:'round', leaf:['#3f8a32','#5aac44','#6ac44a','#2f7a2a'], trunk:'#6a4628', path:['#f0c232','#ffd84a'], water:['#a81c20','#d8262a','#ff4a3a','#1e1410'], shadow:.62 },
+  cyclops:{ g:['#9aa04a','#b8b05a','#c8c06a','#d4cc7a'], sp:[['#9a7ab8',.012],['#f2ead8',.01]], tree:'round', leaf:['#5a7040','#7a9058','#b8c8a0','#6a8048'], trunk:'#6a5a4a', path:['#ecdcae','#f6ead0'], water:['#14588a','#1f7fc0','#3a98d8','#e8f6ff'], shadow:.62 },
   jellara:{ g:['#2aa890','#3fd0b0','#6ae0c4','#9be86a'], sp:[['#ff9ad8',.012],['#ffd0ec',.008]], tree:'round', leaf:['#ff5fb8','#ff8ad0','#9be86a','#ffb030'], trunk:'#227068', path:['#ffd0ec','#ffe8f6'], water:['#2aa890','#3fd0b0','#6ae0c4','#ffd0ec'], shadow:.62 },
   mars:{ g:['#b85a32','#c4683e','#d07648','#dc8654'], sp:[['#7a3220',.014],['#f0b088',.01]], tree:'round', leaf:['#5a2a1c','#7a3a22','#8a4a2a','#a8502e'], trunk:'#3a2420', path:['#e8b088','#f2c4a0'], water:['#2a0e08','#3a140c','#5a2010','#a8502e'], shadow:.62 },
   candy:{ g:['#eaa9c0','#f0b8cc','#f5c6d7','#f9d4e2'], sp:[['#ffffff',.012],['#ffd23f',.006]], tree:'round', leaf:['#c2306a','#e0488a','#ff6fa8','#ffa8cc'], trunk:'#f6f1ea', path:['#c98a5a','#d89c6c'], water:['#3a1c0c','#5a2e14','#7a4422','#a8683e'], shadow:.66 },
@@ -498,6 +499,29 @@ WORLD.oz=function(P,th,seed){
     if(kd<.35){ for(y=1;y<6;y++)for(x=0;x<6;x+=2) P.set(bb[0]+x,bb[1]+y,hex(y<2?'#f0c232':'#5a8a2a')); }
     else if(kd<.6){ P.ell(bb[0]+3,bb[1]+4,2.2,1.8,function(a,b,dx){ P.set(a,b,hex(dx<-.4?'#ffffff':'#eef2fa')); }); P.ell(bb[0]+3,bb[1]+2,2.2,1.2,function(a,b){ P.set(a,b,hex('#2a5ab8')); }); }
     else P.ell(bb[0]+3,bb[1]+3,2.4,2.4,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.5?'#6ac44a':dy>.4?'#2f7a2a':'#3f8a32')); }); }
+};
+WORLD.cyclops=function(P,th,seed){
+  var tk=[], x, y;
+  // the island: dry gold and green meadow in warped soft patches, the sea washing in along one side in bands of blue with a
+  // line of surf, the walk a path of pale sand; olive trees, white sheep and grey crags beside it, and the Cyclops' crag with
+  // the dark mouth of his cave near the trail's end
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var n=fbm(x*.03,y*.03,seed+3), st=hash(x,y,seed+5), sea=fbm(x*.02+5,y*.02,seed+11)+(x/P.w-.5)*.5;
+    if(sea>.66){ P.set(x,y,hex(sea>.8?'#14588a':sea>.7?'#1f7fc0':sea>.675?'#3a98d8':'#e8f6ff')); continue; }
+    if(sea>.62){ P.set(x,y,hex(st>.9?'#ffffff':'#ecdcae')); continue; }
+    P.set(x,y,hex(st>.992?'#9a7ab8':st>.986?'#f2ead8':n>.62?'#c8c06a':n>.48?'#b8b05a':n>.4?'#9aa04a':'#8aa848')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+9)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#d8c490':hash(x>>1,y>>1,seed)<.2?'#f6ead0':'#ecdcae')); else if(pd<e+1.5)P.shade(x,y,.75); }
+  // the Cyclops' crag near the trail's end, the black mouth of his cave in it
+  var hx=spot(P,P.w*.72,P.h*.82,18,14,6,tk); if(hx){ var cx=hx[0]+9, cy=hx[1]+10;
+    P.ell(cx,cy+2,10,3,function(a,b){ P.shade(a,b,.6); });
+    P.ell(cx,cy-3,9,8,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.6?'#b8b0a4':dy>.4?'#6e6a62':'#9a948a')); });
+    P.ell(cx,cy,3.4,3.6,function(a,b,dx,dy){ if(dy>-.2||Math.abs(dx)<.7)P.set(a,b,hex('#1a1410')); }); }
+  // olive trees, sheep and crags, each with its shadow
+  for(var bq=0;bq<34;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.6,.8,function(a,b){ P.shade(a,b,.6); });
+    if(kd<.45){ for(y=3;y<6;y++) P.set(bb[0]+3,bb[1]+y,hex('#6a5a4a')); P.ell(bb[0]+3,bb[1]+2.6,2.6,2,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.5?'#b8c8a0':dy>.4?'#5a7040':'#7a9058')); }); }
+    else if(kd<.75){ P.ell(bb[0]+3,bb[1]+4.4,1.9,1.2,function(a,b,dx){ P.set(a,b,hex(dx<-.4?'#ffffff':'#ece6d6')); }); P.set(bb[0]+5,bb[1]+4,hex('#2a221e')); P.set(bb[0]+5,bb[1]+5,hex('#2a221e')); }
+    else P.ell(bb[0]+3,bb[1]+3.5,2.4,2.2,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.5?'#b8b0a4':dy>.4?'#6e6a62':'#9a948a')); }); }
 };
 WORLD.candy=function(P,th,seed){
   var tk=[], x, y;
