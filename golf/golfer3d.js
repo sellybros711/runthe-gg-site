@@ -1595,7 +1595,21 @@
     out.push(capsule(ab,at,hr*0.06,X2((P&&P.s)||'#c8ccd8'),{noCast:1})); out.push(ellipsoid(at,AXh,[hr*0.11,hr*0.11,hr*0.11],X2((P&&P.r)||'#ff4a4a'),{gloss:3,noCast:1}));   // the antenna
     return out; };
   HAT_OVER_HAIR.ppastrohelmet=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1};   // a modelled hat that is modelled on the course golfer too
+  /* THE BRONZE HELM (Medusa's Isle): Athena's helmet as the Varvakeion statuette has it. A bronze bowl round the crown of the
+     head, open at the face, a ridge over the brow, cheek pieces down either side, and a tall crest of red horsehair from the brow
+     back over the top. Modelled on the course golfer too, so Athena wears it on the trail. */
+  HAT_MODEL.ppbronzehelm=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const br=X2((P&&P.W)||'#c8913a'), dk=X2((P&&P.S)||'#7a5420'), hi=X2((P&&P.g)||'#ffe9a8'), crest=X2((P&&P.r)||'#b83a2a');
+    const C=add(hc,sc(hup,hr*0.12)), R=[hr*1.14,hr*1.12,hr*1.14];
+    out.push(ellipsoid(C,AXh,R,br,{gloss:3,cut:l=>l[1]>-0.15||(l[0]<0.3&&l[1]>-0.7)}));                                      // the bowl and the neck guard
+    out.push(over(C,AXh,R.map(v=>v*1.02),dk,l=>l[0]>0.45&&l[1]>0.02&&l[1]<0.14,{noCast:1}));                                  // the brow ridge
+    out.push(over(C,AXh,R.map(v=>v*1.025),hi,l=>l[0]>-0.2&&l[0]<0.3&&l[1]>0.5&&l[2]<-0.3,{noCast:1}));                         // its shine
+    for(const sd of [1,-1]) out.push(ellipsoid(add(hc,sc(look,hr*0.55),sc(Lf,sd*hr*0.88),sc(hup,-hr*0.35)),AXh,[hr*0.34,hr*0.42,hr*0.12],br,{gloss:3}));   // the cheek pieces
+    out.push(ellipsoid(add(C,sc(hup,R[1]*1.02),sc(look,-hr*0.1)),AXh,[hr*0.95,hr*0.42,hr*0.12],crest,{gloss:1}));              // the crest
+    out.push(ellipsoid(add(C,sc(hup,R[1]*0.86),sc(look,-hr*0.1)),AXh,[hr*0.7,hr*0.12,hr*0.14],dk,{gloss:2,noCast:1}));         // the crest's holder
+    return out; };
+  HAT_OVER_HAIR.ppbronzehelm=1;
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1682,6 +1696,15 @@
       for(const x of [3.9,2.0]) push(ellipsoid(Q(x,1.5),AXs,[0.55,1.05,3.0],X(P.W),{gloss:1}));                // the straps across it
       push(ellipsoid(Q(0.2,2.2),AXs,[3.2,1.6,2.9],X(P.W),{gloss:1}));                                         // the heel strap
       push(ellipsoid(Q(-0.2,3.6),AXs,[3.0,0.6,3.0],X(P.b),{gloss:1,noCast:1})); },                             // the ankle tie
+    // Winged Sandals (Medusa's Isle's world prize): Hermes' sandals, lent to Perseus. A bronze sole, straps across the foot and
+    // round the ankle, and a small white wing at each ankle
+    ppwingsandals(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.6,0.45),AXs,[5.8,0.6,3.3],X(P.s),{gloss:2}));                                          // the sole
+      push(ellipsoid(Q(3.4,1.3),AXs,[2.6,1.0,2.9],X(P.f),{gloss:1}));                                          // the foot between the straps
+      for(const x of [3.9,2.0]) push(ellipsoid(Q(x,1.5),AXs,[0.55,1.05,3.0],X(P.W),{gloss:2}));                // the straps
+      push(ellipsoid(Q(0.2,2.2),AXs,[3.2,1.6,2.9],X(P.W),{gloss:2}));                                         // the heel strap
+      push(ellipsoid(Q(-0.6,3.2,2.9*s),AXs,[2.4,1.4,0.35],X(P.g),{gloss:1,noCast:1}));                         // the little wing
+      push(ellipsoid(Q(-1.4,3.9,2.9*s),AXs,[1.6,0.8,0.3],X(P.o),{gloss:1,noCast:1})); },                      // its tip
     // Mars Boots (Red Planet's world prize): a padded white surface boot on a thick rust tread, a blue band at the ankle
     ppmarsboots(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
       push(ellipsoid(Q(1.6,0.55),AXs,[5.8,0.8,3.4],X(P.s),{gloss:0}));                                         // the rust tread
@@ -1760,6 +1783,8 @@
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(ellipsoid(add(ank,sc(sax[1],0.2)),sax,[2.65,1.6,2.75],'x:'+P.W,{gloss:3})); },
     ppsandals(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.f,{gloss:1,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(over(sc0,sax,sr,'x:'+P.W,l=>l[1]>=-0.5&&Math.abs(Math.sin(l[0]*7))>0.75)); push(ellipsoid(add(ank,sc(sax[1],0.2)),sax,[2.6,0.6,2.7],'x:'+P.b,{gloss:1})); },
+    ppwingsandals(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.f,{gloss:1,bias:.15}));
+      push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(over(sc0,sax,sr,'x:'+P.W,l=>l[1]>=-0.5&&Math.abs(Math.sin(l[0]*7))>0.75)); push(ellipsoid(add(ank,sc(sax[1],0.2)),sax,[2.6,0.6,2.7],'x:'+P.g,{gloss:1})); },
     ppmarsboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:2,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45)); push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'x:'+P.W,{gloss:2}));
       push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },

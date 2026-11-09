@@ -5451,6 +5451,110 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ gfloor:['#3a6a8a', '#4a8aa8', '#2a5a7a', 0.1, function(c, R){ var w = Math.sin(c.ti * 0.25 + Math.sin(c.tj * 0.2) * 2); if (w > 0.85) return R('#9ad8ff'); var b = blot(c, 0.2, 135); return R(b > 0.6 ? '#4a8aa8' : b < 0.3 ? '#2a5a7a' : '#3a6a8a'); }],
         gwall:['#2a4a5a', '#3a6a7a', '#1a3a4a', 0.16, function(c, R){ var z = c.z || 0, h = hash(c.ti, (z * 4) | 0, 137); if (h > 0.97) return R('#ffd8c8'); if (h > 0.94) return R('#9ad8ff');
           return R(Math.sin(c.ti * 0.3 + z * 1.8) > 0.3 ? '#3a6a7a' : '#2a4a5a'); }] } }; };
+  /* ---------------- MEDUSA'S ISLE IS A JOURNEY. The ship tied up at an old stone quay (1 to 4: grey rock and the calm sea along
+     one side), the way climbs through the garden of statues, the earlier visitors she turned to stone, standing where they
+     stopped (5 to 8), through the ruins of a town, fallen columns among the rock (9 to 12), out on the cliffs over the sea
+     (13 to 16), and into Medusa's temple, its marble floor and its ring of columns, braziers burning (17 and 18). The land round a
+     hole is grey rock and dry grass washed in warped noise, never a grid; at the quay and the cliffs it falls softly to the sea.
+     Bernini's and Caravaggio's Medusa, never a snake tail: the statues are plain grey people, calm, never broken or gory. */
+  STOPS.medusa = [[1, 'quay'], [5, 'statues'], [9, 'ruins'], [13, 'cliffs'], [17, 'temple']];
+  (function(){ BUILD.medusa = function(L){ var s = L.stop; return s === 'temple' ? medTemple(L) : s === 'cliffs' ? medCliffs(L) : s === 'ruins' ? medRuins(L) : s === 'statues' ? medStatues(L) : medQuay(L); }; })();
+
+  function medEdge(L, x, y){ return 4.4 + fbm(x * 0.07, y * 0.07, L.seed + 91) * 3.6; }
+  function medMats(){ return {
+      mgrass:['#9a9a72', '#aaa880', '#86865e', 0.12, function(c, R){ if (c.rim === 1) return R('#b8b48a');
+        var b = blot(c, 0.16, 161), w = blot(c, 0.05, 167), st = hash(c.ti, c.tj, 162); if (st > 0.988) return R('#c8c4ba'); if (st > 0.984) return R('#6a8a5a');
+        if (w > 0.62) return R(b > 0.55 ? '#8a8e6a' : '#7a7e5a'); return R(b > 0.66 ? '#aaa880' : b < 0.28 ? '#86865e' : '#9a9a72'); }],
+      mrock:['#9a968e', '#b4b0a6', '#6e6a64', 0.16, function(c, R){ var b = blot(c, 0.22, 168); if (hash(c.ti, c.tj, 169) > 0.986) return R('#7a8a5a'); return R(b > 0.62 ? '#b4b0a6' : b < 0.3 ? '#6e6a64' : '#9a968e'); }],
+      msea:['#2a6a98', '#4a90c0', '#1a4a70', 0.06, function(c, R){ var w = blot(c, 0.06, 165), f = c.f || 0; if (f > 0.6 + w * 0.15) return R('#e8f2f6'); if (f > 0.35) return R('#6ab0d0');
+        var b = blot(c, 0.12, 166); return R(w > 0.6 ? '#3a80b0' : b > 0.55 ? '#2a6a98' : '#22608c'); }],
+      mpave:['#c8c4ba', '#dcd8ce', '#a8a49a', 0.1, function(c, R){ var i = c.ti, j = c.tj, row = Math.floor(j / 6); if (((j % 6) + 6) % 6 === 0 || (((i + (row & 1) * 4) % 8) + 8) % 8 === 0) return R('#8a867c');
+        var b = blot(c, 0.2, 164); return R(b > 0.6 ? '#dcd8ce' : b < 0.3 ? '#b4b0a6' : '#c8c4ba'); }] }; }
+  function medBase(L, o){ var seed = L.seed;
+    function seaK(x, y){ if (!o.sea) return 0; var c = L.clearAt(x, y), e = medEdge(L, x, y) + (o.sea === 'cliff' ? 1.5 : 3); return sm(e, e + (o.sea === 'cliff' ? 1.4 : 3.2), c); }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = seaK(x, y), hill = (fbm(x * 0.08, y * 0.08, seed) - 0.45) * 0.5 * sm(1.3, 4, c);
+        if (o.sea === 'cliff') return hill + (c > 3 ? 0.5 * sm(3, 6, c) : 0) - k * 3.2; return hill - k * 0.9; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = medEdge(L, x, y), k = seaK(x, y);
+        if (k > 0.55) return ['msea', { f:sm(0.55, 0.62, k) < 1 ? 1 - (k - 0.55) / 0.07 : 0 }];
+        if (o.sea && k > 0.1) return [o.sea === 'quay' ? 'mpave' : 'mrock', {}];
+        if (c < e + 0.6) return [o.paved ? 'mpave' : 'mgrass', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (fbm(x * 0.06 + 2, y * 0.06, seed + 79) > (o.rocky ? 0.52 : 0.62)) return ['mrock', {}];
+        return ['mgrass', {}]; },
+      fill:{ on:['mgrass'], trees:o.trees == null ? 0.04 : o.trees, lows:0.14, tree:function(B, x, y, i){ cypressAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 193); if (k < 0.3) statueAt(B, x, y, i + seed); else if (k < 0.72) rockAt(B, x, y, 0.25 + hash(i, seed, 194) * 0.35, ['#9a968e', '#b4b0a6']); else bush(B, x, y, 0.4, ['#7a8a5a', '#6a7a4a', '#8a9a6a']); } },
+      // the sky: a soft calm blue, pale at the horizon, a thin haze of high cloud
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#5a8ac8'); g.addColorStop(1, '#d8e6f0'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        if (o.sea){ ctx.fillStyle = '#3a7ab0'; ctx.fillRect(0, top - Math.max(2, top * 0.12), V.W, Math.max(2, top * 0.12)); }
+        for (var i = 0; i < 4; i++){ var cx = hash(i, 1, seed) * V.W, cy = top * (0.15 + hash(i, 2, seed) * 0.45), cr = Math.max(4, V.W * (0.04 + hash(i, 3, seed) * 0.04));
+          ctx.fillStyle = 'rgba(246,248,250,0.7)'; ctx.beginPath(); ctx.ellipse(cx, cy, cr * 2.6, cr * 0.4, 0, 0, 6.283); ctx.fill(); } },
+      bg:'#9a968e', gain:2, mats:medMats() }; }
+  // a cypress, dark and tall and narrow, the tree of the Greek islands
+  function cypressAt(B, x, y, k){ var zb = B.gz(x, y), H = 3.4 + hash(k, 3, 181) * 1.4, R = 0.55 + hash(k, 4, 181) * 0.2;
+    B.solid(x - R - 0.2, y - R - 0.2, zb - 0.1, x + R + 0.2, y + R + 0.2, zb + H + 0.3, function(px, py, pz){ var t = (pz - zb) / H, d = Math.hypot(px - x, py - y);
+      if (t < 0.12) return d < 0.14 ? '#5a4a3a' : null; var rr = R * Math.sin(Math.PI * Math.min(1, (t - 0.08) / 0.95)) * (1 + (vn(px * 3, pz * 3, 182) - 0.5) * 0.3); if (d > rr) return null;
+      var q = vn(px * 2.4 + py, pz * 2.8, 183); return q > 0.66 ? '#4a6a3a' : q < 0.3 ? '#1e3a22' : '#2e4a2a'; }); }
+  /* a statue of an earlier visitor, turned to stone where he stood: a plain grey figure in a cloak on a low round base, one arm
+     raised as if to shade his eyes, calm. Never broken, never a face in fear. */
+  function statueAt(B, x, y, k){ var zb = B.gz(x, y), dir = hash(k, 7, 191) < 0.5 ? -1 : 1, s = 0.85 + hash(k, 8, 191) * 0.25;
+    B.solid(x - 0.8, y - 0.6, zb - 0.05, x + 0.8, y + 0.6, zb + 2.6 * s, function(px, py, pz){ var dx = (px - x) * dir, dy = py - y, t = (pz - zb) / s;
+      if (t < 0.22) return Math.hypot(dx, dy) < 0.55 ? (t > 0.16 ? '#d8d4cc' : '#a8a49a') : null;                                       // the base
+      var g = hash(Math.floor(px * 8), Math.floor(pz * 8), 192) > 0.5 ? '#b4b0a6' : '#a8a49a', sh = dx > 0.12 ? '#8a8680' : g;
+      if (Math.hypot(dx, dy, (t - 2.15) * 1.1) < 0.24) return sh;                                                                        // the head
+      if (t > 0.22 && t < 1.95 && Math.hypot(dx / (0.36 - (t - 0.22) * 0.05), dy / 0.24) < 1) return sh;                                  // the cloaked body
+      if (Math.abs(dy) < 0.1 && t > 1.6 && t < 2.2 && Math.abs(dx - 0.28 - (t - 1.6) * 0.3) < 0.1) return sh;                             // the raised arm
+      return null; }); }
+  // a column of white marble, fluted, standing whole or broken off part way up, a drum or two lying at its foot
+  function columnAt(B, x, y, k, whole){ var zb = B.gz(x, y), H = whole ? 4.6 : 1.4 + hash(k, 2, 185) * 2.2, R = 0.5;
+    B.solid(x - 0.8, y - 0.8, zb - 0.05, x + 0.8, y + 0.8, zb + H + 0.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+      if (t < 0.25) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.72 ? (t > 0.18 ? '#ffffff' : '#c8c4ba') : null;                       // the plinth
+      if (whole && t > H && t < H + 0.35) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.72 ? '#f6f4ee' : null;                          // the capital
+      var top = whole ? H : H + (vn(dx * 3, dy * 3, 186 + k) - 0.5) * 0.5; if (t > top) return null;
+      if (d > R + 0.04 * Math.cos(a * 12)) return null; return Math.cos(a * 12) > 0.6 ? '#ffffff' : dx > 0.2 ? '#c8c4ba' : '#e8e5de'; }); }
+  function drumAt(B, x, y, k){ var zb = B.gz(x, y), ang = hash(k, 3, 187) * 3.14, c = Math.cos(ang), s = Math.sin(ang);
+    B.solid(x - 1, y - 1, zb - 0.05, x + 1, y + 1, zb + 1.0, function(px, py, pz){ var dx = px - x, dy = py - y, u = dx * c + dy * s, w = -dx * s + dy * c, t = pz - zb - 0.48;
+      if (Math.abs(u) > 0.7 || Math.hypot(w, t) > 0.48) return null; return Math.abs(u) > 0.64 ? '#c8c4ba' : Math.cos(Math.atan2(t, w) * 12) > 0.6 ? '#ffffff' : '#e2ded6'; }); }
+  // a bronze brazier on a tripod, its fire glowing
+  function brazierAt(B, x, y){ var zb = B.gz(x, y); if (B.light) B.light(x, y, zb + 1.6, '#ffb050');
+    B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 1.9, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < 1.1){ var a = Math.atan2(py - y, px - x); return d < 0.5 - t * 0.2 && d > 0.38 - t * 0.2 && Math.abs(Math.sin(a * 1.5)) < 0.2 ? '#7a5420' : null; }
+      if (t < 1.35) return d < 0.55 ? (t > 1.28 ? '#e8b860' : '#c8913a') : null; if (d < 0.4 * (1 - (t - 1.35) / 0.55)) return t > 1.7 ? '#ffe27a' : t > 1.5 ? '#ffa030' : '#e8501a'; return null; }); }
+
+  // 1. THE QUAY: an old stone quay at the water, a bollard or two, rocks along the sea
+  function medQuay(L){ var O = medBase(L, { sea:'quay', trees:0.02 }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(1.2, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.4 + hash(x | 0, y | 0, L.seed + 161 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) statueAt(B, q.x, q.y, k + 3); else rockAt(B, q.x, q.y, 0.6 + (k % 2) * 0.3, ['#9a968e', '#b4b0a6']); }); }; return O; }
+  // 2. THE GARDEN OF STATUES: the earlier visitors, standing about the grass where they stopped
+  function medStatues(L){ var O = medBase(L, { trees:0.04 }), sp = [], i;
+    for (i = 0; i < 9; i++){ var q = L.spot(0.9, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 171 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ statueAt(B, q.x, q.y, k); }); }; return O; }
+  // 3. THE RUINS: columns standing and fallen among the rock, cypresses between them
+  function medRuins(L){ var O = medBase(L, { trees:0.12, rocky:true }), sp = [], i;
+    for (i = 0; i < 7; i++){ var q = L.spot(1, function(x, y){ return L.side(x) * 1.1 + L.north(x, y) * 0.4 + hash(x | 0, y | 0, L.seed + 175 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 3 === 2) drumAt(B, q.x, q.y, k); else columnAt(B, q.x, q.y, k, k % 3 === 0); }); }; return O; }
+  // 4. THE CLIFFS: grey rock, the odd statue at the edge looking out to sea, the sea far below
+  function medCliffs(L){ var O = medBase(L, { sea:'cliff', trees:0.02, rocky:true }), sp = [], i;
+    for (i = 0; i < 3; i++){ var q = L.spot(1.4, function(x, y){ return L.north(x, y) * 0.6 + L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 181 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 1) statueAt(B, q.x, q.y, k + 11); else rockAt(B, q.x, q.y, 0.9 + (k % 2) * 0.4, ['#9a968e', '#b4b0a6']); }); }; return O; }
+  /* 5. THE TEMPLE: inside Medusa's temple, a floor of marble slabs, columns along its walls, braziers burning, and the statues of
+     the visitors who came this far */
+  function medTemple(L){ var R0 = room(L, { floor:'mpave', wall:'mtwall', wallH:7, gap:2.6 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 201, 2.4).forEach(function(q, k){ columnAt(B, q[0], q[1], k, true); });
+        byWall(L, 2, 207, 3.4).forEach(function(q){ brazierAt(B, q[0], q[1]); }); byWall(L, 3, 211, 3).forEach(function(q, k){ statueAt(B, q[0], q[1], k + 21); }); },
+      bg:'#4a4640', gain:2,
+      mats:{ mpave:medMats().mpave, mtwall:['#c8c4ba', '#e2ded6', '#8a867c', 0.16, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 213);
+          if (z > 6) return R('#a8a49a'); if (Math.abs(((c.ti * 0.25) % 2) - 1) < 0.12) return R('#e8e5de'); return R(q > 0.7 ? '#e2ded6' : q < 0.3 ? '#a8a49a' : '#c8c4ba'); }] } }; }
+
+  // The Graeae's Cave: a low grey cave, a fire in the middle where the sisters sit, and their loom and baskets by the walls
+  BUILD['s-graeae'] = function(L){ var R0 = room(L, { floor:'gcfloor', wall:'gcwall', wallH:6, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ var f = byWall(L, 1, 221, 3.4)[0]; if (f) brazierAt(B, f[0], f[1]); if (B.light) B.light(L.cx, L.cy, 5, '#ffc870');
+        byWall(L, 4, 223, 2.4).forEach(function(q, k){ rockAt(B, q[0], q[1], 0.7 + (k % 2) * 0.3, ['#7a766e', '#9a968e']); }); },
+      bg:'#2a2622', gain:2,
+      mats:{ gcfloor:['#6e6a62', '#827e74', '#5a564e', 0.12, function(c, R){ var b = blot(c, 0.2, 225); return R(b > 0.62 ? '#827e74' : b < 0.3 ? '#5a564e' : '#6e6a62'); }],
+        gcwall:['#5a564e', '#77736a', '#3e3a34', 0.18, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 227) + Math.sin(z * 2.2 + c.ti * 0.15) * 0.2; if (z > 5) return R('#3a3630'); return R(q > 0.75 ? '#77736a' : q < 0.3 ? '#3e3a34' : '#5a564e'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
