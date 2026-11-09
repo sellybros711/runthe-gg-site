@@ -3344,16 +3344,17 @@ The ship came across a calm grey sea to Medusa's island: felt the colour of the 
     pawns(H, [[-5.5, -5.5], [3, -5], [0.5, -16], [5.5, -17], [-6, -19], [2.5, -21.5], [1, -29], [5, -31], [5.5, -38.5], [1.5, -40], [-6.4, -46.4, 0.45], [6.4, -46.4, 0.45], [-6, -33], [-6.5, -42]]);
     H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:3.5, y:-35, s:1.6, a:0.12 }); zoneC(H, M.MUD, 6, -6, 0.8); zoneC(H, M.MUD, 5, -24, 0.8);
     teeSide(H, T); bowl(H, -2.5, -42, 1.5, 0.14); return H; } },
-  // Queen Alice: the eighth square at last, and a golden crown on her head. Up through the gate, round the brook by its way at the
-  // left, across the square to the castle hedge and through the glass at its far end, the plum-cake on the way, and back along
-  // the top to the flag. The Red Queen and the White Queen sit either side of her crown, fast asleep.
-  { par:4, three:3, sig:true, f:function(T){ var H = hole([rm(-8, 0, 8, -14), rm(-2.4, -13.9, 2.4, -18.1), rm(-12, -18, 12, -48)], [0, -2.5], [-7, -43]);
-    addBumper(H, 0, -46, 1.3, 'lgcrown'); addBumper(H, -3.5, -45.5, 0.7, 'lgqueen'); addBumper(H, 3.5, -45.5, 0.7, 'lgwqueen');
-    zoneR(H, M.WATER, -6, -25, 12, -28.4); blk(H, T, -6, -24.6, 12, -25); blk(H, T, -6, -28.4, 12, -28.8);
-    glassWall(H, T, -12, 12, -36.7, 10, 3.2); addBumper(H, 7.6, -32.2, 0.6, 'lgcake'); addBumper(H, 3.6, -38.8, 0.6, 'lgwqueen');
-    pawns(H, [[-9, -21], [9, -41], [-8, -32], [3, -41], [4, -21.5], [-4, -6], [4, -7], [-10.4, -46.4, 0.45], [10.4, -46.4, 0.45], [1, -31], [-1, -20.5], [-3.5, -33.5]]);
-    H.comps.push({ k:'mound', x:-3, y:-7, s:1.8, a:0.14 }); H.comps.push({ k:'plane', gx:-0.008, gy:0 }); zoneC(H, M.MUD, 6, -44, 0.8); zoneR(H, M.MUD, 5.5, -12, 8, -14);
-    pen(H, T, -7, -43); teeSide(H, T); bowl(H, -7, -43, 1.5, 0.14); return H; } }
+  // Queen Alice: the eighth square at last, a golden crown on her head, and her feast. In through the narrow gate the hall opens
+  // out like a crown. A hedge runs right across it with a glass at the far left, and the long table is laid up the middle from it,
+  // the Red Queen and the White Queen at its head. The flag is in the side room on the right, behind a hedge that runs up the hall
+  // with a glass set in it on its side: a ball that goes into it falling comes out of it rising.
+  { par:4, three:3, sig:true, f:function(T){ var H = hole([pg([[-6, 0], [6, 0], [6, -9], [14.5, -17.5], [14.5, -41], [-14.5, -41], [-14.5, -17.5], [-6, -9]])], [0, -2.5], [10.5, -36]);
+    glassWall(H, T, -14.5, 14.5, -21.5, -9.5, 3.2); addBlock(H, -1.1, -22.1, 1.1, -35.5, 'lgfeast'); glassWallV(H, T, 6.5, -22.1, -41, -29.5, 3.2);
+    addBumper(H, 0, -37.6, 1.1, 'lgcrown'); addBumper(H, -2.6, -37.4, 0.7, 'lgqueen'); addBumper(H, 2.6, -37.4, 0.7, 'lgwqueen'); addBumper(H, 10.6, -24.6, 0.6, 'lgcake');
+    zoneR(H, M.WATER, -14.5, -13, -11.6, -17.5); blk(H, T, -11.2, -14, -10.8, -17.4);
+    pawns(H, [[-4, -5], [3.8, -7.5], [-7.5, -13.5], [8, -14], [11.5, -19], [3, -18.5], [-5, -26], [-12, -30.5], [-7.5, -34.5], [4, -27], [3.6, -33], [-12.6, -39.4, 0.45], [12.6, -39.4, 0.45], [9, -30.5]]);
+    H.comps.push({ k:'plane', gx:0.009, gy:0 }); H.comps.push({ k:'mound', x:-9.5, y:-29, s:2, a:0.12 }); zoneC(H, M.MUD, -3.5, -31, 0.8); zoneC(H, M.MUD, 12.5, -32, 0.6);
+    pen(H, T, 10.5, -36); teeSide(H, T); bowl(H, 10.5, -36, 1.5, 0.14); return H; } }
 ];
 /* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders, two halves of nine on the season's two
    themes. Par is the solver's, the same rule as the Putt Putt Tour.
@@ -3975,6 +3976,10 @@ var SKIN = {
     if (Math.abs(v - 0.1 + u * u * 1.2) < 0.04 && au < 0.3) return '#b8283a'; return '#fbf6e8'; },   // and its grin
   lgshelf:function(u, v){ if (Math.abs(u) > 0.97 || Math.abs(v) > 0.95) return null; if (Math.abs(u) > 0.88 || Math.abs(v) > 0.84) return '#5a3a22'; var row = ((v + 1) * 2) % 1;
     if (row < 0.12) return '#7a5a3a'; var k = Math.floor((u + 1) * 7); return ['#c8283a', '#3a5aa8', '#e8c040', '#f4f0e4', '#4a8a46', '#8a5ab8', '#d88a3a'][k % 7]; },
+  // Queen Alice's feast laid down its long table: a white cloth, the candles, the leg of mutton and the plum-pudding
+  lgfeast:function(u, v){ if (Math.abs(u) > 0.97 || Math.abs(v) > 0.95) return null; if (Math.abs(u) > 0.86 || Math.abs(v) > 0.88) return Math.sin(v * 40) > 0.3 ? '#e8e4dc' : '#f4f2ec';
+    var cv = ((v + 1) * 2.5) % 1 - 0.5, k = Math.floor((v + 1) * 2.5); if (Math.abs(u) < 0.2 && Math.abs(cv) < 0.2) return k % 3 === 0 ? '#a8642a' : k % 3 === 1 ? '#5a2a1a' : '#e8c040';
+    if (Math.abs(Math.abs(u) - 0.55) < 0.08 && Math.abs(cv) < 0.08) return '#fff4c8'; return '#fbfaf6'; },
   lgbook:function(u, v){ if (Math.abs(u) > 0.97 || Math.abs(v) > 0.92) return null; if (Math.abs(u) > 0.88 || Math.abs(v) > 0.8) return '#6a2a1a'; if (Math.abs(u) < 0.04) return '#c8bca0';
     var row = ((v + 1) * 6) % 1, cl = Math.abs(((u + 1) * 9) % 1 - 0.5); if (row > 0.55 && row < 0.72 && cl < 0.42 && Math.abs(u) > 0.12) return '#3a3028'; return '#f4ecd6'; },
   lgfly:function(u, v){ var au = Math.abs(u); if (Math.hypot(u, v) < 0.28) return v < -0.1 ? '#7a4a24' : '#a86a34'; if (Math.hypot(au - 0.45, v + 0.25) < 0.3) return '#e8f0ff';

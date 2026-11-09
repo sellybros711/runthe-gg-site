@@ -409,6 +409,47 @@ if (!QUICK){
     const wm = wet.reduce((a, b) => a + b, 0) / Math.max(1, wet.length);
     claim(wm <= 0.1, `${TR.name}: on average the worst putt of a hole goes wet or out ${Math.round(wm * 100)}% of the time for a slightly off player`);
     claim(shapes.size === TR.levels.length, `${TR.name}: no two holes share a layout (${shapes.size} distinct)`);
+    /* NO HOLE IS AN EARLIER HOLE RESKINNED. The check above keys a layout on its piece COUNTS, so one more rose bush (or one
+       hedgehog for a column) is a new layout to it: World 22's and 23's signature holes were Olympus' Throne of Zeus with its
+       columns and clouds swapped, and it passed. So a hole fails here when it has an earlier hole's SHELL (its rooms, to the half
+       foot) and shares at least 70% of that hole's GEOMETRY, at least four things of it: its walls and blocks, its water, its
+       mounds, its cup and its tee, to the half foot. The pen round the cup and the dish under it are the same on every hole, so
+       they are left out; every piece, bumper, skin and decoration is left out too, so swapping them changes nothing. */
+    { const r2 = v => Math.round(v * 2) / 2, all = [];
+      for (let n = 1; n <= TR.levels.length; n++){ const C = P.buildLevel(n, TR.id), near = (x, y) => Math.hypot(x - C.cup[0], y - C.cup[1]) < 2.3, g = [];
+        C.blocks.forEach(b => { if (!near((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2)) g.push('b' + [b.x0, b.y0, b.x1, b.y1].map(r2).join()); });
+        C.zones.forEach(z => { if (z.m === M.WATER) g.push('w' + (z.t === 'rect' ? [z.x0, z.y0, z.x1, z.y1] : [z.x, z.y, z.r]).map(r2).join()); });
+        (C.comps || []).forEach(c => { if (c.k === 'mound' && !near(c.x, c.y)) g.push('m' + [c.x, c.y, c.s, c.a].map(r2).join()); });
+        g.push('c' + C.cup.map(r2).join(), 't' + C.tee.map(r2).join());
+        all.push({ n, shell:JSON.stringify((C.polys || [C.poly]).map(q => q.map(p => p.map(r2)))), g }); }
+      const shared = (a, b) => { const A = new Map(); a.forEach(x => A.set(x, (A.get(x) || 0) + 1)); let k = 0; b.forEach(x => { const v = A.get(x) || 0; if (v){ k++; A.set(x, v - 1); } }); return k; };
+      /* THE LIVE NEAR-COPIES, LEFT AS THEY ARE (the owner's call, 2026-11-09: no hole that is live is changed). Each pair is
+         [hole, the earlier hole it copies]; nothing new may join this list. */
+      const GRANDFATHER = TR.id !== 'main' ? [] : [
+        [228, 205],   // live, left as is by the owner's call
+        [233, 215],   // live, left as is by the owner's call
+        [252, 215],   // live, left as is by the owner's call
+        [252, 233],   // live, left as is by the owner's call
+        [282, 265],   // live, left as is by the owner's call
+        [284, 269],   // live, left as is by the owner's call
+        [329, 315],   // live, left as is by the owner's call
+        [338, 316],   // live, left as is by the owner's call
+        [339, 318],   // live, left as is by the owner's call
+        [341, 319],   // live, left as is by the owner's call
+        [347, 315],   // live, left as is by the owner's call
+        [347, 329],   // live, left as is by the owner's call
+        [349, 337],   // live, left as is by the owner's call
+        [352, 341],   // live, left as is by the owner's call
+        [367, 315],   // live, left as is by the owner's call
+        [367, 329],   // live, left as is by the owner's call
+        [367, 347],   // live, left as is by the owner's call
+        [394, 364],   // live, left as is by the owner's call
+        [395, 374],   // live, left as is by the owner's call
+        [396, 378]    // live, left as is by the owner's call
+      ], gf = new Set(GRANDFATHER.map(q => q.join('/'))), copies = [], allowed = [];
+      for (let i = 0; i < all.length; i++) for (let j = 0; j < i; j++){ const A = all[i], B = all[j]; if (A.shell !== B.shell) continue;
+        const k = shared(A.g, B.g); if (k >= 4 && k >= 0.7 * Math.max(A.g.length, B.g.length)){ const key = A.n + '/' + B.n; (gf.has(key) ? allowed : copies).push(key + ' (' + k + ' of ' + Math.max(A.g.length, B.g.length) + ')'); } }
+      claim(!copies.length && allowed.length === gf.size, `${TR.name}: no hole is an earlier one reskinned, its shell and most of its walls, water, mounds, cup and tee` + (copies.length ? ': ' + copies.join(', ') : '') + (allowed.length !== gf.size ? ' (the grandfather list has a pair that no longer copies: ' + allowed.length + ' of ' + gf.size + ')' : ` (${gf.size} live pairs grandfathered)`)); }
     // HARDER AS IT GOES: each world packs more into a hole than the one before, and asks for more putts
     const per = (fn) => TR.worlds.map((W, w) => { let t = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) t += fn(n); return t / TR.per; });
     // a rail or a curb is something to aim at, not a set piece, so a thin block is not counted
