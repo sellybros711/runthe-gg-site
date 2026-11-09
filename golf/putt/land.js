@@ -5670,6 +5670,105 @@ window.RTT_PUTT_LAND = (function(){
       bg:'#14121e', gain:2,
       mats:{ hyfloor:['#3a3848', '#4a4860', '#2a2836', 0.12, function(c, R){ var b = blot(c, 0.2, 325); return R(b > 0.62 ? '#4a4860' : b < 0.3 ? '#2a2836' : '#3a3848'); }],
         hywall:['#2a2836', '#3a3848', '#1a1822', 0.18, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 327) + Math.sin(z * 2.2 + c.ti * 0.15) * 0.2; if (z > 5) return R('#1a1822'); return R(q > 0.75 ? '#3a3848' : q < 0.3 ? '#1a1822' : '#2a2836'); }] } }; };
+  /* ---------------- OLYMPUS IS A JOURNEY. The ship rode Iris' rainbow up out of the sea and came to rest on the top of the gods'
+     mountain, above the clouds (1 to 4: the summit, the sea of cloud below its edge, the dawn still gold in the sky). The way goes on
+     through the gardens of the gods, laurel and olive and the crocus and hyacinth Homer has the earth send up for Zeus and Hera
+     (5 to 8), past Hephaestus' forge in the rock, its braziers and bronze anvils (9 to 12), into the laurel groves where the Muses
+     sing (13 to 16), and into the marble halls of the gods, where Zeus has his throne (17 and 18). The land round a hole is meadow,
+     pale stone and cloud washed in warped noise, never a grid; at the summit's edge it falls softly away into the cloud. The
+     clouds are soft and round, never faceted. */
+  STOPS.olympus = [[1, 'summit'], [5, 'gardens'], [9, 'forge'], [13, 'muses'], [17, 'halls']];
+  (function(){ BUILD.olympus = function(L){ var s = L.stop; return s === 'halls' ? olyHalls(L) : s === 'muses' ? olyMuses(L) : s === 'forge' ? olyForge(L) : s === 'gardens' ? olyGardens(L) : olySummit(L); }; })();
+
+  function olyEdge(L, x, y){ return 4.4 + fbm(x * 0.07, y * 0.07, L.seed + 97) * 3.6; }
+  function olyMats(){ return {
+      ograss:['#6aa856', '#7cba62', '#5a9648', 0.12, function(c, R){ if (c.rim === 1) return R('#8ac870');
+        var b = blot(c, 0.16, 361), w = blot(c, 0.05, 367), st = hash(c.ti, c.tj, 362); if (st > 0.988) return R('#fff4c8'); if (st > 0.982) return R('#c8a8f0');
+        if (w > 0.64) return R(b > 0.55 ? '#5e9c4c' : '#56904a'); return R(b > 0.66 ? '#7cba62' : b < 0.28 ? '#5a9648' : '#6aa856'); }],
+      oflower:['#7cba62', '#e8c8f8', '#5a9648', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 363), b = blot(c, 0.2, 364); if (st > 0.9) return R(b > 0.5 ? '#c8a8f0' : '#ffd860'); if (st > 0.84) return R('#ffffff');
+        return R(b > 0.6 ? '#7cba62' : b < 0.3 ? '#5a9648' : '#6aa856'); }],
+      orock:['#c8c2b4', '#e2ddd0', '#9a9488', 0.16, function(c, R){ var b = blot(c, 0.22, 368); if (hash(c.ti, c.tj, 369) > 0.988) return R('#f4f0e6'); return R(b > 0.62 ? '#e2ddd0' : b < 0.3 ? '#a8a294' : '#c8c2b4'); }],
+      opave:['#ece8de', '#ffffff', '#c8c4b8', 0.1, function(c, R){ var v = blot(c, 0.05, 370), b = blot(c, 0.2, 371); if (v > 0.72) return R('#d8d4ca'); return R(b > 0.6 ? '#f6f4ec' : b < 0.3 ? '#dcd8cc' : '#ece8de'); }],
+      ocloud:['#e8eef8', '#ffffff', '#b8c6de', 0.06, function(c, R){ var w = blot(c, 0.06, 365), f = c.f || 0, b = blot(c, 0.14, 366);
+        if (f > 0.6 + w * 0.15) return R('#ffffff'); if (f > 0.35) return R('#f0f4fc'); return R(w > 0.64 ? '#ffffff' : b > 0.6 ? '#dce6f4' : b < 0.3 ? '#c4d2e8' : '#e8eef8'); }] }; }
+  function olyBase(L, o){ var seed = L.seed;
+    function seaK(x, y){ if (!o.sea) return 0; var c = L.clearAt(x, y), e = olyEdge(L, x, y) + 3; return sm(e, e + 3.2, c); }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = seaK(x, y), hill = (fbm(x * 0.08, y * 0.08, seed) - 0.45) * (o.hills || 0.5) * sm(1.3, 4, c); return hill - k * 1.6; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = olyEdge(L, x, y), k = seaK(x, y);
+        if (k > 0.55) return ['ocloud', { f:sm(0.55, 0.62, k) < 1 ? 1 - (k - 0.55) / 0.07 : 0 }];
+        if (o.sea && k > 0.1) return ['orock', {}];
+        if (c < e + 0.6) return [o.paved ? 'opave' : 'ograss', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (fbm(x * 0.06 + 2, y * 0.06, seed + 85) > (o.rocky ? 0.52 : 0.64)) return ['orock', {}];
+        if (o.flowers && fbm(x * 0.09 + 5, y * 0.09, seed + 87) > 0.5) return ['oflower', {}];
+        return ['ograss', {}]; },
+      fill:{ on:['ograss', 'oflower'], trees:o.trees == null ? 0.04 : o.trees, lows:0.14, tree:function(B, x, y, i){ if (hash(i, seed, 295) < 0.6) laurelAt(B, x, y, i + seed); else oliveAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 296); if (k < 0.3) cloudAt(B, x, y, 0.6 + hash(i, seed, 298) * 0.4, i + seed); else if (k < 0.65) bush(B, x, y, 0.4, ['#4a7a3a', '#5a8a44', '#3a6a30']); else rockAt(B, x, y, 0.25 + hash(i, seed, 297) * 0.35, ['#c8c2b4', '#e2ddd0']); } },
+      // the sky above the clouds: a clear deep blue, pale gold low down where the dawn still is, and the tops of the clouds at the horizon
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#3a72c8'); g.addColorStop(0.7, o.dawn ? '#f0c8a0' : '#a8ccf0'); g.addColorStop(1, o.dawn ? '#ffe8c0' : '#e8f2ff'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        for (var i = 0; i < 7; i++){ var cx = hash(i, 1, seed) * V.W, cy = top * (0.72 + hash(i, 2, seed) * 0.3), cr = Math.max(4, V.W * (0.05 + hash(i, 3, seed) * 0.05));
+          ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.ellipse(cx, cy, cr * 2.4, cr * 0.7, 0, 0, 6.283); ctx.fill(); } },
+      bg:'#c8d6ee', gain:2, mats:olyMats() }; }
+  // a bay laurel, Apollo's tree: a round dark green crown on a short grey trunk, its leaves glossy
+  function laurelAt(B, x, y, k){ var zb = B.gz(x, y), H = 2.8 + hash(k, 3, 381) * 1.2, R = 1.1 + hash(k, 4, 381) * 0.4;
+    B.solid(x - R - 0.3, y - R - 0.3, zb - 0.1, x + R + 0.3, y + R + 0.3, zb + H + R, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < H * 0.5) return d < 0.16 ? '#7a6a5a' : null; var e = Math.hypot((px - x) / R, (py - y) / R, (t - H) / (R * 0.95)) + (vn(px * 2.6, pz * 2.6 + py, 382) - 0.5) * 0.3; if (e > 1) return null;
+      var q = vn(px * 3 + py, pz * 3, 383); return q > 0.68 ? '#5a8a44' : q < 0.3 ? '#244a22' : '#346a2e'; }); }
+  // a cloud resting on the mountain: soft round lobes, white on top and blue grey under
+  function cloudAt(B, x, y, r, k){ var zb = B.gz(x, y) + 0.2, L = [];
+    for (var j = 0; j < 5; j++) L.push([x + (hash(k, j, 391) - 0.5) * r * 2.2, y + (hash(k, j, 392) - 0.5) * r * 1.4, zb + r * (0.5 + hash(k, j, 393) * 0.5), r * (0.55 + hash(k, j, 394) * 0.4)]);
+    B.solid(x - r * 2.2, y - r * 1.8, zb - 0.1, x + r * 2.2, y + r * 1.8, zb + r * 2.2, function(px, py, pz){ var best = 9;
+      for (var j = 0; j < L.length; j++){ var q = L[j], dd = Math.hypot(px - q[0], py - q[1], pz - q[2]) / q[3]; if (dd < best) best = dd; }
+      if (best > 1) return null; return pz < zb + r * 0.45 ? '#b8c6de' : best > 0.82 && pz < zb + r ? '#dce6f4' : '#ffffff'; }); }
+  // a bronze anvil of Hephaestus on its block of stone
+  function anvilAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 0.9, y - 0.6, zb - 0.05, x + 0.9, y + 0.6, zb + 1.3, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 0.6) return Math.abs(dx) < 0.5 && Math.abs(dy) < 0.4 ? (t > 0.5 ? '#a8a294' : '#8a8478') : null;
+      if (t < 0.85) return Math.abs(dx) < 0.22 && Math.abs(dy) < 0.22 ? '#8a5a24' : null;
+      if (t < 1.2){ var hw = 0.55 + (dx < 0 ? (t - 0.85) * 0.9 : 0); return dx > -hw && dx < 0.6 && Math.abs(dy) < 0.24 ? (t > 1.12 ? '#e8b060' : '#c8863a') : null; } return null; }); }
+  // a golden tripod on three tall legs, a bowl on top: Hephaestus made them to run of themselves to the gods' feasts (Iliad 18)
+  function tripodAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 0.7, y - 0.7, zb, x + 0.7, y + 0.7, zb + 2.2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+      if (t < 1.6){ var lr = 0.5 - t * 0.12; return Math.abs(d - lr) < 0.07 && Math.abs(Math.sin(a * 1.5)) < 0.18 ? '#c8a030' : null; }
+      if (t < 2.1) return d < 0.6 - (2.1 - t) * 0.5 && d > 0.48 - (2.1 - t) * 0.5 ? (t > 2.0 ? '#ffe9a0' : '#e8c050') : null; return null; }); }
+
+  // 1. THE SUMMIT: the mountain's top, where the ship came to rest on the cloud; the cloud sea below its edge, the dawn still gold
+  function olySummit(L){ var O = olyBase(L, { sea:true, trees:0.01, hills:0.3, dawn:true }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.2, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.4 + hash(x | 0, y | 0, L.seed + 361 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 3) cloudAt(B, q.x, q.y, 0.8 + (k % 2) * 0.3, k + 3); else rockAt(B, q.x, q.y, 0.6 + (k % 2) * 0.3, ['#c8c2b4', '#e2ddd0']); }); }; return O; }
+  // 2. THE GARDENS OF THE GODS: crocus and hyacinth in the grass, laurels and olives, a golden tripod or two
+  function olyGardens(L){ var O = olyBase(L, { flowers:true, trees:0.1 }), sp = [], i;
+    for (i = 0; i < 8; i++){ var q = L.spot(0.9, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 371 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 4 === 0) tripodAt(B, q.x, q.y); else if (k % 2) laurelAt(B, q.x, q.y, k + 51); else cloudAt(B, q.x, q.y, 0.6, k + 51); }); }; return O; }
+  // 3. HEPHAESTUS' FORGE: bare pale rock, the smith's bronze anvils and his braziers burning bright
+  function olyForge(L){ var O = olyBase(L, { rocky:true, trees:0.02, paved:true }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.4, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 381 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2 === 0) anvilAt(B, q.x, q.y); else if (k === 1) brazierAt(B, q.x, q.y); else rockAt(B, q.x, q.y, 0.8, ['#c8c2b4', '#e2ddd0']); }); }; return O; }
+  // 4. THE GROVE OF THE MUSES: laurels thick about the grass, flowers, the odd column of white marble standing among them
+  function olyMuses(L){ var O = olyBase(L, { flowers:true, trees:0.14, hills:0.7 }), sp = [], i;
+    for (i = 0; i < 6; i++){ var q = L.spot(1, function(x, y){ return L.side(x) * 1.1 + hash(x | 0, y | 0, L.seed + 391 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) laurelAt(B, q.x, q.y, k + 71); else columnAt(B, q.x, q.y, k + 71, true); }); }; return O; }
+  /* 5. THE HALLS OF THE GODS: a floor of white marble veined with gold, tall marble columns along the walls, golden tripods and the
+     braziers burning, as Homer has the gods' houses built by Hephaestus */
+  function olyHalls(L){ var R0 = room(L, { floor:'ohfloor', wall:'ohwall', wallH:7, gap:2.6 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 401, 2.4).forEach(function(q, k){ columnAt(B, q[0], q[1], k + 81, true); });
+        byWall(L, 2, 407, 3.4).forEach(function(q){ brazierAt(B, q[0], q[1]); }); byWall(L, 3, 411, 3).forEach(function(q){ tripodAt(B, q[0], q[1]); }); },
+      bg:'#c8d6ee', gain:2,
+      mats:{ ohfloor:['#ece8de', '#ffffff', '#c8c4b8', 0.1, function(c, R){ var v = Math.abs(Math.sin(c.ti * 0.05 + Math.sin(c.tj * 0.07) * 1.6)), b = blot(c, 0.2, 413); if (v < 0.04) return R('#d8b850');
+          return R(b > 0.62 ? '#f6f4ec' : b < 0.3 ? '#dcd8cc' : '#ece8de'); }],
+        ohwall:['#e2ded4', '#f6f4ee', '#b8b4aa', 0.16, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 415); if (z > 6.4) return R(q > 0.6 ? '#ffffff' : '#ece8de'); if (z > 5.7) return R('#e8c860');
+          if (Math.abs(((c.ti * 0.25) % 2) - 1) < 0.12) return R('#f6f4ee'); return R(q > 0.7 ? '#f6f4ee' : q < 0.3 ? '#c8c4ba' : '#e2ded4'); }] } }; }
+
+  // The Forge of Hephaestus: the smith's own forge in the mountain (Iliad 18), its bellows' fire bright, the anvils by the walls
+  BUILD['s-forge'] = function(L){ var R0 = room(L, { floor:'hffloor', wall:'hfwall', wallH:6, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ var f = byWall(L, 2, 421, 3.4); f.forEach(function(q){ brazierAt(B, q[0], q[1]); }); if (B.light) B.light(L.cx, L.cy, 5, '#ffb050');
+        byWall(L, 4, 423, 2.4).forEach(function(q, k){ if (k % 2) anvilAt(B, q[0], q[1]); else tripodAt(B, q[0], q[1]); }); },
+      bg:'#2a2018', gain:2,
+      mats:{ hffloor:['#6a5a4a', '#7e6c58', '#4e4034', 0.12, function(c, R){ var b = blot(c, 0.2, 425); if (hash(c.ti, c.tj, 426) > 0.985) return R('#ff9a3a'); return R(b > 0.62 ? '#7e6c58' : b < 0.3 ? '#4e4034' : '#6a5a4a'); }],
+        hfwall:['#5a4a3a', '#76624c', '#3a2e24', 0.18, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 427) + Math.sin(z * 2.2 + c.ti * 0.15) * 0.2; if (z > 5) return R('#3a2e24'); return R(q > 0.75 ? '#76624c' : q < 0.3 ? '#3a2e24' : '#5a4a3a'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();

@@ -226,6 +226,21 @@ function gazeOn(C, x, y, tt, memo){ var G = C.gazes, q60 = Math.floor(tt * 60); 
 var LETHE_KEEP = 0.85;
 function letheAng(l, tt){ return l.a0 + l.spin * tt; }
 function letheAt(C, x, y){ var L = C.lethes; for (var i = 0; i < L.length; i++){ var l = L[i], dx = x - l.x, dy = y - l.y; if (dx * dx + dy * dy < l.r * l.r) return l; } return null; }
+/* ZEUS' THUNDERBOLT (Olympus, World 21). A ring of gold is laid on the course where Zeus' bolt falls, r across, and the bolt falls
+   on the hole's clock, once a period (at PACE, like everything that moves), phase putting the first strike. As a strike comes the
+   ring flashes its warning (the last BOLT_WARN of the period). A ball inside the ring when the bolt falls, rolling through it or
+   stopped in it, is thrown: up out of the ring and through the air L feet the way the bolt points (ux, uy), over whatever lies
+   between, and set down rolling BOLT_ROLL feet on. A ball that stops in a ring waits there for the bolt, so no putt ever comes to
+   rest in one, and the next putt is never played from inside one. Landing in a hazard or off the course loses it, like a ramp's
+   jump. Where it is not the cyclone's: the cyclone takes every ball that reaches it and sets it on one mark; the bolt takes only
+   the ball that is in the ring at the strike, and throws it a set way from wherever in the ring it was. Nothing random: when it
+   falls and where it throws are a pure function of the hole's clock. */
+var BOLT_WARN = 0.35, BOLT_FLY = 10, BOLT_ROLL = 1.2;
+// how far through its period a bolt is at moment tt: 0 just after a strike, nearing 1 as the next one comes
+function boltPh(b, tt){ var u = tt / b.period + b.phase; return u - Math.floor(u); }
+// does the bolt fall in the moment (ta, tb]
+function boltFalls(b, ta, tb){ return Math.floor(tb / b.period + b.phase) > Math.floor(ta / b.period + b.phase); }
+function boltAt(C, x, y){ var Q = C.bolts; for (var i = 0; i < Q.length; i++){ var q = Q[i], dx = x - q.x, dy = y - q.y; if (dx * dx + dy * dy < q.r * q.r) return q; } return null; }
 function floatAt(C, x, y){ var F = C.floats; for (var i = 0; i < F.length; i++){ var f = F[i]; if (x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) return f; } return null; }
 function ferryEase(e, w){ return { k:(3 - e) * w * w + (e - 2) * w * w * w, d:2 * (3 - e) * w + 3 * (e - 2) * w * w }; }
 function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w, z;
@@ -407,6 +422,8 @@ function simulate(C, x, y, vx, vy, t0){
   var gMemo = [], gIn = gzs.length ? gazeOn(C, x, y, t0, gMemo) : false;
   // THE LETHE: a ball struck from inside a pool keeps its line until it rolls out of it
   var lth = C.lethes || [], lIn = lth.length ? letheAt(C, x, y) : null;
+  // ZEUS' THUNDERBOLT: a ball that stops in a ring waits there for the bolt (still), so it never rests in one
+  var bls = C.bolts || [], still = false;
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
   /* TRICK SHOT TARGETS (the Clubhouse's gyms, gymkinds/trickshot.js): numbered targets that must go down in order. tk is
      how many are down when the putt is struck (C.tk, kept by whoever plays the room, never by the hole). The cup is shut
@@ -481,11 +498,11 @@ function simulate(C, x, y, vx, vy, t0){
        drag is a quarter of its usual, so a ball that does not make the top rolls back down and stops at the foot. */
     if (C.climbs && C.climbs.length && sl > 0.1 && !over && inClimb(C, s.x, s.y)){ af *= 0.25; climbing = true; } else climbing = false;
     if (over){ ax = 0; ay = 0; }   // over the hole the ball is falling, not rolling
-    if (sp < STOP_V && !over && sl <= af && !climbing){ break; }
+    still = false; if (sp < STOP_V && !over && sl <= af && !climbing){ if (bls.length && boltAt(C, s.x, s.y)){ s.vx = 0; s.vy = 0; still = true; } else break; }
     if (sp > 1e-9 && !over){ var dvx = -af * s.vx / sp * DT, dvy = -af * s.vy / sp * DT;
       // friction can stop a ball, never send it backwards
       if (sl <= af && dvx * dvx + dvy * dvy >= sp * sp){ s.vx = 0; s.vy = 0; } else { s.vx += dvx; s.vy += dvy; } }
-    s.vx += ax * DT; s.vy += ay * DT;
+    if (!still){ s.vx += ax * DT; s.vy += ay * DT; }
     /* A RING RAIL (Saturn, World 14): a banked lane of ring ice round (cx, cy) at radius r, w wide, through the angle a0 to
        a0 + span. On it the bank takes away every push across the lane, so the ball runs round the curve at whatever pace
        it has and leaves the far end going the new way (ringAt). */
@@ -555,6 +572,19 @@ function simulate(C, x, y, vx, vy, t0){
         if (cm === M.WATER){ out.water = true; out.ev.push([t, 'water']); lastPiece = cq; return finishOut(); }
         if (cm === M.OUT){ out.out = true; out.ev.push([t, 'out']); lastPiece = cq; return finishOut(); }
         s.vx = cq.dx * cq.v; s.vy = cq.dy * cq.v; lastPiece = cq; rode = true; } }
+    /* ZEUS' THUNDERBOLT (Olympus): in the ring as the bolt falls, the ball is thrown L feet the way it points (boltAt, boltFalls) */
+    if (bls.length && !rode && !over){ var bq = boltAt(C, s.x, s.y);
+      if (bq && boltFalls(bq, t0 + t, t0 + t + DT)){ var btf = bq.L / BOLT_FLY, bpk = Math.min(3.2, 0.2 * bq.L + 0.8), bfp = [], btk, bu;
+        for (btk = 1 / 60; btk < btf; btk += 1 / 60){ bu = btk / btf; bfp.push([s.x + bq.ux * bq.L * bu, s.y + bq.uy * bq.L * bu, btk, 4 * bpk * bu * (1 - bu)]); }
+        var blx = s.x + bq.ux * bq.L, bly = s.y + bq.uy * bq.L, bb2;
+        for (var bn = 0; bn < 40; bn++){ bb2 = false; for (var bbi = 0; bbi < (C.blocks || []).length; bbi++) if (inBlock(C.blocks[bbi], blx, bly, BALL_R)){ bb2 = true; break; }
+          for (var bbj = 0; bbj < bums.length && !bb2; bbj++) if (Math.hypot(blx - bums[bbj].x, bly - bums[bbj].y) < bums[bbj].r + BALL_R) bb2 = true;
+          if (!bb2) break; blx += bq.ux * 0.1; bly += bq.uy * 0.1; }
+        out.ev.push([t, 'bolt']); bfp.push([blx, bly, btf, 0]); ride(bfp); s.x = blx; s.y = bly; out.ev.push([t, 'land']);
+        var bm2 = landAt(blx, bly, t0 + t);
+        if (bm2 === M.WATER){ out.water = true; out.ev.push([t, 'water']); return finishOut(); }
+        if (bm2 === M.OUT){ out.out = true; out.ev.push([t, 'out']); return finishOut(); }
+        var bvr = Math.sqrt(2 * fricOf(C, M.GREEN) * BOLT_ROLL); s.vx = bq.ux * bvr; s.vy = bq.uy * bvr; rode = true; } }
     if (rode){ px0 = s.x; py0 = s.y; continue; }
     if (lastPiece && Math.hypot(s.x - lastPiece.x, s.y - lastPiece.y) > 2.5) lastPiece = null;
     var hit = false, i;
@@ -604,7 +634,7 @@ function simulate(C, x, y, vx, vy, t0){
        slope pushes, the rail cancels it, and it sits still while the slope says it should roll. So a
        slow ball that has gone nowhere in half a second has come to rest. Measured, without this the
        bowl, the volcano and the tiers each kept a few putts "rolling" to MAX_T. */
-    if (n % 240 === 0){ if (!over && !rv && !disc && !deck && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
+    if (n % 240 === 0){ if (!over && !rv && !disc && !deck && !still && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
     if (t > MAX_T){ if (deck){ out.water = true; out.ev.push([t, 'water']); } break; }
   }
   return finishOut();
@@ -614,7 +644,7 @@ function simulate(C, x, y, vx, vy, t0){
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
   C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
-  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || []; C.rings = C.rings || []; C.hazes = C.hazes || []; C.beams = C.beams || []; C.hops = C.hops || []; C.cyclones = C.cyclones || []; C.eyes = C.eyes || []; C.gazes = C.gazes || []; C.lethes = C.lethes || [];
+  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || []; C.rings = C.rings || []; C.hazes = C.hazes || []; C.beams = C.beams || []; C.hops = C.hops || []; C.cyclones = C.cyclones || []; C.eyes = C.eyes || []; C.gazes = C.gazes || []; C.lethes = C.lethes || []; C.bolts = C.bolts || [];
   if (!C.polys) C.polys = C.poly ? [C.poly] : []; if (!C.allPts) C.allPts = C.polys.reduce(function(a, p){ return a.concat(p); }, []);
   if (!C.edges) C.edges = C.polys.length > 1 ? unionEdges(C.polys) : C.polys.length ? polyWalls(C.polys[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; }) : [];
   if (!C.tierAt) C.tierAt = function(){ return 0; };
@@ -880,6 +910,14 @@ var THEMES = {
     bumper:'undshade', block:'undbasalt', spinner:'#c8303a', slider:'undoar', flag:'#c8303a',
     decor:['undshade', 'undbasalt'], acc:'#9a8ad8', river:['#2a2850', '#8a86c8'], kicker:'#c8303a', loopCol:['#c8303a', '#f4f0e4', '#3a1a2a'],
     holes:[] },
+  /* Olympus: the top of the gods' mountain, above the clouds, where the halls of the gods stand in marble and gold. The course is
+     royal purple felt edged in white marble; the open sky below the clouds is the hazard and golden nectar the slow ground. Soft white
+     clouds stand about the course (the bumpers), white marble makes the blocks, and Zeus' bolt falls on its gold rings. */
+  olympus:{ name:'Olympus', kick:'World 21', bg:'#2a3a6a', bg2:'#34447a', carpet:'#7a5ab0', carpet2:'#7254a8', wall:'#f4f0e6', wallHi:'#ffffff', wallLo:'#b8a878', ink:'#1a2238',
+    haz:'water', hazCol:'#1e2e66', hazCol2:'#8aa8e8', hazName:'The Sky', slow:'mud', slowCol:'#f0c05a', slowName:'Nectar', iceCol:'#e8f4ff', iceCol2:'#ffffff',
+    bumper:'olycloud', block:'olymarble', spinner:'#e8b830', slider:'olybronze', flag:'#e8b830',
+    decor:['olycloud', 'olycolumn'], acc:'#ffd860', river:['#2a6ab8', '#bfe4ff'], kicker:'#e8b830', loopCol:['#e8b830', '#ffffff', '#3a2a10'],
+    holes:[] },
   candy:{ name:'Candy Works', kick:'World 3', bg:'#4a2a1e', bg2:'#58331f', carpet:'#2fae8a', carpet2:'#2a9e7e', wall:'#ff5fa2', wallHi:'#ffa8cc', wallLo:'#9a2a5a', ink:'#1e0e08',
     haz:'water', hazCol:'#5a2e14', hazCol2:'#8a5230', hazName:'Chocolate', slow:'mud', slowCol:'#f2a65a', slowName:'Taffy', iceCol:'#ffd6e6', iceCol2:'#fff4f8',
     bumper:'gumball', block:'sugarcube', spinner:'#ffe14a', slider:'wrapper', flag:'#ff3b7a',
@@ -893,7 +931,7 @@ var THEMES = {
 };
 /* the light that comes up out of the cup when the ball drops, one colour a theme (the real greens use gold) */
 var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
-  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', moon:'#9fe8ff', mars:'#ffb08a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', candy:'#ff9ad0', beach:'#5ce1ff' };
+  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', moon:'#9fe8ff', mars:'#ffb08a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', olympus:'#ffe9a0', candy:'#ff9ad0', beach:'#5ce1ff' };
 Object.keys(GLOW).forEach(function(k){ if (THEMES[k]) THEMES[k].glow = GLOW[k]; });
 // the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
 var CAL_THEMES = ['haunted', 'harvest', 'winter', 'sweetheart', 'shamrock', 'spring', 'firework', 'beach'];
@@ -1017,7 +1055,7 @@ function buildMini(tplName, seed, themeId, label, extra){
   if (r() < 0.5){
     var fx = function(p){ return [-p[0], p[1]]; };
     H.poly = H.poly.map(fx).reverse(); H.tee = fx(H.tee); H.cup = fx(H.cup);
-    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; }); (H.rings || []).forEach(function(g){ g.cx = -g.cx; g.a0 = Math.PI - g.a0; g.span = -g.span; }); (H.hazes || []).forEach(function(h){ var a = -h.x1; h.x1 = -h.x0; h.x0 = a; h.wx = -(h.wx || 0); }); (H.beams || []).forEach(function(b){ b.x0 = -b.x0; b.x1 = -b.x1; }); (H.hops || []).forEach(function(q){ q.x = -q.x; }); (H.cyclones || []).forEach(function(q){ q.x = -q.x; q.tx = -q.tx; q.dx = -q.dx; q.spin = -q.spin; }); (H.eyes || []).forEach(function(e){ e.x = -e.x; e.a0 = -e.a0; e.span = -e.span; }); (H.gazes || []).forEach(function(g){ g.x = -g.x; g.a = -g.a; }); (H.lethes || []).forEach(function(l){ l.x = -l.x; l.a = -l.a; l.spin = -l.spin; });
+    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; }); (H.rings || []).forEach(function(g){ g.cx = -g.cx; g.a0 = Math.PI - g.a0; g.span = -g.span; }); (H.hazes || []).forEach(function(h){ var a = -h.x1; h.x1 = -h.x0; h.x0 = a; h.wx = -(h.wx || 0); }); (H.beams || []).forEach(function(b){ b.x0 = -b.x0; b.x1 = -b.x1; }); (H.hops || []).forEach(function(q){ q.x = -q.x; }); (H.cyclones || []).forEach(function(q){ q.x = -q.x; q.tx = -q.tx; q.dx = -q.dx; q.spin = -q.spin; }); (H.eyes || []).forEach(function(e){ e.x = -e.x; e.a0 = -e.a0; e.span = -e.span; }); (H.gazes || []).forEach(function(g){ g.x = -g.x; g.a = -g.a; }); (H.lethes || []).forEach(function(l){ l.x = -l.x; l.a = -l.a; l.spin = -l.spin; }); (H.bolts || []).forEach(function(b){ b.x = -b.x; b.a = -b.a; });
     H.blocks = H.blocks.map(function(b){ var o = { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; if (b.mir) o.mir = b.mir; if (b.tri) o.tri = b.tri.map(function(q){ return [-q[0], q[1]]; }).reverse(); return o; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(b.tri ? polyWalls(b.tri, 0, 0.6) : rectWalls(b, 0.6)); });
     H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; if (m.k === 'door') m.px = -m.px; } });
@@ -1044,7 +1082,7 @@ function courseFromH(H, tplName, seed, themeId, label){
   var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:PS[0], polys:PS, allPts:all, edges:edges, rooms:rooms, comps:H.comps, flats:H.flats,
     stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
-    secret:H.secret || [], hops:(H.hops || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, k:q.k }; }), cyclones:(H.cyclones || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, tx:q.tx, ty:q.ty, dx:q.dx, dy:q.dy, v:q.v, spin:q.spin }; }), eyes:(H.eyes || []).map(function(e){ return { x:e.x, y:e.y, r:e.r, len:e.len, w:e.w, a0:e.a0, span:e.span, period:e.period / PACE, phase:e.phase, a:e.a }; }), gazes:(H.gazes || []).map(function(g){ return { x:g.x, y:g.y, r:g.r, len:g.len, w:g.w, ux:Math.sin(g.a), uy:-Math.cos(g.a) }; }), lethes:(H.lethes || []).map(function(l){ return { x:l.x, y:l.y, r:l.r, a0:l.a, spin:l.spin * PACE }; }), beams:(H.beams || []).map(function(b){ var L = Math.hypot(b.x1 - b.x0, b.y1 - b.y0) || 1; return { x0:b.x0, y0:b.y0, x1:b.x1, y1:b.y1, w:b.w, a:b.a, L:L, ux:(b.x1 - b.x0) / L, uy:(b.y1 - b.y0) / L }; }), rings:(H.rings || []).slice(), hazes:(H.hazes || []).map(function(h){ return { x0:Math.min(h.x0, h.x1), y0:Math.min(h.y0, h.y1), x1:Math.max(h.x0, h.x1), y1:Math.max(h.y0, h.y1), f:h.f || 2.2, wx:h.wx || 0, wy:h.wy || 0 }; }), devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
+    secret:H.secret || [], hops:(H.hops || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, k:q.k }; }), cyclones:(H.cyclones || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, tx:q.tx, ty:q.ty, dx:q.dx, dy:q.dy, v:q.v, spin:q.spin }; }), eyes:(H.eyes || []).map(function(e){ return { x:e.x, y:e.y, r:e.r, len:e.len, w:e.w, a0:e.a0, span:e.span, period:e.period / PACE, phase:e.phase, a:e.a }; }), gazes:(H.gazes || []).map(function(g){ return { x:g.x, y:g.y, r:g.r, len:g.len, w:g.w, ux:Math.sin(g.a), uy:-Math.cos(g.a) }; }), lethes:(H.lethes || []).map(function(l){ return { x:l.x, y:l.y, r:l.r, a0:l.a, spin:l.spin * PACE }; }), bolts:(H.bolts || []).map(function(b){ return { x:b.x, y:b.y, r:b.r, L:b.L, a:b.a, ux:Math.sin(b.a), uy:-Math.cos(b.a), period:b.period / PACE, phase:b.phase || 0 }; }), beams:(H.beams || []).map(function(b){ var L = Math.hypot(b.x1 - b.x0, b.y1 - b.y0) || 1; return { x0:b.x0, y0:b.y0, x1:b.x1, y1:b.y1, w:b.w, a:b.a, L:L, ux:(b.x1 - b.x0) / L, uy:(b.y1 - b.y0) / L }; }), rings:(H.rings || []).slice(), hazes:(H.hazes || []).map(function(h){ return { x0:Math.min(h.x0, h.x1), y0:Math.min(h.y0, h.y1), x1:Math.max(h.x0, h.x1), y1:Math.max(h.y0, h.y1), f:h.f || 2.2, wx:h.wx || 0, wy:h.wy || 0 }; }), devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
     rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ var st = H.stimp || (themeId === 'winter' ? 9.5 : 9), D = Math.hypot(f.dx, f.dy) || 1, L = Math.abs(f.dx) >= Math.abs(f.dy) ? f.x1 - f.x0 : f.y1 - f.y0,
       ve = Math.sqrt(2 * (V_STIMP * V_STIMP / (2 * st)) * (L + 1)), mv = f.move / PACE;
@@ -1171,7 +1209,8 @@ var WORLDS = [
   { id:'oz', name:'Oz', theme:'oz', blurb:'A cyclone lifts you and sets you down on its mark. Keep out of the poppies.', haz:['Cyclones', 'The poppies', 'Cornfields'] },
   { id:'cyclops', name:'Cyclops Isle', theme:'cyclops', blurb:'The Cyclops is watching. His gaze shoves you back. Putt while he looks away.', haz:['The eye', 'The sea', 'Wild thyme'] },
   { id:'medusa', name:'Medusa’s Isle', theme:'medusa', blurb:'Medusa’s gaze turns a rolling ball to stone. Bounce it away with a bronze shield.', haz:['Her gaze', 'The sea', 'Scree'] },
-  { id:'underworld', name:'The Underworld', theme:'underworld', blurb:'The Lethe makes a ball forget its line. It leaves the pool the way the water runs.', haz:['The Lethe', 'The Styx', 'Asphodel'] }
+  { id:'underworld', name:'The Underworld', theme:'underworld', blurb:'The Lethe makes a ball forget its line. It leaves the pool the way the water runs.', haz:['The Lethe', 'The Styx', 'Asphodel'] },
+  { id:'olympus', name:'Olympus', theme:'olympus', blurb:'Zeus’ bolt falls on the gold ring. A ball in it is thrown. Read the ring’s clock.', haz:['Zeus’ bolt', 'The Sky', 'Nectar'] }
 ];
 // a room: a rectangle at a height (for the picture; the drop between rooms is crossed by a set piece)
 function rm(x0, y0, x1, y1, z){ var a = Math.min(x0, x1), b = Math.max(x0, x1), c = Math.max(y0, y1), d = Math.min(y0, y1); return { pts:[[a, c], [b, c], [b, d], [a, d]], z:z || 0 }; }
@@ -1235,6 +1274,13 @@ function shieldPlate(H, ax, ay, bx, by, px, py, hold, len, ang){ H.movers.push({
    rolls into it is turned its way (simulate, letheAt). shade(H, T, list): the shades of the dead, pale wisps standing on the course
    (bumpers that give a little). */
 function lethe(H, x, y, r, ang, spin){ (H.lethes = H.lethes || []).push({ x:x, y:y, r:r || 1.6, a:(ang || 0) * Math.PI / 180, spin:(spin || 0) * Math.PI / 180 }); }
+/* Olympus, World 21. bolt(H, x, y, r, ang, L, period, phase): a ring r across at (x, y) where Zeus' bolt falls once every period
+   seconds (as written, slowed by PACE in the compile), phase putting the first strike; a ball in it at the strike is thrown L feet
+   toward ang degrees (0 up the hole, 90 to the right, 180 back toward the tee). L is held past the ring's width so a thrown ball is
+   always set down outside it (simulate, boltAt). clouds(H, list): the clouds of Olympus, soft white puffs standing on the course
+   (bumpers that give a little). */
+function bolt(H, x, y, r, ang, L, period, phase){ r = r || 1.4; (H.bolts = H.bolts || []).push({ x:x, y:y, r:r, a:(ang || 0) * Math.PI / 180, L:Math.max(L || 8, 2 * r + 1), period:period || 4, phase:phase || 0 }); }
+function clouds(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.6, e:0.5, skin:'olycloud' }); }); }
 function shades(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.55, e:0.55, skin:'undshade' }); }); }
 function haze(H, x0, y0, x1, y1, wx, wy, f){ (H.hazes = H.hazes || []).push({ x0:x0, y0:y0, x1:x1, y1:y1, wx:wx || 0, wy:wy || 0, f:f || 2.2 }); }
 function pads(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.75, e:1.32, skin:'pad' }); }); }
@@ -2746,7 +2792,157 @@ The ship came across a calm grey sea to Medusa's island: felt the colour of the 
     [[-9, -23], [5, -24], [-6, -34], [6, -38]].forEach(function(q){ blk(H, T, q[0] - 0.6, q[1] - 0.6, q[0] + 0.6, q[1] + 0.6); });
     zoneR(H, M.WATER, 10.6, -20, 12, -26); zoneR(H, M.WATER, -12, -30, -10.6, -36); shades(H, [[-4, -6], [4, -7], [-5, -23], [3, -28], [-5, -42], [10.4, -44.4, 0.45], [-10.4, -44.4, 0.45]]);
     H.comps.push({ k:'mound', x:-3, y:-7, s:1.8, a:0.14 }); H.comps.push({ k:'plane', gx:0.008, gy:0 }); zoneC(H, M.MUD, 6, -42, 0.8); zoneR(H, M.MUD, -8, -12, -5.5, -14);
-    pen(H, T, -8, -40); teeSide(H, T); bowl(H, -8, -40, 1.5, 0.14); return H; } }
+    pen(H, T, -8, -40); teeSide(H, T); bowl(H, -8, -40, 1.5, 0.14); return H; } },
+  /* ---- WORLD 21, OLYMPUS (holes 361 to 378).
+     The ship sailed out of the dark into the dawn and rode Iris' rainbow up from the sea onto the top of the gods' mountain, above
+     the clouds (Homer's Olympus, where the gods live in halls of bronze and gold). Royal purple felt edged in white marble, the open sky
+     below the clouds all round. Zeus' bolt falls on its gold rings on the hole's clock: a ball in a ring at the strike is thrown a
+     set way through the air (bolt(), boltAt, simulate), and a ball that stops in a ring waits for it. Soft clouds stand about the
+     course (clouds()), white marble makes the blocks, golden nectar the slow ground. Every hole rolls. */
+  // Rosy Dawn: the first light on the mountain. A marble wall runs across the field, and Zeus' ring lies in its one gap.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [-3, -31]);
+    blk(H, T, -7, -17, -1.7, -18.4); blk(H, T, 1.7, -17, 7, -18.4); bolt(H, 0, -17.7, 1.3, 0, 8, 4);
+    zoneR(H, M.WATER, 5.4, -7, 7, -13); blk(H, T, 5, -7, 5.4, -13); zoneR(H, M.WATER, -7, -23, -5.4, -28); blk(H, T, -5.4, -23, -5, -28);
+    clouds(H, [[-4, -6.5], [3.2, -6], [-2.5, -11], [1.5, -12], [3.5, -23], [-1, -22.5], [4.5, -28.5], [0.5, -27.5], [5.6, -34.4, 0.45], [-5.5, -34.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:2, y:-25.5, s:1.6, a:0.12 }); zoneC(H, M.MUD, 3.5, -14.5, 0.8); zoneC(H, M.MUD, -4.5, -13, 0.8);
+    pen(H, T, -3, -31); teeSide(H, T); bowl(H, -3, -31, 1.5, 0.14); return H; } },
+  // The Cloud Gates: the Hours keep the gates of the sky, and roll the cloud back to open them. A bronze gate slides to and fro in
+  // the gateway, and past it a ring throws a ball across to the cup's side.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -38)], [3, -2.5], [-3.5, -33]);
+    blk(H, T, -8, -15, -2.4, -16.4); blk(H, T, 2.4, -15, 8, -16.4); slider(H, T, -15.7, -1.6, 1.6, 4, 0, 1.6); bolt(H, 4.5, -22, 1.3, 270, 7.5, 4.4, 0.5);
+    zoneR(H, M.WATER, -8, -21, -6.6, -27); blk(H, T, -6.6, -21, -6.2, -27); zoneR(H, M.WATER, 6.6, -27, 8, -33); blk(H, T, 6.2, -27, 6.6, -33);
+    clouds(H, [[-4.5, -7], [0, -9], [5, -8], [-3.5, -12], [1, -19.5], [-4, -25.5], [2, -28], [5.5, -36.4, 0.45], [-6.4, -36.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:-0.01, gy:0 }); H.comps.push({ k:'mound', x:-1.5, y:-20, s:1.6, a:0.12 }); zoneC(H, M.MUD, 4.5, -11.5, 0.9); zoneC(H, M.MUD, 0, -31, 0.8);
+    pen(H, T, -3.5, -33); teeSide(H, T); bowl(H, -3.5, -33, 1.5, 0.14); return H; } },
+  // Iris' Road: Iris, the messenger with golden wings, runs the rainbow between the sky and the earth. Her bridge rises and falls
+  // over a band of open sky, and a ring by the band throws a ball clean over it.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [3, -33]);
+    zoneR(H, M.WATER, -7, -15, 7, -19); blk(H, T, -7, -14.6, -1.6, -15); blk(H, T, 1.6, -14.6, 7, -15); blk(H, T, -7, -19, -1.6, -19.4); blk(H, T, 1.6, -19, 7, -19.4);
+    drawb(H, -1.6, -15, 1.6, -19, 3.6, 0, 0.55); bolt(H, -4.4, -10.5, 1.3, 0, 11, 4.2, 0.2); blk(H, T, 4.8, -21.2, 6, -22.4); blk(H, T, -6.2, -30, -5, -31.2);
+    clouds(H, [[-4, -6], [4, -6.5], [1, -10], [4.5, -11.5], [-4.5, -25], [0, -25], [5, -25.5], [-2, -30], [5.5, -36.4, 0.45], [-5.5, -36.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:-2, y:-27.5, s:1.6, a:0.12 }); zoneC(H, M.MUD, -1, -21.8, 0.8); zoneC(H, M.MUD, 5, -29, 0.8);
+    pen(H, T, 3, -33); teeSide(H, T); bowl(H, 3, -33, 1.5, 0.14); return H; } },
+  // Hermes' Leap: a band of open sky runs nearly from wall to wall, the way round it at the far right end and back along the top
+  // past two banks of marble. Hermes in his winged sandals would fly it: a ramp by the tee does (the kicker). A ring in the top
+  // corridor throws a ball on toward the flag.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-22, 0, 22, -26)], [-18, -3.5], [-16, -21]);
+    zoneR(H, M.WATER, -22, -10, 15, -13); blk(H, T, -22, -9.4, -16.9, -10); blk(H, T, -15.1, -9.4, 15, -10); blk(H, T, -22, -13, 15, -13.6); kicker(H, -16, -9.95);
+    blk(H, T, 2, -17, 3.4, -26); blk(H, T, -8, -13.6, -6.6, -21); bolt(H, 10, -19.5, 1.3, 270, 11, 4.4, 0.3);
+    clouds(H, [[20.4, -2, 0.9], [-6, -2.5], [6, -5], [-2, -6.5], [12, -4], [18, -17], [13, -23.5], [-3, -22.5], [-11, -16], [-20.4, -24.4, 0.45], [20.4, -24.4, 0.45]]);
+    H.comps.push({ k:'mound', x:0, y:-4, s:2.4, a:0.14 }); H.comps.push({ k:'plane', gx:0, gy:0.006 }); zoneR(H, M.MUD, -22, -0.1, -19.6, -2.2); zoneC(H, M.MUD, 8, -24.5, 0.8);
+    teeSide(H, T); bowl(H, -16, -21, 1.5, 0.14); return H; } },
+  // Poseidon's Tide: the god of the sea is lord of the tides, and a tide race runs slantwise across the hole and carries a ball off
+  // down it. A firm putt crosses it. A ring on the near side throws a ball clean over.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [-2, -2.5], [-3, -35]); river(H, [[-7.2, -14], [7.2, -20]], 2.6, 4); bolt(H, 4.4, -8.5, 1.3, 0, 13.5, 4.6, 0.4);
+    zoneR(H, M.WATER, -7, -26, -5.6, -31); blk(H, T, -5.6, -26, -5.2, -31); blk(H, T, 1.8, -27, 3, -28.2);
+    clouds(H, [[-4.5, -6], [0.5, -8], [-3, -10.5], [5.5, -4.5], [-2, -24], [5.5, -26], [1.5, -31], [5, -32.5], [-5.5, -38.4, 0.45], [5.5, -38.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:-2.5, y:-29, s:1.6, a:0.12 }); zoneC(H, M.MUD, 2, -35.5, 0.8); zoneC(H, M.MUD, 3, -11, 0.8);
+    pen(H, T, -3, -35); teeSide(H, T); bowl(H, -3, -35, 1.5, 0.14); return H; } },
+  // The Eagle of Zeus: the king's eagle soars over a wide band of open sky. A narrow ledge at the left goes round it, and a ring on the
+  // near side throws a ball over it to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -40)], [2, -2.5], [2.5, -35]);
+    zoneR(H, M.WATER, -5.6, -22, 8, -26); blk(H, T, -5.6, -21.6, 8, -22); blk(H, T, -5.6, -26, 8, -26.4); blk(H, T, -6, -21.6, -5.6, -26.4); bolt(H, 3, -17.5, 1.4, 0, 11, 4.6, 0.3);
+    blk(H, T, -6.4, -10, -5.2, -11.2); blk(H, T, 5.2, -30.4, 6.4, -31.6);
+    clouds(H, [[-4, -7], [4.5, -7.5], [0, -11.5], [-4.5, -16], [6, -15], [-3, -30], [0, -29.5], [-5.5, -34], [-6.4, -38.4, 0.45], [6.4, -38.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:-1.5, y:-8, s:1.6, a:0.12 }); zoneC(H, M.MUD, -6.8, -18, 0.8); zoneC(H, M.MUD, 5.5, -34, 0.8);
+    pen(H, T, 2.5, -35); teeSide(H, T); bowl(H, 2.5, -35, 1.5, 0.14); return H; } },
+  // Hephaestus' Forge: the smith of the gods works his bronze above the clouds. Two channels of open sky cross the field, the way past
+  // each at the other side, and in each way a bronze bar slides to and fro like a hammer at the anvil. A ring between them throws
+  // a ball across to the second way.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-8, 0, 8, -48)], [0, -2.5], [-3.5, -43]);
+    zoneR(H, M.WATER, -8, -14, 3.6, -17.4); blk(H, T, -8, -13.6, 3.6, -14); blk(H, T, -8, -17.4, 3.6, -17.8); slider(H, T, -15.7, 4.2, 7.4, 3.6, 0, 1.4);
+    zoneR(H, M.WATER, -3.6, -29, 8, -32.4); blk(H, T, -3.6, -28.6, 8, -29); blk(H, T, -3.6, -32.4, 8, -32.8); slider(H, T, -30.7, -7.4, -4.2, 3.2, 0.5, 1.4);
+    bolt(H, 5, -23, 1.3, 270, 9, 4.2); blk(H, T, -1, -21.6, 0.4, -23);
+    clouds(H, [[-4.5, -6], [4.5, -7.5], [0, -10.5], [-5.5, -21], [2.5, -26], [-6, -26.5], [3, -37.5], [6, -36], [-6.4, -46.4, 0.45], [6.4, -46.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:2, y:-41.5, s:1.6, a:0.12 }); zoneC(H, M.MUD, -5, -40, 0.9); zoneC(H, M.MUD, 5, -11, 0.8);
+    pen(H, T, -3.5, -43); teeSide(H, T); bowl(H, -3.5, -43, 1.5, 0.14); return H; } },
+  // Hera's Colonnade: the queen of the gods walks between two rows of marble columns. The cup's lane is shut at its foot by a block
+  // of marble, and a ring in the middle lane throws a ball across into it.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -40)], [-3, -2.5], [4.5, -35]);
+    [-14, -18, -22, -26, -30].forEach(function(y){ addBumper(H, -2.4, y, 0.55, 'olycolumn'); addBumper(H, 2.4, y, 0.55, 'olycolumn'); }); blk(H, T, 3.2, -12.6, 8, -14);
+    bolt(H, 0, -22, 1.2, 90, 5, 4, 0.2); zoneR(H, M.WATER, -8, -22, -6.6, -28); blk(H, T, -6.6, -22, -6.2, -28); zoneC(H, M.MUD, -5, -33, 0.9); zoneC(H, M.MUD, 5.5, -8, 0.8);
+    clouds(H, [[-5, -7], [1, -7.5], [-5.5, -16], [5.5, -20], [6.4, -38.4, 0.45], [-6.4, -38.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:-5, y:-11, s:1.6, a:0.12 }); pen(H, T, 4.5, -35); teeSide(H, T); bowl(H, 4.5, -35, 1.5, 0.14); return H; } },
+  // Ambrosia: the food of the gods is laid out in a field of golden nectar, which holds a ball. A ring at the field's edge throws a
+  // ball across it.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -40)], [-3, -2.5], [3.5, -35]);
+    zoneR(H, M.MUD, -8, -16, 4.4, -22); bolt(H, -3, -12.5, 1.3, 0, 11, 4, 0.6); zoneC(H, M.MUD, 6, -28, 1.1); zoneC(H, M.MUD, -1, -29, 1);
+    zoneR(H, M.WATER, 6.6, -10, 8, -16); blk(H, T, 6.2, -10, 6.6, -16); blk(H, T, -6.6, -27, -5.4, -28.2); blk(H, T, 5.4, -22.4, 6.6, -23.6);
+    clouds(H, [[-5.5, -7], [-0.5, -8], [4, -10], [6, -19.6, 0.5], [-5, -31], [2, -24.5], [1.5, -31.5], [6.4, -38.4, 0.45], [-6.4, -38.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:-3.5, y:-26, s:1.6, a:0.12 }); pen(H, T, 3.5, -35); teeSide(H, T); bowl(H, 3.5, -35, 1.5, 0.14); return H; } },
+  // The Nine Muses: the daughters of Zeus who sing for the gods. Nine columns stand in a ring round the cup, open at the back, and a
+  // ring at their side throws a ball in over them.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -40)], [0, -2.5], [0, -28]);
+    for (var k = 0; k < 9; k++){ var a = Math.PI * (1.62 + k * 0.22); addBumper(H, Math.cos(a) * 4.2, -28 + Math.sin(a) * 4.2, 0.55, 'olycolumn'); }
+    bolt(H, 5, -20.5, 1.3, 315, 7, 4.4, 0.1); zoneR(H, M.WATER, -8, -14, -6.6, -21); blk(H, T, -6.6, -14, -6.2, -21); zoneC(H, M.MUD, -4.5, -36, 0.9); zoneC(H, M.MUD, 4, -10, 0.8);
+    clouds(H, [[-4, -7], [3, -6.5], [-1, -12], [-4.5, -19], [6, -34], [6.4, -38.4, 0.45], [-6.4, -38.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:-0.01, gy:0 }); H.comps.push({ k:'mound', x:-2.5, y:-9, s:1.6, a:0.12 }); teeSide(H, T); bowl(H, 0, -28, 1.5, 0.14); return H; } },
+  // Apollo's Lyre: the god of music plays for the feast. Two golden arms turn like the strings in a gap of the wall, and a ring by
+  // the wall throws a ball over it.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -40)], [3, -2.5], [-3.5, -35]); blk(H, T, -8, -19.3, -2.8, -20.7); blk(H, T, 2.8, -19.3, 8, -20.7);
+    spinner(H, T, 0, -20, 2.4, 1.4, 2); bumps(H, T, [[0, -20, 0.5]]); bolt(H, -5.4, -13.5, 1.3, 0, 11, 4.2, 0.7);
+    zoneR(H, M.WATER, 6.6, -24, 8, -30); blk(H, T, 6.2, -24, 6.6, -30); zoneC(H, M.MUD, 4, -33.5, 0.9); zoneC(H, M.MUD, -5, -6, 0.9);
+    clouds(H, [[-1, -8], [4.5, -11], [1.5, -14], [-2, -27], [3.5, -26], [1, -31.5], [-6.4, -38.4, 0.45], [6.4, -38.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:2, y:-30, s:1.6, a:0.12 }); pen(H, T, -3.5, -35); teeSide(H, T); bowl(H, -3.5, -35, 1.5, 0.14); return H; } },
+  // The Steps of Olympus: three terraces up the mountain, joined by ramp lanes at opposite ends. A ring on the middle terrace throws
+  // a ball across toward the second lane, and a bronze bar slides across the top of it.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-7, 0, 7, -14), rm(-8, -18, 8, -30, 0.8), rm(-8, -34, 8, -48, 1.6)], [-2, -2.5], [4, -44]); climb(H, 4.5, -14, -18, 2.4); climb(H, -5, -30, -34, 2.4);
+    bolt(H, 4.5, -24, 1.2, 270, 8, 4.4); slider(H, T, -35.2, -7.4, -2.6, 3.6, 0.3, 1.6); zoneR(H, M.WATER, -1.5, -20.5, 2, -27); blk(H, T, -1.9, -20.1, 2.4, -20.5); blk(H, T, -1.9, -27, 2.4, -27.4);
+    zoneR(H, M.WATER, -8, -40, -6.6, -46); blk(H, T, -0.6, -36, 0.8, -46); blk(H, T, -6.8, -11, -5.6, -12.2);
+    clouds(H, [[-4.5, -6], [1, -8], [-6.3, -12.8, 0.45], [5.5, -21], [-5.5, -22], [-4, -27.5], [5.5, -39], [-3.5, -43], [-6.4, -46.4, 0.45], [6.4, -46.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:-0.01, gy:0 }); H.comps.push({ k:'mound', x:-3, y:-38.5, s:1.4, a:0.12 }); zoneC(H, M.MUD, 4, -8, 0.9); zoneC(H, M.MUD, 6, -28.5, 0.7);
+    pen(H, T, 4, -44); teeSide(H, T); bowl(H, 4, -44, 1.5, 0.14); return H; } },
+  // The Winged Horse: Pegasus carries Zeus' thunderbolts for him (Hesiod). A gulf of open sky runs right across the hole with no way
+  // round, and the only way over is the bolt.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [-3, -35]);
+    zoneR(H, M.WATER, -7, -17, 7, -23); blk(H, T, -7, -16.6, 7, -17); blk(H, T, -7, -23, 7, -23.4); bolt(H, 0, -12, 1.6, 0, 13.5, 4.4);
+    blk(H, T, -6.2, -8.6, -5, -9.8); blk(H, T, 4.6, -29, 5.8, -30.2);
+    clouds(H, [[-4, -6], [4, -6.5], [-4.5, -12.5], [4.5, -12], [-4.5, -27], [0.5, -30.5], [4, -34], [-5.5, -38.4, 0.45], [5.5, -38.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); H.comps.push({ k:'mound', x:2, y:-28, s:1.6, a:0.12 }); zoneC(H, M.MUD, 2.5, -9, 0.8); zoneC(H, M.MUD, -1, -33, 0.7);
+    pen(H, T, -3, -35); teeSide(H, T); bowl(H, -3, -35, 1.5, 0.14); return H; } },
+  // The Thunderbolts: two channels of open sky cross the field, the way past each at the other side, and three rings lie between
+  // and before them, each throwing its own way on its own clock: one on over the first channel, one back toward the tee, one
+  // across toward the second way.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-8, 0, 8, -48)], [0, -2.5], [3.5, -43]);
+    zoneR(H, M.WATER, -8, -15, 3.6, -18.4); blk(H, T, -8, -14.6, 3.6, -15); blk(H, T, -8, -18.4, 3.6, -18.8);
+    zoneR(H, M.WATER, -3.6, -31, 8, -34.4); blk(H, T, -3.6, -30.6, 8, -31); blk(H, T, -3.6, -34.4, 8, -34.8);
+    bolt(H, -4.5, -9.5, 1.2, 0, 11.5, 4); bolt(H, -4.6, -24.5, 1.1, 180, 7, 3.4, 0.4); bolt(H, 4.6, -24.5, 1.2, 270, 8.5, 4.6, 0.7);
+    clouds(H, [[3.5, -6], [-1, -7.5], [1, -11.5], [-0.5, -22], [0.5, -28], [-6, -29], [-5.5, -38.5], [0, -40], [-6.4, -46.4, 0.45], [6.4, -46.4, 0.45]]); blk(H, T, 5.6, -10, 6.8, -11.2);
+    H.comps.push({ k:'plane', gx:-0.01, gy:0 }); H.comps.push({ k:'mound', x:-3, y:-42, s:1.6, a:0.12 }); zoneC(H, M.MUD, 6, -38, 0.9);
+    pen(H, T, 3.5, -43); teeSide(H, T); bowl(H, 3.5, -43, 1.5, 0.14); return H; } },
+  // Ganymede's Cup: the cupbearer of the gods pours the nectar. A deep cup is sunk in the field, and a ball that runs down into it
+  // comes to rest in the ring at its bottom, where the bolt throws it on toward the flag.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -40)], [-3, -2.5], [4, -33]); bowl(H, -1, -17, 3.4, 0.24); bolt(H, -1, -17, 1.2, 30, 9.5, 4.4);
+    blk(H, T, 1.5, -24.5, 8, -25.9); zoneR(H, M.WATER, -8, -25, -6.6, -31); blk(H, T, -6.6, -25, -6.2, -31); zoneC(H, M.MUD, 5.5, -12, 0.9); zoneC(H, M.MUD, -4.5, -35, 0.9);
+    clouds(H, [[-5.5, -7], [0, -7.5], [5, -7.5], [-5.5, -20], [4.5, -18], [-3, -29], [0.5, -32], [6.4, -38.4, 0.45], [-6.4, -38.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0 }); pen(H, T, 4, -33); teeSide(H, T); bowl(H, 4, -33, 1.5, 0.14); return H; } },
+  // The Council of the Gods: the gods sit in council in Zeus' hall round a wide pool of open sky. The near side of the hall is shut
+  // off by a wall, so the way is up the far side and along the top, where a ring of judgement throws a ball down into the sky.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-22, 0, 22, -26)], [-18, -3.5], [18, -3.5]);
+    zoneR(H, M.WATER, -10, -7, 10, -17); blk(H, T, -10.4, -6.6, 10.4, -7); blk(H, T, -10.4, -17, 10.4, -17.4); blk(H, T, -10.4, -7, -10, -17); blk(H, T, 10, -7, 10.4, -17); blk(H, T, 0, 0, 1.4, -6.6);
+    bolt(H, 2, -21.5, 1.4, 180, 6, 4.8);
+    [[-6, -21.5], [6, -21.5], [-16, -12], [16, -12]].forEach(function(q){ addBumper(H, q[0], q[1], 0.55, 'olycolumn'); });
+    clouds(H, [[-19, -14], [-15, -22], [19.5, -20], [13, -9], [-6, -3], [-13, -2.5], [-2, -24.6, 0.45], [20.4, -24.4, 0.45], [-20.4, -24.4, 0.45]]);
+    H.comps.push({ k:'plane', gx:0, gy:0.006 }); H.comps.push({ k:'mound', x:-14, y:-19, s:1.8, a:0.12 }); zoneC(H, M.MUD, 10, -24, 0.8); zoneC(H, M.MUD, 6, -2, 0.8);
+    pen(H, T, 18, -3.5); teeSide(H, T); bowl(H, 18, -3.5, 1.5, 0.14); return H; } },
+  // Ithaca Below: from the edge of the mountain Athena shows Odysseus' island far down in the sea: he is home at last. Up the field,
+  // past a channel of open sky, and round the corner along the edge, where a ring throws a ball over a second channel.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-8, 0, 4, -34), rm(-8, -24, 26, -34)], [-4, -2.5], [22, -29]);
+    zoneR(H, M.WATER, -8, -13, -1, -16); blk(H, T, -8, -12.6, -1, -13); blk(H, T, -8, -16, -1, -16.4); zoneR(H, M.WATER, 9, -27.6, 12.6, -34); blk(H, T, 8.6, -27.6, 9, -34); blk(H, T, 12.6, -27.6, 13, -34);
+    bolt(H, -4, -29, 1.4, 90, 9.5, 4.6, 0.3); blk(H, T, 16.2, -24, 17.6, -30.2); blk(H, T, -0.4, -20, 1, -21.4);
+    clouds(H, [[-5, -6], [1.5, -8], [-5.5, -19], [2.5, -17], [-1, -25.5], [4, -31], [6, -32], [15, -31.5], [24.4, -32.4, 0.45], [24.4, -25.6, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.008, gy:0 }); H.comps.push({ k:'mound', x:-3, y:-21.5, s:1.4, a:0.12 }); zoneC(H, M.MUD, 19, -25.5, 0.8); zoneC(H, M.MUD, 2.5, -4, 0.8);
+    pen(H, T, 22, -29); teeSide(H, T); bowl(H, 22, -29, 1.5, 0.14); return H; } },
+  // The Throne of Zeus: in through the bronze doors and across the hall of the king of the gods, Zeus on his throne at the back. A
+  // channel of open sky with its way at the left, a wall of marble with its gate at the right and a bronze bar in it, two rings on
+  // the floor, and the columns of the hall.
+  { par:4, three:3, sig:true, f:function(T){ var H = hole([rm(-8, 0, 8, -14), rm(-2.4, -13.9, 2.4, -18.1), rm(-12, -18, 12, -48)], [0, -2.5], [-7, -43]);
+    addBumper(H, 0, -46.2, 1.3, 'olythrone'); zoneR(H, M.WATER, -6, -25, 12, -28.4); blk(H, T, -6, -24.6, 12, -25); blk(H, T, -6, -28.4, 12, -28.8);
+    blk(H, T, -12, -36, 6, -37.4); slider(H, T, -36.7, 6.6, 11.4, 4, 0.3, 1.8); bolt(H, -8.5, -32, 1.3, 90, 13, 4.6); bolt(H, 8.5, -21.5, 1.3, 270, 9, 4, 0.5);
+    [[-9, -21], [9, -41], [-3, -33], [3, -41]].forEach(function(q){ addBumper(H, q[0], q[1], 0.6, 'olycolumn'); });
+    clouds(H, [[-4, -6], [4, -7], [-10.4, -46.4, 0.45], [10.4, -46.4, 0.45], [5, -31], [-1, -20.5]]);
+    H.comps.push({ k:'mound', x:-3, y:-7, s:1.8, a:0.14 }); H.comps.push({ k:'plane', gx:-0.008, gy:0 }); zoneC(H, M.MUD, 6, -44, 0.8); zoneR(H, M.MUD, 5.5, -12, 8, -14);
+    pen(H, T, -7, -43); teeSide(H, T); bowl(H, -7, -43, 1.5, 0.14); return H; } }
 ];
 /* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders, two halves of nine on the season's two
    themes. Par is the solver's, the same rule as the Putt Putt Tour.
@@ -2863,7 +3059,8 @@ var SECRETS = [
   { theme:'oz', at:18, name:'The Throne Room', scene:'s-throne' },
   { theme:'cyclops', at:6, name:'Poseidon’s Grotto', scene:'s-grotto' },
   { theme:'medusa', at:14, name:'The Graeae’s Cave', scene:'s-graeae' },
-  { theme:'underworld', at:3, name:'The Cave of Sleep', scene:'s-hypnos' }
+  { theme:'underworld', at:3, name:'The Cave of Sleep', scene:'s-hypnos' },
+  { theme:'olympus', at:11, name:'The Forge of Hephaestus', scene:'s-forge' }
 ];
 var SECRET_LEVELS = [
   // The Potting Shed: crates stacked down both walls, the mower rolling across the middle, and a crate in front of the cup.
@@ -2943,7 +3140,13 @@ var SECRET_LEVELS = [
   // in the middle of the floor sends a ball round to the cup, and the shades doze along the walls.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -8], [8, -22], [3, -30], [-3, -30], [-8, -22], [-8, -8]])], [0, -2.5], [3, -26]);
     lethe(H, -1, -15, 1.7, 270); shades(H, [[-5, -6], [5, -6.5], [-4.5, -24], [3, -16], [0.5, -24], [5.5, -21]]); blk(H, T, -8, -20.6, -0.5, -22);
-    zoneC(H, M.WATER, -4, -25, 1.1); H.comps.push({ k:'mound', x:-3, y:-11, s:1.8, a:0.14 }); H.comps.push({ k:'plane', gx:0.01, gy:0 }); pen(H, T, 3, -26); bowl(H, 3, -26, 1.5, 0.14); return H; } }
+    zoneC(H, M.WATER, -4, -25, 1.1); H.comps.push({ k:'mound', x:-3, y:-11, s:1.8, a:0.14 }); H.comps.push({ k:'plane', gx:0.01, gy:0 }); pen(H, T, 3, -26); bowl(H, 3, -26, 1.5, 0.14); return H; } },
+  // The Forge of Hephaestus: the smith's forge in the mountain, where he made Zeus' bolts and the golden tripods. A ring by the
+  // anvil throws a ball across the floor, and a bar of bronze slides to and fro before the cup.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -8], [8, -22], [3, -30], [-3, -30], [-8, -22], [-8, -8]])], [0, -2.5], [-3, -26]);
+    bolt(H, 3.5, -12.5, 1.3, 315, 9, 4); slider(H, T, -21.5, -5, 1.5, 4, 0.2, 1.8); bumps(H, T, [[-5, -6, 0.55], [5, -6.5, 0.55], [5, -21, 0.5], [-0.5, -10, 0.55], [-5.5, -15, 0.55]]);
+    blk(H, T, 5.2, -15.5, 6.6, -16.9); zoneC(H, M.WATER, 4.5, -25, 1.1); zoneC(H, M.MUD, -5, -20.5, 0.8); H.comps.push({ k:'mound', x:2, y:-7, s:1.8, a:0.14 }); H.comps.push({ k:'plane', gx:-0.01, gy:0 });
+    pen(H, T, -3, -26); bowl(H, -3, -26, 1.5, 0.14); return H; } }
 ];
 var SECRET_NAMES = SECRETS.map(function(x){ return x.name; });
 var SECRET_WORLDS = SECRETS.map(function(x){ return { id:'s-' + x.theme, name:x.name, theme:x.theme, blurb:'A secret hole.', haz:['Found on a trail'] }; });
@@ -2994,7 +3197,8 @@ var TOUR_NAMES = [
   'The Landing', 'Sheep Meadow', 'Olive Grove', 'The Goat Path', 'Tide Pools', 'The Shepherd’s Wall', 'Cheese Racks', 'The Spring', 'Twin Rocks',
   'The Great Ram', 'Lookout Hill', 'Driftwood Bay', 'The Olive Club', 'Nobody’s Trick', 'The Oars', 'The Boulder Door', 'The Long Shore', 'The Cyclops’ Cave',
   'The Stone Quay', 'Stone Sailors', 'The Broken Columns', 'Athena’s Shield', 'The Bronze Mirror', 'Hermes’ Sandals', 'The Gorgon Sisters', 'The Olive Wreath', 'Garden of Statues', 'The Gorgon Steps', 'Perseus’ Path', 'The Raised Shield', 'Pegasus’ Spring', 'The Harpe', 'The Sleeping Sisters', 'Two Mirrors', 'The Temple Steps', 'Medusa’s Temple',
-  'The Misty Shore', 'The Offering Pit', 'Asphodel Meadow', 'The Lethe Pool', 'Charon’s Landing', 'The Obol', 'The Styx', 'Tiresias the Seer', 'The Pomegranate', 'Sisyphus’ Hill', 'Tantalus’ Pool', 'The Shades', 'The Turning Pools', 'Elysian Fields', 'The Three Judges', 'Persephone’s Garden', 'Cerberus’ Gate', 'The Hall of Hades'];
+  'The Misty Shore', 'The Offering Pit', 'Asphodel Meadow', 'The Lethe Pool', 'Charon’s Landing', 'The Obol', 'The Styx', 'Tiresias the Seer', 'The Pomegranate', 'Sisyphus’ Hill', 'Tantalus’ Pool', 'The Shades', 'The Turning Pools', 'Elysian Fields', 'The Three Judges', 'Persephone’s Garden', 'Cerberus’ Gate', 'The Hall of Hades',
+  'Rosy Dawn', 'The Cloud Gates', 'Iris’ Road', 'Hermes’ Leap', 'Poseidon’s Tide', 'The Eagle of Zeus', 'Hephaestus’ Forge', 'Hera’s Colonnade', 'Ambrosia', 'The Nine Muses', 'Apollo’s Lyre', 'The Steps of Olympus', 'The Winged Horse', 'The Thunderbolts', 'Ganymede’s Cup', 'The Council of the Gods', 'Ithaca Below', 'The Throne of Zeus'];
 /* THE TOURS. Each is a list of worlds, a list of holes and their names, and what it pays. The Members
    Tour is one world of eighteen in two halves, on the season's theme, and pays the most on the site. */
 var TOURS = {
@@ -3047,7 +3251,7 @@ function roll(H, seed){
     for (var k = 0; k < rooms.length; k++){ var P = rooms[k]; for (var i = 0; i < P.length; i++){ var a = P[i], c = P[(i + 1) % P.length]; if (segDist(x, y, a[0], a[1], c[0], c[1]) < Math.min(need, 1.6) + 0.4){
       if (!rooms.some(function(Q, j){ return j !== k && inPoly(Q, (a[0] + c[0]) / 2, (a[1] + c[1]) / 2 + 0.3) ; })) return false; } } }
     if (Math.hypot(x - H.tee[0], y - H.tee[1]) < need + 2.5 || Math.hypot(x - H.cup[0], y - H.cup[1]) < need + 2.2) return false;
-    var pts = [].concat(H.bumpers.map(function(b){ return [b.x, b.y, b.r]; }), (H.loops || []).map(function(L){ return [L.x, L.y, 2.5]; }), (H.ramps || []).map(function(R){ return [R.x, R.y, 3]; }), (H.hops || []).map(function(q){ return [q.x, q.y, q.r + 0.5]; }), (H.cyclones || []).map(function(q){ return [q.x, q.y, q.r + 0.8]; }), (H.cyclones || []).map(function(q){ return [q.tx, q.ty, 1.4]; }), (H.eyes || []).map(function(e){ return [e.x, e.y, e.r + 1]; }), (H.gazes || []).map(function(g){ return [g.x, g.y, g.r + 1]; }), (H.lethes || []).map(function(l){ return [l.x, l.y, l.r + 0.6]; }),
+    var pts = [].concat(H.bumpers.map(function(b){ return [b.x, b.y, b.r]; }), (H.loops || []).map(function(L){ return [L.x, L.y, 2.5]; }), (H.ramps || []).map(function(R){ return [R.x, R.y, 3]; }), (H.hops || []).map(function(q){ return [q.x, q.y, q.r + 0.5]; }), (H.cyclones || []).map(function(q){ return [q.x, q.y, q.r + 0.8]; }), (H.cyclones || []).map(function(q){ return [q.tx, q.ty, 1.4]; }), (H.eyes || []).map(function(e){ return [e.x, e.y, e.r + 1]; }), (H.gazes || []).map(function(g){ return [g.x, g.y, g.r + 1]; }), (H.lethes || []).map(function(l){ return [l.x, l.y, l.r + 0.6]; }), (H.bolts || []).map(function(b){ return [b.x, b.y, b.r + 0.6]; }), (H.bolts || []).map(function(b){ return [b.x + Math.sin(b.a) * b.L, b.y - Math.cos(b.a) * b.L, 1.6]; }),
       (H.turns || []).map(function(u){ return [u.x, u.y, (u.r || 2) + 0.5]; }), (H.movers || []).map(function(m){ return m.k === 'spin' || m.k === 'blade' ? [m.x, m.y, (m.len || 2) + 0.6] : [(m.ax + m.bx) / 2, (m.ay + m.by) / 2, Math.hypot(m.bx - m.ax, m.by - m.ay) / 2 + 1.2]; }));
     if (pts.some(function(q){ return Math.hypot(x - q[0], y - q[1]) < q[2] + need + 0.6; })) return false;
     var rects = [].concat(H.blocks, H.zones.filter(function(z){ return z.t === 'rect'; }), H.bridges || [], H.ferries || [], H.belts || [], H.floats || [], H.climbs || [], H.secret || []);
@@ -3092,7 +3296,7 @@ var RTT_PUTT = {
   M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, MAX_FT:MAX_FT, V_STIMP:V_STIMP, ART:ART, HOP_MAX:HOP_MAX, CYC_TOP:CYC_TOP,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
-  simulate:simulate, eyeSees:eyeSees, eyeAng:eyeAng, gazePath:gazePath, gazeOn:gazeOn, letheAt:letheAt, letheAng:letheAng, LETHE_KEEP:LETHE_KEEP, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
+  simulate:simulate, eyeSees:eyeSees, eyeAng:eyeAng, gazePath:gazePath, gazeOn:gazeOn, letheAt:letheAt, letheAng:letheAng, LETHE_KEEP:LETHE_KEEP, boltAt:boltAt, boltPh:boltPh, boltFalls:boltFalls, BOLT_WARN:BOLT_WARN, BOLT_FLY:BOLT_FLY, BOLT_ROLL:BOLT_ROLL, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly, _spaceTrip:spaceTrip, ROLLS:ROLLS,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
   CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, TGT_R:TGT_R, TGT_KEEP:TGT_KEEP, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
@@ -3293,6 +3497,35 @@ var SKIN = {
     var w = Math.sin(u * 9) * 0.18; return v < w - 0.2 ? '#ffd0ec' : v < w + 0.3 ? '#ff8ad0' : '#ff5fb8'; },
   jellyslab:function(u, v){ if (Math.abs(u) > 0.96 || Math.abs(v) > 0.9) return null; if (Math.abs(u) > 0.84 || Math.abs(v) > 0.74) return '#227068';
     return v < -0.2 ? '#bff8e8' : u > 0.3 ? '#5ad8b8' : '#8af0d8'; },
+  // ---- Olympus: a cloud standing on the course (soft round lobes, white on top and blue grey beneath, never a hard edge); a block
+  // of white marble with grey veins and a gold band; a fluted marble column with its capital and base; and a bar of polished bronze
+  // from Hephaestus' forge that slides
+  olycloud:function(u, v){ var L = [[0, -0.28, 0.5], [-0.46, 0.02, 0.4], [0.46, 0.04, 0.42], [-0.2, 0.22, 0.42], [0.24, 0.24, 0.4], [-0.72, 0.3, 0.26], [0.74, 0.32, 0.25]], best = 9, k;
+    for (k = 0; k < L.length; k++){ var q = L[k], d = Math.hypot(u - q[0], v - q[1]) / q[2] + Math.sin(u * 9 + v * 7 + k) * 0.03; if (d < best) best = d; }
+    if (best > 1 || v > 0.56) return null; if (v > 0.38) return '#a8b8d8'; if (best > 0.86) return v > 0.1 ? '#b8c8e4' : '#dce6f6';
+    return u + v < -0.55 ? '#ffffff' : v > 0.12 ? '#c8d6ee' : Math.sin(u * 6 - v * 4) > 0.7 ? '#eef4ff' : '#f8fbff'; },
+  olymarble:function(u, v){ if (Math.abs(u) > 0.95 || Math.abs(v) > 0.92) return null; if (Math.abs(u) > 0.84 || Math.abs(v) > 0.8) return Math.abs(u) > 0.9 || Math.abs(v) > 0.87 ? '#b8963a' : '#e8c860';
+    var vein = Math.abs(Math.sin(u * 3.1 + Math.sin(v * 4.3 + u * 1.7) * 1.6)); if (vein < 0.05) return '#a8a8b4'; if (vein < 0.1) return '#d4d4dc';
+    return u + v < -0.6 ? '#ffffff' : v > 0.45 ? '#e4e0d8' : '#f4f2ec'; },
+  olycolumn:function(u, v){ var au = Math.abs(u); if (v > 0.78){ if (au > 0.62 || v > 0.98) return null; return v < 0.86 ? '#e8e4da' : '#b8b4aa'; }   // the base
+    if (v < -0.74){ if (au > 0.66 || v < -0.98) return null; return v < -0.9 ? '#e8c860' : '#f4f0e6'; }                                   // the capital, gilt on top
+    if (au > 0.42) return null; return Math.abs(((u + 1) * 5) % 1 - 0.5) < 0.1 ? '#c8c4ba' : u > 0.2 ? '#dcd8ce' : '#f6f4ee'; },          // the fluted shaft
+  olybronze:function(u, v){ if (Math.abs(u) > 0.97 || Math.abs(v) > 0.8) return null; if (Math.abs(v) > 0.62) return '#7a4a1a';
+    return v < -0.3 ? '#f0c070' : Math.sin(u * 18) > 0.85 ? '#a86a28' : '#d8963c'; },
+  /* Zeus on his throne, the king of the gods as the vase painters and Phidias' Zeus at Olympia show him: seated on a throne of ivory
+     and gold, a white cloak over one shoulder, a full grey beard and a wreath of gold olive leaves, his sceptre upright in his left
+     hand and the thunderbolt held in his right. Calm and kingly. */
+  olythrone:function(u, v){ var au = Math.abs(u);
+    if (Math.abs(u + 0.64) < 0.04 && v > -0.95 && v < 0.84) return '#d8b850'; if (Math.hypot(u + 0.64, v + 0.95) < 0.07) return '#ffe9a0';   // the sceptre
+    if (u > 0.3 && u < 0.62 && v > -0.02 && v < 0.3 && Math.abs((u - 0.46) * 2.4 + Math.sin(v * 22) * 0.12) < 0.1) return '#ffd860';    // the thunderbolt in his hand
+    if (v > 0.84){ if (au > 0.82 || v > 0.98) return null; return v < 0.9 ? '#f4f0e6' : '#b8a878'; }                                    // the step
+    var hx = u, hy = v + 0.42, hr = Math.hypot(hx / 0.2, hy / 0.24);
+    if (hr < 1){ if (hy < -0.15) return Math.sin(u * 40) > 0 ? '#e8c050' : '#c8a030'; if (hy > 0.02) return Math.sin(u * 30) > 0.3 ? '#a8a8b4' : '#c8c8d0';   // the wreath, the beard
+      if (Math.abs(hy + 0.06) < 0.03 && Math.abs(au - 0.08) < 0.04) return '#2a2030'; return '#e0bc98'; }
+    if (v > 0.02 && v < 0.5 && Math.hypot(u / 0.26, (v - 0.04) / 0.2) < 1) return '#a8a8b4';                                            // the beard on his chest
+    if (v > -0.18 && v < 0.84 && au < 0.36 - (v < 0.3 ? 0 : (v - 0.3) * 0.2)) return u < -0.05 ? '#ffffff' : (v > 0.3 ? '#e0bc98' : '#f0ece4');   // his white cloak, his bare right shoulder
+    if (au < 0.6 && v > -0.9 && v < 0.84){ if (v < -0.7) return au < 0.5 ? '#e8c860' : null; return au > 0.5 ? '#b8963a' : '#f4ecd8'; }   // the throne of ivory and gold
+    return null; },
   // ---- The Underworld: a shade of the dead, a pale wisp (a soft round head, a robe that thins to a curling tail, two gentle dark
   // eyes, never a skull); black basalt with a faint violet sheen and its cracks; and Charon's oar, a plank of old dark wood
   undshade:function(u, v){ var au = Math.abs(u);
@@ -3559,6 +3792,8 @@ var CSS = '\
 .wm-medusa b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 28%,#c4d8b4 48%,#c07a4a);-webkit-text-stroke:.9px #1e1a16;filter:drop-shadow(0 2px 0 #2a5a3e) drop-shadow(0 4px 0 #1e1a16) drop-shadow(0 0 10px rgba(154,255,200,.6))}\
 .wm-underworld i{background:#2a2444;color:#f4f0e4;border:1px solid #c8303a}\
 .wm-underworld b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 28%,#d8d0f0 48%,#8a7ac8);-webkit-text-stroke:.9px #14121e;filter:drop-shadow(0 2px 0 #3a2a5a) drop-shadow(0 4px 0 #14121e) drop-shadow(0 0 10px rgba(184,168,255,.65))}\
+.wm-olympus i{background:#2a4a8a;color:#fffbe8;border:1px solid #e8b830}\
+.wm-olympus b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 28%,#fff0b8 48%,#e8b830);-webkit-text-stroke:.9px #1a2238;filter:drop-shadow(0 2px 0 #2a4a8a) drop-shadow(0 4px 0 #1a2238) drop-shadow(0 0 10px rgba(255,233,160,.7))}\
 .wm-iceage b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 30%,#bfe9f4 50%,#5aa8c4);-webkit-text-stroke:.9px #2a241c;filter:drop-shadow(0 2px 0 #5a4630) drop-shadow(0 4px 0 #2a241c) drop-shadow(0 0 8px rgba(143,208,224,.6))}\
 .wm-candy i{background:#5a2e14;color:#ffd6e6;border:1px solid #ff5fa2}\
 .wm-candy b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 22%,#ffa8cc 45%,#ff3b7a);-webkit-text-stroke:.9px #4a1a2e;filter:drop-shadow(0 2px 0 #9a2a5a) drop-shadow(0 4px 0 #3a1c0c) drop-shadow(0 0 8px rgba(255,154,208,.6))}\
@@ -3670,6 +3905,8 @@ var CSS = '\
 .pp-lv.wt-medusa.lock{background:radial-gradient(circle at 38% 30%,#8a867c,#4a4640);border-color:#1e1a16;color:#eeebe4}.pp-lv.wt-medusa.cur{background:radial-gradient(circle at 40% 35%,#ffffff,#c4d8b4 55%,#3a8a5a);border-color:#1e1a16;color:#1e1a16;box-shadow:0 0 14px rgba(154,255,200,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-underworld{background:radial-gradient(circle at 36% 30%,#ffffff,#d8d2c2 50%,#8a8474);border-color:#4a5a7a;color:#14121e}\
 .pp-lv.wt-underworld.lock{background:radial-gradient(circle at 38% 30%,#4a4670,#1c1a34);border-color:#14121e;color:#d8d2c2}.pp-lv.wt-underworld.cur{background:radial-gradient(circle at 40% 35%,#ffffff,#d8d0f0 55%,#8a7ac8);border-color:#14121e;color:#14121e;box-shadow:0 0 14px rgba(184,168,255,.95),0 4px 0 rgba(0,0,0,.35)}\
+.pp-lv.wt-olympus{background:radial-gradient(circle at 36% 30%,#ffffff,#f4f0e6 50%,#b8a878);border-color:#e8b830;color:#1a2238}\
+.pp-lv.wt-olympus.lock{background:radial-gradient(circle at 38% 30%,#6a8ac8,#2a3a6a);border-color:#1a2238;color:#f4f0e6}.pp-lv.wt-olympus.cur{background:radial-gradient(circle at 40% 35%,#ffffff,#fff0b8 55%,#e8b830);border-color:#1a2238;color:#1a2238;box-shadow:0 0 14px rgba(255,233,160,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-iceage{border-radius:44% 56% 48% 52%/52% 46% 54% 48%;background:radial-gradient(circle at 38% 30%,#ffffff,#bfe9f4 50%,#7fc0d6);border-color:#4a3a28;color:#2a241c}\
 .pp-lv.wt-iceage.lock{background:radial-gradient(circle at 38% 30%,#a89884,#7a6a56);border-color:#4a3a28;color:#efe4cc}.pp-lv.wt-iceage.cur{background:radial-gradient(circle at 40% 35%,#fff4d8,#d9c9a6 55%,#a88a5a);border-color:#2a241c;color:#2a1a0a;box-shadow:0 0 14px rgba(174,240,255,.9),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-candy{border-radius:50%;background:repeating-conic-gradient(from 20deg,#ff5fa2 0 30deg,#fff4f8 30deg 60deg);border-color:#9a2a5a;color:#3a1c0c;text-shadow:0 0 3px #fff,0 0 2px #fff}\
@@ -3698,6 +3935,7 @@ var CSS = '\
 .pp-hub[data-wt=cyclops]{--wa:#ffd860;--wi:#1e1a10;--wb1:#1f5f9a;--wb2:#1e1a10;--wt:rgba(18,30,44,.92)}\
 .pp-hub[data-wt=medusa]{--wa:#9affc8;--wi:#1e1a16;--wb1:#2a5a3e;--wb2:#1e1a16;--wt:rgba(30,34,30,.92)}\
 .pp-hub[data-wt=underworld]{--wa:#b8a8ff;--wi:#14121e;--wb1:#3a2a5a;--wb2:#14121e;--wt:rgba(28,24,46,.92)}\
+.pp-hub[data-wt=olympus]{--wa:#ffe9a0;--wi:#1a2238;--wb1:#2a4a8a;--wb2:#1a2238;--wt:rgba(26,38,70,.92)}\
 .pp-hub[data-wt=iceage]{--wa:#8fd0e0;--wi:#2a241c;--wb1:#5a4630;--wb2:#2a241c;--wt:rgba(42,36,28,.92)}\
 .pp-hub[data-wt=candy]{--wa:#ff5fa2;--wi:#3a1c0c;--wb1:#7a4422;--wb2:#3a1c0c;--wt:rgba(58,28,12,.92)}\
 .pp-hub[data-wt=haunted]{--wa:#ff9a3a;--wi:#2a1606;--wb1:#3a1f63;--wb2:#1c1438;--wt:rgba(28,20,44,.92)}\
@@ -3797,6 +4035,7 @@ var CSS = '\
 .pp-door[data-door=cyclops] .pp-dl,.pp-door[data-door=cyclops] .pp-dr{background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.25) 0 10%,transparent 11%),repeating-linear-gradient(160deg,rgba(0,0,0,.12) 0 3px,transparent 3px 22px),linear-gradient(180deg,#b8b0a0,#6e6a60);border-color:#c8643a}\
 .pp-door[data-door=medusa] .pp-dl,.pp-door[data-door=medusa] .pp-dr{background:repeating-linear-gradient(90deg,rgba(0,0,0,.1) 0 2px,transparent 2px 16px),linear-gradient(180deg,#f6f3ea,#a8a49a);border-color:#c8913a}\
 .pp-door[data-door=underworld] .pp-dl,.pp-door[data-door=underworld] .pp-dr{background:repeating-linear-gradient(180deg,rgba(255,255,255,.06) 0 2px,transparent 2px 18px),linear-gradient(180deg,#4a4670,#1c1a34);border-color:#c8303a}\
+.pp-door[data-door=olympus] .pp-dl,.pp-door[data-door=olympus] .pp-dr{background:radial-gradient(ellipse at 50% 30%,rgba(255,255,255,.55) 0 18%,transparent 40%),repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 2px,transparent 2px 16px),linear-gradient(180deg,#ffffff,#c4d2e8);border-color:#e8b830}\
 .pp-door[data-door=iceage] .pp-dl,.pp-door[data-door=iceage] .pp-dr{background:repeating-linear-gradient(170deg,rgba(255,255,255,.35) 0 3px,transparent 3px 26px),linear-gradient(180deg,#dcf4fa,#6fb6d0);border-color:#d9c9a6}\
 .pp-tabs u{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5a4e;margin-left:5px;vertical-align:2px;box-shadow:0 0 0 2px rgba(0,0,0,.35)}.pp-tabs .on u{display:none}\
 /* THE DAILY TAB: a month to a page, the page ruled like a wall calendar, the days tear-off sheets on the trail */\
@@ -4019,8 +4258,8 @@ function top(title, sub, right){
    holes, plus rewards nobody else can earn. No coin price anywhere changes. */
 var PAY = {
   main:{ hole:80, sig:280, ace:20, world:2000,
-    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball', 'Saturn Ball', 'Prism Ball', 'Jelly Ball', 'Emerald Spectacles', 'Fleece Ball', 'Bronze Helm', 'Asphodel Crown'],
-    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles', 'Crystal Specs', 'Wobble Boots', 'Silver Shoes', 'Shepherd Sandals', 'Winged Sandals', 'Pomegranate Ball'] },
+    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball', 'Saturn Ball', 'Prism Ball', 'Jelly Ball', 'Emerald Spectacles', 'Fleece Ball', 'Bronze Helm', 'Asphodel Crown', 'Winged Cap'],
+    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles', 'Crystal Specs', 'Wobble Boots', 'Silver Shoes', 'Shepherd Sandals', 'Winged Sandals', 'Pomegranate Ball', 'Ambrosia Ball'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
     worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
@@ -4059,7 +4298,7 @@ var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Centur
 var REWARD_ITEM = {
   'Clubhouse Visor':'hw:ppvisor', 'Hall Monitor Cap':'hw:pphallcap', 'Lollipop Putter':'pu:pplollipop', 'Neon Putter':'pu:ppneon',
   'Tricorn Hat':'hw:pptricorn', 'Jade Idol Putter':'pu:ppjadeidol', 'Miner’s Lamp Cap':'hw:ppminer', 'Lava Ball':'bl:pplava',
-  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk', 'Astronaut Helmet':'hw:ppastrohelmet', 'Space Suit':'tp:ppspacesuit', 'Red Planet Ball':'bl:ppmars', 'Mars Boots':'ct:ppmarsboots', 'Saturn Ball':'bl:ppsaturn', 'Titan Goggles':'ew:pptitangoggles', 'Prism Ball':'bl:ppprism', 'Crystal Specs':'ew:ppcrystalspecs', 'Jelly Ball':'bl:ppjelly', 'Wobble Boots':'ct:ppwobbleboots', 'Emerald Spectacles':'ew:ppemeraldspecs', 'Silver Shoes':'ct:ppsilvershoes', 'Fleece Ball':'bl:ppfleece', 'Shepherd Sandals':'ct:ppsandals', 'Bronze Helm':'hw:ppbronzehelm', 'Winged Sandals':'ct:ppwingsandals', 'Asphodel Crown':'hw:ppasphodel', 'Pomegranate Ball':'bl:pppomegranate',
+  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk', 'Astronaut Helmet':'hw:ppastrohelmet', 'Space Suit':'tp:ppspacesuit', 'Red Planet Ball':'bl:ppmars', 'Mars Boots':'ct:ppmarsboots', 'Saturn Ball':'bl:ppsaturn', 'Titan Goggles':'ew:pptitangoggles', 'Prism Ball':'bl:ppprism', 'Crystal Specs':'ew:ppcrystalspecs', 'Jelly Ball':'bl:ppjelly', 'Wobble Boots':'ct:ppwobbleboots', 'Emerald Spectacles':'ew:ppemeraldspecs', 'Silver Shoes':'ct:ppsilvershoes', 'Fleece Ball':'bl:ppfleece', 'Shepherd Sandals':'ct:ppsandals', 'Bronze Helm':'hw:ppbronzehelm', 'Winged Sandals':'ct:ppwingsandals', 'Asphodel Crown':'hw:ppasphodel', 'Pomegranate Ball':'bl:pppomegranate', 'Winged Cap':'hw:ppwingcap', 'Ambrosia Ball':'bl:ppambrosia',
   'Clubhouse Cleats':'ct:ppclubhouse', 'Gold Star Ball':'bl:ppgoldstar', 'Sprinkle Ball':'bl:ppsprinkle', 'Pixel Shades':'ew:pppixelshades',
   'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
   'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
@@ -4697,7 +4936,7 @@ function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el
    about six seconds, a tap skips it, and with reduced motion it is the arrival card alone. The space worlds after the Moon
    will each get their own leg of the trip from here (SPACE_TRIP). */
 /* Moon Base to Red Planet is the colony ship, from the Moon's launch pad (SPACE_FROM says where each leg leaves from). */
-var SPACE_TRIP = { moon:'rocket', mars:'ship', saturn:'ship', crystara:'ship', jellara:'ship', oz:'ship', cyclops:'sea', medusa:'sea', underworld:'sea' }, SPACE_FROM = { moon:'earth', mars:'moon', saturn:'mars', crystara:'saturn', jellara:'crystara', oz:'jellara', cyclops:'oz', medusa:'cyclops', underworld:'medusa' };
+var SPACE_TRIP = { moon:'rocket', mars:'ship', saturn:'ship', crystara:'ship', jellara:'ship', oz:'ship', cyclops:'sea', medusa:'sea', underworld:'sea', olympus:'sea' }, SPACE_FROM = { moon:'earth', mars:'moon', saturn:'mars', crystara:'saturn', jellara:'crystara', oz:'jellara', cyclops:'oz', medusa:'cyclops', underworld:'medusa', olympus:'underworld' };
 /* THE ODYSSEY IS REACHED BY SEA (Cyclops Isle on): 'sea' is a Greek ship under sail, trip3d.js's sail(). The walk ends at the ship
    at its jetty and the landed walk sets off from where it ran up on the beach, as the space route does with its pad. */
 function spaceTrip(theme, label, name, host, cb){
@@ -4723,6 +4962,11 @@ function spaceTrip(theme, label, name, host, cb){
   // the sea route with no 3D trip (or with reduced motion): a still of the island over the sea, then the hole
   var SEA = SPACE_TRIP[theme] === 'sea'; if (SEA){ DUR = 1.6; reduce = true; }
   function frame(){ if (done) return; var t = (performance.now() - t0) / 1000;
+    if (reduce && SEA && theme === 'olympus'){ px(0, 0, LW, LH * 0.3, '#4a86d8'); px(0, LH * 0.3, LW, LH * 0.3, '#f0c8a0'); px(0, LH * 0.6, LW, LH, '#e8eef8');
+      disc(LW * 0.5, LH * 0.62, LW * 0.36, '#c8c2b4'); disc(LW * 0.5, LH * 0.5, LW * 0.16, '#e2ddd0'); disc(LW * 0.5, LH * 0.42, LW * 0.06, '#ffffff');
+      ['#e5383b', '#ff9a2a', '#ffd84a', '#5ac85a', '#3a8ad8', '#8a5ad8'].forEach(function(c, k){ ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(LW * 0.5, LH * 0.72, LW * 0.4 - k * 2, Math.PI * 1.08, Math.PI * 1.62); ctx.stroke(); });
+      for (var cq = 0; cq < 7; cq++) disc(LW * (0.05 + cq * 0.15), LH * (0.64 + (cq % 2) * 0.03), LW * 0.09, '#ffffff'); wrap.classList.add('cap');
+      if (t > DUR) return finish(); return requestAnimationFrame(frame); }
     if (reduce && SEA && theme === 'underworld'){ px(0, 0, LW, LH * 0.56, '#24203a'); px(0, LH * 0.56, LW, LH, '#1a1830'); disc(LW / 2, LH * 0.6, LW * 0.42, '#3a3848'); px(0, LH * 0.6, LW, LH, '#1a1830');
       px(LW * 0.1, LH * 0.6, LW * 0.8, 2, '#2c2a34'); disc(LW * 0.62, LH * 0.5, LW * 0.14, '#4a4860'); disc(LW * 0.6, LH * 0.55, LW * 0.05, '#0c0a14'); px(LW * 0.3, LH * 0.57, LW * 0.02, LH * 0.03, '#e6e8f6'); wrap.classList.add('cap');
       if (t > DUR) return finish(); return requestAnimationFrame(frame); }
@@ -4759,7 +5003,7 @@ function spaceTrip(theme, label, name, host, cb){
     if (t > DUR) return finish(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 }
-var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', crystara:'Crystal Gate', jellara:'Jelly Gate', oz:'Emerald Gate', cyclops:'Cave Stone', medusa:'Temple Gate', underworld:'Gate of Hades', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', crystara:'Crystal Gate', jellara:'Jelly Gate', oz:'Emerald Gate', cyclops:'Cave Stone', medusa:'Temple Gate', underworld:'Gate of Hades', olympus:'Gate of the Hours', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
 /* THE WALK IS A PLACE (golf/putt/trail.js). Winning a hole and pressing Next opens the trail to the next
@@ -4783,10 +5027,10 @@ var TRINKETS = {
   pirate:['Doubloon Marker', 'Spyglass', 'Parrot Feather'], canyon:['Gold Nugget', 'Lucky Horseshoe', 'Prospector Pan'],
   volcano:['Obsidian Shard', 'Ember Stone', 'Fire Opal'], dino:['Raptor Claw', 'Fossil Fern', 'Trilobite'],
   sky:['Cloud Feather', 'Kite Charm', 'Weather Vane'], neon:['Arcade Token', 'Joystick Charm', 'Prize Ticket'],
-  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'], moon:['Moon Rock', 'Mission Patch', 'Space Pen'], mars:['Red Rock', 'Rover Wheel', 'Ice Core'], saturn:['Ring Ice', 'Probe Dish', 'Titan Stone'], crystara:['Prism Shard', 'Star Geode', 'Light Lens'], jellara:['Wobble Drop', 'Goo Pearl', 'Bounce Bean'], oz:['Golden Cap', 'Oil Can', 'Poppy Seed'], cyclops:['Olive Sprig', 'Sheep Bell', 'Sea Shell'], medusa:['Owl Coin', 'Bronze Brooch', 'Gorgon Scale'], underworld:['Charon’s Obol', 'Pomegranate Seed', 'Asphodel Flower'],
+  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'], moon:['Moon Rock', 'Mission Patch', 'Space Pen'], mars:['Red Rock', 'Rover Wheel', 'Ice Core'], saturn:['Ring Ice', 'Probe Dish', 'Titan Stone'], crystara:['Prism Shard', 'Star Geode', 'Light Lens'], jellara:['Wobble Drop', 'Goo Pearl', 'Bounce Bean'], oz:['Golden Cap', 'Oil Can', 'Poppy Seed'], cyclops:['Olive Sprig', 'Sheep Bell', 'Sea Shell'], medusa:['Owl Coin', 'Bronze Brooch', 'Gorgon Scale'], underworld:['Charon’s Obol', 'Pomegranate Seed', 'Asphodel Flower'], olympus:['Thunderbolt Charm', 'Caduceus Pin', 'Nectar Cup'],
   candy:['Lucky Gumball', 'Candy Wrapper', 'Sugar Crystal']
 };
-var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', moon:'#7fd8ff', mars:'#ff8a4a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', candy:'#ff5fa2' };
+var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', moon:'#7fd8ff', mars:'#ff8a4a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', olympus:'#ffe27a', candy:'#ff5fa2' };
 var TRINKET_SET_COINS = 300;
 var PP_PUTTERS = [
   { id:'scope', name:'Scope Putter', worlds:[0, 1, 2], tells:'The aim line reaches four feet further.' },
@@ -4962,6 +5206,12 @@ var GREETERS = {
     hi:['You sailed past the edge of the world. Few do.', 'I am Persephone. Half the year I am queen down here.'],
     tip:['The Lethe makes a ball forget its line. It leaves the way the water runs.', 'Some pools turn. Watch one go round before you putt.', 'The Styx is the hazard. Charon will not fetch your ball.'],
     bye:'Off you go. Remember the way home.' },
+  /* Hermes, the messenger of the gods, as the Homeric hymn and the vase painters have him: a young god, his winged cap (the Winged
+     Cap, ppwingcap in golfer3d.js) and winged sandals, his herald's staff in his hand. Quick, friendly, glad to show the way. */
+  olympus:{ name:'Hermes', role:'Messenger of the Gods', look:{ skin:'light', polo:'white', hat:'white', pants:'white', hair:'brown', hairStyle:'curly', cap:true, hatStyle:'ppwingcap', shoes:'gold', gender:'male' },
+    hi:['You rode the rainbow up. Iris will be pleased.', 'I am Hermes. I carry the gods’ messages.'],
+    tip:['Zeus’ bolt falls on the gold ring. A ball in it gets thrown.', 'The ring flashes before the bolt falls. The dots show where it lands.', 'Stop in a ring and wait. The bolt will throw you.'],
+    bye:'Off you go. Athena says Odysseus is home at last.' },
   candy:{ name:'Wendell', role:'Factory Foreman', look:{ skin:'deep', polo:'white', hat:'red', pants:'wine', hair:'black', hairStyle:'short', cap:true, hatStyle:'flat', gender:'male' },
     hi:['Hey! Welcome to Candy Works.', 'I’m Wendell. I run the floor.'],
     tip:['Chocolate on every side. Wafer bridges run on a clock.', 'Taffy grabs your ball. Watch a press go round once before you putt.'],
@@ -5016,6 +5266,7 @@ var TIPS = {
   climb:['It\'s uphill. Give it more than you think.', 'There\'s a step up. Don\'t leave it short.'],
   water:['There\'s water. Don\'t get greedy.', 'Play it safe past the water.', 'Wet costs a stroke. Take the long way if you need to.'],
   ice:['The ice is quick. Ease off.', 'Go soft on the slick stuff.'],
+  bolt:['Zeus\' bolt falls on the gold ring. A ball in it gets thrown.', 'The ring flashes before the bolt falls. Time the putt to it.', 'Stop in the ring and the bolt will throw you. Read where it lands.'],
   lethe:['The Lethe makes a ball forget. It leaves the pool the way the water runs.', 'Into the Lethe, any line will do. The pace is what counts.', 'Some pools turn. Time the putt so the water points where you want to go.'],
   gaze:['Her gaze turns a rolling ball to stone. Stay out of the green light.', 'A statue in her way leaves a shadow. Cross there.', 'A bronze shield bounces her gaze. Read where it goes next.'],
   eye:['The Cyclops shoves a ball he can see. Roll while he looks away.', 'Watch his eye swing. Time the putt so he is looking the other way.', 'A rock between you and the eye hides the ball from him.'],
@@ -5035,7 +5286,7 @@ function holeTips(n, tid, three){ var C; try{ C = buildLevel(n, tid); }catch(e){
   var mv = C.movers || [], has = function(k){ return mv.some(function(m){ return m.k === k; }); }, zm = {};
   (C.zones || []).forEach(function(z){ zm[z.m] = 1; });
   var cand = [];
-  if ((C.lethes || []).length) cand.push('lethe'); if ((C.gazes || []).length) cand.push('gaze'); if ((C.eyes || []).length) cand.push('eye'); if ((C.cyclones || []).length) cand.push('cyclone'); if ((C.hops || []).length) cand.push('hop'); if ((C.beams || []).length) cand.push('beam'); if ((C.ferries || []).length) cand.push('ferry'); if ((C.ramps || []).length) cand.push('ramp'); if ((C.loops || []).length) cand.push('loop');
+  if ((C.bolts || []).length) cand.push('bolt'); if ((C.lethes || []).length) cand.push('lethe'); if ((C.gazes || []).length) cand.push('gaze'); if ((C.eyes || []).length) cand.push('eye'); if ((C.cyclones || []).length) cand.push('cyclone'); if ((C.hops || []).length) cand.push('hop'); if ((C.beams || []).length) cand.push('beam'); if ((C.ferries || []).length) cand.push('ferry'); if ((C.ramps || []).length) cand.push('ramp'); if ((C.loops || []).length) cand.push('loop');
   if ((C.bridges || []).length) cand.push('bridge'); if (has('door')) cand.push('door'); if (has('slide') || has('blade')) cand.push('slide');
   if (has('spin')) cand.push('spin'); if ((C.rivers || []).length) cand.push('river'); if ((C.belts || []).length) cand.push('belt');
   if ((C.turns || []).length) cand.push('turn'); if (zm[M.WATER]) cand.push('water'); if (zm[M.ICE]) cand.push('ice');
@@ -5815,7 +6066,7 @@ function v3Asp(){ var r = S.stage && S.stage.isConnected && S.stage.getBoundingC
 function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
 /* THE FINE PICTURE: a world in FINE_WORLDS is painted three times finer, so it reads as clearly as the golfer.
    Piloted on Pirate Cove; the owner then asked for it on every world (2026-10-15). */
-var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1 }, FINE_ART = 1 / 12;
+var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1, olympus:1 }, FINE_ART = 1 / 12;
 // RTT_PUTT_FINE_TEST names one more world to paint fine, so a world's stops can be built and looked at before it joins FINE_WORLDS
 function fineOn(d){ return (!!FINE_WORLDS[d.theme] || window.RTT_PUTT_FINE_TEST === d.theme) && window.RTT_PUTT_FINE !== 'off'; }
 // a fine picture's zoom can round up (camFor), so it is built a little taller than the stage to leave no band below the land
@@ -6403,6 +6654,33 @@ function drawPieces(ctx, C, cam, clock){
     // the shaggy brow
     ctx.strokeStyle = '#2a1a12'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(2, R * 0.22); ctx.beginPath(); ctx.moveTo(ec[0] - R * 1.1, ec[1] - R * 0.55); ctx.quadraticCurveTo(ec[0], ec[1] - R * 1.25, ec[0] + R * 1.1, ec[1] - R * 0.55); ctx.stroke();
     ctx.lineWidth = Math.max(1, R * 0.1); for (k = 0; k < 7; k++){ var bx = ec[0] - R * 0.9 + k * R * 0.3, by = ec[1] - R * (0.8 + 0.18 * Math.sin(k * 1.3)); ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + R * 0.12, by - R * 0.3); ctx.stroke(); } });
+  /* ZEUS' THUNDERBOLT (Olympus): a ring of gold on the carpet, exactly the circle the physics uses (boltAt), with Zeus' bolt
+     drawn flat in it, and a line of gold dots out to a small ring where it throws a ball (L feet the way it points). As the strike
+     comes (the last BOLT_WARN of its period) the ring fills and flashes, quicker as it nears; at the strike a forked bolt falls
+     out of the sky into it in white and gold, and the ring flares. The same clock the physics reads (boltPh). */
+  (C.bolts || []).forEach(function(bt, bi){ var P = function(x, y, zz){ return cam.v3 ? w2s(cam, x, y, cam.v3.zAt(x, y) + (zz || 0)) : w2s(cam, x, y - (zz || 0) * 0.8); };
+    var ring = function(cx, cy, rr, zz){ ctx.beginPath(); for (var q = 0; q <= 32; q++){ var an = q / 32 * 6.2832, pq = P(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr, zz); q ? ctx.lineTo(pq[0], pq[1]) : ctx.moveTo(pq[0], pq[1]); } ctx.closePath(); };
+    var u = boltPh(bt, clock), warn = u > 1 - BOLT_WARN ? (u - (1 - BOLT_WARN)) / BOLT_WARN : 0, hitk = u < 0.07 ? 1 - u / 0.07 : 0, k;
+    var blink = warn ? 0.5 + 0.5 * Math.sin(clock * (10 + warn * 26)) : 0;
+    ring(bt.x, bt.y, bt.r, 0.02); ctx.fillStyle = 'rgba(255,226,120,' + (0.14 + warn * 0.3 * blink + hitk * 0.6).toFixed(3) + ')'; ctx.fill();
+    ctx.strokeStyle = warn ? 'rgba(255,' + Math.round(236 - 60 * blink) + ',120,.95)' : 'rgba(214,168,48,.9)'; ctx.lineWidth = Math.max(1.5 * d, cam.s * (0.1 + warn * 0.06)); ctx.stroke();
+    ring(bt.x, bt.y, bt.r * 0.8, 0.03); ctx.strokeStyle = 'rgba(255,246,210,' + (0.35 + warn * 0.4).toFixed(3) + ')'; ctx.lineWidth = Math.max(1, cam.s * 0.04); ctx.stroke();
+    // Zeus' bolt laid in the ring, pointing the way it throws
+    var ux = bt.ux, uy = bt.uy, nx = -uy, ny = ux, z0 = bt.r * 0.62, zz = [[-1, 0.18], [-0.1, -0.16], [0.05, 0.12], [1, -0.14]];
+    ctx.strokeStyle = 'rgba(150,104,20,.95)'; ctx.lineWidth = Math.max(2 * d, cam.s * 0.13); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.beginPath();
+    zz.forEach(function(q, j){ var pq = P(bt.x + ux * q[0] * z0 + nx * q[1] * z0, bt.y + uy * q[0] * z0 + ny * q[1] * z0, 0.04); j ? ctx.lineTo(pq[0], pq[1]) : ctx.moveTo(pq[0], pq[1]); }); ctx.stroke();
+    ctx.strokeStyle = warn || hitk ? '#fffbe0' : '#ffd860'; ctx.lineWidth = Math.max(1 * d, cam.s * 0.06); ctx.stroke();
+    // the throw: gold dots out to where it sets a ball down, and a small ring there
+    var lx = bt.x + ux * bt.L, ly = bt.y + uy * bt.L; ctx.fillStyle = 'rgba(255,216,96,' + (0.5 + warn * 0.4).toFixed(3) + ')';
+    for (k = 1; k < 9; k++){ var f = (bt.r + (bt.L - bt.r - 0.5) * k / 9) / bt.L, dp = P(bt.x + ux * bt.L * f, bt.y + uy * bt.L * f, 0.05 + Math.sin(f * Math.PI) * 0.0); ctx.beginPath(); ctx.arc(dp[0], dp[1], Math.max(1, cam.s * 0.045), 0, 7); ctx.fill(); }
+    ring(lx, ly, 0.42, 0.03); ctx.strokeStyle = 'rgba(255,216,96,.85)'; ctx.lineWidth = Math.max(1, cam.s * 0.05); ctx.stroke();
+    // the strike: a forked bolt out of the sky into the ring
+    if (hitk > 0){ var si = Math.floor(clock / bt.period + bt.phase), top = 11, pts = [], j;
+      for (j = 0; j <= 9; j++){ var hz = top * (1 - j / 9), jx = j && j < 9 ? (hash3(bi, j, si) - 0.5) * 1.1 : 0, jy = j && j < 9 ? (hash3(bi, j + 20, si) - 0.5) * 1.1 : 0; pts.push(P(bt.x + jx, bt.y + jy, hz)); }
+      [[cam.s * 0.5, 'rgba(255,230,140,' + (0.35 * hitk).toFixed(3) + ')'], [cam.s * 0.16, 'rgba(255,255,255,' + hitk.toFixed(3) + ')']].forEach(function(st){ ctx.strokeStyle = st[1]; ctx.lineWidth = Math.max(1.5 * d, st[0]); ctx.beginPath(); pts.forEach(function(pq, q){ q ? ctx.lineTo(pq[0], pq[1]) : ctx.moveTo(pq[0], pq[1]); }); ctx.stroke(); });
+      var fk = pts[4], fe = P(bt.x + (hash3(bi, 41, si) - 0.5) * 2.2, bt.y + (hash3(bi, 42, si) - 0.5) * 2.2, top * 0.3); ctx.beginPath(); ctx.moveTo(fk[0], fk[1]); ctx.lineTo(fe[0], fe[1]); ctx.stroke();
+      ring(bt.x, bt.y, bt.r * (1 + 0.4 * (1 - hitk)), 0.04); ctx.strokeStyle = 'rgba(255,250,220,' + (0.8 * hitk).toFixed(3) + ')'; ctx.lineWidth = Math.max(1.5 * d, cam.s * 0.12); ctx.stroke(); }
+  });
   /* THE LETHE (The Underworld): a still pool of pale silver water, exactly the circle the physics uses (letheAt), a darker rim at
      its edge and a soft mist over it. The way it runs is drawn on the water: three pale chevrons drifting across it along its
      line, and streaks of mist moving the same way, so where a ball will leave it is plain. A turning pool turns its chevrons on
@@ -6889,7 +7167,7 @@ RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, 
 RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 /* The home card wears the world you are in: the top band of that world's signature hole, cut from the
    game's own render by build-cards.mjs, so it is the same pixel art as the courses. */
-var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1 }, CARD_V = 14;
+var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1, olympus:1 }, CARD_V = 15;
 RTT_PUTT.cardArt = function(theme){ var t = CARD_ART[theme] ? theme : 'clubhouse';
   return '<img class="gc-art" src="putt/cards/' + t + '.png?v=' + CARD_V + '" alt="" aria-hidden="true">'; };
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR }; RTT_PUTT.PAY = PAY;
