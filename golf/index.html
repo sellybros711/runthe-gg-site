@@ -62,10 +62,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=138"></script>
-<script defer src="putt/land.js?v=24"></script>
+<script defer src="putt/putt.js?v=139"></script>
+<script defer src="putt/land.js?v=25"></script>
 <script defer src="putt/hole3d.js?v=24"></script>
-<script defer src="putt/trip3d.js?v=11"></script>
+<script defer src="putt/trip3d.js?v=12"></script>
 <script defer src="putt/gyms.js?v=4"></script>
 <script defer src="putt/gymkinds/push.js?v=3"></script>
 <script defer src="putt/gymkinds/trickshot.js?v=2"></script>
@@ -88,12 +88,13 @@
 <script defer src="putt/gymkinds/stone.js?v=1"></script>
 <script defer src="putt/gymkinds/obol.js?v=1"></script>
 <script defer src="putt/gymkinds/herald.js?v=1"></script>
-<script defer src="putt/trail.js?v=60"></script>
-<script defer src="putt/mapland.js?v=16"></script>
+<script defer src="putt/gymkinds/grow.js?v=1"></script>
+<script defer src="putt/trail.js?v=61"></script>
+<script defer src="putt/mapland.js?v=17"></script>
 <!-- Share clips of a hole's putts from the card after it (reads putt.js, never changes it). -->
 <script defer src="putt/clips.js?v=2"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=33"></script>
+<script defer src="golfer3d.js?v=34"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11370,6 +11371,8 @@ const PP_REWARDS=[
  {cat:'ball',id:'pppomegranate',name:'Pomegranate Ball',hist:'A Putt Putt world prize',col:'#c8303a',tracer:{g:'rgba(200,48,58,.55)',c:'#f4f0e4'}},
  {cat:'hw',id:'ppwingcap',name:'Winged Cap',hist:'A Putt Putt world prize'},
  {cat:'ball',id:'ppambrosia',name:'Ambrosia Ball',hist:'A Putt Putt world prize',col:'#f0c05a',tracer:{g:'rgba(240,192,90,.55)',c:'#fffbe8'}},
+ {cat:'hw',id:'pphattop',name:'Hatter’s Top Hat',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppcheshire',name:'Cheshire Ball',hist:'A Putt Putt world prize',col:'#a89880',tracer:{g:'rgba(232,120,180,.55)',c:'#ffffff'}},
  {cat:'putter',id:'pptusk',name:'Mammoth Tusk Putter',hist:'A Putt Putt world prize'},
  {cat:'ew',id:'ppsnowgoggles',name:'Snow Goggles',hist:'A Putt Putt world prize'},
  {cat:'hw',id:'pphallowscrown',name:'Hallows Crown',hist:'A Members Tour prize'},
@@ -12137,7 +12140,7 @@ Object.assign(COS_BOOST,{
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
   'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'hw:ppastrohelmet':{sht:2},
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
-  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}, 'bl:ppprism':{sht:2}, 'ew:ppcrystalspecs':{acc:2}, 'bl:ppjelly':{scr:2}, 'ct:ppwobbleboots':{sht:2}, 'ew:ppemeraldspecs':{app:2}, 'ct:ppsilvershoes':{acc:2}, 'bl:ppfleece':{app:2}, 'ct:ppsandals':{bnk:2}, 'hw:ppbronzehelm':{acc:2}, 'ct:ppwingsandals':{dist:2}, 'hw:ppasphodel':{scr:2}, 'bl:pppomegranate':{bnk:2}, 'hw:ppwingcap':{dist:2}, 'bl:ppambrosia':{acc:2}
+  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}, 'bl:ppprism':{sht:2}, 'ew:ppcrystalspecs':{acc:2}, 'bl:ppjelly':{scr:2}, 'ct:ppwobbleboots':{sht:2}, 'ew:ppemeraldspecs':{app:2}, 'ct:ppsilvershoes':{acc:2}, 'bl:ppfleece':{app:2}, 'ct:ppsandals':{bnk:2}, 'hw:ppbronzehelm':{acc:2}, 'ct:ppwingsandals':{dist:2}, 'hw:ppasphodel':{scr:2}, 'bl:pppomegranate':{bnk:2}, 'hw:ppwingcap':{dist:2}, 'bl:ppambrosia':{acc:2}, 'hw:pphattop':{app:2}, 'bl:ppcheshire':{scr:2}
 });
 // THE PRO SHOP LINE (PRO_LINE): the ladder's power for its rarity, a common 1 point and a rare 2, leaning on the stats gear
 // touches least (Bunker, Short Game, Accuracy, Scrambling). Its outerwear and legwear are style and carry none.
@@ -15408,9 +15411,9 @@ function replayTour(){
 const FT_SCREENS=['title','protour','putthub','me'];
 const FT_HUBS=['protour','putthub','me'];
 const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
-const FT_PLATE_V=11;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
+const FT_PLATE_V=12;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
 // the worlds that have a picture for the home's Putt Putt side. A world added without one shows the Clubhouse
-const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars','saturn','crystara','jellara','oz','cyclops','medusa','underworld','olympus'];
+const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars','saturn','crystara','jellara','oz','cyclops','medusa','underworld','olympus','wonderland'];
 // THE FIRST TEE IS THE HOME, for everybody (live since 2026-10-18; the classic home and the PUTT_LIVE switch were
 // removed the same day, at the owner's call). It does not wait for putt.js: its Putt Putt side is drawn once the module
 // has run.
@@ -18334,6 +18337,8 @@ PXG_HERITAGE_HAT_PAL.ppasphodel={'4':'#f4f0e4','5':'#6a7a62','6':'#46524c',W:'#6
 PXG_HAT_OPEN.ppasphodel=1;   // a wreath sits on the hair, so it is not clipped
 PXG_HATS.ppwingcap=PXG_HATS.ppastrohelmet;   // Winged Cap (Olympus): Hermes' petasos, the helmet's outline in tan felt with white wings
 PXG_HERITAGE_HAT_PAL.ppwingcap={k:'#4a3418',W:'#c8a060',w:'#a8844a',G:'#e8c88a',g:'#ffffff',S:'#8a6a3a',L:'#ffffff',r:'#c8d0e0',s:'#8a6a3a'};
+PXG_HATS.pphattop=PXG_HATS.tophat;   // Hatter’s Top Hat (Wonderland): the Hatter's tall hat as Tenniel drew it, the top hat's outline
+PXG_HERITAGE_HAT_PAL.pphattop={I:'#4a4a52',J:'#8a6a3a',K:'#fbf8f0',L:'#6a6a74'};
 PXG_HERITAGE_HAT_PAL.ppbronzehelm={k:'#3a2410',W:'#c8913a',w:'#a8742e',G:'#e8b860',g:'#ffe9a8',S:'#7a5420',L:'#ffe9a8',r:'#b83a2a',s:'#7a5420'};
 PXG_HERITAGE_HAT_PAL.ppminer={A:'#626874',B:'#434752',C:'#2c2f38',D:'#1a1c22',S:'#8a909c',R:'#d9a84a',G:'#e0b04c',H:'#9a6e22',Y:'#fff4b8',W:'#fffbe8',L:'#ffe066',O:'#ffaa2a'};
 // Explorer Hat
@@ -18389,6 +18394,8 @@ PXG_BALL.pppomegranate=PXG_BALL.ppjelly;
 PXG_BALL_PAL.pppomegranate={o:'#5a1018',C:'#c8303a',h:'#e85a5a',b:'#8a1c28',s:'#6a1820',W:'#ffd0d0',T:'#e8ebf0'};
 PXG_BALL.ppambrosia=PXG_BALL.ppjelly;
 PXG_BALL_PAL.ppambrosia={o:'#8a5a14',C:'#f0c05a',h:'#fff0b8',b:'#d8963c',s:'#a86a28',W:'#ffffff',T:'#e8ebf0'};
+PXG_BALL.ppcheshire=PXG_BALL.ppjelly;
+PXG_BALL_PAL.ppcheshire={o:'#5a4a3a',C:'#a89880',h:'#c8b8a0',b:'#7a6a58',s:'#6a5a4a',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL_PAL.ppfleece={o:'#a89a80',C:'#f2ead8',h:'#e2d6bc',b:'#ffffff',s:'#c8b898',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL_PAL.ppjelly={o:'#c8408a',C:'#ff8ad0',h:'#9be86a',b:'#ff5fb8',s:'#c8408a',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL_PAL.ppdinoegg={o:'#4e5a2a',C:'#f2ecc4',h:'#fffbea',s:'#c8c690',g:'#5aae3a',d:'#2f6e2a',T:'#e8ebf0'};
