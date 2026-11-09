@@ -235,6 +235,7 @@ function play(host, o, cb){
   if (o && o.vehicle === 'sea') return sail(host, o, cb);   // the Odyssey's islands are reached by sea (sail, below)
   if (o && o.vehicle === 'fall') return fall(host, o, cb);   // Wonderland is reached down the rabbit hole (fall, below)
   if (o && o.vehicle === 'glass') return glassLeg(host, o, cb);   // the Looking-Glass is reached through the glass (glassLeg, below)
+  if (o && o.vehicle === 'beanstalk') return beanLeg(host, o, cb);   // the Beanstalk is reached up the beanstalk (beanLeg, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var wrap = document.createElement('div'); wrap.className = 'pp-trip';
@@ -1013,5 +1014,106 @@ function glassLeg(host, o, cb){
   requestAnimationFrame(frame);
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
 }
-root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, PLANETS:PLANETS, ISLES:ISLES };
+/* UP THE BEANSTALK (SPACE_TRIP 'beanstalk'): "Jack and the Beanstalk", Joseph Jacobs' telling of 1890. At the end of the
+   Looking-Glass country a beanstalk has grown up out of the turf overnight, as Jack's did from the beans his mother threw out of
+   the window, and it goes up and up until it reaches the sky. The camera walks up to its foot across the fields of the chessboard
+   country (their edges warped noise, the hedgerows wandering, never a check), then climbs: round and round the great twisting stalk
+   as it goes up past its leaves, the fields falling away below ("HE CLIMBED AND HE CLIMBED!"), into the cloud deck and out on top
+   of it, where the giant's land lies on the clouds and a long broad road runs off as straight as a dart to his great tall house
+   ("FEE-FI-FO-FUM!"). Every surface is noise or drawn shapes, never a grid. A tap skips it; with reduced motion putt.js shows a
+   still of the stalk instead (spaceTrip). */
+function beanLeg(host, o, cb){
+  var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; }
+  setRes(150);
+  var done = false, t0 = 0, DUR = 11.4, frames = 0, ftime = 0, CL0 = 62, CL1 = 68, TOP = 3.4;
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function vnz(x, y, z){ return noise3(x, y, z); }
+  // the stalk's middle at height y: it twists as it climbs, and thins a little
+  function axis(y){ return [Math.sin(y * 0.11) * 0.9, Math.cos(y * 0.09) * 0.7]; }
+  function rad(y){ return Math.max(0.55, 1.25 - y * 0.006); }
+  // where the camera is and where it looks: the walk to the foot, the climb round the stalk, and out over the clouds
+  function camAt(t){
+    if (t < 3){ var a = smooth(t / 3); return { pos:V(lerp(3, 1.2, a), 1.7, lerp(16, 5.2, a)), tg:V(0, lerp(4, 9, a), 0), fov:62 }; }
+    if (t < 8.6){ var u = (t - 3) / 5.6, th = 0.25 + u * 6.6, y = 1.9 + Math.pow(u, 1.35) * (CL1 + 6), ax = axis(y), r = 4.4;
+      return { pos:V(ax[0] + Math.sin(th) * r, y, ax[1] + Math.cos(th) * r), tg:V(ax[0] + Math.sin(th + 0.5) * 1.2, y + 3.4 + u * 2, ax[1] + Math.cos(th + 0.5) * 1.2), fov:66 }; }
+    var w = t - 8.6, s2 = smooth(w / 2.6), y2 = CL1 + 6 + s2 * 3; return { pos:V(lerp(Math.sin(6.85) * 4.4, 1.5, s2), y2, lerp(Math.cos(6.85) * 4.4, -6 - w * 3, s2)), tg:V(1.5, CL1 + 2.4, -48 - w * 3), fov:62 }; }
+  function sky(rd){ var g = clamp(rd[1] * 2.2 + 0.1, 0, 1); return lerpV([214, 232, 250], [70, 132, 210], Math.sqrt(g)); }
+  /* the Looking-Glass country below: fields of two greens whose edges are warped noise, a hedgerow along each edge, little brooks */
+  function country(p, d){ var x = p[0] * 0.08, z = p[2] * 0.08, w = vnz(x * 0.5, 5, z * 0.5) - 0.5, f = vnz(x + w * 1.6, 7, z - w * 1.2), f2 = vnz(x * 1.3 - w, 8, z * 1.3 + w), br = Math.abs(vnz(x * 0.35 + w, 11, z * 0.2) - 0.5), c;
+    var T4 = [[96, 168, 78], [128, 196, 96], [150, 206, 104], [116, 182, 88]];
+    if (br < 0.02) c = [70, 130, 196]; else if (Math.abs(f - 0.5) < 0.025 || Math.abs(f2 - 0.5) < 0.02) c = [36, 84, 42]; else c = mul(T4[(f > 0.5 ? 2 : 0) + (f2 > 0.5 ? 1 : 0)], 0.92 + 0.12 * vnz(p[0] * 0.4, 3, p[2] * 0.4));
+    var hd = Math.hypot(p[0], p[2]); if (hd < 2.6 + vnz(p[0], 2, p[2])) c = lerpV(c, [110, 76, 40], 0.7);   // the earth heaved up round the stalk's foot
+    return lerpV(c, [206, 228, 246], 1 - Math.exp(-d / 260)); }
+  /* the giant's land on top of the clouds: meadow, the long broad road, and far off his great tall house; elsewhere cloud tops */
+  function landTop(p, d){ var x = p[0], z = p[2], isl = Math.hypot(x * 0.8, (z + 46) * 0.55) + (vnz(x * 0.05, 13, z * 0.05) - 0.5) * 20, c;
+    if (isl > 34){ var b = vnz(x * 0.08, 15, z * 0.08); c = b > 0.62 ? [255, 255, 255] : b < 0.32 ? [206, 218, 234] : [236, 242, 250]; return lerpV(c, [214, 232, 250], 1 - Math.exp(-d / 300)); }
+    var a = vnz(x * 0.12, 17, z * 0.12); c = a > 0.62 ? [120, 184, 86] : a < 0.32 ? [82, 138, 56] : [100, 164, 70];
+    if (Math.abs(x - 1.5 + (vnz(z * 0.03, 19, 1) - 0.5) * 4) < 1.6 && z < -4) c = [216, 200, 160];   // the road, as straight as a dart
+    if (isl > 31) c = lerpV(c, [236, 242, 250], (isl - 31) / 3);
+    return lerpV(c, [214, 232, 250], 1 - Math.exp(-d / 300)); }
+  // the giant's great tall house at the end of the road: a grey stone box and a dark roof
+  var HOUSE = [[-5, CL1, -86], [9, CL1 + 11, -74]];
+  function hitBox(ro, rd, b){ var tmin = -1e9, tmax = 1e9, n = null; for (var a = 0; a < 3; a++){ if (Math.abs(rd[a]) < 1e-9){ if (ro[a] < b[0][a] || ro[a] > b[1][a]) return null; continue; }
+      var t1 = (b[0][a] - ro[a]) / rd[a], t2 = (b[1][a] - ro[a]) / rd[a]; if (t1 > t2){ var q = t1; t1 = t2; t2 = q; } if (t1 > tmin){ tmin = t1; n = [0, 0, 0]; n[a] = rd[a] > 0 ? -1 : 1; } if (t2 < tmax) tmax = t2; if (tmin > tmax) return null; }
+    return tmin > 1e-4 ? { t:tmin, n:n } : null; }
+  // the stalk: marched a few steps against its twisting axis (a cylinder each step), and its leaves, flat hearts standing out from it
+  function stalkHit(ro, rd, tmax){ var best = null;
+    for (var k = 0; k < 2; k++){ var yy = k === 0 ? ro[1] : ro[1] + rd[1] * 6; var ax = axis(yy), r = rad(yy), ox = ro[0] - ax[0], oz = ro[2] - ax[1], a = rd[0] * rd[0] + rd[2] * rd[2], b = ox * rd[0] + oz * rd[2], c = ox * ox + oz * oz - r * r, h = b * b - a * c;
+      if (a < 1e-9 || h < 0) continue; var tt = (-b - Math.sqrt(h)) / a; if (tt > 1e-3 && tt < tmax && (!best || tt < best.t)){ var p = add(ro, mul(rd, tt)), ax2 = axis(p[1]); if (Math.abs(Math.hypot(p[0] - ax2[0], p[2] - ax2[1]) - rad(p[1])) < 0.5) best = { t:tt, p:p, k:'s', n:norm(V(p[0] - ax2[0], 0, p[2] - ax2[1])) }; } }
+    var lo = Math.floor(Math.min(ro[1], ro[1] + rd[1] * 30) / 3.2) - 1, hi = Math.ceil(Math.max(ro[1], ro[1] + rd[1] * 30) / 3.2) + 1;
+    for (var i = Math.max(0, lo); i <= Math.min(hi, 24); i++){ var ly = i * 3.2 + 1.4, la = i * 2.4, axl = axis(ly), cx = axl[0] + Math.cos(la) * 2.0, cz = axl[1] + Math.sin(la) * 2.0, ny = 0.9, nx = Math.cos(la) * 0.42, nz = Math.sin(la) * 0.42;
+      var den = rd[0] * nx + rd[1] * ny + rd[2] * nz; if (Math.abs(den) < 1e-6) continue; var tl = ((cx - ro[0]) * nx + (ly - ro[1]) * ny + (cz - ro[2]) * nz) / den; if (tl < 1e-3 || tl > tmax || (best && tl > best.t)) continue;
+      var q = add(ro, mul(rd, tl)), lx = q[0] - cx, lz = q[2] - cz, al = lx * Math.cos(la) + lz * Math.sin(la), ac = -lx * Math.sin(la) + lz * Math.cos(la), sh = 1.6 * (1 - Math.pow(al / 1.9, 2));
+      if (Math.abs(al) < 1.9 && Math.abs(ac) < sh * 0.6 + 0.05) best = { t:tl, p:q, k:'l', v:ac, i:i }; }
+    return best; }
+  function render(t){ var cam = camAt(t), f = norm(sub(cam.tg, cam.pos)), r = norm(cross(f, V(0, 1, 0))), u = cross(r, f), foc = (W / 2) / Math.tan(cam.fov * Math.PI / 360), ro = cam.pos, sun = norm(V(0.4, 0.8, 0.45));
+    var inCloud = ro[1] > CL0 && ro[1] < CL1 ? 1 - Math.abs((ro[1] - (CL0 + CL1) / 2) / ((CL1 - CL0) / 2)) : 0;
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++){ var px2 = (x + 0.5 - W / 2) / foc, py2 = (H / 2 - y - 0.5) / foc, rd = norm(add(f, add(mul(r, px2), mul(u, py2)))), col, o2 = (y * W + x) * 4;
+      // what the ray meets: the ground below or the cloud deck (its underside or its top), the house, the stalk and its leaves
+      var tg = 1e9, kind = 'sky';
+      if (ro[1] < CL0){ if (rd[1] < -1e-4){ tg = -ro[1] / rd[1]; kind = 'ground'; } else if (rd[1] > 1e-4){ tg = (CL0 - ro[1]) / rd[1]; kind = 'under'; } }
+      else if (ro[1] > CL1){ if (rd[1] < -1e-4){ tg = (CL1 - ro[1]) / rd[1]; kind = 'top'; } }
+      var hb = ro[1] > CL1 - 2 ? hitBox(ro, rd, HOUSE) : null; if (hb && hb.t < tg){ tg = hb.t; kind = 'house'; }
+      var sh = stalkHit(ro, rd, Math.min(tg, 120));
+      if (sh){ if (sh.k === 's'){ var tw = Math.sin(Math.atan2(sh.p[2] - axis(sh.p[1])[1], sh.p[0] - axis(sh.p[1])[0]) * 3 + sh.p[1] * 0.8); col = tw > 0.55 ? [138, 208, 106] : tw > -0.2 ? [78, 160, 64] : [52, 122, 44]; col = mul(col, 0.7 + 0.3 * Math.max(0, dot(sh.n, sun))); }
+        else { var vein = Math.abs(sh.v) < 0.06; col = vein ? [46, 104, 34] : (sh.i % 2 ? [90, 174, 70] : [74, 152, 58]); }
+        col = lerpV(col, [214, 232, 250], 1 - Math.exp(-sh.t / 200)); }
+      else if (kind === 'ground') col = country(add(ro, mul(rd, tg)), tg);
+      else if (kind === 'under'){ var pu = add(ro, mul(rd, tg)), nb = vnz(pu[0] * 0.06, 21, pu[2] * 0.06); col = lerpV(nb > 0.55 ? [236, 240, 248] : [196, 206, 222], [214, 232, 250], 1 - Math.exp(-tg / 160)); }
+      else if (kind === 'top') col = landTop(add(ro, mul(rd, tg)), tg);
+      else if (kind === 'house'){ var ph = add(ro, mul(rd, tg)); col = ph[1] > CL1 + 7.5 ? [52, 52, 64] : (Math.abs(ph[0] - 2) < 1.6 && ph[1] < CL1 + 4 && hb.n[2] > 0.5 ? [74, 46, 22] : lerpV([150, 146, 134], [180, 174, 158], vnz(ph[0], ph[1], 23)));
+        col = mul(col, 0.72 + 0.28 * Math.max(0, dot(hb.n, sun))); col = lerpV(col, [214, 232, 250], 1 - Math.exp(-tg / 300)); }
+      else col = sky(rd);
+      // the cloud deck between: a ray that crosses it on its way is whited out by how much cloud it went through
+      if (!sh || sh.t > 1){ var c0 = (CL0 - ro[1]) / (rd[1] || 1e-9), c1 = (CL1 - ro[1]) / (rd[1] || 1e-9), ta = Math.max(0, Math.min(c0, c1)), tb = Math.min(sh ? sh.t : tg, Math.max(c0, c1));
+        if (tb > ta && (kind !== 'under' && kind !== 'top')){ var thick = clamp((tb - ta) / 14, 0, 1); col = lerpV(col, [244, 247, 252], thick * 0.95); } }
+      if (inCloud) col = lerpV(col, [244, 247, 252], Math.min(0.92, inCloud * 1.4));
+      D[o2] = col[0]; D[o2 + 1] = col[1]; D[o2 + 2] = col[2]; D[o2 + 3] = 255; }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    var Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    var say = function(txt, c1, c2, wob){ ctx.font = 'bold ' + Math.round(44 * k9) + 'px Anton, Impact, sans-serif'; var fit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText(txt).width)); ctx.font = 'bold ' + Math.round(44 * k9 * fit) + 'px Anton, Impact, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6 * k9; ctx.strokeStyle = c1; ctx.strokeText(txt, Wc / 2 + wob, Hc * 0.2); ctx.fillStyle = c2; ctx.fillText(txt, Wc / 2 + wob, Hc * 0.2); };
+    if (t > 4 && t < 6.6) say('HE CLIMBED AND HE CLIMBED!', '#1e1a14', '#ffffff', Math.sin(t * 6) * 2 * k9);
+    else if (t > 9 && t < 11) say('FEE-FI-FO-FUM!', '#1e1a14', '#ffe08a', Math.sin(t * 9) * 3 * k9);
+    return cam; }
+  if (o.still) return { at:function(t){ var c = render(t); if (t > 10) wrap.classList.add('cap'); return c; }, close:finish };
+  if (reduce){ render(5.4); wrap.classList.add('cap'); setTimeout(finish, 1600); return; }
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 104) setRes(Math.max(104, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 10) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, PLANETS:PLANETS, ISLES:ISLES };
 })();
