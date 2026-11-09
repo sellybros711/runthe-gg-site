@@ -502,7 +502,14 @@ var ISLES = {
      over the water (dark, ocean, mist). The shore is black shingle under grey meadows and dark rock, pale shades of the dead stand
      along it, a cave mouth opens in the crag, and Charon's small dark skiff waits off the shore, his lantern lit (charon). */
   underworld:{ sand:[44, 42, 52], low:[74, 86, 80], high:[58, 66, 70], rock:[64, 62, 80], dark:true, ocean:true, mist:true, shades:true, cave:true, charon:true,
-    hills:[[2, -14, -102, 40, 28, 30, 'crag'], [-24, -10, -94, 22, 18, 20, 'land'], [20, -8, -86, 14, 16, 12, 'land']] }
+    hills:[[2, -14, -102, 40, 28, 30, 'crag'], [-24, -10, -94, 22, 18, 20, 'land'], [20, -8, -86, 14, 16, 12, 'land']] },
+  /* Olympus: the last leg of the Odyssey rises. The ship sails out of the dark of the dead into the dawn (Homer's rosy-fingered
+     Dawn: the sky goes from violet to rose and gold, then to day), and Iris' rainbow comes down to the sea ahead of it. The ship
+     rides the rainbow up out of the sea, through a deck of soft cloud, and comes to rest on the top of the gods' mountain, where
+     the white halls of the gods stand above the clouds (dawn, rise, halls). The mountain is pale rock in warped noise, its flanks
+     ringed with cloud. */
+  olympus:{ sand:[226, 220, 206], low:[110, 158, 86], high:[150, 170, 110], rock:[168, 160, 148], dawn:true, rise:true, halls:true,
+    hills:[[0, -26, -86, 26, 44, 22, 'crag'], [-28, -22, -110, 20, 48, 16, 'crag'], [27, -18, -106, 16, 42, 14, 'crag'], [-1, 13.2, -93, 8, 6.2, 4.4, 'halls']] }
 };
 var SHORES = {
   // Oz: the green land of meadows behind, red poppy fields running through it
@@ -589,7 +596,14 @@ function sail(host, o, cb){
   var FR = ISLES[o.from] || SHORES[o.from] || SHORES.oz;
   // leaving one island for the next, the island left behind lies astern of the ship (its row is drawn ahead of a ship arriving)
   if (ISLES[o.from]) FR = { low:FR.low, high:FR.high, sand:FR.sand, rock:FR.rock, hills:FR.hills.map(function(h){ return [h[0] * 0.8, h[1], 96 + h[2] * 0.5, h[3], h[4], h[5], h[6]]; }) };
-  var MIST = !!ISL.mist, STK = ISL.stacks || [], DARK = !!ISL.dark;
+  var MIST = !!ISL.mist, STK = ISL.stacks || [], DARK = !!ISL.dark, DAWN = !!ISL.dawn, RISE = !!ISL.rise;
+  /* IRIS' RAINBOW (Olympus): a road of the rainbow's colours on an arc of a great circle (axis across, at x = 0), leaving the sea
+     at RB.z0 and rising to its crest on the mountain's top at RB.z1, RB.y1 high. The ship rides it. */
+  var RB = null; if (RISE){ var h0 = ISL.hills[0], z1 = h0[2] + 6, y1 = h0[1] + h0[4] * Math.sqrt(Math.max(0, 1 - Math.pow((z1 - h0[2]) / h0[5], 2))) + 0.2, z0 = -22, D0 = z0 - z1;
+    RB = { z0:z0, z1:z1, y1:y1, R:(D0 * D0 + y1 * y1) / (2 * y1), w:2.1 }; RB.yc = y1 - RB.R; }
+  // the road's height at z (the crest past z1 holds level), and its slope (dy/dz)
+  function rbY(z){ if (!RB || z > RB.z0) return 0; var u = Math.max(0, z - RB.z1); return RB.yc + Math.sqrt(Math.max(0, RB.R * RB.R - u * u)); }
+  function rbS(z){ if (!RB || z > RB.z0 || z < RB.z1) return 0; var u = z - RB.z1; return -u / Math.sqrt(Math.max(1e-6, RB.R * RB.R - u * u)); }
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var wrap = document.createElement('div'); wrap.className = 'pp-trip';
   wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
@@ -609,21 +623,31 @@ function sail(host, o, cb){
   // the sea mist (Medusa's Isle): it rolls in as the stacks come up and thins as the island comes in sight
   function mistAt(t){ return MIST ? smooth((t - 1.6) / 1.4) * (1 - smooth((t - 6.6) / 1.6)) * (DARK ? 0.6 : 1) : 0; }
   // the dark (the Underworld): past the stream of Ocean the sun goes, and it does not come back
-  function darkAt(t){ return DARK ? smooth((t - 2.2) / 2.4) : 0; }
+  function darkAt(t){ return DARK ? smooth((t - 2.2) / 2.4) : DAWN ? 0.92 * (1 - smooth((t - 0.4) / 3.6)) : 0; }
+  // the dawn (Olympus): rose and gold low in the sky as the dark lifts, gone to clear day by the time the ship is up
+  function roseAt(t){ return DAWN ? Math.sin(Math.PI * clamp((t - 0.6) / 5.2, 0, 1)) : 0; }
+  // the rainbow comes down to the sea ahead as the dawn comes
+  function bowAt(t){ return RISE ? smooth((t - 1.4) / 1.6) : 0; }
   // the ship weaves between the stacks, a gentle S
   function swayAt(t){ return MIST && STK.length ? Math.sin(t * 0.9) * 2.6 * smooth(t / 2) * (1 - smooth((t - 7.5) / 1.5)) : 0; }
   function flashAt(t){ var f = 0; FLASH.forEach(function(ft){ var d = t - ft; if (d > 0 && d < 0.32) f = Math.max(f, d < 0.06 ? 1 : d < 0.12 ? 0.35 : d < 0.18 ? 0.8 : 1 - (d - 0.18) / 0.14); }); return f; }
-  function zsAt(t){ return t < 8 ? -6 * t : -(48 + 6 * (t - 8) - 0.95 * (t - 8) * (t - 8)); }
+  function zsAt(t){ if (RISE){ var ta = -RB.z0 / 6; if (t < ta) return -6 * t; var u = clamp((t - ta) / (9.6 - ta), 0, 1), m0 = 6 * (9.6 - ta) / (RB.z0 - RB.z1);
+      return RB.z0 - (RB.z0 - RB.z1) * ((-2 * u * u * u + 3 * u * u) + m0 * (u * u * u - 2 * u * u + u)); }
+    return t < 8 ? -6 * t : -(48 + 6 * (t - 8) - 0.95 * (t - 8) * (t - 8)); }
   function shipAt(t){ var s = stormAt(t), amp = 0.035 + s * 0.16, roll = Math.sin(t * 1.7) * amp, pitch = Math.sin(t * 1.25 + 1) * amp * 0.8, heave = Math.sin(t * 2.1) * (0.08 + s * 0.45);
     var M = mm([1, 0, 0, 0, Math.cos(pitch), -Math.sin(pitch), 0, Math.sin(pitch), Math.cos(pitch)], [Math.cos(roll), -Math.sin(roll), 0, Math.sin(roll), Math.cos(roll), 0, 0, 0, 1]);
-    var row = t > 9.6 ? 0 : Math.sin(t * 3.2), p = V(swayAt(t), heave, zsAt(t)), yaw = MIST && STK.length ? -Math.cos(t * 0.9) * 0.16 * smooth(t / 2) * (1 - smooth((t - 7.5) / 1.5)) : 0;
-    if (yaw) M = mm(rotY(yaw), M); return { p:p, M:M, row:row, s:s }; }
+    var row = t > 9.6 ? 0 : Math.sin(t * 3.2), zs = zsAt(t), p = V(swayAt(t), heave, zs), yaw = MIST && STK.length ? -Math.cos(t * 0.9) * 0.16 * smooth(t / 2) * (1 - smooth((t - 7.5) / 1.5)) : 0;
+    if (yaw) M = mm(rotY(yaw), M);
+    // on the rainbow the ship rides its road: lifted to it, its bow pitched up the climb, the waves left behind
+    if (RISE && zs < RB.z0 + 0.5){ var on = smooth((RB.z0 + 0.5 - zs) / 1.5); p = V(p[0], lerp(heave, rbY(zs) + 0.25, on), zs); M = mm(rotX(Math.atan(-rbS(zs)) * on), M); }
+    return { p:p, M:M, row:row, s:s }; }
   function poseAt(t){ return !STORM ? -80 : -74 + smooth((t - 2.2) / 1.1) * 66 - smooth((t - 6.0) / 1.1) * 70; }
   function camAt(t, sh){ var P = sh.p, a = smooth(t / 2.6), b = smooth((t - 6.8) / 2.4), isl = ISL.hills[0];
     var off = lerpV(lerpV(V(8.5, 3.4, -7), V(-6, 4.4, 11), a), V(3, 3.4, 13.5), b), tg0 = lerpV(add(P, V(0, 1.6, 0)), STORM ? add(P, V(15, 8, -30)) : add(P, V(0, 4.5, -12)), smooth((t - 2.2) / 1.2));
-    var tg = lerpV(tg0, V(isl[0] * 0.5, 5, isl[2]), b), sk = sh.s * 0.25;
+    var tg = lerpV(tg0, RISE ? V(-2, RB.y1 + 1.5, isl[2] - 4) : V(isl[0] * 0.5, 5, isl[2]), b), sk = sh.s * 0.25;
+    if (RISE) off = lerpV(lerpV(off, V(2.5, 5.5, 15), smooth((t - 3.4) / 2)), V(8, 6, 10), smooth((t - 7.4) / 2.2));   // up the rainbow from behind, then a step to the side to see the halls
     return { pos:add(add(P, off), V(Math.sin(t * 23) * sk, Math.sin(t * 29) * sk, 0)), tg:tg, up:V(Math.sin(t * 1.3) * sh.s * 0.05, 1, 0), fov:58 }; }
-  var sun = norm(V(-0.5, 0.65, 0.55));
+  var sun = norm(V(-0.5, 0.65, 0.55)), CLY = 8;
 
   // ---- the land: each hill an ellipsoid half sunk in the sea, painted by height and warped noise
   function hitEll(ro, rd, h){ var sx = h[3], sy = h[4], sz = h[5], o2 = V((ro[0] - h[0]) / sx, (ro[1] - h[1]) / sy, (ro[2] - h[2]) / sz), d2 = V(rd[0] / sx, rd[1] / sy, rd[2] / sz);
@@ -644,6 +668,12 @@ function sail(host, o, cb){
         if (hash(tcx, tcz, 74) > 0.78 && Math.hypot(p[0] - (tcx + 0.5) * 3, (p[2] - (tcz + 0.5) * 3) * 0.7) < 0.5) col = [196, 192, 184]; }
       if (isle && L.shades && y < 3.4 && y > 0.6){ var hcx = Math.floor(p[0] / 2.6), hcz = Math.floor(p[2] / 2.6);   // the pale shades of the dead along the shore
         if (hash(hcx, hcz, 75) > 0.8 && Math.hypot(p[0] - (hcx + 0.5) * 2.6, (p[2] - (hcz + 0.5) * 2.6) * 0.7) < 0.45) col = [222, 224, 244]; } }
+    if (h[6] === 'halls'){ var hy2 = h[1] + h[4], cx3 = (p[0] - h[0] + 9) / 1.15;   // the halls of the gods: white columns under a gold roof
+      return [y > hy2 - 1.6 ? (y > hy2 - 0.5 ? [255, 226, 120] : [236, 196, 90]) : (Math.abs(cx3 - Math.round(cx3)) < 0.24 ? [252, 250, 244] : [168, 164, 160]), n]; }
+    if (L.rise && h[6] === 'crag'){ col = lerpV(L.rock, [222, 216, 204], smooth((q - 0.4) / 0.35)); if (y < 7 && w > 0.5) col = lerpV(col, L.low, 0.7); else if (y < 12 && q < 0.42) col = lerpV(col, L.high, 0.55);
+      if (y > h[1] + h[4] - 7 && w > 0.56) col = lerpV(col, [248, 250, 255], 0.8); }                                     // pale rock, green low on the flanks, snow in the hollows near the top
+    if (isle && L.rise && y > 5 && y < 11){ var cr = fbm([p[0] * 0.08 + 3, y * 0.2, p[2] * 0.08], 3), ck = smooth((cr - 0.42) / 0.18) * (1 - Math.abs(y - 8) / 3);   // a ring of cloud round the flanks
+      if (ck > 0) col = lerpV(col, y > 8 ? [252, 252, 255] : [200, 212, 232], clamp(ck * 1.4, 0, 1)); }
     if (isle && L.temple && h === ISL.hills[0] && y > h[1] + h[4] - 4.5 && Math.abs(p[0] - h[0]) < 6.5){   // the ruined temple on the crown: columns and a white floor
       col = (Math.floor((p[0] - h[0] + 7) / 1.3) % 2 && y < h[1] + h[4] - 0.9) ? [236, 232, 224] : [206, 202, 192]; }
     return [col, n]; }
@@ -653,6 +683,7 @@ function sail(host, o, cb){
     var skyTop = lerpV([96, 166, 236], [34, 40, 54], s), skyLow = lerpV([196, 226, 250], [86, 94, 106], s), horizon = lerpV([170, 206, 232], [70, 78, 90], s);
     if (mi){ skyTop = lerpV(skyTop, [196, 206, 214], mi * 0.7); skyLow = lerpV(skyLow, [226, 230, 232], mi * 0.8); horizon = lerpV(horizon, [214, 220, 224], mi * 0.85); }
     var dk = darkAt(t); if (dk){ skyTop = lerpV(skyTop, [16, 14, 34], dk); skyLow = lerpV(skyLow, [62, 58, 92], dk * 0.92); horizon = lerpV(horizon, [56, 52, 84], dk * 0.92); }
+    var ro = roseAt(t), bw = bowAt(t); if (ro){ skyLow = lerpV(skyLow, [246, 176, 150], ro * 0.75); horizon = lerpV(horizon, [252, 206, 150], ro * 0.8); skyTop = lerpV(skyTop, [120, 110, 170], ro * 0.3); }
     if (fl){ skyTop = lerpV(skyTop, [170, 180, 230], fl * 0.5); skyLow = lerpV(skyLow, [200, 206, 236], fl * 0.5); horizon = lerpV(horizon, [150, 156, 180], fl * 0.4); }
     var shipM = sh.M, oA = sh.row * 0.32, oL = Math.sin(t * 3.2 + 1.57) * 0.14;
     var models = [[GSHIP, sh.p, shipM, 1], [OARS, add(sh.p, mv(shipM, V(1.0, 0.55, 0))), mm(shipM, mm(rotY(oA), [Math.cos(oL), -Math.sin(oL), 0, Math.sin(oL), Math.cos(oL), 0, 0, 0, 1])), 2],
@@ -687,7 +718,13 @@ function sail(host, o, cb){
       // the ship, its oars and the god
       for (var mi = 0; mi < models.length; mi++){ var Mo = models[mi], b4 = Mo[4]; if (x < b4[0] || x > b4[2] || y < b4[1] || y > b4[3]) continue; var hv = hitVox(Mo[0], Mo[5], Mo[2], rd, best);
         if (hv && hv.t < best){ var py3 = cam.pos[1] + rd[1] * hv.t; if (py3 < -0.05 && Mo[3] !== 3) continue; if (Mo[3] === 3 && py3 < 0) continue; best = hv.t; id = Mo[3]; col = [hv.col >> 16 & 255, hv.col >> 8 & 255, hv.col & 255]; n = hv.n; } }
-      if (col){ out = shade(col, n, sun, id === 4 ? 0.3 : 0.12); if (s) out = mul(out, 1 - s * 0.35); if (dk) out = id === 4 ? lerpV(mul(out, 1 - dk * 0.62), [34, 30, 64], dk * 0.3) : lerpV(mul(out, 1 - dk * 0.42), [44, 40, 76], dk * 0.18); if (fl) out = lerpV(out, [230, 236, 255], fl * 0.18);
+      // Iris' rainbow: the road's top, where the ray meets the great circle within the road's width (bands across it, lit of itself)
+      if (RB && bw > 0.01){ var oy = cam.pos[1] - RB.yc, oz = cam.pos[2] - RB.z1, qa = rd[1] * rd[1] + rd[2] * rd[2], qb = oy * rd[1] + oz * rd[2], qc = oy * oy + oz * oz - RB.R * RB.R, qd = qb * qb - qa * qc;
+        if (qd > 0 && qa > 1e-9){ var tr = (-qb - Math.sqrt(qd)) / qa; if (tr > 0 && tr < best){ var hp = add(cam.pos, mul(rd, tr));
+            if (Math.abs(hp[0]) < RB.w && hp[2] < RB.z0 + 1 && hp[2] > RB.z1 - 1 && hp[1] > -0.5){ var bi = clamp(Math.floor((hp[0] + RB.w) / (2 * RB.w) * 6), 0, 5), BC = [[232, 64, 64], [255, 154, 48], [255, 220, 80], [96, 200, 96], [64, 140, 230], [150, 96, 220]][bi];
+              var glow = 0.82 + 0.18 * Math.sin(hp[2] * 0.6 - t * 3); col = mul(BC, glow); n = null; best = tr; id = 7; } } } }
+      if (col && id === 7){ out = lerpV(lerpV(horizon, skyLow, 0.5), col, bw); }
+      else if (col){ out = shade(col, n, sun, id === 4 ? 0.3 : 0.12); if (s) out = mul(out, 1 - s * 0.35); if (dk) out = id === 4 ? lerpV(mul(out, 1 - dk * 0.62), [34, 30, 64], dk * 0.3) : lerpV(mul(out, 1 - dk * 0.42), [44, 40, 76], dk * 0.18); if (fl) out = lerpV(out, [230, 236, 255], fl * 0.18);
         var fv = id === 3 ? vis * 2.6 : id === 5 ? lerp(lerp(520, 18, s), 30, mi) : id === 6 && STORM ? lerp(14, 520, smooth((t - 6.2) / 1.4)) : id === 6 && MIST && best > 40 ? lerp(14, 520, smooth((t - 6.6) / 1.6)) : vis;
         out = lerpV(out, horizon, 1 - Math.exp(-best / fv)); }   // the island is lost in haze until the storm has passed
       else { // the sky: a wash from the horizon up, and clouds drifting, warped, thick and dark in the storm
@@ -696,6 +733,10 @@ function sail(host, o, cb){
           var cov = smooth((cl - (0.56 - s * 0.24)) / 0.14), ccol = lerpV([252, 252, 255], lerpV([70, 76, 90], [120, 126, 140], smooth((cl - 0.5) / 0.2)), s);
           if (fl) ccol = lerpV(ccol, [236, 240, 255], fl * 0.6); out = lerpV(out, ccol, cov * clamp(rd[1] * 6, 0, 1)); }
         else out = horizon; best = 1e12; }
+      /* the deck of cloud the ship rises through (Olympus): soft warped noise at a height round the mountain, thin over the open sea
+         behind, seen from below as grey and from above as white, laid over whatever is beyond it */
+      if (RISE && Math.abs(rd[1]) > 1e-4){ var tcl = (CLY - cam.pos[1]) / rd[1]; if (tcl > 0 && tcl < best){ var pc = add(cam.pos, mul(rd, tcl)), cw3 = fbm([pc[0] * 0.03 + t * 0.02, 5.1, pc[2] * 0.03], 3), cl3 = fbm([pc[0] * 0.05 + cw3 * 2.2, 7.3, pc[2] * 0.05 - cw3 * 1.8], 3);
+          var ca = smooth((cl3 - 0.46) / 0.16) * smooth((-pc[2] - 26) / 18) * (1 - smooth((Math.hypot(pc[0], pc[2] - ISL.hills[0][2]) - 70) / 30)); if (ca > 0.01){ out = lerpV(out, rd[1] < 0 ? lerpV([226, 234, 246], [255, 255, 255], smooth((cl3 - 0.5) / 0.2)) : [176, 188, 212], ca * 0.92); if (ca > 0.5){ best = tcl; id = 8; } } } }
       D[o2] = out[0]; D[o2 + 1] = out[1]; D[o2 + 2] = out[2]; D[o2 + 3] = 255; Z[y * W + x] = best; ID[y * W + x] = id; }
     // the outline round the ship and the god, as the courses are inked
     for (var y2 = 1; y2 < H - 1; y2++) for (var x2 = 1; x2 < W - 1; x2++){ var k2 = y2 * W + x2, idc = ID[k2]; if (idc < 1 || idc > 3) continue;
@@ -713,6 +754,8 @@ function sail(host, o, cb){
       ctx.lineCap = 'round'; [[7 * k, 'rgba(180,200,255,.35)'], [2.4 * k, '#ffffff']].forEach(function(st){ ctx.strokeStyle = st[1]; ctx.lineWidth = st[0]; ctx.beginPath(); segs.forEach(function(p, j){ j ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); }); });
     if (DARK && t > 2.6 && t < 4.4){ var d9 = k, dw = Math.sin(t * 4) * 2 * d9; ctx.font = 'bold ' + Math.round(38 * d9) + 'px Anton, Impact, sans-serif'; var dfit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText('THE EDGE OF THE WORLD').width)); ctx.font = 'bold ' + Math.round(38 * d9 * dfit) + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6 * d9 * dfit;
       ctx.strokeStyle = '#14121e'; ctx.strokeText('THE EDGE OF THE WORLD', Wc / 2, Hc * 0.2 + dw); ctx.fillStyle = '#d8d0f0'; ctx.fillText('THE EDGE OF THE WORLD', Wc / 2, Hc * 0.2 + dw); }
+    else if (RISE && t > 3.4 && t < 5.2){ var r9 = k, rw = Math.sin(t * 4) * 2 * r9; ctx.font = 'bold ' + Math.round(42 * r9) + 'px Anton, Impact, sans-serif'; var rfit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText('RIDE THE RAINBOW!').width)); ctx.font = 'bold ' + Math.round(42 * r9 * rfit) + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6 * r9 * rfit;
+      ctx.strokeStyle = '#1a2238'; ctx.strokeText('RIDE THE RAINBOW!', Wc / 2, Hc * 0.2 + rw); ctx.fillStyle = '#ffe9a0'; ctx.fillText('RIDE THE RAINBOW!', Wc / 2, Hc * 0.2 + rw); }
     else if (MIST && !DARK && t > 2.6 && t < 4.2){ var m9 = k, mw = Math.sin(t * 5) * 2 * m9; ctx.font = 'bold ' + Math.round(42 * m9) + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6 * m9;
       ctx.strokeStyle = '#1e2a24'; ctx.strokeText('FOLLOW THE OWL!', Wc / 2, Hc * 0.2 + mw); ctx.fillStyle = '#ffe9a8'; ctx.fillText('FOLLOW THE OWL!', Wc / 2, Hc * 0.2 + mw); }
     if (STORM && t > 3.0 && t < 4.3){ var s9 = k, wob = Math.sin(t * 16) * 3 * s9; ctx.font = 'bold ' + Math.round(50 * s9) + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6 * s9;

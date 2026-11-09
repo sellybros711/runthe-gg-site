@@ -27,7 +27,7 @@ const require = createRequire(import.meta.url);
 const P = require(process.env.PUTT_SRC || './putt.js');   // PUTT_SRC tries a copy of the holes without touching the real file
 const M = P.M;
 
-export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length > 0; }
+export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length + (C.bolts || []).length > 0; }
 /* walking distance to the cup over the course, round walls and blocks, back through tunnels and pipes
    and back over a ramp's jump, so a ball short of a gap does not rank behind one that went in the water */
 // with avoid, the secret zones are walls: a search told to find the obvious line must not rank a ball
@@ -57,6 +57,8 @@ export function geodesic(C, avoid){
       if (o >= 0 && pass[o]) back.push([o, e, k * 0.6]); } });
   // a cyclone (Oz) carries the ball from its funnel to its landing spot, whatever the pace: the landing leads back to the funnel
   (C.cyclones || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y), a = near(q.tx, q.ty); if (e >= 0 && a >= 0) back.push([a, e, 2]); });
+  // Zeus' bolt (Olympus) throws a ball in its ring a set way: where it lands leads back to the ring
+  (C.bolts || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y), a = near(q.x + q.ux * q.L, q.y + q.uy * q.L); if (e >= 0 && a >= 0) back.push([a, e, 2]); });
   const outOf = new Map(); back.forEach(([a, e, w]) => { if (!outOf.has(a)) outOf.set(a, []); outOf.get(a).push([e, w]); });
   const start = near(C.cup[0], C.cup[1]); if (start < 0) return () => 1e9;
   // a Dijkstra over the grid with the jumps as extra edges (a binary heap keeps it quick)

@@ -1620,7 +1620,19 @@
       if(i%2===0){ const f=add(q,sc(hup,hr*0.1),sc(dir,hr*0.05)); out.push(ellipsoid(f,AXh,[hr*0.15,hr*0.06,hr*0.15],fl,{gloss:2,noCast:1}));   // a flower
         out.push(ellipsoid(add(f,sc(hup,hr*0.04)),AXh,[hr*0.05,hr*0.04,hr*0.05],gd,{gloss:2,noCast:1})); } }                      // its heart
     return out; };
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1};   // a modelled hat that is modelled on the course golfer too
+  /* THE WINGED CAP (Olympus): Hermes' petasos as the vase painters draw it, a low round traveller's cap with a narrow brim, and a
+     small white wing rising from each side of it, swept back. Modelled on the course golfer too, so Hermes wears it on the trail. */
+  HAT_MODEL.ppwingcap=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const cap=X2((P&&P.W)||'#c8a060'), dk=X2((P&&P.S)||'#8a6a3a'), wg=X2((P&&P.g)||'#ffffff'), wd=X2((P&&P.r)||'#c8d0e0');
+    const C=add(hc,sc(hup,hr*0.3)), R=[hr*1.06,hr*0.78,hr*1.06];
+    out.push(ellipsoid(C,AXh,R,cap,{gloss:1,cut:l=>l[1]>-0.1}));                                                               // the crown of the cap
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.3)),AXh,[hr*1.32,hr*0.08,hr*1.32],dk,{gloss:1}));                                      // the brim
+    for(const sd of [1,-1]){ const base=add(C,sc(Lf,sd*hr*0.98),sc(hup,hr*0.25),sc(look,-hr*0.1));
+      for(let k=0;k<3;k++){ const f=add(base,sc(hup,hr*(0.2+k*0.22)),sc(look,-hr*(0.12+k*0.2)),sc(Lf,sd*hr*0.06*k));
+        out.push(ellipsoid(f,AXh,[hr*(0.34-k*0.06),hr*0.1,hr*0.05],k===2?wd:wg,{gloss:2,noCast:1})); } }                          // a wing, feather on feather
+    return out; };
+  HAT_OVER_HAIR.ppwingcap=1;
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1850,6 +1862,9 @@
     // the Pomegranate Ball: Persephone's fruit, a deep red skin with a darker flush, its little crown at the top and a bright gleam
     pppomegranate:{ f:(p,P)=>{ if(p[1]>0.86&&Math.abs(Math.sin(Math.atan2(p[2],p[0])*3))>0.4) return {c:P.s,gloss:1}; if(p[1]>0.8) return {c:P.o,gloss:1};
       if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.2) return {c:P.W,gloss:3}; const w=Math.sin(p[0]*4+p[1]*3)+Math.sin(p[2]*5-p[1]*2); return {c:w>1.2?P.h:w<-0.9?P.b:P.C,gloss:2}; } },
+    // the Ambrosia Ball: the food of the gods, gold with a honey glow, a swirl of paler gold through it and a bright gleam
+    ppambrosia:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.2) return {c:P.W,gloss:3}; const w=Math.sin(p[1]*6+Math.atan2(p[2],p[0])*2+Math.sin(p[0]*3)*1.2);
+      return {c:w>0.6?P.h:w<-0.7?P.b:P.C,gloss:2}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};
