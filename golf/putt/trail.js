@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -171,6 +171,11 @@ var KIT = {
   cyclops:{ g:['#b8b05a', '#c8c06a', '#a8a04e', 0.18], gpat:'cycMeadow', p:['#ecdcae', '#f6ead0', '#d8c490'], tree:['broad', 'broad', 'broad'], leaves:['#7a9058', '#b8c8a0', '#5a7040'], bark:'#6a5a4a',
     low:['sheep', 'rock', 'bush'], brk:'pot', haz:'slow', hazC:['#9a7ab8', '#7a5a98'], waterC:['#1f7fc0', '#5ac8e0'], seaC:['#1f7fc0', '#5ac8e0'], bogC:['#9a7ab8', '#7a5a98'], lm:['cycFold', 'cycCrag', 'columns'], wall:['#f2ead8', '#a8987a'],
     npc:{ skin:'tan', polo:'white', hat:'white', pants:'khaki', hair:'black', hairStyle:'curly', cap:false, shoes:'white', gender:'female' }, who:'the shepherd' },
+  // Medusa's Isle: grey rock and dry grass, a path of marble slabs, dark cypresses, the statues of earlier visitors and the
+  // calm sea at the quay and below the cliffs
+  medusa:{ g:['#9a9a72', '#aaa880', '#86865e', 0.18], gpat:'medGrass', p:['#c8c4ba', '#dcd8ce', '#a8a49a'], paved:true, tree:['pine', 'pine', 'broad'], leaves:['#2e4a2a', '#4a6a3a', '#1e3a22'], bark:'#5a4a3a',
+    low:['mstatue', 'rock', 'bush'], brk:'pot', haz:'slow', hazC:['#8a867c', '#6e6a64'], waterC:['#2a6a98', '#6ab0d0'], seaC:['#2a6a98', '#6ab0d0'], bogC:['#8a867c', '#6e6a64'], lm:['medStatue', 'columns', 'medOwl'], wall:['#eeebe4', '#a8a49a'],
+    npc:{ skin:'light', polo:'white', hat:'white', pants:'white', hair:'brown', hairStyle:'curly', cap:false, shoes:'white', gender:'male' }, who:'the fisherman' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -811,8 +816,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8 };
-var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3 };
+var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7 };
+var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -831,7 +836,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -852,11 +857,12 @@ var SECRET_SAY = {
   jellara:'Something big wobbles under this trail. There is a way in, if you can find it.',
   oz:'They say a green door on this trail leads into the palace. I never found it.',
   cyclops:'The sea runs into a cave under this trail. Some say a god lives down there.',
+  medusa:'Three old sisters live in a cave near here. They share one eye between them.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -1334,6 +1340,7 @@ var LIFE = {
   jellara:{ fly:['drone', 1], mote:[['petal', 20], ['spark', 14]] },
   oz:{ fly:['crow', 2], mote:[['petal', 18], ['butter', 6]] },
   cyclops:{ fly:['gull', 3], mote:[['butter', 8], ['petal', 6]] },
+  medusa:{ fly:['owl', 2], mote:[['dust', 10], ['butter', 4]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -1348,6 +1355,7 @@ var FLY_PAL = {
   parrot:{ base:'bird', w:'#e5483a', o:'#2bb04a', h:'#ffd23a', sz:1, z:[8, 13], v:[6, 8] },
   gull:{ base:'bird', w:'#f4f6fb', o:'#d8dde6', h:'#f2a03a', sz:1.1, z:[9, 15], v:[5, 8] },
   vulture:{ base:'bird', w:'#2a2228', o:'#3a3036', h:'#d89a7a', sz:1.3, z:[13, 17], v:[4, 5], circle:true },
+  owl:{ base:'bird', w:'#a8865a', o:'#8a6a44', h:'#ffd860', sz:1, z:[7, 11], v:[4, 6] },   // Athena's little owl
   crow:{ base:'bird', w:'#1a1820', o:'#24222a', h:'#d8a02a', sz:1, z:[7, 12], v:[6, 8] },
   bat:{ base:'bat', w:'#2a2230', o:'#3a2e44', h:'#ff4a3a', sz:0.9, z:[4, 9], v:[5, 9], flit:true },
   ptero:{ base:'ptero', w:'#a0522d', o:'#7a3e22', h:'#e8a03a', sz:1.5, z:[12, 17], v:[4, 6], circle:true },
@@ -3998,6 +4006,56 @@ BUILD.seaShip = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), beach = !
     var ex = dy + 4.2, ey = tt - 0.3; if (Math.hypot(ex, ey * 1.3) < 0.48) return Math.hypot(ex, ey * 1.3) < 0.18 ? '#14100c' : Math.hypot(ex, ey * 1.3) < 0.34 ? '#3a6ad0' : '#f6f0e0';   // the eye on the bow
     if (tt > top - 0.24) return '#b84a2a'; if (tt < 0.05) return '#1e1814'; return '#5e3c22'; }, 0.2); };
 LMSIZE.cycFold = [7, 5, 2]; LMSIZE.cycCrag = [5, 4, 6]; LMSIZE.cycCave = [10, 6, 8]; LMSIZE.seaShip = [7, 13, 8];
+/* ---- Medusa's Isle's stops on the walk, the same places its holes stand in (land.js): the stone quay where the ship tied up,
+   the garden of statues, the ruined town, the cliffs over the calm sea and Medusa's temple. The walk is a path of marble slabs
+   over grey rock and dry grass. The statues are earlier visitors in plain grey stone, calm, never broken or afraid. */
+GPAT.medGrass = function(c){ var a = vn(c.ti * 0.04, c.tj * 0.04, 241), w = vn(c.ti * 0.012, c.tj * 0.012, 245), st = hash(c.ti, c.tj, 242);
+  if (st > 0.989) return '#c8c4ba'; if (st > 0.984) return '#6a8a5a'; if (w > 0.64) return a > 0.5 ? '#9a968e' : '#8a867c'; return a > 0.7 ? '#aaa880' : a < 0.3 ? '#86865e' : '#9a9a72'; };
+GPAT.medRock = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 243), st = hash(c.ti, c.tj, 244); if (a > 0.6) return st > 0.97 ? '#7a8a5a' : a > 0.74 ? '#b4b0a6' : '#9a968e'; return GPAT.medGrass(c); };
+KIT['medusa~quay'] = kitFrom(KIT.medusa, { sea:true, nlm:3, low:['rock', 'mstatue', 'rock'], lm:['medStatue', 'boat', 'columns'], dens:0.2 });
+KIT['medusa~statues'] = kitFrom(KIT.medusa, { nlm:4, low:['mstatue', 'mstatue', 'bush'], lm:['medStatue', 'medStatue', 'medOwl', 'medStatue'] });
+KIT['medusa~ruins'] = kitFrom(KIT.medusa, { gpat:'medRock', nlm:4, dens:0.7, low:['rock', 'mstatue', 'bush'], lm:['columns', 'ruin', 'columns', 'medStatue'] });
+KIT['medusa~cliffs'] = kitFrom(KIT.medusa, { sea:true, gpat:'medRock', nlm:3, dens:0.15, low:['rock', 'rock', 'mstatue'], lm:['medStatue', 'ruin', 'medOwl'] });
+KIT['medusa~temple'] = kitFrom(KIT.medusa, { gpat:'medRock', nlm:3, dens:0.25, low:['mstatue', 'rock', 'mstatue'], lm:['medTemple', 'columns', 'medStatue'] });
+LIFE_AS['medusa~quay'] = { fly:['gull', 4], mote:[['dust', 4]] };
+LIFE_AS['medusa~statues'] = { fly:['owl', 2], mote:[['dust', 10]] };
+LIFE_AS['medusa~ruins'] = { fly:['song', 3], mote:[['butter', 8], ['dust', 6]] };
+LIFE_AS['medusa~cliffs'] = { fly:['gull', 4], mote:[['dust', 4]] };
+LIFE_AS['medusa~temple'] = { fly:['owl', 2], mote:[['ember', 8], ['dust', 6]] };
+// a statue of an earlier visitor, small, on the trail's grass: a grey figure in a cloak on a round base, one arm raised
+BUILD.mstatue = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), dir = hash(i, 7, 251) < 0.5 ? -1 : 1;
+  B.solid(x - 0.8, y - 0.6, zb - 0.05, x + 0.8, y + 0.6, zb + 2.5, function(px, py, pz){ var dx = (px - x) * dir, dy = py - y, tt = pz - zb;
+    if (tt < 0.2) return Math.hypot(dx, dy) < 0.55 ? (tt > 0.14 ? '#d8d4cc' : '#a8a49a') : null;
+    var sh = dx > 0.12 ? '#8a8680' : hash(Math.floor(px * 8), Math.floor(pz * 8), 252) > 0.5 ? '#b4b0a6' : '#a8a49a';
+    if (Math.hypot(dx, dy, (tt - 2.1) * 1.1) < 0.23) return sh;
+    if (tt < 1.9 && Math.hypot(dx / (0.34 - (tt - 0.2) * 0.05), dy / 0.22) < 1) return sh;
+    if (Math.abs(dy) < 0.09 && tt > 1.55 && tt < 2.15 && Math.abs(dx - 0.26 - (tt - 1.55) * 0.3) < 0.09) return sh; return null; }, 0.125); };
+// a bigger statue on a tall plinth: a warrior in grey stone, his shield on his arm, stopped where he stood
+BUILD.medStatue = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = Math.abs(dx);
+  if (tt < 1.4) return u < 1.3 && Math.abs(dy) < 1.3 ? (tt > 1.25 ? '#ffffff' : (Math.abs(dx * 4 % 1) < 0.1 ? '#c8c4ba' : '#e2ded6')) : null;   // the plinth
+  var t2 = tt - 1.4, sh = dx > 0.25 ? '#8a8680' : '#aaa69e';
+  if (Math.hypot(dx, dy, (t2 - 3.7) * 1.1) < 0.42) return sh;                                                                                 // the head
+  if (t2 > 3.95 && t2 < 4.5 && Math.abs(dx) < 0.1 && Math.abs(dy) < 0.4) return '#9a968e';                                                     // the helmet's crest
+  if (t2 < 3.3 && Math.hypot(dx / (0.62 - t2 * 0.03), dy / 0.4) < 1) return sh;                                                                // the body
+  if (Math.hypot(dx + 0.85, dy + 0.1, (t2 - 2.2) * 0.9) < 0.6 && Math.abs(dy + 0.35) < 0.18) return '#9a968e';                                 // the round shield
+  if (Math.abs(dx - 0.75) < 0.14 && Math.abs(dy) < 0.14 && t2 > 1 && t2 < 5) return '#8a8680';                                                 // the spear
+  return null; }); };
+// Athena's owl on a broken column: a small brown owl with big yellow eyes
+BUILD.medOwl = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.8 ? '#e2ded6' : null;
+  if (tt < 3.6) return r < 0.55 + 0.04 * Math.cos(Math.atan2(dy, dx) * 12) ? (Math.cos(Math.atan2(dy, dx) * 12) > 0.6 ? '#ffffff' : dx > 0.2 ? '#c8c4ba' : '#e8e5de') : null;
+  var t2 = tt - 3.6; if (Math.hypot(dx / 0.45, dy / 0.4, (t2 - 0.55) / 0.6) < 1){ if (dy > 0.25 && t2 > 0.72 && t2 < 0.92 && Math.abs(Math.abs(dx) - 0.17) < 0.1) return Math.abs(Math.abs(dx) - 0.17) < 0.04 ? '#1a1410' : '#ffd860';
+    if (dy > 0.3 && t2 > 0.58 && t2 < 0.7 && Math.abs(dx) < 0.05) return '#d8a040'; return t2 > 0.6 ? '#a8865a' : (Math.sin(t2 * 30) > 0.3 ? '#c8a878' : '#8a6a44'); }
+  if (t2 > 1.05 && t2 < 1.25 && Math.abs(Math.abs(dx) - 0.25) < 0.08 && Math.abs(dy) < 0.1) return '#8a6a44'; return null; }, 0.125); };
+// Medusa's temple from outside: a stepped base, a row of white columns and a pediment, a dark doorway between them
+BUILD.medTemple = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2, hd = t.d / 2;
+  if (tt < 0.9){ var stp = Math.floor(tt / 0.3); return Math.abs(dx) < hw - stp * 0.3 && Math.abs(dy) < hd - stp * 0.3 ? (stp % 2 ? '#e2ded6' : '#c8c4ba') : null; }
+  var top = t.h - 1.6; if (tt > top){ var pr = (tt - top) / 1.6; if (Math.abs(dx) > (hw - 0.6) * (1 - pr) || Math.abs(dy) > hd - 0.6) return null; return pr < 0.12 ? '#f6f4ee' : pr > 0.85 ? '#a8a49a' : '#e8e5de'; }
+  if (tt > top - 0.5) return Math.abs(dx) < hw - 0.5 && Math.abs(dy) < hd - 0.5 ? '#f6f4ee' : null;
+  var n = 6, sp = (t.w - 2) / (n - 1); for (var k = 0; k < n; k++){ var cx = -hw + 1 + k * sp; if (Math.hypot(dx - cx, dy - (hd - 1)) < 0.45) return Math.abs(dx - cx) > 0.25 ? '#c8c4ba' : '#ffffff'; }
+  if (Math.abs(dy) < hd - 1.8 && Math.abs(dx) < hw - 1.2) return dy > hd - 2.2 && Math.abs(dx) < 1.2 && tt < top - 1 ? '#1a1814' : '#d8d4cc';   // the cella, its door
+  return null; }); };
+LMSIZE.medStatue = [3, 3, 7.4]; LMSIZE.medOwl = [2, 2, 5]; LMSIZE.medTemple = [11, 8, 8];
 // @@WORLD STOPS END@@
 /* THE FOLK OF OZ (putt.js FOLK says who stands on which walk and what they say). Four of L. Frank Baum's 1900 characters,
    drawn the way the book and W. W. Denslow's 1900 plates draw them and in no other way (mythiball/PD_SOURCES.md has the
