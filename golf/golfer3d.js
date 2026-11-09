@@ -1609,7 +1609,18 @@
     out.push(ellipsoid(add(C,sc(hup,R[1]*0.86),sc(look,-hr*0.1)),AXh,[hr*0.7,hr*0.12,hr*0.14],dk,{gloss:2,noCast:1}));         // the crest's holder
     return out; };
   HAT_OVER_HAIR.ppbronzehelm=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1};   // a modelled hat that is modelled on the course golfer too
+  /* THE ASPHODEL CROWN (the Underworld): Persephone's wreath, as the old hymn to Demeter crowns her with flowers. A ring of grey
+     green leaves round the crown of the head, and on it the pale six pointed stars of the asphodel, a few to a side, each with its
+     little gold heart. Modelled on the course golfer too, so Persephone wears it on the trail. */
+  HAT_MODEL.ppasphodel=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const lf=X2((P&&P.W)||'#6a7a62'), dk=X2((P&&P.S)||'#46524c'), fl=X2((P&&P.g)||'#f4f0e4'), gd=X2((P&&P.r)||'#e8c050');
+    const C=add(hc,sc(hup,hr*0.42));
+    for(let i=0;i<14;i++){ const a=i/14*Math.PI*2, dir=add(sc(look,Math.cos(a)),sc(Lf,Math.sin(a))), q=add(C,sc(dir,hr*0.98));
+      out.push(ellipsoid(q,AXh,[hr*0.2,hr*0.1,hr*0.2],i%2?lf:dk,{gloss:1}));                                                     // the ring of leaves
+      if(i%2===0){ const f=add(q,sc(hup,hr*0.1),sc(dir,hr*0.05)); out.push(ellipsoid(f,AXh,[hr*0.15,hr*0.06,hr*0.15],fl,{gloss:2,noCast:1}));   // a flower
+        out.push(ellipsoid(add(f,sc(hup,hr*0.04)),AXh,[hr*0.05,hr*0.04,hr*0.05],gd,{gloss:2,noCast:1})); } }                      // its heart
+    return out; };
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1836,6 +1847,9 @@
     // the Fleece Ball: a ball of white wool, curl on curl, a little cream in the deep of the curls
     ppfleece:{ f:(p,P)=>{ const c=Math.sin(p[0]*11+Math.sin(p[1]*9)*1.5)*Math.sin(p[1]*11+Math.sin(p[2]*9)*1.5)*Math.sin(p[2]*11+Math.sin(p[0]*9)*1.5);
       return {c:c>0.25?P.W:c>-0.1?P.C:c>-0.4?P.h:P.s,gloss:0}; } },
+    // the Pomegranate Ball: Persephone's fruit, a deep red skin with a darker flush, its little crown at the top and a bright gleam
+    pppomegranate:{ f:(p,P)=>{ if(p[1]>0.86&&Math.abs(Math.sin(Math.atan2(p[2],p[0])*3))>0.4) return {c:P.s,gloss:1}; if(p[1]>0.8) return {c:P.o,gloss:1};
+      if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.2) return {c:P.W,gloss:3}; const w=Math.sin(p[0]*4+p[1]*3)+Math.sin(p[2]*5-p[1]*2); return {c:w>1.2?P.h:w<-0.9?P.b:P.C,gloss:2}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};

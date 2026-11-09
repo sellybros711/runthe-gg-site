@@ -5555,6 +5555,121 @@ window.RTT_PUTT_LAND = (function(){
       bg:'#2a2622', gain:2,
       mats:{ gcfloor:['#6e6a62', '#827e74', '#5a564e', 0.12, function(c, R){ var b = blot(c, 0.2, 225); return R(b > 0.62 ? '#827e74' : b < 0.3 ? '#5a564e' : '#6e6a62'); }],
         gcwall:['#5a564e', '#77736a', '#3e3a34', 0.18, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 227) + Math.sin(z * 2.2 + c.ti * 0.15) * 0.2; if (z > 5) return R('#3a3630'); return R(q > 0.75 ? '#77736a' : q < 0.3 ? '#3e3a34' : '#5a564e'); }] } }; };
+  /* ---------------- THE UNDERWORLD IS A JOURNEY. The ship ran onto a black beach at the edge of the world, past the stream of Ocean,
+     in the mist where the sun never comes (1 to 4: Homer's land of the Cimmerians, the dark sea along one side). The way goes on
+     through the grey meadows of asphodel, Persephone's poplars and willows standing in them (5 to 8), down the banks of the Styx,
+     Charon's boats drawn up on the shingle (9 to 12), out into the Elysian Fields, soft and pale and lit from nowhere (13 to 16),
+     and into the hall of Hades and Persephone, its black stone walls and its braziers (17 and 18). The land round a hole is
+     meadow and rock washed in warped noise, never a grid; on the shore and the river banks it falls softly to the dark water. The
+     shades of the dead stand about as pale wisps, calm and quiet, never a skull or a bone. */
+  STOPS.underworld = [[1, 'shore'], [5, 'asphodel'], [9, 'styx'], [13, 'elysium'], [17, 'hall']];
+  (function(){ BUILD.underworld = function(L){ var s = L.stop; return s === 'hall' ? undHall(L) : s === 'elysium' ? undElysium(L) : s === 'styx' ? undStyx(L) : s === 'asphodel' ? undAsphodel(L) : undShore(L); }; })();
+
+  function undEdge(L, x, y){ return 4.4 + fbm(x * 0.07, y * 0.07, L.seed + 93) * 3.6; }
+  function undMats(){ return {
+      ugrass:['#4a5650', '#5a6660', '#3a4640', 0.12, function(c, R){ if (c.rim === 1) return R('#6a7670');
+        var b = blot(c, 0.16, 261), w = blot(c, 0.05, 267), st = hash(c.ti, c.tj, 262); if (st > 0.985) return R('#e8e4d0'); if (st > 0.978) return R('#c8c4b0');
+        if (w > 0.62) return R(b > 0.55 ? '#46524c' : '#3e4a44'); return R(b > 0.66 ? '#5a6660' : b < 0.28 ? '#3a4640' : '#4a5650'); }],
+      uflower:['#7a8478', '#d8d4c0', '#4a5650', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 263), b = blot(c, 0.2, 264); if (st > 0.86) return R('#f0ecdc'); if (st > 0.78) return R('#c8c4ac');
+        return R(b > 0.6 ? '#5e6a62' : b < 0.3 ? '#46524c' : '#525e58'); }],
+      urock:['#3a3848', '#54526a', '#24222e', 0.16, function(c, R){ var b = blot(c, 0.22, 268); if (hash(c.ti, c.tj, 269) > 0.988) return R('#7a7690'); return R(b > 0.62 ? '#54526a' : b < 0.3 ? '#24222e' : '#3a3848'); }],
+      ushingle:['#2a2830', '#3e3c48', '#1a1820', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 270), b = blot(c, 0.3, 271); if (st > 0.94) return R('#5a5868'); return R(b > 0.55 ? '#2e2c36' : '#24222a'); }],
+      usea:['#1a1830', '#2e2c50', '#100e1e', 0.06, function(c, R){ var w = blot(c, 0.06, 265), f = c.f || 0; if (f > 0.6 + w * 0.15) return R('#8a86b8'); if (f > 0.35) return R('#3a3864');
+        var b = blot(c, 0.12, 266); return R(w > 0.62 ? '#2a2848' : b > 0.55 ? '#1e1c38' : '#16142a'); }] }; }
+  function undBase(L, o){ var seed = L.seed;
+    function seaK(x, y){ if (!o.sea) return 0; var c = L.clearAt(x, y), e = undEdge(L, x, y) + 3; return sm(e, e + 3.2, c); }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = seaK(x, y), hill = (fbm(x * 0.08, y * 0.08, seed) - 0.45) * (o.hills || 0.5) * sm(1.3, 4, c); return hill - k * 0.9; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = undEdge(L, x, y), k = seaK(x, y);
+        if (k > 0.55) return ['usea', { f:sm(0.55, 0.62, k) < 1 ? 1 - (k - 0.55) / 0.07 : 0 }];
+        if (o.sea && k > 0.1) return ['ushingle', {}];
+        if (c < e + 0.6) return ['ugrass', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (fbm(x * 0.06 + 2, y * 0.06, seed + 81) > (o.rocky ? 0.52 : 0.64)) return ['urock', {}];
+        if (o.flowers && fbm(x * 0.09 + 5, y * 0.09, seed + 83) > 0.5) return ['uflower', {}];
+        return ['ugrass', {}]; },
+      fill:{ on:['ugrass', 'uflower'], trees:o.trees == null ? 0.04 : o.trees, lows:0.14, tree:function(B, x, y, i){ if (hash(i, seed, 195) < 0.6) poplarAt(B, x, y, i + seed); else willowAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 196); if (k < 0.3) shadeAt(B, x, y, i + seed); else if (k < 0.65) asphAt(B, x, y, i + seed); else rockAt(B, x, y, 0.25 + hash(i, seed, 197) * 0.35, ['#3a3848', '#54526a']); } },
+      // the sky: no sun, a deep violet wash over a band of grey mist at the horizon
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        var g = ctx.createLinearGradient(0, 0, 0, top); g.addColorStop(0, o.pale ? '#4a4a6a' : '#16142a'); g.addColorStop(0.7, o.pale ? '#8a8aa8' : '#3a3858'); g.addColorStop(1, o.pale ? '#c8c8d8' : '#6a6888'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, top);
+        if (o.sea){ ctx.fillStyle = '#1e1c38'; ctx.fillRect(0, top - Math.max(2, top * 0.12), V.W, Math.max(2, top * 0.12)); }
+        for (var i = 0; i < 5; i++){ var cx = hash(i, 1, seed) * V.W, cy = top * (0.45 + hash(i, 2, seed) * 0.45), cr = Math.max(4, V.W * (0.05 + hash(i, 3, seed) * 0.05));
+          ctx.fillStyle = 'rgba(200,200,220,0.22)'; ctx.beginPath(); ctx.ellipse(cx, cy, cr * 3, cr * 0.35, 0, 0, 6.283); ctx.fill(); } },
+      bg:'#24203a', gain:2, mats:undMats() }; }
+  // a black poplar, tall and narrow, its leaves silver grey (Persephone's grove, Odyssey 10)
+  function poplarAt(B, x, y, k){ var zb = B.gz(x, y), H = 3.8 + hash(k, 3, 281) * 1.6, R = 0.6 + hash(k, 4, 281) * 0.2;
+    B.solid(x - R - 0.2, y - R - 0.2, zb - 0.1, x + R + 0.2, y + R + 0.2, zb + H + 0.3, function(px, py, pz){ var t = (pz - zb) / H, d = Math.hypot(px - x, py - y);
+      if (t < 0.16) return d < 0.15 ? '#3a3430' : null; var rr = R * Math.sin(Math.PI * Math.min(1, (t - 0.12) / 0.9)) * (1 + (vn(px * 3, pz * 3, 282) - 0.5) * 0.35); if (d > rr) return null;
+      var q = vn(px * 2.4 + py, pz * 2.8, 283); return q > 0.68 ? '#9aa4a0' : q < 0.3 ? '#3e4a46' : '#5e6a66'; }); }
+  // a willow, its long grey green fronds hanging to the ground
+  function willowAt(B, x, y, k){ var zb = B.gz(x, y), H = 3 + hash(k, 5, 284), R = 1.4 + hash(k, 6, 284) * 0.4;
+    B.solid(x - R - 0.2, y - R - 0.2, zb - 0.1, x + R + 0.2, y + R + 0.2, zb + H + 0.4, function(px, py, pz){ var t = (pz - zb) / H, d = Math.hypot(px - x, py - y);
+      if (d < 0.16 && t < 0.8) return '#3a3430'; if (t < 0.15) return null; var dome = R * Math.sqrt(Math.max(0, 1 - Math.pow(Math.max(0, t - 0.55) / 0.5, 2)));
+      if (d > dome || (t < 0.55 && d < dome - 0.35)) return null; if (Math.sin(Math.atan2(py - y, px - x) * 14 + pz * 2) < -0.4 && t < 0.6) return null;
+      var q = vn(px * 3, pz * 2, 285); return q > 0.65 ? '#8a9a7a' : q < 0.3 ? '#3e4e3a' : '#5a6a52'; }); }
+  /* a shade of the dead: a pale wisp the height of a man, a soft round head and a robe that thins away above the ground, faint
+     blue white. Quiet, never a skull. */
+  function shadeAt(B, x, y, k){ var zb = B.gz(x, y), s = 0.85 + hash(k, 8, 286) * 0.25, fl = 0.25 + hash(k, 9, 286) * 0.2;
+    B.solid(x - 0.7, y - 0.6, zb + fl - 0.05, x + 0.7, y + 0.6, zb + fl + 2.4 * s, function(px, py, pz){ var dx = px - x, dy = py - y, t = (pz - zb - fl) / s;
+      if (Math.hypot(dx, dy, (t - 2.0) * 1.1) < 0.28) return dx > 0.1 ? '#b8bcd8' : '#e6e8f6';                                          // the head
+      var rr = 0.12 + Math.min(1, t / 1.6) * 0.26 + Math.sin(t * 6 + k) * 0.03; if (t > 0 && t < 1.85 && Math.hypot(dx, dy) < rr) return dx > 0.12 ? '#a8acc8' : t < 0.4 ? '#c8cce4' : '#d8dcee';
+      return null; }); }
+  // a clump of asphodel: grey leaves and tall stalks of pale starry flowers
+  function asphAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.6, y - 0.6, zb - 0.05, x + 0.6, y + 0.6, zb + 1.5, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, d = Math.hypot(dx, dy);
+      if (t < 0.4) return d < 0.5 - t * 0.6 && Math.sin(Math.atan2(dy, dx) * 7) > -0.2 ? '#5a6a5a' : null;
+      for (var j = 0; j < 3; j++){ var sx = x + (hash(k, j, 287) - 0.5) * 0.6, sy = y + (hash(k, j, 288) - 0.5) * 0.6, top = 0.9 + hash(k, j, 289) * 0.5, sd = Math.hypot(px - sx, py - sy);
+        if (sd < 0.06 && t < top) return '#6a7a62'; if (t > top - 0.4 && t < top + 0.05 && sd < 0.16 && hash(Math.floor(px * 12), Math.floor(pz * 12), j) > 0.35) return hash(Math.floor(px * 12), Math.floor(pz * 12), 9) > 0.5 ? '#f4f0e4' : '#d8d0c0'; }
+      return null; }); }
+  // Charon's skiff drawn up on the shingle, long and dark, a pole laid in it
+  function skiffAt(B, x, y, k){ var zb = B.gz(x, y), ang = hash(k, 3, 290) * 3.14, c = Math.cos(ang), s = Math.sin(ang);
+    B.solid(x - 2, y - 2, zb - 0.1, x + 2, y + 2, zb + 0.8, function(px, py, pz){ var dx = px - x, dy = py - y, u = dx * c + dy * s, w = -dx * s + dy * c, t = pz - zb;
+      var hw = 0.55 * Math.sqrt(Math.max(0, 1 - Math.pow(u / 1.8, 2))); if (Math.abs(w) > hw || t > 0.6) return null; if (Math.abs(w) < hw - 0.12 && t > 0.15) return Math.abs(w) < 0.05 && Math.abs(u) < 1.6 && t < 0.3 ? '#8a6a4a' : null;
+      return t > 0.5 ? '#4a3428' : '#2a1c16'; }); }
+  // a brazier of black iron on a tripod, its fire burning low and red
+  function undBrazier(B, x, y){ var zb = B.gz(x, y); if (B.light) B.light(x, y, zb + 1.6, '#ff6a3a');
+    B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 1.9, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < 1.1){ var a = Math.atan2(py - y, px - x); return d < 0.5 - t * 0.2 && d > 0.38 - t * 0.2 && Math.abs(Math.sin(a * 1.5)) < 0.2 ? '#2a2830' : null; }
+      if (t < 1.35) return d < 0.55 ? (t > 1.28 ? '#5a5868' : '#3a3848') : null; if (d < 0.4 * (1 - (t - 1.35) / 0.55)) return t > 1.7 ? '#ffb070' : t > 1.5 ? '#ff6a3a' : '#c8303a'; return null; }); }
+  // a column of black basalt, plain and heavy
+  function undColumn(B, x, y){ var zb = B.gz(x, y), H = 5;
+    B.solid(x - 0.8, y - 0.8, zb - 0.05, x + 0.8, y + 0.8, zb + H + 0.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, d = Math.hypot(dx, dy);
+      if (t < 0.25 || t > H) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.72 ? '#3e3c50' : null; if (d > 0.5) return null; return dx > 0.2 ? '#1a1822' : '#2e2c3c'; }); }
+
+  // 1. THE SHORE: the black beach at the edge of the world, rocks along the dark water, the first shades come to meet the ship
+  function undShore(L){ var O = undBase(L, { sea:true, trees:0.01, hills:0.3 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.2, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.4 + hash(x | 0, y | 0, L.seed + 261 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) shadeAt(B, q.x, q.y, k + 3); else rockAt(B, q.x, q.y, 0.6 + (k % 2) * 0.3, ['#3a3848', '#54526a']); }); }; return O; }
+  // 2. THE ASPHODEL MEADOWS: pale flowers in the grey grass, poplars and willows, shades wandering among them
+  function undAsphodel(L){ var O = undBase(L, { flowers:true, trees:0.1 }), sp = [], i;
+    for (i = 0; i < 9; i++){ var q = L.spot(0.9, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 271 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 3 === 0) shadeAt(B, q.x, q.y, k); else asphAt(B, q.x, q.y, k); }); }; return O; }
+  // 3. THE STYX: the dark river along one side, shingle banks, Charon's skiffs drawn up on them
+  function undStyx(L){ var O = undBase(L, { sea:true, trees:0.03, rocky:true }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(2, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.4 + hash(x | 0, y | 0, L.seed + 281 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) skiffAt(B, q.x, q.y, k); else if (k === 1) shadeAt(B, q.x, q.y, k + 11); else rockAt(B, q.x, q.y, 0.8 + (k % 2) * 0.4, ['#3a3848', '#54526a']); }); }; return O; }
+  // 4. THE ELYSIAN FIELDS: soft pale meadows under a pale sky, flowers thick, the blessed resting among the willows
+  function undElysium(L){ var O = undBase(L, { flowers:true, trees:0.08, pale:true, hills:0.7 }), sp = [], i;
+    for (i = 0; i < 6; i++){ var q = L.spot(1, function(x, y){ return L.side(x) * 1.1 + hash(x | 0, y | 0, L.seed + 291 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) willowAt(B, q.x, q.y, k + 31); else asphAt(B, q.x, q.y, k + 31); }); }; return O; }
+  /* 5. THE HALL OF HADES: black stone walls, heavy columns of basalt along them, braziers burning low, and the shades who have come
+     to be judged waiting by the walls */
+  function undHall(L){ var R0 = room(L, { floor:'uhfloor', wall:'uhwall', wallH:7, gap:2.6 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 301, 2.4).forEach(function(q){ undColumn(B, q[0], q[1]); });
+        byWall(L, 3, 307, 3.4).forEach(function(q){ undBrazier(B, q[0], q[1]); }); byWall(L, 3, 311, 3).forEach(function(q, k){ shadeAt(B, q[0], q[1], k + 21); }); },
+      bg:'#14121e', gain:2,
+      mats:{ uhfloor:['#3a3848', '#4a4860', '#24222e', 0.1, function(c, R){ var b = blot(c, 0.2, 313), v = blot(c, 0.05, 314); if (v > 0.7) return R('#423a52'); return R(b > 0.62 ? '#4a4860' : b < 0.3 ? '#2e2c3c' : '#3a3848'); }],
+        uhwall:['#2a2836', '#3e3c50', '#14121e', 0.16, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 315) + Math.sin(z * 2 + c.ti * 0.12) * 0.15; if (z > 6) return R('#1a1822'); return R(q > 0.72 ? '#3e3c50' : q < 0.3 ? '#1a1822' : '#2a2836'); }] } }; }
+
+  // The Cave of Sleep: Hypnos' cave by the Lethe (Ovid), dim and still, poppies at its mouth, a low fire, and a pale pool
+  BUILD['s-hypnos'] = function(L){ var R0 = room(L, { floor:'hyfloor', wall:'hywall', wallH:6, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ var f = byWall(L, 1, 321, 3.4)[0]; if (f) undBrazier(B, f[0], f[1]); if (B.light) B.light(L.cx, L.cy, 5, '#a898ff');
+        byWall(L, 4, 323, 2.4).forEach(function(q, k){ if (k % 2) asphAt(B, q[0], q[1], k + 41); else rockAt(B, q[0], q[1], 0.7, ['#3a3848', '#54526a']); }); },
+      bg:'#14121e', gain:2,
+      mats:{ hyfloor:['#3a3848', '#4a4860', '#2a2836', 0.12, function(c, R){ var b = blot(c, 0.2, 325); return R(b > 0.62 ? '#4a4860' : b < 0.3 ? '#2a2836' : '#3a3848'); }],
+        hywall:['#2a2836', '#3a3848', '#1a1822', 0.18, function(c, R){ var z = c.z || 0, q = blot(c, 0.25, 327) + Math.sin(z * 2.2 + c.ti * 0.15) * 0.2; if (z > 5) return R('#1a1822'); return R(q > 0.75 ? '#3a3848' : q < 0.3 ? '#1a1822' : '#2a2836'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
