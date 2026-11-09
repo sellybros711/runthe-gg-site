@@ -1645,7 +1645,17 @@
     out.push(ellipsoid(add(tk,sc(look,hr*0.03)),AXh,[hr*0.02,hr*0.03,hr*0.16],ink,{gloss:1,noCast:1}));                         // and its writing
     return out; };
   HAT_OVER_HAIR.pphattop=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1};   // a modelled hat that is modelled on the course golfer too
+  /* THE WHITE KNIGHT'S HELM (Through the Looking-Glass): his tin helmet as Tenniel drew it, a round crown rising to a sugar-loaf
+     point, a dark slit across the front to see through, and a red plume tied at its tip. Modelled on the course golfer too. */
+  HAT_MODEL.ppknighthelm=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const tin=X2((P&&P.W)||'#d8dee8'), lite=X2((P&&P.G)||'#f4f6fa'), dark=X2((P&&P.k)||'#3a3e4a'), plume=X2((P&&P.r)||'#c8283a');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.1)),AXh,[hr*1.12,hr*0.9,hr*1.12],tin,{gloss:3}));                                      // the round crown over the head
+    for(let k=0;k<6;k++){ const r=hr*(0.92-k*0.15); out.push(ellipsoid(add(hc,sc(hup,hr*(0.75+k*0.22))),AXh,[r,hr*0.16,r],k%2?lite:tin,{gloss:3})); }   // the sugar-loaf point
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.05),sc(look,hr*1.02)),AXh,[hr*0.06,hr*0.07,hr*0.6],dark,{gloss:1,noCast:1}));      // the slit to see through
+    out.push(ellipsoid(add(hc,sc(hup,hr*2.05),sc(look,-hr*0.15)),AXh,[hr*0.16,hr*0.34,hr*0.14],plume,{gloss:1}));            // the plume at its tip
+    return out; };
+  HAT_OVER_HAIR.ppknighthelm=1;
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1879,6 +1889,9 @@
     ppambrosia:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.2) return {c:P.W,gloss:3}; const w=Math.sin(p[1]*6+Math.atan2(p[2],p[0])*2+Math.sin(p[0]*3)*1.2);
       return {c:w>0.6?P.h:w<-0.7?P.b:P.C,gloss:2}; } },
     // the Cheshire Ball: the Cat's own tabby stripes, grey brown, and his great white grin across the front
+    // the Humpty Ball: an egg's white shell, smooth and pale, and round its middle Humpty's blue cravat with its gold tie
+    pphumpty:{ ry:1.06, f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const band=Math.abs(p[1]+0.05)<0.16;
+      if(band) return {c:Math.abs(p[0])<0.14&&p[2]>0.6?'#ffd84a':P.b,gloss:2}; return {c:p[1]>0.4?P.h:p[1]<-0.5?P.s:P.C,gloss:3}; } },
     ppcheshire:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const ax=Math.abs(p[0]);
       if(p[2]>0.55&&ax<0.62&&Math.abs(p[1]+0.12-ax*ax*0.7)<0.09) return {c:Math.floor(p[0]*14)&1?'#ffffff':'#e8e8e0',gloss:2};
       const st=Math.sin(Math.atan2(p[2],p[0])*7+p[1]*3); return {c:st>0.4?P.b:st<-0.6?P.s:P.C,gloss:2}; } },
