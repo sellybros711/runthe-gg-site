@@ -27,15 +27,17 @@ const args = process.argv.slice(2);
 const QUICK = args.includes('--quick');
 const DAYS = +(args[args.indexOf('--days') + 1] || 21) || 21;
 /* ONE PART AT A TIME, FOR CI (the owner, 2026-11-05). The whole file took 30 to 45 minutes in one job, and a runner that
-   died in it (it happens: "the hosted runner lost communication") threw all of it away. CI runs it as three jobs, at
+   died in it (it happens: "the hosted runner lost communication") threw all of it away. CI runs it as four jobs, at
    once, so a dead runner costs only its own part and a re-run of the failed job runs only that part:
      --part node    sections 1 to 5c (the module in node: physics, greens, every hole, dailies, gyms, rooms)
-     --part rooms   section 6's rooms: every gatekeeper's room and every tap kind's gyms, on a phone and a desktop
+     --part rooms   section 6's rooms: every gatekeeper's room on a phone, the Clubhouse's room, every tap kind's gyms
+     --part desk    section 6's rooms: every gatekeeper's room on a desktop (split from rooms on 2026-11-09, when the
+                    gatekeepers of 23 worlds measured on both screens ran rooms past its 35 minute limit)
      --part page    the rest of section 6 (the page in a browser)
    No --part runs all of it, as it always has. Each part prints its own "all good" or "N FAILED". */
 const PART = args.indexOf('--part') >= 0 ? args[args.indexOf('--part') + 1] : 'all';
-if (!['all', 'node', 'rooms', 'page'].includes(PART)){ console.log('unknown --part ' + PART + ' (node, rooms or page)'); process.exit(2); }
-const RUN_NODE = PART === 'all' || PART === 'node', RUN_ROOMS = PART === 'all' || PART === 'rooms', RUN_PAGE = PART === 'all' || PART === 'page';
+if (!['all', 'node', 'rooms', 'desk', 'page'].includes(PART)){ console.log('unknown --part ' + PART + ' (node, rooms, desk or page)'); process.exit(2); }
+const RUN_NODE = PART === 'all' || PART === 'node', RUN_ROOMS = PART === 'all' || PART === 'rooms' || PART === 'desk', RUN_PAGE = PART === 'all' || PART === 'page';
 if (PART !== 'all') console.log('check-putt: --part ' + PART + ' only');
 
 let fails = 0;
@@ -1111,7 +1113,9 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        the record a room's check writes under its own test account is the one the game reads and saves to */
     const settle = async () => { try{ if (typeof sb !== 'undefined' && sb && sb.auth) await sb.auth.getSession(); }catch(e){} await new Promise(r => setTimeout(r, 500)); };
     const lay = {}, KEEPS = await pg.evaluate(() => window.RTT_PUTT_GYMS.kinds().filter(k => k.input !== 'own').map(k => (k.gyms || []).find(g => g.keeper && g.world)).filter(Boolean).map(g => g.id));
-    for (const [vw, vh, touch] of [[390, 844, true], [1440, 900, false]]){
+    // the phone in --part rooms, the desktop in --part desk, both in a full run
+    const KEEP_VIEWS = [[390, 844, true], [1440, 900, false]].filter(v => PART === 'all' || (PART === 'desk') === !v[2]);
+    for (const [vw, vh, touch] of KEEP_VIEWS){
       const cx = await b.newContext({ viewport:{ width:vw, height:vh }, hasTouch:touch, isMobile:touch, deviceScaleFactor:touch ? 2 : 1 }), p2 = await cx.newPage();
       p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
@@ -1181,7 +1185,8 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       claim(L.restart.start && L.restart.resets && L.restart.moves && L.restart.undone && L.pad, `${nm}, Restart (${w === 390 ? 'the button' : 'R'}) is the start and counts as a reset, Undo takes it back, and the pad steps him or a tap on a tile acts (${JSON.stringify([L.restart, L.pad])})`);
       { const Hn = L.hint || {}; claim(Hn.before && Hn.after && Hn.says && Hn.kept && Hn.held && Hn.again && Hn.covered && !Hn.covered.length && Hn.onScreen && Hn.big, `${nm}, Hint shows only once he has tried (${w === 390 ? 'the second Restart' : '4 minutes in the room'}), says the gym's one hint and holds it, records it, says the same again, and with it showing nothing covers the board (${JSON.stringify(Hn)})`); }
       if (w === 1440) claim(L.won && L.toastsOver === 0 && L.wonLine, `${nm}, solved, the vault says what it paid in the panel, and no toast lands over the board (${JSON.stringify([L.won, L.toastsOver, L.wonLine])})`); }
-    claim(KEEPS.length >= 1 && Object.keys(lay).length === KEEPS.length * 2, `the room of every kind's gatekeeper is measured on the phone and the desktop (${KEEPS.join(', ')})`);
+    claim(KEEPS.length >= 1 && Object.keys(lay).length === KEEPS.length * KEEP_VIEWS.length, `the room of every kind's gatekeeper is measured on the ${KEEP_VIEWS.map(v => v[2] ? 'phone' : 'desktop').join(' and the ')} (${KEEPS.join(', ')})`);
+    if (PART !== 'desk'){   // the rest of the rooms runs in --part rooms (and a full run)
     /* THE SAME FOR THE CLUBHOUSE'S GATEKEEPER, the trick shot kind (input 'own': no pad, a putt is a pull on the board):
        on the phone and the desktop, in The Back Bar the panel, its goal line and its controls sit outside the board, the
        stick and the bubble are hidden, the whole room is on screen, the buttons are big enough to hit, and the room is
@@ -1280,6 +1285,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       claim(tp.plain && tp.warm, `${gid}: after two restarts the civilian's plainer line is in the panel, after five the warmer one (${JSON.stringify([tp.plain, tp.warm])})`);
       claim(tp.left && tp.reentered && tp.won && tp.paid === tp.pay && tp.badge && tp.packs.length === 1 && tp.packs[0] === (tp.keeper ? 'tour' : 'base'), `${gid}: out through Leave and in again, its proof tapped tile by tile opens the vault: ${tp.paid} of ${tp.pay} coins, ${JSON.stringify(tp.packs)} and the badge`);
       claim(tp.kept && tp.paidAgain === 0, `${gid}: opened again it shows solved, and the vault never pays twice (${JSON.stringify([tp.kept, tp.paidAgain])})`); }
+    }   // end of the rest of the rooms
     }   // end of the rooms
     if (RUN_PAGE){   // ---- the page, part two
     /* A SPACE WORLD'S GREETER TALKS AFTER THE LANDING (the owner, 2026-11-06: "The people with exclamation marks dont

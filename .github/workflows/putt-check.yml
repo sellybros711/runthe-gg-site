@@ -10,7 +10,7 @@ name: Putting Green checks
 # (golfer3d-check.yml). Runs locally, unchanged:
 #
 #   node golf/putt/check-putt.mjs                 all of it, in one go
-#   node golf/putt/check-putt.mjs --part node     or one of the three parts CI runs at once (node, rooms, page)
+#   node golf/putt/check-putt.mjs --part node     or one of the four parts CI runs at once (node, rooms, desk, page)
 #
 # check-safe-top.mjs holds every close and back button pinned near the top of a full screen
 # layer below the phone's notch (env(safe-area-inset-top)).
@@ -43,7 +43,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # check-putt.mjs in three parts, run at once (the owner, 2026-11-05). In one job it took 30 to 45 minutes, and a
+  # check-putt.mjs in parts, run at once (the owner, 2026-11-05; rooms split into rooms and desk 2026-11-09). In one job it took 30 to 45 minutes, and a
   # runner that died in it lost the lot. Now a dead runner costs only its part, and "Re-run failed jobs" runs only that
   # part. Each part has a time limit (35 minutes: the rooms part took 18.5 on its first CI run), so a hang fails with
   # its log kept instead of running until the runner is lost.
@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [node, rooms, page]
+        part: [node, rooms, desk, page]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -71,7 +71,7 @@ jobs:
       - name: The physics, the greens, every hole played to par (${{ matrix.part }})
         run: node golf/putt/check-putt.mjs --days 14 --part ${{ matrix.part }}
 
-  # the one status the three parts answer to, under the name the single job had
+  # the one status the four parts answer to, under the name the single job had
   check:
     needs: part
     if: always()
