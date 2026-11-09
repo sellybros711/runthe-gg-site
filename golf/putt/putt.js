@@ -4551,6 +4551,17 @@ function greetSpec(tid, w, to){
   pages.push(G.bye);
   return { theme:Wd.theme, name:G.name, role:G.role, look:G.look, lines:pages, met:(st.met || []).indexOf(Wd.theme) >= 0, col:(THEMES[Wd.theme] || {}).acc || '#F1D04A' };
 }
+/* THE FOLK OF OZ (2026-11-09). Four of L. Frank Baum's 1900 characters stand by the road on the walks to
+   the holes their chapters are named for, each in place of that walk's local: id is their model (trail.js FOLK3D,
+   drawn from the book and Denslow's 1900 plates only, never the 1939 film), say what they tell you as you walk up: who
+   they are, then a nudge about the hole ahead, the way the local's holeTips do. A nudge, never the line to play.
+   Keyed by the world and the walk's leg (the hole it leads to, 1 to 18). */
+var FOLK = { oz:{
+  4:{ id:'dorothy', say:['I am Dorothy, from Kansas. A cyclone brought me here too.', 'The twister on the corner carries you along the top. Look where it sets you down.'] },
+  5:{ id:'scarecrow', say:['I am the Scarecrow. My head is stuffed with straw.', 'Even I know to time my pole. And the twister by my field sends you back.'] },
+  9:{ id:'lion', say:['I am the Cowardly Lion. That ditch frightens me.', 'I leap it anyway. Hit the ramp hard. Short is in the poppies.'] },
+  14:{ id:'witch', say:['I am the Wicked Witch of the West. My gate stays shut.', 'Only my plate opens it. And my poppies keep what they catch.'] }
+} };
 var TRAIL_GOLD_COINS = 500;
 function trailOk(){ var TT = window.RTT_PUTT_TRAIL; return !!(TT && TT.API_VERSION === 1 && v3Ok() && S && S.host && S.host.golferWalk); }
 var TIPS = {
@@ -4677,7 +4688,8 @@ function trailSpec(tid, from, landed){
   var leg = (to - 1) % K + 1, st = !cross && tid === 'main' ? stopOf(th, leg) : '', kitAs = st ? th + '~' + st : null;   // the walk goes where its holes go (land.js, STOPS)
   // a world with gyms (gyms.js) carries them on its two trails and none of the small puzzles on the rest
   var gd = !cross && tid === 'main' ? gymAt(th, leg) : null;
-  return { gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:!landed && tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, landed:landed, key:tid + ':' + to + (landed ? ':landed' : ''), tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to + (landed ? ':landed' : '')), theme:th, theme0:th0, cross:cross, space:cross && tid === 'main' && SPACE_TRIP[th] ? SPACE_TRIP[th] : null, vehicle:tid === 'main' ? SPACE_TRIP[th] || null : null, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:landed ? {} : trailLoot(tid, to), holeTo:to <= TR.levels.length && !(cross && tid === 'main' && SPACE_TRIP[th]) ? courseFoot(to, tid) : null, holeFrom:from >= 1 && !landed ? courseFoot(from, tid) : null, greet:from % K === 0 && (tid === 'main' && SPACE_TRIP[th] ? landed : !landed) ? greetSpec(tid, w, to) : null };
+  var folk = !cross && !landed && tid === 'main' && FOLK[th] ? FOLK[th][leg] || null : null;
+  return { folk:folk, gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:!landed && tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, landed:landed, key:tid + ':' + to + (landed ? ':landed' : ''), tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to + (landed ? ':landed' : '')), theme:th, theme0:th0, cross:cross, space:cross && tid === 'main' && SPACE_TRIP[th] ? SPACE_TRIP[th] : null, vehicle:tid === 'main' ? SPACE_TRIP[th] || null : null, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:landed ? {} : trailLoot(tid, to), holeTo:to <= TR.levels.length && !(cross && tid === 'main' && SPACE_TRIP[th]) ? courseFoot(to, tid) : null, holeFrom:from >= 1 && !landed ? courseFoot(from, tid) : null, greet:from % K === 0 && (tid === 'main' && SPACE_TRIP[th] ? landed : !landed) ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
    hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
@@ -4819,7 +4831,7 @@ function openTrail(tid, from, landed){
       portrait:function(look){ try{ var c = S.host.portrait && S.host.portrait(look); return c && c.toDataURL ? c.toDataURL() : ''; }catch(e){ return ''; } },
       met:function(th){ var st = pload(); st.met = st.met || []; if (st.met.indexOf(th) < 0){ st.met.push(th); psave(st); } if (sp.greet) sp.greet.met = true; },
       secretSeen:function(i){ return (pload().sf || []).indexOf(i) >= 0; },
-      lines:function(){ return clouded || !L ? [] : holeTips(to, tid, three); },
+      lines:function(){ return clouded || !L ? [] : sp.folk ? sp.folk.say.slice() : holeTips(to, tid, three); },
       door:function(cb){ var tp = pload().tours[TR.id], open = opened(TR, tp, to), gw = sp.w - 1, have = starsThrough(tp, TR, gw), need = worldGate(TR, gw), T = THEMES[Wd.theme] || {};
         // the stars are there: this is where the clouds part, and the world gets its name
         var hide = clouded && !open; if (clouded && open){ reveal(TR, sp.w); }

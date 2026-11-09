@@ -613,6 +613,13 @@ function plan(spec){
   // the local, beside the path a little before the arch (a greeter's trail has the greeter instead)
   for (var tn = 0; tn < (spec.greet ? 0 : 30); tn++){ var nq = beside(SL * (0.16 + R() * 0.7), R() < 0.5 ? -1 : 1, PW + 1.6), ny = nq[1], nx = nq[0];
     if (free(nx, ny, 1) && okGround(nx, ny, 1) && !(GYM && (inGym(nx, ny, 1.5) || gymShadow(nx, ny)))){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
+  /* one of the folk of Oz (spec.folk) is there to be seen: where a tree or a landmark nearer the camera would hide them, they
+     find a place of their own on a seed of their own, so nothing else on the walk moves */
+  var hides = function(x, y){ return P.things.some(function(t){ var r = t.cr || t.r || 0; return t.h > 2.4 && t.y > y && t.y - y < t.h * CE / SE * 0.6 + r && Math.abs(t.x - x) < r + 1; }); };
+  var fk = spec.folk && items.filter(function(t){ return t.k === 'npc'; })[0];
+  if (fk && hides(fk.x, fk.y)){ var RF = rng(spec.seed ^ 0x0f01c);
+    for (var fn = 0; fn < 80; fn++){ var fq = beside(SL * (0.16 + RF() * 0.7), RF() < 0.5 ? -1 : 1, PW + 1.6), fx = fq[0], fy = fq[1];
+      if (free(fx, fy, 1) && okGround(fx, fy, 1) && !hides(fx, fy) && !(GYM && (inGym(fx, fy, 1.5) || gymShadow(fx, fy)))){ fk.x = fx; fk.y = fy; fk.th = themeAt(fy); used.push({ x:fx, y:fy, r:1 }); break; } } }
   /* THE GYM'S CIVILIAN, the owner's call: somebody at the park standing by the gate, who says one thing about what is in
      there (a nudge, never the answer), and a plainer thing once you have pulled the lever twice. */
   // they stand toward the middle of the screen (on a shore the camera leans out to sea), so their bubble has room
@@ -1636,6 +1643,9 @@ function run(box, P, pic, api){
   function brkSprite(t){ var k = brkKind(t); return prop('brk:' + k, function(B){ (BRK[k] || BRK.crate)(B, 0, 0); }, 1.8, 1.8, 2); }
   // the local is the 3D golfer model, in the world's own clothes, standing and facing the path
   function npcFrame(t){ var G = window.RTT_G3D; if (!G || !G.frame) return null; var face = t.x < P.near(t.x, t.y)[0] ? 90 : -90; try{ return G.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, kitOf(t.th).npc), face, 'walk', 8); }catch(e){ return null; } }
+  // one of the folk of Oz (FOLK3D) stands there instead: a little model of their own, facing the path like the local does
+  function drawFolk(t){ var f = t.x < P.near(t.x, t.y)[0] ? 1 : -1, id = P.spec.folk.id, F = FOLK3D[id]; if (!F) return; var key = 'folk:' + id + ':' + f;
+    var k = F.k || 1; drawSprite(big(key, prop(key, folkFn(id, f), 2 * F.r * k + 0.4, 2 * F.r * k + 0.4, F.h * k)), t.x, t.y, pic.zAt(t.x, t.y)); }
   var IMG = {}; function img(u){ var im = IMG[u]; if (!im){ im = IMG[u] = new Image(); im.src = u; } return im; }
   /* A frame not yet decoded is never a blank: who drew a frame last keeps it on screen until the new one is ready,
      or the golfer blinks out for a frame every time his foot or his facing changes. */
@@ -2271,6 +2281,7 @@ function run(box, P, pic, api){
         ls = ls.concat(api.lines ? api.lines() : []);
         // an unsolved puzzle's clue is what you need right now, so it comes first and the rest after
         if (PZ && !PZ.solved){ say(P.puzzle.clue, 8200, npc); var rest = (word ? [word] : []).concat(ls); if (rest.length) npcLater(rest.join(' '), 8.4, npc); }
+        else if (P.spec.folk && ls.length){ var fq = (word ? [word] : []).concat(ls); say(fq[0], 3600, npc); for (var fi = 1; fi < fq.length; fi++) npcLater(fq[fi], 3.7 * fi, npc); }   // one of the folk of Oz: a line at a time, who they are and then the hole
         else if (word){ say(word, 3600, npc); if (ls.length) npcLater(ls.join(' '), 3.7, npc); } else if (ls.length) say(ls.join(' '), 5200, npc); } else if (dn > 5) nearNpc = false; }
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
@@ -2325,7 +2336,7 @@ function run(box, P, pic, api){
       else if (t.k === 'pzgate'){ var gs = pzGateOpen() ? SPR.pen1 : SPR.pen0; if (gs) drawSprite(gs.s, gs.x, gs.y, pic.zAt(gs.x, gs.y)); }
       else if (t.k === 'crate') drawSprite(SPR.crate, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
-      else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
+      else if (t.k === 'npc'){ if (P.spec.folk) drawFolk(t); else drawFigure(npcFrame(t), t.x, t.y); }
       else if (t.k === 'ship' || t.k === 'tumble' || t.k === 'ghost') drawLifeThing(t, tsec);
       else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); drawFigure(hostFrame(), t.x, t.y, false, 'host');
         if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
@@ -3988,5 +3999,113 @@ BUILD.seaShip = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), beach = !
     if (tt > top - 0.24) return '#b84a2a'; if (tt < 0.05) return '#1e1814'; return '#5e3c22'; }, 0.2); };
 LMSIZE.cycFold = [7, 5, 2]; LMSIZE.cycCrag = [5, 4, 6]; LMSIZE.cycCave = [10, 6, 8]; LMSIZE.seaShip = [7, 13, 8];
 // @@WORLD STOPS END@@
+/* THE FOLK OF OZ (putt.js FOLK says who stands on which walk and what they say). Four of L. Frank Baum's 1900 characters,
+   drawn the way the book and W. W. Denslow's 1900 plates draw them and in no other way (mythiball/PD_SOURCES.md has the
+   rows): Dorothy in blue and white gingham with a pink sunbonnet, her hair in braids and SILVER shoes; the Scarecrow in a
+   pointed blue Munchkin hat and a faded blue patched suit with straw at his seams and a face painted on a pale sack; the
+   Cowardly Lion on four legs with a shaggy mane and a worried face; the Wicked Witch of the West with one eye and a patch
+   over the other, three grey pigtails, a yellow dress with a black pattern, a pointed hat and her umbrella. Nothing from
+   the 1939 film: no ruby slippers, no burlap, no man in a lion suit, no green skin.
+   The golfer model draws people in golf clothes, and none of these can be drawn in it (a dress, a sunbonnet, braids, a
+   lion on four legs), so each is a little model of its own, built like a landmark in voxels and drawn as a sprite. Each
+   is built facing the path (f = 1 toward +x, -1 toward -x), turned toward the camera (+y) so the face reads. In a
+   figure's frame u is forward, v to its right and t the height, all in the trail's feet (the golfer is GH tall). */
+function el3(u, v, t, cu, cv, ct, ru, rv, rt){ var a = (u - cu) / ru, b = (v - cv) / rv, c = (t - ct) / rt; return a * a + b * b + c * c; }
+function cap3(u, v, t, a, b, r){ var du = b[0] - a[0], dv = b[1] - a[1], dt = b[2] - a[2], L = du * du + dv * dv + dt * dt || 1e-9, k = Math.max(0, Math.min(1, ((u - a[0]) * du + (v - a[1]) * dv + (t - a[2]) * dt) / L));
+  return Math.hypot(u - a[0] - k * du, v - a[1] - k * dv, t - a[2] - k * dt) < r; }
+function folkStraw(u, v, t){ return hash((u * 31) | 0, (v * 29 + t * 17) | 0, 77) < 0.5 ? '#f0cc5a' : '#c89a32'; }
+var FOLK3D = {
+  // Dorothy, a little girl (two thirds of a grown golfer): gingham frock, pink sunbonnet, brown braids, silver shoes
+  dorothy:{ r:0.8, h:2.7, k:1.25, at:function(u, v, t){ var s = v < 0 ? -1 : 1, av = Math.abs(v);
+    var ging = function(){ var a = Math.floor((u + v) * 9) & 1, b = Math.floor(t * 9) & 1; return a && b ? '#2a4aa8' : a || b ? '#8aa2dc' : '#f6f7fb'; };
+    if (t < 0.2 && el3(u, av, t, 0.1, 0.12, 0.08, 0.21, 0.09, 0.11) <= 1) return t > 0.12 ? '#f4f6fa' : '#b8bec8';   // the silver shoes
+    if (cap3(u, av, t, [0, 0.12, 0.14], [0, 0.11, 0.85], 0.06)) return '#f2f0ea';   // white stockings
+    if (t >= 0.8 && t < 1.42 && Math.hypot(u, v) < 0.22 + (1.42 - t) * 0.36) return ging();   // the frock's skirt
+    if (el3(u, v, t, 0, 0, 1.6, 0.19, 0.23, 0.27) <= 1) return t > 1.8 && av < 0.14 ? '#f6f7fb' : ging();   // the bodice, a white collar
+    if (cap3(u, av, t, [0, 0.25, 1.74], [0.1, 0.3, 1.28], 0.065)) return t > 1.56 ? ging() : '#f2c8a0';   // arms: puffed sleeves, then bare
+    if (el3(u, av, t, 0.1, 0.3, 1.24, 0.06, 0.06, 0.06) <= 1) return '#f2c8a0';
+    if (cap3(u, v, t, [0, 0, 1.78], [0, 0, 1.94], 0.065)) return '#f2c8a0';
+    var hc = [0, 0, 2.12], d = Math.hypot(u - hc[0], v, t - hc[2]);
+    if (cap3(u, av, t, [-0.04, 0.2, 2.06], [0.02, 0.27, 1.66], 0.05)) return t < 1.72 ? '#3a5ab8' : (Math.floor(t * 22) & 1 ? '#7a4a24' : '#5e3818');   // two braids, tied in blue
+    if (d < 0.32 && d > 0.25 && u < 0.11 - Math.max(0, t - 2.3) * 0.2) return u < -0.1 && t > 2.2 ? '#d86a98' : '#f08cb4';   // the sunbonnet, round the head, open at the face
+    if (u > 0.08 && u < 0.17 && Math.hypot(v, t - hc[2]) < 0.37 && Math.hypot(v, t - hc[2]) > 0.25) return '#f8aecb';   // its brim, round the face
+    if (u < -0.05 && t > 1.86 && t < 2.04 && Math.hypot(u, v) < 0.31) return '#f08cb4';   // the curtain at the back of the neck
+    if (d <= 0.25){ if (u > 0.12 && t > 2.26) return '#7a4a24';   // a little hair under the brim
+      if (u > 0.17 && Math.abs(av - 0.085) < 0.035 && Math.abs(t - 2.15) < 0.035) return '#2a1e1a';   // eyes
+      if (u > 0.2 && av < 0.05 && Math.abs(t - 2.02) < 0.018) return '#c0505a';
+      if (u > 0.16 && Math.abs(av - 0.14) < 0.04 && Math.abs(t - 2.06) < 0.03) return '#f4a8a0';
+      return '#f2c8a0'; }
+    return null; } },
+  // the Scarecrow: a grown man's height, blue boots, a faded blue suit stuffed lumpy with straw, a painted face, a Munchkin hat
+  scarecrow:{ r:0.9, h:4.6, at:function(u, v, t){ var s = v < 0 ? -1 : 1, av = Math.abs(v), lump = 1 + 0.12 * Math.sin(t * 23 + v * 9), patch = hash(Math.floor((u + v) * 3), Math.floor(t * 3), 41);
+    var suit = function(c){ return patch < 0.18 ? '#4a64a8' : patch > 0.88 ? '#a8b8dc' : c; };
+    if (t < 0.24 && el3(u, av, t, 0.07, 0.17, 0.1, 0.22, 0.1, 0.12) <= 1) return '#4a3428';   // his boots
+    if (t < 0.44 && Math.hypot(u, av - 0.17) < 0.13) return t > 0.32 ? '#3a5ab8' : '#4a3428';   // their blue tops
+    if (t >= 0.42 && t < 0.54 && Math.hypot(u, av - 0.16) < 0.13 + hash((u * 40) | 0, (t * 40) | 0, 3) * 0.08) return folkStraw(u, v, t);   // straw at the ankles
+    if (t >= 0.5 && t < 1.7 && Math.hypot(u, av - 0.16) < 0.14 * lump) return suit('#7088c0');   // the trousers
+    if (el3(u, v, t, 0, 0, 2.3, 0.27 * lump, 0.36 * lump, 0.66) <= 1){ if (u > 0.2 && av < 0.03 && [2.05, 2.3, 2.55].some(function(b){ return Math.abs(t - b) < 0.04; })) return '#f0c232';
+      if (Math.abs(t - 1.72) < 0.05) return folkStraw(u, v, t);   // straw at the waist
+      return suit('#6680c0'); }
+    if (cap3(u, av, t, [0, 0.36, 2.72], [0.1, 0.62, 2.0], 0.11)) return suit('#6680c0');   // the arms, stiff and a little out
+    if (cap3(u, av, t, [0.1, 0.62, 2.0], [0.13, 0.7, 1.76], 0.07 + hash((u * 40) | 0, (t * 40) | 0, 5) * 0.06)) return folkStraw(u, v, t);   // straw for hands
+    if (t >= 2.92 && t < 3.04 && Math.hypot(u, v) < 0.16 + hash((u * 40) | 0, (v * 40) | 0, 7) * 0.08) return folkStraw(u, v, t);   // straw at the collar
+    if (el3(u, v, t, 0, 0, 3.34, 0.37, 0.37, 0.4) <= 1){   // the head, a sack with the face painted on
+      if (u > 0.2){ if (Math.abs(t - 3.42) < (s < 0 ? 0.075 : 0.055) && Math.abs(av - 0.13) < (s < 0 ? 0.075 : 0.055)) return '#2a3a8a';   // one eye painted a little bigger than the other (the book)
+        if (Math.abs(t - 3.53) < 0.025 && Math.abs(av - 0.13) < 0.08) return '#2a2a2a';
+        if (av < 0.045 && t > 3.27 && t < 3.35) return '#2a2a2a';
+        if (Math.abs(t - (3.15 + av * av * 3)) < 0.03 && av < 0.17) return '#c03a3a'; }
+      return '#f2ead6'; }
+    if (t >= 3.66 && t < 3.73 && Math.hypot(u, v) < 0.47){ var r0 = Math.hypot(u, v); return r0 > 0.41 && (Math.atan2(v, u) * 5 / Math.PI + 10) % 1 < 0.35 ? '#f0c232' : '#2a4ab0'; }   // the brim, a little bell or two along it
+    if (t >= 3.7 && t < 4.6 && Math.hypot(u + (t - 3.7) * 0.06, v) < 0.3 * (1 - (t - 3.7) / 0.9)) return u + v > 0 ? '#3a62c8' : '#2a4ab0';   // the pointed crown
+    if (t >= 3.5 && t < 3.68 && Math.hypot(u, v) < 0.43 && u < 0 && hash((u * 40) | 0, (v * 40) | 0, 9) < 0.4) return folkStraw(u, v, t);   // straw under the hat
+    return null; } },
+  // the Cowardly Lion, on four legs: a tawny body, a shaggy brown mane round a worried face, a tufted tail
+  lion:{ r:2.1, h:2.8, at:function(u, v, t){ var av = Math.abs(v), fur = function(c, c2){ return hash((u * 24) | 0, (t * 24 + v * 11) | 0, 13) < 0.25 ? c2 : c; };
+    if ([[0.72, 0.26], [-0.86, 0.28]].some(function(L){ return cap3(u, av, t, [L[0], L[1], 1.1], [L[0] + 0.05, L[1], 0.14], 0.15) || el3(u, av, t, L[0] + 0.1, L[1], 0.08, 0.2, 0.14, 0.09) <= 1; })) return t < 0.17 ? '#e8b860' : fur('#d89a3e', '#c4862e');   // four legs and paws
+    if (el3(u, av, t, -0.82, 0.24, 1.0, 0.34, 0.2, 0.42) <= 1) return fur('#d89a3e', '#c4862e');   // his haunches
+    if (el3(u, v, t, -0.05, 0, 1.28, 1.12, 0.44, 0.48) <= 1) return t < 1.02 ? '#ecc070' : fur('#d89a3e', '#c4862e');   // the body, paler underneath
+    if (cap3(u, v, t, [-1.1, 0, 1.42], [-1.55, 0, 1.12], 0.055) || cap3(u, v, t, [-1.55, 0, 1.12], [-1.8, 0, 1.5], 0.055)) return '#d89a3e';   // the tail
+    if (el3(u, v, t, -1.84, 0, 1.6, 0.14, 0.13, 0.15) <= 1) return '#7a3a12';   // its tuft
+    var fu = u - 1.3, ft = t - 1.92;
+    if (el3(u, v, t, 1.3, 0, 1.92, 0.34, 0.35, 0.36) <= 1){   // the face
+      if (el3(u, v, t, 1.6, 0, 1.77, 0.14, 0.19, 0.12) <= 1){ if (fu > 0.36 && av < 0.05 && ft > -0.12) return '#4a2a1a'; return Math.abs(ft + 0.2) < 0.02 && av < 0.1 ? '#6a3a20' : '#f2d49a'; }   // the muzzle, a dark nose
+      if (fu > 0.18 && Math.abs(av - 0.12) < 0.05 && Math.abs(ft - 0.08) < 0.045) return Math.abs(av - 0.13) < 0.022 && ft < 0.09 ? '#2a1a10' : '#ffffff';   // eyes, looking off to one side
+      if (fu > 0.16 && av > 0.05 && av < 0.2 && Math.abs(ft - (0.2 - (av - 0.05) * 0.6)) < 0.025) return '#6a3010';   // brows up in the middle: worried
+      return fur('#e0a84a', '#d4983e'); }
+    var md = el3(u, v, t, 0.95, 0, 1.9, 0.42, 0.6, 0.56), mane = hash((u * 14) | 0, (v * 14 + t * 9) | 0, 21);
+    if (md <= 0.86 + mane * 0.22 && !(fu > -0.14 && Math.hypot(v, ft) < 0.36)) return mane < 0.4 ? '#8a4414' : mane < 0.8 ? '#a85a1e' : '#c06a24';   // the shaggy mane, open round the face
+    if (el3(u, v, t, 0.78, 0, 1.45, 0.34, 0.4, 0.42) <= 1 + mane * 0.15) return mane < 0.5 ? '#8a4414' : '#a85a1e';   // and down his chest
+    return null; } },
+  // the Wicked Witch of the West: small and old, one eye and a patch over the other, three grey pigtails, a yellow dress with a
+  // black pattern, a pointed hat, and her umbrella, closed, for a stick. Pale skin, never green.
+  witch:{ r:0.8, h:3.9, k:1.2, at:function(u, v, t){ var s = v < 0 ? -1 : 1, av = Math.abs(v);
+    var dress = function(){ var a = Math.atan2(v, u) / Math.PI * 6 + 6, i = Math.floor(a), j = Math.floor(t * 6), fa = a - i - 0.5, fj = t * 6 - j - 0.5; return ((i + j) & 1) === 0 && Math.abs(fa) + Math.abs(fj) < 0.32 ? '#1a1a1a' : '#f2c81e'; };
+    if (t < 0.14 && el3(u, av, t, 0.1, 0.1, 0.06, 0.2, 0.08, 0.08) <= 1) return '#1a1a20';   // pointed black shoes
+    if (cap3(u, v, t, [0.22, 0.36, 0], [0.22, 0.36, 1.55], 0.03)) return '#3a2a1a';   // the umbrella: its stick,
+    if (t > 0.35 && t < 1.25 && Math.hypot(u - 0.22, v - 0.36) < 0.1 * Math.sin((t - 0.35) / 0.9 * Math.PI) + 0.02) return Math.floor(Math.atan2(v - 0.36, u - 0.22) * 2.5) & 1 ? '#2a2a36' : '#1a1a22';   // its canopy, furled,
+    if (cap3(u, v, t, [0.22, 0.36, 1.55], [0.34, 0.36, 1.62], 0.035) || cap3(u, v, t, [0.34, 0.36, 1.62], [0.36, 0.36, 1.5], 0.035)) return '#3a2a1a';   // and its crook
+    if (t >= 0.1 && t < 1.55 && Math.hypot(u, v) < 0.2 + (1.55 - t) * 0.26) return dress();   // the dress
+    if (el3(u, v, t, 0, 0, 1.68, 0.18, 0.22, 0.24) <= 1) return dress();
+    if (cap3(u, av, t, [0, 0.22, 1.8], [0.2, s > 0 ? 0.34 : 0.28, 1.5], 0.06)) return '#f2c81e';   // sleeves
+    if (el3(u, av, t, 0.22, s > 0 ? 0.36 : 0.29, 1.47, 0.06, 0.06, 0.06) <= 1) return '#eec9a6';   // hands, one on the umbrella
+    if (cap3(u, v, t, [0, 0, 1.86], [0, 0, 1.92], 0.06)) return '#f6d2b0';
+    var tails = [[[-0.04, 0.26, 2.1], [-0.06, 0.6, 1.94]], [[-0.04, -0.26, 2.1], [-0.06, -0.6, 1.94]], [[-0.24, 0, 2.24], [-0.56, 0, 2.34]]];   // three pigtails, sticking out
+    for (var k = 0; k < 3; k++) if (cap3(u, v, t, tails[k][0], tails[k][1], 0.055)) return Math.floor((t + av + u) * 20) & 1 ? '#b4b4bc' : '#8e8e98';
+    var d = Math.hypot(u, v, t - 2.08);
+    if (cap3(u, v, t, [0.24, 0, 2.08], [0.42, 0, 2.0], 0.05)) return '#e2b894';   // a long nose
+    if (d < 0.31){ if (u < -0.08 || t > 2.33) return '#a4a4ac';   // grey hair at the back
+      if (u > 0.18 && Math.abs(v - 0.11) < 0.07 && Math.abs(t - 2.13) < 0.065 && v > 0) return '#141418';   // the patch over one eye,
+      if (u > 0.1 && Math.abs(t - (2.13 + v * 0.9)) < 0.022) return '#141418';   // its strap,
+      if (u > 0.19 && v < 0 && Math.abs(v + 0.11) < 0.045 && Math.abs(t - 2.13) < 0.045) return '#202020';   // and the one eye
+      if (u > 0.22 && av < 0.08 && Math.abs(t - 1.93) < 0.018) return '#9a4a4a';
+      return '#f6d2b0'; }
+    if (t >= 2.33 && t < 2.38 && Math.hypot(u + 0.08, v) < 0.36) return '#1c1c24';   // the hat's brim, pushed back
+    if (t >= 2.36 && t < 3.15 && Math.hypot(u + 0.08 + (t - 2.36) * 0.1, v) < 0.24 * (1 - (t - 2.36) / 0.79)) return t < 2.43 ? '#5a5a66' : u + v > 0 ? '#2a2a34' : '#1c1c24';   // and its point, a grey band
+    return null; } }
+};
+// a figure's build, facing f, turned 53 degrees toward the camera
+// (k: a figure drawn larger than life, so a little girl still reads on a phone)
+function folkFn(id, f){ var F = FOLK3D[id], ax = f * 0.6, ay = 0.8, k = F.k || 1, R = F.r * k + 0.2;
+  return function(B){ B.solid(-R, -R, 0, R, R, F.h * k + 0.1, function(px, py, pz){ return F.at((px * ax + py * ay) / k, (px * ay - py * ax) / k, pz / k); }, 0.0625); }; }
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();
