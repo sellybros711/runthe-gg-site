@@ -30,7 +30,7 @@ name: Shut The Door checks
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
 #   node shut-the-door/test/engine.mjs && node shut-the-door/test/packs.mjs && node shut-the-door/test/api.mjs
-#   node shut-the-door/test/modes.mjs && node shut-the-door/test/survivor.mjs
+#   node shut-the-door/test/modes.mjs && node shut-the-door/test/survivor.mjs && node shut-the-door/test/versus.mjs
 #   node shut-the-door/check-replays.mjs --self-test
 #   node shut-the-door/check-rules.mjs
 #
@@ -86,6 +86,8 @@ jobs:
         run: node shut-the-door/test/voices.mjs
       - name: The at bats and the box line after the outing are the engine's (postgame.js), and 166's check agrees
         run: node shut-the-door/test/postgame.mjs
+      - name: The result names the real closer in every scheduled pack (names.js versus)
+        run: node shut-the-door/test/versus.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)

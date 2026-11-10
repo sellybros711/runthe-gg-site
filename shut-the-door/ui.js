@@ -2343,7 +2343,7 @@ function renderResult() {
   $('r-why').textContent = r.pitchedLike ? r.pitchedLike.reason : '';
   var rv = r.reveal || {};
   $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
-  $('r-real').innerHTML = '<div class="vs-t"><small>' + VS_LABEL + '</small>' +
+  $('r-real').innerHTML = '<div class="vs-t"><small>' + esc(vsLabel()) + '</small>' +
     '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal)) + '</b>' +
     vsWhy(r, rv, runs) + '</div>';
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
@@ -2434,15 +2434,15 @@ function padTick(t) {
 }
 
 /* ---- you against the real game ---------------------------------------------------------------
-   You pitch as him, so the comparison is with what really happened (the owner, 2026-10-26: "you
-   beat Yamamoto sounds weird when you're also playing as him"). The verdict is the engine's
-   (vsReal: the outcome, then runs, then pitches when his count is known). The line under it says
-   which of the three decided it, in the result's own numbers. */
-var VS_LABEL = 'you vs the real game';
+   The verdict is the engine's (vsReal: the outcome, then runs, then pitches when his count is
+   known). The words name the real closer by his short name (the owner, 2026-11-10: "You vs Uehara",
+   "Uehara did better"), from the pack through names.js versus(); with no name on the pack they are
+   the real game's, as before. The line under it says which of the three decided it, in the result's
+   own numbers. The home's pill stays short and nameless (VS_SHORT). */
 var VS_SHORT = { beat: 'rewrote history', matched: 'matched history', lost: 'history did better' };
-function vsHead(v) {
-  return v === 'beat' ? 'you rewrote history' : v === 'matched' ? 'you matched history' : v === 'lost' ? 'history did better' : '-';
-}
+function vsCopy() { return window.STD_NAMES.versus(S.scn && S.scn.pitcher && S.scn.pitcher.name); }
+function vsLabel() { return vsCopy().label; }
+function vsHead(v) { var c = vsCopy(); return c[v] || '-'; }
 /* the real game's column: the year when the pack has it */
 function realCol() { var y = S.scn && S.scn.pitcher && S.scn.pitcher.year; return y ? String(y) : 'real game'; }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
@@ -2646,7 +2646,7 @@ function compareCard(r, rv, runs, st) {
   var n = Math.max(AB.list.length, real.length), bats = '';
   var bat = (clubsOf(S.scn).them || {}).pri || '';
   for (var i = 0; i < n; i++) bats += abCard(AB.list[i], real[i], i, col, bat);
-  return '<div class="cmp-top"><p class="cmp-t">You vs the real game</p>' +
+  return '<div class="cmp-top"><p class="cmp-t">' + esc(cap(vsLabel())) + '</p>' +
     '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">You</span><span class="who him">' + esc(col) + '</span></div>' +
     rows + '</div>' +
     (rv.summary ? '<p class="cmp-sum"><b>What happened</b> ' + esc(rv.summary) + '.</p>' : '') +
@@ -2731,7 +2731,7 @@ function cardOf(r) {
   return {
     outcome: r.outcome, strip: r.strip || [], pitches: r.pitches, percentile: r.percentile,
     label: s.preview ? 'preview' : '#' + s.number, title: s.title,
-    vsReal: r.vsReal || null, vsLabel: VS_LABEL,
+    vsReal: r.vsReal || null, vsLabel: vsLabel(),
     vsHead: r.vsReal ? vsHead(r.vsReal) : null, vsWhy: r.vsReal && rv.outcome ? vsText(r, rv, runsOf(r, st)) : null,
     pitchedLike: r.pitchedLike && r.pitchedLike.name || null,
   };
