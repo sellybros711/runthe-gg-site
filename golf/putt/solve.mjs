@@ -27,7 +27,7 @@ const require = createRequire(import.meta.url);
 const P = require(process.env.PUTT_SRC || './putt.js');   // PUTT_SRC tries a copy of the holes without touching the real file
 const M = P.M;
 
-export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length + (C.bolts || []).length + (C.stalks || []).length > 0; }
+export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length + (C.bolts || []).length + (C.stalks || []).length + (C.drifts || []).length > 0; }
 /* walking distance to the cup over the course, round walls and blocks, back through tunnels and pipes
    and back over a ramp's jump, so a ball short of a gap does not rank behind one that went in the water */
 // with avoid, the secret zones are walls: a search told to find the obvious line must not rank a ball
@@ -40,7 +40,9 @@ export function geodesic(C, avoid){
   // a ferry's whole crossing is passable: somewhere along it the deck is under the ball
   // and so is a beanstalk's: somewhere in its clock its leaves are under the ball, all the way to its tip
   const vineOn = (x, y) => (C.stalks || []).some(q => { if (q.k !== 'b') return false; const rx = x - q.x, ry = y - q.y, al = rx * q.ux + ry * q.uy; return al >= -0.3 && al <= q.L && Math.abs(rx * q.uy - ry * q.ux) <= q.bw; });
-  const deck = (x, y) => vineOn(x, y) || C.bridges.some(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1) || (C.ferries || []).some(f => x >= Math.min(f.x0, f.x0 + f.dx) && x <= Math.max(f.x1, f.x1 + f.dx) && y >= Math.min(f.y0, f.y0 + f.dy) && y <= Math.max(f.y1, f.y1 + f.dy));
+  // and so is a river the rafts drift down: somewhere in its clock a raft is under the ball, from bank to bank
+  const raftOn = (x, y) => (C.drifts || []).some(d => { const nr = P.driftNear(d, x, y); return Math.abs(nr[1]) <= d.w / 2 + 0.3 && nr[0] > d.L / 2 && nr[0] < d.len - d.L / 2; });
+  const deck = (x, y) => vineOn(x, y) || raftOn(x, y) || C.bridges.some(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1) || (C.ferries || []).some(f => x >= Math.min(f.x0, f.x0 + f.dx) && x <= Math.max(f.x1, f.x1 + f.dx) && y >= Math.min(f.y0, f.y0 + f.dy) && y <= Math.max(f.y1, f.y1 + f.dy));
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++){ const x = b[0] + i * res, y = b[1] + j * res, m = C.mats.at(x, y);
     pass[j * nx + i] = ((m !== M.OUT && m !== M.WATER) || deck(x, y)) && !solid(x, y) && !inZ(x, y) ? 1 : 0; }
   const idx = (x, y) => { const i = Math.round((x - b[0]) / res), j = Math.round((y - b[1]) / res); return (i < 0 || j < 0 || i >= nx || j >= ny) ? -1 : j * nx + i; };

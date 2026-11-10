@@ -2765,20 +2765,20 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "141",
-      "sha": "090401f1cdf462c2"
+      "v": "142",
+      "sha": "05a4e9d526744ba2"
     },
     "putt/land.js": {
-      "v": "27",
-      "sha": "f49fd58a98a94c75"
+      "v": "28",
+      "sha": "ea7c36f60fae4df2"
     },
     "putt/hole3d.js": {
       "v": "24",
       "sha": "b79c934f7da72194"
     },
     "putt/trip3d.js": {
-      "v": "14",
-      "sha": "93e8fcd66bde8f3c"
+      "v": "15",
+      "sha": "bfb3119bfd074a26"
     },
     "putt/gyms.js": {
       "v": "4",
@@ -2880,21 +2880,25 @@
       "v": "1",
       "sha": "0998cb690f3313ab"
     },
+    "putt/gymkinds/raft.js": {
+      "v": "1",
+      "sha": "bff88ea6905a451c"
+    },
     "putt/trail.js": {
-      "v": "63",
-      "sha": "8ca0badb624e958c"
+      "v": "64",
+      "sha": "16fa3bc0c31c1fdc"
     },
     "putt/mapland.js": {
-      "v": "19",
-      "sha": "15b6c389ce245c1e"
+      "v": "20",
+      "sha": "34a14c775b660a50"
     },
     "putt/clips.js": {
       "v": "2",
       "sha": "3fdb09af3736bd66"
     },
     "golfer3d.js": {
-      "v": "36",
-      "sha": "9718d61a00cb6f66"
+      "v": "37",
+      "sha": "3c9938e382a7c196"
     },
     "tracer3d.js": {
       "v": "2",

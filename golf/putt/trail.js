@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], lookingglass:['#c8d8ff', '#ffffff'], beanstalk:['#ffe08a', '#fffbe8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], lookingglass:['#c8d8ff', '#ffffff'], beanstalk:['#ffe08a', '#fffbe8'], mississippi:['#ffd860', '#fff6dc'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -201,6 +201,11 @@ var KIT = {
   beanstalk:{ g:['#62a242', '#6aac4a', '#528a38', 0.18], gpat:'bnMeadow', p:['#d8c8a0', '#e8dab8', '#b8a880'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#3a7a2e', '#4e9a3a', '#2a5a22'], bark:'#5a3a22',
     low:['bnbeanlow', 'bush', 'bnsacklow'], brk:'pot', haz:'slow', hazC:['#7a5430', '#5a3c20'], waterC:['#6aa8e0', '#f2f6fc'], seaC:['#6aa8e0', '#f2f6fc'], bogC:['#7a5430', '#5a3c20'], lm:['bnStalk', 'bnStone', 'bnWell'], wall:['#ece0c4', '#8a6a3a'],
     npc:{ skin:'light', polo:'brown', hat:'brown', pants:'brown', hair:'brown', hairStyle:'short', cap:true, shoes:'brown', gender:'male' }, who:'the farm hand' },
+  // The Mississippi: the river bank's summer grass in soft warped greens, a dusty lane, cottonwoods and willows, cattails and barrels
+  // by the path, the big brown river for water and its mud for the bog
+  mississippi:{ g:['#6a9a44', '#74a84a', '#5e8a3a', 0.18], gpat:'msBank', p:['#d8c8a0', '#e8dab8', '#b8a880'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#3e7a2e', '#5a9a3e', '#2e5a22'], bark:'#6a5a44',
+    low:['msreedlow', 'bush', 'msbarrellow'], brk:'pot', haz:'slow', hazC:['#7a5e3a', '#5a4428'], waterC:['#8a7a4e', '#c8b98a'], seaC:['#8a7a4e', '#c8b98a'], bogC:['#7a5e3a', '#5a4428'], lm:['msHouse', 'msCottonwood', 'msFenceLm'], wall:['#f4f1e6', '#8a7e66'],
+    npc:{ skin:'light', polo:'white', hat:'tan', pants:'brown', hair:'brown', hairStyle:'short', cap:false, shoes:'brown', gender:'male' }, who:'the river man' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -542,10 +547,13 @@ function plan(spec){
     else if (spec.vehicle === 'glass') place('lgGlassFrame', lx, L + 5, 3, 4.6, { w:5, d:2 });
     // the Beanstalk: up the stalk and out on top of the clouds, so the walk sets off from the top of the stalk where it came up
     else if (spec.vehicle === 'beanstalk') place('bnStalkTop', lx, L + 5, 3, 9, { w:5, d:5 });
+    // the Mississippi: down the beanstalk and down the river on the raft, so the walk sets off from the raft pulled up on the bank
+    else if (spec.vehicle === 'river') place('msRaftBank', lx, L + 5, 3, 2.6, { w:5, d:4 });
     // the sea route (Cyclops Isle on): the Greek ship run up on the sand where it came ashore
     else if (spec.vehicle === 'sea') place('seaShip', lx, L + 5, 3, 7, { w:6, d:12, beach:true });
     else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); } used.push({ x:lx, y:L + 5, r:5.5 }); }
-  if (SPACE && spec.space === 'beanstalk'){ place('bnStalkFoot', archX, -4.5, 3, 14, { w:6, d:6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // up the beanstalk into the clouds
+  if (SPACE && spec.space === 'river'){ place('bnStalkTop', archX, -4.5, 3, 9, { w:5, d:5 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // down the beanstalk to the river
+  else if (SPACE && spec.space === 'beanstalk'){ place('bnStalkFoot', archX, -4.5, 3, 14, { w:6, d:6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // up the beanstalk into the clouds
   else if (SPACE && spec.space === 'glass'){ place('lgMantel', archX, -4.5, 3, 5.2, { w:7, d:3 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // up on the chimney-piece and through the glass
   else if (SPACE && spec.space === 'fall'){ place('wonRabbitHole', archX, -4.5, 3, 3, { w:7, d:5 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // down the rabbit hole
   else if (SPACE && spec.space === 'sea'){ place('seaShip', archX, -5.5, 3, 7, { w:6, d:12 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the sea route: the ship at its jetty
@@ -850,8 +858,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1 };
-var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3 };
+var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6 };
+var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -870,7 +878,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'], lookingglass:['A chest. Its lock is on the other side.'], beanstalk:['A chest, as big as a giant’s boot.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'], lookingglass:['A chest. Its lock is on the other side.'], beanstalk:['A chest, as big as a giant’s boot.'], mississippi:['A chest, washed up on the bank.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -897,11 +905,12 @@ var SECRET_SAY = {
   wonderland:'Curiouser and curiouser. There is a secret hole on this trail.',
   lookingglass:'Things are the other way about here. There is a secret hole on this trail.',
   beanstalk:'Something smells good. The giant keeps a secret hole on this trail.',
+  mississippi:'There is a robbers’ cave on this trail. A secret hole, they say.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave', underworld:'cave', wonderland:'secretdoor', lookingglass:'secretdoor', beanstalk:'secretdoor', olympus:'secretdoor' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave', underworld:'cave', wonderland:'secretdoor', lookingglass:'secretdoor', beanstalk:'secretdoor', mississippi:'cave', olympus:'secretdoor' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -1385,6 +1394,7 @@ var LIFE = {
   wonderland:{ fly:['song', 3], mote:[['petal', 10], ['butter', 8]] },
   lookingglass:{ fly:['song', 3], mote:[['butter', 8], ['petal', 6]] },
   beanstalk:{ fly:['song', 3], mote:[['butter', 8]] },
+  mississippi:{ fly:['song', 3], mote:[['butter', 8], ['firefly', 4]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -2063,7 +2073,9 @@ function run(box, P, pic, api){
     [].forEach.call(gE.pad.querySelectorAll('button'), function(bt){ var d = +bt.getAttribute('data-d');
       bt.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); padDir = d; gym.tap = d; try{ bt.setPointerCapture(e.pointerId); }catch(e2){} });
       ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function(ev){ bt.addEventListener(ev, function(){ if (padDir === d) padDir = -1; }); }); }); }
-  function gymPhases(moves){ var i = 0, ph = [], first = []; while (i < moves.length){ first.push(moves[i]); if (moves[i++][0] === 'me') break; } if (first.length) ph.push(first); while (i < moves.length) ph.push([moves[i++]]); return ph; }
+  function gymPhases(moves){ var i = 0, ph = [], first = []; while (i < moves.length){ first.push(moves[i]); if (moves[i++][0] === 'me') break; } if (first.length) ph.push(first);
+    // a move marked 'with' (its fifth element) plays together with the move before it: the raft under him as the current takes them both
+    while (i < moves.length){ var mw = moves[i++]; if (mw[4] === 'with' && ph.length) ph[ph.length - 1].push(mw); else ph.push([mw]); } return ph; }
   function phDur(ph){ var d = 0; ph.forEach(function(m){ d = Math.max(d, GK.dur ? GK.dur(m[3]) : 0.15); }); return reduce ? d * 0.6 : d; }
   function gymDirIn(){ if (padDir >= 0) return padDir; var sx = stickV[0] + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), sy = stickV[1] + (keys.d ? 1 : 0) - (keys.u ? 1 : 0);
     if (Math.max(Math.abs(sx), Math.abs(sy)) < 0.45) return -1; return Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 1 : 3) : (sy > 0 ? 2 : 0); }
@@ -2479,7 +2491,7 @@ function run(box, P, pic, api){
     // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
     if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
-    label = P.gate && P.gate.pad ? (P.spec.space === 'beanstalk' ? 'The beanstalk' : P.spec.space === 'glass' ? 'The looking-glass' : P.spec.space === 'fall' ? 'The rabbit hole' : P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
+    label = P.gate && P.gate.pad ? (P.spec.space === 'beanstalk' || P.spec.space === 'river' ? 'The beanstalk' : P.spec.space === 'glass' ? 'The looking-glass' : P.spec.space === 'fall' ? 'The rabbit hole' : P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
     cls(pin, 'on', false); cls(way, 'on', true); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
     put(way.style, 'left', Math.round(cxs + vx * s2) + 'px'); put(way.style, 'top', Math.round(cys + vy * s2) + 'px'); put(wayI.style, 'transform', 'rotate(' + Math.round(Math.atan2(vy, vx) * 180 / Math.PI + 90) + 'deg)');
@@ -4442,6 +4454,97 @@ BUILD.bnStalkTop = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y);
     if (tt > 8 && d < 0.5) return '#5aae46'; return null; }, 0.125); };
 LMSIZE.bnStalk = [4, 4, 11]; LMSIZE.bnStone = [2.4, 1.6, 4.4]; LMSIZE.bnSignStone = [3, 1.2, 3.2]; LMSIZE.bnGreatHouse = [10, 7, 11]; LMSIZE.bnWell = [3, 3, 3.6];
 LMSIZE.bnCabbageBig = [5, 5, 3.6]; LMSIZE.bnWoodpile = [6, 2.6, 2.4]; LMSIZE.bnHaystack = [4, 4, 4]; LMSIZE.bnHenhouse = [4.4, 3.4, 3.4]; LMSIZE.bnTower = [5, 5, 10];
+/* ---- The Mississippi's stops on the walk, the same places its holes stand in (land.js): St. Petersburg on its hill with Tom's
+   whitewashed fence, the village wharf where the steamboats land, Jackson's Island in its woods, the raft on the open river, the
+   fog among the towheads, the river towns, McDougal's Cave in the bluff, and the steamboat landing below the town. Mark Twain's two
+   river books (1876 and 1884) as True Williams and E. W. Kemble drew them. The river bank is summer grass in soft warped greens,
+   and the sandbars and the mud follow the water's edge: never a grid. */
+GPAT.msBank = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 861), b = vn(c.ti * 0.012, c.tj * 0.012, 862), st = hash(c.ti, c.tj, 863);
+  if (st > 0.993) return '#f4f0d8'; if (st > 0.988) return '#e8c860'; return b > 0.64 ? (a > 0.6 ? '#8ac05a' : '#7ab24e') : a > 0.64 ? '#74a84a' : a < 0.3 ? '#5e8a3a' : '#6a9a44'; };
+GPAT.msSand = function(c){ var w = vn(c.ti * 0.01, c.tj * 0.01, 864), b = vn(c.ti * 0.03, c.tj * 0.03, 865); if (w < 0.42) return GPAT.msBank(c);
+  if (w < 0.46) return b > 0.5 ? '#a8986a' : '#9a8a5c'; return b > 0.62 ? '#e8dcb0' : b < 0.3 ? '#c8b88a' : '#d8cca0'; };
+GPAT.msCave = function(c){ var w = vn(c.ti * 0.05, c.tj * 0.05, 866), b = vn(c.ti * 0.015, c.tj * 0.015, 867); if (Math.abs(w - 0.5) < 0.02) return '#3a362e';
+  return b > 0.6 ? '#7a7262' : b < 0.32 ? '#4e4a40' : '#625c50'; };
+KIT['mississippi~village'] = kitFrom(KIT.mississippi, { nlm:3, dens:0.5, lm:['msChurch', 'msHouse', 'msFenceLm'] });
+KIT['mississippi~wharf'] = kitFrom(KIT.mississippi, { gpat:'msSand', nlm:3, dens:0.3, low:['msbarrellow', 'msreedlow', 'bush'], lm:['msSteamboat', 'msHouse', 'msWoodpile'] });
+KIT['mississippi~island'] = kitFrom(KIT.mississippi, { nlm:3, dens:0.8, tree:['broad', 'broad', 'pine'], lm:['msCottonwood', 'msCampfire', 'msCottonwood'] });
+KIT['mississippi~raft'] = kitFrom(KIT.mississippi, { gpat:'msSand', nlm:3, dens:0.25, low:['msreedlow', 'bush', 'msreedlow'], lm:['msRaftBank', 'msCottonwood', 'msSnagLm'] });
+KIT['mississippi~fog'] = kitFrom(KIT.mississippi, { gpat:'msSand', nlm:3, dens:0.35, low:['msreedlow', 'msreedlow', 'bush'], lm:['msSnagLm', 'msCottonwood', 'msSnagLm'] });
+KIT['mississippi~towns'] = kitFrom(KIT.mississippi, { nlm:3, dens:0.4, low:['msbarrellow', 'bush', 'msreedlow'], lm:['msHouse', 'msChurch', 'msHouse'] });
+KIT['mississippi~cave'] = kitFrom(KIT.mississippi, { gpat:'msCave', nlm:3, dens:0.15, low:['rock', 'rock', 'msreedlow'], lm:['msCaveMouth', 'msBluff', 'msBluff'] });
+KIT['mississippi~landing'] = kitFrom(KIT.mississippi, { gpat:'msSand', nlm:3, dens:0.3, low:['msbarrellow', 'msreedlow', 'bush'], lm:['msSteamboat', 'msChurch', 'msWoodpile'] });
+LIFE_AS['mississippi~village'] = { fly:['song', 3], mote:[['butter', 8]] };
+LIFE_AS['mississippi~wharf'] = { fly:['gull', 2], mote:[['butter', 6]] };
+LIFE_AS['mississippi~island'] = { fly:['song', 3], mote:[['firefly', 10], ['butter', 6]] };
+LIFE_AS['mississippi~raft'] = { fly:['gull', 2], mote:[['butter', 6]] };
+LIFE_AS['mississippi~fog'] = { fly:['crow', 1], mote:[['dust', 10]] };
+LIFE_AS['mississippi~towns'] = { fly:['song', 2], mote:[['butter', 8]] };
+LIFE_AS['mississippi~cave'] = { fly:['crow', 1], mote:[['firefly', 8]] };
+LIFE_AS['mississippi~landing'] = { fly:['gull', 3], mote:[['butter', 6]] };
+// a clump of cattails by the path, and a molasses barrel left on the bank
+BUILD.msreedlow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = 1.5 + hash(i, 3, 871) * 0.5;
+  B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + H + 0.2, function(px, py, pz){ var tt = pz - zb;
+    for (var k = 0; k < 5; k++){ var a = k * 1.3 + i, cx = x + Math.cos(a) * 0.25 + (tt / H) * Math.cos(a) * 0.12, cy = y + Math.sin(a) * 0.2; if (Math.hypot(px - cx, py - cy) < (tt > H - 0.45 && tt < H - 0.05 ? 0.09 : 0.04)) return tt > H - 0.45 ? (tt < H - 0.05 ? '#6a3e1e' : '#5a8a32') : '#4a7a2a'; }
+    return null; }, 0.125); };
+BUILD.msbarrellow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 1.3, function(px, py, pz){ var tt = pz - zb, r = 0.45 + 0.08 * Math.sin(tt / 1.2 * Math.PI), d = Math.hypot(px - x, py - y); if (d > r) return null;
+    if (Math.abs(tt - 0.25) < 0.06 || Math.abs(tt - 1.0) < 0.06) return '#3a3a3a'; return tt > 1.22 ? '#6a4626' : Math.sin(Math.atan2(py - y, px - x) * 7) > 0.85 ? '#4a2e16' : '#8a5e34'; }, 0.125); };
+// the white frame church on the hill, its steeple and its green shutters
+BUILD.msChurch = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.3, hd = t.d / 2 - 0.3, wallH = t.h * 0.42;
+  if (tt < wallH){ if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null; if (dy > hd - 0.25){ if (Math.abs(dx) < 0.7 && tt < 2.4) return '#5a3a22'; if (Math.abs(Math.abs(dx) - 2.2) < 0.45 && tt > 1.4 && tt < 3.2) return Math.abs(Math.abs(dx) - 2.2) > 0.3 ? '#3a6a3a' : '#2a3448'; }
+    return Math.abs(((tt + 9) * 3) % 1 - 0.5) < 0.05 ? '#d8d2c0' : '#f4f1e6'; }
+  var rr = (wallH + 2.6 - tt) / 2.6 * (hd + 0.3); if (tt < wallH + 2.6 && Math.abs(dy) < rr && Math.abs(dx) < hw + 0.3) return Math.abs(dy) > rr - 0.25 ? '#3a3a3a' : '#5a5a5a';
+  if (Math.abs(dx) < 0.8 && Math.abs(dy - 0.6) < 0.8 && tt < t.h - 2.2) return tt > t.h - 3.4 && tt < t.h - 2.6 && Math.abs(dx) < 0.3 ? '#2a3448' : '#ffffff';
+  if (tt >= t.h - 2.2 && Math.abs(dx) < 0.8 * (t.h - tt) / 2.2 && Math.abs(dy - 0.6) < 0.8 * (t.h - tt) / 2.2) return '#4a4a4a'; return null; }); };
+// a frame house of the village, white boards, a porch, a brick chimney
+BUILD.msHouse = function(B, t, i){ var tint = ['#f4f1e6', '#e8dcc0', '#d8e0e0'][i % 3]; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2, wallH = t.h * 0.55;
+  if (Math.abs(dx - hw * 0.5) < 0.35 && Math.abs(dy) < 0.35 && tt > wallH && tt < t.h + 0.2) return '#9a4a32';
+  if (tt < wallH){ if (Math.abs(dx) > hw || Math.abs(dy) > hd) return dy > hd && dy < hd + 1 && Math.abs(dx) < hw && tt < 0.25 ? '#8a6640' : null; if (dy > hd - 0.25){ if (Math.abs(dx) < 0.55 && tt < 2.1) return '#5a3a22'; if (Math.abs(Math.abs(dx) - 1.8) < 0.4 && tt > 1.2 && tt < 2.4) return '#2a3448'; }
+    return Math.abs(((tt + 9) * 3.5) % 1 - 0.5) < 0.05 ? '#a8a294' : tint; }
+  var rr = (t.h - tt) / (t.h - wallH) * (hd + 0.3); if (Math.abs(dy) > rr || Math.abs(dx) > hw + 0.3) return null; return Math.abs(dy) > rr - 0.25 ? '#3a2a22' : '#5a3a2a'; }); };
+// a stretch of Tom's board fence, nine feet high, whitewashed, a bucket at its foot
+BUILD.msFenceLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) < 0.15 && Math.abs(dx) < t.w / 2 - 0.2 && tt < t.h - (Math.abs(((dx + 9) * 2) % 1 - 0.5) < 0.2 ? 0 : 0.25)){ var b = ((dx + 9) * 2) % 1; if (b < 0.06) return '#8a7e66'; return dx > t.w * 0.15 ? (tt > 1.3 ? '#8a6a44' : '#f4f1e6') : tt < 0.6 && hash(dx * 9 | 0, 3, i) > 0.7 ? '#e8e4d8' : '#ffffff'; }
+  if (Math.hypot(dx - t.w * 0.18, dy - 0.7) < 0.35 && tt < 0.8) return tt > 0.68 ? '#ffffff' : '#7a5a3a'; return null; }); };
+// the steamboat lying at the landing: her white decks one above the other, her two tall black chimneys, her paddle box and wheel
+BUILD.msSteamboat = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.3, hd = t.d / 2 - 0.4;
+  if (tt < 0.9){ var w = hw * (1 - Math.pow(Math.max(0, -dx - hw * 0.4) / (hw * 0.6), 2) * 0.6); if (Math.abs(dy) > hd || Math.abs(dx) > hw || Math.abs(dy) > hd * (dx < -hw * 0.4 ? w / hw : 1)) return null; return tt > 0.7 ? '#b8302a' : '#f4f1e6'; }
+  if (tt < 2.2){ if (Math.abs(dx) > hw * 0.8 || Math.abs(dy) > hd * 0.85) return Math.abs(dx - hw * 0.15) < 1.3 && Math.abs(Math.abs(dy) - hd) < 0.5 && tt < 2.6 ? (Math.sin(Math.atan2(tt - 1.2, dx - hw * 0.15) * 8) > 0.3 ? '#b8302a' : '#5a3a22') : null; return Math.abs(((dx + 30) * 1.4) % 1 - 0.5) < 0.1 && tt > 1.1 && tt < 1.9 ? '#3a4a5a' : '#ffffff'; }
+  if (tt < 3.2){ if (Math.abs(dx) > hw * 0.55 || Math.abs(dy) > hd * 0.65) return null; return Math.abs(((dx + 30) * 1.6) % 1 - 0.5) < 0.12 && tt > 2.5 ? '#3a4a5a' : '#f4f1e6'; }
+  if (tt < 4 && Math.abs(dx + hw * 0.35) < 0.9 && Math.abs(dy) < 0.9) return tt > 3.8 ? '#2a2a2a' : '#ffffff';   // the pilot house
+  if (Math.abs(dx - hw * 0.05) < 0.35 && Math.abs(Math.abs(dy) - 0.9) < 0.35) return tt > t.h - 0.5 ? '#c8a040' : '#1e1e1e';   // the chimneys, their crowns
+  return null; }); };
+// the woodpile for the steamboats' furnaces, cordwood stacked on the bank
+BUILD.msWoodpile = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var row = Math.floor(tt / 0.5), r = Math.hypot(((dy + 9 + (row & 1) * 0.25) % 0.5) - 0.25, (tt % 0.5) - 0.25);
+  if (Math.abs(dx) > t.w / 2 - 0.2 || r > 0.24) return null; return Math.abs(dx) > t.w / 2 - 0.4 ? (r < 0.1 ? '#c8a070' : '#a8804a') : '#6a4a2a'; }); };
+// a cottonwood of the island, broad and round, its pale bark
+BUILD.msCottonwood = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx, dy);
+  if (tt < t.h * 0.45) return d < 0.45 - tt * 0.02 ? (vn(dx * 3, tt * 2, i) > 0.6 ? '#c8bca8' : '#9a8e7a') : null;
+  var e = Math.hypot(dx / (t.w / 2), dy / (t.d / 2), (tt - t.h * 0.7) / (t.h * 0.32)) + (vn(dx * 1.4, tt * 1.4 + dy, i) - 0.5) * 0.3; if (e > 1) return null; return e > 0.85 ? '#3e7a2e' : vn(dx, tt + dy, i + 3) > 0.55 ? '#7ab450' : '#5a9a3e'; }); };
+// the pirates' campfire on the island: a ring of stones, the fire, and the great log they sat on
+BUILD.msCampfire = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx, dy);
+  if (tt < 0.35 && Math.abs(d - 0.7) < 0.2) return '#8a8578'; if (d < 0.5 && tt < 0.9 - d) return tt > 0.4 ? '#ffd040' : '#ff7a2a';
+  if (Math.abs(dy - 1.4) < 0.35 && Math.abs(dx) < 1.8 && tt < 0.6) return Math.abs(dx) > 1.6 ? '#c8a070' : '#6a4a2a'; return null; }); };
+// a snag on the bar: a dead tree's grey trunk, half buried, its limbs reaching up
+BUILD.msSnagLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var lean = tt * 0.25, d = Math.hypot(dx - lean, dy);
+  if (d < 0.35 - tt * 0.03) return vn(dx * 3, tt * 3, i) > 0.6 ? '#a89a82' : '#7a6e5a';
+  if (tt > t.h * 0.45 && Math.hypot(dx - lean - (tt - t.h * 0.45) * 0.6, dy) < 0.12) return '#8a7e6a';
+  if (tt > t.h * 0.6 && Math.hypot(dx - lean + (tt - t.h * 0.6) * 0.7, dy - 0.2) < 0.1) return '#8a7e6a'; return null; }); };
+// the raft pulled up on the bank where the walk sets off: its logs, its wigwam of boards, its steering oar
+BUILD.msRaftBank = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (tt < 0.45){ if (Math.abs(dx) > t.w / 2 - 0.3 || Math.abs(dy) > t.d / 2 - 0.6) return null; var lg = Math.abs(((dy + 9) * 1.6) % 1 - 0.5); return lg > 0.44 ? '#4a3018' : tt > 0.35 ? '#a87a44' : '#8a6038'; }
+  if (Math.abs(dx) < 1.2 && Math.abs(dy) < 1.3 && tt < 2.4 - Math.abs(dx)) return Math.abs(dx) < 0.3 && dy > 1.1 && tt < 1.3 ? '#2a1a10' : Math.abs(((tt + 9) * 3) % 1 - 0.5) < 0.06 ? '#8a6a44' : '#c8a870';
+  if (Math.abs(dy + (t.d / 2 - 0.8)) < 0.1 && dx > 0 && dx < t.w / 2 + 0.8 && Math.abs(tt - 0.8 + dx * 0.15) < 0.12) return '#6a4a26'; return null; }); };
+// McDougal's Cave: its mouth in the limestone bluff, shaped like a letter A, its heavy oaken door standing open
+BUILD.msCaveMouth = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2, w = hw * (1 - tt / t.h * 0.35) + (vn(dx * 1.5, tt * 1.5, i) - 0.5) * 0.6; if (Math.abs(dx) > w || Math.abs(dy) > t.d / 2 - 0.2) return null;
+  var arch = 1.4 * (1 - tt / 3.4); if (dy > t.d / 2 - 0.6 && Math.abs(dx) < arch && tt < 3.4) return '#141210'; if (dy > t.d / 2 - 0.5 && dx > arch && dx < arch + 0.25 && tt < 2.6) return '#5a3a22';
+  return vn(dx * 2, tt * 2 + dy, i) > 0.62 ? '#e0d8c4' : Math.abs(Math.sin(tt * 3 + dx * 0.4)) < 0.1 ? '#8a8270' : '#b8ae96'; }); };
+BUILD.msBluff = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var w = t.w / 2 * (1 - tt / t.h * 0.4) + (vn(dx * 1.2, tt * 1.2 + dy, i) - 0.5) * 0.8; if (Math.abs(dx) > w || Math.abs(dy) > t.d / 2 * (1 - tt / t.h * 0.3)) return null;
+  if (tt > t.h - 0.5 && vn(dx * 3, dy * 3, i) > 0.4) return '#5a8a3a'; return Math.abs(Math.sin(tt * 2.6 + dx * 0.3)) < 0.1 ? '#8a8270' : vn(dx * 2, tt * 2, i + 1) > 0.6 ? '#d8d0bc' : '#b8ae96'; }); };
+/* DOWN THE BEANSTALK TO THE RIVER (the walk across from the Beanstalk, SPACE_TRIP 'river'): the walk across the giant's land ends at
+   the top of the beanstalk where it comes up through the clouds (bnStalkTop, the Beanstalk's own), and walking to it starts the climb
+   down. On the far side the walk sets off from the raft pulled up on the bank of the big river (msRaftBank). */
+LMSIZE.msChurch = [7, 6, 11]; LMSIZE.msHouse = [6, 5, 5.6]; LMSIZE.msFenceLm = [6, 1.6, 2.6]; LMSIZE.msSteamboat = [14, 5, 7]; LMSIZE.msWoodpile = [4, 2, 1.6];
+LMSIZE.msCottonwood = [5, 5, 9]; LMSIZE.msCampfire = [4, 4, 1.2]; LMSIZE.msSnagLm = [3, 2, 4]; LMSIZE.msRaftBank = [5, 4, 2.6]; LMSIZE.msCaveMouth = [7, 4, 6]; LMSIZE.msBluff = [5, 4, 5.5];
 // @@WORLD STOPS END@@
 /* THE FOLK OF OZ (putt.js FOLK says who stands on which walk and what they say). Four of L. Frank Baum's 1900 characters,
    drawn the way the book and W. W. Denslow's 1900 plates draw them and in no other way (mythiball/PD_SOURCES.md has the
@@ -4768,6 +4871,78 @@ Object.assign(FOLK3D, {
     if (cap3(u, v, t, [0.35, -0.7, 0.7], [0.4, 0.7, 0.8], 0.11)) return '#6a4a2a';   // the club across his knees
     var d = Math.hypot(u - 0.05, v, t - 2.0);
     if (d < 0.42){ if (u > 0.2 && Math.abs(t - 2.05) < 0.03 && Math.abs(av - 0.15) < 0.08) return '#1a1410'; if (u > 0.12 && t < 1.95) return '#7a4a2a'; return u < -0.15 ? '#5a3a1e' : '#e8b890'; }   // eyes shut, his great beard
+    return null; } }
+});
+/* THE FOLK OF THE MISSISSIPPI (putt.js FOLK.mississippi, and Tom Sawyer, its host: GREETERS.mississippi.folk). The people of Mark
+   Twain's two river books as True Williams (1876) and E. W. Kemble (1884) drew them, and in no other way: never a film's or a
+   cartoon's look. Tom, barefoot in his straw hat and rolled trousers with his whitewash brush; Aunt Polly in her spectacles, cap and
+   long dress; a steamboat pilot in his peaked cap and coat; Huck in his ragged hat and his one suspender; Jim, Huck's friend on the
+   raft, a tall man in a broad hat and a work coat, standing easy with a lantern; and Becky Thatcher with her yellow hair in two
+   long plaits and her pinafore. */
+Object.assign(FOLK3D, {
+  // Tom: barefoot, rolled brown trousers, a white shirt, a straw hat, and the whitewash brush in his hand
+  tom:{ r:0.8, h:3, k:1.15, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.12 && el3(u, av, t, 0.06, 0.12, 0.05, 0.14, 0.08, 0.08) <= 1) return '#e8b890';   // his bare feet
+    if (cap3(u, av, t, [0, 0.12, 0.1], [0, 0.12, 0.95], 0.08)) return t < 0.45 ? '#e8b890' : '#7a5432';   // his legs, the trousers rolled
+    if (t >= 0.85 && t < 1.95 && el3(u, v, t, 0, 0, 1.4, 0.21, 0.26, 0.58) <= 1) return Math.abs(v - 0.1) < 0.03 && t > 1.3 ? '#4a3a2a' : '#f4f0e4';   // his shirt and his suspender
+    if (cap3(u, av, t, [0, 0.26, 1.85], [0.2, 0.32, 1.25], 0.07)) return '#f4f0e4';
+    if (el3(u, v, t, 0.24, 0.32, 1.2, 0.07, 0.07, 0.07) <= 1) return '#e8b890'; if (cap3(u, v, t, [0.26, 0.32, 1.2], [0.42, 0.3, 0.7], 0.03)) return '#8a6038'; if (el3(u, v, t, 0.44, 0.3, 0.62, 0.08, 0.06, 0.1) <= 1) return '#ffffff';   // the brush, wet with whitewash
+    var d = Math.hypot(u, v, t - 2.25);
+    if (d < 0.24){ if (u > 0.16 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.28) < 0.035) return '#1a1410'; if (u > 0.19 && av < 0.05 && Math.abs(t - 2.15) < 0.02) return '#a8402a'; return u < -0.1 ? '#6a4424' : '#f0caa8'; }
+    if (t >= 2.38 && t < 2.46 && Math.hypot(u, v) < 0.42) return '#d8b870'; if (t >= 2.46 && t < 2.64 && Math.hypot(u, v) < 0.22) return Math.abs(t - 2.5) < 0.03 ? '#8a5a2a' : '#e8c880';   // his straw hat
+    return null; } },
+  // Aunt Polly: spectacles, a white cap, a long dark dress and an apron, her hands on her hips
+  auntpolly:{ r:0.9, h:3.1, at:function(u, v, t){ var av = Math.abs(v), rr = Math.hypot(u, v);
+    if (t < 1.45 && rr < 0.24 + (1.45 - t) * 0.14) return u > 0.12 && av < 0.16 ? '#f4f0e4' : '#3a3a4a';
+    if (el3(u, v, t, 0, 0, 1.72, 0.2, 0.24, 0.32) <= 1) return '#3a3a4a';
+    if (cap3(u, av, t, [0, 0.24, 1.9], [0.05, 0.36, 1.5], 0.06) || cap3(u, av, t, [0.05, 0.36, 1.5], [0.12, 0.2, 1.4], 0.06)) return '#3a3a4a';   // her arms, akimbo
+    var d = Math.hypot(u, v, t - 2.25);
+    if (d < 0.22){ if (u > 0.17 && Math.abs(av - 0.08) < 0.05 && Math.abs(t - 2.28) < 0.05) return Math.abs(av - 0.08) < 0.025 ? '#1a1410' : '#c8c8d0'; return u < -0.08 ? '#9a9aa0' : '#eec4a2'; }   // her spectacles
+    if (t >= 2.28 && t < 2.56 && Math.hypot(u + 0.03, v) < 0.25 - (t - 2.28) * 0.3) return '#ffffff';
+    return null; } },
+  // a steamboat pilot: a peaked cap, a dark blue coat with brass buttons, his hands behind him
+  pilot:{ r:0.9, h:3.2, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.05, 0.12, 0.06, 0.16, 0.09, 0.08) <= 1) return '#1a1a1a';
+    if (cap3(u, av, t, [0, 0.12, 0.12], [0, 0.12, 0.95], 0.09)) return '#2a2a3a';
+    if (t >= 0.85 && t < 2.0 && el3(u, v, t, 0, 0, 1.42, 0.23, 0.28, 0.62) <= 1) return u > 0.18 && av < 0.04 && Math.abs(((t * 6) % 1) - 0.5) < 0.2 ? '#d8b040' : '#2a3450';
+    if (cap3(u, av, t, [0, 0.28, 1.88], [-0.15, 0.3, 1.3], 0.07)) return '#2a3450';
+    var d = Math.hypot(u, v, t - 2.3);
+    if (d < 0.23){ if (u > 0.16 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.33) < 0.035) return '#1a1410'; if (u > 0.1 && t < 2.2) return '#8a7a6a'; return u < -0.1 ? '#5a4a3a' : '#e8c0a0'; }   // his whiskers
+    if (t >= 2.44 && t < 2.66 && Math.hypot(u - 0.02, v) < 0.25) return t < 2.5 ? '#1a1a1a' : '#2a3450'; if (t >= 2.44 && t < 2.5 && u > 0.1 && u < 0.42 && av < 0.2) return '#1a1a1a';   // his peaked cap
+    return null; } },
+  // Huck: a ragged wide hat, a torn shirt, trousers held up by one suspender and rolled, barefoot
+  huck:{ r:0.8, h:3, k:1.15, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.12 && el3(u, av, t, 0.06, 0.12, 0.05, 0.14, 0.08, 0.08) <= 1) return '#e0b088';
+    if (cap3(u, av, t, [0, 0.12, 0.1], [0, 0.13, 0.95], 0.09)) return t < 0.4 ? '#e0b088' : (Math.sin(t * 40) > 0.85 ? '#5a4a36' : '#8a7a5a');
+    if (t >= 0.85 && t < 1.95 && el3(u, v, t, 0, 0, 1.4, 0.22, 0.27, 0.6) <= 1){ if (Math.abs(v + 0.1) < 0.03) return '#5a3a22'; return vn(u * 9, t * 9 + v * 9, 31) > 0.78 ? '#a8a088' : '#d8d0b8'; }
+    if (cap3(u, av, t, [0, 0.27, 1.85], [0.1, 0.33, 1.2], 0.07)) return '#d8d0b8';
+    var d = Math.hypot(u, v, t - 2.25);
+    if (d < 0.24){ if (u > 0.16 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.28) < 0.035) return '#1a1410'; return u < -0.1 || t > 2.36 ? '#a87a3a' : '#e8c0a0'; }
+    if (t >= 2.36 && t < 2.44 && Math.hypot(u, v) < 0.44 && hash(u * 30 | 0, v * 30 | 0, 3) > 0.12) return '#8a7a5a'; if (t >= 2.44 && t < 2.68 && Math.hypot(u, v) < 0.24) return '#7a6a4a';   // his old ragged hat
+    return null; } },
+  // Jim: a tall man in a broad brimmed hat, a work shirt and a long coat, standing easy with a lantern in his hand
+  jim:{ r:0.95, h:3.5, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.15 && el3(u, av, t, 0.06, 0.14, 0.06, 0.18, 0.1, 0.09) <= 1) return '#3a2a1a';
+    if (cap3(u, av, t, [0, 0.14, 0.14], [0, 0.14, 1.1], 0.1)) return '#4a4a3a';
+    if (t >= 0.95 && t < 2.25 && el3(u, v, t, 0, 0, 1.6, 0.25, 0.31, 0.66) <= 1) return u > 0.15 && av < 0.1 ? '#c8b890' : '#5a4632';   // his shirt under his coat
+    if (cap3(u, av, t, [0, 0.31, 2.12], [0.08, 0.36, 1.45], 0.08)) return '#5a4632';
+    if (el3(u, v, t, 0.1, -0.37, 1.4, 0.08, 0.08, 0.08) <= 1) return '#6a4430';
+    if (cap3(u, v, t, [0.12, -0.38, 1.35], [0.14, -0.38, 1.1], 0.02)) return '#2a2a2a'; if (el3(u, v, t, 0.14, -0.38, 0.98, 0.1, 0.1, 0.13) <= 1) return Math.hypot(u - 0.14, v + 0.38) < 0.06 ? '#ffd860' : '#2a2a2a';   // the lantern
+    var d = Math.hypot(u, v, t - 2.56);
+    if (d < 0.25){ if (u > 0.17 && Math.abs(av - 0.09) < 0.035 && Math.abs(t - 2.6) < 0.035) return '#1a1410'; if (u > 0.2 && av < 0.05 && Math.abs(t - 2.46) < 0.02) return '#3a2418'; return '#6a4430'; }
+    if (t >= 2.72 && t < 2.8 && Math.hypot(u, v) < 0.48) return '#a88a5a'; if (t >= 2.8 && t < 3.02 && Math.hypot(u, v) < 0.24) return Math.abs(t - 2.84) < 0.03 ? '#5a3a22' : '#b8986a';   // his broad hat
+    return null; } },
+  // Becky: yellow hair in two long plaits, a blue dress, a white pinafore, and her bonnet hanging down her back
+  becky:{ r:0.8, h:2.8, k:1.15, at:function(u, v, t){ var av = Math.abs(v), rr = Math.hypot(u, v);
+    if (t < 0.12 && el3(u, av, t, 0.05, 0.1, 0.05, 0.12, 0.07, 0.07) <= 1) return '#2a2a2a';
+    if (t < 0.5 && cap3(u, av, t, [0, 0.1, 0.1], [0, 0.1, 0.5], 0.05)) return '#f4f0e4';
+    if (t >= 0.45 && t < 1.25 && rr < 0.2 + (1.25 - t) * 0.22) return u > 0.1 && av < 0.15 ? '#ffffff' : '#5a7ac8';
+    if (el3(u, v, t, 0, 0, 1.45, 0.18, 0.22, 0.3) <= 1) return u > 0.1 && av < 0.12 ? '#ffffff' : '#5a7ac8';
+    if (cap3(u, av, t, [0, 0.22, 1.62], [0.12, 0.27, 1.15], 0.06)) return '#5a7ac8';
+    if (cap3(u, av, t, [-0.12, 0.16, 2.0], [-0.16, 0.18, 1.35], 0.05)) return Math.sin(t * 40) > 0.3 ? '#f2d060' : '#d8b040';   // her plaits
+    var d = Math.hypot(u, v, t - 2.02);
+    if (d < 0.22){ if (u > 0.15 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.05) < 0.035) return '#2a4a8a'; if (u > 0.17 && av < 0.05 && Math.abs(t - 1.93) < 0.02) return '#c85a5a'; return u < -0.05 || t > 2.14 ? '#f2d060' : '#f4d4b8'; }
+    if (el3(u, v, t, -0.26, 0, 1.85, 0.06, 0.2, 0.18) <= 1) return '#f4f0e4';   // her bonnet down her back
     return null; } }
 });
 // a figure's build, facing f, turned 53 degrees toward the camera
