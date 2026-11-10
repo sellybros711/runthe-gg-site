@@ -1117,6 +1117,8 @@
      own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
   const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
     ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'}, ppemeraldspecs:{as:'shades',frame:'%',lens:'Q'},
+    // the Glacier Glasses (the Himalayas): an old climber's round glacier glasses, dark lenses in a brass wire rim, leather side shields
+    ppglacier:{as:'round',frame:'%',lens:'Q',strap:'&'},
     ppphantommask:{as:'mask',frame:'%',trim:'*',inner:'a',mark:'=',strap:'+'} };
   function ewColoursPP(d,EP){ const o={}; for(const k of ['frame','lens','strap','trim','inner','mark']) if(d[k]&&EP[d[k]]) o[k]='x:'+EP[d[k]];
     o.lens=o.lens||'x:#14161e'; o.frame=o.frame||'x:#26272d'; return o; }
@@ -1931,6 +1933,11 @@
     // chimneys' crowns
     ppriverboat:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[1])<0.1) return {c:P.b,gloss:2};
       if(Math.abs(p[1]-0.5)<0.06||Math.abs(p[1]+0.5)<0.06) return {c:P.s,gloss:2}; return {c:p[1]>0.3?P.h:P.C,gloss:3}; } },
+    // the Yeti Print Ball: new snow, a little blue in its shade, with two huge footprints stamped across it, toes and all
+    ppyetiprint:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
+      for(const [cx,cy,a] of [[-0.25,-0.05,0.5],[0.3,0.25,0.3]]){ const dx=p[0]-cx, dy=p[1]-cy, u=dx*Math.cos(a)+dy*Math.sin(a), v=-dx*Math.sin(a)+dy*Math.cos(a);
+        if(p[2]>0&&(u*u/0.09+v*v/0.03<1)) return {c:P.b,gloss:2}; for(let t=0;t<5;t++) if(p[2]>0&&Math.hypot(u-0.34,v-(t-2)*0.06)<0.035) return {c:P.b,gloss:2}; }
+      return {c:p[1]>0.3?P.h:p[1]<-0.4?P.s:P.C,gloss:3}; } },
     // the Deep Loch Ball: the loch's dark peaty water, a pale wake across it, and three green humps breaking the surface in a line
     ppdeeploch:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
       for(let k=0;k<3;k++){ if(Math.hypot(p[0]-(k-1)*0.42,p[1]-0.05,p[2]-0.85)<0.2-k*0.03) return {c:P.b,gloss:2}; }
