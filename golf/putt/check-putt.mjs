@@ -1041,7 +1041,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       const paid = []; let hk = null, hc = null; const hook = () => { const h = S().host; if (h !== hk){ if (hk) hk.coins = hc; hk = h; hc = h.coins; h.coins = n => { paid.push(n); }; } };
       const open = async w => { window.RTT_PUTT.close(); openPutt(); await sleep(200); hook(); window.RTT_PUTT._walkTo(w[1], w[0]); for (let i = 0; i < 600 && !T(); i++) await sleep(50); await sleep(200); hook(); return T(); };
       const visit = async (t, x, y, ms) => { t.goTo(x, y); await sleep(ms || 140); };
-      const collectAll = async (t, prize) => { await sleep(2600); const cs = t.items().filter(c => c.k === 'coin' && c.ch && c.ch.id === prize.id); for (const c of cs) await visit(t, c.x, c.y, 90); return cs; };
+      const collectAll = async (t, prize) => { await sleep(2600); const cs = t.items().filter(c => c.k === 'coin' && c.ch && c.ch.id === prize.id); for (const c of cs){ t.goTo(c.x, c.y); for (let i = 0; i < 40 && !c.done; i++) await sleep(50); } return cs; };   // wait for each pickup, not a fixed time (a slow runner missed one)
       const away = t => { const P = t.plan(); t.goTo(P.path[0][0], P.path[0][1]); };
       // the local gives the clue
       if (first.fire){ const t = await open(first.fire), P = t.plan(), npc = t.items().find(i => i.k === 'npc');
