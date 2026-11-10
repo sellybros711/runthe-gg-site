@@ -7377,6 +7377,9 @@ async function shareCardImage(btn){
   setTimeout(() => { btn.textContent = label; }, 2200);
 }
 
+/* The link the shared setlist ends on (the card image draws its own short runthe.gg/setlist).
+   Full https:// with the trailing slash, as arcade/share.js does: messages apps only make "https://runthe.gg/..." a tappable link, and the slash is the canonical page. */
+const SHARE_URL = 'https://runthe.gg/setlist/';
 function shareText(){
   const r = S.result;
   const lines = [];
@@ -7408,7 +7411,7 @@ function shareText(){
      job; anyone who wants the rest can play. */
   lines.push(`${r.total} points`);
   if (S.daily) lines.push('Same shows for everyone today. Beat me.');
-  lines.push('runthe.gg/setlist');
+  lines.push(SHARE_URL);
   return lines.join('\n');
 }
 

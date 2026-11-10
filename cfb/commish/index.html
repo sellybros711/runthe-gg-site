@@ -9552,6 +9552,9 @@ function drawTermCard(){
 
 /* The words that go with it, which have to stand alone: most of the places this is shared
    strip the image and keep the text. Same rule as the card, so neither of them is a score. */
+/* The link the term's share text ends on (the card image draws its own short runthe.gg/cfb/commish).
+   Full https:// with the trailing slash, as arcade/share.js does: messages apps only make "https://runthe.gg/..." a tappable link, and the slash is the canonical page. */
+const SHARE_URL='https://runthe.gg/cfb/commish/';
 function termShareText(){
   const d=termCardData();
   /* THE YEARS, NOT A COUNT. A term is three to eight seasons now depending on what the
@@ -9564,7 +9567,7 @@ function termShareText(){
   if(d.evidence[0]) bits.push(d.evidence[0].say);
   if(d.evidence[1]) bits.push(d.evidence[1].say);
   if(d.doc&&d.doc.name) bits.push('They called me '+d.doc.name+'.');
-  return bits.join(' ')+'\n\nrunthe.gg/cfb/commish';
+  return bits.join(' ')+'\n\n'+SHARE_URL;
 }
 
 const termBlob=(c)=>new Promise((res)=>{ try{ c.toBlob(res,'image/png'); }catch(e){ res(null); } });
