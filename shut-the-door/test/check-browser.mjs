@@ -1610,9 +1610,10 @@ async function runningGame(w, h) {
 }
 
 /* 15b. THE BREAK ARROWS (the owner, 2026-11-03). With a pitch picked and the zone aimed, one to three
-   yellow chevrons start at the reticle and point the way the pitch moves: sideways is pfxX put on
-   screen through screenCol() (the pitcher's view, so a righty's slider, positive pfxX, points left to
-   his glove side), down for a pitch that drops more than the average four-seam. */
+   yellow chevrons start at the reticle and point the way the pitch moves as the hitter sees it
+   (breaks.js: a fastball against the average four-seam, any other pitch against his own fastball),
+   put on screen through screenCol() (the pitcher's view, so a righty's slider, positive pfxX, points
+   left to his glove side). test/breaks.mjs pins the frame on every pack; this holds it on the page. */
 async function breakArrows(page, tag) {
   step(tag + ' 15b the break arrows', 300);
   /* the zone takes a tap once the at bat is up; the reticle shows once it does */
@@ -1640,6 +1641,9 @@ async function breakArrows(page, tag) {
   ok(side.length && side.every((s) => Math.sign(s.dx) === -Math.sign(s.pfxX)), '15b each chevron points the pitcher\'s view way (' + side.map((s) => s.type + ' pfxX ' + s.pfxX + ' dx ' + Math.round(s.dx)).join(', ') + ')');
   const glove = seen.filter((s) => /^(SL|ST|SV|CU|KC)$/.test(s.type) && Math.abs(s.pfxX) >= 3);
   if (glove.length) ok(glove.every((s) => (s.throws === 'R' ? s.dx < 0 : s.dx > 0) && s.dy > 0), '15b a breaking ball points down and to his glove side (' + glove.map((s) => s.throws + ' ' + s.type + ' ' + Math.round(s.dx) + ',' + Math.round(s.dy)).join('; ') + ')');
+  /* a cutter cuts off his fastball whatever its own pfxX (Devin Williams' is -0.8, and pointed arm side before 2026-11-10) */
+  const cut = seen.filter((s) => s.type === 'FC');
+  if (cut.length) ok(cut.every((s) => (s.throws === 'R' ? s.dx < 0 : s.dx > 0)), '15b a cutter points to his glove side (' + cut.map((s) => s.throws + ' FC ' + Math.round(s.dx)).join('; ') + ')');
   await page.click('#m-arsenal .pitch >> nth=0');
 }
 
