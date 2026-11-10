@@ -155,6 +155,9 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
   The weekly refresh (`golf-rosters.yml`, `golf/roster/dg_refresh.py`) re-rates current cards only. Never pass
   `--rerate-legends`. `golf/roster/check_refresh.py` fails a refresh that moves one. A legend is edited by hand,
   only when the owner asks, in its own pull request.
+- **The weekly refresh goes live by itself** (the owner, 2026-11-10). `golf-rosters.yml` merges its own pull
+  request once every check in the job passes. A check that fails stops the job before it pushes, so a refresh
+  that moves a legend or a rating wildly never goes live. Never weaken the gate to get a refresh through.
 
 **Economy**
 
