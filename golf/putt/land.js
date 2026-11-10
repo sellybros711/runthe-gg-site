@@ -6010,6 +6010,132 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ lsfloor:['#6a5040', '#8a6a52', '#4a3a2a', 0.12, function(c, R){ var b = blot(c, 0.2, 635); return R(b > 0.62 ? '#8a6a52' : b < 0.3 ? '#4a3a2a' : '#6a5040'); }],
         lswall:['#5a4030', '#7a5a42', '#3a2a1e', 0.18, function(c, R){ var z = c.z || 0, row = Math.floor(z * 1.2); if (z > 5) return R('#3a2a1e'); if (z > 0.6 && (z * 1.2) % 1 > 0.12){ var k = hash(c.ti >> 2, row, 637); return R(k > 0.8 ? '#c8283a' : k > 0.6 ? '#3a5aa8' : k > 0.45 ? '#e8c040' : k > 0.3 ? '#f4f0e4' : '#7a5a42'); }
           return R('#5a3a22'); }] } }; };
+  /* ---------------- THE BEANSTALK IS A JOURNEY ("Jack and the Beanstalk", Joseph Jacobs 1890 and Benjamin Tabart 1807, drawn the
+     old chapbook way). Off the top of the beanstalk where it comes up through the clouds (1 and 2), along the long broad road
+     that goes as straight as a dart (3 and 4), to the giant's great tall house and its doorstep (5 to 7), round his kitchen
+     garden with its beans and cabbages as big as a cart (8 to 10), across his yard by the woodpile (11 to 13), through the
+     hen yard and the haystacks (14 and 15), and up to his castle (16 to 18). The giant's land lies on top of the clouds: its
+     meadows end in billows of cloud, and here and there a gap in them looks down on the sky below. Every edge is warped noise,
+     the bean rows curve the way the ground does, and nothing is a grid. */
+  STOPS.beanstalk = [[1, 'stalk'], [3, 'road'], [5, 'house'], [8, 'garden'], [11, 'yard'], [14, 'farm'], [16, 'castle']];
+  (function(){ BUILD.beanstalk = function(L){ var s = L.stop; return s === 'castle' ? bnCastle(L) : s === 'farm' ? bnFarm(L) : s === 'yard' ? bnYard(L) : s === 'garden' ? bnGarden(L) : s === 'house' ? bnHouse(L) : s === 'road' ? bnRoad(L) : bnStalkTop(L); }; })();
+
+  function bnEdge(L, x, y){ return 4.2 + fbm(x * 0.07, y * 0.07, L.seed + 401) * 3.4; }
+  // where the meadow ends and the clouds begin: a wandering line well out from the course
+  function bnCloudAt(L, x, y){ return 15 + fbm(x * 0.035, y * 0.035, L.seed + 403) * 12; }
+  // a bean row: bands that bend with the ground (a warped coordinate), so the rows curve and never run on a grid
+  function bnRow(x, y, seed){ var w = (fbm(x * 0.015, y * 0.015, seed + 405) - 0.5) * 30 + (fbm(x * 0.05, y * 0.05, seed + 407) - 0.5) * 4; return Math.abs(Math.sin((y + w + x * (0.3 + fbm(x * 0.01, y * 0.01, seed + 409) * 0.6)) * 0.9)); }
+  function bnMats(){ return {
+      bnturf:['#62a242', '#74b452', '#528a38', 0.12, function(c, R){ if (c.rim === 1) return R('#86c464'); var b = blot(c, 0.15, 701), st = hash(c.ti, c.tj, 702);
+        if (st > 0.992) return R('#fff6c8'); if (st > 0.986) return R('#ffffff'); return R(b > 0.64 ? '#78b856' : b < 0.3 ? '#528a38' : b > 0.5 ? '#6aac4a' : '#62a242'); }],
+      bnrow:['#7a5430', '#9a6c3e', '#5a3c20', 0.12, function(c, R){ var b = blot(c, 0.3, 703), lf = hash(c.ti, c.tj, 704); if (c.k && lf > 0.55) return R(lf > 0.85 ? '#8ad06a' : '#4a9a38');
+        return R(b > 0.6 ? '#9a6c3e' : b < 0.3 ? '#5a3c20' : '#7a5430'); }],
+      bnroad:['#d8c8a0', '#e8dab8', '#b8a880', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 705), b = blot(c, 0.18, 706); if (st > 0.95) return R('#a89870'); return R(b > 0.62 ? '#e8dab8' : b < 0.3 ? '#c4b48c' : '#d8c8a0'); }],
+      bnflag:['#a8a294', '#c4beb0', '#8a8578', 0.12, function(c, R){ var w = vn(c.ti * 0.09, c.tj * 0.09, 707), e = Math.abs(w - 0.5); if (e < 0.03 || Math.abs(vn(c.ti * 0.09 + 9, c.tj * 0.09, 708) - 0.5) < 0.03) return R('#6a665c');
+        return R(blot(c, 0.2, 709) > 0.6 ? '#c4beb0' : '#a8a294'); }],
+      bncloud:['#f2f6fc', '#ffffff', '#c8d4e4', 0.08, function(c, R){ var b = blot(c, 0.09, 710), s = c.sh || 0; if (s > 0.6) return R('#b8c6da'); if (s > 0.35) return R('#d4dfec'); return R(b > 0.6 ? '#ffffff' : '#f2f6fc'); }],
+      bnsky:['#6aa8e0', '#8ac0ec', '#4a88c8', 0.06, function(c, R){ var b = blot(c, 0.05, 711), st = hash(c.ti, c.tj, 712); if (st > 0.995) return R('#5a9a3e'); return R(b > 0.65 ? '#8ac0ec' : b < 0.3 ? '#5a98d4' : '#6aa8e0'); }] }; }
+  function bnBase(L, o){ var seed = L.seed;
+    function cloudK(x, y){ var c = L.clearAt(x, y), ce = bnCloudAt(L, x, y); return sm(ce, ce + 2.6, c); }
+    function gapK(x, y){ return sm(0.6, 0.7, fbm(x * 0.05 + 3, y * 0.05, seed + 413)); }
+    function gap(x, y){ return gapK(x, y) > 0.6; }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = cloudK(x, y), hill = (fbm(x * 0.07, y * 0.07, seed) - 0.45) * (o.hills || 0.6) * sm(1.3, 4, c);
+        var gk = gapK(x, y) * k; return hill + k * (0.6 + fbm(x * 0.12, y * 0.12, seed + 417) * 1.6) * (1 - gk) - gk * 0.4; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = bnEdge(L, x, y), k = cloudK(x, y);
+        if (k > 0.5){ if (gap(x, y)) return ['bnsky', {}]; return ['bncloud', { sh:1 - fbm(x * 0.12, y * 0.12, seed + 417) }]; }
+        if (c < e + 0.6) return [o.paved ? 'bnflag' : o.road ? 'bnroad' : 'bnturf', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (o.road && Math.abs(x - L.cx + (fbm(y * 0.02, 1, seed + 419) - 0.5) * 8) < 2.6 && y < L.P0[1]) return ['bnroad', {}];
+        if (o.rows && fbm(x * 0.05 + 5, y * 0.05, seed + 421) > 0.5){ var r = bnRow(x, y, seed); return ['bnrow', { k:r > 0.72 ? 1 : 0 }]; }
+        return ['bnturf', {}]; },
+      fill:{ on:['bnturf'], trees:o.trees == null ? 0.03 : o.trees, lows:0.1, tree:function(B, x, y, i){ broadTree(B, x, y, 7 + hash(i, seed, 3) * 3, '#5a3a22', ['#3a7a2e', '#4e9a3a', '#2a5a22'], i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 423); if (o.rows && k < 0.45) bnCabbage(B, x, y, i + seed); else if (k > 0.45 && k < 0.53) bnSack(B, x, y); else bush(B, x, y, 0.5, ['#2e6a24', '#3e8a32', '#5aa846']); } },
+      // the sky over the giant's land: a high clear blue, paler toward the clouds, and a few white clouds riding level with you
+      // painted only where nothing of the land stands (the bare background), so a tower or the stalk rising over the horizon is never washed out
+      after:function(ctx, V){ var top = Math.round(V.pr(L.cx, L.E[1], 0)[1] - 2); if (top < 4) return; var W = Math.round(V.W);
+        var cv = document.createElement('canvas'); cv.width = W; cv.height = top; var c2 = cv.getContext('2d');
+        var g = c2.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#4a88d0'); g.addColorStop(0.7, '#8ac0ec'); g.addColorStop(1, '#e8f2fc'); c2.fillStyle = g; c2.fillRect(0, 0, W, top);
+        for (var i = 0; i < 6; i++){ var cx = hash(i, 11, seed) * W, cy = top * (0.35 + hash(i, 12, seed) * 0.5), cr = Math.max(4, W * (0.035 + hash(i, 13, seed) * 0.04));
+          c2.fillStyle = 'rgba(255,255,255,0.85)'; c2.beginPath(); c2.ellipse(cx, cy, cr * 2.4, cr * 0.7, 0, 0, 6.283); c2.fill(); c2.beginPath(); c2.ellipse(cx + cr, cy - cr * 0.4, cr * 1.2, cr * 0.6, 0, 0, 6.283); c2.fill(); }
+        var A = ctx.getImageData(0, 0, W, top), S2 = c2.getImageData(0, 0, W, top).data, D = A.data;
+        for (var k = 0; k < D.length; k += 4) if (D[k] === 58 && D[k + 1] === 90 && D[k + 2] === 122){ D[k] = S2[k]; D[k + 1] = S2[k + 1]; D[k + 2] = S2[k + 2]; }
+        ctx.putImageData(A, 0, 0); },
+      bg:'#3a5a7a', gain:2, mats:bnMats() }; }
+  // a cabbage of the giant's garden, as big as a cart: round, its leaves curling
+  function bnCabbage(B, x, y, k){ var zb = B.gz(x, y), R = 0.9 + hash(k, 2, 731) * 0.4;
+    B.solid(x - R - 0.2, y - R - 0.2, zb - 0.1, x + R + 0.2, y + R + 0.2, zb + R * 1.5, function(px, py, pz){ var d = Math.hypot((px - x) / R, (py - y) / R, (pz - zb - R * 0.55) / (R * 0.8)) + (vn(px * 3, pz * 3 + py, k) - 0.5) * 0.25; if (d > 1) return null;
+      var q = Math.sin(Math.atan2(py - y, px - x) * 5 + pz * 4); return q > 0.7 ? '#a8d88a' : d > 0.85 ? '#3e7a2e' : '#6ab04e'; }); }
+  // a bag of the giant's gold set down on the grass, tied at the neck
+  function bnSack(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 0.7, y - 0.7, zb, x + 0.7, y + 0.7, zb + 1.5, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < 1.0) return d < 0.6 * Math.sin(Math.PI * (0.25 + t * 0.62)) + 0.05 ? (px > x + 0.2 ? '#a88a44' : '#d0b468') : null; if (t < 1.1) return d < 0.2 ? '#6a3a14' : null; return d < 0.25 - (t - 1.1) * 0.4 ? '#c8a050' : null; }); }
+  // the top of the beanstalk where it comes up through the clouds: a great green stalk twisting up out of the billows, its leaves out
+  function bnStalkAt(B, x, y, H){ var zb = B.gz(x, y);
+    B.solid(x - 3.4, y - 3.4, zb - 0.2, x + 3.4, y + 3.4, zb + H, function(px, py, pz){ var t = pz - zb, cx = x + Math.sin(t * 0.35) * 0.7, cy = y + Math.cos(t * 0.3) * 0.5, d = Math.hypot(px - cx, py - cy), r = 0.75 - t * 0.03;
+      if (d < r) return Math.sin(Math.atan2(py - cy, px - cx) * 3 + t) > 0.5 ? '#5aae46' : '#3e8e32';
+      for (var k = 0; k < 5; k++){ var lz = 1.4 + k * 1.7, la = k * 2.4, lx = cx + Math.cos(la) * 1.5, ly = cy + Math.sin(la) * 1.5; if (Math.abs(t - lz - Math.hypot(px - lx, py - ly) * 0.2) < 0.18 && Math.hypot(px - lx, py - ly) < 1.3) return k % 2 ? '#4ea040' : '#6ab854'; }
+      return null; }, 0.125); }
+  // the giant's great tall house, of grey stone, its great door and its high windows, its roof of dark slates
+  function bnHouseAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4.4, y - 3.2, zb, x + 4.4, y + 3.2, zb + 9.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 5.6){ if (Math.abs(dx) > 4.2 || Math.abs(dy) > 3) return null; if (dy > 2.8 && Math.abs(dx) < 0.95 && t < 3.4) return t > 3.2 - Math.abs(dx) * 0.3 ? '#5a5248' : '#4a2e16';
+        if (dy > 2.8 && Math.abs(Math.abs(dx) - 2.6) < 0.55 && t > 2.6 && t < 4.4) return '#2a3448'; var q = vn(dx * 1.2 + dy, t * 1.4, 19); return q > 0.7 ? '#b4ae9e' : q < 0.3 ? '#7a766a' : '#9c978a'; }
+      var roof = 5.6 + (3.2 - Math.abs(dy)) * 1.15; if (t < roof && Math.abs(dx) < 4.4 && Math.abs(dy) < 3.2) return Math.abs(dy) > 2.9 ? '#2a2a32' : '#3a3a46'; return null; }); }
+  // a haystack in the hen yard, round and golden
+  function bnHayAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 1.8, y - 1.8, zb, x + 1.8, y + 1.8, zb + 3, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb, r = 1.7 * Math.sqrt(Math.max(0, 1 - t / 3.0));
+      return d < r ? (hash(px * 9 | 0, pz * 9 | 0, 41) > 0.75 ? '#a8843a' : '#d8b860') : null; }); }
+  // the giant's woodpile: great logs stacked on their sides
+  function bnLogsAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2.6, y - 1.2, zb, x + 2.6, y + 1.2, zb + 2, function(px, py, pz){ var t = pz - zb, row = Math.floor(t / 0.65), cy = (row & 1) * 0.35, r = Math.hypot(((py - y + 0.6 + cy) % 0.7 + 0.7) % 0.7 - 0.35, (t % 0.65) - 0.32);
+      if (Math.abs(px - x) > 2.4 - row * 0.4 || r > 0.33) return null; return Math.abs(px - x) > 2.25 - row * 0.4 ? (r < 0.12 ? '#c8a070' : '#a8804a') : '#6a4a2a'; }); }
+  // a tower of the giant's castle, grey stone, its battlements
+  function bnTowerAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2.4, y - 2.4, zb, x + 2.4, y + 2.4, zb + 9, function(px, py, pz){ var d = Math.hypot(px - x, py - y), t = pz - zb;
+      if (t < 8){ if (d > 2.1) return null; if (Math.abs(px - x) < 0.35 && py > y + 1.6 && t > 4.6 && t < 5.8) return '#2a3448'; return vn(px * 1.3, pz * 1.3 + py, 23) > 0.6 ? '#b4ae9e' : '#9c978a'; }
+      return d < 2.3 && d > 1.6 && (Math.floor((Math.atan2(py - y, px - x) + 3.15) * 2.2) & 1) ? '#a8a294' : null; }); }
+  // a great standing stone of the giant's, as tall as two men
+  function bnStoneAt(B, x, y, k){ var zb = B.gz(x, y), H = 3 + hash(k, 4, 741) * 1.6;
+    B.solid(x - 1.2, y - 1, zb, x + 1.2, y + 1, zb + H, function(px, py, pz){ var t = pz - zb, w = 0.9 - t / H * 0.35 + (vn(px * 2, pz * 2, k) - 0.5) * 0.2; if (Math.abs(px - x) > w || Math.abs(py - y) > w * 0.7) return null;
+      return px > x + w * 0.4 ? '#7a766a' : vn(px * 3, pz * 3, k + 1) > 0.65 ? '#b4ae9e' : '#9c978a'; }); }
+
+  // 1. THE TOP OF THE BEANSTALK: it comes up out of the clouds at the edge of the meadow, and the meadow runs off from it
+  function bnStalkTop(L){ var O = bnBase(L, { trees:0.02 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(i ? 1.2 : 3, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 761 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) bnStalkAt(B, q.x, q.y, 12); else if (k % 2) bnStoneAt(B, q.x, q.y, k + 3); else bnSack(B, q.x, q.y); }); }; return O; }
+  // 2. THE LONG BROAD ROAD: the road as straight as a dart across the meadows, standing stones along it
+  function bnRoad(L){ var O = bnBase(L, { road:true, trees:0.03 }), sp = [], i;
+    for (i = 0; i < 6; i++){ var q = L.spot(1.2, function(x, y){ return L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 771 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ bnStoneAt(B, q.x, q.y, k + 13); }); }; return O; }
+  // 3. THE GREAT TALL HOUSE: the house itself behind, its doorstep, the road up to it
+  function bnHouse(L){ var O = bnBase(L, { road:true, trees:0.02 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(i ? 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.1 + hash(x | 0, y | 0, L.seed + 781 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) bnHouseAt(B, q.x, q.y); else if (k % 2) bnSack(B, q.x, q.y); else bnStoneAt(B, q.x, q.y, k + 23); }); }; return O; }
+  // 4. THE KITCHEN GARDEN: rows of beans curving with the ground, cabbages as big as a cart
+  function bnGarden(L){ var O = bnBase(L, { rows:true, trees:0.02, hills:0.5 }), sp = [], i;
+    for (i = 0; i < 8; i++){ var q = L.spot(1, function(x, y){ return L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 791 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ bnCabbage(B, q.x, q.y, k + 33); }); }; return O; }
+  // 5. THE YARD: the giant's woodpile, his great axe in the block, the sacks
+  function bnYard(L){ var O = bnBase(L, { trees:0.04, hills:0.5 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.6, function(x, y){ return L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 801 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2 === 0) bnLogsAt(B, q.x, q.y); else bnSack(B, q.x, q.y); }); }; return O; }
+  // 6. THE HEN YARD: haystacks and the bean rows beyond
+  function bnFarm(L){ var O = bnBase(L, { rows:true, trees:0.02 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.6, function(x, y){ return L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 811 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) bnCabbage(B, q.x, q.y, k + 43); else bnHayAt(B, q.x, q.y); }); }; return O; }
+  // 7. THE GIANT'S CASTLE: its towers standing about, its court paved with flags
+  function bnCastle(L){ var O = bnBase(L, { paved:true, trees:0.01 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.8, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 821 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2 === 0) bnTowerAt(B, q.x, q.y); else bnSack(B, q.x, q.y); }); }; return O; }
+
+  // The Giant's Larder: a dark stone larder, its shelves of crocks all round, hams hanging and a cheese as big as a cartwheel
+  BUILD['s-larder'] = function(L){ var R0 = room(L, { floor:'blfloor', wall:'blwall', wallH:6.4, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 831, 2.4).forEach(function(q, k){ if (k % 2) bnSack(B, q[0], q[1]); else bnCabbage(B, q[0], q[1], k + 51); }); },
+      bg:'#1e1a16', gain:2,
+      mats:{ blfloor:['#6a6458', '#8a8578', '#4a4640', 0.12, function(c, R){ var b = blot(c, 0.2, 835), w = vn(c.ti * 0.08, c.tj * 0.08, 836); if (Math.abs(w - 0.5) < 0.025) return R('#3a3630'); return R(b > 0.62 ? '#8a8578' : b < 0.3 ? '#4a4640' : '#6a6458'); }],
+        blwall:['#5a5248', '#7a7266', '#3a342c', 0.18, function(c, R){ var z = c.z || 0, row = Math.floor(z * 1.1); if (z > 5.4) return R('#3a342c'); if (z > 0.8 && (z * 1.1) % 1 > 0.14){ var k = hash(c.ti >> 2, row, 837); return R(k > 0.8 ? '#a84a32' : k > 0.6 ? '#e8dcc0' : k > 0.45 ? '#8a5a2a' : k > 0.3 ? '#c8a050' : '#5a4a3a'); }
+          return R('#4a3a2a'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
