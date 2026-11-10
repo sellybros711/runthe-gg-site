@@ -1670,7 +1670,9 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     // every world painted means every world revealed: a record that has walked through all twenty-five gates
     await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 25, null, { timeout:15000 }).catch(() => {});
+    // the map paints one world a frame (mapArt), about half a second each on a CI runner, so the wait grows with
+    // the tour: 15 s ran out at World 25. This is only the ceiling; it returns the moment the last band is painted.
+    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 25, null, { timeout:60000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
       return { cols:cols.size, exact:Math.abs(c.offsetWidth - c.width * 2) < 1 && Math.abs(c.offsetHeight - c.height * 2) < 1, covers:c.offsetWidth >= b.offsetWidth && c.offsetHeight >= b.offsetHeight }; }));
