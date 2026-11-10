@@ -20,7 +20,7 @@ await pg.goto('http://127.0.0.1:' + srv.address().port + '/golf/');
 await pg.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D);
 await pg.evaluate(() => { sbUser = { id:'build' }; sbUsername = 'RunnyJ'; puttOn = () => true; openPutt(); });   // an all-access tester: story mode opens no hole past the frontier
 const ASPECT = 2.4;   // the card is about 2.4 wide to 1 tall on a phone; it is cut to fit by object-fit
-for (const [theme, n] of [['clubhouse', 18], ['school', 36], ['candy', 54], ['neon', 72], ['pirate', 90], ['temple', 108], ['canyon', 126], ['volcano', 144], ['sky', 162], ['dino', 180], ['iceage', 198], ['moon', 216], ['mars', 234], ['saturn', 252], ['crystara', 270], ['jellara', 288], ['oz', 306], ['cyclops', 324], ['medusa', 342], ['underworld', 360], ['olympus', 378], ['wonderland', 396], ['lookingglass', 414], ['beanstalk', 432], ['mississippi', 450]]) {
+for (const [theme, n] of [['clubhouse', 18], ['school', 36], ['candy', 54], ['neon', 72], ['pirate', 90], ['temple', 108], ['canyon', 126], ['volcano', 144], ['sky', 162], ['dino', 180], ['iceage', 198], ['moon', 216], ['mars', 234], ['saturn', 252], ['crystara', 270], ['jellara', 288], ['oz', 306], ['cyclops', 324], ['medusa', 342], ['underworld', 360], ['olympus', 378], ['wonderland', 396], ['lookingglass', 414], ['beanstalk', 432], ['mississippi', 450], ['lochness', 468]]) {
   await pg.evaluate((n) => window.RTT_PUTT._level(n), n);
   await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && P.v3 && P.v3.cv; }, null, { timeout:120000 });
   const url = await pg.evaluate((A) => { const c = window.RTT_PUTT._state().play.v3.cv, h = Math.round(c.width / A), o = document.createElement('canvas');
