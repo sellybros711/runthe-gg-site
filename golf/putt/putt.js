@@ -4462,9 +4462,14 @@ function scoreName(strokes, par){
   return d <= -3 ? 'Albatross' : d === -2 ? 'Eagle' : d === -1 ? 'Birdie' : d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double bogey' : '+' + d;
 }
 
+/* The link a shared Putt Putt line ends on (the daily's copy button here, the clip's share sheet in
+   clips.js). Full https:// with the trailing slash, as arcade/share.js does: messages apps only make
+   "https://runthe.gg/..." a tappable link, and the slash is the canonical page. */
+var SHARE_URL = 'https://runthe.gg/golf/';
 /* =================================================================================== the export */
 var RTT_PUTT = {
   API_VERSION:API_VERSION,
+  SHARE_URL:SHARE_URL,
   M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, MAX_FT:MAX_FT, V_STIMP:V_STIMP, ART:ART, HOP_MAX:HOP_MAX, CYC_TOP:CYC_TOP,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
@@ -7687,7 +7692,7 @@ function dailyResult(got, dk){
   setTimeout(function(){ if (S && S.screen === 'card') thumb(S.ov.querySelector('[data-th]'), dh, 'd' + dk); }, 30);
   dailyBoard(dk); wireNext(S.nextHole);
   S.ov.querySelector('[data-x]').onclick = function(){ showHub(); }; S.ov.querySelector('[data-menu]').onclick = function(){ showHub('daily'); };
-  S.ov.querySelector('[data-share]').onclick = function(e){ var txt = 'Run The Tour · Putt Putt Tour Daily Hole ' + dk + '\n' + T.name + ': ' + dh.name + '\n' + label + ' (' + rec.s + ', par ' + rec.par + ')' + (rec.ms != null ? ' in ' + clockTxt(rec.ms) : '') + '\nrunthe.gg/golf';
+  S.ov.querySelector('[data-share]').onclick = function(e){ var txt = 'Run The Tour · Putt Putt Tour Daily Hole ' + dk + '\n' + T.name + ': ' + dh.name + '\n' + label + ' (' + rec.s + ', par ' + rec.par + ')' + (rec.ms != null ? ' in ' + clockTxt(rec.ms) : '') + '\n' + SHARE_URL;
     try{ navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Copied'; }catch(err){} };
 }
 

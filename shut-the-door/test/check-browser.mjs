@@ -1394,8 +1394,8 @@ async function run(w, h, theme) {
   const toastSeen = await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 }).then(() => true, () => false);
   const said = await page.evaluate(() => window.STD_CHECK_TOAST);
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
-  ok(toastSeen && /^copied/.test(said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
-    '6 copy the text copies the share text (toast "' + (said || 'none in 10 s') + '", ' + clip.split('\n').length + ' lines)');
+  ok(toastSeen && /^copied/.test(said) && /Shut The Door #\d+/.test(clip) && /^https:\/\/runthe\.gg\/shut-the-door\/$/m.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
+    '6 copy the text copies the share text, its link the tappable https:// form (toast "' + (said || 'none in 10 s') + '", ' + clip.split('\n').length + ' lines)');
   await page.click('#sheet-share .sh-x');
   await page.waitForSelector('#sheet-share', { state: 'hidden', timeout: 3000 });
   await shot('shared');
@@ -1610,9 +1610,10 @@ async function runningGame(w, h) {
 }
 
 /* 15b. THE BREAK ARROWS (the owner, 2026-11-03). With a pitch picked and the zone aimed, one to three
-   yellow chevrons start at the reticle and point the way the pitch moves: sideways is pfxX put on
-   screen through screenCol() (the pitcher's view, so a righty's slider, positive pfxX, points left to
-   his glove side), down for a pitch that drops more than the average four-seam. */
+   yellow chevrons start at the reticle and point the way the pitch moves as the hitter sees it
+   (breaks.js: a fastball against the average four-seam, any other pitch against his own fastball),
+   put on screen through screenCol() (the pitcher's view, so a righty's slider, positive pfxX, points
+   left to his glove side). test/breaks.mjs pins the frame on every pack; this holds it on the page. */
 async function breakArrows(page, tag) {
   step(tag + ' 15b the break arrows', 300);
   /* the zone takes a tap once the at bat is up; the reticle shows once it does */
@@ -1640,6 +1641,9 @@ async function breakArrows(page, tag) {
   ok(side.length && side.every((s) => Math.sign(s.dx) === -Math.sign(s.pfxX)), '15b each chevron points the pitcher\'s view way (' + side.map((s) => s.type + ' pfxX ' + s.pfxX + ' dx ' + Math.round(s.dx)).join(', ') + ')');
   const glove = seen.filter((s) => /^(SL|ST|SV|CU|KC)$/.test(s.type) && Math.abs(s.pfxX) >= 3);
   if (glove.length) ok(glove.every((s) => (s.throws === 'R' ? s.dx < 0 : s.dx > 0) && s.dy > 0), '15b a breaking ball points down and to his glove side (' + glove.map((s) => s.throws + ' ' + s.type + ' ' + Math.round(s.dx) + ',' + Math.round(s.dy)).join('; ') + ')');
+  /* a cutter cuts off his fastball whatever its own pfxX (Devin Williams' is -0.8, and pointed arm side before 2026-11-10) */
+  const cut = seen.filter((s) => s.type === 'FC');
+  if (cut.length) ok(cut.every((s) => (s.throws === 'R' ? s.dx < 0 : s.dx > 0)), '15b a cutter points to his glove side (' + cut.map((s) => s.throws + ' FC ' + Math.round(s.dx)).join('; ') + ')');
   await page.click('#m-arsenal .pitch >> nth=0');
 }
 
@@ -1979,9 +1983,14 @@ async function modes(w, h, full) {
   ok(/^Picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
   await page.click('#hm-arc');
   await page.waitForSelector('#hp-arc.on:not([hidden])');
-  const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);
-  ok(arc > 0, '17 Pro: the past dailies are a list to play (' + arc + ' days)');
-  await page.click('#past-body .arc-list button >> nth=0', { timeout: 120000 });
+  /* a phone keeps the list; a desk (980 px and up) shows the same days as a calendar (the owner, 2026-11-10) */
+  const desk = w >= 980;
+  const arc = await page.evaluate(() => ({ list: document.querySelectorAll('#past-body .arc-list button').length,
+    cal: document.querySelectorAll('#arc-cal .ac-d.open').length, calShown: !!document.getElementById('arc-cal') && getComputedStyle(document.getElementById('arc-cal')).display !== 'none',
+    listShown: !!document.querySelector('#past-body .arc-list') && getComputedStyle(document.querySelector('#past-body .arc-list')).display !== 'none' }));
+  if (desk) ok(arc.calShown && !arc.listShown && arc.cal > 0, '17 Pro on a desk: the past dailies are a calendar to play, the list hidden (' + arc.cal + ' days this month)');
+  else ok(arc.list > 0 && arc.listShown && !arc.calShown, '17 Pro: the past dailies are a list to play, no calendar on a phone (' + arc.list + ' days)');
+  await page.click(desk ? '#arc-cal .ac-d.open >> nth=0' : '#past-body .arc-list button >> nth=0', { timeout: 120000 });
   await page.waitForFunction(() => window.STD_UI.state.mode === 'archive' && document.body.dataset.screen === 's-mound', null, { timeout: 120000 });
   ok(true, '17 Pro: a past day opens on the mound, as the archive');
   ok(errors.length === 0, '17 the pick and the archive: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
@@ -1991,6 +2000,9 @@ async function modes(w, h, full) {
   await page.waitForSelector('#hp-arc.on:not([hidden])');
   const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
   ok(!lk.list && /open later/.test(lk.t) && !/\$|price|buy|pro\b/i.test(lk.t), '17 free: the past dailies stay locked, no price and no buy button');
+  const cal = await page.evaluate(() => { const c = document.getElementById('arc-cal'); return c && { shown: getComputedStyle(c).display !== 'none', open: c.querySelectorAll('.ac-d.open, button[data-day]').length, now: c.querySelectorAll('.ac-d.now[aria-current="date"]').length, wk: c.querySelectorAll('.ac-wk span').length, grid: getComputedStyle(document.querySelector('#past-body .past-grid')).display }; });
+  if (w >= 980) ok(cal && cal.shown && cal.open === 0 && cal.now === 1 && cal.wk === 7 && cal.grid === 'none', '17 free on a desk: a calendar, seven weekdays, today ringed, every past day locked, the tiles hidden (' + JSON.stringify(cal) + ')');
+  else ok(!cal || (!cal.shown && cal.grid !== 'none'), '17 free on a phone: the locked tiles as before, no calendar');
   ok(lk.pick, '17 before the vote, the home says nothing about it');
   await ctx.close();
 

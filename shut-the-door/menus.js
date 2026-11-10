@@ -270,19 +270,86 @@ function renderPast(scn) {
      today every player sees the locked tiles below. No price and no buy button here. */
   if (ctx.ent && ctx.ent.archive && ctx.archiveDays && ctx.onArchive) {
     var days = ctx.archiveDays(ctx.today);
-    $('past-body').innerHTML = days.length
+    $('past-body').innerHTML = (days.length
       ? '<p>pick a day. it plays on that day\'s spot and luck. it never goes on the leaderboard.</p><div class="arc-list">' +
         days.map(function (d) { return '<button type="button" data-day="' + esc(d.day) + '"><b>#' + esc(d.number) + '</b><span>' + esc(shortDay(d.day)) + '</span></button>'; }).join('') + '</div>'
-      : '<p>nothing before #' + esc(n) + ' yet.</p>';
-    $('past-body').querySelectorAll('[data-day]').forEach(function (b) {
+      : '<p>nothing before #' + esc(n) + ' yet.</p>') + calendar(days, true);
+    $('past-body').querySelectorAll('.arc-list [data-day]').forEach(function (b) {
       b.addEventListener('click', function () { ctx.onArchive(b.getAttribute('data-day')); });
     });
+    wireCal(days, true);
     return;
   }
   for (var i = n - 1; i >= Math.max(1, n - 12); i--) tiles += '<div class="past-t"><b>#' + i + '</b><span class="lock" aria-hidden="true"></span></div>';
+  var past = ctx.archiveDays ? ctx.archiveDays(ctx.today) : null;
   $('past-body').innerHTML =
     '<p>past dailies open later. today\'s is #' + esc(n) + '.</p>' +
-    (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>');
+    (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>') +
+    (past ? calendar(past, false) : '');
+  if (past) wireCal(past, false);
+}
+
+/* THE ARCHIVE AS A CALENDAR, on a desk only (the owner, 2026-11-10: "a calendar with dates instead of
+   game numbers"). The phone keeps the tiles or the list above; style.css shows .arc-cal from 980 px and
+   hides those there. The days come from the archive's own list (modes-ui.js archiveDays: the contract's
+   EPOCH and dayNumberOf, the map from a day to its daily), so a day is marked here exactly when the
+   archive has it. Which days open is the archive's rule, not the calendar's: locked for everyone, a
+   button for Pro. Today is ringed, the days before #1 and after today are blank. One month at a time,
+   with arrows only when the dailies span more than one. */
+var calMonth = null;
+var WEEK = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+function ymd(y, m, d) { return y + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d; }
+function calendar(days, play) {
+  var today = ctx.today;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today || '')) return '';
+  var num = {};
+  days.forEach(function (d) { num[d.day] = d.number; });
+  var lo = (days.length ? days[days.length - 1].day : today).slice(0, 7), hi = today.slice(0, 7);
+  if (!calMonth || calMonth < lo || calMonth > hi) calMonth = hi;
+  var y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7);
+  var lead = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), len = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  var name = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  var cells = '';
+  for (var i = 0; i < lead; i++) cells += '<span class="ac-d pad" aria-hidden="true"></span>';
+  for (var d = 1; d <= len; d++) {
+    var day = ymd(y, m, d), when = longDay(day);
+    if (day === today) cells += '<span class="ac-d now" aria-current="date" aria-label="' + esc(when + ', today') + '"><b>' + d + '</b><small>today</small></span>';
+    else if (num[day] == null) cells += '<span class="ac-d off"><b>' + d + '</b></span>';
+    else if (play) cells += '<button type="button" class="ac-d open" data-day="' + esc(day) + '" title="#' + esc(num[day]) + '" aria-label="' + esc(when + ', daily #' + num[day]) + '"><b>' + d + '</b></button>';
+    else cells += '<span class="ac-d shut" title="#' + esc(num[day]) + '" aria-label="' + esc(when + ', daily #' + num[day] + ', locked') + '"><b>' + d + '</b><span class="lock" aria-hidden="true"></span></span>';
+  }
+  for (var t = (lead + len) % 7; t && t < 7; t++) cells += '<span class="ac-d pad" aria-hidden="true"></span>';
+  var arrows = lo < hi;
+  return '<div class="arc-cal" id="arc-cal">' +
+    '<div class="ac-top">' +
+      (arrows ? '<button type="button" class="ac-mv" data-mv="-1" aria-label="previous month"' + (calMonth <= lo ? ' disabled' : '') + '><i aria-hidden="true"></i></button>' : '') +
+      '<b class="ac-m" aria-live="polite">' + esc(name) + '</b>' +
+      (arrows ? '<button type="button" class="ac-mv nx" data-mv="1" aria-label="next month"' + (calMonth >= hi ? ' disabled' : '') + '><i aria-hidden="true"></i></button>' : '') +
+    '</div>' +
+    '<div class="ac-wk" aria-hidden="true">' + WEEK.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>' +
+    '<div class="ac-grid">' + cells + '</div></div>';
+}
+function wireCal(days, play) {
+  var el = $('arc-cal');
+  if (!el) return;
+  el.querySelectorAll('[data-mv]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7) + +b.getAttribute('data-mv');
+      if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
+      calMonth = y + '-' + (m < 10 ? '0' : '') + m;
+      el.outerHTML = calendar(days, play);
+      wireCal(days, play);
+      /* focus stays on the arrow, or moves to the other one when this end is reached */
+      var nb = $('arc-cal').querySelector('[data-mv="' + b.getAttribute('data-mv') + '"]:not(:disabled)') || $('arc-cal').querySelector('[data-mv]:not(:disabled)');
+      if (nb) nb.focus();
+    });
+  });
+  if (play) el.querySelectorAll('[data-day]').forEach(function (b) {
+    b.addEventListener('click', function () { ctx.onArchive(b.getAttribute('data-day')); });
+  });
+}
+function longDay(day) {
+  return new Date(Date.parse(day + 'T12:00:00Z')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
 }
 
 function shortDay(day) {

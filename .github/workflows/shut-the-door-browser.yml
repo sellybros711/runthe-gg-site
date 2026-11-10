@@ -29,6 +29,10 @@ name: Shut The Door browser check
 # Runs locally, unchanged:
 #   node shut-the-door/test/check-browser.mjs                       (or --shard 1/4, --plan 4)
 #   node shut-the-door/lab/pipeline/check-contact.mjs              (or --shard 2/6, --sample N, --resume)
+#   node shut-the-door/test/card.mjs                                (SHOTS=dir for the PNGs)
+#
+# A third job, card, draws the share card tall and wide in Chromium with the real faces and fails
+# when two texts overlap, a text runs out of its tile or off the image (shut-the-door/test/card.mjs).
 #
 # No secrets, no deploy.
 
@@ -148,3 +152,18 @@ jobs:
           [ -f check-contact.txt ] || exit 0
           grep -E 'FAIL' check-contact.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-contact::/' || true
           tail -n 1 check-contact.txt | sed 's/^/::notice title=check-contact::/'
+
+  card:
+    name: share card text never overlaps
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        timeout-minutes: 14
+        uses: ./.github/actions/playwright
+      - name: The card's texts never overlap, tall and wide, long kickers and long names
+        run: node shut-the-door/test/card.mjs

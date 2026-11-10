@@ -1249,25 +1249,14 @@ function breakGlyph(a, color, big) {
 }
 
 /* THE BREAK ARROWS (the owner, 2026-11-03): one, two or three yellow chevrons from the reticle, the way
-   the picked pitch moves. The way is what the hitter sees the ball do: total movement with gravity,
-   measured against the path of the league's average four-seam (the straight fastball the eye
-   expects). So its vertical is pfxZ (induced) less the drop gravity adds at his own speed, less that
-   of the average four-seam: a riding four-seam reads flat or up, a sinker, splitter or curve down.
-   Sideways is pfxX (catcher's view) put on screen through screenCol() (aim.js SCREEN_U), so a
-   righty's slider points to his glove side. Nothing here is a number on screen.
-   The count is the size of that movement. Measured on every pitch in the 30 packs (81 arsenal rows,
-   2026-11-03): the thirds fall at 10.8 and 19.6 inches, so under 11 is one arrow, 11 to 20 two, 20 and
-   over three (the four-seams land in one, most sliders and every curve in three). BRK_REF is that
-   four-seam average (pfxZ less the drop, -11.7 inches). */
-var BRK_REF = -11.7, BRK_TWO = 11, BRK_THREE = 20;
-/* the drop gravity adds over the last 50 feet at 95% of his release speed, in inches */
-function gravityDrop(velo) { var t = 50 / (0.95 * velo * 1.4667); return 0.5 * 32.174 * t * t * 12; }
+   the picked pitch moves as the hitter sees it. breaks.js holds the frame and its measurements (a
+   fastball against the average four-seam, any other pitch against his own fastball, both ways, with
+   gravity) and test/breaks.mjs pins it per pitch type and hand. Sideways goes on screen through
+   screenCol() (aim.js SCREEN_U), so a righty's slider points to his glove side. Nothing here is a
+   number on screen. */
 function breakArrows(a) {
-  if (!a || a.pfxX == null || a.pfxZ == null || !a.velo) return null;
-  var x = a.pfxX, z = a.pfxZ - gravityDrop(a.velo) - BRK_REF, mag = Math.sqrt(x * x + z * z);
-  if (mag < 0.5) return null;
-  var U = window.STD_AIM.SCREEN_U;
-  return { dx: x * U / mag, dy: -z / mag, n: mag >= BRK_THREE ? 3 : mag >= BRK_TWO ? 2 : 1 };
+  var p = S.scn.pitcher;
+  return window.STD_BREAK.arrows(a, p.arsenal, p.throws, window.STD_AIM.SCREEN_U);
 }
 
 /* A long press on a pitch button opens its guide (and does not pick it). Returns a test for the
@@ -1332,7 +1321,7 @@ function gridLine() {
 function pitchSay(a, bats) {
   if (a.pfxX == null || a.pfxZ == null) return '';
   var x = a.pfxX, z = a.pfxZ, ax = Math.abs(x), shape = a.shape || C.SHAPE_OF[a.type];
-  var toward = bats === 'L' ? x > 0 : x < 0;
+  var toward = window.STD_BREAK.side(x, bats) === 'in';
   var dir = (toward ? 'in on ' : 'away from ') + (bats === 'L' ? 'a lefty' : 'a righty');
   var side = function (verb, min) { return ax >= min ? ' ' + verb + ' ' + dir + '.' : ''; };
   switch (shape) {
@@ -1370,7 +1359,7 @@ function renderGuide() {
   /* no speed: it is revealed after the throw (the owner, 2026-10-23) */
   var nums = '';
   if (a.pfxX != null && a.pfxZ != null) {
-    var toward = lefty ? a.pfxX > 0 : a.pfxX < 0, hx = Math.round(Math.abs(a.pfxX));
+    var toward = window.STD_BREAK.side(a.pfxX, b.bats) === 'in', hx = Math.round(Math.abs(a.pfxX));
     nums += '<span><b>' + esc(Math.round(Math.abs(a.pfxZ))) + '"</b>' + (a.pfxZ >= 0 ? 'up' : 'down') + '</span>' +
       '<span><b>' + esc(hx) + '"</b>' + (hx === 0 ? 'sideways' : toward ? 'in' : 'away') + '</span>';
   }

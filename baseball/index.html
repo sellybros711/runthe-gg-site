@@ -8566,6 +8566,8 @@ function shareVerdict(o){
 }
 /* What a daily result looks like pasted into a group chat. The grid first, because
    that is the part people recognise, then the record, then one line of detail. */
+/* The link every shared line ends on (the daily and the season). Full https:// with the trailing slash, as arcade/share.js does: messages apps only make "https://runthe.gg/..." a tappable link, and the slash is the canonical page. */
+const SHARE_URL='https://runthe.gg/baseball/';
 function dailyShareText(d){
   const verdict=d.titleWon?'World Series Champions':
     d.madePlayoffs?'Reached October':'Missed the playoffs';
@@ -8577,7 +8579,7 @@ function dailyShareText(d){
   if(d.chem)bits.push('Chemistry +'+d.chem);
   if(bits.length)t+='\n'+bits.join(' \u00b7 ');
   if(d.streak>1)t+='\n\uD83D\uDD25 '+d.streak+' day streak';
-  t+='\nrunthe.gg/baseball';
+  t+='\n'+SHARE_URL;
   return t;
 }
 async function shareDaily(){
@@ -8603,7 +8605,7 @@ function shareLines(o){
   const grid=seasonGrid();
   if(grid)t+='\n'+grid;
   if(shownRating(o)!=null) t+=' Team rating '+Math.round(shownRating(o))+'.';
-  t+='\n'+(RUN.daily?'Same twelve spins for everybody today. One try.':'Can you draft a better team?')+'\nrunthe.gg/baseball';
+  t+='\n'+(RUN.daily?'Same twelve spins for everybody today. One try.':'Can you draft a better team?')+'\n'+SHARE_URL;
   return t;
 }
 function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);

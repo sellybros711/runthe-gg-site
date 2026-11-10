@@ -1788,9 +1788,43 @@ body[data-screen="s-next"] .app { max-width: none; border: 0; }
 .arc-list button b { font-family: var(--sans); font-weight: 700; font-size: 17.6px; line-height: 1; }
 .arc-list button span { font-size: 12px; color: var(--dim); }
 .arc-list button:hover, .arc-list button:focus-visible { border-color: var(--signal); }
+/* the archive as a calendar (menus.js calendar), on a desk only: a phone keeps the tiles and the list */
+.arc-cal { display: none; }
+@media (min-width: 980px) {
+  #past-body .past-grid, #past-body .arc-list { display: none; }
+  .arc-cal { display: block; margin-top: 14px; }
+  .ac-top { display: flex; align-items: center; gap: 8px; min-height: 40px; margin-bottom: 8px; }
+  .ac-m { flex: 1; font-family: var(--sans); font-weight: 700; font-size: 17px; color: var(--ink); }
+  .ac-mv { order: 2; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink); cursor: pointer; }
+  .ac-mv i { width: 9px; height: 9px; border: solid currentColor; border-width: 0 0 2px 2px; transform: translateX(2px) rotate(45deg); }
+  .ac-mv.nx i { transform: translateX(-2px) rotate(-135deg); }
+  .ac-mv:not(:disabled):hover, .ac-mv:focus-visible { border-color: var(--signal); color: var(--signal); outline: 0; }
+  .ac-mv:disabled { opacity: .35; cursor: default; }
+  .ac-wk, .ac-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .ac-wk { margin-bottom: 6px; }
+  .ac-wk span { text-align: center; font-family: var(--sans); font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .ac-d { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; border-radius: 12px; font-family: var(--sans); color: var(--dim); }
+  .ac-d b { font-weight: 700; font-size: 16px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ac-d .lock { margin-top: 8px; transform: scale(.8); opacity: .8; }
+  .ac-d.off { opacity: .38; }
+  .ac-d.off b { font-weight: 500; }
+  .ac-d.shut { background: var(--panel); border: 1.5px dashed var(--line-2); }
+  .ac-d.open { background: var(--panel); border: 1px solid var(--line-2); color: var(--ink); cursor: pointer; }
+  .ac-d.open:hover, .ac-d.open:focus-visible { border-color: var(--signal); outline: 0; }
+  .ac-d.now { background: var(--signal-soft); box-shadow: inset 0 0 0 2px var(--signal); color: var(--ink); }
+  .ac-d.now b { color: var(--signal); }
+  .ac-d.now small { font-weight: 700; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--signal); }
+}
 .r-vote { scroll-margin-top: 12px; }
 /* LEADERBOARD is a longer word than "the board.": on a phone it scales with the width so it stays in its card */
 @media (max-width: 879px) { #bd-head { font-size: min(64px, 15.5vw); } }
+/* and on a desk it scales with its own card (the left column is 5/12 of the page, so 84px ran past the
+   card's edge and the last letter was clipped, the owner 2026-11-10). LEADERBOARD in Anton is about 5.1
+   of its size wide, so 19% of the card's width fits with room. Without container units it stays 84px. */
+@media (min-width: 880px) {
+  #s-board .bd-hero { container-type: inline-size; }
+  #bd-head { font-size: min(84px, 19cqi); }
+}
 
 /* ---- BETWEEN TWO OF HIS HALVES (rules 8, box-ui.js): his team bats on the line score ----
    The broadcast's look at the other dugout: a night of its own over the whole screen, the line score
@@ -1940,6 +1974,15 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
   #sheet-menu .menu-list button { transition: background .12s; }
   #sheet-menu .menu-list button:hover, #sheet-menu .menu-list button:focus-visible { background: var(--panel-2); outline: 0; }
   #sheet-menu .menu-list button:focus-visible { box-shadow: inset 0 0 0 2px var(--signal); }
+}
+/* THE FOOTER ON A DESK (the owner, 2026-11-10: "the disclaimer should be at the bottom"). The side column
+   lets go of its box (display: contents, as on a phone), so the menu is the grid's own item in the right
+   column and stays in view, and the footer takes a row of its own under both columns, centred. The DOM
+   and the phone are as they were. */
+@media (min-width: 980px) {
+  .t-side { display: contents; }
+  #h-menu { grid-column: 2; grid-row: 2 / span 2; align-self: start; position: sticky; top: 72px; }
+  #s-home .t-side .legal { grid-column: 1 / -1; grid-row: 4; justify-self: center; width: 100%; max-width: 640px; margin: 28px 0 8px; padding-top: 22px; border-top: 1px solid rgba(255, 255, 255, .14); }
 }
 @media (min-width: 1600px) {
   .title { max-width: 1180px; grid-template-columns: minmax(0, 640px) minmax(300px, 380px); padding-top: 28px; row-gap: 20px; }
