@@ -167,8 +167,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -427,8 +427,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -685,8 +685,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "72",
-      "sha": "faca55799fb1651d"
+      "v": "73",
+      "sha": "14747f69fdac4720"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -755,8 +755,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -941,8 +941,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1119,8 +1119,8 @@
       "sha": "c04d30537df36ba9"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1139,8 +1139,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "71",
-      "sha": "5cd909b3f0c45004"
+      "v": "72",
+      "sha": "165ff9aba94f161c"
     },
     "/arcade/stats.js": {
       "v": "4",
@@ -1393,8 +1393,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1563,8 +1563,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1737,8 +1737,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1987,8 +1987,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "72",
-      "sha": "faca55799fb1651d"
+      "v": "73",
+      "sha": "14747f69fdac4720"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -2183,8 +2183,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "71",
-      "sha": "78537e5b5dcbe990"
+      "v": "72",
+      "sha": "c7deced3b12a21b8"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -2207,8 +2207,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "71",
-      "sha": "5cd909b3f0c45004"
+      "v": "72",
+      "sha": "165ff9aba94f161c"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -2765,8 +2765,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "142",
-      "sha": "05a4e9d526744ba2"
+      "v": "143",
+      "sha": "cb89a1047fba6a40"
     },
     "putt/land.js": {
       "v": "28",
@@ -2893,8 +2893,8 @@
       "sha": "34a14c775b660a50"
     },
     "putt/clips.js": {
-      "v": "2",
-      "sha": "3fdb09af3736bd66"
+      "v": "3",
+      "sha": "3be4d90ce0bc4423"
     },
     "golfer3d.js": {
       "v": "37",
@@ -3167,8 +3167,8 @@
       "sha": "cc149708e8a0216e"
     },
     "contract.js": {
-      "v": "16",
-      "sha": "11b529808c08113e"
+      "v": "17",
+      "sha": "6ecc169d64293b86"
     },
     "meter.js": {
       "v": "6",
@@ -3203,7 +3203,7 @@
       "sha": "b2c9da92a9b1f849"
     },
     "menus.js": {
-      "v": "24",
+      "v": "25",
       "sha": "8515115c9e6d5df3"
     },
     "rng.js": {
@@ -3235,11 +3235,11 @@
       "sha": "87051ef4ff5dc28c"
     },
     "share.js": {
-      "v": "2",
-      "sha": "7a13d168ba82631e"
+      "v": "3",
+      "sha": "8ead22ce5b02cae9"
     },
     "card.js": {
-      "v": "5",
+      "v": "6",
       "sha": "b2970890cdd43dc7"
     },
     "auth.js": {
@@ -3259,8 +3259,8 @@
       "sha": "602880a846c4c91e"
     },
     "mock-api.js": {
-      "v": "19",
-      "sha": "40a14761a6689a60"
+      "v": "20",
+      "sha": "b7fdaaf7bb81d034"
     },
     "coach.js": {
       "v": "2",

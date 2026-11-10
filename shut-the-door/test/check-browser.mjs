@@ -1394,8 +1394,8 @@ async function run(w, h, theme) {
   const toastSeen = await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 }).then(() => true, () => false);
   const said = await page.evaluate(() => window.STD_CHECK_TOAST);
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
-  ok(toastSeen && /^copied/.test(said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
-    '6 copy the text copies the share text (toast "' + (said || 'none in 10 s') + '", ' + clip.split('\n').length + ' lines)');
+  ok(toastSeen && /^copied/.test(said) && /Shut The Door #\d+/.test(clip) && /^https:\/\/runthe\.gg\/shut-the-door\/$/m.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
+    '6 copy the text copies the share text, its link the tappable https:// form (toast "' + (said || 'none in 10 s') + '", ' + clip.split('\n').length + ' lines)');
   await page.click('#sheet-share .sh-x');
   await page.waitForSelector('#sheet-share', { state: 'hidden', timeout: 3000 });
   await shot('shared');

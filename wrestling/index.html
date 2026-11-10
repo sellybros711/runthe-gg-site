@@ -15962,10 +15962,12 @@ async function drawShareCard(cv){
   P.outline(txt,P.K); P.draw(ctx,txt,0,0,U);
   return cv;
 }
+/* The link the shared card's text ends on, and the url beside it. Full https:// with the trailing slash, as arcade/share.js does: messages apps only make "https://runthe.gg/..." a tappable link, and the slash is the canonical page. */
+const SHARE_URL='https://runthe.gg/wrestling/';
 function shareCardText(){
   const c=G.car, w=G.w, n=(c.reigns||[]).length;
   const lead=c.title?`${w.name}, champion.`:n?`${w.name}, ${n}-time champion.`:`${w.name}.`;
-  return `${lead} ${ovr(w)} OVR, ${c.rec.w}-${c.rec.l}. Build yours at runthe.gg/wrestling`;
+  return `${lead} ${ovr(w)} OVR, ${c.rec.w}-${c.rec.l}. Build yours at ${SHARE_URL}`;
 }
 async function shareMyCard(save){
   if(!G||!G.w) return;
@@ -15976,7 +15978,7 @@ async function shareMyCard(save){
     const fname=((G.w.name||'wrestler').replace(/\s+/g,'-'))+'-card.png';
     const file=new File([b],fname,{type:'image/png'});
     if(!save && navigator.canShare && navigator.canShare({files:[file]})){
-      try{ await navigator.share({files:[file], text:shareCardText(), url:'https://runthe.gg/wrestling/'}); return; }
+      try{ await navigator.share({files:[file], text:shareCardText(), url:SHARE_URL}); return; }
       catch(e){ if(e&&e.name==='AbortError') return; }
     }
     const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=fname; a.click();
