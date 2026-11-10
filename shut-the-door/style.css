@@ -442,9 +442,10 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .dbg { position: absolute; left: 6px; bottom: 6px; z-index: 6; font: 11px ui-monospace, monospace; background: rgba(0, 0, 0, .65); color: #b6f5c8; padding: 2px 6px; border-radius: 4px; }
 
 /* ---- the result: the clubhouse rail (the owner's pick, 2026-10-26). An ink rail holds the outcome,
-   the verdict against the real game, the three numbers, the graded strip and the menu; the main
-   side holds you vs the real game pitch by pitch, the chart and pitched like. Upright the rail is the
-   top block and the main side follows it. From 1100 px the rail is fixed on the left. ---- */
+   the verdict against the real closer, the three numbers, pitched like, the graded strip and the
+   menu; the main side holds the outing pitch by pitch beside the real game, then the chart. Upright
+   the rail is the top block and the main side follows it, and everything down to pitched like is on
+   screen without a scroll at 375x667 (the owner, 2026-11-10). From 1100 px the rail is fixed on the left. ---- */
 .eyebrow { font-family: var(--sans); font-weight: 600; font-size: 13px; letter-spacing: 0.066em; text-transform: uppercase; color: rgba(244, 245, 247, .65); margin: 0 0 6px; position: relative; z-index: 1; }
 .outcome { font-family: var(--hero); font-weight: 400; font-size: 74px; line-height: .9; margin: 4px 0 6px; text-transform: uppercase; letter-spacing: .01em; color: #fff; }
 .outcome::after { content: '.'; color: var(--signal); }
@@ -474,39 +475,46 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .r-rail::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--club); }
 .r-rail::after { content: ''; position: absolute; right: -60px; top: 40px; width: 230px; height: 230px; background: url(brand/mark.svg?v=2) center / contain no-repeat; opacity: .06; transform: rotate(-10deg); pointer-events: none; }
 .r-rail > * { position: relative; z-index: 1; }
-.r-hero .outcome { font-size: 80px; }
-.r-hero .seam { width: 280px; max-width: 80%; }
+.r-hero .outcome { font-size: 72px; margin-bottom: 4px; }
+.r-hero .seam { width: 280px; max-width: 80%; margin-bottom: 8px; }
 
-/* the verdict against the real game: signal when you rewrote it, data blue when you matched it,
-   red when history did better */
-.vsbar { margin: 14px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
+/* the verdict against the real closer: signal when you did better, data blue when you matched it,
+   red when he did better */
+.vsbar { margin: 12px 0 0; padding: 10px 14px 9px; border-radius: 14px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
 .vsbar.none { display: none; }
 .vsbar.beat { background: rgba(255, 79, 31, .14); box-shadow: inset 0 0 0 1px rgba(255, 79, 31, .5); }
 .vsbar.matched { background: rgba(91, 130, 255, .14); box-shadow: inset 0 0 0 1px rgba(91, 130, 255, .5); }
 .vsbar.lost { background: rgba(229, 56, 59, .12); box-shadow: inset 0 0 0 1px rgba(229, 56, 59, .45); }
 .vs-t { display: flex; flex-direction: column; min-width: 0; }
 .vs-t small { font-family: var(--sans); font-weight: 600; font-size: 11.5px; letter-spacing: 0.088em; text-transform: uppercase; color: rgba(244, 245, 247, .65); }
-.vs-t b { font-family: var(--sans); font-weight: 700; font-size: 25.6px; line-height: .95; text-transform: uppercase; margin: 4px 0 6px; }
+.vs-t b { font-family: var(--sans); font-weight: 700; font-size: 23.2px; line-height: 1; text-transform: uppercase; margin: 3px 0 5px; overflow-wrap: anywhere; }
 .vsbar.beat .vs { color: #ff7a52; } .vsbar.matched .vs { color: #8fa8ff; } .vsbar.lost .vs { color: #ff8a8c; }
-.vs-t .vs-l { display: flex; align-items: baseline; gap: 10px; font-size: 13.5px; font-weight: 600; line-height: 1.5; color: rgba(244, 245, 247, .92); }
+.vs-t .vs-l { display: flex; align-items: baseline; gap: 10px; font-size: 13.5px; font-weight: 600; line-height: 1.4; color: rgba(244, 245, 247, .92); }
 .vs-t .vs-l i { font-style: normal; font-family: var(--sans); font-weight: 600; font-size: 11px; letter-spacing: 0.077em; text-transform: uppercase; color: rgba(244, 245, 247, .6); min-width: 84px; }
 
 /* the three numbers */
-.r-kn { display: grid; grid-template-columns: 1fr 1fr 1.3fr; margin-top: 16px; border-top: 1px solid rgba(255, 255, 255, .1); border-bottom: 1px solid rgba(255, 255, 255, .1); }
-.kn { padding: 12px 0 11px; display: flex; flex-direction: column; min-width: 0; font-size: 12.5px; color: rgba(244, 245, 247, .62); }
+.r-kn { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, .8fr) minmax(0, 1.6fr); margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, .1); border-bottom: 1px solid rgba(255, 255, 255, .1); }
+.kn { padding: 9px 0 8px; display: flex; flex-direction: column; min-width: 0; font-size: 12.5px; color: rgba(244, 245, 247, .62); }
 .kn + .kn { padding-left: 14px; border-left: 1px solid rgba(255, 255, 255, .1); }
 .kn[hidden] + .kn { border-left: 0; padding-left: 0; }
-.kn b { font-family: var(--sans); font-weight: 700; font-size: 36.8px; line-height: .92; color: #fff; font-variant-numeric: tabular-nums; }
+.kn b { font-family: var(--sans); font-weight: 700; font-size: 33.6px; line-height: .92; color: #fff; font-variant-numeric: tabular-nums; }
 .pct { color: #7b98ff !important; }
 .pct sup { font-size: .42em; vertical-align: top; position: relative; top: .14em; margin-left: 2px; }
 .kn-pct span span::before { content: '\00a0\00b7\00a0'; }
 .kn-pct span span:empty::before { content: none; }
 
-.r-graded { margin-top: 14px; }
+/* pitched like: one line under the numbers, the reason under it, every number the engine's */
+.r-like { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; margin: 0; padding: 8px 0 9px; border-bottom: 1px solid rgba(255, 255, 255, .1); }
+.r-like small { font-family: var(--sans); font-weight: 600; font-size: 11.5px; letter-spacing: 0.077em; text-transform: uppercase; color: rgba(244, 245, 247, .62); }
+.r-like b { font-family: var(--sans); font-weight: 700; font-size: 17.6px; line-height: 1.2; color: #fff; }
+.r-like .rl-why { flex-basis: 100%; font-size: 12px; line-height: 1.35; color: rgba(244, 245, 247, .62); }
+.r-like .rl-why:empty { display: none; }
+
+.r-graded { margin-top: 10px; }
 .rg-h { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 8px; font-size: 12.5px; color: rgba(244, 245, 247, .6); }
 .rg-h b { font-family: var(--sans); font-weight: 600; font-size: 12px; letter-spacing: 0.077em; text-transform: uppercase; color: rgba(244, 245, 247, .85); }
-.strip.mid { gap: 5px; }
-.strip.mid .sq { width: 26px; height: 26px; border-radius: 7px; color: #fff; font: 700 11.5px var(--sans); }
+.strip.mid { gap: 4px; }
+.strip.mid .sq { width: 24px; height: 24px; border-radius: 7px; color: #fff; font: 700 11.5px var(--sans); }
 .strip.mid .sq.yellow { color: #2a2000; }
 
 /* the menu: console rows, the selected one in signal. Arrow keys and a pad's d-pad move it */
@@ -650,13 +658,6 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 
 .r-pctline { margin: -4px 0 8px; font-size: 13.5px; color: var(--dim); }
 .r-pctline b { color: var(--ink); }
-.r-like { display: flex; gap: 14px; align-items: flex-start; }
-.rl-ic { flex: 0 0 44px; height: 44px; border-radius: 13px; background: var(--data-soft); display: grid; place-items: center; }
-.rl-ic svg { width: 23px; height: 23px; fill: none; stroke: var(--data); stroke-width: 2; stroke-linecap: round; }
-.rl-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.rl-t small { font-family: var(--sans); font-weight: 600; font-size: 12px; letter-spacing: 0.066em; text-transform: uppercase; color: var(--dim); }
-.rl-t b { font-family: var(--sans); font-weight: 700; font-size: 22.4px; line-height: 1; margin: 3px 0 5px; text-transform: none; }
-.rl-t span { font-size: 13px; color: var(--dim); }
 
 /* the entrance: once, as the result comes up. The outcome slams, the rail and the tiles rise */
 @keyframes r-slam { from { opacity: 0; transform: scale(1.14) translateX(-8px); } 60% { opacity: 1; } to { transform: none; } }
@@ -719,8 +720,6 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
   .ab-body { grid-template-columns: minmax(0, 150px) minmax(0, 1fr); }
   .bx { grid-template-columns: repeat(10, minmax(0, 1fr)); }
   .bx dd { font-size: 24px; }
-  .r-row2 { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 14px; align-items: start; }
-  .r-row2 .r-tile { margin: 0; }
   .chart { max-width: 480px; }
 }
 @media (min-width: 1700px) {
@@ -957,8 +956,8 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
   .sheet.coach .sh-in { height: 86vh; }
 }
 @media (max-width: 370px) {
-  .r-hero .outcome { font-size: 66px; }
-  .vs-t b { font-size: 22.4px; }
+  .r-hero .outcome { font-size: 64px; }
+  .vs-t b { font-size: 20.8px; }
   .kn b { font-size: 30.4px; }
 }
 /* the home on a desk: a wider page, the spot and the take on the left, the pitcher and the due up on the right */
