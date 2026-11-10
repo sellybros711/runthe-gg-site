@@ -94,6 +94,8 @@ jobs:
         run: node shut-the-door/check-rules.mjs
       - name: Every pitch moves like the real pitch (break side, size, crossing point, preview against flight)
         run: node shut-the-door/lab/pipeline/check-pitches.mjs
+      - name: The break arrows and the guide point each pitch its way, for either hand and either hitter
+        run: node shut-the-door/test/breaks.mjs
       - name: No em or en dashes
         run: node scripts/check-dashes.mjs shut-the-door
       - name: The copy rules, on the files that hold player copy
