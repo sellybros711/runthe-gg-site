@@ -6264,6 +6264,111 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ msgfloor:['#625c50', '#7a7262', '#4e4a40', 0.12, function(c, R){ var b = blot(c, 0.2, 1013), w = vn(c.ti * 0.08, c.tj * 0.08, 1014); if (Math.abs(w - 0.5) < 0.025) return R('#3a362e'); return R(b > 0.62 ? '#7a7262' : b < 0.3 ? '#4e4a40' : '#625c50'); }],
         msgwall:['#8a8270', '#b8ae96', '#5a5444', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.6) return R('#3a362e'); if (z > 1.4 && z < 2.6 && hash(c.ti >> 1, (z * 4) | 0, 1015) > 0.82) return R('#f4e0a0');
           return R(Math.abs(Math.sin(z * 2.6 + c.ti * 0.05)) < 0.1 ? '#6a6456' : '#a89e88'); }] } }; };
+  /* ---------------- LOCH NESS IS A JOURNEY (the Cryptid Expedition, World 26): an original Highland loch. Ashore at the timber
+     pier in the morning mist (1 and 2), up through the crofts and their peat stacks (3 and 4), over the moor to the ring of standing
+     stones (5 to 7), out on the headland round the ruined keep (8 and 9), into the mist on the water (10), back to the steamer pier
+     (11 to 13), out to the lighthouse on its rock (14 and 15), and along the deep water under the pines (16 to 18). The loch lies
+     all round the course: its shore wanders on noise, the shingle and the bog follow the water's edge, and nothing is a grid. */
+  STOPS.lochness = [[1, 'pier'], [3, 'croft'], [5, 'stones'], [8, 'keep'], [10, 'mist'], [11, 'steamer'], [14, 'lighthouse'], [16, 'deep']];
+  (function(){ BUILD.lochness = function(L){ var s = L.stop; return s === 'croft' ? lnCroftStop(L) : s === 'stones' ? lnStonesStop(L) : s === 'keep' ? lnKeepStop(L) : s === 'mist' ? lnMistStop(L) : s === 'lighthouse' ? lnLightStop(L) : s === 'deep' ? lnDeepStop(L) : lnPierStop(L); }; })();
+  function lnEdge(L, x, y){ return 4.2 + fbm(x * 0.07, y * 0.07, L.seed + 1101) * 3.4; }
+  // where the shore ends and the loch begins: a line out from the course that wanders on two scales of noise, never a circle
+  function lnShore(L, x, y, o){ return (o.near || 13) + fbm(x * 0.025, y * 0.025, L.seed + 1103) * 13 + (fbm(x * 0.09, y * 0.09, L.seed + 1104) - 0.5) * 3; }
+  function lnMats(){ return {
+      lnturf:['#5f8e4a', '#689a50', '#557e42', 0.12, function(c, R){ if (c.rim === 1) return R('#76a85a'); var b = blot(c, 0.15, 1105), st = hash(c.ti, c.tj, 1106), hb = blot(c, 0.06, 1107);
+        if (st > 0.992) return R('#c8a0e0'); if (hb > 0.7) return R(st > 0.5 ? '#8a5aaa' : '#7a6a8a'); return R(b > 0.64 ? '#689a50' : b < 0.3 ? '#557e42' : '#5f8e4a'); }],
+      lntrack:['#b8b0a0', '#c8c0b0', '#9a9284', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 1108), b = blot(c, 0.18, 1109); if (st > 0.95) return R('#8a8476'); return R(b > 0.62 ? '#c8c0b0' : b < 0.3 ? '#a8a092' : '#b8b0a0'); }],
+      lnshingle:['#a8a294', '#b8b2a4', '#8e887a', 0.1, function(c, R){ var b = blot(c, 0.3, 1110), st = hash(c.ti, c.tj, 1111); if (st > 0.93) return R('#d8d4c8'); return R(b > 0.62 ? '#b8b2a4' : b < 0.3 ? '#8e887a' : '#a8a294'); }],
+      lnbog:['#4e3e2c', '#5a4a36', '#3a2e20', 0.12, function(c, R){ var b = blot(c, 0.25, 1112); return R(b > 0.6 ? '#5a4a36' : b < 0.3 ? '#3a2e20' : '#4e3e2c'); }],
+      lnloch:['#24434c', '#2e5058', '#1c3640', 0.06, function(c, R){ var b = blot(c, 0.05, 1113), st = hash(c.ti, c.tj, 1114), w = Math.sin(c.ti * 0.19 + Math.sin(c.tj * 0.06) * 2.6);
+        if (c.mist) return R(b > 0.5 ? '#dfe6e4' : '#cfd8d8'); if (w > 0.97 && st > 0.3) return R('#8ab4b8'); return R(b > 0.65 ? '#2e5058' : b < 0.3 ? '#1c3640' : '#24434c'); }] }; }
+  function lnBase(L, o){ var seed = L.seed;
+    function lochK(x, y){ var c = L.clearAt(x, y), re = lnShore(L, x, y, o); return sm(re, re + 1.4, c); }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = lochK(x, y), hill = (fbm(x * 0.05, y * 0.05, seed) - 0.4) * (o.hills || 1.4) * sm(1.3, 5, c); return hill * (1 - k) - k * 0.7; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = lnEdge(L, x, y), k = lochK(x, y);
+        if (k > 0.5) return ['lnloch', { mist:o.mist ? 1 : 0 }];
+        if (k > 0.18) return [fbm(x * 0.1, y * 0.1, seed + 1115) > 0.6 ? 'lnbog' : 'lnshingle', {}];
+        if (c < e + 0.6) return [o.track ? 'lntrack' : 'lnturf', { rim:c > e - 0.3 ? 1 : 0 }];
+        return ['lnturf', {}]; },
+      fill:{ on:['lnturf'], trees:o.trees == null ? 0.04 : o.trees, lows:0.14, tree:function(B, x, y, i){ if (hash(i, seed, 1116) < 0.65) lnPine(B, x, y, 1 + hash(i, seed, 1117) * 0.4, i + seed); else broadTree(B, x, y, 6 + hash(i, seed, 3) * 3, '#d8d4c8', ['#4e7e3a', '#6a9a48', '#3a6a2e'], i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 1118); if (k < 0.5) lnHeather(B, x, y, i + seed); else if (k < 0.7) lnBoulder(B, x, y, i + seed); else bush(B, x, y, 0.5, ['#2e5a2a', '#3e6e34', '#5a8a46']); } },
+      // a low grey Highland sky with soft cloud, the hills across the loch in a darker band (painted only on the bare background)
+      after:function(ctx, V){ var top = Math.round(V.pr(L.cx, L.E[1], 0)[1] - 2); if (top < 4) return; var W = Math.round(V.W);
+        var cv = document.createElement('canvas'); cv.width = W; cv.height = top; var c2 = cv.getContext('2d');
+        var g = c2.createLinearGradient(0, 0, 0, top); if (o.mist){ g.addColorStop(0, '#c8d0d0'); g.addColorStop(1, '#eef2f0'); } else { g.addColorStop(0, '#8a9ca8'); g.addColorStop(0.65, '#c8d2d4'); g.addColorStop(1, '#dfe6e4'); }
+        c2.fillStyle = g; c2.fillRect(0, 0, W, top);
+        if (!o.mist){ c2.fillStyle = '#5a6a5a'; c2.beginPath(); c2.moveTo(0, top); for (var i = 0; i <= 16; i++) c2.lineTo(W * i / 16, top * (0.7 - 0.22 * fbm(i * 0.4, 1, seed + 1119))); c2.lineTo(W, top); c2.fill(); }
+        var A = ctx.getImageData(0, 0, W, top), S2 = c2.getImageData(0, 0, W, top).data, D = A.data;
+        for (var k = 0; k < D.length; k += 4) if (D[k] === 36 && D[k + 1] === 67 && D[k + 2] === 77){ D[k] = S2[k]; D[k + 1] = S2[k + 1]; D[k + 2] = S2[k + 2]; }
+        ctx.putImageData(A, 0, 0); },
+      bg:'#24434d', gain:2, mats:lnMats() }; }
+  // a Scots pine: a tall bare trunk of orange bark, and its crown in flat dark green clouds near the top
+  function lnPine(B, x, y, r, k){ var zb = B.gz(x, y), H = r * 6 + 1, R0 = r * 1.5;
+    B.solid(x - R0, y - R0, zb, x + R0, y + R0, zb + H + 0.3, function(px, py, pz){ var rr = Math.hypot(px - x, py - y), h = (pz - zb) / H;
+      if (h < 0.62) return rr < 0.2 - h * 0.08 ? (vn(px * 4, pz * 3, k) > 0.5 ? '#b8683a' : '#8a4a2a') : null;
+      var e = 1e9; for (var j = 0; j < 3; j++){ var a = j * 2.1 + k, cx = x + Math.cos(a) * R0 * 0.4, cy = y + Math.sin(a) * R0 * 0.35, cz = zb + H * (0.72 + j * 0.09); e = Math.min(e, Math.hypot((px - cx) / (R0 * 0.62), (py - cy) / (R0 * 0.62), (pz - cz) / (H * 0.07))); }
+      e += (vn(px * 2, py * 2 + pz * 2, k) - 0.5) * 0.3; if (e > 1) return null; return e > 0.8 ? '#1e3a26' : pz - zb > H * 0.85 ? '#3e6e3a' : '#2e5a32'; }, B.ART); }
+  // a tuft of heather, a grey boulder with its moss
+  function lnHeather(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.7, y - 0.7, zb, x + 0.7, y + 0.7, zb + 1.1, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y), w = 0.62 * (1 - Math.pow(t / 1.1, 2)); if (r > w) return null;
+      var n = vn(px * 6, py * 6 + pz * 4, k); return t < 0.25 ? '#3e4a2e' : n > 0.62 ? '#d8a8ec' : n > 0.38 ? '#a06ac4' : '#7a4a9a'; }, 0.125); }
+  function lnBoulder(B, x, y, k){ var zb = B.gz(x, y), s = 0.7 + hash(k, 3, 1121) * 0.6;
+    B.solid(x - s, y - s, zb, x + s, y + s, zb + s * 1.4, function(px, py, pz){ var t = pz - zb, e = Math.hypot((px - x) / s, (py - y) / (s * 0.8), t / (s * 1.3)) + (vn(px * 3, py * 3 + pz, k) - 0.5) * 0.2; if (e > 1) return null;
+      return t > s * 0.9 && vn(px * 5, py * 5, k + 1) > 0.45 ? '#5a8a3e' : e > 0.86 ? '#6a6a62' : '#8e8c82'; }); }
+  // a standing stone, a stack of peats, a croft, the pier, the keep's broken tower, the lighthouse, the steamer
+  function lnStoneAt(B, x, y, k){ var zb = B.gz(x, y), H = 3.6 + hash(k, 5, 1123) * 1.6;
+    B.solid(x - 0.9, y - 0.6, zb, x + 0.9, y + 0.6, zb + H, function(px, py, pz){ var t = pz - zb, w = 0.8 * (1 - t / H * 0.3) - Math.max(0, t - H + 0.6) * 0.7; if (Math.abs(px - x) > w || Math.abs(py - y) > 0.5) return null;
+      return vn(px * 2, pz * 2 + py, k) > 0.62 ? '#a8a69c' : py < y - 0.3 && vn(px * 4, pz * 4, k + 1) > 0.6 ? '#c8b84a' : '#8a8880'; }); }
+  function lnPeatsAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 1.6, y - 0.9, zb, x + 1.6, y + 0.9, zb + 1.4, function(px, py, pz){ var t = pz - zb, w = 1.4 - t * 0.25; if (Math.abs(px - x) > w || Math.abs(py - y) > 0.7) return null; var row = Math.floor(t / 0.3), bx = ((px - x + 9 + (row % 2) * 0.3) / 0.6) % 1;
+      return bx < 0.08 || (t % 0.3) < 0.04 ? '#2a1e14' : row % 2 ? '#5a4430' : '#4a3626'; }); }
+  function lnCroftAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 4.2, y - 2.4, zb, x + 4.2, y + 2.4, zb + 4.8, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (Math.abs(Math.abs(dx) - 3.4) < 0.35 && Math.abs(dy) < 0.4 && t > 2 && t < 4.8) return '#8e8a7e';
+      if (t < 2.1){ if (Math.abs(dx) > 3.8 || Math.abs(dy) > 2) return null; if (dy > 1.8 && Math.abs(dx) < 0.5 && t < 1.8) return '#3a5a6a'; if (dy > 1.8 && Math.abs(Math.abs(dx) - 1.9) < 0.4 && t > 0.9 && t < 1.7) return '#2a3448'; return '#f2efe6'; }
+      var rr = (4.6 - t) / 2.5 * 2.4; if (Math.abs(dy) > rr || Math.abs(dx) > 4 || t > 4.6) return null; return Math.abs(((dx + 9) * 1.2) % 1 - 0.5) < 0.04 ? '#5a4a2a' : Math.sin(dx * 13 + t * 5) > 0.5 ? '#c8a860' : '#b0904a'; }); }
+  function lnPierAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4.2, y - 1.4, zb - 0.4, x + 4.2, y + 1.4, zb + 1.1, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (t > 0.8){ if (Math.abs(dy) > 1.2) return null; return Math.abs(((dx + 9) * 3) % 1 - 0.5) > 0.44 ? '#2a2016' : '#7a6448'; }
+      return Math.abs(((dx + 9) / 1.4) % 1 - 0.5) > 0.42 && Math.abs(Math.abs(dy) - 0.9) < 0.18 ? '#4a3a2a' : null; }); }
+  function lnKeepAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 3.2, y - 3.2, zb, x + 3.2, y + 3.2, zb + 10, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, top = 8.4 - vn(dx * 0.8 + dy * 0.8, 3, k) * 3; if (t > top || Math.abs(dx) > 3 || Math.abs(dy) > 3) return null;
+      if (Math.abs(dx) < 2.4 && Math.abs(dy) < 2.4 && t > 0.4) return null; if (dy > 2.75 && Math.abs(dx) < 0.7 && t < 2.6) return '#1a1a18'; if (dx < -2.7 && vn(dy * 3, t * 3, k) > 0.45) return '#3e6a32';
+      var row = Math.floor(t * 1.6); return (t * 1.6) % 1 < 0.08 ? '#5a564c' : row % 3 ? '#a8a092' : '#968e80'; }); }
+  function lnLightAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2.2, y - 2.2, zb - 0.5, x + 2.2, y + 2.2, zb + 11, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, d = Math.hypot(dx, dy);
+      if (t < 1.2) return d < 2 + (vn(dx * 2, dy * 2, 3) - 0.5) * 0.6 ? (vn(dx * 3, t * 3, 4) > 0.5 ? '#7e7c74' : '#62605a') : null; var r = 1.2 - (t - 1.2) * 0.04;
+      if (t < 8.6) return d < r ? (Math.abs(t - 5) < 0.3 ? '#c8302a' : '#f4f2ea') : null; if (t < 8.9) return d < r + 0.3 ? '#1e1e1e' : null; if (t < 10.2) return d < r - 0.1 ? '#ffe08a' : null; return d < (11 - t) * 0.9 ? '#1e1e1e' : null; }); }
+  function lnSteamerAt(B, x, y){ var zb = B.gz(x, y) - 0.5;
+    B.solid(x - 6.5, y - 2.4, zb, x + 6.5, y + 2.4, zb + 7, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 1.1){ var w = 2.1 * (dx < -3 ? 1 - Math.pow((-dx - 3) / 3.5, 2) * 0.8 : 1); if (Math.abs(dy) > w || Math.abs(dx) > 6.5) return null; return Math.abs(t - 0.85) < 0.08 ? '#d8b040' : '#2a4430'; }
+      if (t < 2.4){ if (Math.abs(dx - 0.6) < 1.2 && Math.abs(Math.abs(dy) - 2) < 0.4) return '#c8302a'; if (Math.abs(dx) > 4.8 || Math.abs(dy) > 1.7) return null; return Math.abs(((dx + 30) * 1.4) % 1 - 0.5) < 0.12 && t > 1.4 && t < 2.1 ? '#3a4a5a' : '#f2efe6'; }
+      if (Math.abs(dx - 0.6) < 0.5 && Math.abs(dy) < 0.5 && t < 6.6) return t > 5.6 ? '#1e1e1e' : '#c8302a'; return null; }); }
+  // the stops: each the shared lochside with its own things placed by the course's sides
+  function lnSpots(L, n, salt, pad){ var sp = [], i; for (i = 0; i < n; i++){ var q = L.spot(i ? pad || 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.35 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + salt + i) * 2; }); if (q) sp.push(q); } return sp; }
+  function lnPierStop(L){ var O = lnBase(L, { near:11, trees:0.02 }), sp = lnSpots(L, 4, 1131);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) lnPierAt(B, q.x, q.y); else if (k === 1) lnSteamerAt(B, q.x, q.y); else lnPeatsAt(B, q.x, q.y); }); }; return O; }
+  function lnCroftStop(L){ var O = lnBase(L, { near:16, trees:0.03 }), sp = lnSpots(L, 5, 1141);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2 === 0) lnCroftAt(B, q.x, q.y, k); else lnPeatsAt(B, q.x, q.y); }); }; return O; }
+  function lnStonesStop(L){ var O = lnBase(L, { near:17, hills:2, trees:0.01 }), sp = lnSpots(L, 6, 1151, 1.1);
+    O.build = function(B){ sp.forEach(function(q, k){ lnStoneAt(B, q.x, q.y, k); }); }; return O; }
+  function lnKeepStop(L){ var O = lnBase(L, { near:12, hills:1.8, trees:0.02 }), sp = lnSpots(L, 4, 1161);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) lnKeepAt(B, q.x, q.y, k); else lnStoneAt(B, q.x, q.y, k + 5); }); }; return O; }
+  function lnMistStop(L){ var O = lnBase(L, { near:10, mist:true, trees:0.02 }), sp = lnSpots(L, 3, 1171);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) lnPierAt(B, q.x, q.y); else lnStoneAt(B, q.x, q.y, k + 9); }); }; O.bg = '#cfd8d8'; return O; }
+  function lnLightStop(L){ var O = lnBase(L, { near:10, trees:0.01 }), sp = lnSpots(L, 3, 1181);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) lnLightAt(B, q.x, q.y); else lnPeatsAt(B, q.x, q.y); }); }; return O; }
+  function lnDeepStop(L){ var O = lnBase(L, { near:12, trees:0.09 }), sp = lnSpots(L, 3, 1191);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) lnKeepAt(B, q.x, q.y, k + 3); else lnStoneAt(B, q.x, q.y, k + 13); }); }; return O; }
+
+  // The Boathouse: the expedition's stone boathouse, its slip of dark water under the far wall, oars racked, nets hung to dry
+  BUILD['s-boathouse'] = function(L){ var R0 = room(L, { floor:'lnbfloor', wall:'lnbwall', wallH:5.2, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 1201, 2.4).forEach(function(q, k){ if (k % 2) lnBoulder(B, q[0], q[1], k + 3); else lnHeather(B, q[0], q[1], k + 7); }); },
+      bg:'#141a1c', gain:2,
+      mats:{ lnbfloor:['#7a7466', '#8e887a', '#5a564c', 0.12, function(c, R){ var b = blot(c, 0.2, 1203), w = vn(c.ti * 0.07, c.tj * 0.07, 1204); if (Math.abs(w - 0.5) < 0.025) return R('#3e3c36'); return R(b > 0.62 ? '#8e887a' : b < 0.3 ? '#5a564c' : '#7a7466'); }],
+        lnbwall:['#8e887a', '#a8a294', '#5a564c', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.4) return R('#2a2e34'); if (z > 1.6 && z < 2.2 && hash(c.ti >> 2, 1, 1205) > 0.7) return R('#6a4a2a');
+          var row = Math.floor(z * 1.8); return R((z * 1.8) % 1 < 0.1 ? '#5a564c' : hash(c.ti >> 2, row, 1206) > 0.5 ? '#a8a294' : '#8e887a'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
