@@ -6136,6 +6136,134 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ blfloor:['#6a6458', '#8a8578', '#4a4640', 0.12, function(c, R){ var b = blot(c, 0.2, 835), w = vn(c.ti * 0.08, c.tj * 0.08, 836); if (Math.abs(w - 0.5) < 0.025) return R('#3a3630'); return R(b > 0.62 ? '#8a8578' : b < 0.3 ? '#4a4640' : '#6a6458'); }],
         blwall:['#5a5248', '#7a7266', '#3a342c', 0.18, function(c, R){ var z = c.z || 0, row = Math.floor(z * 1.1); if (z > 5.4) return R('#3a342c'); if (z > 0.8 && (z * 1.1) % 1 > 0.14){ var k = hash(c.ti >> 2, row, 837); return R(k > 0.8 ? '#a84a32' : k > 0.6 ? '#e8dcc0' : k > 0.45 ? '#8a5a2a' : k > 0.3 ? '#c8a050' : '#5a4a3a'); }
           return R('#4a3a2a'); }] } }; };
+  /* ---------------- THE MISSISSIPPI IS A JOURNEY (Mark Twain, "The Adventures of Tom Sawyer" 1876 and "Adventures of Huckleberry
+     Finn" 1884, drawn as True Williams and E. W. Kemble drew them). Down from St. Petersburg on its hill with Tom's whitewashed
+     fence (1 and 2), to the village wharf where the steamboats land (3 and 4), across to Jackson's Island in its woods (5 to 7), out
+     on the raft on the open river (8 and 9), into the fog among the towheads (10 and 11), past the river towns (12 to 14), into
+     McDougal's Cave in the bluff (15 to 17), and down to the steamboat landing (18). The big river lies all round the course: its
+     banks wander, the sandbars and the mud follow the water's edge, and nothing is a grid. */
+  STOPS.mississippi = [[1, 'village'], [3, 'wharf'], [5, 'island'], [8, 'raft'], [10, 'fog'], [12, 'towns'], [15, 'cave'], [18, 'landing']];
+  (function(){ BUILD.mississippi = function(L){ var s = L.stop; return s === 'cave' ? msCaveStop(L) : s === 'fog' ? msFogStop(L) : s === 'raft' ? msRaftStop(L) : s === 'island' ? msIslandStop(L) : s === 'wharf' || s === 'landing' ? msWharfStop(L) : s === 'towns' ? msTownsStop(L) : msVillageStop(L); }; })();
+  function msEdge(L, x, y){ return 4.2 + fbm(x * 0.07, y * 0.07, L.seed + 901) * 3.4; }
+  // where the bank ends and the big river begins: a wandering line out from the course
+  function msRiverAt(L, x, y, o){ return (o.near || 13) + fbm(x * 0.03, y * 0.03, L.seed + 903) * 12; }
+  function msMats(){ return {
+      msgrass:['#6a9a44', '#7ab24e', '#5e8a3a', 0.12, function(c, R){ if (c.rim === 1) return R('#8ac05a'); var b = blot(c, 0.15, 905), st = hash(c.ti, c.tj, 906);
+        if (st > 0.992) return R('#f4f0d8'); if (st > 0.987) return R('#e8c860'); return R(b > 0.64 ? '#7ab24e' : b < 0.3 ? '#5e8a3a' : b > 0.5 ? '#74a84a' : '#6a9a44'); }],
+      mslane:['#d8c8a0', '#e8dab8', '#b8a880', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 907), b = blot(c, 0.18, 908); if (st > 0.95) return R('#a89870'); return R(b > 0.62 ? '#e8dab8' : b < 0.3 ? '#c4b48c' : '#d8c8a0'); }],
+      mssand:['#d8cca0', '#e8dcb0', '#b8a87a', 0.1, function(c, R){ var b = blot(c, 0.2, 909), st = hash(c.ti, c.tj, 910); if (st > 0.97) return R('#a8986a'); return R(b > 0.62 ? '#e8dcb0' : b < 0.3 ? '#c8b88a' : '#d8cca0'); }],
+      msmud:['#7a5e3a', '#8a6a44', '#5a4428', 0.12, function(c, R){ var b = blot(c, 0.25, 911); return R(b > 0.6 ? '#8a6a44' : b < 0.3 ? '#5a4428' : '#7a5e3a'); }],
+      msriver:['#5e7f86', '#6e8c94', '#4e6e76', 0.06, function(c, R){ var b = blot(c, 0.05, 912), st = hash(c.ti, c.tj, 913), w = Math.sin(c.ti * 0.21 + Math.sin(c.tj * 0.07) * 2.4);
+        if (w > 0.97 && st > 0.3) return R('#b8d0d0'); if (c.fog) return R(b > 0.5 ? '#e8ecee' : '#d8dee2'); return R(b > 0.65 ? '#6e8c94' : b < 0.3 ? '#527278' : '#5e7f86'); }],
+      mscave:['#625c50', '#7a7262', '#4e4a40', 0.12, function(c, R){ var w = vn(c.ti * 0.08, c.tj * 0.08, 914), b = blot(c, 0.2, 915); if (Math.abs(w - 0.5) < 0.025) return R('#3a362e');
+        return R(b > 0.62 ? '#7a7262' : b < 0.3 ? '#4e4a40' : '#625c50'); }] }; }
+  function msBase(L, o){ var seed = L.seed;
+    function riverK(x, y){ var c = L.clearAt(x, y), re = msRiverAt(L, x, y, o); return sm(re, re + 1.6, c); }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = riverK(x, y), hill = (fbm(x * 0.06, y * 0.06, seed) - 0.45) * (o.hills || 0.8) * sm(1.3, 4, c);
+        return hill * (1 - k) - k * 0.6; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = msEdge(L, x, y), k = riverK(x, y);
+        if (k > 0.5) return ['msriver', { fog:o.fog ? 1 : 0 }];
+        if (k > 0.2 || (o.sand && fbm(x * 0.05 + 7, y * 0.05, seed + 917) > 0.62 && c > e + 2)) return [c > msRiverAt(L, x, y, o) - 2.5 && fbm(x * 0.1, y * 0.1, seed + 919) > 0.55 ? 'msmud' : 'mssand', {}];
+        if (c < e + 0.6) return [o.lane ? 'mslane' : 'msgrass', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (o.lane && Math.abs(x - L.cx + (fbm(y * 0.02, 1, seed + 921) - 0.5) * 8) < 2.2 && y < L.P0[1]) return ['mslane', {}];
+        return ['msgrass', {}]; },
+      fill:{ on:['msgrass'], trees:o.trees == null ? 0.04 : o.trees, lows:0.12, tree:function(B, x, y, i){ broadTree(B, x, y, 7 + hash(i, seed, 3) * 3, '#6a5a44', ['#3e7a2e', '#5a9a3e', '#2e5a22'], i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 923); if (k < 0.4) msCattail(B, x, y, i + seed); else if (k < 0.5 && o.barrels) msBarrel(B, x, y); else bush(B, x, y, 0.5, ['#2e6a24', '#3e8a32', '#5aa846']); } },
+      // a summer sky over the river, hazy toward the far bank (painted only on the bare background), or the fog
+      after:function(ctx, V){ var top = Math.round(V.pr(L.cx, L.E[1], 0)[1] - 2); if (top < 4) return; var W = Math.round(V.W);
+        var cv = document.createElement('canvas'); cv.width = W; cv.height = top; var c2 = cv.getContext('2d');
+        var g = c2.createLinearGradient(0, 0, 0, top); if (o.fog){ g.addColorStop(0, '#c8d0d4'); g.addColorStop(1, '#eef0f0'); } else { g.addColorStop(0, '#6aa0d8'); g.addColorStop(0.7, '#a8d0ec'); g.addColorStop(1, '#e8f0e8'); }
+        c2.fillStyle = g; c2.fillRect(0, 0, W, top);
+        if (!o.fog) for (var i = 0; i < 4; i++){ var cx = hash(i, 11, seed) * W, cy = top * (0.25 + hash(i, 12, seed) * 0.4), cr = Math.max(4, W * (0.03 + hash(i, 13, seed) * 0.03)); c2.fillStyle = 'rgba(255,255,255,0.8)'; c2.beginPath(); c2.ellipse(cx, cy, cr * 2.6, cr * 0.6, 0, 0, 6.283); c2.fill(); }
+        var A = ctx.getImageData(0, 0, W, top), S2 = c2.getImageData(0, 0, W, top).data, D = A.data;
+        for (var k = 0; k < D.length; k += 4) if (D[k] === 94 && D[k + 1] === 127 && D[k + 2] === 135){ D[k] = S2[k]; D[k + 1] = S2[k + 1]; D[k + 2] = S2[k + 2]; }
+        ctx.putImageData(A, 0, 0); },
+      bg:'#5e7f87', gain:2, mats:msMats() }; }
+  // a clump of cattails at the water's edge
+  function msCattail(B, x, y, k){ var zb = B.gz(x, y), H = 1.6 + hash(k, 2, 931) * 0.6;
+    B.solid(x - 0.7, y - 0.7, zb, x + 0.7, y + 0.7, zb + H + 0.2, function(px, py, pz){ var t = pz - zb;
+      for (var j = 0; j < 5; j++){ var a = j * 1.3 + k, cx = x + Math.cos(a) * 0.3 + (t / H) * Math.cos(a) * 0.15, cy = y + Math.sin(a) * 0.25; if (Math.hypot(px - cx, py - cy) < (t > H - 0.5 && t < H - 0.05 ? 0.1 : 0.05)) return t > H - 0.5 ? (t < H - 0.05 ? '#6a3e1e' : '#5a8a32') : '#4a7a2a'; }
+      return null; }, 0.125); }
+  // a molasses barrel on the wharf
+  function msBarrel(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 1.3, function(px, py, pz){ var t = pz - zb, r = 0.45 + 0.08 * Math.sin(t / 1.2 * Math.PI), d = Math.hypot(px - x, py - y); if (d > r) return null;
+      if (Math.abs(t - 0.25) < 0.06 || Math.abs(t - 1.0) < 0.06) return '#3a3a3a'; return t > 1.22 ? '#6a4626' : '#8a5e34'; }); }
+  // a white frame house of the village, its porch and its chimney
+  function msHouseAt(B, x, y, k){ var zb = B.gz(x, y), tint = ['#f4f1e6', '#e8dcc0', '#d8e0e0'][k % 3];
+    B.solid(x - 3.2, y - 2.6, zb, x + 3.2, y + 2.6, zb + 6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (Math.abs(dx - 1.4) < 0.35 && Math.abs(dy) < 0.35 && t > 3.2 && t < 6) return '#9a4a32';
+      if (t < 3.2){ if (Math.abs(dx) > 3 || Math.abs(dy) > 2.4) return null; if (dy > 2.2 && Math.abs(dx) < 0.55 && t < 2.1) return '#5a3a22'; if (dy > 2.2 && Math.abs(Math.abs(dx) - 1.8) < 0.4 && t > 1.2 && t < 2.4) return '#2a3448';
+        return Math.abs(((t + 9) * 3.5) % 1 - 0.5) < 0.05 ? '#a8a294' : tint; }
+      var rr = (5.6 - t) / 2.4 * 2.7; if (t > 5.6 || Math.abs(dy) > rr || Math.abs(dx) > 3.3) return null; return Math.abs(dy) > rr - 0.25 ? '#3a2a22' : '#5a3a2a'; }); }
+  // the white church with its steeple, up on the hill
+  function msChurchAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3.4, y - 3, zb, x + 3.4, y + 3, zb + 11, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 4.4){ if (Math.abs(dx) > 3.2 || Math.abs(dy) > 2.8) return null; if (dy > 2.6 && Math.abs(dx) < 0.7 && t < 2.4) return '#5a3a22'; if (dy > 2.6 && Math.abs(Math.abs(dx) - 2.1) < 0.4 && t > 1.4 && t < 3.2) return '#3a6a3a'; return '#f4f1e6'; }
+      if (t < 7 && Math.abs(dy) < (7 - t) / 2.6 * 3.1 && Math.abs(dx) < 3.4) return '#5a5a5a';
+      if (Math.abs(dx) < 0.8 && Math.abs(dy - 0.6) < 0.8 && t < 8.8) return '#ffffff';
+      if (t >= 8.8 && Math.abs(dx) < 0.8 * (11 - t) / 2.2 && Math.abs(dy - 0.6) < 0.8 * (11 - t) / 2.2) return '#4a4a4a'; return null; }); }
+  // the steamboat at the landing: white decks, red trim, two tall black chimneys
+  function msBoatAt(B, x, y){ var zb = B.gz(x, y) - 0.4;
+    B.solid(x - 7, y - 2.4, zb, x + 7, y + 2.4, zb + 7.5, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 1){ var w = 2.2 * (dx < -3.5 ? 1 - Math.pow((-dx - 3.5) / 3.5, 2) : 1); if (Math.abs(dy) > w || Math.abs(dx) > 7) return null; return t > 0.8 ? '#b8302a' : '#f4f1e6'; }
+      if (t < 2.4){ if (Math.abs(dx) > 5.4 || Math.abs(dy) > 1.9) return null; return Math.abs(((dx + 30) * 1.4) % 1 - 0.5) < 0.1 && t > 1.3 && t < 2.1 ? '#3a4a5a' : '#ffffff'; }
+      if (t < 3.4){ if (Math.abs(dx) > 3.6 || Math.abs(dy) > 1.4) return null; return '#f4f1e6'; }
+      if (t < 4.3 && Math.abs(dx + 2.4) < 0.9 && Math.abs(dy) < 0.9) return t > 4.1 ? '#2a2a2a' : '#ffffff';
+      if (Math.abs(dx - 0.3) < 0.35 && Math.abs(Math.abs(dy) - 0.9) < 0.35) return t > 7 ? '#c8a040' : '#1e1e1e'; return null; }); }
+  // a limestone bluff, grey and grown with green on top
+  function msBluffAt(B, x, y, k){ var zb = B.gz(x, y), H = 4 + hash(k, 4, 941) * 2.5;
+    B.solid(x - 2.6, y - 2, zb, x + 2.6, y + 2, zb + H, function(px, py, pz){ var t = pz - zb, w = 2.4 * (1 - t / H * 0.4) + (vn(px * 1.2, pz * 1.2 + py, k) - 0.5) * 0.8; if (Math.abs(px - x) > w || Math.abs(py - y) > 1.8 * (1 - t / H * 0.3)) return null;
+      if (t > H - 0.5 && vn(px * 3, py * 3, k) > 0.4) return '#5a8a3a'; return Math.abs(Math.sin(t * 2.6)) < 0.1 ? '#8a8270' : vn(px * 2, pz * 2, k + 1) > 0.6 ? '#d8d0bc' : '#b8ae96'; }); }
+  // a snag standing up out of a sandbar
+  function msSnagAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 1.6, y - 1, zb, x + 1.6, y + 1, zb + 4, function(px, py, pz){ var t = pz - zb, lean = t * 0.25, d = Math.hypot(px - x - lean, py - y);
+      if (d < 0.32 - t * 0.03) return '#9a8e7a'; if (t > 1.8 && Math.hypot(px - x - lean - (t - 1.8) * 0.6, py - y) < 0.12) return '#8a7e6a'; if (t > 2.4 && Math.hypot(px - x - lean + (t - 2.4) * 0.7, py - y - 0.2) < 0.1) return '#8a7e6a'; return null; }); }
+  // the raft drawn up on a sandbar: logs, the wigwam
+  function msRaftAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2.4, y - 2, zb, x + 2.4, y + 2, zb + 2.6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 0.45){ if (Math.abs(dx) > 2.2 || Math.abs(dy) > 1.6) return null; return Math.abs(((dy + 9) * 1.6) % 1 - 0.5) > 0.44 ? '#4a3018' : '#a87a44'; }
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1.1 && t < 2.2 - Math.abs(dx)) return '#c8a870'; return null; }); }
+
+  // 1. ST. PETERSBURG: the village on its hill, the white church and the houses, and Tom's fence along the lane
+  function msVillageStop(L){ var O = msBase(L, { lane:true, trees:0.05, near:16 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(i ? 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.1 + hash(x | 0, y | 0, L.seed + 951 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) msChurchAt(B, q.x, q.y); else msHouseAt(B, q.x, q.y, k); }); }; return O; }
+  // 2. THE WHARF AND THE LANDING: the steamboat lying at the bank, barrels on the wharf, the woodpile
+  function msWharfStop(L){ var O = msBase(L, { sand:true, barrels:true, trees:0.02, near:11 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(i ? 1.2 : 3.6, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 961 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) msBoatAt(B, q.x, q.y); else if (k % 2) msBarrel(B, q.x, q.y); else msHouseAt(B, q.x, q.y, k); }); }; return O; }
+  // 3. JACKSON'S ISLAND: thick woods to the water, cottonwoods and the sandbar at its head
+  function msIslandStop(L){ var O = msBase(L, { sand:true, trees:0.09, near:12 }), sp = [], i;
+    for (i = 0; i < 3; i++){ var q = L.spot(1.2, function(x, y){ return L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 1021 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) msRaftAt(B, q.x, q.y); else msCattail(B, q.x, q.y, k + 11); }); }; return O; }
+  // 4. THE RAFT: the open river, wide and slow, a sandbar and the raft drawn up on it
+  function msRaftStop(L){ var O = msBase(L, { sand:true, trees:0.02, near:10 }), sp = [], i;
+    for (i = 0; i < 3; i++){ var q = L.spot(i ? 1.2 : 2.6, function(x, y){ return L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 971 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) msRaftAt(B, q.x, q.y); else msSnagAt(B, q.x, q.y, k); }); }; return O; }
+  // 5. THE FOG: the towheads and the snags, the river white with fog
+  function msFogStop(L){ var O = msBase(L, { sand:true, fog:true, trees:0.03, near:10 }), sp = [], i;
+    for (i = 0; i < 4; i++){ var q = L.spot(1.2, function(x, y){ return L.side(x) * 1.3 + hash(x | 0, y | 0, L.seed + 981 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ msSnagAt(B, q.x, q.y, k + 3); }); }; O.bg = '#c8d0d4'; return O; }
+  // 6. THE RIVER TOWNS: a row of frame houses above the bank, the barrels of the wharf
+  function msTownsStop(L){ var O = msBase(L, { lane:true, barrels:true, trees:0.03, near:13 }), sp = [], i;
+    for (i = 0; i < 5; i++){ var q = L.spot(1.3, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 991 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2 === 0) msHouseAt(B, q.x, q.y, k); else msBarrel(B, q.x, q.y); }); }; return O; }
+  // 7. McDOUGAL'S CAVE: the limestone bluffs, the cave floor of grey stone, candlelight
+  function msCaveStop(L){ var O = msBase(L, { trees:0.0, near:18 }), sp = [], i, m0 = O.mat;
+    O.mat = function(x, y){ var r = m0(x, y); return r[0] === 'msgrass' || r[0] === 'mslane' ? ['mscave', {}] : r; };
+    O.fill = { on:['mscave'], trees:0.0001, lows:0.06, tree:function(B, x, y, k){ msBluffAt(B, x, y, k); }, low:function(B, x, y, k){ if (hash(k, L.seed, 997) > 0.5) msBluffAt(B, x, y, k); } };
+    for (i = 0; i < 5; i++){ var q = L.spot(1.5, function(x, y){ return L.north(x, y) * 0.4 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + 1001 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ msBluffAt(B, q.x, q.y, k + 7); }); }; O.bg = '#1e1c18'; O.after = null; return O; }
+
+  // Tom Sawyer's Gang: the robbers' cave in the bluff, its low stone room lit by candles, the gang's oath scratched on the wall
+  BUILD['s-gang'] = function(L){ var R0 = room(L, { floor:'msgfloor', wall:'msgwall', wallH:5.4, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 1011, 2.4).forEach(function(q, k){ if (k % 2) msBarrel(B, q[0], q[1]); else msCattail(B, q[0], q[1], k + 3); }); },
+      bg:'#1a1814', gain:2,
+      mats:{ msgfloor:['#625c50', '#7a7262', '#4e4a40', 0.12, function(c, R){ var b = blot(c, 0.2, 1013), w = vn(c.ti * 0.08, c.tj * 0.08, 1014); if (Math.abs(w - 0.5) < 0.025) return R('#3a362e'); return R(b > 0.62 ? '#7a7262' : b < 0.3 ? '#4e4a40' : '#625c50'); }],
+        msgwall:['#8a8270', '#b8ae96', '#5a5444', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.6) return R('#3a362e'); if (z > 1.4 && z < 2.6 && hash(c.ti >> 1, (z * 4) | 0, 1015) > 0.82) return R('#f4e0a0');
+          return R(Math.abs(Math.sin(z * 2.6 + c.ti * 0.05)) < 0.1 ? '#6a6456' : '#a89e88'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();

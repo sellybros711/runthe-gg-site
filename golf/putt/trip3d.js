@@ -236,6 +236,7 @@ function play(host, o, cb){
   if (o && o.vehicle === 'fall') return fall(host, o, cb);   // Wonderland is reached down the rabbit hole (fall, below)
   if (o && o.vehicle === 'glass') return glassLeg(host, o, cb);   // the Looking-Glass is reached through the glass (glassLeg, below)
   if (o && o.vehicle === 'beanstalk') return beanLeg(host, o, cb);   // the Beanstalk is reached up the beanstalk (beanLeg, below)
+  if (o && o.vehicle === 'river') return riverLeg(host, o, cb);   // the Mississippi is reached down the beanstalk and down the river (riverLeg, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var wrap = document.createElement('div'); wrap.className = 'pp-trip';
@@ -1115,5 +1116,99 @@ function beanLeg(host, o, cb){
   requestAnimationFrame(frame);
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
 }
-root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, PLANETS:PLANETS, ISLES:ISLES };
+/* DOWN THE BEANSTALK TO THE RIVER (SPACE_TRIP 'river'): from the giant's land the camera goes back down the beanstalk, round and
+   round it through the cloud deck and down past its leaves, and comes out over a green river valley where the stalk's foot stands
+   on the bank of the big river. Then it is aboard a raft, low on the brown water, drifting down the wandering Mississippi between
+   its wooded banks and sandbars ("MARK TWAIN!", the leadsman's call), past a white steamboat churning up the river with her two
+   tall chimneys smoking, to St. Petersburg on its hill, its white houses and its steeple ("ST. PETERSBURG!"). Mark Twain's river
+   books (1876, 1884); nothing from any film. Every surface is noise or drawn shapes, never a grid. A tap skips it; with reduced
+   motion putt.js shows a still of the river instead (spaceTrip). */
+function riverLeg(host, o, cb){
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; }
+  setRes(150);
+  var done = false, t0 = 0, DUR = 11.6, frames = 0, ftime = 0, CL0 = 62, CL1 = 68;
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function vnz(x, y, z){ return noise3(x, y, z); }
+  function axis(y){ return [Math.sin(y * 0.11) * 0.9, Math.cos(y * 0.09) * 0.7]; }
+  function rad(y){ return Math.max(0.55, 1.25 - y * 0.006); }
+  // the river's middle at z: great loose bends, and its half width
+  function rivX(z){ return 13 + Math.sin(z * 0.021) * 9 + Math.sin(z * 0.057 + 1.2) * 3; }
+  function rivW(z){ return 8 + Math.sin(z * 0.03 + 0.5) * 1.5; }
+  function rz(t){ return -2 - (t - 5.2) * 14; }
+  function camAt(t){
+    if (t < 4){ var u = t / 4, th = 6.85 - u * 6.6, y = CL1 + 6 - Math.pow(u, 0.8) * (CL1 + 1), ax = axis(y), r = 4.4;
+      return { pos:V(ax[0] + Math.sin(th) * r, y, ax[1] + Math.cos(th) * r), tg:V(ax[0] + Math.sin(th - 0.6) * 1.2, y - 3 - u * 2, ax[1] + Math.cos(th - 0.6) * 1.2), fov:66 }; }
+    if (t < 5.2){ var a = smooth((t - 4) / 1.2), x0 = rivX(-2); return { pos:V(lerp(Math.sin(0.25) * 4.4, x0, a), lerp(5.6, 1.5, a), lerp(Math.cos(0.25) * 4.4, -2, a)), tg:V(lerp(2, rivX(-30), a), lerp(2, 1.2, a), lerp(-6, -30, a)), fov:62 }; }
+    var z = rz(t); return { pos:V(rivX(z), 1.5, z), tg:V(rivX(z - 26), 1.1, z - 26), fov:62 }; }
+  function sky(rd){ var g = clamp(rd[1] * 2.2 + 0.1, 0, 1); return lerpV([226, 236, 230], [96, 154, 214], Math.sqrt(g)); }
+  // the valley: the river wandering through it, sandbars along its edges, green banks, a dusty lane
+  function valley(p, d, t){ var x = p[0], z = p[2], e = Math.abs(x - rivX(z)) - rivW(z) + (vnz(x * 0.08, 5, z * 0.08) - 0.5) * 3, c;
+    if (e < 0){ var st = Math.abs(vnz(x * 0.5, 7, z * 0.12 + t * 0.5) - 0.5); c = st < 0.025 ? [184, 206, 206] : vnz(x * 0.1, 9, z * 0.1) > 0.55 ? [110, 140, 146] : [96, 128, 134]; }
+    else if (e < 1.6) c = [216, 204, 160];
+    else { var a = vnz(x * 0.1, 11, z * 0.1); c = a > 0.62 ? [122, 178, 78] : a < 0.32 ? [94, 138, 58] : [106, 154, 68]; var hd = Math.hypot(x, z); if (hd < 2.6 + vnz(x, 2, z)) c = lerpV(c, [110, 76, 40], 0.7); }
+    return lerpV(c, [226, 236, 230], 1 - Math.exp(-d / 220)); }
+  function landTop(p, d){ var b = vnz(p[0] * 0.08, 15, p[2] * 0.08), c = b > 0.62 ? [255, 255, 255] : b < 0.32 ? [206, 218, 234] : [236, 242, 250]; return lerpV(c, [214, 232, 250], 1 - Math.exp(-d / 300)); }
+  function hitBox(ro, rd, b){ var tmin = -1e9, tmax = 1e9, n = null; for (var a = 0; a < 3; a++){ if (Math.abs(rd[a]) < 1e-9){ if (ro[a] < b[0][a] || ro[a] > b[1][a]) return null; continue; }
+      var t1 = (b[0][a] - ro[a]) / rd[a], t2 = (b[1][a] - ro[a]) / rd[a]; if (t1 > t2){ var q = t1; t1 = t2; t2 = q; } if (t1 > tmin){ tmin = t1; n = [0, 0, 0]; n[a] = rd[a] > 0 ? -1 : 1; } if (t2 < tmax) tmax = t2; if (tmin > tmax) return null; }
+    return tmin > 1e-4 ? { t:tmin, n:n } : null; }
+  // the steamboat coming up the river toward the raft, and St. Petersburg's houses and church on the left bank
+  function boxes(t){ var bz = -78 + (t - 5.2) * 4, bxx = rivX(bz) + 4.4, B = [];
+    B.push({ b:[[bxx - 2, 0, bz - 7], [bxx + 2, 1.2, bz + 7]], c:[244, 241, 230], k:'hull' }); B.push({ b:[[bxx - 1.6, 1.2, bz - 5], [bxx + 1.6, 2.6, bz + 5]], c:[255, 255, 255], k:'deck' });
+    B.push({ b:[[bxx - 1.1, 2.6, bz - 3], [bxx + 1.1, 3.4, bz + 3.4]], c:[244, 241, 230], k:'deck' }); B.push({ b:[[bxx - 0.3, 2.6, bz - 1.2], [bxx + 0.3, 8.4, bz - 0.6]], c:[30, 30, 30], k:'stack' }); B.push({ b:[[bxx - 0.3, 2.6, bz + 0.6], [bxx + 0.3, 8.4, bz + 1.2]], c:[30, 30, 30], k:'stack' });
+    for (var k = 0; k < 6; k++){ var hz = -128 - k * 7, hx = rivX(hz) - rivW(hz) - 6 - (k % 3) * 4; B.push({ b:[[hx - 2.2, 0, hz - 2], [hx + 2.2, 3 + (k % 2), hz + 2]], c:k % 3 ? [244, 241, 230] : [232, 220, 192], k:'house' }); }
+    var cz = -140, cx = rivX(cz) - rivW(cz) - 12; B.push({ b:[[cx - 3, 3, cz - 3], [cx + 3, 7, cz + 3]], c:[244, 241, 230], k:'house' }); B.push({ b:[[cx - 0.7, 7, cz - 0.7], [cx + 0.7, 13, cz + 0.7]], c:[255, 255, 255], k:'steeple' });
+    return B; }
+  function stalkHit(ro, rd, tmax){ var ax = axis(ro[1]), r = rad(ro[1]), ox = ro[0] - ax[0], oz = ro[2] - ax[1], a = rd[0] * rd[0] + rd[2] * rd[2], b = ox * rd[0] + oz * rd[2], c = ox * ox + oz * oz - r * r, h = b * b - a * c;
+    if (a < 1e-9 || h < 0) return null; var tt = (-b - Math.sqrt(h)) / a; if (tt < 1e-3 || tt > tmax) return null; var p = add(ro, mul(rd, tt)); if (p[1] < 0 || p[1] > CL1 + 8) return null; var ax2 = axis(p[1]);
+    return { t:tt, p:p, n:norm(V(p[0] - ax2[0], 0, p[2] - ax2[1])) }; }
+  function render(t){ var cam = camAt(t), f = norm(sub(cam.tg, cam.pos)), r = norm(cross(f, V(0, 1, 0))), u = cross(r, f), foc = (W / 2) / Math.tan(cam.fov * Math.PI / 360), ro = cam.pos, sun = norm(V(0.4, 0.8, 0.45)), BX = boxes(t);
+    var inCloud = ro[1] > CL0 && ro[1] < CL1 ? 1 - Math.abs((ro[1] - (CL0 + CL1) / 2) / ((CL1 - CL0) / 2)) : 0;
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++){ var px2 = (x + 0.5 - W / 2) / foc, py2 = (H / 2 - y - 0.5) / foc, rd = norm(add(f, add(mul(r, px2), mul(u, py2)))), col, o2 = (y * W + x) * 4;
+      var tg = 1e9, kind = 'sky', hb = null, hk = null;
+      if (ro[1] < CL0){ if (rd[1] < -1e-4){ tg = -ro[1] / rd[1]; kind = 'ground'; } else if (rd[1] > 1e-4){ tg = (CL0 - ro[1]) / rd[1]; kind = 'under'; } }
+      else if (ro[1] > CL1){ if (rd[1] < -1e-4){ tg = (CL1 - ro[1]) / rd[1]; kind = 'top'; } }
+      if (ro[1] < CL0) for (var k = 0; k < BX.length; k++){ var q = hitBox(ro, rd, BX[k].b); if (q && q.t < tg){ tg = q.t; kind = 'box'; hb = q; hk = BX[k]; } }
+      var sh = t < 5.4 ? stalkHit(ro, rd, Math.min(tg, 160)) : null;
+      if (sh){ var tw = Math.sin(Math.atan2(sh.p[2] - axis(sh.p[1])[1], sh.p[0] - axis(sh.p[1])[0]) * 3 + sh.p[1] * 0.8); col = tw > 0.55 ? [138, 208, 106] : tw > -0.2 ? [78, 160, 64] : [52, 122, 44]; col = mul(col, 0.7 + 0.3 * Math.max(0, dot(sh.n, sun))); col = lerpV(col, [226, 236, 230], 1 - Math.exp(-sh.t / 200)); }
+      else if (kind === 'ground') col = valley(add(ro, mul(rd, tg)), tg, t);
+      else if (kind === 'under' && t > 4.6){ col = sky(rd); var pc = add(ro, mul(rd, tg)); if (vnz(pc[0] * 0.03, 23, pc[2] * 0.03) > 0.7) col = lerpV(col, [255, 255, 255], 0.75); }
+      else if (kind === 'under'){ var pu = add(ro, mul(rd, tg)), nb = vnz(pu[0] * 0.06, 21, pu[2] * 0.06); col = lerpV(nb > 0.55 ? [236, 240, 248] : [196, 206, 222], [226, 236, 230], 1 - Math.exp(-tg / 160)); }
+      else if (kind === 'top') col = landTop(add(ro, mul(rd, tg)), tg);
+      else if (kind === 'box'){ var ph = add(ro, mul(rd, tg)); col = hk.c; if (hk.k === 'hull' && ph[1] > 0.95) col = [184, 48, 42]; if ((hk.k === 'deck' || hk.k === 'house') && Math.abs(((ph[2] + ph[0]) * 0.8) % 1) < 0.18 && ph[1] % 1.4 > 0.5) col = [58, 74, 90];
+        if (hk.k === 'stack' && ph[1] > 8.1) col = [200, 160, 64]; col = mul(col, 0.7 + 0.3 * Math.max(0, dot(hb.n, sun))); col = lerpV(col, [226, 236, 230], 1 - Math.exp(-tg / 240)); }
+      else col = sky(rd);
+      if (!sh || sh.t > 1){ var c0 = (CL0 - ro[1]) / (rd[1] || 1e-9), c1 = (CL1 - ro[1]) / (rd[1] || 1e-9), ta = Math.max(0, Math.min(c0, c1)), tb = Math.min(sh ? sh.t : tg, Math.max(c0, c1));
+        if (tb > ta && kind !== 'under' && kind !== 'top' && t < 4.6){ var thick = clamp((tb - ta) / 14, 0, 1); col = lerpV(col, [244, 247, 252], thick * 0.95); } }
+      if (inCloud) col = lerpV(col, [244, 247, 252], Math.min(0.92, inCloud * 1.4));
+      D[o2] = col[0]; D[o2 + 1] = col[1]; D[o2 + 2] = col[2]; D[o2 + 3] = 255; }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    var Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    // aboard: the raft's front logs across the bottom of the view, rocking a little, and smoke rising from the steamboat's chimneys
+    if (t > 5.2){ var rk = Math.sin(t * 1.7) * 3 * k9, y0 = Hc * 0.86 + rk; ctx.fillStyle = '#5a3e22'; ctx.fillRect(0, y0 - 2 * k9, Wc, Hc - y0 + 2 * k9);
+      for (var lg = 0; lg < 7; lg++){ var lx = lg * Wc / 7; ctx.fillStyle = lg % 2 ? '#8a6038' : '#a87a44'; ctx.fillRect(Math.round(lx + 2 * k9), Math.round(y0), Math.round(Wc / 7 - 4 * k9), Math.round(Hc - y0)); }
+      ctx.fillStyle = '#d8c090'; ctx.fillRect(0, Math.round(y0 + 10 * k9), Wc, Math.round(4 * k9)); }
+    var say = function(txt, c1, c2, wob){ ctx.font = 'bold ' + Math.round(44 * k9) + 'px Anton, Impact, sans-serif'; var fit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText(txt).width)); ctx.font = 'bold ' + Math.round(44 * k9 * fit) + 'px Anton, Impact, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6 * k9; ctx.strokeStyle = c1; ctx.strokeText(txt, Wc / 2 + wob, Hc * 0.2); ctx.fillStyle = c2; ctx.fillText(txt, Wc / 2 + wob, Hc * 0.2); };
+    if (t > 1 && t < 3.4) say('DOWN AND DOWN!', '#1e1a12', '#ffffff', Math.sin(t * 6) * 2 * k9);
+    else if (t > 6.2 && t < 8.6) say('MARK TWAIN!', '#1e1a12', '#ffe6a0', Math.sin(t * 7) * 2 * k9);
+    else if (t > 9.8 && t < 11.4) say('ST. PETERSBURG!', '#1e1a12', '#ffffff', Math.sin(t * 9) * 3 * k9);
+    return cam; }
+  if (o.still) return { at:function(t){ var c = render(t); if (t > 10) wrap.classList.add('cap'); return c; }, close:finish };
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 104) setRes(Math.max(104, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 10.2) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, PLANETS:PLANETS, ISLES:ISLES };
 })();

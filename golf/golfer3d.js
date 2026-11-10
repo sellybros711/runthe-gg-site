@@ -1665,7 +1665,20 @@
     for(let k=0;k<3;k++) for(let j=-2;j<=2;j++) out.push(ellipsoid(add(hc,sc(hup,hr*(0.6+k*0.3)),sc(look,hr*(1.0-k*0.06)),sc(Lf,hr*j*0.26)),AXh,[hr*0.04,hr*0.05,hr*0.05],dim,{gloss:1,noCast:1}));   // its dimples
     return out; };
   HAT_OVER_HAIR.ppthimble=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1};   // a modelled hat that is modelled on the course golfer too
+  /* HUCK'S STRAW HAT (The Mississippi): the old straw hat Huck wears in Kemble's drawings, a broad floppy brim gone ragged at its edge,
+     a low round crown with a dent in it, plaited straw, and a dark band. Modelled on the course golfer too. */
+  HAT_MODEL.ppstrawhat=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const straw=X2((P&&P.W)||'#d8b870'), lite=X2((P&&P.G)||'#ecd090'), dark=X2((P&&P.k)||'#a8843a'), band=X2((P&&P.r)||'#5a3a22');
+    for(let k=0;k<14;k++){ const a=k/14*Math.PI*2, rr=hr*(1.62+((k*7)%3)*0.07), dz=Math.sin(a*2)*hr*0.06;   // the brim, floppy and ragged at its edge
+      out.push(ellipsoid(add(hc,sc(hup,hr*0.62+dz),sc(look,Math.cos(a)*rr*0.62),sc(Lf,Math.sin(a)*rr*0.62)),AXh,[hr*0.5,hr*0.06,hr*0.5],k%2?straw:lite,{gloss:1})); }
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.66)),AXh,[hr*1.25,hr*0.07,hr*1.25],straw,{gloss:1}));
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.78)),AXh,[hr*0.98,hr*0.12,hr*0.98],band,{gloss:1}));                                   // its band
+    out.push(ellipsoid(add(hc,sc(hup,hr*1.0)),AXh,[hr*0.94,hr*0.34,hr*0.94],straw,{gloss:1}));                                   // the low round crown
+    out.push(ellipsoid(add(hc,sc(hup,hr*1.28),sc(look,hr*0.1)),AXh,[hr*0.5,hr*0.1,hr*0.3],dark,{gloss:1,noCast:1}));              // the dent in it
+    for(let k=0;k<4;k++) out.push(ellipsoid(add(hc,sc(hup,hr*(0.92+k*0.1)),sc(look,hr*0.9)),AXh,[hr*0.04,hr*0.03,hr*0.5],dark,{gloss:1,noCast:1}));   // its plaited rows
+    return out; };
+  HAT_OVER_HAIR.ppstrawhat=1;
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1903,6 +1916,10 @@
     // pale eye down one side
     ppmagicbean:{ ry:1.04, f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2]+0.15)<0.12&&p[0]>0.6) return {c:P.h,gloss:2};
       const m=Math.sin(p[0]*7+Math.sin(p[1]*5)*2)+Math.sin(p[1]*8-p[2]*6)+Math.sin(p[2]*9+p[0]*3); return {c:m>1.1?P.C:m>0.2?P.b:m<-1.2?P.s:P.o,gloss:2}; } },
+    // the Riverboat Ball: a steamboat's white paint, a red line round its middle like her guard rail, and two black bands for her
+    // chimneys' crowns
+    ppriverboat:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[1])<0.1) return {c:P.b,gloss:2};
+      if(Math.abs(p[1]-0.5)<0.06||Math.abs(p[1]+0.5)<0.06) return {c:P.s,gloss:2}; return {c:p[1]>0.3?P.h:P.C,gloss:3}; } },
     // the Humpty Ball: an egg's white shell, smooth and pale, and round its middle Humpty's blue cravat with its gold tie
     pphumpty:{ ry:1.06, f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const band=Math.abs(p[1]+0.05)<0.16;
       if(band) return {c:Math.abs(p[0])<0.14&&p[2]>0.6?'#ffd84a':P.b,gloss:2}; return {c:p[1]>0.4?P.h:p[1]<-0.5?P.s:P.C,gloss:3}; } },
