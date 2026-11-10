@@ -31,6 +31,7 @@ node shut-the-door/test/postgame.mjs           the at bats, K-Zones and box line
 node shut-the-door/check-replays.mjs           stored outings replayed against their scores (--self-test)
 node shut-the-door/check-rules.mjs             every in-play row in every pack a legal MLB play
 node shut-the-door/test/check-browser.mjs      the whole game in Chromium at 390x844 and 1440x900
+node shut-the-door/test/card.mjs               the share card's texts never overlap or leave their tile, tall and wide
 node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real packs (--relative)
 ```
 
