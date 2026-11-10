@@ -1979,9 +1979,14 @@ async function modes(w, h, full) {
   ok(/^Picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
   await page.click('#hm-arc');
   await page.waitForSelector('#hp-arc.on:not([hidden])');
-  const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);
-  ok(arc > 0, '17 Pro: the past dailies are a list to play (' + arc + ' days)');
-  await page.click('#past-body .arc-list button >> nth=0', { timeout: 120000 });
+  /* a phone keeps the list; a desk (980 px and up) shows the same days as a calendar (the owner, 2026-11-10) */
+  const desk = w >= 980;
+  const arc = await page.evaluate(() => ({ list: document.querySelectorAll('#past-body .arc-list button').length,
+    cal: document.querySelectorAll('#arc-cal .ac-d.open').length, calShown: !!document.getElementById('arc-cal') && getComputedStyle(document.getElementById('arc-cal')).display !== 'none',
+    listShown: !!document.querySelector('#past-body .arc-list') && getComputedStyle(document.querySelector('#past-body .arc-list')).display !== 'none' }));
+  if (desk) ok(arc.calShown && !arc.listShown && arc.cal > 0, '17 Pro on a desk: the past dailies are a calendar to play, the list hidden (' + arc.cal + ' days this month)');
+  else ok(arc.list > 0 && arc.listShown && !arc.calShown, '17 Pro: the past dailies are a list to play, no calendar on a phone (' + arc.list + ' days)');
+  await page.click(desk ? '#arc-cal .ac-d.open >> nth=0' : '#past-body .arc-list button >> nth=0', { timeout: 120000 });
   await page.waitForFunction(() => window.STD_UI.state.mode === 'archive' && document.body.dataset.screen === 's-mound', null, { timeout: 120000 });
   ok(true, '17 Pro: a past day opens on the mound, as the archive');
   ok(errors.length === 0, '17 the pick and the archive: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
@@ -1991,6 +1996,9 @@ async function modes(w, h, full) {
   await page.waitForSelector('#hp-arc.on:not([hidden])');
   const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
   ok(!lk.list && /open later/.test(lk.t) && !/\$|price|buy|pro\b/i.test(lk.t), '17 free: the past dailies stay locked, no price and no buy button');
+  const cal = await page.evaluate(() => { const c = document.getElementById('arc-cal'); return c && { shown: getComputedStyle(c).display !== 'none', open: c.querySelectorAll('.ac-d.open, button[data-day]').length, now: c.querySelectorAll('.ac-d.now[aria-current="date"]').length, wk: c.querySelectorAll('.ac-wk span').length, grid: getComputedStyle(document.querySelector('#past-body .past-grid')).display }; });
+  if (w >= 980) ok(cal && cal.shown && cal.open === 0 && cal.now === 1 && cal.wk === 7 && cal.grid === 'none', '17 free on a desk: a calendar, seven weekdays, today ringed, every past day locked, the tiles hidden (' + JSON.stringify(cal) + ')');
+  else ok(!cal || (!cal.shown && cal.grid !== 'none'), '17 free on a phone: the locked tiles as before, no calendar');
   ok(lk.pick, '17 before the vote, the home says nothing about it');
   await ctx.close();
 
