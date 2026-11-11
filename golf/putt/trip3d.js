@@ -239,7 +239,8 @@ function play(host, o, cb){
   if (o && o.vehicle === 'river') return riverLeg(host, o, cb);   // the Mississippi is reached down the beanstalk and down the river (riverLeg, below)
   if (o && o.vehicle === 'loch') return lochLeg(host, o, cb);   // Loch Ness is reached by steamboat, out to sea and up the loch (lochLeg, below)
   if (o && o.vehicle === 'plane') return planeLeg(host, o, cb);
-  if (o && o.vehicle === 'forest') return forestLeg(host, o, cb);   // the Pacific Forest: by seaplane off the glacier and across the ocean, then up the logging road (forestLeg, below)   // the Himalayas are reached by seaplane off the loch, over the clouds to the peaks (planeLeg, below)
+  if (o && o.vehicle === 'forest') return forestLeg(host, o, cb);
+  if (o && o.vehicle === 'circus') return circusLeg(host, o, cb);   // the Big Top: by circus train from the loggers' siding, then in with the parade (circusLeg, below)   // the Pacific Forest: by seaplane off the glacier and across the ocean, then up the logging road (forestLeg, below)   // the Himalayas are reached by seaplane off the loch, over the clouds to the peaks (planeLeg, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var wrap = document.createElement('div'); wrap.className = 'pp-trip';
@@ -1473,5 +1474,81 @@ function forestLeg(host, o, cb){
   requestAnimationFrame(frame);
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
 }
-root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, forest:forestLeg, PLANETS:PLANETS, ISLES:ISLES };
+/* BY CIRCUS TRAIN FROM THE LOGGERS' SIDING, AND IN WITH THE PARADE (SPACE_TRIP 'circus'): the Pacific Forest's last walk ends at the
+   old logging rail siding, where the circus train has stopped for water. The camera is at the window of the engine's cab: the rails
+   run on ahead between the dark firs ("ALL ABOARD!"), the forest opens out onto rolling farm country under an evening sky ("THE
+   CIRCUS TRAIN!"); then the view is down on the lot, walking in with the parade along a sawdust path between the striped tents with
+   their flags ("THE PARADE!") toward the big top itself ("THE BIG TOP!"). No real place, no real circus: every hill, tree and tent is
+   noise. Never a grid. A tap skips it; with reduced motion putt.js shows a still of the big top and the train instead (spaceTrip). */
+function circusLeg(host, o, cb){
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; }
+  setRes(140);
+  var done = false, t0 = 0, DUR = 13.2, PARADE = 7.4, frames = 0, ftime = 0;
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function vnz(x, y, z){ return noise3(x, y, z); }
+  function hsh(a, b){ var h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); }
+  // what stands in cell (ci, cj) beside the way: a fir in the forest, an elm out in the farm country, a striped tent on the lot
+  function thing(ci, cj, kind, wayX){ if (hsh(ci, cj) > (kind === 2 ? 0.55 : kind === 1 ? 0.22 : 0.7)) return null; var cx = ci * 6 + 3 + (hsh(ci + 7, cj) - 0.5) * 2.6, cz = cj * 6 + 3 + (hsh(ci, cj + 9) - 0.5) * 2.6;
+    if (Math.abs(cx - wayX(cz)) < (kind === 2 ? 6 : 4.5)) return null; return [cx, cz, kind === 2 ? 1.8 + hsh(ci + 3, cj) * 1.4 : 0.5 + hsh(ci + 3, cj + 5) * 0.6, hsh(ci + 11, cj + 2)]; }
+  function scene(t){ var par = t >= PARADE, s = par ? t - PARADE : t, wayX = par ? function(z){ return 0; } : function(z){ return Math.sin(z * 0.02) * 4; };
+    var cz = par ? -s * 3.2 : -s * 16, cx = wayX(cz), cy = par ? 2.4 + Math.abs(Math.sin(s * 6)) * 0.08 : 2.6, yaw = par ? 0 : Math.atan2(wayX(cz - 8) - wayX(cz), 8), foc = (W / 2) / Math.tan(68 * Math.PI / 360), hz = H * 0.48;
+    var dusk = par ? 1 : clamp(s / 6, 0, 1), forest = !par && cz > -60;
+    for (var x = 0; x < W; x++){ var a = yaw + Math.atan((x + 0.5 - W / 2) / foc), dx = Math.sin(a), dz = Math.cos(a), dist = 90, hit = null;
+      for (var d = 0.8; d < 90; d += 0.4){ var px = cx + dx * d, pz = cz - dz * d, kind = par ? 2 : pz > -60 ? 0 : 1, ci = Math.floor(px / 6), cj = Math.floor(pz / 6), q = thing(ci, cj, kind, wayX);
+        if (q && Math.hypot(px - q[0], pz - q[1]) < q[2]){ dist = d; hit = q; hit.k = kind; hit.px = px; hit.pz = pz; break; } }
+      // the big top itself at the end of the parade, a great striped cone across the way ahead
+      var bigTop = par ? (-cz + 40) : 1e9;
+      var ht = hit ? (hit.k === 0 ? 14 : hit.k === 1 ? 7 : 4.6) : 0, top = hit ? Math.max(-1, hz - ((ht - cy) / dist) * foc) : hz;
+      for (var y = 0; y < H; y++){ var o2 = (y * W + x) * 4, col = null, fd = 60;
+        if (y > hz){ var gd = cy * foc / (y - hz + 0.5); if (!(hit && gd > dist)){ var gx = cx + dx * gd, gz = cz - dz * gd, off = gx - wayX(gz), n = vnz(gx * 0.6, 3, gz * 0.6);
+            if (par) col = Math.abs(off) < 3 ? (n > 0.6 ? [232, 204, 144] : [216, 184, 120]) : n > 0.6 ? [104, 154, 68] : [90, 138, 58];
+            else if (Math.abs(Math.abs(off) - 0.75) < 0.09) col = [150, 150, 156]; else if (Math.abs(off) < 1.2) col = Math.abs(((gz * 1.2) % 1) - 0.5) < 0.18 ? [90, 58, 30] : [106, 90, 74];
+            else col = forest ? (n > 0.6 ? [56, 106, 52] : [42, 78, 42]) : (n > 0.6 ? [138, 160, 72] : n < 0.3 ? [96, 128, 56] : [118, 146, 64]); fd = gd; } }
+        if (!col && hit && y >= top){ var n2 = vnz(x * 0.4, y * 0.08, hit[3] * 9), hh = (hz - y) * dist / foc + cy;
+          if (hit.k === 0) col = hh < 5 ? (n2 > 0.5 ? [96, 56, 34] : [70, 42, 26]) : (n2 > 0.55 ? [30, 63, 38] : [22, 48, 30]);
+          else if (hit.k === 1) col = hh < 2.4 ? [90, 70, 48] : (n2 > 0.5 ? [62, 110, 50] : [46, 90, 40]);
+          else { var ang = Math.atan2(hit.pz - hit[1], hit.px - hit[0]), stp = Math.floor((ang / Math.PI + 1) * 6) % 2, edge = hh > ht - 0.6; col = edge ? [244, 200, 64] : stp ? [244, 236, 216] : [200, 48, 42]; }
+          fd = dist; }
+        if (!col){ var g = clamp((hz - y) / hz, 0, 1); col = lerpV(lerpV([216, 200, 180], [232, 140, 90], dusk), lerpV([120, 160, 210], [58, 42, 90], dusk), Math.sqrt(g));
+          if (par){ var bw = (40 / Math.max(4, bigTop)) * foc * 0.9, bh = (14 / Math.max(4, bigTop)) * foc; if (Math.abs(x - W / 2) < bw * (1 - (hz - y) / bh) && y > hz - bh){ col = Math.floor((x - W / 2) / Math.max(1, bw / 5) + 20) % 2 ? [244, 236, 216] : [200, 48, 42]; fd = 8; } }
+          if (fd === 40 || !par) fd = 60; }
+        col = lerpV(col, par ? [200, 170, 150] : forest ? [150, 170, 150] : [220, 190, 160], 1 - Math.exp(-fd / 70));
+        D[o2] = col[0]; D[o2 + 1] = col[1]; D[o2 + 2] = col[2]; D[o2 + 3] = 255; } }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    var Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    if (!par){ // at the cab window: its dark frame, the red of the engine and its brass, and a puff of smoke going by
+      ctx.fillStyle = '#1e1416'; ctx.fillRect(0, 0, Wc, Math.round(26 * k9)); ctx.fillRect(0, 0, Math.round(26 * k9), Hc); ctx.fillRect(Math.round(Wc - 26 * k9), 0, Math.round(26 * k9), Hc);
+      ctx.fillStyle = '#c8302a'; ctx.fillRect(0, Math.round(Hc - 90 * k9), Wc, Math.round(90 * k9)); ctx.fillStyle = '#f4c840'; ctx.fillRect(0, Math.round(Hc - 90 * k9), Wc, Math.round(7 * k9));
+      for (var g2 = 0; g2 < 2; g2++){ ctx.fillStyle = '#f4c840'; ctx.beginPath(); ctx.arc(Wc * (0.35 + g2 * 0.3), Hc - 45 * k9, 14 * k9, 0, 7); ctx.fill(); ctx.fillStyle = '#141414'; ctx.beginPath(); ctx.arc(Wc * (0.35 + g2 * 0.3), Hc - 45 * k9, 10 * k9, 0, 7); ctx.fill(); }
+      var sm = (t * 0.7) % 1; ctx.fillStyle = 'rgba(240,240,236,' + (0.5 * (1 - sm)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(Wc * (0.7 - sm * 0.5), Hc * (0.18 + sm * 0.04), (30 + sm * 40) * k9, 0, 7); ctx.fill(); }
+    else { // the parade: bunting strung over the way, pennants red, gold and blue swinging
+      for (var b = 0; b < 2; b++){ var by = Hc * (0.08 + b * 0.06), sw = Math.sin(t * 3 + b) * 4 * k9; for (var p = 0; p < 12; p++){ var x0 = Wc * p / 12; ctx.fillStyle = ['#c8302a', '#f4c840', '#2a5ab8'][(p + b) % 3]; ctx.beginPath(); ctx.moveTo(x0, by + Math.sin(p) * 3 * k9); ctx.lineTo(x0 + Wc / 12, by + Math.sin(p + 1) * 3 * k9); ctx.lineTo(x0 + Wc / 24 + sw, by + 22 * k9); ctx.fill(); } } }
+    return { pos:V(cx, cy, cz) }; }
+  function render(t){ var cam = scene(t), Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    if (t > PARADE - 0.3 && t < PARADE + 0.3){ ctx.fillStyle = 'rgba(0,0,0,' + (1 - Math.abs(t - PARADE) / 0.3).toFixed(2) + ')'; ctx.fillRect(0, 0, Wc, Hc); }
+    var say = function(txt, c1, c2, wob){ ctx.font = 'bold ' + Math.round(44 * k9) + 'px Anton, Impact, sans-serif'; var fit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText(txt).width)); ctx.font = 'bold ' + Math.round(44 * k9 * fit) + 'px Anton, Impact, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6 * k9; ctx.strokeStyle = c1; ctx.strokeText(txt, Wc / 2 + wob, Hc * 0.3); ctx.fillStyle = c2; ctx.fillText(txt, Wc / 2 + wob, Hc * 0.3); };
+    if (t > 0.6 && t < 3.0) say('ALL ABOARD!', '#1a0a12', '#ffffff', Math.sin(t * 6) * 2 * k9);
+    else if (t > 3.6 && t < 7.0) say('THE CIRCUS TRAIN!', '#1a0a12', '#ffd860', Math.sin(t * 7) * 2 * k9);
+    else if (t > 7.8 && t < 9.6) say('THE PARADE!', '#1a0a12', '#ff8a7a', Math.sin(t * 7) * 2 * k9);
+    else if (t > 9.8 && t < 11.5) say('THE BIG TOP!', '#1a0a12', '#ffd860', Math.sin(t * 9) * 3 * k9);
+    return cam; }
+  if (o.still) return { at:function(t){ var c = render(t); if (t > 11.6) wrap.classList.add('cap'); return c; }, close:finish };
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 96) setRes(Math.max(96, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 11.6) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, forest:forestLeg, circus:circusLeg, PLANETS:PLANETS, ISLES:ISLES };
 })();

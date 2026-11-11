@@ -63,6 +63,8 @@ export function geodesic(C, avoid){
   (C.cyclones || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y), a = near(q.tx, q.ty); if (e >= 0 && a >= 0) back.push([a, e, 2]); });
   // Zeus' bolt (Olympus) throws a ball in its ring a set way: where it lands leads back to the ring
   (C.bolts || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y), a = near(q.x + q.ux * q.L, q.y + q.uy * q.L); if (e >= 0 && a >= 0) back.push([a, e, 2]); });
+  // a high wire (the Big Top) carries a ball lined up with it from one platform to the other, either way: each end leads back to the other
+  (C.wires || []).forEach(q => { const a = near(q.a[0] - q.ux * 0.8, q.a[1] - q.uy * 0.8), e = near(q.b[0] + q.ux * 0.8, q.b[1] + q.uy * 0.8); if (a >= 0 && e >= 0){ back.push([a, e, q.len]); back.push([e, a, q.len]); } });
   const outOf = new Map(); back.forEach(([a, e, w]) => { if (!outOf.has(a)) outOf.set(a, []); outOf.get(a).push([e, w]); });
   const start = near(C.cup[0], C.cup[1]); if (start < 0) return () => 1e9;
   // a Dijkstra over the grid with the jumps as extra edges (a binary heap keeps it quick)
