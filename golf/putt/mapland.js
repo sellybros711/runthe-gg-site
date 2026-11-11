@@ -62,6 +62,7 @@ var PAL={
   beanstalk:{ g:['#528a38','#62a242','#74b452','#86c464'], sp:[['#fff6c8',.012],['#ffffff',.01]], tree:'round', leaf:['#2a5a22','#3a7a2e','#4e9a3a','#5aae46'], trunk:'#5a3a22', path:['#d8c8a0','#e8dab8'], water:['#4a88c8','#6aa8e0','#8ac0ec','#f2f6fc'], shadow:.62 },
   mississippi:{ g:['#5e8a3a','#6a9a44','#7ab24e','#8ac05a'], sp:[['#f4f0d8',.012],['#e8c860',.008]], tree:'round', leaf:['#2e5a22','#3e7a2e','#5a9a3e','#4a8a34'], trunk:'#6a5a44', path:['#d8c8a0','#e8dab8'], water:['#4e6e76','#5e7f86','#6e8c94','#b8d0d0'], shadow:.62 },
   himalayas:{ g:['#d8e4f0','#e8f0f8','#f4f8fc','#ffffff'], sp:[['#a8bcd0',.014],['#86827a',.01]], tree:'round', leaf:['#173a2a','#1e3f30','#28503e','#f6f9fd'], trunk:'#4a3626', path:['#a8a49a','#b8b4aa'], water:['#3a94a8','#5ab4c4','#7ac8d4','#e8f8fc'], shadow:.7 },
+  london:{ g:['#26402c','#2e4a34','#385a3c','#4a6a46'], sp:[['#4e5256',.02],['#ffd27a',.004]], tree:'round', leaf:['#203e22','#2a4a2a','#345a32','#3e6a3a'], trunk:'#6a6450', path:['#4e5256','#5a5e62'], water:['#1a262c','#22323a','#2a3e46','#6a8088'], shadow:.6 },
   bigtop:{ g:['#4a7a32','#5a8a3a','#689a44','#7aa44a'], sp:[['#d8b878',.016],['#f4c840',.006]], tree:'round', leaf:['#2e5a22','#3a6a2a','#4a7a32','#5a8a3a'], trunk:'#5a4630', path:['#d8b878','#e8cc90'], water:['#2a2234','#3a3048','#4a4060','#e8dcc0'], shadow:.62 },
   pacific:{ g:['#2e5a2e','#386a34','#467a3c','#5a8a44'], sp:[['#6a4a2a',.012],['#8ab06a',.012]], tree:'pine', leaf:['#16301e','#1e3f26','#2a5230','#3e6a38'], trunk:'#4a2a1a', path:['#7a5a3a','#8a6a46'], water:['#24484a','#3a6a6a','#5a8a84','#c8e8e0'], shadow:.62 },
   lochness:{ g:['#557e42','#5f8e4a','#689a50','#76a85a'], sp:[['#c8a0e0',.014],['#8a5aaa',.01]], tree:'round', leaf:['#22462a','#2e5a32','#3e6e3a','#4e7e3a'], trunk:'#5a4a3e', path:['#b8b0a0','#c8c0b0'], water:['#1c3640','#24434c','#2e5058','#8ab4b8'], shadow:.62 },
@@ -743,6 +744,25 @@ WORLD.pacific=function(P,th,seed){
     else { for(y=3;y<6;y++)for(x=0;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(x===0||x===5?'#d8b07a':y===4?'#5a3a22':'#7a5234')); } }
   // the footprints: a line of big bare prints in the mud along the creek
   for(var fq=0;fq<8;fq++){ var fy=Math.round(P.h*0.2+fq*P.h*0.07), fx=Math.round(P.w*(0.26+0.08*Math.sin(fy*0.017+seed*0.01))+P.w*0.09+(fq%2?3:0)); P.set(fx,fy,hex('#2a1e12')); P.set(fx,fy+1,hex('#2a1e12')); P.set(fx+1,fy+1,hex('#3a2a1a')); }
+};
+WORLD.london=function(P,th,seed){
+  var tk=[], x, y;
+  // London by night: the squares' lawns in the night's greens with wet cobbles spread over them on their own noise, the walk a way
+  // of grey setts, the Thames winding up one side with its foreshore of mud, terraces with their lit windows, gas lamps with their
+  // pools of light, and the barrows and pillar boxes of the street
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var cx=P.w*(0.1+0.035*Math.sin(y*0.018+seed*0.01))+(fbm(x*.03,y*.03,seed+5)-.5)*10, st=hash(x,y,seed+9), a=fbm(x*.05,y*.05,seed+11);
+    if(Math.abs(x-cx)<3.2){ P.set(x,y,hex(Math.abs(x-cx)<2.2?(fbm(x*.2,y*.2,seed+13)>.62?'#2a3e46':'#22323a'):'#4a4236')); continue; }
+    if(fbm(x*.03,y*.03,seed+15)>.62){ P.set(x,y,hex(st>.96?'#7a7e84':a>.5?'#5a5e62':'#4e5256')); continue; }
+    P.set(x,y,hex(st>.994?'#b07a26':a>.64?'#385a3c':a<.3?'#26402c':'#2e4a34')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+17)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#3e4246':fbm(x*.2,y*.2,seed+19)>.6?'#5a5e62':'#4e5256')); else if(pd<e+1.5)P.shade(x,y,.8); }
+  // terraces, gas lamps, barrows and pillar boxes, each with its shadow
+  for(var bq=0;bq<30;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.6,.9,function(a,b){ P.shade(a,b,.7); });
+    if(kd<.4){ for(y=1;y<6;y++)for(x=0;x<7;x++) P.set(bb[0]+x,bb[1]+y,hex(y===1?'#3a3e44':(x%2&&y%2===0)?((x+y+bq)%3?'#ffd88a':'#2a2630'):'#6a3426')); }
+    else if(kd<.65){ for(y=0;y<6;y++) P.set(bb[0]+3,bb[1]+y,hex(y===0?'#ffe6a0':'#141418')); P.set(bb[0]+2,bb[1],hex('#ffe6a0')); P.set(bb[0]+4,bb[1],hex('#ffe6a0')); }
+    else if(kd<.85){ for(y=3;y<6;y++)for(x=1;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(y===3?['#c8302a','#f4a020','#6aa83a'][x%3]:'#6a4a28')); P.set(bb[0]+1,bb[1]+6,hex('#4a3018')); P.set(bb[0]+5,bb[1]+6,hex('#4a3018')); }
+    else { for(y=2;y<6;y++)for(x=2;x<4;x++) P.set(bb[0]+x,bb[1]+y,hex(y===2?'#e8c040':'#c4221c')); } }
 };
 WORLD.bigtop=function(P,th,seed){
   var tk=[], x, y;

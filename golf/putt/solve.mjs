@@ -27,7 +27,7 @@ const require = createRequire(import.meta.url);
 const P = require(process.env.PUTT_SRC || './putt.js');   // PUTT_SRC tries a copy of the holes without touching the real file
 const M = P.M;
 
-export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length + (C.bolts || []).length + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length > 0; }
+export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length + (C.bolts || []).length + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length + (C.tides || []).length > 0; }
 /* walking distance to the cup over the course, round walls and blocks, back through tunnels and pipes
    and back over a ramp's jump, so a ball short of a gap does not rank behind one that went in the water */
 // with avoid, the secret zones are walls: a search told to find the obvious line must not rank a ball
@@ -65,6 +65,8 @@ export function geodesic(C, avoid){
   (C.bolts || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y), a = near(q.x + q.ux * q.L, q.y + q.uy * q.L); if (e >= 0 && a >= 0) back.push([a, e, 2]); });
   // a high wire (the Big Top) carries a ball lined up with it from one platform to the other, either way: each end leads back to the other
   (C.wires || []).forEach(q => { const a = near(q.a[0] - q.ux * 0.8, q.a[1] - q.uy * 0.8), e = near(q.b[0] + q.ux * 0.8, q.b[1] + q.uy * 0.8); if (a >= 0 && e >= 0){ back.push([a, e, q.len]); back.push([e, a, q.len]); } });
+  // a foreshore (London) is walked like the carpet it is at low water: its tide is the clock's business (timed), never the map's
+  (C.tides || []).forEach(q => { for (let y = q.y0 + res / 2; y < q.y1; y += res) for (let x = q.x0 + res / 2; x < q.x1; x += res){ const o = idx(x, y); if (o >= 0 && !solid(x, y) && !inZ(x, y) && C.matFn(x, y) !== M.OUT && C.matFn(x, y) !== M.WATER) pass[o] = 1; } });
   const outOf = new Map(); back.forEach(([a, e, w]) => { if (!outOf.has(a)) outOf.set(a, []); outOf.get(a).push([e, w]); });
   const start = near(C.cup[0], C.cup[1]); if (start < 0) return () => 1e9;
   // a Dijkstra over the grid with the jumps as extra edges (a binary heap keeps it quick)

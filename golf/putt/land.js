@@ -6564,6 +6564,119 @@ window.RTT_PUTT_LAND = (function(){
       bg:'#1a100a', gain:2,
       mats:{ pfhfloor:['#6a4428', '#7a5234', '#5a3a22', 0.12, function(c, R){ var b = blot(c, 0.2, 1623), st = hash(c.ti, c.tj, 1624); if (st > 0.96) return R('#a8784e'); if (st < 0.03) return R('#5a9a3a'); return R(b > 0.62 ? '#7a5234' : b < 0.3 ? '#5a3a22' : '#6a4428'); }],
         pfhwall:['#8e4628', '#b8603a', '#5a2e1a', 0.18, function(c, R){ var z = c.z || 0; if (z > 5) return R('#2a160c'); var n = vn(c.ti * 0.5, z * 0.15, 1625); return R(n > 0.66 ? '#b8603a' : n < 0.34 ? '#6a3020' : '#8e4628'); }] } }; };
+  /* ---------------- LONDON IS A JOURNEY (World 30): late Victorian and Edwardian London by night, in the fog and the gaslight,
+     nobody's real building. In at the terminus where the night train stops (1 and 2), along Baker Street's terraces (3 and 4), down
+     the street of shops (5 and 6), through the flower market (7 and 8), across the square by Scotland Yard (9 and 10), along the
+     docks (11 and 12), into the alleys (13 and 14), out on the Embankment (15 and 16) and down to the Thames itself (17 and 18).
+     The squares' lawns lie all round the course in the night's greens: their edge wanders on noise, the wet cobbles are spread on
+     noise of their own, and nothing is a grid. */
+  STOPS.london = [[1, 'terminus'], [3, 'bakerst'], [5, 'street'], [7, 'market'], [9, 'yard'], [11, 'docks'], [13, 'alleys'], [15, 'embankment'], [17, 'thames']];
+  (function(){ BUILD.london = function(L){ var s = L.stop; return s === 'bakerst' ? ldBakerStop(L) : s === 'street' ? ldStreetStop(L) : s === 'market' ? ldMarketStop(L) : s === 'yard' ? ldYardStop(L) : s === 'docks' ? ldDocksStop(L) : s === 'alleys' ? ldAlleyStop(L) : s === 'embankment' ? ldEmbStop(L) : s === 'thames' ? ldThamesStop(L) : ldTerminusStop(L); }; })();
+  function ldEdge(L, x, y){ return 4.2 + fbm(x * 0.07, y * 0.07, L.seed + 1901) * 3.4; }
+  function ldMats(){ return {
+      ldlawn:['#2e4a34', '#385a3c', '#26402c', 0.1, function(c, R){ if (c.rim === 1) return R('#4a6a46'); var b = blot(c, 0.15, 1905), st = hash(c.ti, c.tj, 1906);
+        if (st > 0.993) return R('#b07a26'); return R(b > 0.64 ? '#385a3c' : b < 0.3 ? '#26402c' : '#2e4a34'); }],
+      ldsett:['#4e5256', '#5a5e62', '#40444a', 0.1, function(c, R){ var w = vn(c.ti * 0.34, c.tj * 0.3, 1907), b = blot(c, 0.2, 1908), st = hash(c.ti, c.tj, 1909);
+        if (w < 0.36) return R('#2a2c30'); if (st > 0.97) return R('#7a7e84'); return R(b > 0.62 ? '#5a5e62' : b < 0.3 ? '#40444a' : '#4e5256'); }],
+      ldmud:['#4a4236', '#544a3c', '#3a3428', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 1910); return R(st > 0.95 ? '#6a6250' : st < 0.06 ? '#2a2620' : blot(c, 0.2, 1911) > 0.55 ? '#544a3c' : '#4a4236'); }] }; }
+  function ldBase(L, o){ var seed = L.seed;
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y); return (fbm(x * 0.05, y * 0.05, seed) - 0.4) * (o.hills || 1.0) * sm(1.3, 5, c); },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = ldEdge(L, x, y), sw = fbm(x * 0.03, y * 0.03, seed + 1912);
+        if (o.mud && fbm(x * 0.02, y * 0.02, seed + 1913) > 0.62 && c > e + 2) return ['ldmud', {}];
+        if (c < e + 0.6) return [o.sett ? 'ldsett' : 'ldlawn', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (sw > (o.sett ? 0.5 : 0.64)) return ['ldsett', {}];
+        return ['ldlawn', {}]; },
+      fill:{ on:['ldlawn'], trees:o.trees == null ? 0.02 : o.trees, lows:0.12, tree:function(B, x, y, i){ if (hash(i, seed, 1914) < 0.4) ldLampAt(B, x, y, i + seed); else ldPlaneAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 1915); if (k < 0.4) ldBarrelAt(B, x, y, i + seed); else if (k < 0.7) ldPillarAt(B, x, y, i + seed); else ldBenchAt(B, x, y, i + seed); } },
+      bg:'#0c1216', gain:2, mats:ldMats() }; }
+  // a plane tree of the squares, its trunk dappled where the bark peels; a gas lamp; a brewer's barrel; a pillar box; a bench
+  function ldPlaneAt(B, x, y, i){ var zb = B.gz(x, y), H = 7 + hash(i, 2, 1916) * 3, R0 = 2.4 + hash(i, 3, 1917);
+    B.solid(x - R0, y - R0, zb, x + R0, y + R0, zb + H + R0, function(px, py, pz){ var dx = px - x, dy = py - y, h = pz - zb, rr = Math.hypot(dx, dy);
+      if (h < H && rr < 0.32) return vn(px * 3, pz * 2, i) > 0.55 ? '#a8a080' : '#6a6450';
+      var cr = Math.hypot(dx, dy, (h - H) * 1.3); if (cr < R0 && h > H - 1.2){ var n = vn(px * 1.2, py * 1.2 + pz, i + 7); return cr > R0 - 0.5 && n < 0.45 ? null : n > 0.6 ? '#345a32' : n < 0.3 ? '#203e22' : '#2a4a2a'; } return null; }, B.ART); }
+  function ldLampAt(B, x, y, i){ var zb = B.gz(x, y), H = 5.5;
+    B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + H + 0.3, function(px, py, pz){ var rr = Math.hypot(px - x, py - y), h = pz - zb;
+      if (h < 0.4) return rr < 0.3 ? '#141418' : null; if (h < H - 0.8) return rr < 0.1 ? '#141418' : null; if (h < H) return rr < 0.3 ? (rr > 0.24 ? '#16161a' : '#ffe6a0') : null; return rr < 0.1 ? '#c8a040' : null; }); }
+  function ldBarrelAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.7, y - 0.7, zb, x + 0.7, y + 0.7, zb + 1.3, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y), w = 0.52 + 0.08 * Math.sin(t / 1.25 * Math.PI); if (r > w) return null;
+      if (t > 1.18) return '#7a4e2a'; if (Math.abs(t - 0.25) < 0.06 || Math.abs(t - 1.0) < 0.06) return '#34343a'; return Math.sin(Math.atan2(py - y, px - x) * 10 + k) > 0.7 ? '#5a3a20' : '#8a5a30'; }); }
+  function ldPillarAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + 1.9, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y);
+      if (t < 0.12) return r < 0.44 ? '#1a1a1e' : null; if (t < 1.5) return r < 0.34 ? '#c4221c' : null; return r < 0.4 - (t - 1.5) ? (t < 1.58 ? '#e8c040' : '#c4221c') : null; }); }
+  function ldBenchAt(B, x, y, k){ var zb = B.gz(x, y), a = hash(k, 4, 1918) > 0.5;
+    B.solid(x - 1.2, y - 1.2, zb, x + 1.2, y + 1.2, zb + 1.2, function(px, py, pz){ var t = pz - zb, u = a ? px - x : py - y, v = a ? py - y : px - x; if (Math.abs(u) > 1.1 || Math.abs(v) > 0.45) return null;
+      if (Math.abs(Math.abs(u) - 0.95) < 0.08) return t < 1.1 ? '#141418' : null; if (t > 0.5 && t < 0.62) return Math.floor((v + 1) * 4) % 2 ? '#2e5a36' : '#14281a'; if (v > 0.3 && t > 0.62 && t < 1.1) return Math.floor(t * 8) % 2 ? '#2e5a36' : '#14281a'; return null; }); }
+  // a terrace house front, a shopfront, a coster's barrow, a warehouse, a dock crane, the river wall, the station's train shed and
+  // a hansom cab, by the course as on the walk
+  function ldTerraceAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4, y - 2, zb, x + 4, y + 2, zb + 8.6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 3.8 || Math.abs(dy) > 1.8) return null;
+      if (t > 7.2){ if (Math.abs(dy) > (8.6 - t) * 1.1 && !(Math.abs(Math.abs(dx) - 2.2) < 0.35)) return null; return Math.abs(Math.abs(dx) - 2.2) < 0.35 ? '#6a3a2a' : '#3a3e44'; }
+      if (dy < 1.6) return '#4a2a22'; var cl = Math.floor((dx + 3.8) / 7.6 * 3), u = ((dx + 3.8) / 7.6 * 3) % 1, fl = Math.floor(t / 2.3), v = (t % 2.3) / 2.3;
+      if (fl === 0 && cl === 1 && u > 0.3 && u < 0.7 && v > 0.2) return v > 0.86 ? '#ffd88a' : '#141418';
+      if (fl > 0 && u > 0.26 && u < 0.74 && v > 0.22 && v < 0.82){ if (u < 0.31 || u > 0.69 || v < 0.27 || v > 0.77 || Math.abs(u - 0.5) < 0.03) return '#e8e4dc'; return (cl + fl) % 3 ? '#ffd88a' : '#2a2630'; }
+      var bh = hash(Math.floor(dx * 3), Math.floor(t * 6), 1919); return bh > 0.8 ? '#5a2e22' : bh > 0.4 ? '#7a3a2a' : '#6a3426'; }); }
+  function ldShopAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3, y - 1.5, zb, x + 3, y + 1.5, zb + 4.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 2.8 || Math.abs(dy) > 1.3) return null; if (t > 4.0) return '#2a2e34';
+      if (dy > 1.1){ if (t > 2.6 && t < 3.2) return '#1e3a2a'; if (t > 0.5 && t < 2.5 && Math.abs(dx) < 2.4) return ((dx + 9) * 1.6) % 1 < 0.1 ? '#141418' : '#ffe0a0'; }
+      if (t > 3.2 && t < 3.5 && dy > 0.8) return Math.floor((dx + 9) * 2) % 2 ? '#c8302a' : '#f4ecd8'; return t < 0.5 ? '#4a4a4e' : '#1e3a2a'; }); }
+  function ldStallAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 1.8, y - 1.1, zb, x + 1.8, y + 1.1, zb + 2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (Math.abs(Math.abs(dy) - 0.9) < 0.12 && Math.hypot(dx, t - 0.7) < 0.7) return Math.hypot(dx, t - 0.7) > 0.58 ? '#4a3018' : null;
+      if (Math.abs(dx) > 1.6 || Math.abs(dy) > 0.78 || t < 0.9) return null; if (t < 1.2) return '#6a4a28'; if (t > 1.2 + (1 - Math.abs(dx) / 1.6) * 0.7) return null;
+      return ['#c8302a', '#f4a020', '#6aa83a', '#e8d040'][Math.floor(hash(Math.floor(dx * 3), Math.floor(dy * 3), 1920 + k) * 4)]; }); }
+  function ldWarehouseAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4.5, y - 2.5, zb, x + 4.5, y + 2.5, zb + 8, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 4.3 || Math.abs(dy) > 2.3) return null; if (t > 7.7) return '#2a2e34';
+      if (dy > 2.1){ if (Math.abs(dx) < 0.9 && t > 0.4 && ((t - 0.4) % 2.4) < 1.8) return '#5a3e24'; var wc = ((dx + 9) * 0.6) % 1; if (Math.abs(dx) > 1.4 && wc > 0.3 && wc < 0.7 && (t % 2.4) > 0.8 && (t % 2.4) < 1.9) return (Math.floor(dx) + Math.floor(t / 2.4)) % 4 ? '#2a2830' : '#ffd88a'; }
+      var bh = hash(Math.floor(dx * 3), Math.floor(t * 6), 1921); return bh > 0.85 ? '#3a1e18' : bh > 0.45 ? '#4e2a22' : '#44261e'; }); }
+  function ldCraneAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3.5, y - 1, zb, x + 3.5, y + 1, zb + 9, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 0.6) return Math.abs(dx + 2.1) < 0.9 && Math.abs(dy) < 0.9 ? '#5a5650' : null; if (Math.abs(dx + 2.1) < 0.28 && Math.abs(dy) < 0.28) return '#4a3a28';
+      var s2 = (dx + 2.1) / 5.2, jz = 1.8 + s2 * 6.4; if (s2 > 0 && s2 < 1 && Math.abs(dy) < 0.16 && Math.abs(t - jz) < 0.2) return '#5a4630';
+      if (Math.abs(s2 - 0.97) < 0.03 && Math.abs(dy) < 0.05 && t < jz && t > jz - 3) return '#2a2a2e'; return null; }); }
+  function ldRiverWallAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4, y - 0.7, zb, x + 4, y + 0.7, zb + 3, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, rr = Math.min(Math.hypot(dx - 3.5, dy), Math.hypot(dx + 3.5, dy));
+      if (rr < 0.16 && t < 2.7) return '#141418'; if (rr < 0.3 && t >= 2.7) return t > 2.9 ? '#c8a040' : '#ffe6a0'; if (Math.abs(dx) > 3.8 || Math.abs(dy) > 0.5 || t > 1.3) return null; return t > 1.1 ? '#9a968c' : '#7a766e'; }); }
+  function ldStationAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 6, y - 3, zb, x + 6, y + 3, zb + 8, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 5.8 || Math.abs(dy) > 2.8) return null;
+      var arch = 7 - (dx * dx) / 33.6 * 3.6; if (t > arch + 0.3) return null; if (t > arch - 0.1) return Math.abs(((dy + 9) * 0.8) % 1 - 0.5) < 0.1 ? '#2a2e34' : '#a8b4b8';
+      if (Math.abs(((dx + 9) % 2.4) - 1.2) < 0.14 && Math.abs(Math.abs(dy) - 2.6) < 0.2) return '#2a3a3e'; if (t < 0.15) return '#3a3e42'; return null; }); }
+  function ldCabAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3, y - 1.2, zb, x + 3, y + 1.2, zb + 3.2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (Math.abs(Math.abs(dy) - 1) < 0.1 && Math.hypot(dx + 0.8, t - 1) < 1) return Math.hypot(dx + 0.8, t - 1) > 0.86 ? '#141414' : null;
+      if (Math.abs(dy) < 0.8 && dx > -1.8 && dx < 0.2 && t > 0.9 && t < 2.8) return t > 2.6 ? '#26262c' : '#121216';
+      if (dx > 1.0 && dx < 2.6 && Math.abs(dy) < 0.34 && t > 1.0 && t < 1.8) return '#5a3a22'; if (dx > 2.4 && dx < 2.9 && Math.abs(dy) < 0.2 && t > 1.5 && t < 2.4) return '#5a3a22';
+      if (Math.abs(Math.abs(dy) - 0.2) < 0.08 && (Math.abs(dx - 1.2) < 0.08 || Math.abs(dx - 2.3) < 0.08) && t < 1.0) return '#3a2414'; return null; }); }
+  function ldSpots(L, n, salt, pad){ var sp = [], i; for (i = 0; i < n; i++){ var q = L.spot(i ? pad || 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.35 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + salt + i) * 2; }); if (q) sp.push(q); } return sp; }
+  function ldTerminusStop(L){ var O = ldBase(L, { sett:true, trees:0.015 }), sp = ldSpots(L, 3, 1931);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ldStationAt(B, q.x, q.y); else if (k === 1) ldCabAt(B, q.x, q.y); else ldPillarAt(B, q.x, q.y, k); }); }; return O; }
+  function ldBakerStop(L){ var O = ldBase(L, { trees:0.025 }), sp = ldSpots(L, 3, 1941);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) ldTerraceAt(B, q.x, q.y); else ldLampAt(B, q.x, q.y, k); }); }; return O; }
+  function ldStreetStop(L){ var O = ldBase(L, { sett:true, trees:0.02 }), sp = ldSpots(L, 3, 1951);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ldShopAt(B, q.x, q.y); else if (k === 1) ldTerraceAt(B, q.x, q.y); else ldCabAt(B, q.x, q.y); }); }; return O; }
+  function ldMarketStop(L){ var O = ldBase(L, { sett:true, trees:0.02 }), sp = ldSpots(L, 4, 1961);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 3) ldStallAt(B, q.x, q.y, k); else ldShopAt(B, q.x, q.y); }); }; return O; }
+  function ldYardStop(L){ var O = ldBase(L, { trees:0.03 }), sp = ldSpots(L, 3, 1971);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ldTerraceAt(B, q.x, q.y); else ldLampAt(B, q.x, q.y, k); }); }; return O; }
+  function ldDocksStop(L){ var O = ldBase(L, { sett:true, mud:true, trees:0.01 }), sp = ldSpots(L, 3, 1981);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ldWarehouseAt(B, q.x, q.y); else if (k === 1) ldCraneAt(B, q.x, q.y); else ldBarrelAt(B, q.x, q.y, k); }); }; return O; }
+  function ldAlleyStop(L){ var O = ldBase(L, { sett:true, trees:0.01 }), sp = ldSpots(L, 3, 1991);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ldWarehouseAt(B, q.x, q.y); else if (k === 1) ldShopAt(B, q.x, q.y); else ldLampAt(B, q.x, q.y, k); }); }; return O; }
+  function ldEmbStop(L){ var O = ldBase(L, { trees:0.03 }), sp = ldSpots(L, 3, 2001);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) ldRiverWallAt(B, q.x, q.y); else ldLampAt(B, q.x, q.y, k); }); }; return O; }
+  function ldThamesStop(L){ var O = ldBase(L, { sett:true, mud:true, hills:0.8, trees:0.015 }), sp = ldSpots(L, 3, 2011);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ldRiverWallAt(B, q.x, q.y); else if (k === 1) ldCraneAt(B, q.x, q.y); else ldWarehouseAt(B, q.x, q.y); }); }; return O; }
+
+  // The Rooms at 221B: the sitting room up the seventeen steps, its walls papered dark with the gas brackets lit, its floor boards
+  // under a worn Turkey rug, the fire in the hearth, and the bookcases and the chemistry table along the walls
+  BUILD['s-bakerst'] = function(L){ var R0 = room(L, { floor:'ldbfloor', wall:'ldbwall', wallH:5.4, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 2021, 2.4).forEach(function(q, k){ if (k % 2) ldBarrelAt(B, q[0], q[1], k + 3); else ldLampAt(B, q[0], q[1], k + 21); }); },
+      bg:'#120c0a', gain:2,
+      mats:{ ldbfloor:['#5a3a22', '#6a4a2e', '#3a2416', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 2023), rg = vn(c.ti * 0.05, c.tj * 0.05, 2024); if (Math.abs(((c.ti * 0.25) % 1) - 0.5) < 0.06) return R('#3a2416');
+          if (rg > 0.42 && rg < 0.7) return R(st > 0.6 ? '#8a2a22' : st > 0.3 ? '#6a1e1a' : '#a88a4a'); return R(st > 0.5 ? '#6a4a2e' : '#5a3a22'); }],
+        ldbwall:['#2a3a32', '#344a3e', '#1a2620', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.8) return R('#14100c'); if (Math.abs(z - 3.4) < 0.12) return R('#c8a040'); if (z < 0.6) return R('#3a2416');
+          var n = vn(c.ti * 0.5, z * 0.4, 2025); return R(n > 0.66 ? '#4a5a3a' : n > 0.4 ? '#2a3a32' : '#344a3e'); }] } }; };
   /* ---------------- THE BIG TOP IS A JOURNEY (World 29): an original travelling show of the 1880s to the 1910s on a fairground lot,
      nobody's real circus. Off the rail siding where the circus train comes in (1 and 2), across the lot where the tents go up (3 and
      4), down the midway (5 and 6), along the tent rows (7 and 8), through the wagon yard (9 and 10), past the prop tent (11 and 12),
