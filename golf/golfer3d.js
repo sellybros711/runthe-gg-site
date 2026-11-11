@@ -1659,6 +1659,18 @@
     out.push(ellipsoid(add(hc,sc(hup,hr*0.6),sc(look,hr*1.0)),AXh,[hr*0.05,hr*0.13,hr*0.13],gold,{gloss:2,noCast:1}));           // the gold star
     return out; };
   HAT_OVER_HAIR.pptopper=1;
+  /* THE BAKER STREET DEERSTALKER (London Mystery): the tweed deerstalker of Sidney Paget's plates, a soft round crown in a brown check,
+     a peak fore and aft, and its ear flaps tied up over the crown with a little bow. Modelled on the course golfer too, so it is worn
+     on the trail. */
+  HAT_MODEL.ppdeerstalker=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const tweed=X2((P&&P.W)||'#7a6a50'), dark=X2((P&&P.G)||'#5a4e3a'), lite=X2((P&&P.S)||'#9a8a68');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.42)),AXh,[hr*1.08,hr*0.66,hr*1.08],tweed,{gloss:1}));                                     // the round crown
+    for(let k=0;k<3;k++){ const r=hr*(1.09-k*0.1); out.push(ellipsoid(add(hc,sc(hup,hr*(0.24+k*0.22))),AXh,[r,hr*0.03,r],dark,{gloss:1})); }   // the check's darker bands
+    for(const k of [-1,1]) out.push(ellipsoid(add(hc,sc(hup,hr*0.16),sc(look,hr*0.98*k)),AXh,[hr*0.55,hr*0.06,hr*0.74],dark,{gloss:1}));   // the peaks, fore and aft
+    for(const k of [-1,1]) out.push(ellipsoid(add(hc,sc(hup,hr*0.82),sc(Lf,hr*0.56*k)),AXh,[hr*0.5,hr*0.1,hr*0.34],lite,{gloss:1}));   // the ear flaps, tied up
+    out.push(ellipsoid(add(hc,sc(hup,hr*1.08)),AXh,[hr*0.14,hr*0.08,hr*0.22],dark,{gloss:1,noCast:1}));                           // the little bow on top
+    return out; };
+  HAT_OVER_HAIR.ppdeerstalker=1;
   /* THE WHITE KNIGHT'S HELM (Through the Looking-Glass): his tin helmet as Tenniel drew it, a round crown rising to a sugar-loaf
      point, a dark slit across the front to see through, and a red plume tied at its tip. Modelled on the course golfer too. */
   HAT_MODEL.ppknighthelm=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
@@ -1703,7 +1715,7 @@
     out.push(ellipsoid(add(hc,sc(hup,hr*1.36),sc(Lf,hr*0.18)),AXh,[hr*0.22,hr*0.22,hr*0.22],toorie,{gloss:1}));                    // the toorie
     return out; };
   HAT_OVER_HAIR.pptam=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1, pptopper:1};   // a modelled hat that is modelled on the course golfer too
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1, pptopper:1, ppdeerstalker:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1958,6 +1970,10 @@
     // the Big Top Ball: a performer's balance ball, its segments red, gold and blue from pole to pole round a white band
     ppbigtop:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2])<0.08) return {c:P.W,gloss:2};
       const k=Math.floor((Math.atan2(p[1],p[0])/Math.PI+1)*3)%3; return {c:k===0?P.C:k===1?P.h:P.b,gloss:3}; } },
+    // the Gaslight Ball: a street lamp's glowing glass, warm amber under the black iron of its frame, six bars from pole to pole
+    // and a ring round its crown
+    ppgaslight:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const a=Math.atan2(p[1],p[0]), m=Math.abs((((a/(Math.PI/3))%1)+1)%1-0.5);
+      if(m>0.44||Math.abs(p[2]-0.55)<0.06) return {c:P.s,gloss:2}; return {c:p[2]>0.2?P.h:P.C,gloss:3}; } },
     // the Tree Ring Ball: the cut end of an old fir, pale wood ringed with its years, a crack out from the heart and bark round its edge
     pptreering:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
       const r=Math.hypot(p[0],p[1]); if(Math.abs(p[2])<0.35) return {c:P.b,gloss:1};

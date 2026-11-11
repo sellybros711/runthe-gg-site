@@ -240,6 +240,7 @@ function play(host, o, cb){
   if (o && o.vehicle === 'loch') return lochLeg(host, o, cb);   // Loch Ness is reached by steamboat, out to sea and up the loch (lochLeg, below)
   if (o && o.vehicle === 'plane') return planeLeg(host, o, cb);
   if (o && o.vehicle === 'forest') return forestLeg(host, o, cb);
+  if (o && o.vehicle === 'fog') return fogLeg(host, o, cb);   // London: by the night train from the circus siding to a London terminus, then a hansom cab through the fog (fogLeg, below)
   if (o && o.vehicle === 'circus') return circusLeg(host, o, cb);   // the Big Top: by circus train from the loggers' siding, then in with the parade (circusLeg, below)   // the Pacific Forest: by seaplane off the glacier and across the ocean, then up the logging road (forestLeg, below)   // the Himalayas are reached by seaplane off the loch, over the clouds to the peaks (planeLeg, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
@@ -1550,5 +1551,88 @@ function circusLeg(host, o, cb){
   requestAnimationFrame(frame);
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
 }
-root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, forest:forestLeg, circus:circusLeg, PLANETS:PLANETS, ISLES:ISLES };
+/* BY THE NIGHT TRAIN TO LONDON, THEN A HANSOM CAB THROUGH THE FOG (SPACE_TRIP 'fog'): the Big Top's last walk ends at the rail siding,
+   where the circus train is going on to London by night. The camera is at the window of the engine's cab: the rails run on through
+   dark fields with a cottage lit here and there ("THE NIGHT TRAIN!"), the city closes in, row on row of lit windows beside the line,
+   and the train runs in under the iron and glass arch of a London terminus ("LONDON!"). Then the view is from a hansom cab, the
+   horse's ears in front, clattering through the fog between the terraces with the gas lamps going by in their haloes ("A HANSOM
+   CAB!"), and into Baker Street ("BAKER STREET!"). No real place and no real station: every house, lamp and window is noise. Never a
+   grid. A tap skips it; with reduced motion putt.js shows a still of Baker Street in the fog instead (spaceTrip). */
+function fogLeg(host, o, cb){
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; }
+  setRes(140);
+  var done = false, t0 = 0, DUR = 13.2, CAB = 7.2, frames = 0, ftime = 0, SHED = -88, CITY = -46;
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function hsh(a, b){ var h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); }
+  // a house front's colour at (along, up) on the side'th row: brick, its windows lit or dark in their white sashes, a door now and then
+  function front(al, up, side, hh){ var bay = Math.floor(al / 2.2), u = (al / 2.2) - bay, fl = Math.floor(up / 2.4), v = (up % 2.4) / 2.4, k = hsh(bay * 3 + side, fl);
+    if (up > hh - 0.8) return up > hh - 0.3 ? [42, 46, 52] : [58, 62, 68];
+    if (u > 0.25 && u < 0.75 && v > 0.25 && v < 0.82){ if (u < 0.3 || u > 0.7 || v < 0.3 || v > 0.77) return [200, 196, 188]; return k > 0.38 ? [255, 214, 140] : [36, 32, 40]; }
+    return hsh(Math.floor(al * 3), Math.floor(up * 5) + side) > 0.6 ? [110, 54, 40] : [96, 46, 36]; }
+  function scene(t){ var cab = t >= CAB, s = cab ? t - CAB : t;
+    var cz = cab ? -s * 4.2 : -s * 15, cx = 0, cy = cab ? 2.6 + Math.abs(Math.sin(s * 7)) * 0.07 : 2.7, foc = (W / 2) / Math.tan(70 * Math.PI / 360), hz = H * 0.48;
+    var X = cab ? 5.6 : cz < CITY ? 7.5 : 1e9, hh = cab ? 9 : 11, shed = !cab && cz < SHED;
+    var fogC = cab ? [150, 156, 160] : [40, 46, 60], fogK = cab ? 26 : 90;
+    for (var x = 0; x < W; x++){ var dx = (x + 0.5 - W / 2) / foc, dist = 1e9, side = dx > 0 ? 1 : -1;
+      if (Math.abs(dx) > 1e-4 && X < 1e8) dist = (X - Math.abs(cx)) / Math.abs(dx);
+      for (var y = 0; y < H; y++){ var o2 = (y * W + x) * 4, col = null, fd = 80;
+        if (y > hz){ var gd = cy * foc / (y - hz + 0.5); if (gd < dist){ var gx = cx + dx * gd, gz = cz - gd, n = noise3(gx * 0.8, 3, gz * 0.8);
+            if (cab) col = Math.abs(gx) > 4 ? [72, 74, 78] : noise3(gx * 3.1, 5, gz * 2.6) < 0.34 ? [34, 36, 40] : n > 0.6 ? [84, 88, 92] : [70, 74, 78];
+            else if (Math.abs(Math.abs(gx) - 0.75) < 0.09) col = [130, 130, 138]; else if (Math.abs(gx) < 1.2) col = Math.abs(((gz * 1.2) % 1) - 0.5) < 0.18 ? [56, 40, 28] : [60, 56, 54];
+            else col = gz < CITY ? (n > 0.6 ? [52, 52, 58] : [40, 42, 48]) : (n > 0.6 ? [34, 48, 36] : [24, 36, 28]);
+            fd = gd; } }
+        if (!col && dist < 1e8){ var up = (hz - y) * dist / foc + cy; if (up < hh){ col = front(cz - dist, up, side, hh); fd = dist; } }
+        if (!col){ var g = clamp((hz - y) / hz, 0, 1); col = cab ? lerpV([170, 172, 168], [86, 92, 100], g) : lerpV([62, 58, 74], [12, 16, 30], Math.sqrt(g));
+          // a cottage window lit far off across the fields, before the city
+          if (!cab && cz > CITY && y > hz - 3 && y < hz && hsh(Math.floor((x + cz * 0.6) / 3), 7) > 0.93) col = [255, 210, 130];
+          // the terminus: the iron ribs of its train shed over the line, its glass lit from below
+          if (shed){ var rib = ((cz * 0.5) % 1 + 1) % 1; if (y < hz - 2) col = Math.abs(rib - 0.5) < 0.05 || Math.abs(((x * 7 / W) % 1) - 0.5) < 0.04 ? [30, 34, 40] : [120, 132, 136]; }
+          fd = 60; }
+        col = lerpV(col, fogC, 1 - Math.exp(-fd / fogK));
+        D[o2] = col[0]; D[o2 + 1] = col[1]; D[o2 + 2] = col[2]; D[o2 + 3] = 255; } }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    var Wc = cv.width, Hc = cv.height, k9 = Wc / 390, sx = Wc / W, sy = Hc / H;
+    if (cab){ // the gas lamps going by on both kerbs, each in its halo in the fog
+      for (var li = Math.floor(-cz / 7) + 8; li >= Math.floor(-cz / 7); li--) for (var ls = -1; ls <= 1; ls += 2){ var lz = -li * 7 - 3.5, ld = cz - lz; if (ld < 0.6) continue;
+        var lxs = (W / 2 + (ls * 3.8 - cx) / ld * foc) * sx, lyt = (hz - (5 - cy) / ld * foc) * sy, lyb = (hz + cy / ld * foc) * sy, a = Math.exp(-ld / 30);
+        ctx.strokeStyle = 'rgba(14,14,18,' + a.toFixed(2) + ')'; ctx.lineWidth = Math.max(1, 0.12 / ld * foc * sx); ctx.beginPath(); ctx.moveTo(lxs, lyb); ctx.lineTo(lxs, lyt); ctx.stroke();
+        var hr = Math.max(4, 2.6 / ld * foc * sx), hg = ctx.createRadialGradient(lxs, lyt, 1, lxs, lyt, hr); hg.addColorStop(0, 'rgba(255,236,170,' + (0.95 * a).toFixed(2) + ')'); hg.addColorStop(1, 'rgba(255,220,140,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(lxs, lyt, hr, 0, 7); ctx.fill(); }
+      // the horse's ears and its head going on in front of the cab, and the reins
+      var bob = Math.sin(s * 7) * 6 * k9; ctx.fillStyle = '#2a1a12'; ctx.beginPath(); ctx.ellipse(Wc / 2, Hc + 20 * k9 + bob, 70 * k9, 120 * k9, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(Wc / 2 - 34 * k9, Hc - 88 * k9 + bob); ctx.lineTo(Wc / 2 - 22 * k9, Hc - 140 * k9 + bob); ctx.lineTo(Wc / 2 - 12 * k9, Hc - 92 * k9 + bob); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(Wc / 2 + 34 * k9, Hc - 88 * k9 + bob); ctx.lineTo(Wc / 2 + 22 * k9, Hc - 140 * k9 + bob); ctx.lineTo(Wc / 2 + 12 * k9, Hc - 92 * k9 + bob); ctx.fill();
+      ctx.strokeStyle = '#4a3420'; ctx.lineWidth = 4 * k9; ctx.beginPath(); ctx.moveTo(0, Hc * 0.98); ctx.quadraticCurveTo(Wc * 0.3, Hc * 0.86 + bob, Wc / 2 - 40 * k9, Hc - 60 * k9 + bob); ctx.moveTo(Wc, Hc * 0.98); ctx.quadraticCurveTo(Wc * 0.7, Hc * 0.86 + bob, Wc / 2 + 40 * k9, Hc - 60 * k9 + bob); ctx.stroke(); }
+    else { // at the cab window: its dark frame, the engine's black and its brass, and a puff of steam going by
+      ctx.fillStyle = '#141012'; ctx.fillRect(0, 0, Wc, Math.round(26 * k9)); ctx.fillRect(0, 0, Math.round(26 * k9), Hc); ctx.fillRect(Math.round(Wc - 26 * k9), 0, Math.round(26 * k9), Hc);
+      ctx.fillStyle = '#26262c'; ctx.fillRect(0, Math.round(Hc - 90 * k9), Wc, Math.round(90 * k9)); ctx.fillStyle = '#c8a040'; ctx.fillRect(0, Math.round(Hc - 90 * k9), Wc, Math.round(6 * k9));
+      for (var g2 = 0; g2 < 2; g2++){ ctx.fillStyle = '#c8a040'; ctx.beginPath(); ctx.arc(Wc * (0.35 + g2 * 0.3), Hc - 45 * k9, 14 * k9, 0, 7); ctx.fill(); ctx.fillStyle = '#ffe6a0'; ctx.beginPath(); ctx.arc(Wc * (0.35 + g2 * 0.3), Hc - 45 * k9, 9 * k9, 0, 7); ctx.fill(); }
+      var sm = (t * 0.7) % 1; ctx.fillStyle = 'rgba(200,204,214,' + (0.45 * (1 - sm)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(Wc * (0.7 - sm * 0.5), Hc * (0.18 + sm * 0.04), (30 + sm * 40) * k9, 0, 7); ctx.fill(); }
+    return { pos:V(cx, cy, cz) }; }
+  function render(t){ var cam = scene(t), Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    if (t > CAB - 0.3 && t < CAB + 0.3){ ctx.fillStyle = 'rgba(0,0,0,' + (1 - Math.abs(t - CAB) / 0.3).toFixed(2) + ')'; ctx.fillRect(0, 0, Wc, Hc); }
+    var say = function(txt, c1, c2, wob){ ctx.font = 'bold ' + Math.round(44 * k9) + 'px Anton, Impact, sans-serif'; var fit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText(txt).width)); ctx.font = 'bold ' + Math.round(44 * k9 * fit) + 'px Anton, Impact, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6 * k9; ctx.strokeStyle = c1; ctx.strokeText(txt, Wc / 2 + wob, Hc * 0.3); ctx.fillStyle = c2; ctx.fillText(txt, Wc / 2 + wob, Hc * 0.3); };
+    if (t > 0.6 && t < 3.2) say('THE NIGHT TRAIN!', '#0a0e10', '#ffffff', Math.sin(t * 6) * 2 * k9);
+    else if (t > 4.2 && t < 6.9) say('LONDON!', '#0a0e10', '#ffd27a', Math.sin(t * 7) * 2 * k9);
+    else if (t > 7.8 && t < 9.6) say('A HANSOM CAB!', '#0a0e10', '#ffffff', Math.sin(t * 7) * 2 * k9);
+    else if (t > 9.8 && t < 11.5) say('BAKER STREET!', '#0a0e10', '#ffd27a', Math.sin(t * 9) * 3 * k9);
+    return cam; }
+  if (o.still) return { at:function(t){ var c = render(t); if (t > 11.6) wrap.classList.add('cap'); return c; }, close:finish };
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 96) setRes(Math.max(96, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 11.6) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, forest:forestLeg, circus:circusLeg, fog:fogLeg, PLANETS:PLANETS, ISLES:ISLES };
 })();
