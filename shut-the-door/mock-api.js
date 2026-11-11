@@ -37,7 +37,7 @@ function shareText(r, number) {
   if (r.pitchedLike && r.pitchedLike.name) lines.push('pitched like ' + r.pitchedLike.name);
   var sq = (r.strip || []).map(function (b) { return C.SQUARE[b]; });
   for (var i = 0; i < sq.length; i += C.SQUARES_PER_LINE) lines.push(sq.slice(i, i + C.SQUARES_PER_LINE).join(''));
-  lines.push(C.SHARE_URL);
+  lines.push(C.SHARE_LINK);
   return lines.join('\n');
 }
 if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true };

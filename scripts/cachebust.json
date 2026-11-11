@@ -2765,20 +2765,20 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "142",
-      "sha": "05a4e9d526744ba2"
+      "v": "145",
+      "sha": "8f139908d69680a1"
     },
     "putt/land.js": {
-      "v": "28",
-      "sha": "ea7c36f60fae4df2"
+      "v": "30",
+      "sha": "76aae5defb9f509b"
     },
     "putt/hole3d.js": {
       "v": "24",
       "sha": "b79c934f7da72194"
     },
     "putt/trip3d.js": {
-      "v": "15",
-      "sha": "bfb3119bfd074a26"
+      "v": "17",
+      "sha": "313a89a64e077211"
     },
     "putt/gyms.js": {
       "v": "4",
@@ -2884,21 +2884,29 @@
       "v": "1",
       "sha": "bff88ea6905a451c"
     },
+    "putt/gymkinds/tide.js": {
+      "v": "1",
+      "sha": "2efeeb19c9b01b14"
+    },
+    "putt/gymkinds/slope.js": {
+      "v": "1",
+      "sha": "0d215b0a3f37f70c"
+    },
     "putt/trail.js": {
-      "v": "64",
-      "sha": "16fa3bc0c31c1fdc"
+      "v": "66",
+      "sha": "f944cb92ffcadd65"
     },
     "putt/mapland.js": {
-      "v": "20",
-      "sha": "34a14c775b660a50"
+      "v": "22",
+      "sha": "53cfccdad35075c7"
     },
     "putt/clips.js": {
-      "v": "2",
-      "sha": "3fdb09af3736bd66"
+      "v": "3",
+      "sha": "3be4d90ce0bc4423"
     },
     "golfer3d.js": {
-      "v": "37",
-      "sha": "3c9938e382a7c196"
+      "v": "39",
+      "sha": "7c2ee73c6aff59a1"
     },
     "tracer3d.js": {
       "v": "2",
@@ -3167,8 +3175,8 @@
       "sha": "cc149708e8a0216e"
     },
     "contract.js": {
-      "v": "16",
-      "sha": "11b529808c08113e"
+      "v": "17",
+      "sha": "6ecc169d64293b86"
     },
     "meter.js": {
       "v": "6",
@@ -3190,6 +3198,10 @@
       "v": "6",
       "sha": "199b31bdddc40b37"
     },
+    "breaks.js": {
+      "v": "1",
+      "sha": "e198b813106803c2"
+    },
     "anim.js": {
       "v": "3",
       "sha": "8ab8f0d81c6c1f34"
@@ -3203,8 +3215,8 @@
       "sha": "b2c9da92a9b1f849"
     },
     "menus.js": {
-      "v": "23",
-      "sha": "9b91f5298eb2b536"
+      "v": "25",
+      "sha": "8515115c9e6d5df3"
     },
     "rng.js": {
       "v": "1",
@@ -3235,12 +3247,12 @@
       "sha": "87051ef4ff5dc28c"
     },
     "share.js": {
-      "v": "2",
-      "sha": "7a13d168ba82631e"
+      "v": "3",
+      "sha": "8ead22ce5b02cae9"
     },
     "card.js": {
-      "v": "4",
-      "sha": "f42ddd13c70685d0"
+      "v": "6",
+      "sha": "b2970890cdd43dc7"
     },
     "auth.js": {
       "v": "10",
@@ -3259,8 +3271,8 @@
       "sha": "602880a846c4c91e"
     },
     "mock-api.js": {
-      "v": "19",
-      "sha": "40a14761a6689a60"
+      "v": "20",
+      "sha": "b7fdaaf7bb81d034"
     },
     "coach.js": {
       "v": "2",
@@ -3291,8 +3303,8 @@
       "sha": "26b07d7d61b15d86"
     },
     "ui.js": {
-      "v": "79",
-      "sha": "c6a46651b24a33bc"
+      "v": "81",
+      "sha": "4beb81876654ed2b"
     },
     "3d/boot.js": {
       "v": "117",

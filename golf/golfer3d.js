@@ -1117,6 +1117,8 @@
      own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
   const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
     ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'}, ppemeraldspecs:{as:'shades',frame:'%',lens:'Q'},
+    // the Glacier Glasses (the Himalayas): an old climber's round glacier glasses, dark lenses in a brass wire rim, leather side shields
+    ppglacier:{as:'round',frame:'%',lens:'Q',strap:'&'},
     ppphantommask:{as:'mask',frame:'%',trim:'*',inner:'a',mark:'=',strap:'+'} };
   function ewColoursPP(d,EP){ const o={}; for(const k of ['frame','lens','strap','trim','inner','mark']) if(d[k]&&EP[d[k]]) o[k]='x:'+EP[d[k]];
     o.lens=o.lens||'x:#14161e'; o.frame=o.frame||'x:#26272d'; return o; }
@@ -1678,7 +1680,18 @@
     for(let k=0;k<4;k++) out.push(ellipsoid(add(hc,sc(hup,hr*(0.92+k*0.1)),sc(look,hr*0.9)),AXh,[hr*0.04,hr*0.03,hr*0.5],dark,{gloss:1,noCast:1}));   // its plaited rows
     return out; };
   HAT_OVER_HAIR.ppstrawhat=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1};   // a modelled hat that is modelled on the course golfer too
+  /* THE HIGHLAND TAM (Loch Ness): a knitted bonnet in the expedition's heather tartan, its wide soft crown pulled to one side, a band
+     round the head, and a red toorie (the pompom) on its top. Modelled on the course golfer too. */
+  HAT_MODEL.pptam=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const wool=X2((P&&P.W)||'#6a4a8a'), check=X2((P&&P.G)||'#2e5a3a'), band=X2((P&&P.k)||'#1e2a26'), toorie=X2((P&&P.r)||'#c8302a');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.72)),AXh,[hr*1.02,hr*0.14,hr*1.02],band,{gloss:1}));                                      // the band
+    for(let k=0;k<12;k++){ const a=k/12*Math.PI*2; out.push(ellipsoid(add(hc,sc(hup,hr*1.0),sc(look,Math.cos(a)*hr*0.62-hr*0.12),sc(Lf,Math.sin(a)*hr*0.62+hr*0.18)),AXh,[hr*0.55,hr*0.2,hr*0.55],k%3?wool:check,{gloss:1})); }   // the soft crown, pulled to one side
+    out.push(ellipsoid(add(hc,sc(hup,hr*1.06),sc(Lf,hr*0.18)),AXh,[hr*1.2,hr*0.22,hr*1.2],wool,{gloss:1}));
+    for(let k=0;k<3;k++) out.push(ellipsoid(add(hc,sc(hup,hr*1.12),sc(look,hr*(k-1)*0.5),sc(Lf,hr*0.18)),AXh,[hr*0.06,hr*0.04,hr*1.0],check,{gloss:1,noCast:1}));   // the tartan's lines
+    out.push(ellipsoid(add(hc,sc(hup,hr*1.36),sc(Lf,hr*0.18)),AXh,[hr*0.22,hr*0.22,hr*0.22],toorie,{gloss:1}));                    // the toorie
+    return out; };
+  HAT_OVER_HAIR.pptam=1;
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1920,6 +1933,15 @@
     // chimneys' crowns
     ppriverboat:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[1])<0.1) return {c:P.b,gloss:2};
       if(Math.abs(p[1]-0.5)<0.06||Math.abs(p[1]+0.5)<0.06) return {c:P.s,gloss:2}; return {c:p[1]>0.3?P.h:P.C,gloss:3}; } },
+    // the Yeti Print Ball: new snow, a little blue in its shade, with two huge footprints stamped across it, toes and all
+    ppyetiprint:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
+      for(const [cx,cy,a] of [[-0.25,-0.05,0.5],[0.3,0.25,0.3]]){ const dx=p[0]-cx, dy=p[1]-cy, u=dx*Math.cos(a)+dy*Math.sin(a), v=-dx*Math.sin(a)+dy*Math.cos(a);
+        if(p[2]>0&&(u*u/0.09+v*v/0.03<1)) return {c:P.b,gloss:2}; for(let t=0;t<5;t++) if(p[2]>0&&Math.hypot(u-0.34,v-(t-2)*0.06)<0.035) return {c:P.b,gloss:2}; }
+      return {c:p[1]>0.3?P.h:p[1]<-0.4?P.s:P.C,gloss:3}; } },
+    // the Deep Loch Ball: the loch's dark peaty water, a pale wake across it, and three green humps breaking the surface in a line
+    ppdeeploch:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
+      for(let k=0;k<3;k++){ if(Math.hypot(p[0]-(k-1)*0.42,p[1]-0.05,p[2]-0.85)<0.2-k*0.03) return {c:P.b,gloss:2}; }
+      if(Math.abs(p[1]+0.08+Math.abs(p[0])*0.35)<0.05&&p[2]>0) return {c:P.h,gloss:3}; return {c:p[1]>0.3?P.C:p[1]<-0.4?P.s:P.o,gloss:3}; } },
     // the Humpty Ball: an egg's white shell, smooth and pale, and round its middle Humpty's blue cravat with its gold tie
     pphumpty:{ ry:1.06, f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const band=Math.abs(p[1]+0.05)<0.16;
       if(band) return {c:Math.abs(p[0])<0.14&&p[2]>0.6?'#ffd84a':P.b,gloss:2}; return {c:p[1]>0.4?P.h:p[1]<-0.5?P.s:P.C,gloss:3}; } },

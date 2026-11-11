@@ -1080,11 +1080,12 @@ Shut The Door #12
 door shut · better than 71% of closers
 pitched like Josh Hader
 🟩🟩🟨🟩🟧🟩
-runthe.gg/shut-the-door
+https://runthe.gg/shut-the-door/
 ```
 
-Squares: green 🟩, yellow 🟨, orange 🟧, red 🟥, ten to a line. The URL line is one constant in
-`share.js`.
+Squares: green 🟩, yellow 🟨, orange 🟧, red 🟥, ten to a line. The URL line is `SHARE_LINK` in
+`contract.js`: the full https:// form, so messages apps make it a tappable link. The card
+image draws the short `SHARE_URL` it is built from.
 
 ## 12. Storage (own tables, migration `153_shut_the_door.sql` or the next free number)
 
