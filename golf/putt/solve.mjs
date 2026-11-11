@@ -27,7 +27,7 @@ const require = createRequire(import.meta.url);
 const P = require(process.env.PUTT_SRC || './putt.js');   // PUTT_SRC tries a copy of the holes without touching the real file
 const M = P.M;
 
-export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length + (C.bolts || []).length + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length > 0; }
+export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length + (C.bolts || []).length + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length > 0; }
 /* walking distance to the cup over the course, round walls and blocks, back through tunnels and pipes
    and back over a ramp's jump, so a ball short of a gap does not rank behind one that went in the water */
 // with avoid, the secret zones are walls: a search told to find the obvious line must not rank a ball

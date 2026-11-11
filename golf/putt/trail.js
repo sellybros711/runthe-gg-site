@@ -80,9 +80,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', lochness:'lanterns', himalayas:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], lookingglass:['#c8d8ff', '#ffffff'], beanstalk:['#ffe08a', '#fffbe8'], mississippi:['#ffd860', '#fff6dc'], lochness:['#ffe08a', '#fffbe8'], himalayas:['#ffc860', '#fff6dc'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', lochness:'rock', himalayas:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', lochness:'lanterns', himalayas:'lanterns', pacific:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], lookingglass:['#c8d8ff', '#ffffff'], beanstalk:['#ffe08a', '#fffbe8'], mississippi:['#ffd860', '#fff6dc'], lochness:['#ffe08a', '#fffbe8'], himalayas:['#ffc860', '#fff6dc'], pacific:['#ffb050', '#fff2c8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', lochness:'rock', himalayas:'rocksnow', pacific:'rock', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -218,6 +218,11 @@ var KIT = {
   himalayas:{ g:['#e8f0f8', '#f4f8fc', '#d8e4f0', 0.18], gpat:'hmSnow', p:['#a8a49a', '#b8b4aa', '#8e8a80'], paved:false, tree:['pine', 'pine', 'dead'], leaves:['#1e3f30', '#28503e', '#173a2a'], bark:'#4a3626', snow:true,
     low:['hmrocklow', 'bushsnow', 'hmjuniperlow'], brk:'ice', haz:'slow', hazC:['#c8d8e8', '#a8bcd0'], waterC:['#4aa0b4', '#c8eef4'], seaC:['#4aa0b4', '#c8eef4'], bogC:['#c8d8e8', '#a8bcd0'], lm:['hmTentLm', 'hmCairnLm', 'hmBoulderLm'], wall:['#a8a49a', '#5a5650'],
     npc:{ skin:'medium', polo:'red', hat:'red', pants:'black', hair:'black', hairStyle:'short', cap:true, shoes:'brown', gender:'male' }, who:'the mountain guide' },
+  // the Pacific Forest: a forest floor of moss and needles in deep warped greens, a trodden logging road of brown earth, giant firs
+  // and cedars, sword ferns, stumps and mossy rocks by the path, the creek for the water and wet moss for the slow ground
+  pacific:{ g:['#386a34', '#467a3c', '#2a4e2a', 0.18], gpat:'pfFloor', p:['#7a5a3a', '#8a6a46', '#5a4028'], paved:false, tree:['pffir', 'pffir', 'pine'], leaves:['#16301e', '#1e3f26', '#2a5230'], bark:'#4a2a1a',
+    low:['pffernlow', 'pfstumplow', 'pfmosslow'], brk:'pot', haz:'slow', hazC:['#3e5a2a', '#2e4a20'], waterC:['#24484a', '#8ac4b8'], seaC:['#24484a', '#8ac4b8'], bogC:['#3e5a2a', '#2e4a20'], lm:['pfCedarLm', 'pfStumpLm', 'pfLogsLm'], wall:['#6a4a32', '#3a2618'],
+    npc:{ skin:'medium', polo:'green', hat:'brown', pants:'brown', hair:'brown', hairStyle:'short', cap:true, shoes:'brown', gender:'female' }, who:'the forest ranger' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -565,10 +570,13 @@ function plan(spec){
     else if (spec.vehicle === 'loch') place('lnSteamer', lx, L + 5, 3, 7, { w:12, d:5 });
     // the Himalayas: off the loch by seaplane and down onto the glacial lake below base camp, so the walk sets off from her on the shore
     else if (spec.vehicle === 'plane') place('hmSeaplane', lx, L + 5, 3, 4, { w:11, d:9 });
+    // the Pacific Forest: off the glacier by seaplane, then up the logging road in the truck, so the walk sets off from it at the road end
+    else if (spec.vehicle === 'forest') place('pfTruck', lx, L + 5, 3, 3.6, { w:10, d:3.6 });
     // the sea route (Cyclops Isle on): the Greek ship run up on the sand where it came ashore
     else if (spec.vehicle === 'sea') place('seaShip', lx, L + 5, 3, 7, { w:6, d:12, beach:true });
     else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); } used.push({ x:lx, y:L + 5, r:5.5 }); }
-  if (SPACE && spec.space === 'plane'){ place('hmSeaplane', archX, -4.5, 3, 4, { w:11, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the seaplane on the loch, bound over the clouds to the peaks
+  if (SPACE && spec.space === 'forest'){ place('hmSeaplane', archX, -4.5, 3, 4, { w:11, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the seaplane on the glacial lake again, bound across the ocean to the forest
+  else if (SPACE && spec.space === 'plane'){ place('hmSeaplane', archX, -4.5, 3, 4, { w:11, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the seaplane on the loch, bound over the clouds to the peaks
   else if (SPACE && spec.space === 'loch'){ place('msSteamboat', archX, -4.5, 3, 7, { w:14, d:5 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the steamboat, bound down the river and over the sea to the Highlands
   else if (SPACE && spec.space === 'river'){ place('bnStalkTop', archX, -4.5, 3, 9, { w:5, d:5 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // down the beanstalk to the river
   else if (SPACE && spec.space === 'beanstalk'){ place('bnStalkFoot', archX, -4.5, 3, 14, { w:6, d:6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // up the beanstalk into the clouds
@@ -878,8 +886,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6, lnheatherlow:0.6, lnboulderlow:0.8, hmrocklow:0.8, hmjuniperlow:0.7 };
-var LOWH = { bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3, lnheatherlow:1.1, lnboulderlow:1.2, hmrocklow:1.2, hmjuniperlow:1.3 };
+var LOWR = { pffernlow:1, pfstumplow:0.9, pfmosslow:1, bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6, lnheatherlow:0.6, lnboulderlow:0.8, hmrocklow:0.8, hmjuniperlow:0.7 };
+var LOWH = { pffernlow:1.4, pfstumplow:1.1, pfmosslow:1.2, bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3, lnheatherlow:1.1, lnboulderlow:1.2, hmrocklow:1.2, hmjuniperlow:1.3 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -898,7 +906,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'], lookingglass:['A chest. Its lock is on the other side.'], beanstalk:['A chest, as big as a giant’s boot.'], mississippi:['A chest, washed up on the bank.'], lochness:['A chest, half sunk in the heather.'], himalayas:['A chest, frozen into the snow. Somebody left it on the way up.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'], lookingglass:['A chest. Its lock is on the other side.'], beanstalk:['A chest, as big as a giant’s boot.'], mississippi:['A chest, washed up on the bank.'], lochness:['A chest, half sunk in the heather.'], himalayas:['A chest, frozen into the snow. Somebody left it on the way up.'], pacific:['A chest under the ferns. Moss all over it.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -928,11 +936,12 @@ var SECRET_SAY = {
   mississippi:'There is a robbers’ cave on this trail. A secret hole, they say.',
   lochness:'The old boathouse is somewhere on this trail. They say there is a hole inside.',
   himalayas:'There is a cave in the ice somewhere on this trail. They say a hole is inside, and prints.',
+  pacific:'There is a cedar on this trail so old it is hollow. They say a hole is inside it.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave', underworld:'cave', wonderland:'secretdoor', lookingglass:'secretdoor', beanstalk:'secretdoor', mississippi:'cave', lochness:'cave', himalayas:'cave', olympus:'secretdoor' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave', underworld:'cave', wonderland:'secretdoor', lookingglass:'secretdoor', beanstalk:'secretdoor', mississippi:'cave', lochness:'cave', himalayas:'cave', pacific:'cave', olympus:'secretdoor' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -1419,6 +1428,7 @@ var LIFE = {
   mississippi:{ fly:['song', 3], mote:[['butter', 8], ['firefly', 4]] },
   lochness:{ fly:['gull', 2], mote:[['dust', 2], ['butter', 4]] },
   himalayas:{ fly:['crow', 2], mote:[['snow', 30]] },
+  pacific:{ fly:['song', 3], mote:[['leaf', 12]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -1783,6 +1793,19 @@ function run(box, P, pic, api){
      a flipper turning. It is drawn small and soft, the way she is always seen, and it is gone once the photo is taken. */
   function drawGlimpse(t, now){ var gx = t.x + (t.x < P.near(t.x, t.y)[0] ? -2.4 : 2.4), gy = t.y - 1.6, z0 = pic.zAt(gx, gy), c = scr(gx, gy, z0), k = t.pic || 'humps', up = 0.65 + 0.35 * Math.sin(now * 1.1 + t.x);
     var e0 = scr(gx - 2.2, gy, z0), e1 = scr(gx, gy - 1.1, z0), rx = Math.abs(c[0] - e0[0]), ry = Math.max(2, Math.abs(c[1] - e1[1])); var s = Math.max(kk, rx / 12);
+    /* the Pacific Forest's glimpses are in the woods, not in a pool: a patch of creek mud with one huge bare print in it, a tall dark
+       shape between two trunks that steps back out of sight, a trail camera's grey frame with something in it, and a tree that is
+       knocked on, the rings of the knock going out from it */
+    if (k === 'mud' || k === 'trees' || k === 'trailcam' || k === 'knock'){ ctx.fillStyle = 'rgba(70,52,34,.92)'; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(40,70,40,.7)'; ctx.lineWidth = Math.max(1, s * 0.6); ctx.stroke();
+      var hair = '#2a201a';
+      if (k === 'mud'){ var fq = scr(gx, gy, z0); ctx.fillStyle = 'rgba(30,20,12,' + (0.55 + 0.35 * up).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(fq[0], fq[1] + s, s * 1.6, s * 3.4, 0, 0, 7); ctx.fill(); for (var ti = 0; ti < 5; ti++){ ctx.beginPath(); ctx.arc(fq[0] - s * 1.6 + ti * s * 0.8, fq[1] - s * 3.2 + Math.abs(ti - 1.5) * s * 0.3, s * 0.45, 0, 7); ctx.fill(); } }
+      else if (k === 'trees'){ var tb = scr(gx + 0.4, gy - 0.6, z0 + 0.8 + 1.2 * up), ts = s * 2.6; ctx.fillStyle = '#5a2e1a'; ctx.fillRect(Math.round(c[0] - rx * 0.9), Math.round(c[1] - ry * 6), Math.round(s * 3), Math.round(ry * 6)); ctx.fillRect(Math.round(c[0] + rx * 0.55), Math.round(c[1] - ry * 6), Math.round(s * 3), Math.round(ry * 6));
+        ctx.fillStyle = hair; ctx.beginPath(); ctx.ellipse(tb[0], tb[1], ts * 1, ts * 1.9, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(tb[0], tb[1] - ts * 2.2, ts * 0.7, 0, 7); ctx.fill(); }
+      else if (k === 'trailcam'){ var cq = scr(gx, gy, z0 + 1.6); ctx.fillStyle = 'rgba(200,210,200,.9)'; ctx.fillRect(Math.round(cq[0] - s * 6), Math.round(cq[1] - s * 4.5), Math.round(s * 12), Math.round(s * 9)); ctx.fillStyle = 'rgba(60,66,60,' + (0.4 + 0.5 * up).toFixed(2) + ')';
+        ctx.beginPath(); ctx.ellipse(cq[0] - s * 1.5, cq[1] + s * 0.6, s * 1.3, s * 2.6, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(cq[0] - s * 1.4, cq[1] - s * 2.6, s * 0.9, 0, 7); ctx.fill(); }
+      else { var kq = scr(gx, gy, z0); ctx.fillStyle = '#4a2a1a'; ctx.fillRect(Math.round(kq[0] - s * 1.5), Math.round(kq[1] - ry * 7), Math.round(s * 3), Math.round(ry * 7)); ctx.strokeStyle = 'rgba(232,236,216,' + (0.3 + 0.5 * up).toFixed(2) + ')'; ctx.lineWidth = Math.max(1, s * 0.7);
+        for (var ri = 0; ri < 3; ri++){ ctx.beginPath(); ctx.arc(kq[0], kq[1] - ry * 3, s * (3 + ri * 3 + up * 2), -0.7, 0.7); ctx.stroke(); ctx.beginPath(); ctx.arc(kq[0], kq[1] - ry * 3, s * (3 + ri * 3 + up * 2), Math.PI - 0.7, Math.PI + 0.7); ctx.stroke(); } }
+      return; }
     /* the Himalayas' glimpses are on the snow, not in a pool: a drift of new snow with a line of huge prints across it, a shaggy shape
        standing up behind it and ducking down again, a tuft of pale hair on a rock lifting in the wind, the rings of a far roar */
     if (k === 'prints' || k === 'ridge' || k === 'fur' || k === 'roar'){ ctx.fillStyle = 'rgba(246,250,255,.95)'; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(150,180,210,.7)'; ctx.lineWidth = Math.max(1, s * 0.6); ctx.stroke();
@@ -2550,7 +2573,7 @@ function run(box, P, pic, api){
     // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
     if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
-    label = P.gate && P.gate.pad ? (P.spec.space === 'plane' ? 'The seaplane' : P.spec.space === 'loch' ? 'The steamboat' : P.spec.space === 'beanstalk' || P.spec.space === 'river' ? 'The beanstalk' : P.spec.space === 'glass' ? 'The looking-glass' : P.spec.space === 'fall' ? 'The rabbit hole' : P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
+    label = P.gate && P.gate.pad ? (P.spec.space === 'plane' || P.spec.space === 'forest' ? 'The seaplane' : P.spec.space === 'loch' ? 'The steamboat' : P.spec.space === 'beanstalk' || P.spec.space === 'river' ? 'The beanstalk' : P.spec.space === 'glass' ? 'The looking-glass' : P.spec.space === 'fall' ? 'The rabbit hole' : P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
     cls(pin, 'on', false); cls(way, 'on', true); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
     put(way.style, 'left', Math.round(cxs + vx * s2) + 'px'); put(way.style, 'top', Math.round(cys + vy * s2) + 'px'); put(wayI.style, 'transform', 'rotate(' + Math.round(Math.atan2(vy, vx) * 180 / Math.PI + 90) + 'deg)');
@@ -4678,6 +4701,94 @@ BUILD.hmSeaplane = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(d
 BUILD.hmSeaplaneLm = BUILD.hmSeaplane;
 LMSIZE.hmTentLm = [4, 3.4, 2.4]; LMSIZE.hmCairnLm = [2.2, 2.2, 2.6]; LMSIZE.hmBoulderLm = [4, 3.4, 3]; LMSIZE.hmFlagsLm = [7, 1, 4.2]; LMSIZE.hmTeaHouse = [8, 5, 4.6];
 LMSIZE.hmYakLm = [4.4, 2, 2.4]; LMSIZE.hmSeracLm = [3, 2.6, 6]; LMSIZE.hmCrateLm = [3, 2, 2.4]; LMSIZE.hmSeaplane = [11, 9, 4]; LMSIZE.hmSeaplaneLm = [11, 9, 4];
+/* ---- the Pacific Forest's stops on the walk, the same places its holes stand in (land.js): the logging road where the truck sets
+   the expedition down, the ranger's cabin, the fire lookout, the creek, the old logging camp, the mill ruins, the waterfall, the
+   flume and the deep woods. An original stretch of old growth, nobody's real forest, town or camp. The forest floor is moss and
+   needles in warped greens, the old road's trodden earth follows its own noise: never a grid. */
+GPAT.pfFloor = function(c){ var a = vn(c.ti * 0.04, c.tj * 0.04, 1501), b = vn(c.ti * 0.012, c.tj * 0.012, 1502), st = hash(c.ti, c.tj, 1503);
+  if (st > 0.994) return '#e8e8d0'; if (st > 0.975) return '#7ab04a'; if (st < 0.015) return '#6a4a2a'; return b > 0.66 ? (a > 0.55 ? '#2e5a2e' : '#386a34') : a > 0.64 ? '#467a3c' : a < 0.3 ? '#2a4e2a' : '#3e7038'; };
+GPAT.pfNeedles = function(c){ var w = vn(c.ti * 0.012, c.tj * 0.012, 1504), b = vn(c.ti * 0.05, c.tj * 0.05, 1505), st = hash(c.ti, c.tj, 1506); if (w < 0.5) return GPAT.pfFloor(c);
+  if (w < 0.54) return b > 0.5 ? '#5a6a34' : '#4a5a2e'; return st > 0.92 ? '#a8784e' : b > 0.6 ? '#7a5a3a' : b < 0.32 ? '#5a4028' : '#6a4a30'; };
+TREEH.pffir = [18, 6, 3.2];
+// a great fir of the old growth: a long bare trunk of red brown bark, then a narrow dark crown in drooping tiers
+BUILD.pffir = function(B, t, i){ var kx = kitOf(t.th), x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R0 = t.cr, lv = kx.leaves;
+  B.solid(x - R0, y - R0, zb, x + R0, y + R0, zb + H, function(px, py, pz){ var rr = Math.hypot(px - x, py - y), h = (pz - zb) / H;
+    if (h < 0.34) return rr < 0.6 - h * 0.4 ? (vn(px * 4, pz * 1.5, i) > 0.5 ? '#6a3a22' : '#4a2a1a') : null; var tier = (h - 0.34) / 0.66 * 5, f = tier - Math.floor(tier), rad = R0 * (1 - (h - 0.34) / 0.66) * (0.55 + 0.55 * (1 - f)); if (rr < 0.4) return '#4a2a1a'; if (rr > rad) return null;
+    return ((Math.floor(pz * 2.4) + Math.floor(px * 2.4)) % 3) ? lv[0] : f > 0.7 ? lv[2] : lv[1]; }, 0.25); };
+KIT['pacific~road'] = kitFrom(KIT.pacific, { gpat:'pfNeedles', nlm:3, dens:0.4, lm:['pfTruckLm', 'pfLogsLm', 'pfStumpLm'] });
+KIT['pacific~cabin'] = kitFrom(KIT.pacific, { nlm:3, dens:0.45, lm:['pfCabinLm', 'pfLogsLm', 'pfCedarLm'] });
+KIT['pacific~lookout'] = kitFrom(KIT.pacific, { nlm:3, dens:0.35, lm:['pfLookoutLm', 'pfStumpLm', 'pfCedarLm'] });
+KIT['pacific~creek'] = kitFrom(KIT.pacific, { nlm:3, dens:0.45, lm:['pfCedarLm', 'pfStumpLm', 'pfTrailCamLm'] });
+KIT['pacific~camp'] = kitFrom(KIT.pacific, { gpat:'pfNeedles', nlm:3, dens:0.35, lm:['pfLogsLm', 'pfLogsLm', 'pfStumpLm'] });
+KIT['pacific~mill'] = kitFrom(KIT.pacific, { gpat:'pfNeedles', nlm:3, dens:0.35, lm:['pfMillLm', 'pfLogsLm', 'pfFlumeLm'] });
+KIT['pacific~falls'] = kitFrom(KIT.pacific, { nlm:3, dens:0.4, lm:['pfFallsLm', 'pfCedarLm', 'pfStumpLm'] });
+KIT['pacific~flume'] = kitFrom(KIT.pacific, { nlm:3, dens:0.4, lm:['pfFlumeLm', 'pfFlumeLm', 'pfTrailCamLm'] });
+KIT['pacific~deep'] = kitFrom(KIT.pacific, { nlm:3, dens:0.55, lm:['pfCedarLm', 'pfCedarLm', 'pfTrailCamLm'] });
+LIFE_AS['pacific~road'] = { fly:['crow', 2], mote:[['dust', 10]] };
+LIFE_AS['pacific~cabin'] = { fly:['song', 3], mote:[['leaf', 10]] };
+LIFE_AS['pacific~lookout'] = { fly:['crow', 2], mote:[['leaf', 8]] };
+LIFE_AS['pacific~creek'] = { fly:['song', 3], mote:[['leaf', 12]] };
+LIFE_AS['pacific~camp'] = { fly:['crow', 2], mote:[['dust', 8], ['leaf', 6]] };
+LIFE_AS['pacific~mill'] = { fly:['crow', 2], mote:[['dust', 8]] };
+LIFE_AS['pacific~falls'] = { fly:['song', 2], mote:[['leaf', 10]] };
+LIFE_AS['pacific~flume'] = { fly:['song', 2], mote:[['leaf', 12]] };
+LIFE_AS['pacific~deep'] = { fly:['crow', 1], mote:[['leaf', 16]] };
+// a sword fern by the path, a cut stump, and a mossy rock
+BUILD.pffernlow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.9, y - 0.9, zb, x + 0.9, y + 0.9, zb + 1.3, function(px, py, pz){ var tt = pz - zb, dx = px - x, dy = py - y, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx), top = 1.25 * (1 - Math.pow(r / 0.88, 2));
+    if (r > 0.88 || tt > top || Math.abs(Math.sin(a * 3.5 + i)) < 0.35) return null; return tt > top - 0.18 ? '#4e9a3e' : vn(px * 7, py * 7, i) > 0.5 ? '#3e8a34' : '#2e6a2a'; }, 0.125); };
+BUILD.pfstumplow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.8, y - 0.8, zb, x + 0.8, y + 0.8, zb + 1, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, py - y), w = 0.62 + Math.max(0, 0.25 - tt) * 0.6; if (r > w) return null;
+    if (tt > 0.86) return Math.abs(((r * 6) % 1) - 0.5) < 0.14 ? '#a8784e' : '#d8b07a'; return tt > 0.5 && vn(px * 5, py * 5, i) > 0.62 ? '#5a9a3a' : vn(px * 6 + pz, py * 6, i) > 0.5 ? '#6a3a22' : '#5a2e1a'; }, 0.125); };
+BUILD.pfmosslow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.8, y - 0.8, zb, x + 0.8, y + 0.8, zb + 1.1, function(px, py, pz){ var tt = pz - zb, e = Math.hypot((px - x) / 0.75, (py - y) / 0.6, tt / 1.0) + (vn(px * 3, py * 3 + pz, i) - 0.5) * 0.2; if (e > 1) return null;
+    return tt > 0.45 ? (vn(px * 5, py * 5, i) > 0.4 ? '#5a9a3a' : '#7ab04a') : e > 0.86 ? '#4a4a44' : '#7a7a72'; }, 0.125); };
+// a giant cedar of the old growth: a vast fluted red trunk flaring at its foot, its crown out of sight above
+BUILD.pfCedarLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var a = Math.atan2(dy, dx), r = Math.hypot(dx, dy), w = (t.w / 2 - 0.4) * (0.62 + 0.38 * Math.exp(-tt * 0.9)) * (1 + Math.sin(a * 9 + i) * 0.06);
+  if (tt > t.h - 5){ var cr = (t.w / 2) * (0.6 + 0.4 * Math.sin((tt - t.h + 5) * 1.4)); if (r > cr) return null; return vn(dx * 2, tt * 2 + dy, i) > 0.5 ? '#2a5230' : '#1e3f26'; }
+  if (r > w) return null; return Math.abs(Math.sin(a * 9 + i)) < 0.12 ? '#5a2e1a' : tt < 1.6 && vn(dx * 3, dy * 3, i) > 0.55 ? '#5a9a3a' : vn(a * 3, tt * 0.8, i) > 0.5 ? '#b8603a' : '#8e4628'; }); };
+// a great cut stump, its top pale with rings and the springboard notches of the old fallers in its side
+BUILD.pfStumpLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), w = (t.w / 2 - 0.3) * (1 + Math.max(0, 0.6 - tt) * 0.3); if (r > w) return null;
+  if (tt > t.h - 0.2) return Math.abs(((r * 3) % 1) - 0.5) < 0.12 ? '#a8784e' : '#d8b07a'; if (dx > w - 0.5 && Math.abs(tt - t.h * 0.5) < 0.25) return '#2a160c';
+  return tt > t.h * 0.6 && vn(dx * 2, dy * 2, i) > 0.62 ? '#5a9a3a' : vn(dx * 3 + tt, dy * 3, i) > 0.5 ? '#6a3a22' : '#5a2e1a'; }); };
+// a stack of cut logs seen end on, their pale ends ringed
+BUILD.pfLogsLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dx) > t.w / 2 - 0.2) return null; var R = 0.55;
+  for (var row = 0; row < 3; row++){ var n = 3 - row; for (var j = 0; j < n; j++){ var cy = (j - (n - 1) / 2) * R * 2, cz = R + row * R * 1.72, d = Math.hypot(dy - cy, tt - cz); if (d < R){
+    if (Math.abs(dx) > t.w / 2 - 0.45) return Math.abs(((d * 6) % 1) - 0.5) < 0.14 ? '#a8784e' : '#d8b07a'; return vn(dx * 3, tt * 5, i + j) > 0.5 ? '#6a4428' : '#5a3a22'; } } }
+  return null; }); };
+// the ranger's log cabin: walls of round logs, a green tin roof, a stone chimney, a lit window and the door
+BUILD.pfCabinLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2, wallH = t.h * 0.56;
+  if (Math.abs(dx - hw * 0.6) < 0.4 && Math.abs(dy) < 0.4 && tt < t.h) return vn(dx * 4, tt * 4, i) > 0.5 ? '#7a7a72' : '#5a5a54';
+  if (tt < wallH){ if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null; if (dy > hd - 0.25){ if (Math.abs(dx) < 0.6 && tt < 2) return '#3a2616'; if (Math.abs(dx - 2) < 0.55 && tt > 1 && tt < 1.9) return '#f4e2a0'; }
+    return ((tt * 2.6) % 1) < 0.16 ? '#3a2616' : Math.abs(dx) > hw - 0.3 ? '#c8a070' : '#9a6a42'; }
+  var roof = wallH + (hd + 0.3 - Math.abs(dy)) * 0.8; if (tt > roof || Math.abs(dx) > hw + 0.3 || Math.abs(dy) > hd + 0.3) return null; return tt > roof - 0.25 ? '#5a6a44' : '#3e5a34'; }); };
+// the fire lookout: a little cab with windows all round on four tall timber legs, braced, and its pointed roof
+BUILD.pfLookoutLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var cab = t.h - 3.2;
+  if (tt < cab){ var w = t.w / 2 - 0.4 - tt * 0.06; if (Math.abs(Math.abs(dx) - w) < 0.16 && Math.abs(Math.abs(dy) - w) < 0.16) return '#6a4a32'; if (Math.abs(Math.abs(dx) - w) < 0.1 && Math.abs(dy) < w && Math.abs(((tt + dy * 0.7) % 2.4) - 1.2) < 0.1) return '#5a3a22'; return null; }
+  if (tt < cab + 2){ if (Math.abs(dx) > 1.6 || Math.abs(dy) > 1.6) return null; return tt > cab + 0.6 && tt < cab + 1.7 && Math.max(Math.abs(dx), Math.abs(dy)) > 1.4 && (Math.abs(dx) < 1.3 || Math.abs(dy) < 1.3) ? '#c8e0d8' : '#8a6040'; }
+  var roof = cab + 2 + (1.9 - Math.max(Math.abs(dx), Math.abs(dy))) * 0.7; if (Math.abs(dx) > 1.9 || Math.abs(dy) > 1.9 || tt > roof) return null; return '#5a2e1a'; }); };
+// a waterfall down a mossy rock face into its pool, white water in the middle
+BUILD.pfFallsLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var w = t.w / 2 - 0.3 - tt * 0.12 + (vn(tt * 1.2, dx, i) - 0.5) * 0.8; if (Math.abs(dx) > w || Math.abs(dy) > t.d / 2 - 0.2) return null;
+  if (dy > t.d / 2 - 0.9 - tt * 0.05 && Math.abs(dx) < 1.1) return vn(dx * 3, tt * 4, i) > 0.45 ? '#e8f4f0' : '#9ac8c4'; if (tt < 0.4) return '#24484a'; return vn(dx * 3, tt * 3, i + 3) > 0.62 ? '#5a9a3a' : '#5a5a54'; }); };
+// a run of the loggers' wooden flume on its trestle, water in its trough
+BUILD.pfFlumeLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var top = t.h - 1;
+  if (tt > top){ if (Math.abs(dy) > 0.7) return null; return Math.abs(dy) < 0.45 && tt > top + 0.5 ? '#5aa0b4' : '#9a6a42'; }
+  if (Math.abs(((dx + t.w) % 1.8) - 0.9) < 0.14 && Math.abs(Math.abs(dy) - 0.5) < 0.14) return '#6a4428'; if (Math.abs(tt - top * 0.5) < 0.1 && Math.abs(Math.abs(dy) - 0.5) < 0.1) return '#5a3a22'; return null; }); };
+// the mossy concrete footing of the old mill, rusted bolts standing out of it
+BUILD.pfMillLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.3, hd = t.d / 2 - 0.3; if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null; var lvl = Math.abs(dx) < hw * 0.4 ? t.h : t.h * 0.55;
+  if (tt > lvl) return Math.abs(((dx + 9) % 1.6) - 0.8) < 0.08 && Math.abs(dy) < 0.08 && tt < lvl + 0.5 ? '#8a4a2a' : null; if (tt > lvl - 0.3 && vn(dx * 2, dy * 2, i) > 0.4) return '#5a8a3a'; return vn(dx * 3, tt * 3 + dy, i) > 0.6 ? '#8a8a82' : '#a8a8a0'; }); };
+// a trail camera strapped to a post at knee height, its little dark lens and its red light
+BUILD.pfTrailCamLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.hypot(dx, dy) < 0.22) return '#6a4428';
+  if (tt > 0.9 && tt < 1.7 && Math.abs(dx) < 0.36 && dy > 0.1 && dy < 0.5){ if (dy > 0.42 && Math.hypot(dx, tt - 1.35) < 0.12) return '#0e1418'; if (dy > 0.42 && Math.abs(dx - 0.22) < 0.05 && Math.abs(tt - 1.6) < 0.05) return '#e83a2a'; return '#4a5a3a'; } return null; }); };
+// the logging truck that brought the expedition up the road: an orange cab and a load of logs on its bed
+BUILD.pfTruck = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.3, hd = t.d / 2 - 0.3;
+  if (tt < 0.9) return Math.abs(Math.abs(dy) - hd + 0.3) < 0.3 && [-hw + 1.2, -hw + 3.1, hw - 1.4].some(function(w){ return Math.hypot(dx - w, tt - 0.55) < 0.55; }) ? '#1e1e1e' : null;
+  if (Math.abs(dy) > hd) return null; if (dx > hw - 2.8){ if (dx > hw || tt > 3.2) return null; return tt > 2.1 && dx < hw - 0.8 ? '#c8e0f0' : '#d8582a'; }
+  if (tt < 1.3) return dx > -hw ? '#2a2a2a' : null; for (var j = 0; j < 3; j++){ var d = Math.hypot(dy - (j - 1) * 0.85, tt - 1.75); if (d < 0.42) return dx < -hw + 0.4 || dx > hw - 3.2 ? '#d8b07a' : '#6a4428'; }
+  return Math.abs(dx + hw - 0.2) < 0.12 || Math.abs(dx - hw + 3.1) < 0.12 ? (tt < 3 ? '#3a3a3a' : null) : null; }); };
+BUILD.pfTruckLm = BUILD.pfTruck;
+LMSIZE.pfCedarLm = [5, 5, 22]; LMSIZE.pfStumpLm = [3.6, 3.6, 2.6]; LMSIZE.pfLogsLm = [4.4, 3.6, 2.8]; LMSIZE.pfCabinLm = [8, 6, 5]; LMSIZE.pfLookoutLm = [5, 5, 12];
+LMSIZE.pfFallsLm = [6, 3, 7]; LMSIZE.pfFlumeLm = [8, 2, 4]; LMSIZE.pfMillLm = [6, 4, 2.4]; LMSIZE.pfTrailCamLm = [1.2, 1.2, 1.8]; LMSIZE.pfTruck = [10, 3.6, 3.6]; LMSIZE.pfTruckLm = [10, 3.6, 3.6];
 /* ---- Loch Ness's stops on the walk, the same places its holes stand in (land.js): the timber pier where the steamer puts in, the
    crofts and their peat stacks, the ring of standing stones on the moor, the ruined keep on its headland, the mist on the water,
    the lighthouse on its rock and the deep water. An original Highland loch, nobody's real castle or village. The turf is soft warped
@@ -5277,6 +5388,62 @@ Object.assign(FOLK3D, {
     var d = Math.hypot(u, v, t - 2.05);
     if (d < 0.21){ if (u > 0.15 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.08) < 0.035) return '#1a1410'; return u < -0.06 ? '#3a2418' : '#e0b090'; }
     if (t >= 2.1 && Math.hypot(u + 0.02, v, (t - 2.08) * 1.3) < 0.27 && t < 2.36) return '#f4f4ec';   // her helmet
+    return null; } }
+});
+/* THE FOLK OF THE PACIFIC FOREST (putt.js FOLK.pacific; Dr. Quill is GREETERS.pacific.folk again, and waits on the walk to the
+   seventeenth). Nobody real, and no film's or brand's look: the forest ranger in a green shirt and a flat brimmed hat with a radio on
+   her belt; the fire-lookout keeper in a plaid wool shirt with binoculars round his neck; the old logger in braces and a hard hat
+   with an axe over his shoulder; the trail-camera hobbyist in a camouflage jacket holding up a camera; and the kid from the campsite
+   in a yellow rain jacket with a flashlight. */
+Object.assign(FOLK3D, {
+  ranger:{ r:0.9, h:3.2, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.16 && el3(u, av, t, 0.06, 0.12, 0.07, 0.17, 0.1, 0.09) <= 1) return '#3a2a1a';
+    if (cap3(u, av, t, [0, 0.13, 0.12], [0, 0.13, 0.92], 0.1)) return '#5a4a32';
+    if (t >= 0.85 && t < 2.05 && el3(u, v, t, 0, 0, 1.45, 0.26, 0.31, 0.64) <= 1) return Math.abs(t - 1.0) < 0.06 ? '#3a2a1a' : Math.abs(t - 1.02) < 0.1 && u > 0.1 && v > 0.12 ? '#1e1e1e' : u > 0.16 && Math.abs(v - 0.14) < 0.07 && Math.abs(t - 1.75) < 0.07 ? '#e8c040' : '#4a6a3a';
+    if (cap3(u, av, t, [0, 0.3, 1.9], [0.14, 0.33, 1.3], 0.075)) return '#4a6a3a';
+    var d = Math.hypot(u, v, t - 2.33);
+    if (d < 0.22){ if (u > 0.15 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.36) < 0.035) return '#1a1410'; return u < -0.08 ? '#6a3a1e' : '#c89068'; }
+    if (t >= 2.44 && t < 2.49 && Math.hypot(u, v) < 0.38) return '#8a6a3a'; if (t >= 2.49 && t < 2.7 && Math.hypot(u, v) < 0.2) return Math.abs(v) < 0.03 ? '#6a4a2a' : '#8a6a3a';   // the flat brimmed hat
+    return null; } },
+  lookout:{ r:0.95, h:3.2, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.16 && el3(u, av, t, 0.06, 0.12, 0.07, 0.18, 0.1, 0.09) <= 1) return '#2a1e14';
+    if (cap3(u, av, t, [0, 0.13, 0.12], [0, 0.13, 0.92], 0.1)) return '#3a4a5a';
+    if (t >= 0.85 && t < 2.05 && el3(u, v, t, 0, 0, 1.45, 0.27, 0.32, 0.64) <= 1) return (Math.floor(t * 8) + Math.floor((v + 1) * 8)) % 2 ? '#a8302a' : '#2a1e1e';   // the plaid wool shirt
+    if (el3(u, v, t, 0.26, 0, 1.72, 0.08, 0.16, 0.08) <= 1) return '#1e1e1e'; if (cap3(u, v, t, [0.2, -0.12, 1.75], [0.12, -0.1, 2.12], 0.015) || cap3(u, v, t, [0.2, 0.12, 1.75], [0.12, 0.1, 2.12], 0.015)) return '#1e1e1e';   // binoculars on their strap
+    if (cap3(u, av, t, [0, 0.3, 1.9], [0.14, 0.34, 1.3], 0.08)) return '#a8302a';
+    var d = Math.hypot(u, v, t - 2.35);
+    if (d < 0.23){ if (u > 0.16 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.38) < 0.035) return '#1a1410'; if (u > 0.08 && t < 2.3) return '#8a8a82'; return u < -0.08 ? '#8a8a82' : '#d8a07a'; }   // a grey beard
+    if (t >= 2.46 && t < 2.62 && Math.hypot(u + 0.02, v) < 0.24) return '#3a3a3a';
+    return null; } },
+  logger:{ r:0.95, h:3.3, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.18 && el3(u, av, t, 0.06, 0.12, 0.08, 0.18, 0.11, 0.1) <= 1) return '#1e1610';   // his caulk boots
+    if (cap3(u, av, t, [0, 0.13, 0.14], [0, 0.13, 0.95], 0.11)) return '#3a4a6a';
+    if (t >= 0.85 && t < 2.05 && el3(u, v, t, 0, 0, 1.45, 0.28, 0.33, 0.64) <= 1) return Math.abs(av - 0.15) < 0.03 && u > 0 ? '#c8302a' : '#c8b898';   // the braces over a pale shirt
+    if (cap3(u, av, t, [0, 0.31, 1.9], [0.15, 0.35, 1.3], 0.085)) return '#c8b898';
+    if (cap3(u, v, t, [-0.1, 0.36, 1.25], [-0.2, 0.2, 2.5], 0.03)) return '#8a6040'; if (el3(u, v, t, -0.2, 0.16, 2.55, 0.06, 0.18, 0.1) <= 1) return '#8a8e96';   // the axe over his shoulder
+    var d = Math.hypot(u, v, t - 2.38);
+    if (d < 0.24){ if (u > 0.16 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.41) < 0.035) return '#1a1410'; return u < -0.1 ? '#8a8a82' : '#c08a62'; }
+    if (t >= 2.5 && t < 2.72 && Math.hypot(u, v) < 0.3 - (t - 2.5) * 0.5) return '#e8a020'; if (t >= 2.48 && t < 2.52 && Math.hypot(u - 0.08, v) < 0.34) return '#e8a020';   // his hard hat
+    return null; } },
+  camhob:{ r:0.9, h:3.1, at:function(u, v, t){ var av = Math.abs(v), cam = vn(u * 6 + t * 4, v * 6, 3);
+    if (t < 0.16 && el3(u, av, t, 0.06, 0.12, 0.07, 0.17, 0.1, 0.09) <= 1) return '#2a2a2a';
+    if (cap3(u, av, t, [0, 0.13, 0.12], [0, 0.13, 0.9], 0.1)) return '#4a4a3a';
+    if (t >= 0.85 && t < 2.0 && el3(u, v, t, 0, 0, 1.42, 0.26, 0.31, 0.62) <= 1) return cam > 0.62 ? '#3a4a2a' : cam < 0.36 ? '#7a6a4a' : '#5a6a3a';   // the camouflage jacket
+    if (el3(u, v, t, 0.36, -0.16, 1.7, 0.12, 0.14, 0.12) <= 1) return Math.hypot(v + 0.16, t - 1.7) < 0.05 && u > 0.4 ? '#0e1418' : '#2a3a2a';   // the camera he holds up
+    if (cap3(u, av, t, [0, 0.3, 1.85], [0.3, 0.2, 1.62], 0.075)) return '#5a6a3a';
+    var d = Math.hypot(u, v, t - 2.28);
+    if (d < 0.22){ if (u > 0.15 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.31) < 0.035) return '#1a1410'; return u < -0.08 ? '#3a2418' : '#a8744e'; }
+    if (t >= 2.36 && t < 2.56 && Math.hypot(u + 0.02, v) < 0.24) return u > 0.18 && t < 2.42 ? '#3a4a2a' : '#5a6a3a';   // a cap the same
+    return null; } },
+  camper:{ r:0.75, h:2.6, k:1.05, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.05, 0.1, 0.06, 0.13, 0.08, 0.08) <= 1) return '#c8302a';   // red rubber boots
+    if (cap3(u, av, t, [0, 0.1, 0.12], [0, 0.1, 0.7], 0.075)) return '#2a3a6a';
+    if (t >= 0.65 && t < 1.6 && el3(u, v, t, 0, 0, 1.12, 0.2, 0.25, 0.5) <= 1) return Math.abs(v) < 0.02 && u > 0.1 ? '#a88a10' : '#f4c820';   // the yellow rain jacket
+    if (cap3(u, av, t, [0, 0.24, 1.45], [0.2, 0.26, 1.1], 0.06)) return '#f4c820';
+    if (cap3(u, v, t, [0.22, 0.26, 1.08], [0.42, 0.28, 1.12], 0.04)) return '#3a3a3a'; if (el3(u, v, t, 0.44, 0.28, 1.12, 0.03, 0.05, 0.05) <= 1) return '#fff2b0';   // the flashlight
+    var d = Math.hypot(u, v, t - 1.8);
+    if (d < 0.2){ if (u > 0.14 && Math.abs(av - 0.07) < 0.03 && Math.abs(t - 1.83) < 0.03) return '#1a1410'; return u < -0.05 || t > 1.93 ? '#6a3a1e' : '#e0b090'; }
+    if (t >= 1.8 && Math.hypot(u + 0.03, v, (t - 1.82) * 1.2) < 0.25 && t < 2.08 && u < 0.05) return '#f4c820';   // the hood up
     return null; } }
 });
 // a figure's build, facing f, turned 53 degrees toward the camera

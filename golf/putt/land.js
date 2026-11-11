@@ -6464,6 +6464,106 @@ window.RTT_PUTT_LAND = (function(){
       bg:'#0e1a28', gain:2,
       mats:{ hmgfloor:['#c8dcec', '#dceaf6', '#a8c4dc', 0.12, function(c, R){ var b = blot(c, 0.2, 1423), w = vn(c.ti * 0.07, c.tj * 0.07, 1424); if (Math.abs(w - 0.5) < 0.02) return R('#7aa4c8'); return R(b > 0.62 ? '#dceaf6' : b < 0.3 ? '#a8c4dc' : '#c8dcec'); }],
         hmgwall:['#7ab8dc', '#a8d4ec', '#3a78a8', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.6) return R('#2a5a88'); var n = vn(c.ti * 0.1, z * 0.6, 1425); return R(n > 0.66 ? '#bfe4f4' : n < 0.34 ? '#4a88b8' : '#7ab8dc'); }] } }; };
+  /* ---------------- THE PACIFIC FOREST IS A JOURNEY (the Cryptid Expedition, World 28): an original stretch of old growth, nobody's
+     real forest. Off the logging road where the truck sets the expedition down (1 and 2), past the ranger's cabin (3 and 4), up to
+     the fire lookout on its ridge (5 and 6), along the creek (7 and 8), through the old logging camp (9 and 10), by the mill ruins
+     (11 and 12), under the waterfall (13 and 14), along the flume (15 and 16) and into the deep woods (17 and 18). The moss and the
+     needles lie all round the course: its edge wanders on noise, the creek and the trodden earth of the old road follow their own,
+     and nothing is a grid. */
+  STOPS.pacific = [[1, 'road'], [3, 'cabin'], [5, 'lookout'], [7, 'creek'], [9, 'camp'], [11, 'mill'], [13, 'falls'], [15, 'flume'], [17, 'deep']];
+  (function(){ BUILD.pacific = function(L){ var s = L.stop; return s === 'cabin' ? pfCabinStop(L) : s === 'lookout' ? pfLookStop(L) : s === 'creek' ? pfCreekStop(L) : s === 'camp' ? pfCampStop(L) : s === 'mill' ? pfMillStop(L) : s === 'falls' ? pfFallsStop(L) : s === 'flume' ? pfFlumeStop(L) : s === 'deep' ? pfDeepStop(L) : pfRoadStop(L); }; })();
+  function pfEdge(L, x, y){ return 4.2 + fbm(x * 0.07, y * 0.07, L.seed + 1501) * 3.4; }
+  // where the forest floor gives way to the creek: a line out from the course that wanders on two scales of noise
+  function pfShore(L, x, y, o){ return (o.near || 13) + fbm(x * 0.025, y * 0.025, L.seed + 1503) * 13 + (fbm(x * 0.09, y * 0.09, L.seed + 1504) - 0.5) * 3; }
+  function pfMats(){ return {
+      pfmossy:['#386a34', '#467a3c', '#2a4e2a', 0.1, function(c, R){ if (c.rim === 1) return R('#5a8a44'); var b = blot(c, 0.15, 1505), st = hash(c.ti, c.tj, 1506);
+        if (st > 0.994) return R('#e8e8d0'); if (st > 0.975) return R('#7ab04a'); if (st < 0.02) return R('#6a4a2a'); return R(b > 0.64 ? '#467a3c' : b < 0.3 ? '#2a4e2a' : '#386a34'); }],
+      pfroad:['#7a5a3a', '#8a6a46', '#5a4028', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 1507), b = blot(c, 0.18, 1508); if (st > 0.95) return R('#a8845a'); if (st < 0.04) return R('#4a8a3e'); return R(b > 0.62 ? '#8a6a46' : b < 0.3 ? '#5a4028' : '#7a5a3a'); }],
+      pfstone:['#6a6a62', '#7a7a72', '#4a4a44', 0.1, function(c, R){ var b = blot(c, 0.3, 1509), st = hash(c.ti, c.tj, 1510); if (st > 0.9) return R('#5a8a3a'); return R(b > 0.62 ? '#7a7a72' : b < 0.3 ? '#4a4a44' : '#6a6a62'); }],
+      pfwater:['#24484a', '#3a6a6a', '#1e3e40', 0.06, function(c, R){ var b = blot(c, 0.05, 1511), st = hash(c.ti, c.tj, 1512), w = Math.sin(c.ti * 0.21 + Math.sin(c.tj * 0.07) * 2.4);
+        if (c.foam && (w > 0.55 || b > 0.72)) return R(b > 0.6 ? '#e8f4f0' : '#c8e8e0'); if (w > 0.96 && st > 0.3) return R('#c8e8e0'); return R(b > 0.65 ? '#3a6a6a' : b < 0.3 ? '#1e3e40' : '#24484a'); }] }; }
+  function pfBase(L, o){ var seed = L.seed;
+    function creekK(x, y){ var c = L.clearAt(x, y), re = pfShore(L, x, y, o); return sm(re, re + 1.4, c); }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = creekK(x, y), hill = (fbm(x * 0.05, y * 0.05, seed) - 0.4) * (o.hills || 1.6) * sm(1.3, 5, c); return hill * (1 - k) - k * 0.6; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = pfEdge(L, x, y), k = creekK(x, y);
+        if (k > 0.5) return ['pfwater', { foam:o.foam ? 1 : 0 }];
+        if (k > 0.18 || (o.stone && fbm(x * 0.06, y * 0.06, seed + 1513) > 0.64)) return ['pfstone', {}];
+        if (c < e + 0.6) return [o.road ? 'pfroad' : 'pfmossy', { rim:c > e - 0.3 ? 1 : 0 }];
+        return ['pfmossy', {}]; },
+      fill:{ on:['pfmossy'], trees:o.trees == null ? 0.05 : o.trees, lows:0.16, tree:function(B, x, y, i){ pfFirAt(B, x, y, 1.1 + hash(i, seed, 1514) * 0.5, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 1515); if (k < 0.45) pfFernAt(B, x, y, i + seed); else if (k < 0.75) pfStumpAt(B, x, y, i + seed); else pfMossRock(B, x, y, i + seed); } },
+      bg:'#16261a', gain:2, mats:pfMats() }; }
+  // a great fir, dark and tall, its red brown trunk bare a long way up; a sword fern; a cedar stump; a mossy rock
+  function pfFirAt(B, x, y, r, i){ var zb = B.gz(x, y), H = r * 7 + 2, R0 = r * 1.2;
+    B.solid(x - R0, y - R0, zb, x + R0, y + R0, zb + H + 0.2, function(px, py, pz){ var rr = Math.hypot(px - x, py - y), h = (pz - zb) / H;
+      if (h < 0.3) return rr < 0.32 ? (vn(px * 6, pz * 2, i) > 0.5 ? '#6a3a22' : '#4a2a1a') : null; var tier = (h - 0.3) / 0.7 * 4, f = tier - Math.floor(tier), rad = R0 * (1 - (h - 0.3) / 0.7) * (0.6 + 0.5 * (1 - f)); if (rr > rad) return null;
+      return (Math.floor(pz * 4) + i) % 3 ? '#16301e' : (px < x ? '#2a5230' : '#1e3f26'); }, B.ART); }
+  function pfFernAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 1, y - 1, zb, x + 1, y + 1, zb + 1.1, function(px, py, pz){ var t = pz - zb, dx = px - x, dy = py - y, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx), lf = Math.abs(Math.sin(a * 3.5 + k)), top = 1.05 * (1 - Math.pow(r / 0.95, 2));
+      if (r > 0.95 || t > top || lf < 0.35) return null; return t > top - 0.15 ? '#4e9a3e' : vn(px * 7, py * 7, k) > 0.5 ? '#3e8a34' : '#2e6a2a'; }, 0.125); }
+  function pfStumpAt(B, x, y, k){ var zb = B.gz(x, y), s = 0.6 + hash(k, 3, 1517) * 0.5, H = 0.9 + hash(k, 4, 1518) * 0.6;
+    B.solid(x - s - 0.2, y - s - 0.2, zb, x + s + 0.2, y + s + 0.2, zb + H, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y), w = s * (1 + Math.max(0, 0.3 - t) * 0.8); if (r > w) return null;
+      if (t > H - 0.12) return Math.abs(((r * 5) % 1) - 0.5) < 0.14 ? '#a8784e' : '#d8b07a'; return t > H - 0.5 && vn(px * 4, py * 4, k) > 0.62 ? '#5a9a3a' : vn(px * 6 + pz, py * 6, k + 1) > 0.5 ? '#6a3a22' : '#5a2e1a'; }); }
+  function pfMossRock(B, x, y, k){ var zb = B.gz(x, y), s = 0.7 + hash(k, 3, 1519) * 0.6;
+    B.solid(x - s, y - s, zb, x + s, y + s, zb + s * 1.3, function(px, py, pz){ var t = pz - zb, e = Math.hypot((px - x) / s, (py - y) / (s * 0.8), t / (s * 1.2)) + (vn(px * 3, py * 3 + pz, k) - 0.5) * 0.2; if (e > 1) return null;
+      return t > s * 0.55 ? (vn(px * 5, py * 5, k) > 0.4 ? '#5a9a3a' : '#7ab04a') : e > 0.86 ? '#4a4a44' : '#7a7a72'; }); }
+  // a stack of cut logs, the ranger's cabin, the fire lookout on its legs, a waterfall over its rocks, the flume on its trestle, the logging truck
+  function pfLogsAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 2.6, y - 1.5, zb, x + 2.6, y + 1.5, zb + 2.2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 2.5) return null;
+      for (var j = 0; j < 6; j++){ var row = j < 3 ? 0 : j < 5 ? 1 : 2, cy = (j - [1, 1, 1, 3.5, 3.5, 5][j]) * 0.95 + (row === 1 ? 0 : 0), cz = 0.48 + row * 0.82, d = Math.hypot(dy - (row === 0 ? (j - 1) * 0.95 : row === 1 ? (j - 3.5) * 0.95 : 0), t - cz);
+        if (d < 0.46) return Math.abs(dx) > 2.38 ? (Math.abs(((d * 7) % 1) - 0.5) < 0.14 ? '#a8784e' : '#d8b07a') : vn(px * 3, pz * 5, k + j) > 0.5 ? '#6a4428' : '#5a3a22'; }
+      return null; }); }
+  function pfCabinAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4, y - 3, zb, x + 4, y + 3, zb + 5, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 2.8){ if (Math.abs(dx) > 3.6 || Math.abs(dy) > 2.6) return null; if (dy > 2.4 && Math.abs(dx) < 0.6 && t < 2.1) return '#3a2616'; if (dy > 2.4 && Math.abs(dx - 2) < 0.5 && t > 1 && t < 1.9) return '#f4e2a0';
+        return ((t * 2.6) % 1) < 0.16 ? '#3a2616' : Math.abs(dx) > 3.4 ? '#c8a070' : '#9a6a42'; }
+      var roof = 2.8 + (2.9 - Math.abs(dy)) * 0.75; if (Math.abs(dx) > 3.9 || Math.abs(dy) > 2.9 || t > roof) return null; if (Math.abs(dx - 2.2) < 0.3 && Math.abs(dy) < 0.3 && t < 4.6) return '#6a6a62'; return t > roof - 0.25 ? '#4a5a3a' : '#5a6a44'; }); }
+  function pfLookoutAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2.6, y - 2.6, zb, x + 2.6, y + 2.6, zb + 9.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 6.4){ var w = 2.2 - t * 0.15; if (Math.abs(Math.abs(dx) - w) < 0.14 && Math.abs(Math.abs(dy) - w) < 0.14) return '#6a4a32'; if (Math.abs(Math.abs(dx) - w) < 0.1 && Math.abs(dy) < w && Math.abs(((t + dy * 0.6) % 2) - 1) < 0.08) return '#5a3a22'; return null; }
+      if (t < 8.4){ if (Math.abs(dx) > 1.6 || Math.abs(dy) > 1.6) return null; return t > 7 && t < 8 && Math.abs(dx) < 1.4 && Math.abs(dy) < 1.4 ? '#c8e0d8' : '#8a6040'; }
+      var roof = 8.4 + (1.9 - Math.max(Math.abs(dx), Math.abs(dy))) * 0.6; if (Math.abs(dx) > 1.9 || Math.abs(dy) > 1.9 || t > roof) return null; return '#5a2e1a'; }); }
+  function pfFallsAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3.4, y - 2, zb, x + 3.4, y + 2, zb + 6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, w = 3.2 - t * 0.2 + (vn(pz * 1.2, dx, 7) - 0.5) * 0.8; if (Math.abs(dx) > w || dy < -1.8 || dy > 1.8 - t * 0.25) return null;
+      if (Math.abs(dx) < 1 && dy > 1.8 - t * 0.25 - 0.35) return vn(dx * 3, pz * 4, 9) > 0.45 ? '#e8f4f0' : '#9ac8c4'; return vn(px * 3, pz * 3, 11) > 0.62 ? '#5a9a3a' : '#5a5a54'; }); }
+  function pfFlumeAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 3.4, y - 0.7, zb, x + 3.4, y + 0.7, zb + 3, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t > 2.2){ if (Math.abs(dy) > 0.6) return null; return Math.abs(dy) < 0.4 && t > 2.7 ? '#5aa0b4' : '#9a6a42'; }
+      if (Math.abs(((dx + 3.4) % 1.7) - 0.85) < 0.12 && Math.abs(Math.abs(dy) - 0.45) < 0.12) return '#6a4428'; if (Math.abs(t - 1.1) < 0.08 && Math.abs(Math.abs(dy) - 0.45) < 0.08) return '#5a3a22'; return null; }); }
+  function pfTruckAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 5, y - 1.6, zb, x + 5, y + 1.6, zb + 3.6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 0.9) return Math.abs(Math.abs(dy) - 1.15) < 0.3 && [-3.6, -1.6, 2.8].some(function(w){ return Math.hypot(dx - w, t - 0.55) < 0.55; }) ? '#1e1e1e' : null;
+      if (Math.abs(dy) > 1.4) return null; if (dx > 1.6){ if (dx > 4.4 || t > 3.2) return null; return t > 2.1 && dx < 3.6 ? '#c8e0f0' : '#d8582a'; }
+      if (t < 1.3) return dx > -4.8 ? '#2a2a2a' : null; for (var j = 0; j < 3; j++){ var d = Math.hypot(dy - (j - 1) * 0.85, t - 1.75); if (d < 0.42) return dx < -4.4 || dx > 1.2 ? '#d8b07a' : '#6a4428'; }
+      return Math.abs(dx + 4.6) < 0.12 || Math.abs(dx - 1.3) < 0.12 ? (t < 3 ? '#3a3a3a' : null) : null; }); }
+  function pfSpots(L, n, salt, pad){ var sp = [], i; for (i = 0; i < n; i++){ var q = L.spot(i ? pad || 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.35 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + salt + i) * 2; }); if (q) sp.push(q); } return sp; }
+  function pfRoadStop(L){ var O = pfBase(L, { near:18, road:true, trees:0.04 }), sp = pfSpots(L, 3, 1531);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) pfTruckAt(B, q.x, q.y); else pfLogsAt(B, q.x, q.y, k); }); }; return O; }
+  function pfCabinStop(L){ var O = pfBase(L, { near:17, trees:0.05 }), sp = pfSpots(L, 3, 1541);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) pfCabinAt(B, q.x, q.y); else pfStumpAt(B, q.x, q.y, k + 40); }); }; return O; }
+  function pfLookStop(L){ var O = pfBase(L, { near:18, stone:true, hills:2.6, trees:0.03 }), sp = pfSpots(L, 3, 1551);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) pfLookoutAt(B, q.x, q.y); else pfMossRock(B, q.x, q.y, k + 50); }); }; return O; }
+  function pfCreekStop(L){ var O = pfBase(L, { near:9, trees:0.05 }), sp = pfSpots(L, 3, 1561);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) pfMossRock(B, q.x, q.y, k + 60); else pfFernAt(B, q.x, q.y, k + 60); }); }; return O; }
+  function pfCampStop(L){ var O = pfBase(L, { near:16, road:true, trees:0.04 }), sp = pfSpots(L, 4, 1571);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) pfLogsAt(B, q.x, q.y, k + 70); else pfStumpAt(B, q.x, q.y, k + 70); }); }; return O; }
+  function pfMillStop(L){ var O = pfBase(L, { near:15, stone:true, trees:0.04 }), sp = pfSpots(L, 3, 1581);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) pfFlumeAt(B, q.x, q.y, k); else pfMossRock(B, q.x, q.y, k + 80); }); }; return O; }
+  function pfFallsStop(L){ var O = pfBase(L, { near:8, foam:true, stone:true, trees:0.04 }), sp = pfSpots(L, 3, 1591);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) pfFallsAt(B, q.x, q.y); else pfFernAt(B, q.x, q.y, k + 90); }); }; return O; }
+  function pfFlumeStop(L){ var O = pfBase(L, { near:12, trees:0.05 }), sp = pfSpots(L, 3, 1601);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) pfFlumeAt(B, q.x, q.y, k + 3); else pfStumpAt(B, q.x, q.y, k + 100); }); }; return O; }
+  function pfDeepStop(L){ var O = pfBase(L, { near:20, hills:2.4, trees:0.08 }), sp = pfSpots(L, 3, 1611);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) pfStumpAt(B, q.x, q.y, k + 110); else pfFernAt(B, q.x, q.y, k + 110); }); }; return O; }
+
+  // The Hollow Cedar: inside a great old cedar, hollowed by a fire long ago and still standing, its walls red wood and its floor soft
+  BUILD['s-hollowcedar'] = function(L){ var R0 = room(L, { floor:'pfhfloor', wall:'pfhwall', wallH:5.8, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 1621, 2.4).forEach(function(q, k){ if (k % 2) pfStumpAt(B, q[0], q[1], k + 3); else pfFernAt(B, q[0], q[1], k + 21); }); },
+      bg:'#1a100a', gain:2,
+      mats:{ pfhfloor:['#6a4428', '#7a5234', '#5a3a22', 0.12, function(c, R){ var b = blot(c, 0.2, 1623), st = hash(c.ti, c.tj, 1624); if (st > 0.96) return R('#a8784e'); if (st < 0.03) return R('#5a9a3a'); return R(b > 0.62 ? '#7a5234' : b < 0.3 ? '#5a3a22' : '#6a4428'); }],
+        pfhwall:['#8e4628', '#b8603a', '#5a2e1a', 0.18, function(c, R){ var z = c.z || 0; if (z > 5) return R('#2a160c'); var n = vn(c.ti * 0.5, z * 0.15, 1625); return R(n > 0.66 ? '#b8603a' : n < 0.34 ? '#6a3020' : '#8e4628'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();

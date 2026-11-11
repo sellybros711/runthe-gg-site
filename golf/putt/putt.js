@@ -382,6 +382,38 @@ function printPull(k, x, y, tt){ var F = k.prints, rl = k.rl, rw = k.rw, out = n
   return out; }
 // every print of walk k at moment tt that is not level snow: [print, depth]
 function printsAt(k, tt){ var out = []; for (var i = 0; i < k.prints.length; i++){ var D = printDepth(k, k.prints[i], tt); if (D > 0) out.push([k.prints[i], D]); } return out; }
+/* THE LOG CHUTE (the Pacific Forest, World 28). The old loggers' skid road runs down the hillside across the hole, and on the
+   hole's clock the logs come down it: each one tips off the log deck at the top of the chute (a), rolls broadside straight down the
+   skid road to its foot (b), gathering speed as it goes (v0 ft/s at the top and acc ft/s/s more each second, at PACE like everything
+   that moves), and drops over the bank into the ditch at the foot; n logs a period, gap seconds apart, and then the skid road is
+   empty for idle seconds until the next tips off. A log is a round of fir L feet long and r feet thick, lying across its way: while
+   it rolls it is solid and moving, so a ball it meets is shoved ahead of it the way a bumper throws it, the log's own speed added
+   (LOG_E), and a ball it catches up with is carried down the chute in front of it and left at the foot when it drops. It tips on
+   over LOG_RISE seconds, behind the rail (the deck stands off the green), and at the foot it drops at once into the ditch, still
+   pushing, so a ball it carries is always thrown clear of the road. It is no hump, no ferry, no raft, no stalk and no footprint: it swims no course and carries
+   nothing; it comes one way only, faster and faster, and the read is when the chute is empty and how fast the next one will be
+   going where the ball crosses. A ball never comes to rest against a log: while it touches one it is not allowed to stop, and the
+   log rolls on and leaves it on the carpet. Nothing random: where every log is, is the clock. */
+var LOG_E = 0.5, LOG_RISE = 0.35, LOG_R = 0.42;
+function skidPrep(k, pace){ var ax = k.a[0], ay = k.a[1], bx = k.b[0], by = k.b[1], len = Math.hypot(bx - ax, by - ay) || 1, ux = (bx - ax) / len, uy = (by - ay) / len;
+  var v0 = (k.v == null ? 1.2 : k.v) * pace, acc = (k.acc == null ? 1.2 : k.acc) * pace * pace, run = acc > 1e-9 ? (-v0 + Math.sqrt(v0 * v0 + 2 * acc * len)) / acc : len / v0, n = k.n || 1, gap = (k.gap || 2.4) / pace;
+  return { a:[ax, ay], b:[bx, by], len:len, ux:ux, uy:uy, hl:(k.L || 4.4) / 2, r:k.r || LOG_R, v0:v0, acc:acc, run:run, n:n, gap:gap, idle:(k.idle || 2.6) / pace,
+    period:Math.max((k.period || 0) / pace, (n - 1) * gap + run + (k.idle || 2.6) / pace), phase:k.phase || 0 }; }
+// every log on chute k at moment tt that is rolling: its middle, its way and speed, how far down it is, and how far up (0 to 1)
+function logsAt(k, tt){ var P = k.period, u = ((tt / P + k.phase) % 1 + 1) % 1 * P, out = [];
+  for (var j = 0; j < k.n; j++){ var a = u - j * k.gap; if (a < 0 || a >= k.run) continue; var s = Math.min(k.len, k.v0 * a + 0.5 * k.acc * a * a), v = k.v0 + k.acc * a;
+    out.push({ x:k.a[0] + k.ux * s, y:k.a[1] + k.uy * s, vx:k.ux * v, vy:k.uy * v, v:v, s:s, j:j, age:a, h:Math.min(1, a / LOG_RISE) }); }
+  return out; }
+/* the skid road itself: every spot a rolling log can touch a ball (its sweep, a log's thickness and a ball beyond its ends). A ball
+   is never left at rest there, where the next log would roll through it: a slow ball on the road waits, held still, until a log
+   comes down and carries it to the foot (simulate). So the log deck stands at a rail, and the foot has open carpet past it. */
+// is any rolling log within a quarter foot of touching a ball at x, y
+function skidNear(sks, x, y, tt){ for (var i = 0; i < sks.length; i++){ var k = sks[i], P = k.period, u = ((tt / P + k.phase) % 1 + 1) % 1 * P, lax = -k.uy, lay = k.ux;
+    for (var j = 0; j < k.n; j++){ var a = u - j * k.gap; if (a < 0 || a >= k.run) continue; var sd = Math.min(k.len, k.v0 * a + 0.5 * k.acc * a * a), h = Math.min(1, a / LOG_RISE);
+      var qx = x - k.a[0] - k.ux * sd, qy = y - k.a[1] - k.uy * sd, lt = clamp(qx * lax + qy * lay, -k.hl, k.hl); if (Math.hypot(qx - lax * lt, qy - lay * lt) < k.r * h + BR + 0.25) return true; } }
+  return false; }
+function skidReach(k, x, y){ var dx = x - k.a[0], dy = y - k.a[1], s = dx * k.ux + dy * k.uy, l = Math.abs(-dx * k.uy + dy * k.ux);
+  return Math.hypot(s < 0 ? -s : s > k.len ? s - k.len : 0, Math.max(0, l - k.hl)) < k.r + BR - 0.02; }
 function floatAt(C, x, y){ var F = C.floats; for (var i = 0; i < F.length; i++){ var f = F[i]; if (x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) return f; } return null; }
 function ferryEase(e, w){ return { k:(3 - e) * w * w + (e - 2) * w * w * w, d:2 * (3 - e) * w + 3 * (e - 2) * w * w }; }
 function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w, z;
@@ -577,6 +609,8 @@ function simulate(C, x, y, vx, vy, t0){
   var wks = C.wakes || [], nearH = false, inWake = false;
   // THE HIMALAYAS: the yeti's footprints stamped into the snow on the clock; inPrint while the ball lies in one still a hollow
   var yts = C.yetis || [], inPrint = false, wasPrint = false;
+  // THE PACIFIC FOREST: the logs rolling down the skid road on the clock; nearL while the ball touches a rolling log
+  var sks = C.skids || [], nearL = false, skFF = sks.length && !movs.length && !C.bridges.length && !C.turns.length && !C.ferries.length && !(C.devils || []).length && !(C.eyes || []).length && !(C.gazes || []).length && !(C.lethes || []).length && !(C.bolts || []).length && !(C.stalks || []).length && !(C.drifts || []).length && !(C.wakes || []).length && !(C.yetis || []).length && !(C.hazes || []).length;
   if (szs.length){ var sq0 = sizerAt(C, x, y); if (sq0){ sz = sq0.k; BR = sz === 1 ? WEE_R : BIG_R; out.ev.push([0, sz === 1 ? 'shrink' : 'grow']); } }
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
   /* TRICK SHOT TARGETS (the Clubhouse's gyms, gymkinds/trickshot.js): numbered targets that must go down in order. tk is
@@ -669,7 +703,12 @@ function simulate(C, x, y, vx, vy, t0){
        drag is a quarter of its usual, so a ball that does not make the top rolls back down and stops at the foot. */
     if (C.climbs && C.climbs.length && sl > 0.1 && !over && inClimb(C, s.x, s.y)){ af *= 0.25; climbing = true; } else climbing = false;
     if (over){ ax = 0; ay = 0; }   // over the hole the ball is falling, not rolling
-    still = false; if (sp < STOP_V && !over && sl <= af && !climbing && !nearH && !inPrint){ if (bls.length && boltAt(C, s.x, s.y)){ s.vx = 0; s.vy = 0; still = true; } else break; }
+    still = false; if (sp < STOP_V && !over && sl <= af && !climbing && !nearH && !inPrint && !nearL){ if (bls.length && boltAt(C, s.x, s.y)){ s.vx = 0; s.vy = 0; still = true; }
+      else if (sks.length && sks.some(function(k){ return skidReach(k, s.x, s.y); })){ s.vx = 0; s.vy = 0; still = true;
+        /* held on the skid road with nothing else on the hole that moves: nothing can happen to the ball until a log comes near, so
+           the clock runs on without the rest of the step (the same samples, the same moment the log arrives, many times quicker) */
+        if (skFF) for (;;){ if (t > MAX_T || skidNear(sks, s.x, s.y, t0 + t)) break; t += DT; n++; if (n % SUB === 0) out.pts.push([s.x, s.y, t]); if (n % 240 === 0){ rx = s.x; ry = s.y; } } }
+      else break; }
     if (sp > 1e-9 && !over){ var dvx = -af * s.vx / sp * DT, dvy = -af * s.vy / sp * DT;
       // friction can stop a ball, never send it backwards
       if (sl <= af && dvx * dvx + dvy * dvy >= sp * sp){ s.vx = 0; s.vy = 0; } else { s.vx += dvx; s.vy += dvy; } }
@@ -775,6 +814,15 @@ function simulate(C, x, y, vx, vy, t0){
       var hdx = s.x - hp.x, hdy = s.y - hp.y, hdd = Math.hypot(hdx, hdy), hR = hr + BR; if (hdd >= hR + 0.05) continue; nearH = true; if (hdd >= hR) continue;
       if (hdd < 1e-9){ hdx = -hp.ty; hdy = hp.tx; hdd = 1; } var hnx = hdx / hdd, hny = hdy / hdd; s.x = hp.x + hnx * hR; s.y = hp.y + hny * hR;
       var hvn = (s.vx - hp.vx) * hnx + (s.vy - hp.vy) * hny; if (hvn < 0){ s.vx -= (1 + HUMP_E) * hvn * hnx; s.vy -= (1 + HUMP_E) * hvn * hny; if (Math.abs(hvn) > 0.4){ hit = true; out.ev.push([t, 'hump']); } } }
+    /* THE LOGS (the Pacific Forest): a log rolling down the chute is solid, r thick (growing as it tips on, shrinking as it drops off)
+       and L long across its way, and moving: a ball meets it the way it meets a bumper, but against the log's own speed (logsAt) */
+    nearL = false;
+    for (i = 0; i < sks.length; i++){ var skq = sks[i], lgs = logsAt(skq, t0 + t);
+      for (var lgi = 0; lgi < lgs.length; lgi++){ var lg = lgs[lgi], lr = skq.r * lg.h; if (lr < 0.03) continue;
+        var lax = -skq.uy, lay = skq.ux, lqx = s.x - lg.x, lqy = s.y - lg.y, lt = clamp(lqx * lax + lqy * lay, -skq.hl, skq.hl), ldx = lqx - lax * lt, ldy = lqy - lay * lt, ldd = Math.hypot(ldx, ldy), lR = lr + BR;
+        if (ldd >= lR + 0.05) continue; nearL = true; if (ldd >= lR) continue;
+        if (ldd < 1e-9){ ldx = skq.ux; ldy = skq.uy; ldd = 1; } var lnx = ldx / ldd, lny = ldy / ldd; s.x = lg.x + lax * lt + lnx * lR; s.y = lg.y + lay * lt + lny * lR;
+        var lvn = (s.vx - lg.vx) * lnx + (s.vy - lg.vy) * lny; if (lvn < 0){ s.vx -= (1 + LOG_E) * lvn * lnx; s.vy -= (1 + LOG_E) * lvn * lny; if (Math.abs(lvn) > 0.4){ hit = true; out.ev.push([t, 'log']); } } } }
     for (i = 0; i < movs.length; i++){ var mo = movs[i], segs = moverAt(mo, t0 + t);
       for (var q = 0; q < segs.length; q++){ var sg = segs[q];
         var mx = (sg[0] + sg[2]) / 2, my = (sg[1] + sg[3]) / 2, vb = moverVel(mo, t0 + t, mx, my);
@@ -823,7 +871,7 @@ function simulate(C, x, y, vx, vy, t0){
        slope pushes, the rail cancels it, and it sits still while the slope says it should roll. So a
        slow ball that has gone nowhere in half a second has come to rest. Measured, without this the
        bowl, the volcano and the tiers each kept a few putts "rolling" to MAX_T. */
-    if (n % 240 === 0){ if (!over && !rv && !disc && !deck && !onRaft && !still && !nearH && !inPrint && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
+    if (n % 240 === 0){ if (!over && !rv && !disc && !deck && !onRaft && !still && !nearH && !inPrint && !nearL && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
     if (t > MAX_T){ if (onRaft){ out.water = true; out.ev.push([t, 'adrift']); break; } if (deck){ out.water = true; out.ev.push([t, 'water']); } break; }
   }
   // a ball that stops on a bridge stalk over the water goes in when it draws back: never a place to putt from
@@ -835,7 +883,7 @@ function simulate(C, x, y, vx, vy, t0){
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
   C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
-  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || []; C.rings = C.rings || []; C.hazes = C.hazes || []; C.beams = C.beams || []; C.hops = C.hops || []; C.cyclones = C.cyclones || []; C.eyes = C.eyes || []; C.gazes = C.gazes || []; C.lethes = C.lethes || []; C.bolts = C.bolts || []; C.sizers = C.sizers || []; C.wees = C.wees || []; C.glasses = (C.glasses || []).map(function(g){ return g.nx == null ? glassPrep(g) : g; }); C.stalks = (C.stalks || []).map(function(q){ return q.ux == null ? stalkPrep(q, 1) : q; }); C.drifts = (C.drifts || []).map(function(d){ return d.S ? d : driftPrep(d, 1); }); C.wakes = (C.wakes || []).map(function(k){ return k.S ? k : wakePrep(k, 1); }); C.yetis = (C.yetis || []).map(function(k){ return k.S ? k : yetiPrep(k, 1); });
+  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || []; C.rings = C.rings || []; C.hazes = C.hazes || []; C.beams = C.beams || []; C.hops = C.hops || []; C.cyclones = C.cyclones || []; C.eyes = C.eyes || []; C.gazes = C.gazes || []; C.lethes = C.lethes || []; C.bolts = C.bolts || []; C.sizers = C.sizers || []; C.wees = C.wees || []; C.glasses = (C.glasses || []).map(function(g){ return g.nx == null ? glassPrep(g) : g; }); C.stalks = (C.stalks || []).map(function(q){ return q.ux == null ? stalkPrep(q, 1) : q; }); C.drifts = (C.drifts || []).map(function(d){ return d.S ? d : driftPrep(d, 1); }); C.wakes = (C.wakes || []).map(function(k){ return k.S ? k : wakePrep(k, 1); }); C.yetis = (C.yetis || []).map(function(k){ return k.S ? k : yetiPrep(k, 1); }); C.skids = (C.skids || []).map(function(k){ return k.ux != null ? k : skidPrep(k, 1); });
   if (!C.polys) C.polys = C.poly ? [C.poly] : []; if (!C.allPts) C.allPts = C.polys.reduce(function(a, p){ return a.concat(p); }, []);
   if (!C.edges) C.edges = C.polys.length > 1 ? unionEdges(C.polys) : C.polys.length ? polyWalls(C.polys[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; }) : [];
   if (!C.tierAt) C.tierAt = function(){ return 0; };
@@ -1147,6 +1195,17 @@ var THEMES = {
      Heather tufts stand about the dykes (the bumpers), drystone walls and the stones of a ruined keep divide it (the blocks), a
      ghillie's rowing boat pulls to and fro (the sliders), and something in the loch comes up on the hole's clock. An original
      place: no real castle, village or monster's likeness. */
+  /* The Pacific Forest: the third and last world of the Cryptid Expedition, into the old growth of the Northwest with a camera and a
+     notebook. The course is a mossy forest floor under cedar and fir, its rails timber, the creek the hazard and the wet moss the
+     slow ground. Cedar stumps, mossy rocks and sword ferns stand about (the bumpers), stacks of cut logs, fallen cedars and the ruins
+     of the old logging camp divide it (the blocks), the loggers' rail speeder runs to and fro (the sliders), and down the skid road
+     across the hole the logs come rolling on the hole's clock. An original place: no real forest, town or camp, and no creature's
+     likeness from any film, photo or later work. */
+  pacific:{ name:'The Pacific Forest', kick:'World 28', bg:'#1c2a20', bg2:'#28382c', carpet:'#4e8a3e', carpet2:'#467e38', wall:'#6a4a32', wallHi:'#a8825a', wallLo:'#3a2618', ink:'#121a14',
+    haz:'water', hazCol:'#24484a', hazCol2:'#8ac4b8', hazName:'The Creek', slow:'mud', slowCol:'#3e5a2a', slowName:'Wet Moss', iceCol:'#c8e0d8', iceCol2:'#eef6f2',
+    bumper:'pfstump', block:'pflogs', spinner:'#d8582a', slider:'pfspeeder', flag:'#d8582a',
+    decor:['pfsword', 'pftrillium'], acc:'#ffb050', river:['#24484a', '#8ac4b8'], kicker:'#d8582a', loopCol:['#d8582a', '#f4e2a0', '#121a14'],
+    holes:[] },
   /* The Himalayas: the second world of the Cryptid Expedition, up from base camp onto the glaciers and the high snow with a camera
      and a notebook. The course is wind packed snow in the blue shade of the peaks, its rails granite with snow on their tops, the
      crevasses the hazard and the deep snow the slow ground. Snowy boulders and stone cairns stand about (the bumpers), granite crags
@@ -1181,7 +1240,7 @@ var THEMES = {
 };
 /* the light that comes up out of the cup when the ball drops, one colour a theme (the real greens use gold) */
 var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
-  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', moon:'#9fe8ff', mars:'#ffb08a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', olympus:'#ffe9a0', wonderland:'#ffb0c8', lookingglass:'#d8e4ff', beanstalk:'#ffe08a', mississippi:'#ffe6a0', lochness:'#d8c8f0', himalayas:'#ffe0a0', candy:'#ff9ad0', beach:'#5ce1ff' };
+  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', moon:'#9fe8ff', mars:'#ffb08a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', olympus:'#ffe9a0', wonderland:'#ffb0c8', lookingglass:'#d8e4ff', beanstalk:'#ffe08a', mississippi:'#ffe6a0', lochness:'#d8c8f0', himalayas:'#ffe0a0', pacific:'#c8f0a0', candy:'#ff9ad0', beach:'#5ce1ff' };
 Object.keys(GLOW).forEach(function(k){ if (THEMES[k]) THEMES[k].glow = GLOW[k]; });
 // the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
 var CAL_THEMES = ['haunted', 'harvest', 'winter', 'sweetheart', 'shamrock', 'spring', 'firework', 'beach'];
@@ -1305,7 +1364,7 @@ function buildMini(tplName, seed, themeId, label, extra){
   if (r() < 0.5){
     var fx = function(p){ return [-p[0], p[1]]; };
     H.poly = H.poly.map(fx).reverse(); H.tee = fx(H.tee); H.cup = fx(H.cup);
-    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; }); (H.rings || []).forEach(function(g){ g.cx = -g.cx; g.a0 = Math.PI - g.a0; g.span = -g.span; }); (H.hazes || []).forEach(function(h){ var a = -h.x1; h.x1 = -h.x0; h.x0 = a; h.wx = -(h.wx || 0); }); (H.beams || []).forEach(function(b){ b.x0 = -b.x0; b.x1 = -b.x1; }); (H.hops || []).forEach(function(q){ q.x = -q.x; }); (H.cyclones || []).forEach(function(q){ q.x = -q.x; q.tx = -q.tx; q.dx = -q.dx; q.spin = -q.spin; }); (H.eyes || []).forEach(function(e){ e.x = -e.x; e.a0 = -e.a0; e.span = -e.span; }); (H.gazes || []).forEach(function(g){ g.x = -g.x; g.a = -g.a; }); (H.lethes || []).forEach(function(l){ l.x = -l.x; l.a = -l.a; l.spin = -l.spin; }); (H.bolts || []).forEach(function(b){ b.x = -b.x; b.a = -b.a; }); (H.sizers || []).forEach(function(q){ q.x = -q.x; }); (H.wees || []).forEach(function(w){ w.ax = -w.ax; w.bx = -w.bx; }); (H.glasses || []).forEach(function(g){ g.ax = -g.ax; g.bx = -g.bx; }); (H.stalks || []).forEach(function(q){ q.x = -q.x; q.a = -q.a; }); (H.drifts || []).forEach(function(d){ d.pts = d.pts.map(function(p){ return [-p[0], p[1]]; }); }); (H.wakes || []).forEach(function(k){ k.pts = k.pts.map(function(p){ return [-p[0], p[1]]; }); }); (H.yetis || []).forEach(function(k){ k.pts = k.pts.map(function(p){ return [-p[0], p[1]]; }); });
+    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; }); (H.rings || []).forEach(function(g){ g.cx = -g.cx; g.a0 = Math.PI - g.a0; g.span = -g.span; }); (H.hazes || []).forEach(function(h){ var a = -h.x1; h.x1 = -h.x0; h.x0 = a; h.wx = -(h.wx || 0); }); (H.beams || []).forEach(function(b){ b.x0 = -b.x0; b.x1 = -b.x1; }); (H.hops || []).forEach(function(q){ q.x = -q.x; }); (H.cyclones || []).forEach(function(q){ q.x = -q.x; q.tx = -q.tx; q.dx = -q.dx; q.spin = -q.spin; }); (H.eyes || []).forEach(function(e){ e.x = -e.x; e.a0 = -e.a0; e.span = -e.span; }); (H.gazes || []).forEach(function(g){ g.x = -g.x; g.a = -g.a; }); (H.lethes || []).forEach(function(l){ l.x = -l.x; l.a = -l.a; l.spin = -l.spin; }); (H.bolts || []).forEach(function(b){ b.x = -b.x; b.a = -b.a; }); (H.sizers || []).forEach(function(q){ q.x = -q.x; }); (H.wees || []).forEach(function(w){ w.ax = -w.ax; w.bx = -w.bx; }); (H.glasses || []).forEach(function(g){ g.ax = -g.ax; g.bx = -g.bx; }); (H.stalks || []).forEach(function(q){ q.x = -q.x; q.a = -q.a; }); (H.drifts || []).forEach(function(d){ d.pts = d.pts.map(function(p){ return [-p[0], p[1]]; }); }); (H.wakes || []).forEach(function(k){ k.pts = k.pts.map(function(p){ return [-p[0], p[1]]; }); }); (H.yetis || []).forEach(function(k){ k.pts = k.pts.map(function(p){ return [-p[0], p[1]]; }); }); (H.skids || []).forEach(function(k){ k.a = [-k.a[0], k.a[1]]; k.b = [-k.b[0], k.b[1]]; });
     H.blocks = H.blocks.map(function(b){ var o = { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; if (b.mir) o.mir = b.mir; if (b.tri) o.tri = b.tri.map(function(q){ return [-q[0], q[1]]; }).reverse(); return o; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(b.tri ? polyWalls(b.tri, 0, 0.6) : rectWalls(b, 0.6)); });
     H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; if (m.k === 'door') m.px = -m.px; } });
@@ -1332,7 +1391,7 @@ function courseFromH(H, tplName, seed, themeId, label){
   var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:PS[0], polys:PS, allPts:all, edges:edges, rooms:rooms, comps:H.comps, flats:H.flats,
     stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
-    secret:H.secret || [], hops:(H.hops || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, k:q.k }; }), cyclones:(H.cyclones || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, tx:q.tx, ty:q.ty, dx:q.dx, dy:q.dy, v:q.v, spin:q.spin }; }), eyes:(H.eyes || []).map(function(e){ return { x:e.x, y:e.y, r:e.r, len:e.len, w:e.w, a0:e.a0, span:e.span, period:e.period / PACE, phase:e.phase, a:e.a }; }), gazes:(H.gazes || []).map(function(g){ return { x:g.x, y:g.y, r:g.r, len:g.len, w:g.w, ux:Math.sin(g.a), uy:-Math.cos(g.a) }; }), lethes:(H.lethes || []).map(function(l){ return { x:l.x, y:l.y, r:l.r, a0:l.a, spin:l.spin * PACE }; }), bolts:(H.bolts || []).map(function(b){ return { x:b.x, y:b.y, r:b.r, L:b.L, a:b.a, ux:Math.sin(b.a), uy:-Math.cos(b.a), period:b.period / PACE, phase:b.phase || 0 }; }), sizers:(H.sizers || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, k:q.k }; }), wees:(H.wees || []).map(function(w){ return { ax:w.ax, ay:w.ay, bx:w.bx, by:w.by }; }), glasses:(H.glasses || []).map(glassPrep), stalks:(H.stalks || []).map(function(q){ return stalkPrep(q, PACE); }), drifts:(H.drifts || []).map(function(d){ return driftPrep(d, PACE); }), wakes:(H.wakes || []).map(function(k){ return wakePrep(k, PACE); }), yetis:(H.yetis || []).map(function(k){ return yetiPrep(k, PACE); }), beams:(H.beams || []).map(function(b){ var L = Math.hypot(b.x1 - b.x0, b.y1 - b.y0) || 1; return { x0:b.x0, y0:b.y0, x1:b.x1, y1:b.y1, w:b.w, a:b.a, L:L, ux:(b.x1 - b.x0) / L, uy:(b.y1 - b.y0) / L }; }), rings:(H.rings || []).slice(), hazes:(H.hazes || []).map(function(h){ return { x0:Math.min(h.x0, h.x1), y0:Math.min(h.y0, h.y1), x1:Math.max(h.x0, h.x1), y1:Math.max(h.y0, h.y1), f:h.f || 2.2, wx:h.wx || 0, wy:h.wy || 0 }; }), devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
+    secret:H.secret || [], hops:(H.hops || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, k:q.k }; }), cyclones:(H.cyclones || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, tx:q.tx, ty:q.ty, dx:q.dx, dy:q.dy, v:q.v, spin:q.spin }; }), eyes:(H.eyes || []).map(function(e){ return { x:e.x, y:e.y, r:e.r, len:e.len, w:e.w, a0:e.a0, span:e.span, period:e.period / PACE, phase:e.phase, a:e.a }; }), gazes:(H.gazes || []).map(function(g){ return { x:g.x, y:g.y, r:g.r, len:g.len, w:g.w, ux:Math.sin(g.a), uy:-Math.cos(g.a) }; }), lethes:(H.lethes || []).map(function(l){ return { x:l.x, y:l.y, r:l.r, a0:l.a, spin:l.spin * PACE }; }), bolts:(H.bolts || []).map(function(b){ return { x:b.x, y:b.y, r:b.r, L:b.L, a:b.a, ux:Math.sin(b.a), uy:-Math.cos(b.a), period:b.period / PACE, phase:b.phase || 0 }; }), sizers:(H.sizers || []).map(function(q){ return { x:q.x, y:q.y, r:q.r, k:q.k }; }), wees:(H.wees || []).map(function(w){ return { ax:w.ax, ay:w.ay, bx:w.bx, by:w.by }; }), glasses:(H.glasses || []).map(glassPrep), stalks:(H.stalks || []).map(function(q){ return stalkPrep(q, PACE); }), drifts:(H.drifts || []).map(function(d){ return driftPrep(d, PACE); }), wakes:(H.wakes || []).map(function(k){ return wakePrep(k, PACE); }), yetis:(H.yetis || []).map(function(k){ return yetiPrep(k, PACE); }), skids:(H.skids || []).map(function(k){ return skidPrep(k, PACE); }), beams:(H.beams || []).map(function(b){ var L = Math.hypot(b.x1 - b.x0, b.y1 - b.y0) || 1; return { x0:b.x0, y0:b.y0, x1:b.x1, y1:b.y1, w:b.w, a:b.a, L:L, ux:(b.x1 - b.x0) / L, uy:(b.y1 - b.y0) / L }; }), rings:(H.rings || []).slice(), hazes:(H.hazes || []).map(function(h){ return { x0:Math.min(h.x0, h.x1), y0:Math.min(h.y0, h.y1), x1:Math.max(h.x0, h.x1), y1:Math.max(h.y0, h.y1), f:h.f || 2.2, wx:h.wx || 0, wy:h.wy || 0 }; }), devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
     rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ var st = H.stimp || (themeId === 'winter' ? 9.5 : 9), D = Math.hypot(f.dx, f.dy) || 1, L = Math.abs(f.dx) >= Math.abs(f.dy) ? f.x1 - f.x0 : f.y1 - f.y0,
       ve = Math.sqrt(2 * (V_STIMP * V_STIMP / (2 * st)) * (L + 1)), mv = f.move / PACE;
@@ -1467,7 +1526,8 @@ var WORLDS = [
   { id:'beanstalk', name:'The Beanstalk', theme:'beanstalk', blurb:'The beanstalk grows out and draws back on a clock. Out, it is a wall or a bridge.', haz:['The beanstalk', 'The Sky Below', 'Tilled Earth'] },
   { id:'mississippi', name:'The Mississippi', theme:'mississippi', blurb:'Rafts drift down the river on its current. Cross on one. Miss it and you are in.', haz:['The rafts', 'The Big River', 'River Mud'] },
   { id:'lochness', name:'Loch Ness', theme:'lochness', blurb:'Something swims in the loch. Her hump is solid. Her wake pushes the ball aside.', haz:['Her wake', 'The Loch', 'Peat Bog'] },
-  { id:'himalayas', name:'The Himalayas', theme:'himalayas', blurb:'Something walks across the snow. Its footprints are hollows. A slow ball falls in.', haz:['The footprints', 'The Crevasse', 'Deep Snow'] }
+  { id:'himalayas', name:'The Himalayas', theme:'himalayas', blurb:'Something walks across the snow. Its footprints are hollows. A slow ball falls in.', haz:['The footprints', 'The Crevasse', 'Deep Snow'] },
+  { id:'pacific', name:'The Pacific Forest', theme:'pacific', blurb:'Logs roll down the skid road on a clock. A log shoves the ball ahead of it.', haz:['The logs', 'The Creek', 'Wet Moss'] }
 ];
 // a room: a rectangle at a height (for the picture; the drop between rooms is crossed by a set piece)
 function rm(x0, y0, x1, y1, z){ var a = Math.min(x0, x1), b = Math.max(x0, x1), c = Math.max(y0, y1), d = Math.min(y0, y1); return { pts:[[a, c], [b, c], [b, d], [a, d]], z:z || 0 }; }
@@ -1637,6 +1697,31 @@ function cornice(H, step, keep){ var rooms = H.polys.map(function(q){ return q.p
       if ((H.secret || []).some(function(z){ return x > z.x0 - 0.8 && x < z.x1 + 0.8 && y > z.y0 - 0.8 && y < z.y1 + 0.8; })) continue;
       if ((H.movers || []).some(function(m){ return m.ax != null ? segDist(x, y, m.ax, m.ay, m.bx, m.by) < 1.6 : Math.hypot(x - m.x, y - m.y) < (m.len || 2) + 0.8; }) || (H.ramps || []).some(function(R){ return Math.hypot(x - R.x, y - R.y) < 2.4; })) continue;
       H.bumpers.push({ x:x, y:y, r:0.34, e:0.55, skin:'hmsnowrock' }); } } }); }
+/* The Pacific Forest, World 28. skid(H, a, b, o): the loggers' skid road down the hillside across a hole, from the log deck at a
+   to the ditch at b (keep the whole sweep of its logs, L feet across and the length of the chute, on open carpet, well clear of
+   every rail, block and bumper, the tee and the cup), and its clock, o { v, acc, L, r, n, gap, idle, period, phase } (skidPrep,
+   logsAt, simulate). stumps(H, list): cedar stumps, mossy rocks, ferns and the forest's other things, [x, y, r, skin] each
+   (bumpers), any that would stand in a chute's sweep left out. ferns(H, step, keep): sword ferns along the inside of the rails,
+   step feet apart, clear of the tee, the cup, the blocks, the other bumpers, the water, every chute's sweep and every [x, y, r]
+   in keep. */
+function skid(H, a, b, o){ o = o || {}; (H.skids = H.skids || []).push({ a:a, b:b, v:o.v, acc:o.acc, L:o.L, r:o.r, n:o.n, gap:o.gap, idle:o.idle, period:o.period, phase:o.phase }); }
+function skidClear(H, x, y, r){ return !(H.skids || []).some(function(k){ var q = skidPrep(k, 1), dx = x - q.a[0], dy = y - q.a[1], s = dx * q.ux + dy * q.uy, l = -dx * q.uy + dy * q.ux, m = q.r + r + 0.45;
+  return s > -m && s < q.len + m && Math.abs(l) < q.hl + m; }); }
+function stumps(H, list){ list.forEach(function(b){ var r = b[2] || 0.5; if (!skidClear(H, b[0], b[1], r)) return; H.bumpers.push({ x:b[0], y:b[1], r:r, e:0.55, skin:b[3] || 'pfstump' }); }); }
+function ferns(H, step, keep){ var rooms = H.polys.map(function(q){ return q.pts; }); keep = keep || []; step = step || 3.0;
+  rooms.forEach(function(P){ for (var i = 0; i < P.length; i++){ var a = P[i], c = P[(i + 1) % P.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]), n = Math.floor(L / step);
+    if (n < 1) continue; var tx = (c[0] - a[0]) / L, ty = (c[1] - a[1]) / L;
+    for (var k = 0; k < n; k++){ var u = (k + 0.5) * L / n, px = a[0] + tx * u, py = a[1] + ty * u, x = px - ty * 0.8, y = py + tx * 0.8;
+      if (!rooms.some(function(Q){ return inPoly(Q, x, y); })){ x = px + ty * 0.8; y = py - tx * 0.8; if (!rooms.some(function(Q){ return inPoly(Q, x, y); })) continue; }
+      if (rooms.some(function(Q){ for (var j = 0; j < Q.length; j++){ var e0 = Q[j], e1 = Q[(j + 1) % Q.length]; if ((Q !== P || j !== i) && segDist(x, y, e0[0], e0[1], e1[0], e1[1]) < 0.75) return true; } return false; })) continue;
+      if (Math.hypot(x - H.tee[0], y - H.tee[1]) < 3 || Math.hypot(x - H.cup[0], y - H.cup[1]) < 3.2) continue;
+      if (keep.some(function(q){ return Math.hypot(x - q[0], y - q[1]) < q[2]; })) continue;
+      if (H.blocks.some(function(r){ return inBlock(r, x, y, 0.75); }) || H.bumpers.some(function(b){ return Math.hypot(x - b.x, y - b.y) < b.r + 1.1; })) continue;
+      if (H.zones.some(function(z){ return z.m === M.WATER && (z.t === 'rect' ? x > Math.min(z.x0, z.x1) - 0.6 && x < Math.max(z.x0, z.x1) + 0.6 && y > Math.min(z.y0, z.y1) - 0.6 && y < Math.max(z.y0, z.y1) + 0.6 : Math.hypot(x - z.x, y - z.y) < z.r + 0.6); })) continue;
+      if (!skidClear(H, x, y, 0.6)) continue;
+      if ((H.secret || []).some(function(z){ return x > z.x0 - 0.8 && x < z.x1 + 0.8 && y > z.y0 - 0.8 && y < z.y1 + 0.8; })) continue;
+      if ((H.movers || []).some(function(m){ return m.ax != null ? segDist(x, y, m.ax, m.ay, m.bx, m.by) < 1.6 : Math.hypot(x - m.x, y - m.y) < (m.len || 2) + 0.8; }) || (H.ramps || []).some(function(R){ return Math.hypot(x - R.x, y - R.y) < 2.4; })) continue;
+      H.bumpers.push({ x:x, y:y, r:0.34, e:0.5, skin:'pffern' }); } } }); }
 function roses(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.55, e:0.55, skin:b[3] || 'wonrose' }); }); }
 function clouds(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.6, e:0.5, skin:'olycloud' }); }); }
 function shades(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.55, e:0.55, skin:'undshade' }); }); }
@@ -4306,7 +4391,181 @@ The ship came across a calm grey sea to Medusa's island: felt the colour of the 
     crags(H, [[-3.4, -4.9, 0.5], [3.4, -4.9, 0.5, 'hmsnowrock'], [-9.6, -14.9, 0.45, 'hmjuniper'], [10.1, -15.9, 0.45, 'hmcairn'], [-3.4, -13.1, 0.45, 'hmtent'], [3.9, -13.4, 0.45, 'hmpack'], [-12.4, -25.4, 0.45, 'hmsnowrock'], [10.9, -25.1, 0.4], [-12.9, -41.9, 0.45, 'hmcairn'],
       [-2.6, -34.1, 0.45, 'hmsnowrock'], [3.6, -33.9, 0.45, 'hmjuniper'], [-10.6, -51.9, 0.4], [-4.6, -49.4, 0.45, 'hmsnowrock'], [3.4, -48.9, 0.45, 'hmedel'], [12.6, -48.1, 0.4]]);
     H.comps.push({ k:'plane', gx:0.008, gy:0.002 }); H.comps.push({ k:'mound', x:-4.4, y:-50.1, s:1.9, a:0.12 }); zoneC(H, M.MUD, -6.6, -24.9, 0.6); zoneC(H, M.MUD, 6.9, -41.9, 0.55);
-    cornice(H, 3.0); pen(H, T, 8.9, -49.6); teeSide(H, T); bowl(H, 8.9, -49.6, 1.5, 0.14); return H; } }
+    cornice(H, 3.0); pen(H, T, 8.9, -49.6); teeSide(H, T); bowl(H, 8.9, -49.6, 1.5, 0.14); return H; } },
+  /* ---- WORLD 28, THE PACIFIC FOREST (holes 487 to 504). The third and last world of the Cryptid Expedition.
+     Into the old growth with a camera and a field notebook: the first cedars and the giant firs, the ranger's cabin, the creek, the
+     fire lookout on its ridge, the ruins of the old logging camp and its mill, the splash dam and the flume, and the deep woods
+     where something knocks on the trees at night. Across every hole the loggers' old skid road runs down the hillside, and on the
+     hole's clock the logs come rolling down it (skid, logsAt): each tips off the deck over a rail, rolls broadside down the road
+     faster and faster, and a ball it meets is shoved down the road ahead of it. A ball that stops on the road waits there until the
+     next log carries it to the foot. The rails are timber, sword ferns stand along them (ferns), and the wet moss is the slow
+     ground. Every hole rolls. An original place: no real forest, town or camp, and no creature's likeness from any film or later work. */
+  // The First Cedars: the first great cedars stand round the tee, a stack of cut logs waits by the right rail, and across the
+  // middle of the green the first skid road comes down from the left.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.6, 0], [6.4, 0], [7.9, -13.1], [7.1, -27.6], [8.4, -40.9], [-5.6, -42.4], [-8.4, -28.1], [-7.4, -12.9]])], [0.4, -2.5], [-1.9, -37.4]);
+    addBlock(H, 1.9, -13.9, 7.6, -17.1, 'pflogs');
+    skid(H, [-8.9, -24.4], [1.6, -25.4], { v:1.2, acc:1.2, phase:0.2 });
+    stumps(H, [[-3.9, -6.1, 0.5], [4.1, -7.4, 0.5, 'pfmoss'], [-4.6, -15.6, 0.5, 'pfstump'], [-1.4, -12.1, 0.45, 'pfmush'], [-3.6, -31.6, 0.55], [4.6, -30.9, 0.5, 'pfmoss'], [2.6, -38.4, 0.45, 'pfmush'], [-5.1, -36.9, 0.45, 'pftrailcam']]);
+    H.comps.push({ k:'plane', gx:0.008, gy:-0.002 }); H.comps.push({ k:'mound', x:4.6, y:-33.9, s:1.7, a:0.12 }); zoneC(H, M.MUD, 5.4, -37.6, 0.65); zoneC(H, M.MUD, -4.4, -9.6, 0.6);
+    ferns(H, 2.6); pen(H, T, -1.9, -37.4); teeSide(H, T); bowl(H, -1.9, -37.4, 1.5, 0.14); return H; } },
+  // Old Growth: the giant firs close in, one has fallen across the left of the green long ago and lies there under its moss, the
+  // green steps out right round it, and the skid road comes down from the right across the top.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-5.9, 0], [6.6, 0], [8.4, -11.6], [7.6, -24.1], [11.9, -31.4], [10.9, -42.6], [-4.4, -43.9], [-7.9, -30.6], [-6.9, -14.1]])], [0.9, -2.5], [4.1, -38.9]);
+    addBlock(H, -6.9, -17.4, -0.4, -19.4, 'pfcedar');
+    skid(H, [13.1, -28.4], [-1.6, -27.1], { v:1.4, acc:1.1, phase:0.55 });
+    stumps(H, [[-3.1, -6.6, 0.5, 'pfmoss'], [3.9, -7.9, 0.45], [5.4, -15.1, 0.5, 'pfmush'], [1.6, -21.6, 0.45, 'pfstump'], [-4.9, -23.9, 0.5, 'pfmoss'], [-1.9, -37.6, 0.45, 'pfmush'], [8.4, -40.1, 0.4], [-4.1, -33.4, 0.45, 'pflantern']]);
+    H.comps.push({ k:'plane', gx:-0.008, gy:0.003 }); H.comps.push({ k:'mound', x:0.6, y:-35.1, s:1.8, a:0.12 }); zoneC(H, M.MUD, 7.9, -34.4, 0.6); zoneC(H, M.MUD, -3.6, -12.1, 0.6);
+    ferns(H, 2.6); pen(H, T, 4.1, -38.9); teeSide(H, T); bowl(H, 4.1, -38.9, 1.5, 0.14); return H; } },
+  // The Ranger Cabin: the ranger's log cabin stands against the left rail with its lamp in the window, and above it the skid road
+  // comes down from the left, past the cabin's back door, to the far side of the green.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-7.1, 0], [6.1, 0], [8.6, -15.1], [7.9, -42.9], [-6.4, -44.6], [-9.4, -29.6], [-7.9, -14.4]])], [2.1, -2.5], [-3.1, -39.6]);
+    addBlock(H, -7.9, -15.1, -2.6, -20.4, 'pfcabin');
+    skid(H, [-9.8, -26.1], [2.4, -28.6], { v:1.2, acc:1.3, phase:0.1 });
+    stumps(H, [[-4.9, -6.1, 0.5, 'pflantern'], [1.1, -8.1, 0.45, 'pfstump'], [-1.1, -12.9, 0.5, 'pfmoss'], [4.9, -12.4, 0.45], [-0.9, -21.9, 0.45, 'pfmush'], [5.6, -21.4, 0.5, 'pfmoss'], [-6.9, -33.6, 0.45], [4.6, -36.9, 0.45, 'pftrailcam'], [1.4, -41.6, 0.4, 'pfmush']]);
+    H.comps.push({ k:'plane', gx:0.01, gy:0.001 }); H.comps.push({ k:'mound', x:1.9, y:-35.4, s:1.7, a:0.12 }); zoneC(H, M.MUD, -6.1, -38.4, 0.6); zoneC(H, M.MUD, 3.4, -18.1, 0.55);
+    ferns(H, 2.6); pen(H, T, -3.1, -39.6); teeSide(H, T); bowl(H, -3.1, -39.6, 1.5, 0.14); return H; } },
+  // The Skid Road: the long haul up the hill. A stack of logs shuts the lower green but for its right end, the longest skid road
+  // in the forest comes all the way down from the right across the middle, and the ruins of a donkey engine's footing shut the top
+  // but for its left end, with the flag back at the left.
+  { par:4, three:3, f:function(T){ var H = hole([pg([[-7.4, 0], [6.6, 0], [8.1, -19.1], [12.9, -24.6], [12.4, -53.1], [-9.6, -54.4], [-10.9, -26.9], [-7.9, -19.6]])], [0.6, -2.5], [-6.4, -49.1]);
+    addBlock(H, -10.9, -19.9, 4.1, -21.6, 'pflogs');
+    skid(H, [13.4, -31.4], [-3.4, -30.1], { v:1.4, acc:1.4, phase:0.35 });
+    addBlock(H, -1.9, -38.1, 12.4, -39.9, 'pfruin');
+    stumps(H, [[-3.9, -6.9, 0.5], [3.6, -7.6, 0.5, 'pfmoss'], [-5.1, -13.9, 0.45, 'pfmush'], [1.4, -14.9, 0.5, 'pfstump'], [10.1, -24.6, 0.45, 'pflantern'], [-7.9, -24.9, 0.45], [-7.1, -36.4, 0.45, 'pfmoss'], [6.9, -35.6, 0.45, 'pfmush'],
+      [-2.4, -44.6, 0.5, 'pfmoss'], [5.4, -45.4, 0.5], [9.9, -50.4, 0.4, 'pftrailcam'], [0.9, -51.1, 0.45, 'pfmush']]);
+    H.comps.push({ k:'plane', gx:-0.009, gy:0.003 }); H.comps.push({ k:'mound', x:4.1, y:-47.4, s:1.8, a:0.12 }); zoneC(H, M.MUD, 8.1, -34.9, 0.6); zoneC(H, M.MUD, -2.6, -24.6, 0.6);
+    ferns(H, 2.6); pen(H, T, -6.4, -49.1); teeSide(H, T); bowl(H, -6.4, -49.1, 1.5, 0.14); return H; } },
+  // Sword Ferns: a bank of sword ferns as high as a man stands about the middle of the green, and the skid road comes down from the
+  // right across the top, between the ferns and the flag.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.1, 0], [6.9, 0], [9.1, -13.9], [8.4, -38.6], [-3.4, -43.9], [-9.6, -35.6], [-8.4, -14.9]])], [0.4, -2.5], [-2.4, -38.9]);
+    stumps(H, [[-4.9, -16.4, 0.75, 'pfsword'], [-1.1, -19.1, 0.8, 'pfsword'], [2.9, -16.9, 0.7, 'pfsword'], [6.1, -20.4, 0.75, 'pfsword'], [-6.4, -21.9, 0.6, 'pfsword']]);
+    skid(H, [9.4, -29.4], [-2.1, -31.1], { v:1.1, acc:1.2, phase:0.8 });
+    stumps(H, [[-3.6, -6.4, 0.45, 'pfmush'], [4.4, -7.1, 0.5, 'pfmoss'], [6.9, -12.4, 0.45], [-6.6, -11.9, 0.45, 'pfstump'], [6.4, -36.1, 0.45, 'pfmush'], [1.9, -41.1, 0.45, 'pfmoss'], [-7.6, -33.9, 0.4]]);
+    H.comps.push({ k:'plane', gx:0.009, gy:-0.002 }); H.comps.push({ k:'mound', x:2.4, y:-36.4, s:1.7, a:0.12 }); zoneC(H, M.MUD, -6.4, -37.4, 0.55); zoneC(H, M.MUD, 5.6, -9.9, 0.55);
+    ferns(H, 2.6); pen(H, T, -2.4, -38.9); teeSide(H, T); bowl(H, -2.4, -38.9, 1.5, 0.14); return H; } },
+  // The Creek Crossing: the creek runs across the lower green from the left rail, with a ford of dry gravel on its right, the skid
+  // road comes down from the left above it, and the ruins of the old ford house shut the top but for its left end.
+  { par:4, three:3, f:function(T){ var H = hole([pg([[-6.9, 0], [7.4, 0], [8.9, -16.9], [13.1, -22.4], [12.6, -50.9], [-8.4, -52.6], [-10.4, -24.1], [-7.6, -17.4]])], [-0.4, -2.5], [8.4, -46.6]);
+    zoneR(H, M.WATER, -10.9, -19.6, 2.1, -22.6);
+    skid(H, [-10.6, -33.1], [3.6, -34.6], { v:1.2, acc:1.2, phase:0.6 });
+    addBlock(H, -1.4, -40.9, 12.6, -42.6, 'pfruin');
+    stumps(H, [[-3.9, -6.4, 0.5, 'pfmoss'], [4.1, -7.6, 0.45], [-4.6, -13.6, 0.45, 'pfmush'], [5.9, -14.4, 0.5, 'pfmoss'], [7.4, -26.6, 0.45, 'pflantern'], [-6.9, -27.4, 0.45], [0.4, -26.1, 0.45, 'pfstump'], [-6.1, -39.1, 0.45, 'pfmoss'],
+      [-4.4, -47.6, 0.5, 'pfmush'], [3.1, -48.4, 0.45], [10.6, -38.4, 0.4, 'pftrailcam']]);
+    H.comps.push({ k:'plane', gx:0.008, gy:0.002 }); H.comps.push({ k:'mound', x:-2.4, y:-46.1, s:1.8, a:0.12 }); zoneC(H, M.MUD, 9.1, -30.4, 0.6); zoneC(H, M.MUD, -4.1, -9.9, 0.55);
+    ferns(H, 2.6); pen(H, T, 8.4, -46.6); teeSide(H, T); bowl(H, 8.4, -46.6, 1.5, 0.14); return H; } },
+  // Nurse Log: a great cedar fell across the top of the green a hundred years ago and young trees grow along its back. It shuts the
+  // green but for its left end, and below it the skid road comes down from the left.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.4, 0], [6.1, 0], [7.6, -12.4], [10.4, -26.1], [8.9, -41.4], [-6.9, -42.9], [-8.1, -26.6], [-7.6, -13.1]])], [-0.6, -2.5], [5.4, -37.6]);
+    skid(H, [-8.6, -17.4], [2.9, -18.6], { v:1.3, acc:1.1, phase:0.25 });
+    addBlock(H, -2.4, -27.4, 10.4, -29.1, 'pfcedar');
+    stumps(H, [[-3.4, -6.9, 0.45, 'pfstump'], [3.9, -6.1, 0.5, 'pfmoss'], [5.4, -12.1, 0.45, 'pfmush'], [-5.9, -24.6, 0.45, 'pfmoss'], [4.6, -23.9, 0.5], [-4.4, -35.9, 0.45, 'pfmush'], [0.6, -39.9, 0.45, 'pflantern'], [7.4, -32.4, 0.4, 'pfmoss']]);
+    H.comps.push({ k:'plane', gx:-0.01, gy:0.002 }); H.comps.push({ k:'mound', x:-0.9, y:-34.4, s:1.7, a:0.12 }); zoneC(H, M.MUD, 2.4, -31.9, 0.55); zoneC(H, M.MUD, -4.9, -10.6, 0.6);
+    ferns(H, 2.6); pen(H, T, 5.4, -37.6); teeSide(H, T); bowl(H, 5.4, -37.6, 1.5, 0.14); return H; } },
+  // The Fire Lookout: the lookout stands on the ridge at the top of the hill. A stack of logs shuts the foot of the green but for
+  // its left end, a skid road comes down from the right above it, the stone footing of the old lookout shuts the middle but for its
+  // right end, and a second road comes down from the left across the top, with the flag back at the left.
+  { par:4, three:3, f:function(T){ var H = hole([pg([[-6.6, 0], [7.1, 0], [9.6, -17.4], [8.4, -34.6], [12.9, -41.1], [11.4, -55.4], [-10.9, -56.6], [-12.1, -38.4], [-8.9, -17.9]])], [0.9, -2.5], [-6.9, -51.4]);
+    addBlock(H, -2.9, -16.4, 9.9, -17.9, 'pflogs'); skid(H, [9.9, -24.1], [-1.9, -25.4], { v:1.2, acc:1.2, phase:0 });
+    addBlock(H, -12.1, -33.4, 3.4, -35.1, 'pfruin');
+    skid(H, [-12.5, -44.6], [2.1, -43.4], { v:1.3, acc:1.2, phase:0.5 });
+    stumps(H, [[-3.4, -6.6, 0.5, 'pfmoss'], [4.4, -7.4, 0.45], [-5.1, -14.1, 0.45, 'pfmush'], [1.9, -14.9, 0.5, 'pfstump'], [6.6, -30.4, 0.45, 'pflantern'], [-7.4, -29.4, 0.45, 'pfmoss'], [-0.4, -30.1, 0.45], [9.6, -37.9, 0.45, 'pfmush'],
+      [-2.4, -51.9, 0.5, 'pfmoss'], [7.1, -51.4, 0.45], [-9.1, -39.6, 0.4, 'pftrailcam']]);
+    H.comps.push({ k:'plane', gx:0.009, gy:0.002 }); H.comps.push({ k:'mound', x:3.4, y:-50.1, s:1.8, a:0.12 }); zoneC(H, M.MUD, 5.4, -38.4, 0.6); zoneC(H, M.MUD, -4.4, -10.1, 0.55);
+    ferns(H, 2.6); pen(H, T, -6.9, -51.4); teeSide(H, T); bowl(H, -6.9, -51.4, 1.5, 0.14); return H; } },
+  // The Splash Dam: the loggers dammed the creek to float their logs out, and the old dam still stands across the green with its
+  // sluice open in the middle. Below it the skid road comes down from the right, and the mill pond lies up in the left corner.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-7.1, 0], [6.4, 0], [7.9, -14.1], [9.1, -39.9], [-4.9, -42.6], [-8.6, -28.9], [-8.1, -13.6]])], [0.1, -2.5], [2.9, -37.9]);
+    skid(H, [8.8, -16.1], [-2.4, -15.4], { v:1.2, acc:1.2, phase:0.7 });
+    addBlock(H, -8.6, -21.1, -1.6, -22.9, 'pfruin'); addBlock(H, 1.4, -21.1, 9.1, -22.9, 'pfruin'); zoneC(H, M.WATER, -5.6, -34.1, 1.2);
+    stumps(H, [[-4.1, -6.1, 0.5, 'pfmush'], [3.9, -7.1, 0.5, 'pfstump'], [-5.6, -25.9, 0.45, 'pfmoss'], [5.9, -26.6, 0.45], [-1.6, -30.4, 0.45, 'pflantern'], [6.6, -35.4, 0.45, 'pfmush'], [-1.9, -39.9, 0.4, 'pfmoss']]);
+    H.comps.push({ k:'plane', gx:-0.009, gy:0.002 }); H.comps.push({ k:'mound', x:4.9, y:-30.9, s:1.7, a:0.12 }); zoneC(H, M.MUD, -2.9, -11.4, 0.6); zoneC(H, M.MUD, 6.1, -10.9, 0.55);
+    ferns(H, 2.6); pen(H, T, 2.9, -37.9); teeSide(H, T); bowl(H, 2.9, -37.9, 1.5, 0.14); return H; } },
+  // The Log Deck: the camp's log deck, where the cut logs wait. A stack of them shuts the lower green but for its right end, the skid
+  // road comes slanting down from the right across the middle, and the old flume's trestle shuts the top but for its left end.
+  { par:4, three:3, f:function(T){ var H = hole([pg([[-7.9, 0], [7.1, 0], [8.6, -20.4], [12.1, -26.4], [11.6, -52.9], [-10.6, -54.1], [-11.4, -27.1], [-8.4, -20.9]])], [-0.6, -2.5], [7.1, -48.6]);
+    addBlock(H, -11.4, -20.9, 2.9, -22.6, 'pflogs');
+    skid(H, [13.4, -37.7], [-3.4, -31.6], { v:1.2, acc:1.3, phase:0.15 });
+    addBlock(H, -5.4, -43.4, 11.6, -44.9, 'pfflume');
+    stumps(H, [[-4.1, -6.4, 0.5, 'pfstump'], [3.6, -7.1, 0.45, 'pfmoss'], [-5.4, -14.4, 0.5], [2.1, -15.1, 0.45, 'pfmush'], [9.4, -24.9, 0.45, 'pfmoss'], [-8.4, -25.6, 0.45, 'pflantern'], [-1.4, -26.4, 0.45], [-8.6, -38.1, 0.45, 'pfmush'],
+      [-6.9, -49.6, 0.5, 'pfmoss'], [0.4, -50.4, 0.45, 'pfstump'], [9.6, -40.1, 0.4]]);
+    H.comps.push({ k:'plane', gx:-0.008, gy:0.002 }); H.comps.push({ k:'mound', x:-2.4, y:-48.4, s:1.8, a:0.12 }); zoneC(H, M.MUD, 3.6, -39.4, 0.6); zoneC(H, M.MUD, 5.1, -11.6, 0.55);
+    ferns(H, 2.6); pen(H, T, 7.1, -48.6); teeSide(H, T); bowl(H, 7.1, -48.6, 1.5, 0.14); return H; } },
+  // Trail Camera: somebody has strapped trail cameras to the stumps all about the green. A stack of logs stands in the middle of the
+  // lower green, and the skid road comes down from the left across the top.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.1, 0], [7.4, 0], [8.6, -12.9], [6.9, -28.4], [9.4, -42.1], [-6.4, -43.4], [-7.9, -26.4], [-6.9, -12.1]])], [1.4, -2.5], [-2.1, -38.6]);
+    addBlock(H, -1.4, -15.4, 4.4, -18.1, 'pflogs');
+    skid(H, [-8.5, -29.6], [2.6, -30.4], { v:1.3, acc:1.2, phase:0.45 });
+    stumps(H, [[-3.4, -6.9, 0.45, 'pftrailcam'], [4.6, -6.4, 0.5, 'pfstump'], [-4.6, -14.6, 0.5, 'pftrailcam'], [6.1, -16.1, 0.45, 'pfmoss'], [-3.9, -22.9, 0.45, 'pfmush'], [4.4, -24.1, 0.45, 'pftrailcam'], [5.4, -36.6, 0.45, 'pfmoss'], [1.9, -41.4, 0.4, 'pftrailcam']]);
+    H.comps.push({ k:'plane', gx:0.009, gy:0.003 }); H.comps.push({ k:'mound', x:2.9, y:-34.6, s:1.7, a:0.12 }); zoneC(H, M.MUD, -5.4, -35.4, 0.55); zoneC(H, M.MUD, 1.4, -21.6, 0.6);
+    ferns(H, 2.6); pen(H, T, -2.1, -38.6); teeSide(H, T); bowl(H, -2.1, -38.6, 1.5, 0.14); return H; } },
+  // The Mill Ruins: the old sawmill's concrete walls still stand in the woods. One shuts the lower green but for its right end, the
+  // skid road comes down from the right above it, and two more cross the top, the first open at its left end and the last at its
+  // right, with the flag back at the left.
+  { par:4, three:3, f:function(T){ var H = hole([pg([[-6.9, 0], [6.9, 0], [7.9, -22.1], [12.9, -27.9], [13.4, -51.6], [-8.1, -53.4], [-9.9, -29.6], [-7.4, -22.4]])], [0.1, -2.5], [-4.4, -48.9]);
+    addBlock(H, -9.9, -14.9, 2.4, -16.4, 'pfruin');
+    skid(H, [14.1, -25.5], [-3.4, -27.1], { v:1.3, acc:1.2, phase:0.3 });
+    addBlock(H, -1.4, -35.6, 13.4, -37.1, 'pfruin'); addBlock(H, -9.4, -42.4, 4.4, -43.9, 'pfruin');
+    stumps(H, [[-3.6, -6.6, 0.5, 'pfmoss'], [3.9, -7.9, 0.45, 'pfstump'], [5.1, -13.6, 0.45, 'pfmush'], [-5.4, -20.4, 0.45], [4.4, -20.9, 0.45, 'pfmoss'], [-7.1, -31.1, 0.45, 'pflantern'], [7.4, -39.9, 0.45], [6.9, -46.4, 0.5, 'pfmoss'], [10.9, -48.9, 0.4, 'pfmush'], [-0.4, -50.6, 0.45]]);
+    H.comps.push({ k:'plane', gx:0.009, gy:-0.002 }); H.comps.push({ k:'mound', x:3.6, y:-47.1, s:1.8, a:0.12 }); zoneC(H, M.MUD, -2.9, -32.4, 0.6); zoneC(H, M.MUD, -4.6, -10.4, 0.55);
+    ferns(H, 2.6); pen(H, T, -4.4, -48.9); teeSide(H, T); bowl(H, -4.4, -48.9, 1.5, 0.14); return H; } },
+  // The Waterfall: a waterfall comes down the rocks into a pool in the top right corner, the spray keeps the moss wet all round it,
+  // and across the middle of the green the skid road comes down from the right.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-5.6, 0], [7.1, 0], [8.4, -14.6], [7.4, -30.9], [4.1, -42.4], [-8.4, -41.1], [-9.1, -25.9], [-7.1, -12.9]])], [0.6, -2.5], [-3.4, -36.4]);
+    addBlock(H, -7.1, -13.6, -1.9, -15.4, 'pflogs');
+    skid(H, [8.8, -22.1], [-2.6, -23.9], { v:1.2, acc:1.3, phase:0.9 });
+    zoneC(H, M.WATER, 4.1, -37.1, 1.5);
+    stumps(H, [[-3.1, -6.1, 0.45, 'pfmush'], [4.1, -6.9, 0.5, 'pfmoss'], [5.6, -14.4, 0.5, 'pfmoss'], [1.4, -17.9, 0.45, 'pfstump'], [-6.4, -29.9, 0.45, 'pfmoss'], [3.6, -30.6, 0.5, 'pfmoss'], [-6.6, -38.4, 0.4, 'pflantern'], [0.9, -40.4, 0.45, 'pfmoss']]);
+    H.comps.push({ k:'plane', gx:-0.008, gy:0.002 }); H.comps.push({ k:'mound', x:-0.4, y:-31.9, s:1.7, a:0.12 }); zoneC(H, M.MUD, 2.1, -34.1, 0.6); zoneC(H, M.MUD, -4.6, -19.4, 0.55);
+    ferns(H, 2.6); pen(H, T, -3.4, -36.4); teeSide(H, T); bowl(H, -3.4, -36.4, 1.5, 0.14); return H; } },
+  // The Flume: the loggers' flume runs across the green twice on its trestle, the lower run shutting the green but for its right end
+  // and the upper but for its left, and between them the skid road comes down from the left.
+  { par:4, three:3, f:function(T){ var H = hole([pg([[-6.4, 0], [7.6, 0], [9.4, -18.9], [13.4, -23.1], [13.9, -50.4], [-9.9, -52.1], [-11.6, -23.9], [-8.1, -19.4]])], [1.1, -2.5], [9.4, -46.9]);
+    addBlock(H, -11.6, -18.9, 3.9, -20.4, 'pfflume');
+    skid(H, [-12.1, -29.6], [4.4, -31.1], { v:1.3, acc:1.3, phase:0.65 });
+    addBlock(H, -3.4, -38.4, 13.9, -39.9, 'pfflume');
+    stumps(H, [[-3.6, -6.1, 0.5, 'pfstump'], [4.4, -6.9, 0.5, 'pfmoss'], [-4.4, -13.1, 0.45, 'pfmush'], [2.1, -14.4, 0.45], [11.1, -26.4, 0.45, 'pfmoss'], [-8.9, -25.9, 0.45, 'pflantern'], [-0.4, -24.6, 0.45], [-8.4, -36.4, 0.45, 'pfmush'],
+      [-6.6, -48.9, 0.5, 'pfmoss'], [1.4, -47.6, 0.45, 'pfstump'], [11.4, -42.6, 0.4, 'pftrailcam']]);
+    H.comps.push({ k:'plane', gx:-0.009, gy:0.002 }); H.comps.push({ k:'mound', x:3.6, y:-44.4, s:1.8, a:0.12 }); zoneC(H, M.MUD, 8.4, -35.1, 0.6); zoneC(H, M.MUD, -5.4, -9.4, 0.55);
+    ferns(H, 2.6); pen(H, T, 9.4, -46.9); teeSide(H, T); bowl(H, 9.4, -46.9, 1.5, 0.14); return H; } },
+  // Campfire Night: the campers' fire burns in its ring of stones in the middle of the green, their lanterns hang about it, and above
+  // it the skid road comes down from the left in the dark.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.9, 0], [6.1, 0], [8.9, -13.4], [8.1, -27.9], [9.9, -40.6], [-5.4, -43.1], [-8.6, -29.4], [-8.9, -14.9]])], [-0.9, -2.5], [4.9, -38.1]);
+    stumps(H, [[0.4, -15.4, 0.5, 'pfmoss'], [2.6, -16.6, 0.5, 'pfmoss'], [2.6, -19.2, 0.5, 'pfmoss'], [0.4, -20.4, 0.5, 'pfmoss'], [-1.8, -19.2, 0.5, 'pfmoss'], [-1.8, -16.6, 0.5, 'pfmoss'], [0.4, -17.9, 0.55, 'pflantern']]);
+    skid(H, [-9.2, -30.6], [1.4, -31.4], { v:1.2, acc:1.2, phase:0.4 });
+    stumps(H, [[-4.6, -6.6, 0.45, 'pflantern'], [3.6, -6.1, 0.5, 'pfstump'], [6.1, -12.6, 0.45, 'pfmush'], [-6.4, -12.1, 0.45, 'pfmoss'], [-5.1, -38.4, 0.45, 'pflantern'], [-0.6, -41.1, 0.45, 'pfmush'], [7.4, -34.9, 0.4]]);
+    H.comps.push({ k:'plane', gx:0.009, gy:-0.002 }); H.comps.push({ k:'mound', x:-1.9, y:-35.9, s:1.7, a:0.12 }); zoneC(H, M.MUD, 5.6, -24.4, 0.6); zoneC(H, M.MUD, -5.9, -22.9, 0.55);
+    ferns(H, 2.6); pen(H, T, 4.9, -38.1); teeSide(H, T); bowl(H, 4.9, -38.1, 1.5, 0.14); return H; } },
+  // The Long Haul: the longest green in the forest. A fallen cedar shuts the lower green but for its right end, a stack of logs the
+  // middle but for its left, and across the top a skid road brings its logs down from the right two at a time.
+  { par:4, three:3, f:function(T){ var H = hole([pg([[-6.1, 0], [6.9, 0], [8.4, -16.4], [7.6, -33.9], [11.9, -39.4], [11.1, -57.4], [-9.4, -58.6], [-10.6, -37.6], [-7.4, -16.9]])], [0.4, -2.5], [-5.4, -53.6]);
+    addBlock(H, -10.6, -26.4, 3.1, -28.1, 'pfcedar'); addBlock(H, -4.4, -36.4, 11.9, -37.9, 'pflogs');
+    skid(H, [12.4, -45.9], [-3.4, -44.4], { v:1.4, acc:1.2, n:2, gap:2.6, phase:0.2 });
+    stumps(H, [[-3.4, -6.9, 0.5, 'pfmoss'], [4.1, -7.4, 0.45, 'pfstump'], [-4.6, -14.1, 0.45, 'pfmush'], [2.4, -13.9, 0.5], [5.9, -23.1, 0.45, 'pflantern'], [-6.6, -21.9, 0.45, 'pfmoss'], [-7.9, -33.1, 0.45], [5.4, -31.9, 0.45, 'pfmush'],
+      [-1.9, -54.4, 0.5, 'pfmoss'], [7.4, -54.9, 0.45, 'pftrailcam'], [-8.1, -41.4, 0.4, 'pfstump']]);
+    H.comps.push({ k:'plane', gx:0.008, gy:0.003 }); H.comps.push({ k:'mound', x:3.9, y:-51.6, s:1.8, a:0.12 }); zoneC(H, M.MUD, -3.6, -31.9, 0.6); zoneC(H, M.MUD, 5.4, -11.4, 0.55);
+    ferns(H, 2.6); pen(H, T, -5.4, -53.6); teeSide(H, T); bowl(H, -5.4, -53.6, 1.5, 0.14); return H; } },
+  // A Knock in the Woods: two knocks on a tree in the dark, then one more far off. A fallen cedar shuts the lower green but for its
+  // left end, hollow in one place near its right and open right through, the skid road comes down from the right above it, and a
+  // stack of logs shuts the top but for its right end. Threaded straight up from the tee, the hollow cedar is two putts against three.
+  { par:4, three:3, f:function(T){ var H = hole([pg([[-6.6, 0], [7.6, 0], [9.1, -18.4], [8.1, -50.6], [-9.4, -51.9], [-10.9, -22.1]])], [2.9, -2.5], [5.4, -46.4]);
+    addBlock(H, -6.4, -23.6, 3.45, -25.1, 'pfcedar'); addBlock(H, 4.45, -23.6, 9.6, -25.1, 'pfcedar'); secret(H, 3.45, -23.4, 4.45, -25.3);
+    skid(H, [9.5, -31.6], [-3.9, -33.1], { v:1.3, acc:1.2, phase:0.75 });
+    addBlock(H, -10.4, -38.9, 1.9, -40.4, 'pflogs');
+    stumps(H, [[-4.4, -6.1, 0.45, 'pflantern'], [5.6, -7.4, 0.5, 'pfmoss'], [-7.4, -14.6, 0.5, 'pfstump'], [6.4, -16.4, 0.45, 'pfmush'], [6.9, -28.4, 0.45, 'pfmoss'], [-7.6, -28.9, 0.45], [-7.9, -48.9, 0.45, 'pfmush'], [-1.4, -46.9, 0.45, 'pfmoss'], [1.4, -49.6, 0.4, 'pftrailcam']]);
+    H.comps.push({ k:'plane', gx:-0.009, gy:0.002 }); H.comps.push({ k:'mound', x:-4.6, y:-45.1, s:1.8, a:0.12 }); zoneC(H, M.MUD, -3.9, -12.4, 0.6); zoneC(H, M.MUD, -6.6, -36.9, 0.55);
+    ferns(H, 2.6); pen(H, T, 5.4, -46.4); teeSide(H, T); bowl(H, 5.4, -46.4, 1.5, 0.14); return H; } },
+  // Bigfoot Country: the whole forest at once. The green opens wide under the giant trees with a skid road coming down from the left
+  // across its foot, a great fallen cedar lies across the middle from the right rail, a second road comes down from the right above
+  // it, and a last stack of logs shuts the top but for its right end, with the flag back at the left.
+  { par:4, three:3, sig:true, f:function(T){ var H = hole([pg([[-6.9, 0], [6.6, 0], [8.1, -12.9], [14.4, -16.4], [13.4, -34.1], [15.1, -51.4], [-12.9, -55.1], [-14.9, -34.6], [-12.4, -15.9], [-7.9, -13.4]])], [0.4, -2.5], [-8.6, -50.4]);
+    skid(H, [-14.0, -22.1], [4.4, -23.6], { v:1.4, acc:1.3, phase:0 });
+    addBlock(H, -10.9, -28.4, 13.9, -30.9, 'pfcedar');
+    skid(H, [14.8, -40.4], [-2.9, -38.9], { v:1.3, acc:1.3, phase:0.5 });
+    addBlock(H, -13.9, -45.4, 9.9, -46.6, 'pflogs');
+    stumps(H, [[-3.4, -5.1, 0.5, 'pfmoss'], [3.4, -5.4, 0.5, 'pfstump'], [-9.6, -15.4, 0.45, 'pfmush'], [10.1, -16.4, 0.45, 'pfmoss'], [-3.4, -13.1, 0.45, 'pflantern'], [3.9, -13.4, 0.45, 'pftrailcam'], [-12.6, -26.1, 0.45, 'pfmoss'], [11.1, -26.4, 0.4],
+      [-12.9, -42.4, 0.45, 'pfmush'], [-2.6, -51.9, 0.45, 'pfmoss'], [4.6, -51.4, 0.45, 'pfstump'], [12.9, -49.1, 0.4, 'pfmush']]);
+    H.comps.push({ k:'plane', gx:0.008, gy:0.002 }); H.comps.push({ k:'mound', x:-3.4, y:-50.9, s:1.9, a:0.12 }); zoneC(H, M.MUD, 6.9, -42.9, 0.6); zoneC(H, M.MUD, -6.6, -34.6, 0.55);
+    ferns(H, 2.6); pen(H, T, -8.6, -50.4); teeSide(H, T); bowl(H, -8.6, -50.4, 1.5, 0.14); return H; } }
 ];
 /* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders, two halves of nine on the season's two
    themes. Par is the solver's, the same rule as the Putt Putt Tour.
@@ -4430,7 +4689,8 @@ var SECRETS = [
   { theme:'beanstalk', at:5, name:'The Giant’s Larder', scene:'s-larder' },
   { theme:'mississippi', at:13, name:'Tom Sawyer’s Gang', scene:'s-gang' },
   { theme:'lochness', at:9, name:'The Boathouse', scene:'s-boathouse' },
-  { theme:'himalayas', at:17, name:'The Ice Grotto', scene:'s-icegrotto' }
+  { theme:'himalayas', at:17, name:'The Ice Grotto', scene:'s-icegrotto' },
+  { theme:'pacific', at:7, name:'The Hollow Cedar', scene:'s-hollowcedar' }
 ];
 var SECRET_LEVELS = [
   // The Potting Shed: crates stacked down both walls, the mower rolling across the middle, and a crate in front of the cup.
@@ -4561,7 +4821,15 @@ var SECRET_LEVELS = [
     yeti(H, [[-5.4, -14.6], [-1.6, -16.4], [2.6, -14.4], [5.4, -15.9]], { v:2.8, keep:2.4, fill:1.2, phase:0.3 });
     crags(H, [[-4.6, -5.6, 0.45, 'hmsnowrock'], [4.6, -6.1, 0.45, 'hmserac'], [5.1, -24.1, 0.45, 'hmsnowrock'], [-6.1, -23.4, 0.4, 'hmserac'], [-1.4, -21.9, 0.42, 'hmsnowrock']]);
     H.comps.push({ k:'mound', x:3.1, y:-11.9, s:1.6, a:0.12 }); H.comps.push({ k:'plane', gx:-0.01, gy:0.002 }); zoneC(H, M.MUD, -4.4, -11.4, 0.6);
-    pen(H, T, -3.1, -25.9); bowl(H, -3.1, -25.9, 1.5, 0.14); return H; } }
+    pen(H, T, -3.1, -25.9); bowl(H, -3.1, -25.9, 1.5, 0.14); return H; } },
+  // The Hollow Cedar: inside a giant cedar that a fire hollowed out a hundred years ago and that still stands, its walls red wood
+  // and its floor soft with needles. A fallen limb lies across the back, and down the middle an old skid road brings its logs.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-5.4, 0], [6.1, 0], [7.9, -11.6], [6.6, -24.9], [1.9, -30.4], [-6.4, -28.6], [-7.9, -13.6]])], [0.4, -2.5], [-2.4, -25.4]);
+    addBlock(H, 1.1, -18.9, 6.9, -20.4, 'pfcedar');
+    skid(H, [-8.6, -14.1], [1.6, -15.1], { v:1.2, acc:1.2, phase:0.3 });
+    stumps(H, [[-4.4, -5.6, 0.45, 'pfmush'], [4.6, -6.1, 0.45, 'pfstump'], [4.4, -23.6, 0.45, 'pfmoss'], [-5.6, -22.9, 0.4, 'pflantern'], [-1.1, -21.4, 0.42, 'pfmush']]);
+    H.comps.push({ k:'mound', x:2.6, y:-10.9, s:1.6, a:0.12 }); H.comps.push({ k:'plane', gx:0.01, gy:0.002 }); zoneC(H, M.MUD, -4.1, -10.6, 0.6);
+    pen(H, T, -2.4, -25.4); bowl(H, -2.4, -25.4, 1.5, 0.14); return H; } }
 ];
 var SECRET_NAMES = SECRETS.map(function(x){ return x.name; });
 var SECRET_WORLDS = SECRETS.map(function(x){ return { id:'s-' + x.theme, name:x.name, theme:x.theme, blurb:'A secret hole.', haz:['Found on a trail'] }; });
@@ -4619,7 +4887,8 @@ var TOUR_NAMES = [
   'Up Through the Clouds', 'The Long Broad Road', 'Five Magic Beans', 'Milky-White', 'The Giant’s Doorstep', 'The Great Tall House', 'Fee-Fi-Fo-Fum', 'Into the Oven', 'The Giant’s Breakfast', 'Bags of Gold', 'The Counting House', 'Into the Copper', 'The Hen That Lays', 'Golden Eggs', 'The Singing Harp', 'Master! Master!', 'Down the Beanstalk', 'The Giant’s Castle',
   'The Whitewashed Fence', 'St. Petersburg', 'The Steamboat Landing', 'The Ferry Boat', 'Jackson’s Island', 'The Pirates’ Camp', 'The Storm on the Island', 'The Wigwam on the Raft', 'Running by Night', 'Lost in the Fog', 'The Towhead', 'The Wreck', 'Mark Twain', 'The River Towns', 'McDougal’s Cave', 'The Kite Line', 'The Treasure', 'The Big River',
   'The Pier at Dawn', 'First Ripple', 'The Crofter’s Field', 'Heather Brae', 'The Standing Stones', 'The Ghillie’s Boat', 'Peat Smoke', 'The Ruined Keep', 'The Castle Well', 'Mist on the Water', 'The Steamer Pier', 'The Long Neck', 'Three Humps', 'The Lighthouse Rock', 'The Sketchbook', 'Deep Water', 'The Camera Shy', 'The Monster’s Loch',
-  'Base Camp', 'The First Snow', 'The Tea House', 'The Yak Trail', 'The Moraine', 'The Rope Bridge', 'Big Feet', 'The Icefall', 'The Herder’s Camp', 'Blue Ice', 'The Cook Tent', 'Whiteout', 'The Crevasse Field', 'Spindrift', 'The Fixed Rope', 'The High Col', 'A Roar in the Night', 'The Yeti’s Ridge'];
+  'Base Camp', 'The First Snow', 'The Tea House', 'The Yak Trail', 'The Moraine', 'The Rope Bridge', 'Big Feet', 'The Icefall', 'The Herder’s Camp', 'Blue Ice', 'The Cook Tent', 'Whiteout', 'The Crevasse Field', 'Spindrift', 'The Fixed Rope', 'The High Col', 'A Roar in the Night', 'The Yeti’s Ridge',
+  'The First Cedars', 'Old Growth', 'The Ranger Cabin', 'The Skid Road', 'Sword Ferns', 'The Creek Crossing', 'Nurse Log', 'The Fire Lookout', 'The Splash Dam', 'The Log Deck', 'Trail Camera', 'The Mill Ruins', 'The Waterfall', 'The Flume', 'Campfire Night', 'The Long Haul', 'A Knock in the Woods', 'Bigfoot Country'];
 /* THE TOURS. Each is a list of worlds, a list of holes and their names, and what it pays. The Members
    Tour is one world of eighteen in two halves, on the season's theme, and pays the most on the site. */
 var TOURS = {
@@ -4673,6 +4942,7 @@ function roll(H, seed){
       if (!rooms.some(function(Q, j){ return j !== k && inPoly(Q, (a[0] + c[0]) / 2, (a[1] + c[1]) / 2 + 0.3) ; })) return false; } } }
     if (Math.hypot(x - H.tee[0], y - H.tee[1]) < need + 2.5 || Math.hypot(x - H.cup[0], y - H.cup[1]) < need + 2.2) return false;
     var pts = [].concat(H.bumpers.map(function(b){ return [b.x, b.y, b.r]; }), (H.loops || []).map(function(L){ return [L.x, L.y, 2.5]; }), (H.ramps || []).map(function(R){ return [R.x, R.y, 3]; }), (H.hops || []).map(function(q){ return [q.x, q.y, q.r + 0.5]; }), (H.cyclones || []).map(function(q){ return [q.x, q.y, q.r + 0.8]; }), (H.cyclones || []).map(function(q){ return [q.tx, q.ty, 1.4]; }), (H.eyes || []).map(function(e){ return [e.x, e.y, e.r + 1]; }), (H.gazes || []).map(function(g){ return [g.x, g.y, g.r + 1]; }), (H.lethes || []).map(function(l){ return [l.x, l.y, l.r + 0.6]; }), (H.sizers || []).map(function(q){ return [q.x, q.y, q.r + 0.6]; }), (H.wees || []).map(function(w){ return [(w.ax + w.bx) / 2, (w.ay + w.by) / 2, Math.hypot(w.bx - w.ax, w.by - w.ay) / 2 + 0.8]; }), (H.glasses || []).map(function(g){ return [(g.ax + g.bx) / 2, (g.ay + g.by) / 2, Math.hypot(g.bx - g.ax, g.by - g.ay) / 2 + 1]; }), (H.stalks || []).map(function(q){ var a = q.a * Math.PI / 180; return [q.x + Math.sin(a) * q.L / 2, q.y - Math.cos(a) * q.L / 2, q.L / 2 + 1]; }), [].concat.apply([], (H.drifts || []).map(function(d){ var q = driftPrep(d, 1); return q.q.filter(function(p, i){ return i % 4 === 0; }).map(function(p){ return [p[0], p[1], q.w / 2 + 1]; }); })), [].concat.apply([], (H.wakes || []).map(function(k){ var q = driftPrep({ pts:k.pts, w:0.4 }, 1); return q.q.filter(function(p, i){ return i % 4 === 0; }).map(function(p){ return [p[0], p[1], (k.r || 0.85) + 1.2]; }); })), [].concat.apply([], (H.yetis || []).map(function(k){ return yetiPrep(k, 1).prints.map(function(p){ return [p.x, p.y, (k.rl || 0.9) + 1]; }); })), (H.bolts || []).map(function(b){ return [b.x, b.y, b.r + 0.6]; }), (H.bolts || []).map(function(b){ return [b.x + Math.sin(b.a) * b.L, b.y - Math.cos(b.a) * b.L, 1.6]; }),
+      [].concat.apply([], (H.skids || []).map(function(k){ var o = []; for (var u = 0; u <= 1.0001; u += 0.2) o.push([k.a[0] + (k.b[0] - k.a[0]) * u, k.a[1] + (k.b[1] - k.a[1]) * u, (k.L || 4.4) / 2 + 0.8]); return o; })),
       (H.turns || []).map(function(u){ return [u.x, u.y, (u.r || 2) + 0.5]; }), (H.movers || []).map(function(m){ return m.k === 'spin' || m.k === 'blade' ? [m.x, m.y, (m.len || 2) + 0.6] : [(m.ax + m.bx) / 2, (m.ay + m.by) / 2, Math.hypot(m.bx - m.ax, m.by - m.ay) / 2 + 1.2]; }));
     if (pts.some(function(q){ return Math.hypot(x - q[0], y - q[1]) < q[2] + need + 0.6; })) return false;
     var rects = [].concat(H.blocks, H.zones.filter(function(z){ return z.t === 'rect'; }), H.bridges || [], H.ferries || [], H.belts || [], H.floats || [], H.climbs || [], H.secret || []);
@@ -4722,7 +4992,7 @@ var RTT_PUTT = {
   M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, MAX_FT:MAX_FT, V_STIMP:V_STIMP, ART:ART, HOP_MAX:HOP_MAX, CYC_TOP:CYC_TOP,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
-  simulate:simulate, eyeSees:eyeSees, eyeAng:eyeAng, gazePath:gazePath, gazeOn:gazeOn, letheAt:letheAt, letheAng:letheAng, LETHE_KEEP:LETHE_KEEP, boltAt:boltAt, boltPh:boltPh, boltFalls:boltFalls, sizerAt:sizerAt, sizeAtT:sizeAtT, glassFlip:glassFlip, glassCross:glassCross, stalkLen:stalkLen, stalkDeck:stalkDeck, raftAt:raftAt, raftsOf:raftsOf, driftNear:driftNear, driftWet:driftWet, RAFT_LOST:RAFT_LOST, humpAt:humpAt, wakePush:wakePush, wakePrep:wakePrep, yetiPrep:yetiPrep, printDepth:printDepth, printPull:printPull, printsAt:printsAt, PRINT_D:PRINT_D, PRINT_STOMP:PRINT_STOMP, PRINT_DRAG:PRINT_DRAG, HUMP_E:HUMP_E, HUMP_RISE:HUMP_RISE, WAKE_A:WAKE_A, WEE_R:WEE_R, BIG_R:BIG_R, WEE_SLOPE:WEE_SLOPE, BIG_SLOPE:BIG_SLOPE, BOLT_WARN:BOLT_WARN, BOLT_FLY:BOLT_FLY, BOLT_ROLL:BOLT_ROLL, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
+  simulate:simulate, eyeSees:eyeSees, eyeAng:eyeAng, gazePath:gazePath, gazeOn:gazeOn, letheAt:letheAt, letheAng:letheAng, LETHE_KEEP:LETHE_KEEP, boltAt:boltAt, boltPh:boltPh, boltFalls:boltFalls, sizerAt:sizerAt, sizeAtT:sizeAtT, glassFlip:glassFlip, glassCross:glassCross, stalkLen:stalkLen, stalkDeck:stalkDeck, raftAt:raftAt, raftsOf:raftsOf, driftNear:driftNear, driftWet:driftWet, RAFT_LOST:RAFT_LOST, humpAt:humpAt, wakePush:wakePush, wakePrep:wakePrep, yetiPrep:yetiPrep, printDepth:printDepth, printPull:printPull, printsAt:printsAt, skidPrep:skidPrep, logsAt:logsAt, skidReach:skidReach, LOG_E:LOG_E, LOG_RISE:LOG_RISE, LOG_R:LOG_R, PRINT_D:PRINT_D, PRINT_STOMP:PRINT_STOMP, PRINT_DRAG:PRINT_DRAG, HUMP_E:HUMP_E, HUMP_RISE:HUMP_RISE, WAKE_A:WAKE_A, WEE_R:WEE_R, BIG_R:BIG_R, WEE_SLOPE:WEE_SLOPE, BIG_SLOPE:BIG_SLOPE, BOLT_WARN:BOLT_WARN, BOLT_FLY:BOLT_FLY, BOLT_ROLL:BOLT_ROLL, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly, _spaceTrip:spaceTrip, ROLLS:ROLLS,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
   CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, TGT_R:TGT_R, TGT_KEEP:TGT_KEEP, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
@@ -5177,6 +5447,43 @@ var SKIN = {
   // orange dome tent; a supply crate roped shut; a coil of red climbing rope; a climber's pack; a blue serac of glacier ice; the
   // granite crag with its snow; the tea house's whitewashed wall with blue window frames; an aluminium ladder over a crevasse;
   // and the herder's yak (the slider), side on, shaggy, its horns up
+  // ---- the Pacific Forest, old growth and the loggers' ruins of the Cryptid Expedition, drawn plain and bold: a cedar stump, its
+  // cut top pale with rings; a sword fern; a mossy rock; a ring of brown mushrooms; a trail camera strapped to a post; a camp lantern;
+  // a stack of cut logs seen end on; a fallen cedar's red bark; a log cabin's wall; the mossy concrete of an old mill footing; a
+  // wooden flume on its trestle; the loggers' rail speeder (the slider); and, about the course, a sword fern and a white trillium
+  pfstump:function(u, v){ var r = Math.hypot(u, v / 0.92) + Math.sin(Math.atan2(v, u) * 7) * 0.035; if (r > 0.95) return null; if (r > 0.8) return Math.sin(Math.atan2(v, u) * 23) > 0.2 ? '#5a3422' : '#4a2a1a';
+    if (r > 0.72) return '#8a5a3a'; var ring = Math.abs(((r * 6) % 1) - 0.5) < 0.12; return ring ? '#a8784e' : r < 0.1 ? '#7a5234' : '#d8b07a'; },
+  pffern:function(u, v){ var au = Math.abs(u); if (v > 0.9 || v < -0.95) return null; for (var k = 0; k < 5; k++){ var a = -1.3 + k * 0.65, ca = Math.cos(a), sa = Math.sin(a), t = u * sa - v * -ca, w = u * ca + v * sa;
+      if (t > 0 && t < 0.92 && Math.abs(w) < 0.14 * (1 - t) + 0.02) return Math.abs(w) < 0.03 ? '#2a5a26' : (Math.floor(t * 9) % 2 ? '#3e8a34' : '#4e9a3e'); }
+    if (au < 0.12 && v > 0.55) return '#3a2a1a'; return null; },
+  pfmoss:function(u, v){ var r = Math.hypot(u, (v - 0.06) / 0.8) + Math.sin(u * 6 + v * 4) * 0.05; if (r > 0.95) return null; if (r > 0.85) return '#2e3a2a';
+    var n = Math.sin(u * 11 + v * 7) + Math.sin(v * 13 - u * 5); if (v < 0.1 + Math.sin(u * 5) * 0.15) return n > 0.6 ? '#7ab04a' : '#5a9a3a'; return n > 0.8 ? '#8a8a80' : '#6a6a62'; },
+  pfmush:function(u, v){ var C = [[-0.38, -0.1, 0.42], [0.34, -0.2, 0.36], [0.02, 0.32, 0.3]];
+    for (var k = 0; k < C.length; k++){ var q = C[k], d = Math.hypot(u - q[0], (v - q[1]) * 1.2); if (d < q[2]){ if (d > q[2] - 0.07) return '#5a3a1e'; return Math.hypot(u - q[0] + q[2] * 0.3, v - q[1] + q[2] * 0.3) < q[2] * 0.25 ? '#e8c890' : '#b8763a'; } }
+    return null; },
+  pftrailcam:function(u, v){ if (Math.hypot(u, v) < 0.3) return Math.hypot(u, v) < 0.16 ? '#0e1418' : '#2a3a3a';
+    if (Math.abs(u) < 0.56 && Math.abs(v) < 0.7){ if (Math.abs(u) > 0.48 || Math.abs(v) > 0.62) return '#1e2a1e'; if (v < -0.42 && Math.abs(u - 0.3) < 0.08) return '#e83a2a'; return Math.sin(u * 20 + v * 14) > 0.6 ? '#4a5a3a' : '#5e6e44'; }
+    if (Math.abs(v) < 0.12 && Math.abs(u) < 0.95) return '#2a2a2a'; return null; },
+  pflantern:function(u, v){ var au = Math.abs(u); if (v < -0.95 || v > 0.9) return null; if (v < -0.7) return au < 0.25 ? (au > 0.12 ? '#3a3a3a' : null) : null;
+    if (v < -0.55) return au < 0.5 ? '#2a4a2a' : null; if (v > 0.7) return au < 0.55 ? '#2a4a2a' : null; if (au > 0.48) return null; if (au > 0.4) return '#2a4a2a';
+    return Math.hypot(u, v - 0.1) < 0.2 ? '#fff2b0' : '#ffb84a'; },
+  pflogs:function(u, v){ if (Math.abs(u) > 0.98 || Math.abs(v) > 0.96) return null; var cx = Math.round((u + 1) * 2.2) / 2.2 - 1, cy = Math.round((v + 1) * 1.6 + ((Math.round((u + 1) * 2.2)) % 2) * 0.5) / 1.6 - 1;
+    var d = Math.hypot((u - cx) * 2.2, (v - cy) * 1.6); if (d > 0.5) return '#3a2616'; if (d > 0.42) return '#6a4428'; return Math.abs(((d * 7) % 1) - 0.5) < 0.12 ? '#a8784e' : '#d8b07a'; },
+  pfcedar:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.95) return null; var n = Math.sin(u * 3 + Math.sin(v * 5) * 0.8) + Math.sin(v * 31 + u * 2) * 0.5;
+    if (Math.abs(v) > 0.82) return '#4a2416'; if (v < -0.3 && Math.sin(u * 9) > 0.55) return '#5a9a3a'; return n > 0.9 ? '#b8603a' : n < -0.6 ? '#6a3020' : '#8e4628'; },
+  pfcabin:function(u, v){ if (Math.abs(u) > 0.98 || Math.abs(v) > 0.96) return null; var row = Math.floor((v + 1) * 3), e = ((v + 1) * 3) % 1;
+    if (Math.abs(u) > 0.86) return (row % 2) ? '#c8a070' : '#8a6040'; if (e < 0.12) return '#3a2616'; if (Math.abs(u) < 0.22 && v > -0.4 && v < 0.4) return Math.abs(u) < 0.18 && Math.abs(v) < 0.34 ? (u * v > 0 ? '#f4e2a0' : '#d8c070') : '#3a2616';
+    return Math.sin(u * 17 + row * 3) > 0.7 ? '#7a5234' : '#9a6a42'; },
+  pfruin:function(u, v){ if (Math.abs(u) > 0.98 || Math.abs(v) > 0.95) return null; var n = Math.sin(u * 9 + v * 4) + Math.sin(v * 11 - u * 7) * 0.7;
+    if (v < -0.4 + Math.sin(u * 6) * 0.2 && n > -0.2) return n > 0.8 ? '#7ab04a' : '#5a8a3a'; if (Math.abs(u) > 0.88 || Math.abs(v) > 0.84) return '#4a4a44'; if (Math.abs(n) < 0.05) return '#3a3a36'; return n > 0.5 ? '#a8a8a0' : '#8a8a82'; },
+  pfflume:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.95) return null; if (Math.abs(v) < 0.4) return Math.sin(u * 14 - v * 3) > 0.7 ? '#c8eef0' : '#5aa0b4';
+    if (Math.abs(v) < 0.56) return '#3a2616'; return Math.abs(((u + 1) * 5) % 1 - 0.5) < 0.08 ? '#4a3018' : '#9a6a42'; },
+  pfspeeder:function(u, v){ var au = Math.abs(u), av = Math.abs(v); if (au > 0.95 || av > 0.85) return null; if (av > 0.62) return Math.abs(Math.abs(u) - 0.6) < 0.22 ? '#1e1e1e' : null;
+    if (au > 0.86 || av > 0.54) return '#2a2a2a'; if (u > 0.2 && u < 0.7 && av < 0.36) return '#c8e0f0'; return u < -0.3 ? '#8a5a2a' : '#d8582a'; },
+  pfsword:function(u, v){ if (v > 0.95 || v < -0.95) return null; for (var k = 0; k < 7; k++){ var a = -1.5 + k * 0.5, ca = Math.cos(a), sa = Math.sin(a), t = u * sa + v * ca * -1, w = u * ca - v * sa * -1;
+      if (t > 0 && t < 0.95 && Math.abs(w) < 0.09 * (1 - t) + 0.015) return (Math.floor(t * 12) % 2) ? '#2e6a2a' : '#3e7e34'; } return null; },
+  pftrillium:function(u, v){ var r = Math.hypot(u, v); if (r > 0.9) return null; var a = Math.atan2(v, u), pt = 0.45 + 0.45 * Math.max(0, Math.cos(a * 3));
+    if (r < 0.14) return '#e8d040'; if (r < pt) return r > pt - 0.1 ? '#d8d8cc' : '#fafaf2'; var lf = 0.4 + 0.5 * Math.max(0, Math.cos(a * 3 + Math.PI)); return r < lf ? '#3a7a34' : null; },
   hmboulder:function(u, v){ var r = Math.hypot(u, (v - 0.08) / 0.82) + Math.sin(u * 7 + v * 3) * 0.04; if (r > 0.95) return null; if (r > 0.84) return '#3e3c38';
     if (v < -0.28 + Math.sin(u * 6) * 0.1) return r > 0.74 ? '#d8e4f0' : '#f4f8fc'; return u < -0.2 && v < 0.3 ? '#a8a49a' : Math.sin(u * 13 + v * 9) > 0.85 ? '#5a5650' : '#86827a'; },
   hmsnowrock:function(u, v){ var r = Math.hypot(u, (v - 0.12) / 0.7); if (r > 0.92) return null; if (v > 0.35 + Math.sin(u * 5) * 0.12) return r > 0.8 ? '#3e3c38' : '#7a766e'; return r > 0.82 ? '#c8d8e8' : '#f4f8fc'; },
@@ -5545,6 +5852,8 @@ var CSS = '\
 .wm-lookingglass b{font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:25px;letter-spacing:.02em;background-image:linear-gradient(180deg,#ffffff 0 28%,#dce6ff 48%,#8a9ac8);-webkit-text-stroke:.9px #1a1a22;filter:drop-shadow(0 2px 0 #b8283a) drop-shadow(0 4px 0 #1a1a22) drop-shadow(0 0 10px rgba(216,228,255,.75))}\
 .wm-beanstalk i{background:#3e8e32;color:#fff8e8;border:1px solid #1e1a14}\
 .wm-mississippi i{background:#b8302a;color:#fff8e8;border:1px solid #1e1a12}\
+.wm-pacific i{background:#d8582a;color:#f4ecd8;border:1px solid #121a14}\
+.wm-pacific b{font-family:Georgia,serif;font-weight:700;font-size:28px;letter-spacing:.04em;background-image:linear-gradient(180deg,#ffffff 0 26%,#e8f0d8 46%,#8ab07a);-webkit-text-stroke:.9px #121a14;filter:drop-shadow(0 2px 0 #3a2618) drop-shadow(0 4px 0 #121a14) drop-shadow(0 0 10px rgba(200,240,160,.7))}\
 .wm-himalayas i{background:#c8302a;color:#f4f6fa;border:1px solid #141a22}\
 .wm-himalayas b{font-family:Anton,Impact,sans-serif;font-size:32px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 30%,#dceaf6 52%,#7aa0c4);-webkit-text-stroke:.9px #141a22;filter:drop-shadow(0 2px 0 #1c3a5a) drop-shadow(0 4px 0 #141a22) drop-shadow(0 0 10px rgba(255,224,160,.7))}\
 .wm-lochness i{background:#7a4a9a;color:#f6f2fa;border:1px solid #1a1e1c}\
@@ -5669,6 +5978,8 @@ var CSS = '\
 .pp-lv.wt-lookingglass{background:radial-gradient(circle at 36% 30%,#ffffff,#f6f2e6 50%,#c8c2b0);border-color:#b8283a;color:#b8283a}\
 .pp-lv.wt-lookingglass.lock{background:radial-gradient(circle at 38% 30%,#74b85e,#2e5a34);border-color:#1a1a22;color:#f6f2e6}.pp-lv.wt-lookingglass.cur{background:radial-gradient(circle at 40% 35%,#ffffff,#dce6ff 55%,#8a9ac8);border-color:#1a1a22;color:#1a1a22;box-shadow:0 0 14px rgba(216,228,255,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-mississippi{border-radius:48% 52% 46% 54%/54% 48% 52% 46%;background:radial-gradient(circle at 36% 30%,#ffffff,#f4f1e6 50%,#c8c0a8);border-color:#6a5a3a;color:#6a4a2a}\
+.pp-lv.wt-pacific{border-radius:52% 48% 46% 54%/48% 56% 44% 52%;background:radial-gradient(circle at 36% 30%,#f4e2b8,#d8b07a 50%,#8a5a3a);border-color:#3a2618;color:#3a2618}\
+.pp-lv.wt-pacific.lock{background:radial-gradient(circle at 38% 30%,#5a8a4a,#1e3a22);border-color:#121a14;color:#e8f0d8}.pp-lv.wt-pacific.cur{background:radial-gradient(circle at 40% 35%,#ffffff,#c8f0a0 55%,#d8582a);border-color:#121a14;color:#121a14;box-shadow:0 0 14px rgba(200,240,160,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-himalayas{border-radius:44% 56% 50% 50%/60% 52% 48% 40%;background:radial-gradient(circle at 36% 30%,#ffffff,#dceaf6 50%,#8aa8c4);border-color:#1c3a5a;color:#1c3a5a}\
 .pp-lv.wt-himalayas.lock{background:radial-gradient(circle at 38% 30%,#a8a49a,#5a5650);border-color:#141a22;color:#f4f6fa}.pp-lv.wt-himalayas.cur{background:radial-gradient(circle at 40% 35%,#ffffff,#ffe0a0 55%,#c8302a);border-color:#141a22;color:#141a22;box-shadow:0 0 14px rgba(255,224,160,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-lochness{border-radius:46% 54% 52% 48%/56% 50% 50% 44%;background:radial-gradient(circle at 36% 30%,#d8d4c8,#9a968a 52%,#5a564c);border-color:#2e3a34;color:#f6f2fa;text-shadow:0 1px 0 #2e3a34}\
@@ -5707,6 +6018,7 @@ var CSS = '\
 .pp-hub[data-wt=olympus]{--wa:#ffe9a0;--wi:#1a2238;--wb1:#2a4a8a;--wb2:#1a2238;--wt:rgba(26,38,70,.92)}\
 .pp-hub[data-wt=wonderland]{--wa:#ffb0c8;--wi:#1a1410;--wb1:#2e6a2e;--wb2:#1a1410;--wt:rgba(30,52,34,.92)}\
 .pp-hub[data-wt=lookingglass]{--wa:#d8e4ff;--wi:#1a1a22;--wb1:#2e5a34;--wb2:#1a1a22;--wt:rgba(30,46,40,.92)}\
+.pp-hub[data-wt=pacific]{--wa:#c8f0a0;--wi:#121a14;--wb1:#2e5a32;--wb2:#16261a;--wt:rgba(24,42,30,.92)}\
 .pp-hub[data-wt=himalayas]{--wa:#ffe0a0;--wi:#141a22;--wb1:#3a5a7a;--wb2:#1c2a3a;--wt:rgba(28,40,58,.92)}\
 .pp-hub[data-wt=lochness]{--wa:#d8c8f0;--wi:#1a1e1c;--wb1:#3e5a46;--wb2:#1e2a26;--wt:rgba(30,44,40,.92)}\
 .pp-hub[data-wt=mississippi]{--wa:#ffe6a0;--wi:#1e1a12;--wb1:#5a7a3a;--wb2:#2a2a1a;--wt:rgba(48,56,34,.92)}\
@@ -5814,6 +6126,7 @@ var CSS = '\
 .pp-door[data-door=olympus] .pp-dl,.pp-door[data-door=olympus] .pp-dr{background:radial-gradient(ellipse at 50% 30%,rgba(255,255,255,.55) 0 18%,transparent 40%),repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 2px,transparent 2px 16px),linear-gradient(180deg,#ffffff,#c4d2e8);border-color:#e8b830}\
 .pp-door[data-door=wonderland] .pp-dl,.pp-door[data-door=wonderland] .pp-dr{background:radial-gradient(circle at 70% 50%,#ffd84a 0 4%,transparent 5%),repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 2px,transparent 2px 18px),linear-gradient(180deg,#9a6a3e,#5a3a1e);border-color:#c8a050}\
 .pp-door[data-door=lookingglass] .pp-dl,.pp-door[data-door=lookingglass] .pp-dr{background:radial-gradient(ellipse at 40% 30%,rgba(255,255,255,.7) 0 14%,transparent 38%),linear-gradient(135deg,rgba(255,255,255,.35) 0 8%,transparent 8% 46%,rgba(255,255,255,.25) 46% 52%,transparent 52%),linear-gradient(180deg,#e8f0ff,#98a8c8);border-color:#c8a040}\
+.pp-door[data-door=pacific] .pp-dl,.pp-door[data-door=pacific] .pp-dr{background:radial-gradient(circle at 72% 50%,#2a2016 0 4%,transparent 5%),repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 3px,transparent 3px 22px),linear-gradient(180deg,#9a6a42,#5a3a22);border-color:#d8582a}\
 .pp-door[data-door=himalayas] .pp-dl,.pp-door[data-door=himalayas] .pp-dr{background:radial-gradient(circle at 72% 50%,#2a2a26 0 4%,transparent 5%),linear-gradient(180deg,#ffffff 0 12%,transparent 12%),repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 2px,transparent 2px 18px),linear-gradient(180deg,#c8c4b8,#7a766c);border-color:#c8302a}\
 .pp-door[data-door=lochness] .pp-dl,.pp-door[data-door=lochness] .pp-dr{background:radial-gradient(circle at 72% 50%,#2a2a26 0 4%,transparent 5%),repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 2px,transparent 2px 14px),repeating-linear-gradient(90deg,rgba(0,0,0,.1) 0 2px,transparent 2px 20px),linear-gradient(180deg,#b8b4a8,#6e6a60);border-color:#7a4a9a}\
 .pp-door[data-door=mississippi] .pp-dl,.pp-door[data-door=mississippi] .pp-dr{background:radial-gradient(circle at 74% 50%,#5a4a2a 0 4%,transparent 5%),repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 2px,transparent 2px 22px),linear-gradient(180deg,#ffffff,#d8d2c0);border-color:#b8302a}\
@@ -6040,8 +6353,8 @@ function top(title, sub, right){
    holes, plus rewards nobody else can earn. No coin price anywhere changes. */
 var PAY = {
   main:{ hole:80, sig:280, ace:20, world:2000,
-    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball', 'Saturn Ball', 'Prism Ball', 'Jelly Ball', 'Emerald Spectacles', 'Fleece Ball', 'Bronze Helm', 'Asphodel Crown', 'Winged Cap', 'Hatter’s Top Hat', 'White Knight’s Helm', 'Giant’s Thimble Cap', 'Huck’s Straw Hat', 'Highland Tam', 'Glacier Glasses'],
-    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles', 'Crystal Specs', 'Wobble Boots', 'Silver Shoes', 'Shepherd Sandals', 'Winged Sandals', 'Pomegranate Ball', 'Ambrosia Ball', 'Cheshire Ball', 'Humpty Ball', 'Magic Bean Ball', 'Riverboat Ball', 'Deep Loch Ball', 'Yeti Print Ball'] },
+    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball', 'Saturn Ball', 'Prism Ball', 'Jelly Ball', 'Emerald Spectacles', 'Fleece Ball', 'Bronze Helm', 'Asphodel Crown', 'Winged Cap', 'Hatter’s Top Hat', 'White Knight’s Helm', 'Giant’s Thimble Cap', 'Huck’s Straw Hat', 'Highland Tam', 'Glacier Glasses', 'Caulk Boots'],
+    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles', 'Crystal Specs', 'Wobble Boots', 'Silver Shoes', 'Shepherd Sandals', 'Winged Sandals', 'Pomegranate Ball', 'Ambrosia Ball', 'Cheshire Ball', 'Humpty Ball', 'Magic Bean Ball', 'Riverboat Ball', 'Deep Loch Ball', 'Yeti Print Ball', 'Tree Ring Ball'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
     worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
@@ -6080,7 +6393,7 @@ var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Centur
 var REWARD_ITEM = {
   'Clubhouse Visor':'hw:ppvisor', 'Hall Monitor Cap':'hw:pphallcap', 'Lollipop Putter':'pu:pplollipop', 'Neon Putter':'pu:ppneon',
   'Tricorn Hat':'hw:pptricorn', 'Jade Idol Putter':'pu:ppjadeidol', 'Miner’s Lamp Cap':'hw:ppminer', 'Lava Ball':'bl:pplava',
-  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk', 'Astronaut Helmet':'hw:ppastrohelmet', 'Space Suit':'tp:ppspacesuit', 'Red Planet Ball':'bl:ppmars', 'Mars Boots':'ct:ppmarsboots', 'Saturn Ball':'bl:ppsaturn', 'Titan Goggles':'ew:pptitangoggles', 'Prism Ball':'bl:ppprism', 'Crystal Specs':'ew:ppcrystalspecs', 'Jelly Ball':'bl:ppjelly', 'Wobble Boots':'ct:ppwobbleboots', 'Emerald Spectacles':'ew:ppemeraldspecs', 'Silver Shoes':'ct:ppsilvershoes', 'Fleece Ball':'bl:ppfleece', 'Shepherd Sandals':'ct:ppsandals', 'Bronze Helm':'hw:ppbronzehelm', 'Winged Sandals':'ct:ppwingsandals', 'Asphodel Crown':'hw:ppasphodel', 'Pomegranate Ball':'bl:pppomegranate', 'Winged Cap':'hw:ppwingcap', 'Ambrosia Ball':'bl:ppambrosia', 'Hatter’s Top Hat':'hw:pphattop', 'Cheshire Ball':'bl:ppcheshire', 'White Knight’s Helm':'hw:ppknighthelm', 'Humpty Ball':'bl:pphumpty', 'Giant’s Thimble Cap':'hw:ppthimble', 'Magic Bean Ball':'bl:ppmagicbean', 'Huck’s Straw Hat':'hw:ppstrawhat', 'Riverboat Ball':'bl:ppriverboat', 'Highland Tam':'hw:pptam', 'Deep Loch Ball':'bl:ppdeeploch', 'Glacier Glasses':'ew:ppglacier', 'Yeti Print Ball':'bl:ppyetiprint',
+  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk', 'Astronaut Helmet':'hw:ppastrohelmet', 'Space Suit':'tp:ppspacesuit', 'Red Planet Ball':'bl:ppmars', 'Mars Boots':'ct:ppmarsboots', 'Saturn Ball':'bl:ppsaturn', 'Titan Goggles':'ew:pptitangoggles', 'Prism Ball':'bl:ppprism', 'Crystal Specs':'ew:ppcrystalspecs', 'Jelly Ball':'bl:ppjelly', 'Wobble Boots':'ct:ppwobbleboots', 'Emerald Spectacles':'ew:ppemeraldspecs', 'Silver Shoes':'ct:ppsilvershoes', 'Fleece Ball':'bl:ppfleece', 'Shepherd Sandals':'ct:ppsandals', 'Bronze Helm':'hw:ppbronzehelm', 'Winged Sandals':'ct:ppwingsandals', 'Asphodel Crown':'hw:ppasphodel', 'Pomegranate Ball':'bl:pppomegranate', 'Winged Cap':'hw:ppwingcap', 'Ambrosia Ball':'bl:ppambrosia', 'Hatter’s Top Hat':'hw:pphattop', 'Cheshire Ball':'bl:ppcheshire', 'White Knight’s Helm':'hw:ppknighthelm', 'Humpty Ball':'bl:pphumpty', 'Giant’s Thimble Cap':'hw:ppthimble', 'Magic Bean Ball':'bl:ppmagicbean', 'Huck’s Straw Hat':'hw:ppstrawhat', 'Riverboat Ball':'bl:ppriverboat', 'Highland Tam':'hw:pptam', 'Deep Loch Ball':'bl:ppdeeploch', 'Glacier Glasses':'ew:ppglacier', 'Yeti Print Ball':'bl:ppyetiprint', 'Caulk Boots':'ct:ppcaulkboots', 'Tree Ring Ball':'bl:pptreering',
   'Clubhouse Cleats':'ct:ppclubhouse', 'Gold Star Ball':'bl:ppgoldstar', 'Sprinkle Ball':'bl:ppsprinkle', 'Pixel Shades':'ew:pppixelshades',
   'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
   'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
@@ -6720,7 +7033,7 @@ function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el
    about six seconds, a tap skips it, and with reduced motion it is the arrival card alone. The space worlds after the Moon
    will each get their own leg of the trip from here (SPACE_TRIP). */
 /* Moon Base to Red Planet is the colony ship, from the Moon's launch pad (SPACE_FROM says where each leg leaves from). */
-var SPACE_TRIP = { moon:'rocket', mars:'ship', saturn:'ship', crystara:'ship', jellara:'ship', oz:'ship', cyclops:'sea', medusa:'sea', underworld:'sea', olympus:'sea', wonderland:'fall', lookingglass:'glass', beanstalk:'beanstalk', mississippi:'river', lochness:'loch', himalayas:'plane' }, SPACE_FROM = { moon:'earth', mars:'moon', saturn:'mars', crystara:'saturn', jellara:'crystara', oz:'jellara', cyclops:'oz', medusa:'cyclops', underworld:'medusa', olympus:'underworld', wonderland:'olympus', lookingglass:'wonderland', beanstalk:'lookingglass', mississippi:'beanstalk', lochness:'mississippi', himalayas:'lochness' };
+var SPACE_TRIP = { moon:'rocket', mars:'ship', saturn:'ship', crystara:'ship', jellara:'ship', oz:'ship', cyclops:'sea', medusa:'sea', underworld:'sea', olympus:'sea', wonderland:'fall', lookingglass:'glass', beanstalk:'beanstalk', mississippi:'river', lochness:'loch', himalayas:'plane', pacific:'forest' }, SPACE_FROM = { moon:'earth', mars:'moon', saturn:'mars', crystara:'saturn', jellara:'crystara', oz:'jellara', cyclops:'oz', medusa:'cyclops', underworld:'medusa', olympus:'underworld', wonderland:'olympus', lookingglass:'wonderland', beanstalk:'lookingglass', mississippi:'beanstalk', lochness:'mississippi', himalayas:'lochness', pacific:'himalayas' };
 /* THE ODYSSEY IS REACHED BY SEA (Cyclops Isle on): 'sea' is a Greek ship under sail, trip3d.js's sail(). The walk ends at the ship
    at its jetty and the landed walk sets off from where it ran up on the beach, as the space route does with its pad. */
 function spaceTrip(theme, label, name, host, cb){
@@ -6744,7 +7057,7 @@ function spaceTrip(theme, label, name, host, cb){
     if (flame > 0){ var fl = flame * (8 + 4 * Math.sin(tsec * 40));
       px(x - 3, y + 2, 6, fl, '#ffb020'); px(x - 2, y + 2, 4, fl * 0.75, '#fff27a'); px(x - 1, y + 2, 2, fl * 0.45, '#ffffff'); } }
   // the sea route with no 3D trip (or with reduced motion): a still of the island over the sea, then the hole
-  var SEA = SPACE_TRIP[theme] === 'sea' || SPACE_TRIP[theme] === 'fall' || SPACE_TRIP[theme] === 'glass' || SPACE_TRIP[theme] === 'beanstalk' || SPACE_TRIP[theme] === 'river' || SPACE_TRIP[theme] === 'loch' || SPACE_TRIP[theme] === 'plane'; if (SEA){ DUR = 1.6; reduce = true; }
+  var SEA = SPACE_TRIP[theme] === 'sea' || SPACE_TRIP[theme] === 'fall' || SPACE_TRIP[theme] === 'glass' || SPACE_TRIP[theme] === 'beanstalk' || SPACE_TRIP[theme] === 'river' || SPACE_TRIP[theme] === 'loch' || SPACE_TRIP[theme] === 'plane' || SPACE_TRIP[theme] === 'forest'; if (SEA){ DUR = 1.6; reduce = true; }
   function frame(){ if (done) return; var t = (performance.now() - t0) / 1000;
     // down the rabbit hole, still: the round dark well of the hole, a cupboard and a shelf on its wall, a jar of marmalade, and the
     // light of the little door far below
@@ -6757,6 +7070,14 @@ function spaceTrip(theme, label, name, host, cb){
     // water, a lighthouse on its rock, the steamer's bow in the foreground, and out on the water three dark humps in a line
     // up to the mountains, still: a deep blue high sky, the white range across it with blue shadow on its faces, a glacial lake of
     // milky turquoise below, the seaplane down on the lake with its floats, and a line of huge prints going up the snow
+    // to the forest, still: an old logging road of brown earth going up between the red trunks of giant firs and cedars, ferns either
+    // side, light coming down through the green, and the orange hood of the logging truck in the foreground
+    if (reduce && SEA && theme === 'pacific'){ px(0, 0, LW, LH, '#1e3f26'); px(0, 0, LW, LH * 0.5, '#2a5230'); px(LW * 0.42, 0, LW * 0.16, LH * 0.5, '#8ab07a');
+      ctx.fillStyle = '#7a5a3a'; ctx.beginPath(); ctx.moveTo(LW * 0.46, LH * 0.5); ctx.lineTo(LW * 0.54, LH * 0.5); ctx.lineTo(LW * 0.9, LH); ctx.lineTo(LW * 0.1, LH); ctx.fill(); px(0, LH * 0.5, LW * 0.12, LH * 0.5, '#386a34'); px(LW * 0.88, LH * 0.5, LW * 0.12, LH * 0.5, '#386a34');
+      [[0.06, 0.12, '#8e4628'], [0.24, 0.07, '#6a3a22'], [0.34, 0.04, '#5a2e1a'], [0.62, 0.04, '#5a2e1a'], [0.72, 0.08, '#8e4628'], [0.88, 0.13, '#6a3a22']].forEach(function(q){ px(LW * q[0], 0, LW * q[1], LH * (0.5 + q[1] * 2.4), q[2]); });
+      for (var fe = 0; fe < 8; fe++) disc(LW * (fe < 4 ? 0.04 + fe * 0.07 : 0.7 + (fe - 4) * 0.08), LH * (0.78 + (fe % 2) * 0.05), LW * 0.06, '#3e8a34');
+      ctx.fillStyle = '#d8582a'; ctx.beginPath(); ctx.moveTo(LW * 0.1, LH); ctx.lineTo(LW * 0.24, LH * 0.86); ctx.lineTo(LW * 0.76, LH * 0.86); ctx.lineTo(LW * 0.9, LH); ctx.fill(); wrap.classList.add('cap');
+      if (t > DUR) return finish(); return requestAnimationFrame(frame); }
     if (reduce && SEA && theme === 'himalayas'){ px(0, 0, LW, LH, '#4a7ab0'); px(0, LH * 0.2, LW, LH * 0.16, '#7aa4cc');
       var peak = function(x0, x1, top, c, sh){ var xm = (x0 + x1) / 2; ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x0, LH * 0.5); ctx.lineTo(xm, top); ctx.lineTo(x1, LH * 0.5); ctx.fill(); ctx.fillStyle = sh; ctx.beginPath(); ctx.moveTo(xm, top); ctx.lineTo(x1, LH * 0.5); ctx.lineTo(xm + (x1 - xm) * 0.2, LH * 0.5); ctx.fill(); };
       peak(-LW * 0.2, LW * 0.5, LH * 0.24, '#eef4fa', '#b8cce0'); peak(LW * 0.25, LW * 1.0, LH * 0.14, '#f4f8fc', '#c8d8e8'); peak(LW * 0.6, LW * 1.3, LH * 0.26, '#eef4fa', '#b8cce0'); px(0, LH * 0.5, LW, LH * 0.5, '#e8f0f8'); px(0, LH * 0.62, LW, LH * 0.16, '#5ab4c4'); px(0, LH * 0.62, LW, LH * 0.012, '#f4f8fc');
@@ -6835,7 +7156,7 @@ function spaceTrip(theme, label, name, host, cb){
     if (t > DUR) return finish(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 }
-var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', crystara:'Crystal Gate', jellara:'Jelly Gate', oz:'Emerald Gate', cyclops:'Cave Stone', medusa:'Temple Gate', underworld:'Gate of Hades', olympus:'Gate of the Hours', wonderland:'The Little Door', lookingglass:'The Looking-Glass', beanstalk:'The Giant’s Door', mississippi:'The Fence Gate', lochness:'The Keep Gate', himalayas:'The Snow Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', crystara:'Crystal Gate', jellara:'Jelly Gate', oz:'Emerald Gate', cyclops:'Cave Stone', medusa:'Temple Gate', underworld:'Gate of Hades', olympus:'Gate of the Hours', wonderland:'The Little Door', lookingglass:'The Looking-Glass', beanstalk:'The Giant’s Door', mississippi:'The Fence Gate', lochness:'The Keep Gate', himalayas:'The Snow Gate', pacific:'The Ranger Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
 /* THE WALK IS A PLACE (golf/putt/trail.js). Winning a hole and pressing Next opens the trail to the next
@@ -6859,10 +7180,10 @@ var TRINKETS = {
   pirate:['Doubloon Marker', 'Spyglass', 'Parrot Feather'], canyon:['Gold Nugget', 'Lucky Horseshoe', 'Prospector Pan'],
   volcano:['Obsidian Shard', 'Ember Stone', 'Fire Opal'], dino:['Raptor Claw', 'Fossil Fern', 'Trilobite'],
   sky:['Cloud Feather', 'Kite Charm', 'Weather Vane'], neon:['Arcade Token', 'Joystick Charm', 'Prize Ticket'],
-  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'], moon:['Moon Rock', 'Mission Patch', 'Space Pen'], mars:['Red Rock', 'Rover Wheel', 'Ice Core'], saturn:['Ring Ice', 'Probe Dish', 'Titan Stone'], crystara:['Prism Shard', 'Star Geode', 'Light Lens'], jellara:['Wobble Drop', 'Goo Pearl', 'Bounce Bean'], oz:['Golden Cap', 'Oil Can', 'Poppy Seed'], cyclops:['Olive Sprig', 'Sheep Bell', 'Sea Shell'], medusa:['Owl Coin', 'Bronze Brooch', 'Gorgon Scale'], underworld:['Charon’s Obol', 'Pomegranate Seed', 'Asphodel Flower'], olympus:['Thunderbolt Charm', 'Caduceus Pin', 'Nectar Cup'], wonderland:['Golden Key', 'Pocket Watch', 'Jam Tart'], lookingglass:['White Pawn', 'Red Queen’s Crown', 'Looking-Glass Book'], beanstalk:['Magic Bean', 'Giant’s Gold Coin', 'Harp String'], mississippi:['Blue Bottle-Glass', 'Brass Doorknob', 'Spool Cannon'], lochness:['Thistle Brooch', 'Brass Compass', 'Heather Sprig'], himalayas:['Yak Bell', 'Ice Axe Charm', 'Edelweiss'],
+  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'], moon:['Moon Rock', 'Mission Patch', 'Space Pen'], mars:['Red Rock', 'Rover Wheel', 'Ice Core'], saturn:['Ring Ice', 'Probe Dish', 'Titan Stone'], crystara:['Prism Shard', 'Star Geode', 'Light Lens'], jellara:['Wobble Drop', 'Goo Pearl', 'Bounce Bean'], oz:['Golden Cap', 'Oil Can', 'Poppy Seed'], cyclops:['Olive Sprig', 'Sheep Bell', 'Sea Shell'], medusa:['Owl Coin', 'Bronze Brooch', 'Gorgon Scale'], underworld:['Charon’s Obol', 'Pomegranate Seed', 'Asphodel Flower'], olympus:['Thunderbolt Charm', 'Caduceus Pin', 'Nectar Cup'], wonderland:['Golden Key', 'Pocket Watch', 'Jam Tart'], lookingglass:['White Pawn', 'Red Queen’s Crown', 'Looking-Glass Book'], beanstalk:['Magic Bean', 'Giant’s Gold Coin', 'Harp String'], mississippi:['Blue Bottle-Glass', 'Brass Doorknob', 'Spool Cannon'], lochness:['Thistle Brooch', 'Brass Compass', 'Heather Sprig'], himalayas:['Yak Bell', 'Ice Axe Charm', 'Edelweiss'], pacific:['Cedar Cone', 'Lookout Key', 'Plaster Cast'],
   candy:['Lucky Gumball', 'Candy Wrapper', 'Sugar Crystal']
 };
-var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', moon:'#7fd8ff', mars:'#ff8a4a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', olympus:'#ffe27a', wonderland:'#ff8aa8', lookingglass:'#d8e4ff', beanstalk:'#ffe08a', mississippi:'#ffe6a0', lochness:'#c8a8e8', himalayas:'#ffc860', candy:'#ff5fa2' };
+var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', moon:'#7fd8ff', mars:'#ff8a4a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', olympus:'#ffe27a', wonderland:'#ff8aa8', lookingglass:'#d8e4ff', beanstalk:'#ffe08a', mississippi:'#ffe6a0', lochness:'#c8a8e8', himalayas:'#ffc860', pacific:'#a8e07a', candy:'#ff5fa2' };
 var TRINKET_SET_COINS = 300;
 var PP_PUTTERS = [
   { id:'scope', name:'Scope Putter', worlds:[0, 1, 2], tells:'The aim line reaches four feet further.' },
@@ -6878,7 +7199,7 @@ var PART_NAMES = ['grip', 'shaft', 'head'];
    taken (pmerge takes the union, cloudProg counts it) and the walk's own record marks it found (r.cm). A new expedition world only
    adds itself to EXPEDITION and its sightings to SIGHTINGS, each { walk, id, name, pic, note }, with a painter in CAM_PICS for
    each new pic. Ids are the world and the sighting's own (lochness:humps), so they never move once released. */
-var EXPEDITION = ['lochness', 'himalayas'];
+var EXPEDITION = ['lochness', 'himalayas', 'pacific'];
 var SIGHTINGS = {
   lochness:[
     { walk:4, id:'humps', name:'Humps in the Water', pic:'humps', note:'Three dark humps in a line, going up the loch.' },
@@ -6889,7 +7210,12 @@ var SIGHTINGS = {
     { walk:4, id:'prints', name:'Footprints in the Snow', pic:'prints', note:'A line of huge footprints across the snow. Nothing at the end of it.' },
     { walk:7, id:'ridge', name:'A Shape on the Ridge', pic:'ridge', note:'Something big and shaggy on the skyline. Then it was gone.' },
     { walk:11, id:'fur', name:'A Tuft of Fur', pic:'fur', note:'Long pale hair caught on a rock. Nobody knows whose.' },
-    { walk:16, id:'roar', name:'A Roar in the Night', pic:'roar', note:'Moonlight on the tents, and a sound from the peaks.' } ] };
+    { walk:16, id:'roar', name:'A Roar in the Night', pic:'roar', note:'Moonlight on the tents, and a sound from the peaks.' } ],
+  pacific:[
+    { walk:4, id:'mud', name:'A Footprint in the Mud', pic:'mud', note:'One huge bare footprint by the creek. Five toes. Fresh.' },
+    { walk:8, id:'trees', name:'A Shape in the Trees', pic:'trees', note:'Something tall and dark between the cedars. It walked off.' },
+    { walk:13, id:'trailcam', name:'The Trail Camera', pic:'trailcam', note:'One grey frame at three in the morning. A tall shape, too close.' },
+    { walk:16, id:'knock', name:'A Knock in the Woods', pic:'knock', note:'Two knocks on a tree in the dark. Then one more, far off.' } ] };
 // the sighting on the walk to hole leg of world th, if any, as a trail find
 function sightAt(th, leg){ var L = SIGHTINGS[th] || []; for (var i = 0; i < L.length; i++) if (L[i].walk === leg) return { id:th + ':' + L[i].id, name:L[i].name, pic:L[i].pic, theme:th }; return null; }
 function sightById(id){ var p = String(id).split(':'), L = SIGHTINGS[p[0]] || []; for (var i = 0; i < L.length; i++) if (L[i].id === p[1]) return Object.assign({ theme:p[0], key:id }, L[i]); return null; }
@@ -6932,7 +7258,29 @@ var CAM_PICS = {
   roar:function(x, w, h){ CAM_PICS.snow(x, w, h, 4, true); x.fillStyle = '#f4f2e0'; x.beginPath(); x.arc(w * 0.8, h * 0.16, w * 0.05, 0, 7); x.fill();
     var tent = function(cx, cy, r, c){ x.fillStyle = c; x.beginPath(); x.moveTo(cx - r, cy); x.lineTo(cx, cy - r * 0.9); x.lineTo(cx + r, cy); x.fill(); x.fillStyle = 'rgba(255,200,96,.35)'; x.beginPath(); x.arc(cx, cy - r * 0.3, r * 1.2, 0, 7); x.fill(); };
     tent(w * 0.3, h * 0.86, w * 0.12, '#e8803a'); tent(w * 0.56, h * 0.88, w * 0.1, '#e8a03a');
-    x.strokeStyle = 'rgba(244,242,224,.6)'; x.lineWidth = Math.max(1, w / 120); for (var k = 0; k < 3; k++){ x.beginPath(); x.arc(w * 0.36, h * 0.3, w * (0.06 + k * 0.05), -0.9, 0.2); x.stroke(); } } };
+    x.strokeStyle = 'rgba(244,242,224,.6)'; x.lineWidth = Math.max(1, w / 120); for (var k = 0; k < 3; k++){ x.beginPath(); x.arc(w * 0.36, h * 0.3, w * (0.06 + k * 0.05), -0.9, 0.2); x.stroke(); } },
+  /* the Pacific Forest: tall dark trunks of cedar and fir going up out of the frame, ferns along the bottom, and light coming down
+     through the green; then what was seen, half hidden and soft, the way every photo of it is */
+  forest:function(x, w, h, sd, night){ var g = x.createLinearGradient(0, 0, 0, h); if (night){ g.addColorStop(0, '#0a120e'); g.addColorStop(1, '#1a2a20'); } else { g.addColorStop(0, '#a8c8a0'); g.addColorStop(1, '#3a5a3a'); } x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (var k = 0; k < 7; k++){ var tx = w * (((k * 0.37 + sd * 0.11) % 1) * 1.1 - 0.05), tw = w * (0.05 + ((k * 7) % 4) * 0.02); x.fillStyle = night ? (k % 2 ? '#141e18' : '#1a2620') : (k % 2 ? '#4a3a2a' : '#5e4632'); x.fillRect(tx - tw / 2, 0, tw, h * 0.9);
+      if (!night){ x.fillStyle = 'rgba(160,190,120,.25)'; x.fillRect(tx - tw / 2, 0, tw * 0.25, h * 0.9); } }
+    if (!night){ x.fillStyle = 'rgba(240,250,220,.18)'; x.beginPath(); x.moveTo(w * 0.45, 0); x.lineTo(w * 0.62, 0); x.lineTo(w * 0.9, h); x.lineTo(w * 0.55, h); x.fill(); }
+    x.fillStyle = night ? '#1a2a1e' : '#3e6a32'; for (var f = 0; f < 9; f++){ var fx = w * (f / 8), fy = h * (0.88 + (f % 3) * 0.03); x.beginPath(); x.moveTo(fx - w * 0.09, h); x.quadraticCurveTo(fx, fy - h * 0.12, fx + w * 0.09, h); x.fill(); } },
+  mud:function(x, w, h){ CAM_PICS.forest(x, w, h, 1); x.fillStyle = '#5a4430'; x.fillRect(0, h * 0.55, w, h * 0.45); x.fillStyle = '#6e5640'; x.beginPath(); x.ellipse(w * 0.5, h * 0.75, w * 0.42, h * 0.16, 0, 0, 7); x.fill();
+    x.fillStyle = 'rgba(70,110,120,.6)'; x.fillRect(0, h * 0.55, w, h * 0.05); var cx = w * 0.52, cy = h * 0.76, s = w * 0.11;
+    x.fillStyle = '#3a2a1c'; x.beginPath(); x.ellipse(cx, cy + s * 0.25, s * 0.42, s * 0.9, 0.15, 0, 7); x.fill(); for (var t = 0; t < 5; t++){ x.beginPath(); x.ellipse(cx - s * 0.36 + t * s * 0.2 - s * 0.05, cy - s * 0.78 + Math.abs(t - 1.5) * s * 0.06, s * 0.09, s * 0.08, 0, 0, 7); x.fill(); } },
+  trees:function(x, w, h){ CAM_PICS.forest(x, w, h, 2); var bx = w * 0.66, by = h * 0.42, s = w * 0.03; x.fillStyle = '#2a201a';
+    x.beginPath(); x.ellipse(bx, by, s * 1.2, s * 2.4, 0.05, 0, 7); x.fill(); x.beginPath(); x.ellipse(bx + s * 0.1, by - s * 2.9, s * 0.8, s * 0.95, 0, 0, 7); x.fill();
+    x.lineCap = 'round'; x.strokeStyle = '#2a201a'; x.lineWidth = s * 0.75; x.beginPath(); x.moveTo(bx + s, by - s); x.lineTo(bx + s * 1.7, by + s * 1.8); x.moveTo(bx - s * 0.5, by + s * 2); x.lineTo(bx - s * 0.9, by + s * 4.2); x.moveTo(bx + s * 0.5, by + s * 2); x.lineTo(bx + s * 0.9, by + s * 4.2); x.stroke();
+    x.fillStyle = '#4a3a2a'; x.fillRect(bx - s * 3.6, 0, s * 2.6, h * 0.9); var m = x.createLinearGradient(0, h * 0.3, 0, h * 0.7); m.addColorStop(0, 'rgba(220,236,220,0)'); m.addColorStop(0.5, 'rgba(220,236,220,.35)'); m.addColorStop(1, 'rgba(220,236,220,0)'); x.fillStyle = m; x.fillRect(0, h * 0.3, w, h * 0.4); },
+  trailcam:function(x, w, h){ CAM_PICS.forest(x, w, h, 3, true); var g = x.createRadialGradient(w * 0.5, h * 0.55, w * 0.05, w * 0.5, h * 0.55, w * 0.6); g.addColorStop(0, 'rgba(200,214,200,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    var bx = w * 0.28, by = h * 0.5, s = w * 0.05; x.fillStyle = 'rgba(60,66,60,.85)'; x.beginPath(); x.ellipse(bx, by, s * 1.1, s * 2.3, 0.1, 0, 7); x.fill(); x.beginPath(); x.ellipse(bx + s * 0.2, by - s * 2.8, s * 0.75, s * 0.85, 0, 0, 7); x.fill();
+    x.fillStyle = 'rgba(230,236,230,.9)'; x.fillRect(w * 0.06, h * 0.06, w * 0.3, h * 0.06); x.fillRect(w * 0.64, h * 0.88, w * 0.3, h * 0.05);
+    x.fillStyle = 'rgba(30,34,30,.9)'; for (var k = 0; k < 6; k++) x.fillRect(w * (0.08 + k * 0.045), h * 0.075, w * 0.025, h * 0.03); for (var j = 0; j < 6; j++) x.fillRect(w * (0.66 + j * 0.045), h * 0.89, w * 0.025, h * 0.03); },
+  knock:function(x, w, h){ CAM_PICS.forest(x, w, h, 4, true); x.fillStyle = '#e8ecd8'; x.beginPath(); x.arc(w * 0.82, h * 0.14, w * 0.04, 0, 7); x.fill();
+    x.fillStyle = '#2a2018'; x.fillRect(w * 0.4, 0, w * 0.1, h * 0.92); x.strokeStyle = 'rgba(232,236,216,.55)'; x.lineWidth = Math.max(1, w / 120);
+    for (var k = 0; k < 3; k++){ x.beginPath(); x.arc(w * 0.45, h * 0.45, w * (0.08 + k * 0.06), -0.6, 0.6); x.stroke(); x.beginPath(); x.arc(w * 0.45, h * 0.45, w * (0.08 + k * 0.06), Math.PI - 0.6, Math.PI + 0.6); x.stroke(); }
+    x.fillStyle = 'rgba(255,200,110,.5)'; x.beginPath(); x.arc(w * 0.2, h * 0.86, w * 0.06, 0, 7); x.fill(); } };
 // a photo as an image: its painting in a white print border (the album and the trail both show it)
 function camPic(pic, W, H){ var c = document.createElement('canvas'); c.width = W || 160; c.height = H || 120; var x = c.getContext('2d'), b = Math.round(c.width * 0.05), w = c.width - 2 * b, h = c.height - 2 * b;
   x.fillStyle = '#f6f4ee'; x.fillRect(0, 0, c.width, c.height); x.save(); x.translate(b, b); x.beginPath(); x.rect(0, 0, w, h); x.clip();
@@ -7156,6 +7504,11 @@ var GREETERS = {
     hi:['You made it! Welcome to base camp.', 'People up here tell of the yeti. A big shaggy thing that walks the snow. We are here to get a photo.'],
     tip:['Something walks across the snow on a clock. Watch its prints come once.', 'A print is a hollow. A slow ball falls in and waits.', 'The snow blows back into a print. Then it is level again.', 'Keep your eyes open on the walks. If you see something, walk up and take a photo.'],
     bye:'Off you go. Mind the crevasses.' },
+  /* Dr. Quill again, in the old growth of the Pacific Forest: the third and last world of her expedition, the same woman and the same model. */
+  pacific:{ name:'Dr. Rosalind Quill', role:'Leader of the Cryptid Expedition', folk:'quill', look:{ skin:'light', polo:'green', hat:'brown', pants:'brown', hair:'auburn', hairStyle:'bun', cap:false, shoes:'brown', gender:'female' },
+    hi:['You made it! Welcome to the forest. This is our last stop.', 'People here tell of something tall and hairy in the trees. Big feet. We are here to get a photo.'],
+    tip:['Logs roll down the skid road on a clock. Watch one come down.', 'A log shoves the ball ahead of it. Go while the road is empty.', 'A log is slow at the top. It is quick at the bottom.', 'Keep your eyes open on the walks. If you see something, walk up and take a photo.'],
+    bye:'Off you go. Last roll of film.' },
   candy:{ name:'Wendell', role:'Factory Foreman', look:{ skin:'deep', polo:'white', hat:'red', pants:'wine', hair:'black', hairStyle:'short', cap:true, hatStyle:'flat', gender:'male' },
     hi:['Hey! Welcome to Candy Works.', 'I’m Wendell. I run the floor.'],
     tip:['Chocolate on every side. Wafer bridges run on a clock.', 'Taffy grabs your ball. Watch a press go round once before you putt.'],
@@ -7244,6 +7597,16 @@ FOLK.himalayas = {
   8:{ id:'teakeep', say:['Welcome to my tea house. Sit down. Have a cup.', 'Climbers tell me about big footprints every year. I just pour the tea.'] },
   12:{ id:'cook', say:['I cook for the expedition. Rice, lentils, and a lot of tea.', 'Something took a sack of potatoes last night. It left prints as long as my arm.'] },
   15:{ id:'climber', say:['I want to climb every peak up here one day.', 'A slow ball falls in a print. Give it pace, or wait for smooth snow.'] } };
+/* THE FOLK OF THE PACIFIC FOREST (2026-11-11): the people of an original stretch of old growth, nobody real, each in place of a walk's
+   local and each a little model of their own (trail.js FOLK3D). They tell the expedition what they have seen, and what to watch for.
+   Dr. Quill herself waits on the walk to the seventeenth with the last word of her expedition. */
+FOLK.pacific = {
+  3:{ id:'ranger', say:['I am the ranger here. I look after the trails.', 'The logs come down the old skid road. Wait for an empty road.'] },
+  5:{ id:'lookout', say:['I keep the fire lookout up on the ridge. I see the whole forest.', 'From up there I saw something walk out of the trees. Then back in.'] },
+  10:{ id:'logger', say:['My grandpa ran logs down these hills.', 'A log is slow at the top of the road. It is fast at the bottom.'] },
+  12:{ id:'camhob', say:['I put trail cameras on the trees. Hundreds of photos of deer.', 'One frame I cannot explain. Look at it and tell me.'] },
+  14:{ id:'camper', say:['We heard knocking in the woods last night!', 'Dad says it was a branch. It was not a branch.'] },
+  17:{ id:'quill', say:['Three worlds. A loch, the snow and now the forest.', 'Every photo we took is in the album. Nobody will believe us. That is fine.'] } };
 var TRAIL_GOLD_COINS = 500;
 function trailOk(){ var TT = window.RTT_PUTT_TRAIL; return !!(TT && TT.API_VERSION === 1 && v3Ok() && S && S.host && S.host.golferWalk); }
 var TIPS = {
@@ -7261,6 +7624,7 @@ var TIPS = {
   climb:['It\'s uphill. Give it more than you think.', 'There\'s a step up. Don\'t leave it short.'],
   water:['There\'s water. Don\'t get greedy.', 'Play it safe past the water.', 'Wet costs a stroke. Take the long way if you need to.'],
   ice:['The ice is quick. Ease off.', 'Go soft on the slick stuff.'],
+  log:['Logs roll down the skid road on a clock. Watch one come down.', 'A log shoves the ball ahead of it. Go while the road is empty.', 'A log is slow at the top of the road. It is fast at the bottom.', 'Stop on the road and you wait. The next log carries you off.'],
   yeti:['Something walks across the snow. Watch where its prints come.', 'A print is a hollow. A slow ball falls in and waits there.', 'Go firm through the prints, or go while the snow is smooth.', 'The snow blows back into a print. Then it is level again.'],
   wake:['Something swims in the loch. Watch its line once.', 'Her hump is solid. Go while she is under.', 'Her wake pushes the ball away from her line.', 'Cross behind her and the wake gives the ball a shove.'],
   raft:['The rafts drift down the river on its current. They never stop.', 'Cross while a raft is passing. Miss it and you are in the river.', 'A raft carries the ball a little way downstream. Aim a little upstream.', 'Never stop on a raft. The river takes it away.'],
@@ -7287,7 +7651,7 @@ function holeTips(n, tid, three){ var C; try{ C = buildLevel(n, tid); }catch(e){
   var mv = C.movers || [], has = function(k){ return mv.some(function(m){ return m.k === k; }); }, zm = {};
   (C.zones || []).forEach(function(z){ zm[z.m] = 1; });
   var cand = [];
-  if ((C.yetis || []).length) cand.push('yeti'); if ((C.wakes || []).length) cand.push('wake'); if ((C.drifts || []).length) cand.push('raft'); if ((C.stalks || []).length) cand.push('stalk'); if ((C.glasses || []).length) cand.push('glass'); if ((C.sizers || []).length || (C.wees || []).length) cand.push('shrink'); if ((C.bolts || []).length) cand.push('bolt'); if ((C.lethes || []).length) cand.push('lethe'); if ((C.gazes || []).length) cand.push('gaze'); if ((C.eyes || []).length) cand.push('eye'); if ((C.cyclones || []).length) cand.push('cyclone'); if ((C.hops || []).length) cand.push('hop'); if ((C.beams || []).length) cand.push('beam'); if ((C.ferries || []).length) cand.push('ferry'); if ((C.ramps || []).length) cand.push('ramp'); if ((C.loops || []).length) cand.push('loop');
+  if ((C.skids || []).length) cand.push('log'); if ((C.yetis || []).length) cand.push('yeti'); if ((C.wakes || []).length) cand.push('wake'); if ((C.drifts || []).length) cand.push('raft'); if ((C.stalks || []).length) cand.push('stalk'); if ((C.glasses || []).length) cand.push('glass'); if ((C.sizers || []).length || (C.wees || []).length) cand.push('shrink'); if ((C.bolts || []).length) cand.push('bolt'); if ((C.lethes || []).length) cand.push('lethe'); if ((C.gazes || []).length) cand.push('gaze'); if ((C.eyes || []).length) cand.push('eye'); if ((C.cyclones || []).length) cand.push('cyclone'); if ((C.hops || []).length) cand.push('hop'); if ((C.beams || []).length) cand.push('beam'); if ((C.ferries || []).length) cand.push('ferry'); if ((C.ramps || []).length) cand.push('ramp'); if ((C.loops || []).length) cand.push('loop');
   if ((C.bridges || []).length) cand.push('bridge'); if (has('door')) cand.push('door'); if (has('slide') || has('blade')) cand.push('slide');
   if (has('spin')) cand.push('spin'); if ((C.rivers || []).length) cand.push('river'); if ((C.belts || []).length) cand.push('belt');
   if ((C.turns || []).length) cand.push('turn'); if (zm[M.WATER]) cand.push('water'); if (zm[M.ICE]) cand.push('ice');
@@ -7513,7 +7877,7 @@ function openTrail(tid, from, landed){
           if (have >= 3){ if (!st.pp.eq) st.pp.eq = pa.putter; var inCl = false; try{ inCl = S.host.grantPutter && S.host.grantPutter(pa.putter); }catch(e){}
             msg = 'The ' + PT.name + ' is built. ' + PT.tells + (S.host.grantPutter ? ' It is in your closet.' : ' It is in your Bag.'); } }
         else if (kind === 'sight'){ r.cm = 1; var sgt = sp.loot.sight; st.cam = st.cam || []; if (sgt && st.cam.indexOf(sgt.id) < 0) st.cam.push(sgt.id);
-          msg = 'Photo taken: ' + (sgt ? sgt.name : 'a sighting') + '. ' + camHave(st, sgt && sgt.theme) + ' of ' + camTotal(sgt && sgt.theme) + ' from ' + Wd.name + '. It is in your album, in the Bag.'; }
+          msg = 'Photo taken: ' + (sgt ? sgt.name : 'a sighting') + '. ' + camHave(st, sgt && sgt.theme) + ' of ' + camTotal(sgt && sgt.theme) + ' from ' + Wd.name + '. It is in your album, in the Bag.' + (camHave(st) >= camTotal() ? ' That is every photo. The album is full!' : ''); }
         else if (kind === 'golden'){ var was = !!r.g; r.g = 1; var gd = goldenOf(st, tid, sp.w), done = gd.have >= gd.total, rw = 'Golden Ball Set: ' + Wd.name;
           msg = 'Golden ball. ' + gd.have + ' of ' + gd.total + ' in ' + Wd.name + '.';
           if (done && !was && st.rewards.indexOf(rw) < 0){ st.rewards.push(rw); n = TRAIL_GOLD_COINS; msg += ' Set complete: +' + TRAIL_GOLD_COINS + ' coins.'; } }
@@ -8070,7 +8434,7 @@ function v3Asp(){ var r = S.stage && S.stage.isConnected && S.stage.getBoundingC
 function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
 /* THE FINE PICTURE: a world in FINE_WORLDS is painted three times finer, so it reads as clearly as the golfer.
    Piloted on Pirate Cove; the owner then asked for it on every world (2026-10-15). */
-var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1, olympus:1, wonderland:1, lookingglass:1, beanstalk:1, mississippi:1, lochness:1, himalayas:1 }, FINE_ART = 1 / 12;
+var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1, olympus:1, wonderland:1, lookingglass:1, beanstalk:1, mississippi:1, lochness:1, himalayas:1, pacific:1 }, FINE_ART = 1 / 12;
 // RTT_PUTT_FINE_TEST names one more world to paint fine, so a world's stops can be built and looked at before it joins FINE_WORLDS
 function fineOn(d){ return (!!FINE_WORLDS[d.theme] || window.RTT_PUTT_FINE_TEST === d.theme) && window.RTT_PUTT_FINE !== 'off'; }
 // a fine picture's zoom can round up (camFor), so it is built a little taller than the stage to leave no band below the land
@@ -8730,6 +9094,35 @@ function drawPieces(ctx, C, cam, clock){
      exactly on the segment the physics uses (glassCross). It is drawn see-through, so a ball behind it still shows, with slow
      bright streaks drifting across it the way a mirror catches the light. Its middle line, the line the ball is mirrored across,
      is marked on the carpet both sides of it in small silver dots, with a gold diamond at the glass's centre. */
+  /* THE LOG CHUTE (the Pacific Forest): the skid road is drawn down the green from the log deck to the ditch, a strip of trodden
+     earth with its skids (short timbers) laid across it, so a player sees the way the logs will come. Every log is drawn exactly
+     where the physics has it (logsAt), as long and as thick as it is solid: a round of fir lying across its way, its bark seams
+     turning as it rolls, its cut ends pale with their rings, its shadow under it. The next log shakes on the deck for the last
+     second and a half before it tips, and each one drops over the bank into the ditch at the foot with a puff of dust. */
+  (C.skids || []).forEach(function(sk){ var P = function(x, y, zz){ return cam.v3 ? w2s(cam, x, y, cam.v3.zAt(x, y) + (zz || 0)) : w2s(cam, x, y - (zz || 0) * 0.8); };
+    var ax = -sk.uy, ay = sk.ux, at = function(s, l, z){ return P(sk.a[0] + sk.ux * s + ax * l, sk.a[1] + sk.uy * s + ay * l, z); }, j;
+    var quad = function(s0, s1, l0, l1, z, col){ var q = [at(s0, l0, z), at(s1, l0, z), at(s1, l1, z), at(s0, l1, z)]; ctx.fillStyle = col; ctx.beginPath(); q.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.fill(); };
+    var hw = sk.hl + 0.3; quad(-0.4, sk.len + 0.4, -hw, hw, 0.004, 'rgba(96,70,44,.42)');
+    for (var sv = 0.4; sv < sk.len; sv += 1.6) quad(sv - 0.16, sv + 0.16, -hw + 0.15, hw - 0.15, 0.006, 'rgba(70,48,28,.55)');
+    quad(sk.len + 0.25, sk.len + 0.75, -hw - 0.2, hw + 0.2, 0.006, 'rgba(34,24,16,.7)');
+    var logAt = function(x, y, rr, roll, z){ var e0 = P(x - ax * sk.hl, y - ay * sk.hl, z), e1 = P(x + ax * sk.hl, y + ay * sk.hl, z), wpx = Math.max(2, rr * 2 * cam.s);
+      ctx.lineCap = 'round'; ctx.strokeStyle = '#5a3a22'; ctx.lineWidth = wpx; ctx.beginPath(); ctx.moveTo(e0[0], e0[1]); ctx.lineTo(e1[0], e1[1]); ctx.stroke();
+      ctx.strokeStyle = '#7a5234'; ctx.lineWidth = wpx * 0.72; ctx.beginPath(); ctx.moveTo(e0[0], e0[1]); ctx.lineTo(e1[0], e1[1]); ctx.stroke();
+      ctx.lineCap = 'butt'; ctx.lineWidth = Math.max(1, cam.s * 0.05);
+      for (var k = 0; k < 4; k++){ var th = roll + k * Math.PI / 2, c = Math.cos(th); if (c < 0.1) continue; var off = Math.sin(th) * rr * 0.9, f0 = P(x - ax * sk.hl * 0.92 + sk.ux * off, y - ay * sk.hl * 0.92 + sk.uy * off, z + c * rr * 0.4), f1 = P(x + ax * sk.hl * 0.92 + sk.ux * off, y + ay * sk.hl * 0.92 + sk.uy * off, z + c * rr * 0.4);
+        ctx.strokeStyle = 'rgba(46,28,14,' + (0.3 + 0.5 * c).toFixed(2) + ')'; ctx.beginPath(); ctx.moveTo(f0[0], f0[1]); ctx.lineTo(f1[0], f1[1]); ctx.stroke(); }
+      [e0, e1].forEach(function(e){ ctx.fillStyle = '#d8b07a'; ctx.beginPath(); ctx.arc(e[0], e[1], wpx * 0.46, 0, 7); ctx.fill(); ctx.strokeStyle = '#a8784e'; ctx.lineWidth = Math.max(1, wpx * 0.1); ctx.beginPath(); ctx.arc(e[0], e[1], wpx * 0.25, 0, 7); ctx.stroke(); }); };
+    var Pd = sk.period, u = ((clock / Pd + sk.phase) % 1 + 1) % 1 * Pd, wait = Pd - u;
+    // the next log waits on the deck, and shakes as it is about to tip
+    var sh = wait < 1.5 ? Math.sin(clock * 40) * 0.06 : 0; if (u > (sk.n - 1) * sk.gap + 0.4 || wait < 1.5) logAt(sk.a[0] - sk.ux * 0.9 + sk.ux * sh, sk.a[1] - sk.uy * 0.9 + sk.uy * sh, sk.r * 0.8, 0, sk.r * 0.8);
+    logsAt(sk, clock).forEach(function(lg){ var rr = sk.r * lg.h, sq = []; for (j = 0; j <= 12; j++){ var an = j / 12 * 2 * Math.PI; sq.push(P(lg.x + ax * Math.cos(an) * sk.hl + sk.ux * (Math.sin(an) * rr + 0.18), lg.y + ay * Math.cos(an) * sk.hl + sk.uy * (Math.sin(an) * rr + 0.18), 0.003)); }
+      ctx.fillStyle = 'rgba(20,16,10,' + (0.3 * lg.h).toFixed(2) + ')'; ctx.beginPath(); sq.forEach(function(q, i){ i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.fill();
+      logAt(lg.x, lg.y, rr, lg.s / sk.r, rr); });
+    // a log that has reached the foot drops over the bank into the ditch (the physics is done with it) and a puff of dust goes up
+    for (j = 0; j < sk.n; j++){ var da = u - j * sk.gap - sk.run; if (da < 0 || da >= 0.6) continue; var f = da / 0.6;
+      ctx.globalAlpha = 1 - f; logAt(sk.b[0] + sk.ux * (0.35 + f * 0.5), sk.b[1] + sk.uy * (0.35 + f * 0.5), sk.r * (1 - f * 0.4), (sk.len + da * 3) / sk.r, sk.r * (1 - f * 2.2)); ctx.globalAlpha = 1;
+      for (var dj = 0; dj < 7; dj++){ var dq = P(sk.b[0] + ax * (dj - 3) * sk.hl * 0.33 + sk.ux * 0.5, sk.b[1] + ay * (dj - 3) * sk.hl * 0.33 + sk.uy * 0.5, 0.2 + f * 1.2);
+        ctx.fillStyle = 'rgba(176,150,110,' + (0.5 * (1 - f)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(dq[0], dq[1], Math.max(1.2, cam.s * (0.12 + f * 0.2)), 0, 7); ctx.fill(); } } });
   /* THE YETI'S FOOTPRINTS (the Himalayas): every print is drawn exactly where and as deep as the physics has it (printDepth): a
      hollow in the snow in the blue of its shadow, darker as it is deeper, its five toes at its front and a bright lip of thrown snow
      round its back, fading back to smooth snow as it fills. Where the next prints will come a faint trodden line shows in the snow,
@@ -9341,7 +9734,7 @@ RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, 
 RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.SIGHTINGS = SIGHTINGS; RTT_PUTT.EXPEDITION = EXPEDITION; RTT_PUTT.sightAt = sightAt; RTT_PUTT.camPic = camPic; RTT_PUTT._album = function(){ albumSheet(); }; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 /* The home card wears the world you are in: the top band of that world's signature hole, cut from the
    game's own render by build-cards.mjs, so it is the same pixel art as the courses. */
-var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1, olympus:1, wonderland:1, lookingglass:1, beanstalk:1, mississippi:1, lochness:1, himalayas:1 }, CARD_V = 21;
+var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1, olympus:1, wonderland:1, lookingglass:1, beanstalk:1, mississippi:1, lochness:1, himalayas:1, pacific:1 }, CARD_V = 22;
 RTT_PUTT.cardArt = function(theme){ var t = CARD_ART[theme] ? theme : 'clubhouse';
   return '<img class="gc-art" src="putt/cards/' + t + '.png?v=' + CARD_V + '" alt="" aria-hidden="true">'; };
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR }; RTT_PUTT.PAY = PAY;
