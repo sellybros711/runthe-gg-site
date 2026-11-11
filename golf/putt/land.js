@@ -6369,6 +6369,101 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ lnbfloor:['#7a7466', '#8e887a', '#5a564c', 0.12, function(c, R){ var b = blot(c, 0.2, 1203), w = vn(c.ti * 0.07, c.tj * 0.07, 1204); if (Math.abs(w - 0.5) < 0.025) return R('#3e3c36'); return R(b > 0.62 ? '#8e887a' : b < 0.3 ? '#5a564c' : '#7a7466'); }],
         lnbwall:['#8e887a', '#a8a294', '#5a564c', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.4) return R('#2a2e34'); if (z > 1.6 && z < 2.2 && hash(c.ti >> 2, 1, 1205) > 0.7) return R('#6a4a2a');
           var row = Math.floor(z * 1.8); return R((z * 1.8) % 1 < 0.1 ? '#5a564c' : hash(c.ti >> 2, row, 1206) > 0.5 ? '#a8a294' : '#8e887a'); }] } }; };
+  /* ---------------- THE HIMALAYAS ARE A JOURNEY (the Cryptid Expedition, World 27): an original valley under original peaks. Down on
+     the glacial lake where the seaplane comes in (1 and 2), up to base camp and its tents (3 and 4), past the herders' yaks (5 and 6),
+     over the moraine (7 and 8), under the icefall (9 and 10), by the tea house and the cook tent (11 and 12), across the crevasse
+     field (13 and 14), up to the high col (15 and 16) and out on the ridge (17 and 18). The snow lies all round the course: its edge
+     wanders on noise, the moraine's grit and the milky blue of the meltwater follow their own, and nothing is a grid. */
+  STOPS.himalayas = [[1, 'lake'], [3, 'camp'], [5, 'yaks'], [7, 'moraine'], [9, 'icefall'], [11, 'tea'], [13, 'crevasse'], [15, 'col'], [17, 'ridge']];
+  (function(){ BUILD.himalayas = function(L){ var s = L.stop; return s === 'camp' ? hmCampStop(L) : s === 'yaks' ? hmYakStop(L) : s === 'moraine' ? hmMoraineStop(L) : s === 'icefall' ? hmIceStop(L) : s === 'tea' ? hmTeaStop(L) : s === 'crevasse' ? hmCrevStop(L) : s === 'col' ? hmColStop(L) : s === 'ridge' ? hmRidgeStop(L) : hmLakeStop(L); }; })();
+  function hmEdge(L, x, y){ return 4.2 + fbm(x * 0.07, y * 0.07, L.seed + 1301) * 3.4; }
+  // where the snow gives way to the melt (the lake, a crevasse): a line out from the course that wanders on two scales of noise
+  function hmShore(L, x, y, o){ return (o.near || 13) + fbm(x * 0.025, y * 0.025, L.seed + 1303) * 13 + (fbm(x * 0.09, y * 0.09, L.seed + 1304) - 0.5) * 3; }
+  function hmMats(){ return {
+      hmsnow:['#eaf1f8', '#f4f8fc', '#d8e4f0', 0.1, function(c, R){ if (c.rim === 1) return R('#ffffff'); var b = blot(c, 0.15, 1305), st = hash(c.ti, c.tj, 1306), rp = Math.sin(c.ti * 0.23 + Math.sin(c.tj * 0.05) * 3 + b * 3);
+        if (st > 0.996) return R('#ffffff'); if (rp > 0.94) return R('#d4e2f0'); return R(b > 0.64 ? '#f4f8fc' : b < 0.3 ? '#dfe8f2' : '#eaf1f8'); }],
+      hmtrack:['#a8a49a', '#b8b4aa', '#8e8a80', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 1307), b = blot(c, 0.18, 1308); if (st > 0.94) return R('#e8f0f8'); return R(b > 0.62 ? '#b8b4aa' : b < 0.3 ? '#8e8a80' : '#a8a49a'); }],
+      hmgrit:['#8a867c', '#9a968c', '#6e6a62', 0.1, function(c, R){ var b = blot(c, 0.3, 1309), st = hash(c.ti, c.tj, 1310); if (st > 0.93) return R('#f4f8fc'); if (st < 0.05) return R('#4a4640'); return R(b > 0.62 ? '#9a968c' : b < 0.3 ? '#6e6a62' : '#8a867c'); }],
+      hmmelt:['#5ab4c4', '#7ac8d4', '#3a94a8', 0.06, function(c, R){ var b = blot(c, 0.05, 1311), st = hash(c.ti, c.tj, 1312), w = Math.sin(c.ti * 0.19 + Math.sin(c.tj * 0.06) * 2.6);
+        if (c.ice) return R(b > 0.5 ? '#eef8fc' : '#d8eef8'); if (w > 0.97 && st > 0.3) return R('#e8f8fc'); return R(b > 0.65 ? '#7ac8d4' : b < 0.3 ? '#3a94a8' : '#5ab4c4'); }] }; }
+  function hmBase(L, o){ var seed = L.seed;
+    function meltK(x, y){ var c = L.clearAt(x, y), re = hmShore(L, x, y, o); return sm(re, re + 1.4, c); }
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y), k = meltK(x, y), hill = (fbm(x * 0.05, y * 0.05, seed) - 0.4) * (o.hills || 1.8) * sm(1.3, 5, c); return hill * (1 - k) - k * 0.7; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = hmEdge(L, x, y), k = meltK(x, y);
+        if (k > 0.5) return ['hmmelt', { ice:o.ice ? 1 : 0 }];
+        if (k > 0.18 || (o.grit && fbm(x * 0.06, y * 0.06, seed + 1313) > 0.62)) return ['hmgrit', {}];
+        if (c < e + 0.6) return [o.track ? 'hmtrack' : 'hmsnow', { rim:c > e - 0.3 ? 1 : 0 }];
+        return ['hmsnow', {}]; },
+      fill:{ on:['hmsnow'], trees:o.trees == null ? 0.03 : o.trees, lows:0.12, tree:function(B, x, y, i){ pineAt(B, x, y, 1 + hash(i, seed, 1314) * 0.4, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 1315); if (k < 0.55) hmRock(B, x, y, i + seed); else hmJuniper(B, x, y, i + seed); } },
+      // a deep blue high sky and the white range standing across it, blue shadow on its faces (painted only on the bare background)
+      after:function(ctx, V){ var top = Math.round(V.pr(L.cx, L.E[1], 0)[1] - 2); if (top < 4) return; var W = Math.round(V.W);
+        var cv = document.createElement('canvas'); cv.width = W; cv.height = top; var c2 = cv.getContext('2d');
+        var g = c2.createLinearGradient(0, 0, 0, top); g.addColorStop(0, '#3a6aa8'); g.addColorStop(0.7, '#8ab4d8'); g.addColorStop(1, '#dceaf6'); c2.fillStyle = g; c2.fillRect(0, 0, W, top);
+        [['#c8d8e8', 0.2, 0.62, 3], ['#f4f8fc', 0.4, 0.42, 5]].forEach(function(r, ri){ c2.fillStyle = r[0]; c2.beginPath(); c2.moveTo(0, top); for (var i = 0; i <= 24; i++){ var u = i / 24, j = Math.abs(((u * r[3] + fbm(i * 0.3, ri, seed + 1316) * 0.6) % 1) - 0.5) * 2; c2.lineTo(W * u, top * (r[2] + r[1] * j)); } c2.lineTo(W, top); c2.fill(); });
+        var A = ctx.getImageData(0, 0, W, top), S2 = c2.getImageData(0, 0, W, top).data, D = A.data;
+        for (var k = 0; k < D.length; k += 4) if (D[k] === 28 && D[k + 1] === 58 && D[k + 2] === 82){ D[k] = S2[k]; D[k + 1] = S2[k + 1]; D[k + 2] = S2[k + 2]; }
+        ctx.putImageData(A, 0, 0); },
+      bg:'#1c3a52', gain:2, mats:hmMats() }; }
+  // a snowy rock and a juniper with snow on it
+  function hmRock(B, x, y, k){ var zb = B.gz(x, y), s = 0.7 + hash(k, 3, 1317) * 0.6;
+    B.solid(x - s, y - s, zb, x + s, y + s, zb + s * 1.4, function(px, py, pz){ var t = pz - zb, e = Math.hypot((px - x) / s, (py - y) / (s * 0.8), t / (s * 1.3)) + (vn(px * 3, py * 3 + pz, k) - 0.5) * 0.2; if (e > 1) return null;
+      return t > s * 0.75 ? '#f4f8fc' : e > 0.86 ? '#5a5650' : '#86827a'; }); }
+  function hmJuniper(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.8, y - 0.8, zb, x + 0.8, y + 0.8, zb + 1.3, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y), w = 0.72 * (1 - Math.pow(t / 1.3, 2)); if (r > w) return null;
+      var n = vn(px * 5, py * 5 + pz * 4, k); return t > 0.9 && n > 0.4 ? '#f4f8fc' : n > 0.6 ? '#3e6e48' : '#22462e'; }, 0.125); }
+  // a dome tent, a cairn, a serac, a yak, the tea house, the seaplane on the lake
+  function hmTentAt(B, x, y, k){ var zb = B.gz(x, y), C = ['#e8803a', '#e8c040', '#c8302a'][k % 3];
+    B.solid(x - 2, y - 1.7, zb, x + 2, y + 1.7, zb + 2.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, r = Math.hypot(dx / 1.8, dy / 1.5), top = 2.3 * Math.sqrt(Math.max(0, 1 - r * r)); if (r > 1 || t > top) return null;
+      if (dy > 0 && Math.abs(dx) < 0.5 && t < top * 0.7) return '#4a2a14'; return t > top - 0.2 ? '#f4f8fc' : dx < 0 ? C : '#b85a24'; }); }
+  function hmCairnAt(B, x, y, k){ var zb = B.gz(x, y), H = 2.2 + hash(k, 5, 1318) * 0.8;
+    B.solid(x - 1.1, y - 1.1, zb, x + 1.1, y + 1.1, zb + H, function(px, py, pz){ var t = pz - zb, r = 1 * (1 - t / H) + 0.15, d = Math.hypot(px - x, py - y) + (vn(px * 3, py * 3 + pz * 3, k) - 0.5) * 0.3; if (d > r) return null;
+      return (t * 3) % 1 < 0.15 ? '#f4f8fc' : vn(px * 5, pz * 5, k + 2) > 0.5 ? '#a8a49a' : '#7e7a72'; }); }
+  function hmSeracAt(B, x, y, k){ var zb = B.gz(x, y), H = 4.5 + hash(k, 6, 1319) * 2.5;
+    B.solid(x - 1.6, y - 1.4, zb, x + 1.6, y + 1.4, zb + H, function(px, py, pz){ var t = pz - zb, w = 1.4 - Math.max(0, t - H + 1.2) * 0.5 + (vn(py * 1.2, pz * 0.8, k) - 0.5) * 0.6; if (Math.abs(px - x - t * 0.08) > w || Math.abs(py - y) > 1.2) return null;
+      if (t > H - 0.5) return '#f4f8fc'; var n = vn(px * 2 + pz, py * 2, k + 3); return Math.abs(n - 0.5) < 0.03 ? '#3a6a90' : n > 0.62 ? '#eef8fc' : n < 0.36 ? '#8ac0dc' : '#bfe4f4'; }); }
+  function hmYakAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 2.2, y - 1, zb, x + 2.2, y + 1, zb + 2.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, body = Math.hypot(dx / 1.4, dy / 0.7, (t - 1.3) / 0.75), head = Math.hypot((dx - 1.6) / 0.42, dy / 0.38, (t - 1.35) / 0.4);
+      if (head <= 1) return dx > 1.85 ? '#d8d0c0' : '#2a1e16'; if (Math.abs(dx - 1.55) < 0.1 && Math.abs(Math.abs(dy) - 0.38) < 0.1 && t > 1.6 && t < 2.0) return '#e8e0c8';
+      if (body <= 1) return t > 1.85 && vn(dx * 3, dy * 3, k) > 0.5 ? '#f4f8fc' : '#3a2a1e'; if (t < 0.9 && Math.abs(Math.abs(dx) - 0.9) < 0.15 && Math.abs(Math.abs(dy) - 0.35) < 0.15) return '#1e1610'; return null; }); }
+  function hmTeaAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 4, y - 2.5, zb, x + 4, y + 2.5, zb + 4.6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 2.9){ if (Math.abs(dx) > 3.8 || Math.abs(dy) > 2.3) return null; if (dy > 2.1 && Math.abs(dx) < 0.6 && t < 2) return '#6a4a2a'; if (dy > 2.1 && Math.abs(Math.abs(dx) - 2.2) < 0.5 && t > 1 && t < 2) return '#2a6ab8'; return '#f2f0e8'; }
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 2.5) return null; return t > 4.3 ? '#f4f8fc' : '#3a5a8a'; }); }
+  function hmPlaneAt(B, x, y){ var zb = B.gz(x, y) - 0.4;
+    B.solid(x - 5.5, y - 4.5, zb, x + 5.5, y + 4.5, zb + 4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (t < 0.8) return Math.abs(Math.abs(dy) - 1.6) < 0.4 && Math.abs(dx) < 4.6 ? (t > 0.6 ? '#f4f2ea' : '#c8302a') : null;
+      if (t < 1.4) return Math.abs(Math.abs(dy) - 1.6) < 0.08 && Math.abs(Math.abs(dx) - 1.6) < 0.1 ? '#3a3a3a' : null;
+      if (t < 2.8){ if (Math.abs(dy) > 0.8 || dx < -4.6 || dx > 4.2) return null; return Math.abs(t - 2) < 0.1 ? '#c8302a' : t > 2.2 && dx > 0.4 && dx < 1.8 ? '#5a7a98' : '#f4f2ea'; }
+      if (t < 3.1) return Math.abs(dx - 0.6) < 0.9 && Math.abs(dy) < 4.2 ? (Math.abs(dy) > 3.7 ? '#c8302a' : '#f4f2ea') : null; return dx < -3.8 && Math.abs(dy) < 0.12 && t < 3.9 ? '#c8302a' : null; }); }
+  function hmSpots(L, n, salt, pad){ var sp = [], i; for (i = 0; i < n; i++){ var q = L.spot(i ? pad || 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.35 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + salt + i) * 2; }); if (q) sp.push(q); } return sp; }
+  function hmLakeStop(L){ var O = hmBase(L, { near:10, trees:0.02 }), sp = hmSpots(L, 3, 1331);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) hmPlaneAt(B, q.x, q.y); else hmCairnAt(B, q.x, q.y, k); }); }; return O; }
+  function hmCampStop(L){ var O = hmBase(L, { near:16, trees:0.02 }), sp = hmSpots(L, 5, 1341);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 3) hmTentAt(B, q.x, q.y, k); else hmCairnAt(B, q.x, q.y, k); }); }; return O; }
+  function hmYakStop(L){ var O = hmBase(L, { near:17, trees:0.03 }), sp = hmSpots(L, 4, 1351);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 3) hmYakAt(B, q.x, q.y, k); else hmCairnAt(B, q.x, q.y, k); }); }; return O; }
+  function hmMoraineStop(L){ var O = hmBase(L, { near:16, grit:true, hills:2.4, trees:0.01 }), sp = hmSpots(L, 5, 1361, 1.1);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k % 2) hmCairnAt(B, q.x, q.y, k); else hmRock(B, q.x, q.y, k + 40); }); }; return O; }
+  function hmIceStop(L){ var O = hmBase(L, { near:12, ice:true, hills:2.4, trees:0 }), sp = hmSpots(L, 4, 1371);
+    O.build = function(B){ sp.forEach(function(q, k){ hmSeracAt(B, q.x, q.y, k); }); }; return O; }
+  function hmTeaStop(L){ var O = hmBase(L, { near:15, trees:0.03, track:true }), sp = hmSpots(L, 3, 1381);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) hmTeaAt(B, q.x, q.y, k); else hmTentAt(B, q.x, q.y, k + 3); }); }; return O; }
+  function hmCrevStop(L){ var O = hmBase(L, { near:9, ice:true, trees:0 }), sp = hmSpots(L, 3, 1391);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) hmSeracAt(B, q.x, q.y, k + 7); else hmCairnAt(B, q.x, q.y, k + 7); }); }; return O; }
+  function hmColStop(L){ var O = hmBase(L, { near:14, grit:true, hills:3, trees:0 }), sp = hmSpots(L, 3, 1401);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) hmCairnAt(B, q.x, q.y, k + 11); else hmRock(B, q.x, q.y, k + 51); }); }; return O; }
+  function hmRidgeStop(L){ var O = hmBase(L, { near:12, hills:3, trees:0 }), sp = hmSpots(L, 3, 1411);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) hmSeracAt(B, q.x, q.y, k + 13); else hmTentAt(B, q.x, q.y, k + 5); }); }; return O; }
+
+  // The Ice Grotto: a cave in the glacier, its walls blue ice lit from outside, its floor old ice with blown snow on it
+  BUILD['s-icegrotto'] = function(L){ var R0 = room(L, { floor:'hmgfloor', wall:'hmgwall', wallH:5.4, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 1421, 2.4).forEach(function(q, k){ if (k % 2) hmRock(B, q[0], q[1], k + 3); else hmSeracAt(B, q[0], q[1], k + 21); }); },
+      bg:'#0e1a28', gain:2,
+      mats:{ hmgfloor:['#c8dcec', '#dceaf6', '#a8c4dc', 0.12, function(c, R){ var b = blot(c, 0.2, 1423), w = vn(c.ti * 0.07, c.tj * 0.07, 1424); if (Math.abs(w - 0.5) < 0.02) return R('#7aa4c8'); return R(b > 0.62 ? '#dceaf6' : b < 0.3 ? '#a8c4dc' : '#c8dcec'); }],
+        hmgwall:['#7ab8dc', '#a8d4ec', '#3a78a8', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.6) return R('#2a5a88'); var n = vn(c.ti * 0.1, z * 0.6, 1425); return R(n > 0.66 ? '#bfe4f4' : n < 0.34 ? '#4a88b8' : '#7ab8dc'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();

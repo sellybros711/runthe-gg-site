@@ -238,6 +238,7 @@ function play(host, o, cb){
   if (o && o.vehicle === 'beanstalk') return beanLeg(host, o, cb);   // the Beanstalk is reached up the beanstalk (beanLeg, below)
   if (o && o.vehicle === 'river') return riverLeg(host, o, cb);   // the Mississippi is reached down the beanstalk and down the river (riverLeg, below)
   if (o && o.vehicle === 'loch') return lochLeg(host, o, cb);   // Loch Ness is reached by steamboat, out to sea and up the loch (lochLeg, below)
+  if (o && o.vehicle === 'plane') return planeLeg(host, o, cb);   // the Himalayas are reached by seaplane off the loch, over the clouds to the peaks (planeLeg, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var wrap = document.createElement('div'); wrap.className = 'pp-trip';
@@ -1291,5 +1292,83 @@ function lochLeg(host, o, cb){
   requestAnimationFrame(frame);
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
 }
-root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, PLANETS:PLANETS, ISLES:ISLES };
+/* OFF THE LOCH, OVER THE CLOUDS AND DOWN AMONG THE PEAKS (SPACE_TRIP 'plane'): the Cryptid Expedition's second leg sets off from
+   the seaplane moored at the end of the Loch Ness walk. The camera is in her cockpit, her nose and her spinning propeller across the
+   bottom of the view. She runs along the dark loch on her floats and lifts off over the heather hills ("UP AND AWAY!"), climbs out
+   over a white sea of cloud with the high peaks standing up out of it far ahead ("THE HIGH PEAKS!"), then comes down into a valley
+   between great white mountains to a milky blue glacial lake, a line of huge footprints going up the snow beside it ("THE
+   HIMALAYAS!"). No real mountain: every peak is noise. Every surface is noise or drawn shapes, never a grid. A tap skips it; with
+   reduced motion putt.js shows a still of the lake and the peaks instead (spaceTrip). */
+function planeLeg(host, o, cb){
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; }
+  setRes(140);
+  var done = false, t0 = 0, DUR = 11.8, frames = 0, ftime = 0, Z1 = -110, Z2 = -260, CLOUD = 22;
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function vnz(x, y, z){ return noise3(x, y, z); }
+  // where she is: along the loch on her floats, up over the hills, level over the cloud, and down into the valley to the lake
+  function camZ(t){ return -t * 30; }
+  function camY(t){ if (t < 1.8) return 1.4; if (t < 5) return lerp(1.4, 34, smooth((t - 1.8) / 3.2)); if (t < 8) return 34; return lerp(34, 7, smooth((t - 8) / 3.6)); }
+  function region(z){ return z > Z1 ? 0 : z > Z2 ? 1 : 2; }
+  function midX(z){ return Math.sin(z * 0.012) * 8; }
+  // the ground: the loch and its low hills, the land far under the cloud, and the great valley of the peaks with its lake
+  function landH(x, z){ var rg = region(z), e;
+    if (rg === 0){ e = Math.abs(x - midX(z)) - 14 + (vnz(x * 0.06, 3, z * 0.06) - 0.5) * 6; return e < 0 ? -1 : Math.min(14, e * 0.6 + vnz(x * 0.04, 5, z * 0.04) * 5); }
+    var vw = rg === 2 ? 26 + Math.sin(z * 0.02) * 4 : 60, r = vnz(x * 0.018, 7, z * 0.018), rid = 1 - Math.abs(vnz(x * 0.035, 9, z * 0.035) * 2 - 1);
+    e = Math.abs(x - midX(z)) - vw + (r - 0.5) * 20; var hh = rg === 2 ? Math.min(120, e * 1.5 + rid * 34) : Math.min(140, Math.max(0, (e - 30) * 2.2) + rid * 40 * smooth((Z1 - 40 - z) / 120));
+    if (rg === 2 && Math.abs(x - midX(z)) < 12 + (r - 0.5) * 6 && z < Z2 - 50 && z > Z2 - 170) return -1;   // the glacial lake
+    return e < 0 ? (rg === 2 ? 1.2 + vnz(x * 0.1, 11, z * 0.1) * 1.5 : 0.5) : hh; }
+  function camAt(t){ var z = camZ(t), y = camY(t), roll = t < 1.8 ? Math.sin(t * 9) * 0.05 : 0, x = midX(z);
+    return { pos:V(x, y + roll, z), tg:V(midX(z - 40), y - (t > 8 ? 5 : t < 1.8 ? -0.2 : -1.5), z - 40), fov:64 }; }
+  function sky(rd, t){ var g = clamp(rd[1] * 2 + 0.1, 0, 1), z = camZ(t); var hi = z > Z1 ? [110, 140, 170] : [40, 90, 170], lo = z > Z1 ? [214, 222, 222] : [214, 230, 246]; return lerpV(lo, hi, Math.sqrt(g)); }
+  function land(p, d, t){ var x = p[0], y = p[1], z = p[2], rg = region(z), a = vnz(x * 0.1, 11, z * 0.1), b = vnz(x * 0.03, 13, z * 0.03);
+    if (rg === 0){ if (y < 0.8) return [168, 162, 148]; return b > 0.62 ? [122, 90, 150] : a > 0.6 ? [46, 90, 50] : [95, 142, 74]; }
+    var snow = y > 14 + (a - 0.5) * 16; if (snow) return a > 0.62 ? [214, 228, 242] : [244, 248, 252];
+    if (rg === 2 && y < 3){ var fp = Math.abs(x - midX(z) - 14 + Math.sin(z * 0.3) * 0.6) < 0.7 && Math.abs(((z * 0.32) % 1 + 1) % 1 - 0.5) < 0.2; return fp ? [122, 148, 180] : [236, 242, 248]; }   // the line of prints up the snow by the lake
+    return a > 0.55 ? [122, 118, 110] : [92, 88, 82]; }
+  function water(p, d, t){ var rg = region(p[2]), w = Math.abs(vnz(p[0] * 0.6, 7, p[2] * 0.15 + t * 0.6) - 0.5) * 1.8; if (rg === 0) return w < 0.03 ? [138, 180, 184] : [36, 67, 76]; return w < 0.04 ? [214, 240, 244] : [90, 180, 196]; }
+  function render(t){ var cam = camAt(t), f = norm(sub(cam.tg, cam.pos)), r = norm(cross(f, V(0, 1, 0))), u = cross(r, f), foc = (W / 2) / Math.tan(cam.fov * Math.PI / 360), ro = cam.pos, rg0 = region(ro[2]);
+    var fogD = rg0 === 0 ? 120 : 420, fogC = rg0 === 0 ? [210, 218, 220] : [214, 228, 244];
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++){ var px2 = (x + 0.5 - W / 2) / foc, py2 = (H / 2 - y - 0.5) / foc, rd = norm(add(f, add(mul(r, px2), mul(u, py2)))), col = null, o2 = (y * W + x) * 4, tg = 1e9;
+      var tt = 0.5, hitL = false, pz;
+      for (var k = 0; k < 56 && tt < 520; k++){ var p = add(ro, mul(rd, tt)); if (p[1] < 0) break; var lh = landH(p[0], p[2]); if (lh > 0 && p[1] < lh){ hitL = true; pz = p; break; } tt += 0.6 + tt * 0.07; }
+      if (hitL){ tg = tt; col = land(pz, tt, t); col = mul(col, 0.72 + 0.28 * clamp((pz[1] - landH(pz[0] + 1, pz[2])) * 0.5 + 0.6, 0, 1)); }
+      else if (rd[1] < -1e-4){ var tw = -ro[1] / rd[1]; if (tw < tg){ tg = tw; var pw = add(ro, mul(rd, tw)); col = landH(pw[0], pw[2]) > 0 ? land(pw, tw, t) : water(pw, tw, t); } }
+      // the sea of cloud over the low country between the loch and the peaks, the peaks standing up out of it
+      if (region(ro[2] + rd[2] * Math.max(0, (CLOUD - ro[1]) / (rd[1] || -1e-9))) === 1 && ro[1] > CLOUD && rd[1] < 0){ var tc = (CLOUD - ro[1]) / rd[1]; if (tc < tg){ var pc = add(ro, mul(rd, tc)), cn = vnz(pc[0] * 0.04, 17, pc[2] * 0.04 + t * 0.05); tg = tc; col = cn > 0.6 ? [255, 255, 255] : cn > 0.4 ? [236, 242, 250] : [210, 222, 238]; } }
+      if (!col){ col = sky(rd, t); tg = 900; }
+      col = lerpV(col, fogC, 1 - Math.exp(-tg / fogD));
+      D[o2] = col[0]; D[o2 + 1] = col[1]; D[o2 + 2] = col[2]; D[o2 + 3] = 255; }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    var Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    // in the cockpit: her white nose and red stripe across the bottom of the view, the dark dash, and the blur of her propeller
+    var bob = t < 1.8 ? Math.sin(t * 9) * 3 * k9 : Math.sin(t * 1.6) * 1.2 * k9, y0 = Hc * 0.84 + bob;
+    ctx.fillStyle = '#f4f2ea'; ctx.beginPath(); ctx.moveTo(0, Hc); ctx.lineTo(0, y0 + 40 * k9); ctx.quadraticCurveTo(Wc / 2, y0 - 30 * k9, Wc, y0 + 40 * k9); ctx.lineTo(Wc, Hc); ctx.fill();
+    ctx.fillStyle = '#c8302a'; ctx.fillRect(0, Math.round(y0 + 52 * k9), Wc, Math.round(6 * k9)); ctx.fillStyle = '#1e2228'; ctx.fillRect(0, Math.round(Hc - 46 * k9), Wc, Math.round(46 * k9));
+    ctx.fillStyle = '#e8c040'; for (var gq = 0; gq < 3; gq++){ ctx.beginPath(); ctx.arc(Wc * (0.3 + gq * 0.2), Hc - 23 * k9, 12 * k9, 0, 7); ctx.fill(); ctx.fillStyle = '#141414'; ctx.beginPath(); ctx.arc(Wc * (0.3 + gq * 0.2), Hc - 23 * k9, 9 * k9, 0, 7); ctx.fill(); ctx.fillStyle = '#e8c040'; }
+    ctx.strokeStyle = 'rgba(40,40,40,.35)'; ctx.lineWidth = 6 * k9; var pa = t * 47; ctx.beginPath(); ctx.moveTo(Wc / 2 - Math.cos(pa) * 90 * k9, y0 - 10 * k9 - Math.sin(pa) * 70 * k9); ctx.lineTo(Wc / 2 + Math.cos(pa) * 90 * k9, y0 - 10 * k9 + Math.sin(pa) * 70 * k9); ctx.stroke();
+    ctx.fillStyle = 'rgba(220,220,220,.12)'; ctx.beginPath(); ctx.ellipse(Wc / 2, y0 - 10 * k9, 92 * k9, 72 * k9, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#c8302a'; ctx.beginPath(); ctx.arc(Wc / 2, y0 - 8 * k9, 9 * k9, 0, 7); ctx.fill();
+    var say = function(txt, c1, c2, wob){ ctx.font = 'bold ' + Math.round(44 * k9) + 'px Anton, Impact, sans-serif'; var fit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText(txt).width)); ctx.font = 'bold ' + Math.round(44 * k9 * fit) + 'px Anton, Impact, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6 * k9; ctx.strokeStyle = c1; ctx.strokeText(txt, Wc / 2 + wob, Hc * 0.2); ctx.fillStyle = c2; ctx.fillText(txt, Wc / 2 + wob, Hc * 0.2); };
+    if (t > 2.4 && t < 4.8) say('UP AND AWAY!', '#141a22', '#ffffff', Math.sin(t * 6) * 2 * k9);
+    else if (t > 6 && t < 8.2) say('THE HIGH PEAKS!', '#141a22', '#ffe0a0', Math.sin(t * 7) * 2 * k9);
+    else if (t > 9.2 && t < 11.4) say('THE HIMALAYAS!', '#141a22', '#ffffff', Math.sin(t * 9) * 3 * k9);
+    return cam; }
+  if (o.still) return { at:function(t){ var c = render(t); if (t > 10.4) wrap.classList.add('cap'); return c; }, close:finish };
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 96) setRes(Math.max(96, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 10.4) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, PLANETS:PLANETS, ISLES:ISLES };
 })();
