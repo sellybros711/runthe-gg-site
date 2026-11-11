@@ -6564,6 +6564,92 @@ window.RTT_PUTT_LAND = (function(){
       bg:'#1a100a', gain:2,
       mats:{ pfhfloor:['#6a4428', '#7a5234', '#5a3a22', 0.12, function(c, R){ var b = blot(c, 0.2, 1623), st = hash(c.ti, c.tj, 1624); if (st > 0.96) return R('#a8784e'); if (st < 0.03) return R('#5a9a3a'); return R(b > 0.62 ? '#7a5234' : b < 0.3 ? '#5a3a22' : '#6a4428'); }],
         pfhwall:['#8e4628', '#b8603a', '#5a2e1a', 0.18, function(c, R){ var z = c.z || 0; if (z > 5) return R('#2a160c'); var n = vn(c.ti * 0.5, z * 0.15, 1625); return R(n > 0.66 ? '#b8603a' : n < 0.34 ? '#6a3020' : '#8e4628'); }] } }; };
+  /* ---------------- THE BIG TOP IS A JOURNEY (World 29): an original travelling show of the 1880s to the 1910s on a fairground lot,
+     nobody's real circus. Off the rail siding where the circus train comes in (1 and 2), across the lot where the tents go up (3 and
+     4), down the midway (5 and 6), along the tent rows (7 and 8), through the wagon yard (9 and 10), past the prop tent (11 and 12),
+     by the grandstand (13 and 14), round the backyard where the performers wait (15 and 16) and into the big top (17 and 18). The
+     lot's trodden grass lies all round the course: its edge wanders on noise, the sawdust is spread on noise of its own, and
+     nothing is a grid. */
+  STOPS.bigtop = [[1, 'siding'], [3, 'lot'], [5, 'midway'], [7, 'tents'], [9, 'wagons'], [11, 'props'], [13, 'grandstand'], [15, 'backyard'], [17, 'bigtop']];
+  (function(){ BUILD.bigtop = function(L){ var s = L.stop; return s === 'lot' ? btLotStop(L) : s === 'midway' ? btMidwayStop(L) : s === 'tents' ? btTentsStop(L) : s === 'wagons' ? btWagonsStop(L) : s === 'props' ? btPropsStop(L) : s === 'grandstand' ? btStandStop(L) : s === 'backyard' ? btYardStop(L) : s === 'bigtop' ? btTopStop(L) : btSidingStop(L); }; })();
+  function btEdge(L, x, y){ return 4.2 + fbm(x * 0.07, y * 0.07, L.seed + 1701) * 3.4; }
+  function btMats(){ return {
+      btgrass:['#5a8a3a', '#689a44', '#4a7a32', 0.1, function(c, R){ if (c.rim === 1) return R('#7aa44a'); var b = blot(c, 0.15, 1705), st = hash(c.ti, c.tj, 1706);
+        if (st > 0.994) return R('#f4e2a0'); if (st > 0.98) return R('#d8b878'); return R(b > 0.64 ? '#689a44' : b < 0.3 ? '#4a7a32' : '#5a8a3a'); }],
+      btsaw:['#d8b878', '#e8cc90', '#b8985a', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 1707), b = blot(c, 0.18, 1708); if (st > 0.95) return R('#f4e2a0'); if (st < 0.03) return R('#8a7a4a'); return R(b > 0.62 ? '#e8cc90' : b < 0.3 ? '#b8985a' : '#d8b878'); }],
+      btrail:['#5a4a3a', '#6a5a4a', '#3a3028', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 1709); if (Math.abs(((c.tj * 0.25) % 1) - 0.5) < 0.12) return R('#5a3a1e'); return R(st > 0.9 ? '#8a8a8a' : '#6a5a4a'); }] }; }
+  function btBase(L, o){ var seed = L.seed;
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y); return (fbm(x * 0.05, y * 0.05, seed) - 0.4) * (o.hills || 1.2) * sm(1.3, 5, c); },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = btEdge(L, x, y), sw = fbm(x * 0.03, y * 0.03, seed + 1711);
+        if (o.rail && Math.abs(fbm(x * 0.01, y * 0.01, seed + 1712) - 0.5) < 0.035 && c > e + 3) return ['btrail', {}];
+        if (c < e + 0.6) return [o.saw ? 'btsaw' : 'btgrass', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (sw > (o.saw ? 0.56 : 0.66)) return ['btsaw', {}];
+        return ['btgrass', {}]; },
+      fill:{ on:['btgrass'], trees:o.trees == null ? 0.02 : o.trees, lows:0.14, tree:function(B, x, y, i){ btPoleAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 1714); if (k < 0.4) btTubAt(B, x, y, i + seed); else if (k < 0.75) btBallAt(B, x, y, i + seed); else btBaleAt(B, x, y, i + seed); } },
+      bg:'#1a0e1e', gain:2, mats:btMats() }; }
+  // a tent pole with its pennant; a performer's tub; a striped balance ball; a bale of straw
+  function btPoleAt(B, x, y, i){ var zb = B.gz(x, y), H = 8 + hash(i, 2, 1715) * 3;
+    B.solid(x - 2, y - 0.4, zb, x + 2, y + 0.4, zb + H + 0.3, function(px, py, pz){ var dx = px - x, dy = py - y, h = pz - zb;
+      if (Math.hypot(dx, dy) < 0.2) return h > H - 0.3 ? '#f4c840' : '#f4ecd8';
+      if (h > H - 2 && h < H - 0.3 && dx > 0 && dx < 1.8 && Math.abs(dy) < 0.15 && Math.abs(h - H + 1.1) < 0.5 * (1 - dx / 1.9)) return (i % 2 ? dx < 0.9 : dx >= 0.9) ? '#c8302a' : '#f4c840'; return null; }, B.ART); }
+  function btTubAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.8, y - 0.8, zb, x + 0.8, y + 0.8, zb + 1.1, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y), w = 0.7 - t * 0.12; if (r > w) return null;
+      if (t > 0.98) return r < 0.25 ? '#f4c840' : '#f8f2e4'; if (t > 0.85 || t < 0.12) return '#f4c840'; return Math.sin(Math.atan2(py - y, px - x) * 6 + k) > 0 ? '#c8302a' : '#a8202a'; }); }
+  function btBallAt(B, x, y, k){ var zb = B.gz(x, y), s = 0.6 + hash(k, 3, 1716) * 0.3;
+    B.solid(x - s, y - s, zb, x + s, y + s, zb + s * 2, function(px, py, pz){ var dx = px - x, dy = py - y, dz = pz - zb - s, r = Math.hypot(dx, dy, dz); if (r > s) return null;
+      return ['#c8302a', '#f4c840', '#2a5ab8'][Math.floor((Math.atan2(dy, dx) / Math.PI + 1) * 3 + k) % 3]; }); }
+  function btBaleAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 1, y - 0.6, zb, x + 1, y + 0.6, zb + 0.9, function(px, py, pz){ var t = pz - zb; if (Math.abs(px - x) > 0.95 || Math.abs(py - y) > 0.55 || t > 0.85) return null; if (Math.abs(px - x - 0.4) < 0.05 || Math.abs(px - x + 0.4) < 0.05) return '#8a5a2a'; return vn(px * 6, pz * 9, k) > 0.5 ? '#e8cc70' : '#d8b858'; }); }
+  // the great tent, a wagon, a playbill board, a ticket booth, the cannon, the grandstand and the circus train, on the lot as on the walk
+  function btTentAt(B, x, y, R0){ var zb = B.gz(x, y), Hh = R0 * 1.1, wallH = Hh * 0.34;
+    B.solid(x - R0, y - R0, zb, x + R0, y + R0, zb + Hh + 1.6, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx), t = pz - zb, st = Math.floor((a / Math.PI + 1) * 8) % 2;
+      if (r < 0.2) return t > Hh + 0.6 ? (dx > 0 ? '#f4c840' : null) : '#f4ecd8';
+      if (t < wallH){ if (r > R0 - 0.2 || r < R0 - 0.6) return null; return st ? '#f4ecd8' : '#c8302a'; }
+      var rr = (R0 - 0.2) * (1 - (t - wallH) / (Hh - wallH)); if (rr < 0.2 || r > rr || r < rr - 0.5) return null; if (t < wallH + 0.5 && Math.sin(a * 24) > 0.2) return '#f4c840'; return st ? '#f4ecd8' : '#c8302a'; }); }
+  function btWagonAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3, y - 1.4, zb, x + 3, y + 1.4, zb + 3.6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (Math.abs(Math.abs(dy) - 1.2) < 0.15 && [-1.9, 1.9].some(function(w){ return Math.hypot(dx - w, t - 0.7) < 0.7; })) return Math.hypot(dx - (dx > 0 ? 1.9 : -1.9), t - 0.7) > 0.58 ? '#5a3a10' : '#f4c840';
+      if (t < 1.1 || Math.abs(dx) > 2.8 || Math.abs(dy) > 1.1) return null; if (t > 3.3) return Math.abs(dx) < 2.6 ? '#f4c840' : null; if (t < 1.3 || t > 3.0) return '#f4c840'; return '#c8302a'; }); }
+  function btPosterAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 2.2, y - 0.3, zb, x + 2.2, y + 0.3, zb + 4.2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(Math.abs(dx) - 1.8) < 0.12 && Math.abs(dy) < 0.12) return '#5a3a1e'; if (Math.abs(dy) > 0.1 || t < 1.2 || Math.abs(dx) > 2) return null;
+      var u = (dx + 2) / 4, v = (t - 1.2) / 3; if (u < 0.05 || u > 0.95 || v < 0.05 || v > 0.95) return '#f4c840'; if (v > 0.78) return '#c8302a'; if (Math.hypot(u - 0.7, v - 0.45) < 0.15) return '#f4c840'; return '#f8ecc8'; }); }
+  function btBoothAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 1.4, y - 1.4, zb, x + 1.4, y + 1.4, zb + 4.2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (t < 2.6){ if (Math.abs(dx) > 1.2 || Math.abs(dy) > 1.2) return null; return Math.floor((dx + 9) * 2) % 2 ? '#f4ecd8' : '#c8302a'; }
+      var rr = 1.4 * (1 - (t - 2.6) / 1.6); return Math.max(Math.abs(dx), Math.abs(dy)) > rr ? null : '#c8302a'; }); }
+  function btTrainAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 6, y - 1.8, zb, x + 6, y + 1.8, zb + 4.6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (t < 0.25) return Math.abs(Math.abs(dy) - 1.2) < 0.12 ? '#3a3a3a' : null;
+      if (t < 1) return Math.abs(Math.abs(dy) - 1.3) < 0.2 && [-4.6, -2.8, 1.2, 3.2, 4.8].some(function(w){ return Math.hypot(dx - w, t - 0.6) < 0.5; }) ? '#1e1e24' : null; if (Math.abs(dy) > 1.5) return null;
+      if (dx > 0.4){ if (dx > 4.6 && t > 2.4 && Math.hypot(dx - 5, dy) < 0.35) return t > 4.2 ? '#f4c840' : '#1e1e1e'; if (dx < 2.2 && t < 3.6) return t > 3.3 ? '#1e1e1e' : '#c8302a'; if (t < 2.6 && Math.hypot(dy, t - 1.6) < 1) return '#1e1e24'; return t < 1.3 && dx < 5.6 ? '#c8302a' : null; }
+      if (dx < -5.6 || t > 3.6) return null; if (t > 3.3) return '#5a1418'; if (t > 2.8 && t < 3.1) return '#f4c840'; return '#c8302a'; }); }
+  function btSpots(L, n, salt, pad){ var sp = [], i; for (i = 0; i < n; i++){ var q = L.spot(i ? pad || 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.35 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + salt + i) * 2; }); if (q) sp.push(q); } return sp; }
+  function btSidingStop(L){ var O = btBase(L, { rail:true, trees:0.02 }), sp = btSpots(L, 3, 1731);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) btTrainAt(B, q.x, q.y); else btBaleAt(B, q.x, q.y, k); }); }; return O; }
+  function btLotStop(L){ var O = btBase(L, { trees:0.03 }), sp = btSpots(L, 3, 1741);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) btTentAt(B, q.x, q.y, 5); else btWagonAt(B, q.x, q.y); }); }; return O; }
+  function btMidwayStop(L){ var O = btBase(L, { saw:true, trees:0.02 }), sp = btSpots(L, 3, 1751);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) btBoothAt(B, q.x, q.y); else btPosterAt(B, q.x, q.y); }); }; return O; }
+  function btTentsStop(L){ var O = btBase(L, { trees:0.03 }), sp = btSpots(L, 3, 1761);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) btTentAt(B, q.x, q.y, 3.6); else btTubAt(B, q.x, q.y, k); }); }; return O; }
+  function btWagonsStop(L){ var O = btBase(L, { saw:true, trees:0.02 }), sp = btSpots(L, 3, 1771);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) btWagonAt(B, q.x, q.y); else btBaleAt(B, q.x, q.y, k); }); }; return O; }
+  function btPropsStop(L){ var O = btBase(L, { trees:0.02 }), sp = btSpots(L, 3, 1781);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) btTentAt(B, q.x, q.y, 4); else btBallAt(B, q.x, q.y, k); }); }; return O; }
+  function btStandStop(L){ var O = btBase(L, { saw:true, trees:0.02 }), sp = btSpots(L, 3, 1791);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) btPosterAt(B, q.x, q.y); else btTubAt(B, q.x, q.y, k); }); }; return O; }
+  function btYardStop(L){ var O = btBase(L, { trees:0.03 }), sp = btSpots(L, 3, 1801);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) btWagonAt(B, q.x, q.y); else btBallAt(B, q.x, q.y, k); }); }; return O; }
+  function btTopStop(L){ var O = btBase(L, { saw:true, hills:0.8, trees:0.02 }), sp = btSpots(L, 3, 1811);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) btTentAt(B, q.x, q.y, 6); else btBoothAt(B, q.x, q.y); }); }; return O; }
+
+  // The Wardrobe Wagon: inside the costume wagon, its walls red and gold, rails of spangled costumes along them, its floor boards
+  BUILD['s-wardrobe'] = function(L){ var R0 = room(L, { floor:'btwfloor', wall:'btwwall', wallH:5.6, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 1821, 2.4).forEach(function(q, k){ if (k % 2) btTubAt(B, q[0], q[1], k + 3); else btBaleAt(B, q[0], q[1], k + 21); }); },
+      bg:'#1a0a10', gain:2,
+      mats:{ btwfloor:['#7a5232', '#8a6040', '#5a3a22', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 1823); if (Math.abs(((c.ti * 0.25) % 1) - 0.5) < 0.06) return R('#4a2e18'); if (st > 0.97) return R('#f4c840'); return R(st > 0.5 ? '#8a6040' : '#7a5232'); }],
+        btwwall:['#a8202a', '#c8302a', '#6a1418', 0.18, function(c, R){ var z = c.z || 0; if (z > 5) return R('#2a0a10'); if (Math.abs(z - 3.2) < 0.15) return R('#f4c840'); var n = vn(c.ti * 0.5, z * 0.3, 1825); if (z > 1.2 && z < 3 && n > 0.55) return R(n > 0.75 ? '#e8d0ff' : '#5a2a8a'); return R(n > 0.6 ? '#c8302a' : '#a8202a'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();

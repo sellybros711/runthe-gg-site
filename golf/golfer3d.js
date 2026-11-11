@@ -1647,6 +1647,18 @@
     out.push(ellipsoid(add(tk,sc(look,hr*0.03)),AXh,[hr*0.02,hr*0.03,hr*0.16],ink,{gloss:1,noCast:1}));                         // and its writing
     return out; };
   HAT_OVER_HAIR.pphattop=1;
+  /* THE RINGMASTER'S TOPPER (the Big Top): the ringmaster's tall black silk hat of the old circus posters, its crown a little wider
+     at the top, a broad red band edged in gold round it, and a small gold star pinned to the band. Modelled on the course golfer
+     too, so it is worn on the trail. */
+  HAT_MODEL.pptopper=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const silk=X2((P&&P.W)||'#1a1a1e'), lite=X2((P&&P.G)||'#2e2e34'), band=X2((P&&P.S)||'#c8302a'), gold=X2((P&&P.g)||'#f4c840');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.34)),AXh,[hr*1.4,hr*0.07,hr*1.4],silk,{gloss:3}));                                       // the brim
+    for(let k=0;k<8;k++){ const r=hr*(0.96+k*0.02); out.push(ellipsoid(add(hc,sc(hup,hr*(0.42+k*0.2))),AXh,[r,hr*0.14,r],k===7?lite:silk,{gloss:3})); }   // the tall crown
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.6)),AXh,[hr*1.02,hr*0.15,hr*1.02],band,{gloss:1}));                                    // the red band
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.75)),AXh,[hr*1.025,hr*0.025,hr*1.025],gold,{gloss:2}));                                 // its gold edge
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.6),sc(look,hr*1.0)),AXh,[hr*0.05,hr*0.13,hr*0.13],gold,{gloss:2,noCast:1}));           // the gold star
+    return out; };
+  HAT_OVER_HAIR.pptopper=1;
   /* THE WHITE KNIGHT'S HELM (Through the Looking-Glass): his tin helmet as Tenniel drew it, a round crown rising to a sugar-loaf
      point, a dark slit across the front to see through, and a red plume tied at its tip. Modelled on the course golfer too. */
   HAT_MODEL.ppknighthelm=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
@@ -1691,7 +1703,7 @@
     out.push(ellipsoid(add(hc,sc(hup,hr*1.36),sc(Lf,hr*0.18)),AXh,[hr*0.22,hr*0.22,hr*0.22],toorie,{gloss:1}));                    // the toorie
     return out; };
   HAT_OVER_HAIR.pptam=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1};   // a modelled hat that is modelled on the course golfer too
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1, pptopper:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1943,6 +1955,9 @@
     // chimneys' crowns
     ppriverboat:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[1])<0.1) return {c:P.b,gloss:2};
       if(Math.abs(p[1]-0.5)<0.06||Math.abs(p[1]+0.5)<0.06) return {c:P.s,gloss:2}; return {c:p[1]>0.3?P.h:P.C,gloss:3}; } },
+    // the Big Top Ball: a performer's balance ball, its segments red, gold and blue from pole to pole round a white band
+    ppbigtop:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2])<0.08) return {c:P.W,gloss:2};
+      const k=Math.floor((Math.atan2(p[1],p[0])/Math.PI+1)*3)%3; return {c:k===0?P.C:k===1?P.h:P.b,gloss:3}; } },
     // the Tree Ring Ball: the cut end of an old fir, pale wood ringed with its years, a crack out from the heart and bark round its edge
     pptreering:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
       const r=Math.hypot(p[0],p[1]); if(Math.abs(p[2])<0.35) return {c:P.b,gloss:1};
