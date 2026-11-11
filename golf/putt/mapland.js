@@ -62,6 +62,7 @@ var PAL={
   beanstalk:{ g:['#528a38','#62a242','#74b452','#86c464'], sp:[['#fff6c8',.012],['#ffffff',.01]], tree:'round', leaf:['#2a5a22','#3a7a2e','#4e9a3a','#5aae46'], trunk:'#5a3a22', path:['#d8c8a0','#e8dab8'], water:['#4a88c8','#6aa8e0','#8ac0ec','#f2f6fc'], shadow:.62 },
   mississippi:{ g:['#5e8a3a','#6a9a44','#7ab24e','#8ac05a'], sp:[['#f4f0d8',.012],['#e8c860',.008]], tree:'round', leaf:['#2e5a22','#3e7a2e','#5a9a3e','#4a8a34'], trunk:'#6a5a44', path:['#d8c8a0','#e8dab8'], water:['#4e6e76','#5e7f86','#6e8c94','#b8d0d0'], shadow:.62 },
   himalayas:{ g:['#d8e4f0','#e8f0f8','#f4f8fc','#ffffff'], sp:[['#a8bcd0',.014],['#86827a',.01]], tree:'round', leaf:['#173a2a','#1e3f30','#28503e','#f6f9fd'], trunk:'#4a3626', path:['#a8a49a','#b8b4aa'], water:['#3a94a8','#5ab4c4','#7ac8d4','#e8f8fc'], shadow:.7 },
+  pacific:{ g:['#2e5a2e','#386a34','#467a3c','#5a8a44'], sp:[['#6a4a2a',.012],['#8ab06a',.012]], tree:'pine', leaf:['#16301e','#1e3f26','#2a5230','#3e6a38'], trunk:'#4a2a1a', path:['#7a5a3a','#8a6a46'], water:['#24484a','#3a6a6a','#5a8a84','#c8e8e0'], shadow:.62 },
   lochness:{ g:['#557e42','#5f8e4a','#689a50','#76a85a'], sp:[['#c8a0e0',.014],['#8a5aaa',.01]], tree:'round', leaf:['#22462a','#2e5a32','#3e6e3a','#4e7e3a'], trunk:'#5a4a3e', path:['#b8b0a0','#c8c0b0'], water:['#1c3640','#24434c','#2e5058','#8ab4b8'], shadow:.62 },
   jellara:{ g:['#2aa890','#3fd0b0','#6ae0c4','#9be86a'], sp:[['#ff9ad8',.012],['#ffd0ec',.008]], tree:'round', leaf:['#ff5fb8','#ff8ad0','#9be86a','#ffb030'], trunk:'#227068', path:['#ffd0ec','#ffe8f6'], water:['#2aa890','#3fd0b0','#6ae0c4','#ffd0ec'], shadow:.62 },
   mars:{ g:['#b85a32','#c4683e','#d07648','#dc8654'], sp:[['#7a3220',.014],['#f0b088',.01]], tree:'round', leaf:['#5a2a1c','#7a3a22','#8a4a2a','#a8502e'], trunk:'#3a2420', path:['#e8b088','#f2c4a0'], water:['#2a0e08','#3a140c','#5a2010','#a8502e'], shadow:.62 },
@@ -719,6 +720,28 @@ WORLD.himalayas=function(P,th,seed){
     else { for(y=0;y<6;y++)for(x=1;x<5;x++) P.set(bb[0]+x,bb[1]+y,hex(y===0?'#f4f8fc':(x+y)%3?'#bfe4f4':'#8ac0dc')); } }
   // the footprints: a line of pairs across the snow, left and right
   for(var fq=0;fq<9;fq++){ var fx=Math.round(P.w*0.12+fq*P.w*0.045), fy=Math.round(P.h*0.3+fq*1.6+(fq%2?2:0)); P.set(fx,fy,hex('#7a94b4')); P.set(fx+1,fy,hex('#7a94b4')); P.set(fx+2,fy,hex('#5a7698')); }
+};
+WORLD.pacific=function(P,th,seed){
+  var tk=[], x, y;
+  // the old growth: a forest floor of moss and needles in deep warped greens, a creek winding down the map over grey stones with
+  // white water where it falls, the walk an old logging road of trodden brown earth, and huge cedars and firs, stumps, sword ferns
+  // and cut logs along it, and one line of huge bare footprints in the mud by the creek. Every edge is noise.
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var cx=P.w*(0.26+0.08*Math.sin(y*0.017+seed*0.01)+0.05*Math.sin(y*0.051+0.7))+(fbm(x*.02,y*.02,seed+5)-.5)*28+(fbm(x*.08,y*.08,seed+6)-.5)*6, d=x-cx, w=P.w*0.05+(fbm(x*.025,y*.025,seed+7)-.5)*8, st=hash(x,y,seed+9), a=fbm(x*.05,y*.05,seed+11);
+    if(Math.abs(d)<w){ P.set(x,y,hex(st>.985||Math.sin(y*0.4+a*6)>.93?'#c8e8e0':a>.6?'#3a6a6a':a<.35?'#1e3e40':'#24484a')); continue; }
+    if(Math.abs(d)<w+2+fbm(x*.08,y*.08,seed+13)*3){ P.set(x,y,hex(st>.6?'#7a7a72':'#5a5a54')); continue; }
+    if(fbm(x*.03,y*.03,seed+15)>.68){ P.set(x,y,hex(st>.97?'#8a5a3a':a>.5?'#5a4a2e':'#4a3e26')); continue; }
+    P.set(x,y,hex(st>.994?'#e8e8d0':st>.97?'#7ab04a':a>.64?'#4e8a3e':a<.3?'#2a4e2a':'#386a34')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+17)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#4a3420':fbm(x*.2,y*.2,seed+19)>.6?'#8a6a46':'#7a5a3a')); else if(pd<e+1.5)P.shade(x,y,.8); }
+  // giant cedars and firs, stumps, ferns and cut logs, each with its shadow
+  for(var bq=0;bq<34;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.4,.9,function(a,b){ P.shade(a,b,.7); });
+    if(kd<.5){ for(y=0;y<6;y++){ var hw2=Math.round((y+1)*0.5); for(x=-hw2;x<=hw2;x++) P.set(bb[0]+3+x,bb[1]+y,hex(x<0?'#2a5230':y%2?'#16301e':'#1e3f26')); } P.set(bb[0]+3,bb[1]+6,hex('#4a2a1a')); }
+    else if(kd<.68){ for(y=3;y<6;y++)for(x=1;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(y===3?((x+bq)%2?'#d8b07a':'#a8784e'):x<3?'#6a3a22':'#5a2e1a')); }
+    else if(kd<.84){ for(y=2;y<6;y++)for(x=0;x<7;x++) if(Math.abs(x-3)<=y-1&&(x+y)%2) P.set(bb[0]+x,bb[1]+y,hex(x<3?'#3e7e34':'#2e6a2a')); }
+    else { for(y=3;y<6;y++)for(x=0;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(x===0||x===5?'#d8b07a':y===4?'#5a3a22':'#7a5234')); } }
+  // the footprints: a line of big bare prints in the mud along the creek
+  for(var fq=0;fq<8;fq++){ var fy=Math.round(P.h*0.2+fq*P.h*0.07), fx=Math.round(P.w*(0.26+0.08*Math.sin(fy*0.017+seed*0.01))+P.w*0.09+(fq%2?3:0)); P.set(fx,fy,hex('#2a1e12')); P.set(fx,fy+1,hex('#2a1e12')); P.set(fx+1,fy+1,hex('#3a2a1a')); }
 };
 WORLD.candy=function(P,th,seed){
   var tk=[], x, y;
