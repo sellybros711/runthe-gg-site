@@ -5645,10 +5645,10 @@ var MEMBER_LEVELS = [
     addBlock(H, -9.9, -30.9, -6.6, -32.4, 'mctable');
     H.comps.push({ k:'plane', gx:-0.0051, gy:-0.0031 }); H.comps.push({ k:'mound', x:5.4, y:-12.6, s:1.8, a:0.12 });
     pen(H, T, -4.1, -36.4); teeSide(H, T); bowl(H, -4.1, -36.4, 1.5, 0.14); return H; } },
-  // The Horseman's Bridge: the brook below the old church winds across the course, and the wooden bridge over it has a rail on each
-  // side. The Horseman never crosses running water. Over the bridge and up the far bank to the cup.
+  // The Horseman's Bridge: the brook below the old church spreads into two pools across the course, and the wooden bridge between
+  // them has a rail on each side. Over the bridge, or the long way round the pools' ends, and up the far bank to the cup.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-7.1, 0], [6.4, 0], [9.6, -9.9], [11.4, -22.1], [9.4, -35.6], [1.9, -42.4], [-6.9, -40.6], [-11.9, -30.1], [-11.1, -16.9], [-9.4, -7.6]])], [-0.6, -2.5], [-4.6, -36.1]);
-    zoneC(H, M.WATER, -8.9, -18.9, 2.1); zoneC(H, M.WATER, -5.1, -19.9, 2.2); zoneC(H, M.WATER, -1.1, -19.4, 2.1); zoneC(H, M.WATER, 3.1, -18.4, 2.2); zoneC(H, M.WATER, 7.1, -18.9, 2.1); zoneC(H, M.WATER, 10.6, -19.6, 2.2);
+    zoneC(H, M.WATER, -3.6, -19.3, 4.4); zoneC(H, M.WATER, 4.4, -19.0, 4.4);
     zoneR(H, M.GREEN, 0.6, -22.4, 3.6, -15.6); addBlock(H, 0.3, -22.6, 0.6, -15.4, 'mcrail'); addBlock(H, 3.6, -22.6, 3.9, -15.4, 'mcrail');
     rocks(H, [[-5.4, -7.9, 0.5, 'mcstone2'], [5.1, -8.4, 0.5, 'mcpump'], [-7.6, -27.6, 0.5, 'mcstone2'], [7.9, -27.1, 0.5, 'mcpump'], [1.6, -31.4, 0.5, 'mcstone2'], [-0.9, -39.1, 0.45, 'mcpump'], [-8.9, -12.4, 0.45, 'mcpump']]);
     H.comps.push({ k:'plane', gx:0.0046, gy:0.0033 }); H.comps.push({ k:'mound', x:4.9, y:-34.4, s:1.8, a:0.12 }); zoneC(H, M.MUD, 6.6, -12.1, 0.5);
