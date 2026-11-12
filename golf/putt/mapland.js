@@ -37,6 +37,7 @@ function Px(w,h){
 var PAL={
   clubhouse:{ g:['#5f9e45','#6cae4f','#79bb58','#86c663'], sp:[['#f6e8a8',.008],['#ffffff',.006]], tree:'round', leaf:['#24552a','#2f6d33','#3f8a3e','#5aa84c'], trunk:'#5a3d26', path:['#d9caa0','#e6d9b4'], water:['#2e6f9e','#3e86b8','#5aa3d3','#cfeaf7'], shadow:.62 },
   haunted:{ g:['#24223a','#2b2843','#322e4c','#3a3556'], sp:[['#4f4868',.03],['#5d3a5a',.008]], tree:'dead', leaf:['#0f1519','#172126','#22313a','#2f4249'], trunk:'#1a1418', path:['#6e6185','#82749a'], water:['#1f4a4a','#2a6058','#3a7a68','#7fb59a'], shadow:.55, fog:'#8a6fb8' },
+  monster:{ g:['#22303a','#283840','#2e4046','#36484c'], sp:[['#4a4a62',.02],['#5a5a7a',.006]], tree:'dead', leaf:['#0f1519','#172126','#22313a','#2f4249'], trunk:'#1a1418', path:['#6e6a7a','#82808e'], water:['#1e3448','#24405a','#3a5a78','#5a86a4'], shadow:.55, fog:'#7a7ab8' },
   winter:{ g:['#d4e1ee','#dde8f3','#e7eff8','#f3f7fc'], sp:[['#c2d0e0',.02],['#ffffff',.02]], tree:'pine', leaf:['#173d30','#21503e','#2c644d','#3b7a5c'], snow:'#f6f9fd', trunk:'#4a3626', path:['#a9b9ca','#bccad8'], water:['#8cc0e2','#a3cdea','#c0def3','#eaf5fc'], shadow:.72 },
   beach:{ g:['#e2c47c','#eacf8c','#f1da9c','#f6e5b6'], sp:[['#fff6dc',.02],['#c9a964',.012]], tree:'palm', leaf:['#256b31','#2f8139','#3f9a46','#5bb352'], trunk:'#8a6a3e', path:['#8f6539','#a8794a'], water:['#165f86','#1f7aa6','#2e95c2','#55b6db'], shadow:.7 },
   tour:{ g:['#3f7f37','#468a3c','#4f9643','#59a24a'], sp:[['#e9f0c0',.004]], tree:'round', leaf:['#1d4a24','#265c2c','#327236','#428a41'], trunk:'#4a3220', path:['#c7b88f','#d6c8a0'], water:['#2b6a95','#357fae','#4d97c6','#cfe8f5'], shadow:.62 },
@@ -217,6 +218,23 @@ WORLD.haunted=function(P,th,seed){
   for(var yy=20;yy<P.h;yy+=40){ var lx=P.pathX(yy); if(lx!=null)lamp(P,lx+6,yy,1); }
   for(var k=0;k<5;k++){ var p=spot(P,P.w*(.2+.6*hash(k,1,seed)),P.h*hash(k,2,seed),4,4,6,tk); if(p){ P.ell(p[0]+2,p[1]+2,1.6,1.4,function(a,b){ P.set(a,b,hex('#e8761f')); }); P.ell(p[0]+2,p[1]+2,5,4,function(a,b,dx,dy){ P.tint(a,b,hex('#ffb347'),.15*(1-Math.sqrt(dx*dx+dy*dy))); }); } }
   fog(P,th.fog,9,.45);
+};
+/* Monster Castle (the Members Tour): the moat round the castle on its hill under the moon, the castle with its towers and lit windows,
+   the bare wood and the dark pines, the bridge where the trail crosses the moat, candle lanterns, and pumpkins by the Horseman's road */
+WORLD.monster=function(P,th,seed){
+  var tk=[], my=P.h*.5;
+  var moat=function(x,y){ var cy=my+Math.sin(x*.05+1.3)*8+fbm(x*.04,0,5)*6; return (6-Math.abs(y-cy))/6; };
+  water(P,th,moat,8,false);
+  for(var y=0;y<P.h;y++)for(var x=0;x<P.w;x++)if(P.pathD(x,y)<4&&moat(x,y)>-.3)P.set(x,y,hex((x+y)%3?'#5a5666':'#46424e'));   // a stone bridge over the moat
+  var c=spot(P,P.w*.7,P.h*.16,24,16,8,tk); if(c)building(P,c[0],c[1]+10,24,16,{ wall:'#6e6a7e', roof:'#2a2838', win:'#ffd27a', spire:1, glow:1 });
+  var t2=spot(P,P.w*.24,P.h*.3,12,10,8,tk); if(t2)building(P,t2[0],t2[1],12,10,{ wall:'#5e5a6e', roof:'#24222e', win:'#ffd27a', spire:1, glow:1 });
+  var h=spot(P,P.w*.28,P.h*.8,14,10,8,tk); if(h)building(P,h[0],h[1],14,10,{ wall:'#4e4a5a', roof:'#1e1c28', win:'#ffb347', glow:1 });
+  var pines=Object.assign({},th,{ tree:'pine', snow:null }), near=function(x,y){ return P.pathD(x,y)<9; };
+  forest(P,pines,function(x,y){ var n=fbm(x*.045,y*.045,14); return n>.6?.75:x<P.vx0-4||x>P.vx1+4?.9:.03; },seed+11,function(x,y){ return near(x,y)||moat(x,y)>-.2||P.clear(x,y,tk); },7,6);
+  forest(P,th,function(){ return .16; },seed+13,function(x,y){ return near(x,y)||moat(x,y)>-.2||P.clear(x,y,tk); },13,6);
+  for(var yy=24;yy<P.h;yy+=44){ var lx=P.pathX(yy); if(lx!=null)lamp(P,lx-6,yy,1); }
+  for(var k=0;k<4;k++){ var p=spot(P,P.w*(.2+.6*hash(k,3,seed)),P.h*hash(k,4,seed),4,4,6,tk); if(p){ P.ell(p[0]+2,p[1]+2,1.6,1.4,function(a,b){ P.set(a,b,hex('#e8781f')); }); } }
+  fog(P,th.fog,9,.4);
 };
 WORLD.winter=function(P,th,seed){
   var tk=[];

@@ -229,6 +229,54 @@ window.RTT_PUTT_LAND = (function(){
     };
   };
 
+  /* ---------------- MONSTER CASTLE (the Members Tour): the castle on its hill behind the hole, a curtain wall with a round tower
+     at each end and the gate in it, a flagstone walk up from the tee, bare oaks and dark pines, stone urns, a little pool of the
+     moat and candle lanterns along the walk. An original castle: no real castle's likeness. */
+  BUILD.monster = function(L){
+    var C = L.C, E = L.E, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
+    var wall = spotRect(15, 4, function(x, y){ return north(x, y) * 1.5 - Math.abs(x - L.cx) * 0.25; });
+    var pool = spot(2.4, function(x, y){ return -Math.abs(y - L.cy) * 0.3 + Math.abs(x - L.cx) * 0.4; });
+    var tee = C.tee, gate = wall ? [wall.x, wall.y + wall.d / 2] : null;
+    var paths = [L.route([tee[0] + (tee[0] < L.cx ? -1 : 1) * 0.5, E[3] + 1], [tee[0], P1[1] + 1.4], seed, 1.5)];
+    if (gate) paths.push(L.route([gate[0], gate[1] + 0.2], [tee[0], P1[1] + 1.4], seed + 3, 1.2));
+    var trees = []; for (var i = 0; i < 18; i++){ var t = spot(1.3 + hash(i, seed, 4) * 0.6, function(x, y){ return north(x, y) * 0.8 + Math.min(L.far(x, y), 5) * 0.5 + L.side(x) * 3.5; }); if (t) trees.push(t); }
+    var urns = []; for (i = 0; i < 5; i++){ var u = spot(0.6, function(x, y){ return -Math.abs(clearAt(x, y) - 3) * 0.6 + hash(i, 5, seed) * 2; }); if (u) urns.push(u); }
+    var lamps = [], pp = paths[paths.length - 1];
+    for (i = 1; i < pp.length - 1; i += 2){ var p = pp[i], q = pp[i + 1], dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1, sd = i % 4 === 1 ? 1 : -1, lx = p[0] - dy / l * 1.3 * sd, ly = p[1] + dx / l * 1.3 * sd; if (clearAt(lx, ly) > 0.8) lamps.push([lx, ly]); }
+    var dP = paths.map(function(q){ return L.dist(q); });
+    function onPath(x, y){ for (var k = 0; k < dP.length; k++) if (dP[k](x, y) < (k ? 0.7 : 0.85)) return true; return false; }
+    function poolD(x, y){ return pool ? 1 - Math.hypot((x - pool.x) / pool.r, (y - pool.y) / (pool.r * 0.75)) + (fbm(x * 0.6, y * 0.6, seed + 9) - 0.5) * 0.4 : -1; }
+    return {
+      h:function(x, y){ var z = (fbm(x * 0.06, y * 0.06, seed) - 0.45) * 2.4 * sm(1.5, 7, clearAt(x, y));
+        if (wall){ var ddx = Math.max(0, Math.abs(x - wall.x) - wall.w / 2), ddy = Math.max(0, Math.abs(y - wall.y) - wall.d / 2), d = Math.hypot(ddx, ddy); z = z * sm(0, 3, d) + 0.4 * (1 - sm(0, 3, d)); }
+        var b = poolD(x, y); if (b > 0) z = Math.min(z, -0.25); else if (b > -0.25) z = Math.min(z, -0.1 + b);
+        if (onPath(x, y)) z -= 0.03; return z; },
+      mat:function(x, y){ var b = poolD(x, y); if (b > 0) return ['moat', { dep:b }]; if (b > -0.18) return ['clay'];
+        if (onPath(x, y)) return ['flags']; return ['turf']; },
+      build:function(B){
+        if (wall){ var x0 = wall.x - wall.w / 2, x1 = wall.x + wall.w / 2, y0 = wall.y - wall.d / 2 + 0.8, y1 = wall.y + wall.d / 2 - 0.8, zb = B.gz(wall.x, wall.y), WH = 4.2;
+          B.solid(x0 - 1.8, y0 - 1.8, zb - 0.2, x1 + 1.8, y1 + 1.8, zb + WH + 3.4, function(px, py, pz){ var t = pz - zb, tw = [x0, x1].map(function(cx){ return Math.hypot(px - cx, py - (y0 + y1) / 2); }), rt = Math.min(tw[0], tw[1]);
+            if (rt < 1.7){ if (t > WH + 2.6) return rt > 1.25 && Math.floor((Math.atan2(py - wall.y, px) + 4) * 3) % 2 ? '#8a8698' : null;   // the towers' crenels
+              if (t > WH + 1.6 && Math.abs(py - y1) < 2 && py > (y0 + y1) / 2 && Math.abs(t - WH - 1.4) < 0.5 && rt > 1.4 && Math.abs(Math.abs(px - wall.x) - wall.w / 2) < 0.35) return '#ffd27a';   // a lit window
+              var row = Math.floor(t * 1.4); return (t * 1.4) % 1 < 0.1 ? '#4a4656' : hash(row, (Math.atan2(py - wall.y, px - wall.x) * 6) | 0, seed) < 0.25 ? '#9a96a8' : '#7e7a90'; }
+            if (px < x0 || px > x1 || py < y0 || py > y1) return null; if (t > WH + 0.8) return null;
+            if (t > WH) return Math.floor((px - x0) * 1.1) % 2 ? '#8a8698' : null;   // the crenels along the wall
+            if (Math.abs(px - wall.x) < 1.2 && (t < 2.2 || Math.hypot(px - wall.x, t - 2.2) < 1.2)){ if (py < y1 - 0.3) return null; return (Math.abs(((px - wall.x + 2) * 2.5) % 1 - 0.5) < 0.14 || Math.abs((t * 2.5) % 1 - 0.5) < 0.14) && t > 1 ? '#2a2a34' : null; }   // the gate, its portcullis half up
+            var rw = Math.floor(t * 1.4), c = ((px - x0) * 0.7 + (rw % 2) * 0.5) % 1; if (c < 0.07 || (t * 1.4) % 1 < 0.1) return '#4a4656'; return '#7e7a90'; }); }
+        trees.forEach(function(t, i){ deadTree(B, t.x, t.y, 5 + hash(i, seed, 8) * 2.4, i + seed); });
+        urns.forEach(function(u){ var x = u.x, y = u.y, zb = B.gz(x, y);
+          B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 1.3, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, py - y);
+            if (tt < 0.3) return r < 0.34 ? '#6e6a7e' : null; if (tt < 1.1) return r < 0.26 + Math.sin((tt - 0.3) / 0.8 * Math.PI) * 0.22 ? '#8a8698' : null; return r < 0.42 ? (r < 0.3 ? '#2e5a3a' : '#a8a4b6') : null; }); });
+        lamps.forEach(function(l){ lamp(B, l[0], l[1], '#231d2a', '#ffd56a'); });
+      },
+      fill:{ on:['turf'], trees:0.45, lows:0.3, tree:function(B, x, y, i){ deadTree(B, x, y, 4.2 + hash(i, seed, 18) * 2.4, i + seed * 7); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 19); if (k < 0.45) bush(B, x, y, 0.45, ['#1e3a2e', '#24443a', '#183026']); else rockAt(B, x, y, 0.4, ['#5f5b6c', '#7c7889']); } },
+      gain:0.8, fog:function(x, y){ return fbm(x * 0.13 + y * 0.03, y * 0.2, seed + 21); }, fogCol:'#7a7ab8',
+      mats:{ turf:['#2a4034', '#304a3a', '#36403e', 0.18], flags:['#6e6a7a', '#7e7a8a', '#5a5666', 0.3, function(c, R, h3){ var f = fbm(c.ti * 0.21, c.tj * 0.21, 7); return R(f < 0.34 ? '#5a5666' : f > 0.66 || h3(c.ti, c.tj, 7) < 0.1 ? '#86828e' : '#6e6a7a'); }],
+        clay:['#7a5236', '#8a5e3e', '#6a4630', 0.2], moat:['#1e3448', '#5a86a4', '#24405a', 0.03, function(c, R, h3){ return R(h3(c.ti, c.tj, 4) < 0.025 ? '#5a86a4' : '#1e3448'); }] }
+    };
+  };
+
   /* ---------------- SEASHELL SHORES: the shore behind the hole, a lighthouse on the point, dunes and a boardwalk in front */
   BUILD.beach = function(L){
     var E = L.E, P0 = L.P0, seed = L.seed, clearAt = L.clearAt, spot = L.spot;

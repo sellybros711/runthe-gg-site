@@ -82,9 +82,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', lochness:'lanterns', himalayas:'lanterns', pacific:'lanterns', bigtop:'lanterns', london:'gas lamps', notredame:'candles', treasure:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', lochness:'lanterns', himalayas:'lanterns', pacific:'lanterns', bigtop:'lanterns', london:'gas lamps', notredame:'candles', treasure:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns', monster:'candles' };
 var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], lookingglass:['#c8d8ff', '#ffffff'], beanstalk:['#ffe08a', '#fffbe8'], mississippi:['#ffd860', '#fff6dc'], lochness:['#ffe08a', '#fffbe8'], himalayas:['#ffc860', '#fff6dc'], pacific:['#ffb050', '#fff2c8'], bigtop:['#ffd860', '#fffbe8'], london:['#ffe6a0', '#fffaf0'], notredame:['#ffd890', '#fff4e0'], treasure:['#ffd070', '#fff4d8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', lochness:'rock', himalayas:'rocksnow', pacific:'rock', bigtop:'rock', london:'rock', notredame:'rock', treasure:'rock', volcano:'rockdark', haunted:'rockdark' };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', lochness:'rock', himalayas:'rocksnow', pacific:'rock', bigtop:'rock', london:'rock', notredame:'rock', treasure:'rock', volcano:'rockdark', haunted:'rockdark', monster:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -257,7 +257,12 @@ var KIT = {
     npc:{ skin:'porcelain', polo:'black', hat:'black', pants:'grey', hair:'white', hairStyle:'long', cap:false, gender:'female' }, who:'the caretaker' },
   harvest:{ g:['#9c8a44', '#a8964c', '#8e7c3c', 0.2], p:['#b08a58', '#c09a66', '#9a784a'], tree:['broad', 'broad', 'corn'], leaves:['#c8641e', '#e08a2a', '#a84e18'], bark:'#4a3624',
     low:['hay', 'pumpkin', 'bush'], brk:'hay', haz:'slow', hazC:['#6a4e2e', '#5a4024'], lm:['barn', 'scarecrow', 'cornfield'], wall:['#8b4a1e', '#5a2e10'],
-    npc:{ skin:'tan', polo:'gold', hat:'stone', pants:'navy', hair:'auburn', hairStyle:'short', cap:true, hatStyle:'cap', gender:'male' }, who:'the farmer' }
+    npc:{ skin:'tan', polo:'gold', hat:'stone', pants:'navy', hair:'auburn', hairStyle:'short', cap:true, hatStyle:'cap', gender:'male' }, who:'the farmer' },
+  // Monster Castle: the castle lawn under the moon, a flagstone walk, bare oaks and dark pines, urns and a suit of armour by the path,
+  // the moat for the water and the Golem's wet clay for the slow ground
+  monster:{ g:['#2e4a3a', '#36543e', '#284234', 0.2], p:['#6e6a7a', '#7e7a8a', '#5e5a6a'], paved:true, tree:['dead', 'pine', 'dead'], leaves:['#1e3a2e', '#24443a', '#183026'], bark:'#2e2a2e',
+    low:['mcurnlow', 'mcarmourlow', 'rockdark'], brk:'pumpkin', haz:'slow', hazC:['#9a6a44', '#7a5236'], waterC:['#1e3448', '#5a86a4'], seaC:['#1e3448', '#5a86a4'], bogC:['#9a6a44', '#7a5236'], lm:['mcTowerLm', 'mcGateLm', 'mcOakLm'], wall:['#8a8698', '#3a3646'],
+    npc:{ skin:'light', polo:'navy', hat:'black', pants:'grey', hair:'grey', hairStyle:'short', cap:false, gender:'female' }, who:'the housekeeper' }
 };
 /* A WORLD'S WALKS TRAVEL WITH ITS HOLES. Pirate Cove's holes go beach, town, jungle, Skull Rock, cove (land.js), and the walks
    between them go the same way: putt.js names the stop (spec.kitAs), and the walk is planned with that stop's kit. Only the
@@ -925,8 +930,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { tirocklow:0.8, tikeglow:0.5, tidriftlow:0.9, ndpostlow:0.5, ndbasketlow:0.7, ndwelllow:0.9, ldlamplow:0.6, ldbarrellow:0.8, ldpillarlow:0.7, btdrumlow:0.8, btballlow:0.8, btpinslow:0.7, pffernlow:1, pfstumplow:0.9, pfmosslow:1, bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6, lnheatherlow:0.6, lnboulderlow:0.8, hmrocklow:0.8, hmjuniperlow:0.7 };
-var LOWH = { tirocklow:1.1, tikeglow:0.9, tidriftlow:0.5, ndpostlow:1.2, ndbasketlow:0.9, ndwelllow:1.4, ldlamplow:2.6, ldbarrellow:1.2, ldpillarlow:1.7, btdrumlow:1.1, btballlow:1.5, btpinslow:1.3, pffernlow:1.4, pfstumplow:1.1, pfmosslow:1.2, bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3, lnheatherlow:1.1, lnboulderlow:1.2, hmrocklow:1.2, hmjuniperlow:1.3 };
+var LOWR = { mcurnlow:0.6, mcarmourlow:0.6, tirocklow:0.8, tikeglow:0.5, tidriftlow:0.9, ndpostlow:0.5, ndbasketlow:0.7, ndwelllow:0.9, ldlamplow:0.6, ldbarrellow:0.8, ldpillarlow:0.7, btdrumlow:0.8, btballlow:0.8, btpinslow:0.7, pffernlow:1, pfstumplow:0.9, pfmosslow:1, bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6, lnheatherlow:0.6, lnboulderlow:0.8, hmrocklow:0.8, hmjuniperlow:0.7 };
+var LOWH = { mcurnlow:1.3, mcarmourlow:2.6, tirocklow:1.1, tikeglow:0.9, tidriftlow:0.5, ndpostlow:1.2, ndbasketlow:0.9, ndwelllow:1.4, ldlamplow:2.6, ldbarrellow:1.2, ldpillarlow:1.7, btdrumlow:1.1, btballlow:1.5, btpinslow:1.3, pffernlow:1.4, pfstumplow:1.1, pfmosslow:1.2, bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3, lnheatherlow:1.1, lnboulderlow:1.2, hmrocklow:1.2, hmjuniperlow:1.3 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -946,7 +951,7 @@ var CHEST_SAY = {
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
   volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'], lookingglass:['A chest. Its lock is on the other side.'], beanstalk:['A chest, as big as a giant’s boot.'], mississippi:['A chest, washed up on the bank.'], lochness:['A chest, half sunk in the heather.'], himalayas:['A chest, frozen into the snow. Somebody left it on the way up.'], pacific:['A chest under the ferns. Moss all over it.'], bigtop:['A strongbox off the show wagon. Still locked.'], london:['A strongbox. Somebody left it in a hurry.'], notredame:['A chest under the bell frame. It hums when the bells ring.'], treasure:['A sea chest. Somebody painted an X on the lid.'],
-  haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
+  haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'], monster:['A chest from the castle. The lid creaks.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
   school:'Kids say there\'s a secret hole on this trail. Don\'t tell the principal.',
@@ -1451,6 +1456,7 @@ var LIFE = {
   neon:{ fly:['drone', 3], mote:['spark', 40] },
   haunted:{ fly:['bat', 5], ghosts:2, mote:['firefly', 8] },
   harvest:{ fly:['crow', 3], mote:['leaf', 16] },
+  monster:{ fly:['bat', 4], mote:[['firefly', 10], ['leaf', 6]] },
   school:{ fly:['song', 4], mote:[['leaf', 10], ['butter', 6]] },
   iceage:{ mote:['snow', 60], fly:['crow', 2] },
   moon:{ fly:['drone', 2], mote:['spark', 30] },
@@ -6293,6 +6299,162 @@ Object.assign(FOLK3D, {
     if (d < 0.23){ if (t > 2.38 || u < -0.08) return t > 2.36 ? '#c8302a' : '#2a1a10';   // the red kerchief tied over his head
       if (u > 0.15 && Math.abs(av - 0.075) < 0.03 && Math.abs(t - 2.34) < 0.025) return '#1a1410'; if (u > 0.16 && Math.abs(t - 2.24) < 0.02 && av < 0.09) return '#7a3a2a'; return '#d8a882'; }
     if (el3(u, v, t, -0.26, 0, 2.36, 0.08, 0.05, 0.06) <= 1 || cap3(u, v, t, [-0.26, 0, 2.34], [-0.36, 0.06, 2.18], 0.03)) return '#c8302a';   // its knot at the nape, the ends hanging
+    return null; } }
+});
+/* ---- Monster Castle (the Members Tour): the castle lawn under the moon, the walk a path of worn flagstones, bare oaks and dark
+   pines along it, stone urns and a suit of armour on its plinth by the path, the castle's round towers, its gatehouse with the
+   portcullis half up, and the great bare oak of Sleepy Hollow with a lantern hung in it. Never a real castle's likeness. */
+// a stone urn on its foot, and a suit of armour standing on a plinth
+BUILD.mcurnlow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 1.3, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, py - y);
+    if (tt < 0.3) return r < 0.34 ? '#6e6a7e' : null; if (tt < 1.1) return r < 0.26 + Math.sin((tt - 0.3) / 0.8 * Math.PI) * 0.22 ? (Math.floor(tt * 6) % 3 ? '#8a8698' : '#76728a') : null;
+    if (tt < 1.22) return r < 0.42 ? (r < 0.3 ? '#2e5a3a' : '#a8a4b6') : null; return r < 0.25 && hash(px * 9 | 0, py * 9 | 0, 5) < 0.5 ? '#3a6a44' : null; }, 0.125); };
+BUILD.mcarmourlow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 2.6, function(px, py, pz){ var tt = pz - zb, dx = px - x, dy = py - y, r = Math.hypot(dx, dy);
+    if (tt < 0.35) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.5 ? '#5e5a72' : null;   // the plinth
+    if (tt < 1.2) return Math.hypot(Math.abs(dx) - 0.14, dy) < 0.11 ? '#9aa0ae' : null;   // the greaves
+    if (tt < 1.95) return r < 0.3 ? (Math.abs(dx) < 0.04 ? '#e8ecf4' : '#a8aebc') : (Math.hypot(Math.abs(dx) - 0.38, dy) < 0.08 && tt > 1.3 ? '#8e94a2' : null);   // the breastplate, the arms
+    if (tt < 2.4) return r < 0.19 ? (Math.abs(tt - 2.2) < 0.03 && dy > 0.1 ? '#14141c' : '#c0c6d2') : null;   // the helm and its slit
+    return Math.hypot(dx, dy) < 0.05 ? '#a8243a' : null; }, 0.125); };   // its red plume
+// a round castle tower: grey coursed stone, an arrow slit or two, a lit window and the crenels round its top
+BUILD.mcTowerLm = function(B, t, i){ var R = Math.min(t.w, t.d) / 2 - 0.3; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+  if (tt > t.h - 1.2){ if (r > R + 0.3 || r < R - 0.5) return null; return Math.floor((a + 4) * 3) % 2 ? '#8a8698' : null; }   // the crenels
+  if (tt > t.h - 1.6) return r < R + 0.3 ? '#6e6a7e' : null; if (r > R) return null;
+  if (dy > 0 && Math.abs(dx) < 0.45 && Math.abs(tt - t.h * 0.62) < 0.7) return '#ffd27a';   // a lit window
+  if (dy > 0 && Math.abs(dx - R * 0.5) < 0.12 && Math.abs(tt - t.h * 0.35) < 0.6) return '#14141c';   // an arrow slit
+  var row = Math.floor(tt * 1.4), c = ((a + 4) * 4 + (row % 2) * 0.5) % 1; if (c < 0.07 || (tt * 1.4) % 1 < 0.1) return '#4a4656'; return hash(row, (a * 8) | 0, i + 3) < 0.25 ? '#9a96a8' : '#7e7a90'; }); };
+// the gatehouse: the curtain wall with its arch, the portcullis half up in it, the crenels along its top
+BUILD.mcGateLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2; if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null;
+  if (tt > t.h - 1){ return Math.floor((dx + 20) * 0.9) % 2 ? '#8a8698' : null; }
+  var arch = Math.abs(dx) < 1.4 && (tt < 2.6 || Math.hypot(dx, tt - 2.6) < 1.4);
+  if (arch){ if (dy < hd - 0.4) return null; if (tt > 1.4 && ((Math.abs(((dx + 2) * 2.5) % 1 - 0.5) < 0.12) || Math.abs((tt * 2.5) % 1 - 0.5) < 0.12)) return '#2a2a34'; return null; }   // the portcullis, half up
+  var row = Math.floor(tt * 1.4), c = ((dx + 20) * 0.7 + (row % 2) * 0.5) % 1; if (c < 0.07 || (tt * 1.4) % 1 < 0.1) return '#4a4656'; return '#7e7a90'; }); };
+// the great bare oak of Sleepy Hollow, a lantern hung from one bough
+BUILD.mcOakLm = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h;
+  B.vox(x - t.w / 2, y - t.d / 2, zb, x + t.w / 2, y + t.d / 2, zb + H + 1, function(set){
+    B.tube(set, x, y, zb, x + 0.2, y, zb + H * 0.55, 0.55, 0.32, '#3a2e2a');
+    for (var k = 0; k < 6; k++){ var a = hash(i, k, 81) * 6.28, s0 = 0.4 + k * 0.08, bx = x + 0.1, bz = zb + H * s0, len = 2.2 + hash(k, i, 82) * 1.8, ex = bx + Math.cos(a) * len, ey = y + Math.sin(a) * len * 0.6, ez = bz + len * 0.6;
+      B.tube(set, bx, y, bz, ex, ey, ez, 0.22, 0.1, '#3a2e2a'); B.tube(set, ex, ey, ez, ex + Math.cos(a + 0.7) * 0.9, ey + Math.sin(a + 0.7) * 0.5, ez + 0.7, 0.1, 0.05, '#3a2e2a');
+      if (k === 2){ B.tube(set, ex, ey, ez, ex, ey, ez - 0.8, 0.03, 0.03, '#1a1410'); B.blob(set, ex, ey, ez - 1.05, 0.2, 0.2, 0.26, '#ffd27a'); } } }); };
+LMSIZE.mcTowerLm = [6, 6, 15]; LMSIZE.mcGateLm = [10, 2.6, 8]; LMSIZE.mcOakLm = [8, 6, 9];
+/* THE FOLK OF MONSTER CASTLE (the Members Tour), each from its public domain book and never from a film's make up. Ichabod Crane as
+   Irving wrote him and Darley drew him (1820, 1849): lank and long necked, huge ears, the black schoolmaster's coat, a tall black hat
+   and a book under his arm. The Zombie of folklore, drawn gently: an ashen sleepwalker in a torn work shirt and trousers, barefoot,
+   his arms out in front of him, blank pale eyes, and nothing gory. The Invisible Man as Wells wrote him (1897): the bandaged head,
+   the dark blue goggles, the pink false nose, a wide brimmed hat, an overcoat with its collar up and gloves (never the dressing
+   gown). Mr. Hyde as Stevenson wrote him (1886): small, pale and hunched, swamped in Dr. Jekyll's coat, its sleeves past his hairy
+   hands, a heavy cane and a wide smile (no fangs, no ape's face). The Vampire of Varney (1847) and Carmilla (1872): gaunt and
+   bloodless, long black hair, tin grey eyes, a black frock coat and a plain black cloak (no lined cape, no white tie, no medallion).
+   The Werewolf as Lucas Cranach cut him (1512): a wolf's head with yellow eyes on a man's body, a torn shirt and his claws. The
+   Golem of the old story: clay, a clay bowl cut, a wide belt, the star amulet and the word on his brow, a gentle keeper. And
+   Irving's Headless Horseman: NO head at all above the high collar of his Hessian coat with its brass buttons, a black cloak, buff
+   breeches, his boots and sabre, and a pumpkin under his arm. */
+Object.assign(FOLK3D, {
+  ichabod:{ r:0.85, h:4.0, k:1.1, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.12 && el3(u, av, t, 0.08, 0.1, 0.06, 0.2, 0.08, 0.07) <= 1) return '#14141a';   // long flat shoes
+    if (cap3(u, av, t, [0, 0.1, 0.1], [0, 0.1, 0.62], 0.06)) return '#d8d4cc';   // his stockings, thin shanks
+    if (cap3(u, av, t, [0, 0.1, 0.6], [0, 0.11, 1.22], 0.08)) return '#1e1e24';   // black breeches
+    if (el3(u, v, t, 0.1, 0.35, 1.72, 0.11, 0.06, 0.15) <= 1) return Math.abs(u - 0.1) > 0.08 ? '#f0e8d0' : '#6a2a22';   // the book under his arm, its pages
+    if (t >= 1.12 && t < 2.5 && el3(u, v, t, 0, 0, 1.8, 0.2, 0.25, 0.7) <= 1){ if (u > 0.14 && av < 0.05 && t > 2.25) return '#f4f0e6'; return (Math.floor(t * 10) + Math.floor(v * 8)) % 5 ? '#1a1a20' : '#24242c'; }   // the black coat, his white neckcloth
+    if (t >= 1.05 && t < 1.5 && u < -0.05 && el3(u, v, t, -0.12, 0, 1.25, 0.14, 0.22, 0.3) <= 1) return '#1a1a20';   // its skirts
+    if (cap3(u, av, t, [0, 0.25, 2.4], [0.06, 0.3, 1.6], 0.06)) return '#1a1a20';   // long thin arms
+    if (el3(u, av, t, 0.07, 0.31, 1.52, 0.05, 0.05, 0.06) <= 1) return '#f0d0b4';
+    if (cap3(u, v, t, [0, 0, 2.45], [0.02, 0, 2.78], 0.07)) return '#f0d0b4';   // the long neck
+    if (el3(u, av, t, -0.01, 0.22, 2.93, 0.05, 0.05, 0.12) <= 1) return '#e8b49a';   // the huge ears
+    var d = Math.hypot(u, v * 1.08, (t - 2.93) * 0.92);
+    if (d < 0.2){ if (u > 0.13 && Math.abs(av - 0.065) < 0.03 && Math.abs(t - 2.97) < 0.03) return '#1a1410'; if (u > 0.12 && av < 0.06 && Math.abs(t - 2.9) < 0.05) return '#e8b49a'; return u < -0.06 || t > 3.06 ? '#6a4a2a' : '#f0d0b4'; }   // a narrow face, a long nose
+    if (el3(u, v, t, 0.24, 0, 2.89, 0.07, 0.03, 0.03) <= 1) return '#e8b49a';   // the snipe nose
+    if (t >= 3.08 && t < 3.13 && Math.hypot(u, v) < 0.3) return '#14141a'; if (t >= 3.13 && t < 3.7 && Math.hypot(u, v) < 0.16) return Math.abs(t - 3.18) < 0.03 ? '#3a3a44' : '#14141a';   // the tall hat
+    return null; } },
+  zombie:{ r:1.0, h:3.3, at:function(u, v, t){ var av = Math.abs(v), rag = hash((u * 23) | 0, (v * 19 + t * 29) | 0, 61);
+    if (t < 0.1 && el3(u, av, t, 0.06, 0.12, 0.05, 0.17, 0.08, 0.06) <= 1) return '#9a9c92';   // bare feet
+    if (cap3(u, av, t, [0, 0.12, 0.08], [0, 0.12, 0.38], 0.065)) return '#9a9c92';
+    if (cap3(u, av, t, [0, 0.12, 0.34], [0, 0.12, 0.95], 0.1)) return t < 0.42 && rag < 0.5 ? null : (Math.floor(t * 6 + v * 4) % 4 ? '#6a5a42' : '#5a4a36');   // patched trousers, the hems ragged
+    if (t >= 0.85 && t < 2.0 && el3(u, v, t, 0, 0, 1.42, 0.26, 0.31, 0.62) <= 1){ if (rag < 0.07 && u > 0) return '#3a3a40'; if (u > 0.14 && av < 0.03) return '#d8d4c4'; return (Math.floor(t * 9) % 3) ? '#7a8aa0' : '#6a7a90'; }   // the faded work shirt, a tear or two
+    if (cap3(u, av, t, [0, 0.3, 1.9], [0.56, 0.26, 1.82], 0.075)) return u < 0.35 ? '#7a8aa0' : '#9a9c92';   // his arms out in front, sleepwalking
+    if (el3(u, av, t, 0.62, 0.26, 1.82, 0.07, 0.06, 0.05) <= 1) return '#9a9c92';
+    var d = Math.hypot(u, v, t - 2.3);
+    if (d < 0.22){ if (u > 0.15 && Math.abs(av - 0.07) < 0.035 && Math.abs(t - 2.34) < 0.03) return '#e8ece4';   // blank pale eyes, sleepy
+      if (u > 0.16 && av < 0.06 && Math.abs(t - 2.22) < 0.015) return '#5a5c54'; return u < -0.05 || t > 2.44 ? '#3a3430' : '#a8aa9e'; }   // ashen skin, untidy hair
+    if (el3(u, v, t, -0.05, 0, 2.48, 0.18, 0.2, 0.08) <= 1 && rag > 0.3) return '#3a3430';
+    return null; } },
+  invisible:{ r:1.0, h:3.7, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.07, 0.13, 0.06, 0.19, 0.1, 0.08) <= 1) return '#2a1e14';   // his boots
+    if (cap3(u, av, t, [0, 0.13, 0.12], [0, 0.13, 0.7], 0.09)) return '#3a3a44';
+    if (t >= 0.5 && t < 2.1 && el3(u, v, t, 0, 0, 1.3, 0.3, 0.35, 0.82) <= 1){ if (u > 0.2 && av < 0.03) return '#3a2a1a'; if (u > 0.22 && Math.abs(((t * 5) % 1) - 0.5) < 0.1 && Math.abs(av - 0.08) < 0.04) return '#2a1e14'; return (Math.floor(t * 8) + Math.floor(v * 7)) % 4 ? '#6a5a44' : '#5e4e3a'; }   // the long overcoat, its buttons
+    if (t >= 1.95 && t < 2.2 && Math.hypot(u, v) < 0.27) return '#5e4e3a';   // its collar turned up
+    if (cap3(u, av, t, [0, 0.34, 1.9], [0.14, 0.38, 1.25], 0.085)) return '#6a5a44';
+    if (el3(u, av, t, 0.14, 0.39, 1.2, 0.06, 0.06, 0.06) <= 1) return '#e8e4d8';   // white gloves, nothing inside to see
+    var d = Math.hypot(u, v, t - 2.38);
+    if (d < 0.23){ if (u > 0.13 && Math.abs(av - 0.08) < 0.06 && Math.abs(t - 2.42) < 0.05) return Math.hypot(av - 0.08, t - 2.42) < 0.03 ? '#2a3a7a' : '#14182a';   // the dark blue goggles
+      if (u > 0.18 && av < 0.035 && t > 2.3 && t < 2.38) return '#f0a8a0';   // the pink false nose
+      return Math.abs(((t * 18) % 1) - 0.5) < 0.12 ? '#c8c4b4' : '#f0ece0'; }   // bandages wound round and round
+    if (t >= 2.56 && t < 2.6 && Math.hypot(u, v) < 0.42) return '#4a3a26'; if (t >= 2.6 && t < 2.8 && Math.hypot(u, v) < 0.2) return Math.abs(t - 2.63) < 0.025 ? '#2a1e14' : '#4a3a26';   // the wide brimmed hat
+    return null; } },
+  hyde:{ r:0.9, h:2.8, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.12 && el3(u, av, t, 0.06, 0.12, 0.05, 0.16, 0.08, 0.07) <= 1) return '#1a1410';
+    if (cap3(u, av, t, [0, 0.12, 0.1], [0, 0.12, 0.42], 0.08)) return '#2a2a2e';
+    if (cap3(u, v, t, [0.28, 0.3, 1.0], [0.34, 0.34, 0.05], 0.03)) return '#3a2410'; if (el3(u, v, t, 0.28, 0.3, 1.03, 0.05, 0.05, 0.05) <= 1) return '#6a4a2a';   // his heavy cane
+    if (t >= 0.2 && t < 1.75 && el3(u - (t - 0.9) * 0.18, v, t, 0, 0, 0.96, 0.3, 0.38, 0.78) <= 1){ if (u > 0.2 && av < 0.03 && t > 0.6) return '#14100c'; return (Math.floor(t * 8) + Math.floor(v * 7)) % 4 ? '#3a3a2e' : '#2e2e24'; }   // Jekyll's coat, far too big, its hem near the ground
+    if (cap3(u, av, t, [0.1, 0.34, 1.55], [0.3, 0.34, 0.98], 0.1)) return '#3a3a2e';   // the long sleeves
+    if (el3(u, av, t, 0.32, 0.33, 0.92, 0.06, 0.06, 0.05) <= 1) return '#8a7058';   // hairy hands
+    var d = Math.hypot(u - 0.22, v, t - 1.86);   // his head pushed forward, hunched
+    if (d < 0.21){ if (u > 0.36 && Math.abs(av - 0.07) < 0.03 && Math.abs(t - 1.9) < 0.03) return '#1a1410';
+      if (u > 0.36 && av < 0.12 && Math.abs(t - 1.78 - av * av * 4) < 0.02) return '#7a3a34';   // a wide smile
+      return u < 0.16 || t > 1.99 ? '#2a2018' : '#ece2d6'; }   // pale, his dark hair
+    return null; } },
+  vampire:{ r:1.0, h:4.0, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.07, 0.12, 0.06, 0.2, 0.09, 0.08) <= 1) return '#0e0e12';
+    if (cap3(u, av, t, [0, 0.12, 0.12], [0, 0.12, 1.1], 0.08)) return '#16161c';   // gaunt legs in black
+    if (u < -0.04 && t >= 0.25 && t < 2.62 && el3(u, v, t, -0.12, 0, 1.55, 0.18, 0.42, 1.2) <= 1) return (Math.floor(t * 7) % 2) ? '#121216' : '#18181e';   // the plain black cloak
+    if (t >= 1.0 && t < 2.5 && el3(u, v, t, 0, 0, 1.75, 0.21, 0.27, 0.74) <= 1){ if (u > 0.15 && av < 0.05 && t > 2.25) return '#3a3a44'; return '#1e1e26'; }   // the black frock coat, a dark stock at the throat
+    if (cap3(u, av, t, [0, 0.27, 2.4], [0.1, 0.31, 1.55], 0.065)) return '#1e1e26';
+    if (el3(u, av, t, 0.1, 0.32, 1.48, 0.05, 0.05, 0.07) <= 1) return '#e4e0e8';   // long pale hands
+    var d = Math.hypot(u, v * 1.1, (t - 2.8) * 0.9);
+    if (d < 0.21){ if (u > 0.13 && Math.abs(av - 0.07) < 0.03 && Math.abs(t - 2.84) < 0.025) return '#8a8a98';   // tin grey eyes
+      if (u > 0.15 && av < 0.05 && Math.abs(t - 2.7) < 0.015) return '#9a8a94'; return u < -0.02 || t > 2.95 ? '#0e0e12' : '#e4e0e8'; }   // bloodless, his long black hair
+    if (el3(u, v, t, -0.1, 0, 2.6, 0.12, 0.24, 0.32) <= 1) return '#0e0e12';   // falling to his shoulders
+    return null; } },
+  werewolf:{ r:1.1, h:3.6, at:function(u, v, t){ var av = Math.abs(v), fur = hash((u * 27) | 0, (v * 23 + t * 31) | 0, 47);
+    if (t < 0.14 && el3(u, av, t, 0.09, 0.13, 0.06, 0.2, 0.1, 0.08) <= 1) return u > 0.24 ? '#e8e0c8' : '#6a5038';   // his paws, the claws pale
+    if (cap3(u, av, t, [0, 0.14, 0.1], [0, 0.14, 0.46], 0.08)) return fur > 0.5 ? '#6a5038' : '#5a4230';
+    if (cap3(u, av, t, [0, 0.14, 0.44], [0, 0.14, 1.0], 0.11)) return t < 0.52 && fur < 0.4 ? null : '#6a5a3e';   // brown breeches, torn at the knee
+    if (t >= 0.9 && t < 2.1 && el3(u, v, t, 0, 0, 1.5, 0.3, 0.36, 0.64) <= 1){ if (fur < 0.12 && u > 0.05) return '#6a5038'; if (u > 0.2 && av < 0.1 && t > 1.75) return fur > 0.5 ? '#7a6044' : '#6a5038'; return (Math.floor(t * 7) % 3) ? '#e8e2d2' : '#d8d0bc'; }   // the torn white shirt, his fur showing through
+    if (cap3(u, av, t, [0, 0.36, 2.0], [0.18, 0.42, 1.32], 0.09)) return u < 0.1 ? '#e8e2d2' : '#6a5038';
+    if (el3(u, av, t, 0.2, 0.43, 1.26, 0.07, 0.06, 0.06) <= 1) return u > 0.25 ? '#e8e0c8' : '#6a5038';   // the claws
+    if (el3(u, av, t, 0.0, 0.13, 2.72, 0.05, 0.05, 0.12) <= 1) return '#4a3424';   // pointed ears up
+    if (el3(u, v, t, 0.26, 0, 2.3, 0.18, 0.1, 0.09) <= 1){ if (u > 0.4) return '#1a1410'; return t < 2.26 ? '#d8ccb4' : '#7a6044'; }   // the long snout, its nose
+    var d = Math.hypot(u, v, t - 2.42);
+    if (d < 0.25){ if (u > 0.16 && Math.abs(av - 0.09) < 0.035 && Math.abs(t - 2.48) < 0.035) return Math.abs(av - 0.09) < 0.012 ? '#1a1410' : '#f4c830';   // yellow eyes
+      return fur > 0.55 ? '#5a4230' : '#7a6044'; }
+    return null; } },
+  golem:{ r:1.3, h:4.0, k:1.05, at:function(u, v, t){ var av = Math.abs(v), cl = vn(u * 7 + t * 5, v * 7, 31);
+    var clay = cl > 0.62 ? '#a87a56' : cl < 0.3 ? '#8a5e3e' : '#9a6c4a';
+    if (t < 0.16 && el3(u, av, t, 0.08, 0.17, 0.07, 0.24, 0.13, 0.09) <= 1) return '#7a5238';   // big clay feet
+    if (cap3(u, av, t, [0, 0.17, 0.12], [0, 0.17, 1.05], 0.15)) return clay;
+    if (t >= 1.0 && t < 1.18 && Math.hypot(u, v) < 0.44) return Math.abs(v) < 0.08 && u > 0.3 ? '#c8a040' : '#3a2a1a';   // the wide belt
+    if (t >= 0.95 && t < 2.45 && el3(u, v, t, 0, 0, 1.7, 0.38, 0.46, 0.76) <= 1){
+      if (u > 0.3 && av < 0.18 && t > 1.85 && t < 2.2){ var sv = av, st = t - 2.02, a = Math.abs(st + 0.05) < 0.14 - sv * 0.7 && st > -0.09, b = Math.abs(st - 0.05) < 0.14 - sv * 0.7 && st < 0.09; if (a && b) return '#c8a040'; if ((a || b) && Math.abs(st) < 0.12) return '#e8c860'; }   // the star amulet on his chest
+      return clay; }
+    if (cap3(u, av, t, [0, 0.46, 2.3], [0.12, 0.52, 1.35], 0.13)) return clay;   // thick clay arms
+    if (el3(u, av, t, 0.13, 0.53, 1.28, 0.1, 0.1, 0.1) <= 1) return '#8a5e3e';
+    var d = Math.hypot(u, v, t - 2.74);
+    if (d < 0.27){ if (u > 0.2 && Math.abs(av - 0.09) < 0.035 && Math.abs(t - 2.76) < 0.03) return '#2a1a10';   // calm eyes
+      if (u > 0.22 && av < 0.14 && Math.abs(t - 2.88) < 0.025 && (Math.floor(v * 30) & 1)) return '#3a2214';   // the word on his brow
+      if (u > 0.22 && av < 0.06 && Math.abs(t - 2.64) < 0.015) return '#6a4028';
+      return t > 2.9 ? '#6a4630' : clay; }   // the clay bowl cut
+    if (t > 2.84 && t < 3.04 && Math.hypot(u, v) < 0.29 && u < 0.18) return '#6a4630';
+    return null; } },
+  horseman:{ r:1.1, h:3.2, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.6 && cap3(u, av, t, [0, 0.14, 0.08], [0, 0.14, 0.58], 0.11)) return t < 0.14 ? '#0e0e10' : (t > 0.5 ? '#3a2a1a' : '#1a1410');   // tall black boots, turned down
+    if (cap3(u, av, t, [0, 0.14, 0.56], [0, 0.14, 0.98], 0.11)) return '#d8c49a';   // buff breeches
+    if (u < -0.05 && t >= 0.4 && t < 2.3 && el3(u, v, t, -0.14, 0, 1.4, 0.18, 0.44, 0.95) <= 1) return (Math.floor(t * 7) % 2) ? '#121216' : '#1a1a1e';   // the black cloak
+    if (el3(u, v, t, 0.18, -0.38, 1.55, 0.24, 0.2, 0.22) <= 1){ if (t > 1.74 && Math.hypot(u - 0.18, v + 0.38) < 0.05) return '#3a5a1a'; return Math.abs(Math.sin(Math.atan2(t - 1.55, u - 0.18) * 4)) < 0.15 ? '#c8601a' : '#e8781f'; }   // the pumpkin under his arm (no face carved)
+    if (cap3(u, v, t, [-0.05, 0.36, 1.0], [0.3, 0.4, 0.22], 0.025)) return '#c8c8d0'; if (el3(u, v, t, -0.06, 0.37, 1.02, 0.05, 0.05, 0.05) <= 1) return '#c8a040';   // his sabre at his side
+    if (t >= 0.9 && t < 2.15 && el3(u, v, t, 0, 0, 1.52, 0.27, 0.33, 0.64) <= 1){ if (u > 0.18 && Math.abs(av - 0.09) < 0.03 && Math.abs(((t * 6) % 1) - 0.5) < 0.14) return '#e8c060'; if (u > 0.18 && av < 0.05) return '#c8302a'; return '#2a3a6a'; }   // the Hessian coat, its brass buttons and red facing
+    if (cap3(u, av, t, [0, 0.33, 2.0], [0.12, 0.38, 1.3], 0.085)) return '#2a3a6a';
+    if (el3(u, av, t, 0.13, 0.39, 1.26, 0.06, 0.06, 0.06) <= 1) return '#1a1410';   // black gauntlets
+    if (t >= 2.05 && t < 2.42 && Math.hypot(u, v) < 0.22 && Math.hypot(u, v) > 0.12) return t > 2.36 ? '#c8302a' : '#2a3a6a';   // the high collar, and nothing at all above it
     return null; } }
 });
 // a figure's build, facing f, turned 53 degrees toward the camera
