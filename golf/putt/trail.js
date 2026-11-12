@@ -6482,12 +6482,12 @@ Object.assign(FOLK3D, {
     if (Math.hypot(u + 0.46, v + 0.2) < 0.11 && t >= 2.0 && t < 2.24) return t > 2.2 ? '#f0e0b0' : (Math.floor(Math.atan2(v + 0.2, u + 0.46) * 2) & 1 ? '#d8302a' : '#e8c040');   // a toy drum,
     if (el3(u, v, t, -0.42, 0.08, 2.08, 0.08, 0.08, 0.1) <= 1) return '#2f8a4a';   // and a green toy, peeping out of
     if (el3(u, v, t, -0.44, -0.08, 1.72, 0.22, 0.3, 0.4) <= 1) return sh < 0.25 ? '#8a6a40' : '#a07c4c';   // his sack of toys
-    if (t >= 0.86 && t < 2.22 && el3(u, v, t, 0.06, 0, 1.5, 0.42, 0.42, 0.64) <= 1){
+    if (t >= 0.86 && t < 2.22 && el3(u, v, t, 0.08, 0, 1.48, 0.48, 0.47, 0.64) <= 1){
       if (Math.abs(t - 1.36) < 0.065) return u > 0.3 && av < 0.09 ? '#e8c040' : '#1a1410';   // the wide belt, its brass buckle
       if (t < 0.99 || (u > 0.32 && av < 0.07)) return fur;   // fur at the hem and down the front
       return red; }
-    if (cap3(u, av, t, [0, 0.38, 2.0], [0.2, 0.47, 1.42], 0.1)) return t < 1.56 ? fur : red;   // his arms, fur at the cuffs
-    if (el3(u, av, t, 0.23, 0.48, 1.34, 0.08, 0.07, 0.08) <= 1) return '#1a1410';   // black mittens
+    if (cap3(u, av, t, [0, 0.42, 2.0], [0.2, 0.52, 1.42], 0.1)) return t < 1.56 ? fur : red;   // his arms, fur at the cuffs
+    if (el3(u, av, t, 0.23, 0.53, 1.34, 0.08, 0.07, 0.08) <= 1) return '#1a1410';   // black mittens
     if (u > -0.04 && t < 2.44 && el3(u, v, t, 0.12, 0, 2.26, 0.18, 0.24, 0.3) <= 1) return sh < 0.3 ? '#e8e6e0' : '#ffffff';   // the white beard
     if (el3(u, v, t, 0.25, 0, 2.5, 0.06, 0.05, 0.05) <= 1) return '#e04a52';   // a nose like a cherry
     var d = Math.hypot(u, v, t - 2.5);
@@ -6533,20 +6533,20 @@ Object.assign(FOLK3D, {
     if (t < 0.14 && el3(u, av, t, 0.07, 0.15, 0.07, 0.15, 0.1, 0.08) <= 1) return Math.abs(av - 0.15) < 0.015 && u > 0.08 ? '#4a4440' : '#1a1614';   // two cloven hooves
     if (cap3(u, av, t, [0, 0.15, 0.1], [0, 0.16, 1.0], 0.13 + fr * 0.03)) return pelt;   // shaggy legs
     if (u > 0.28 && Math.abs(u - 0.4) < 0.15 && av < 0.17 && Math.abs(t - 1.5) < 0.13){ if (av < 0.025 || Math.abs(t - 1.5) < 0.025) return '#d8303a'; return '#2f8a4a'; }   // the present, a red ribbon round it
-    if (cap3(u, av, t, [0, 0.36, 2.2], [0.24, 0.2, 1.55], 0.1 + fr * 0.02)) return pelt;   // his arms round it
+    if (cap3(u, av, t, [0, 0.42, 2.2], [0.24, 0.2, 1.55], 0.11 + fr * 0.02)) return pelt;   // his arms round it
     if (el3(u, av, t, 0.27, 0.19, 1.5, 0.07, 0.06, 0.07) <= 1) return '#5a4a44';   // his hands
     if (t >= 2.29 && t < 2.36 && Math.hypot(u, v) < 0.27 && Math.hypot(u, v) > 0.18 && u > -0.05) return '#c8262c';   // a red ribbon,
     if (el3(u, v, t, 0.3, 0, 2.18, 0.08, 0.09, 0.1) <= 1) return t < 2.1 ? '#b08a28' : '#e8c040';   // and on it his cowbell
-    if (t >= 0.9 && t < 2.42 && el3(u, v, t, 0, 0, 1.64, 0.34 + fr * 0.03, 0.38 + fr * 0.03, 0.76) <= 1) return pelt;   // the shaggy body
+    if (t >= 0.9 && t < 2.42 && el3(u, v, t, 0, 0, 1.64, 0.4 + fr * 0.03, 0.44 + fr * 0.03, 0.76) <= 1) return pelt;   // the shaggy body
     if (el3(u, av, t, -0.02, 0.3, 2.74, 0.05, 0.12, 0.05) <= 1) return av > 0.36 ? '#8a5a52' : pelt;   // ears out to the side
-    var hl = [[0.04, 0.15, 2.88], [-0.02, 0.23, 3.18], [-0.14, 0.29, 3.38], [-0.27, 0.27, 3.32]];   // two horns, curled back
-    for (var k = 0; k < 3; k++) if (cap3(u, av, t, hl[k], hl[k + 1], 0.06 - k * 0.012)) return Math.floor((t + u) * 18) % 3 ? '#d8c8a8' : '#b8a888';
+    var hl = [[0.04, 0.14, 2.86], [0, 0.27, 3.08], [-0.1, 0.4, 3.16], [-0.2, 0.42, 3.02]];   // two horns, curled back
+    for (var k = 0; k < 3; k++) if (cap3(u, av, t, hl[k], hl[k + 1], 0.08 - k * 0.018)) return Math.floor((t + u) * 18) % 3 ? '#d8c8a8' : '#b8a888';
     var d = Math.hypot(u, v * 0.95, t - 2.68);
     if (el3(u, v, t, 0.33, 0, 2.62, 0.05, 0.06, 0.04) <= 1) return '#2a1a18';   // his nose
     if (el3(u, v, t, 0.31, 0.04, 2.48, 0.03, 0.04, 0.025) <= 1) return '#d8505a';   // the tip of his tongue, out a little
-    if (el3(u, v, t, 0.22, 0, 2.56, 0.12, 0.16, 0.11) <= 1) return '#8a6a52';   // the muzzle, paler
+    if (el3(u, v, t, 0.22, 0, 2.58, 0.13, 0.18, 0.13) <= 1) return '#a8846a';   // the muzzle, paler
     if (d < 0.3){ if (u > 0.2 && Math.abs(t - (2.8 + (av - 0.05) * 0.35)) < 0.02 && av > 0.04 && av < 0.18) return '#1a1410';   // brows down in the middle: grumbly
-      if (u > 0.19 && Math.abs(av - 0.11) < 0.06 && Math.abs(t - 2.72) < 0.05) return Math.abs(av - 0.1) < 0.025 && Math.abs(t - 2.71) < 0.03 ? '#1a1410' : '#ffffff';   // round eyes
+      if (u > 0.18 && Math.abs(av - 0.12) < 0.065 && Math.abs(t - 2.72) < 0.06) return Math.abs(av - 0.11) < 0.03 && Math.abs(t - 2.71) < 0.035 ? '#1a1410' : '#ffffff';   // round eyes
       return pelt; }
     return null; } },
   // the Easter Bunny, a brown hare standing up: long black tipped ears, a blue jacket and white collar, a basket of coloured eggs
@@ -6567,10 +6567,10 @@ Object.assign(FOLK3D, {
     if (el3(u, v, t, 0, 0, 1.36, 0.28, 0.32, 0.56) <= 1){ if (t < 1.0) return coat;
       if (u > 0.18 && av < 0.06) return Math.abs(((t * 6) % 1) - 0.5) < 0.12 && u > 0.24 ? '#e8c040' : '#e8d8bc';   // his pale front, brass buttons
       return u + v * 0.3 > 0 ? '#2a5ab0' : '#22489a'; }   // the blue jacket
-    if (cap3(u, av, t, [0, 0.1, 2.28], [-0.06, 0.16, 3.3], 0.07)) return t > 3.12 ? '#1a1410' : u > 0.04 && av < 0.15 ? '#e8a8a0' : coat;   // the long ears, black at the tips
-    if (el3(u, v, t, 0.33, 0, 2.08, 0.03, 0.04, 0.03) <= 1) return '#e08890';   // a pink nose
-    if (el3(u, v, t, 0.24, 0, 2.03, 0.1, 0.13, 0.09) <= 1) return '#e8d8bc';   // the pale muzzle
-    if (el3(u, v, t, 0.06, 0, 2.12, 0.25, 0.22, 0.25) <= 1){ if (u > 0.08 && Math.abs(av - 0.15) < 0.04 && Math.abs(t - 2.19) < 0.04) return Math.abs(t - 2.21) < 0.013 && av > 0.15 ? '#ffffff' : '#2a1a10';   // a hare's eyes, set wide
+    if (cap3(u, av, t, [0, 0.11, 2.3], [-0.06, 0.18, 3.3], 0.09)) return t > 3.12 ? '#1a1410' : u > 0.04 && av < 0.15 ? '#e8a8a0' : coat;   // the long ears, black at the tips
+    if (el3(u, v, t, 0.37, 0, 2.1, 0.035, 0.045, 0.035) <= 1) return '#e08890';   // a pink nose
+    if (el3(u, v, t, 0.27, 0, 2.04, 0.11, 0.14, 0.1) <= 1) return '#e8d8bc';   // the pale muzzle
+    if (el3(u, v, t, 0.06, 0, 2.14, 0.3, 0.26, 0.29) <= 1){ if (u > 0.08 && Math.abs(av - 0.17) < 0.045 && Math.abs(t - 2.21) < 0.045) return Math.abs(t - 2.23) < 0.015 && av > 0.17 ? '#ffffff' : '#2a1a10';   // a hare's eyes, set wide
       return coat; }
     return null; } },
   // the Tooth Fairy, a sprite in the air: a lilac petal dress, gossamer blue wings, a pouch at her side, a tooth on her wand
@@ -6653,15 +6653,15 @@ Object.assign(FOLK3D, {
     if (cap3(u, v, t, [0, 0.28, 2.15], [0.28, 0.34, 2.02], 0.07)) return '#3a8a4a';   // her sleeves
     if (cap3(u, v, t, [0, -0.28, 2.15], [0.06, -0.34, 1.52], 0.07)) return '#3a8a4a';
     if (el3(u, v, t, 0.07, -0.35, 1.46, 0.05, 0.05, 0.06) <= 1) return skin;
-    if (u < 0.05 && t > 0.6 && el3(u, v, t, -0.06, 0, 1.6, 0.3, 0.37, 0.62) <= 1) return leaf;   // the leafy mantle, over her shoulders
-    if (t >= 0.02 && t < 1.95 && Math.hypot(u, v) < 0.22 + (1.95 - t) * 0.16) return t < 0.12 ? '#2a6a36' : (Math.floor(Math.atan2(v, u) * 5) & 1 ? '#3a8a4a' : '#2f7a40');   // the green robe
+    if (u < -0.07 && t > 0.7 && t < 2.24 && el3(u, v, t, -0.1, 0, 1.6, 0.26, 0.34, 0.62) <= 1) return leaf;   // the leafy mantle, over her shoulders
+    if (t >= 0.02 && t < 1.95 && Math.hypot(u, v) < 0.2 + (1.95 - t) * 0.12) return t < 0.12 ? '#2a6a36' : (Math.floor(Math.atan2(v, u) * 5) & 1 ? '#3a8a4a' : '#2f7a40');   // the green robe
     if (el3(u, v, t, 0, 0, 2.0, 0.2, 0.26, 0.3) <= 1) return '#3a8a4a';
     if (cap3(u, v, t, [0, 0, 2.2], [0, 0, 2.32], 0.06)) return skin;
     var wr = Math.hypot(u, v);
     if (t >= 2.6 && t < 2.71 && wr > 0.17 && wr < 0.27){ var fl = hash(Math.floor(Math.atan2(v, u) * 5 + 20), 3, 113); return fl < 0.18 ? '#f8d040' : fl < 0.32 ? '#f4a0c0' : fl < 0.42 ? '#ffffff' : fl < 0.7 ? '#4a9a30' : '#6ab83a'; }   // the wreath
     if (el3(u, v, t, -0.14, 0, 2.18, 0.1, 0.22, 0.42) <= 1) return '#6a4224';   // long brown hair, down her back
     var d = Math.hypot(u, v, t - 2.5);
-    if (d < 0.22){ if (u > 0.15 && Math.abs(av - 0.075) < 0.03 && Math.abs(t - 2.53) < 0.025) return '#2a1a10';
+    if (d < 0.24){ if (u > 0.16 && Math.abs(av - 0.08) < 0.032 && Math.abs(t - 2.53) < 0.028) return '#2a1a10';
       if (u > 0.17 && av < 0.05 && Math.abs(t - 2.42) < 0.013) return '#b0505a';
       return u < -0.02 || t > 2.62 || av > 0.16 ? '#6a4224' : skin; }
     return null; } }

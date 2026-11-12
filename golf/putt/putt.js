@@ -1698,6 +1698,38 @@ function dailyHole(dayKey){
   var d = dailyShape(dayKey), n = dailyLevel(dayKey);
   return { tour:n, tid:'main', daily:1, tpl:'dly' + n, seed:d.seed, theme:d.theme, name:d.name, day:dayKey };
 }
+/* THE HOLIDAY FOLK (the plan of 2026-11-09: "in the seasonal pass and daily worlds"). The calendar's holidays belong to the dailies and
+   the passes, never to the main tour, and the Daily is the one place the game walks the calendar. So the folk of the holidays stand by
+   TODAY'S PAGE of the Daily calendar (drawCal), in their season and on no other day: Santa with Krampus early in December, Santa with
+   Mrs. Claus on to Christmas, Father Time at the turn of the year, Cupid on Sweetheart Greens' days, the Tooth Fairy on Shamrock Glen's
+   (it has a Fairy Ring, and Tooth Fairy Day, 28 February, falls in it), the Easter Bunny from Palm Sunday to Easter Monday, and Mother
+   Nature on the rest of Bloom Gardens' days. Each is a little model of their own (trail.js FOLK3D, drawn by its folkPic) and says two
+   lines in the bubble the walks use; a tap on one gives their next line. The day is the game's own Eastern day key, as the Daily's is.
+   Nothing here is earned, sold or unlocked: they are there to say hello. */
+var HOLIDAY_FOLK = {
+  santa:{ name:'Santa Claus', say:['Ho ho ho! Merry Christmas.', 'One hole a day to Christmas. I check my card twice.'] },
+  mrsclaus:{ name:'Mrs. Claus', say:['I’m Mrs. Claus. The cocoa is hot.', 'Santa practices his putting here. Don’t tell the elves.'] },
+  krampus:{ name:'Krampus', say:['Hmph. I’m Krampus. I walk with Santa.', 'I grumble. I don’t bite. I carry the presents.'] },
+  fathertime:{ name:'Father Time', say:['Happy New Year! I’m Father Time.', 'A new year starts. There’s always time for one more hole.'] },
+  cupid:{ name:'Cupid', say:['Hi! I’m Cupid. Love is in the air.', 'My arrows fly true. Aim like me.'] },
+  toothfairy:{ name:'The Tooth Fairy', say:['Hello! I’m the Tooth Fairy. Smile!', 'I fly at night. By day I watch the putting.'] },
+  easterbunny:{ name:'The Easter Bunny', say:['Happy Easter! I’m the Easter Bunny.', 'I hop. You putt. Gently does it.'] },
+  mothernature:{ name:'Mother Nature', say:['Hello, little one. I’m Mother Nature.', 'Everything grows in spring. Even a putting stroke.'] }
+};
+// Easter Sunday of a year (the Gregorian computus), as an ISO day
+function easterDay(y){ var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  var h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  var mo = Math.floor((h + l - 7 * m + 114) / 31), dy = ((h + l - 7 * m + 114) % 31) + 1; return y + '-' + (mo < 10 ? '0' : '') + mo + '-' + (dy < 10 ? '0' : '') + dy; }
+// who stands by a day's page: the ids of HOLIDAY_FOLK, the first of them the one who speaks first, or none
+function holidayFolk(dk){ var md = String(dk).slice(5), ea = easterDay(+String(dk).slice(0, 4)), th = themeForDay(dk);
+  if (dk >= dayAdd(ea, -7) && dk <= dayAdd(ea, 1)) return ['easterbunny'];
+  if (md >= '12-01' && md <= '12-06') return ['santa', 'krampus'];
+  if (md >= '12-07' && md <= '12-26') return ['santa', 'mrsclaus'];
+  if (md >= '12-27' || md <= '01-06') return ['fathertime'];
+  if (th === 'sweetheart') return ['cupid'];
+  if (th === 'shamrock') return ['toothfairy'];
+  if (th === 'spring') return ['mothernature'];
+  return []; }
 /* ================================================================= THE PUTT PUTT TOURS: 198 + 18 HOLES */
 /* TWO TOURS. The Putt Putt Tour is everybody's: eleven worlds of eighteen, played strictly in order, on
    the game's own evergreen worlds (never a season's theme). The Members Tour is the Tour Pass holder's:
@@ -6070,7 +6102,7 @@ var RTT_PUTT = {
   simulate:simulate, eyeSees:eyeSees, eyeAng:eyeAng, gazePath:gazePath, gazeOn:gazeOn, letheAt:letheAt, letheAng:letheAng, LETHE_KEEP:LETHE_KEEP, boltAt:boltAt, boltPh:boltPh, boltFalls:boltFalls, sizerAt:sizerAt, sizeAtT:sizeAtT, glassFlip:glassFlip, glassCross:glassCross, stalkLen:stalkLen, stalkDeck:stalkDeck, raftAt:raftAt, raftsOf:raftsOf, driftNear:driftNear, driftWet:driftWet, RAFT_LOST:RAFT_LOST, humpAt:humpAt, wakePush:wakePush, wakePrep:wakePrep, yetiPrep:yetiPrep, printDepth:printDepth, printPull:printPull, printsAt:printsAt, skidPrep:skidPrep, logsAt:logsAt, skidReach:skidReach, LOG_E:LOG_E, LOG_RISE:LOG_RISE, LOG_R:LOG_R, tidePrep:tidePrep, bellPrep:bellPrep, bellAt:bellAt, quickPrep:quickPrep, quickIn:quickIn, quickAt:quickAt, quickEdge:quickEdge, quickRing:quickRing, QS_F:QS_F, QS_GRIP:QS_GRIP, QS_V:QS_V, QS_SINK:QS_SINK, QS_SHAKE:QS_SHAKE, bellNear:bellNear, bellReach:bellReach, BELL_E:BELL_E, BELL_CLEAR:BELL_CLEAR, tideAt:tideAt, tideShore:tideShore, tideH:tideH, tideLevel:tideLevel, tideWait:tideWait, tideUV:tideUV, tideBay:tideBay, TIDE_WOB:TIDE_WOB, TIDE_LO:TIDE_LO, TIDE_HI:TIDE_HI, TIDE_P:TIDE_P, wirePrep:wirePrep, wireMount:wireMount, WIRE_CATCH:WIRE_CATCH, WIRE_ANG:WIRE_ANG, WIRE_F:WIRE_F, WIRE_MIN:WIRE_MIN, WIRE_Z:WIRE_Z, PRINT_D:PRINT_D, PRINT_STOMP:PRINT_STOMP, PRINT_DRAG:PRINT_DRAG, HUMP_E:HUMP_E, HUMP_RISE:HUMP_RISE, WAKE_A:WAKE_A, WEE_R:WEE_R, BIG_R:BIG_R, WEE_SLOPE:WEE_SLOPE, BIG_SLOPE:BIG_SLOPE, BOLT_WARN:BOLT_WARN, BOLT_FLY:BOLT_FLY, BOLT_ROLL:BOLT_ROLL, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly, _spaceTrip:spaceTrip, ROLLS:ROLLS,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
-  CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, TGT_R:TGT_R, TGT_KEEP:TGT_KEEP, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
+  CAL_THEMES:CAL_THEMES, HOLIDAY_FOLK:HOLIDAY_FOLK, holidayFolk:holidayFolk, easterDay:easterDay, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, TGT_R:TGT_R, TGT_KEEP:TGT_KEEP, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
 };
 /* ================================================================================ THE PICTURE */
 /* Everything static is painted ONCE, onto a pixel grid of ART feet per pixel (the same grid the
@@ -7410,6 +7442,8 @@ var CSS = '\
 .pp-cday .sc{display:inline-block;margin-top:1px;padding:1px 6px;border-radius:999px;font-size:10.5px;font-weight:900;background:#e8e1d2;color:#4b443a}.pp-cday .sc.u{background:#1f9d55;color:#fff}.pp-cday .sc.e{background:#2b6cb0;color:#fff}.pp-cday .sc.o{background:#b9452f;color:#fff}.pp-cday .sc.now{background:#F1D04A;color:#10241a}\
 .pp-cday.lock{filter:saturate(.35) brightness(.78)}.pp-cday.lock s{position:absolute;right:-6px;top:-8px;text-decoration:none;font-size:13px}.pp-cday.open .sc.ms{background:#3a1f63;color:#ffd45e}\
 .pp-cday.cur{width:68px;box-shadow:0 0 0 3px #F1D04A,0 5px 0 #c9bfae,0 0 26px rgba(241,208,74,.75);animation:ppcal 1.6s ease-in-out infinite}.pp-cday.cur b{font-size:32px}@keyframes ppcal{50%{box-shadow:0 0 0 3px #F1D04A,0 5px 0 #c9bfae,0 0 8px rgba(241,208,74,.3)}}\
+.pp-hf{position:absolute;z-index:2;display:block;border:0;background:none;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}.pp-hf canvas{display:block;image-rendering:pixelated}\
+.pp-hfsh{position:absolute;z-index:1;width:30px;height:9px;margin:-5px 0 0 -15px;border-radius:50%;background:rgba(0,0,0,.25)}.pp-hbub{z-index:3;max-width:200px;width:max-content;font-size:13px;text-align:left}.pp-hbub b{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#b8452f}\
 .pp-cday.done:after{content:"✓";position:absolute;right:-7px;top:-8px;width:18px;height:18px;border-radius:50%;background:#1f9d55;color:#fff;font-size:11px;font-weight:900;line-height:18px;box-shadow:0 2px 4px rgba(0,0,0,.4)}\
 @media (prefers-reduced-motion:reduce){.pp-cday.cur{animation:none}}\
 .pp-hub[data-wt] .pp-cpill,.pp-hub[data-wt] .pp-cx{background:var(--wt)}.pp-hub[data-wt] .pp-av{border-color:var(--wa)}'
@@ -8220,13 +8254,13 @@ var WDAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 function drawCal(st){
   var box = S.ov.querySelector('[data-map]'), days = calDays(st), t = today(), W = 340, STEP = 88, MH = 118, PADB = 120, PADT = 76;
   var months = []; days.forEach(function(d){ var m = d.slice(0, 7); if (!months.length || months[months.length - 1].m !== m) months.push({ m:m, first:days.indexOf(d) }); });
-  var H = days.length * STEP + months.length * MH + PADB + PADT, pos = [], mi = -1;
+  var HX = holidayFolk(t).length ? HF_ROOM : 0, H = days.length * STEP + months.length * MH + PADB + PADT + HX, pos = [], mi = -1;
   days.forEach(function(d, i){ if (mi + 1 < months.length && months[mi + 1].first === i) mi++; var y = H - PADB - i * STEP - mi * MH, x = W / 2 + Math.sin(i * 0.9) * 105; pos.push([x, y]); });
   var bands = months.map(function(M, j){ var last = j + 1 < months.length ? months[j + 1].first - 1 : days.length - 1, T = THEMES[themeForDay(days[M.first])] || THEMES[themeForDay(t)];
     var top = j + 1 < months.length ? pos[last][1] - STEP / 2 - MH : 0, bot = j === 0 ? H : pos[M.first][1] + STEP / 2;
     var played = 0; for (var i = M.first; i <= last; i++) if (st.daily[days[i]] && st.daily[days[i]].done) played++;
     return '<div class="pp-band pp-cmon" data-m="' + M.m + '" style="top:' + top + 'px;height:' + (bot - top) + 'px;--c1:' + T.bg2 + ';--c2:' + T.bg + ';--ca:' + T.acc + '"></div>\
-      <div class="pp-cpage" style="top:' + (pos[last][1] - STEP / 2 - MH + 14) + 'px;--ca:' + T.acc + '"><i class="rings"></i><b>' + MONTHS[+M.m.slice(5) - 1] + '</b><span>' + M.m.slice(0, 4) + ' · ' + played + ' of ' + (last - M.first + 1) + ' played</span></div>'; }).join('');
+      <div class="pp-cpage" style="top:' + (pos[last][1] - STEP / 2 - MH + 14 - (j === months.length - 1 ? HX : 0)) + 'px;--ca:' + T.acc + '"><i class="rings"></i><b>' + MONTHS[+M.m.slice(5) - 1] + '</b><span>' + M.m.slice(0, 4) + ' · ' + played + ' of ' + (last - M.first + 1) + ' played</span></div>'; }).join('');
   var dpath = pos.map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
   // the trail is walked in gold up to the last day you played, so the run you are on reads at a glance
   var lastPlayed = -1; days.forEach(function(d, i){ if (st.daily[d] && st.daily[d].done) lastPlayed = i; });
@@ -8242,6 +8276,7 @@ function drawCal(st){
   box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world pp-calw" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
     '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + dpath + '"/>' + (walked ? '<path class="walk" d="' + walked + '"/>' : '') + '</svg>' + pages +
     '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferFig('pp-meimg') + '</div></div></div>';
+  calFolk(box.querySelector('.pp-calw'), t, cp, W);
   box.querySelectorAll('[data-day]').forEach(function(b){ b.onclick = function(){ var d = b.getAttribute('data-day'), r = pload().daily[d];
     if (r && r.done) return dailyResult(null, d);
     if (d === today()) return startDaily();
@@ -8254,7 +8289,33 @@ function drawCal(st){
     chip.textContent = MONTHS[+M.m.slice(5) - 1] + ' · ' + n + '/' + (last - M.first + 1) + ' played' + (st.streak && st.streak.n > 1 ? ' · ' + st.streak.n + ' day streak' : '');
     if (hub) hub.setAttribute('data-wt', themeForDay(days[M.first])); }
   box.addEventListener('scroll', mchip, { passive:true });
-  requestAnimationFrame(function(){ box.scrollTop = Math.max(0, Math.min(cp[1] * k - box.clientHeight * 0.62, (PADT + 58) * k - 80)); mchip(); });
+  requestAnimationFrame(function(){ box.scrollTop = Math.max(0, Math.min(cp[1] * k - box.clientHeight * 0.62, (PADT + HX + 58) * k - 80)); mchip(); });
+}
+/* THE HOLIDAY FOLK BY TODAY'S PAGE (HOLIDAY_FOLK): on the side of the page away from the golfer, or beyond him when that side has no
+   room, standing on the line he stands on and facing the page, the one who speaks first nearest to it. They say their first line in
+   the walks' bubble, above them in the room drawCal leaves under the month's page (HF_ROOM); a tap on any of them says that one's
+   next line. A day with no holiday has nobody, and a page without the models (no hole3d.js) has nobody either. */
+var HF_K = 1.4, HF_ROOM = 64, HF_GAP = 40;
+// the first row of a sprite with anything drawn in it (the top of the figure's head)
+function headRow(cv){ try{ var d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; for (var y = 0; y < cv.height; y++) for (var x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] > 40) return y; }catch(e){} return 0; }
+function calFolk(world, dk, cp, W){
+  var ids = holidayFolk(dk), TL = window.RTT_PUTT_TRAIL; if (!world || !ids.length || !TL || !TL.folkPic) return;
+  var meLeft = cp[0] > W / 2 + 50, n = ids.length, side, near;
+  if (meLeft){ if (cp[0] + 56 + HF_GAP * (n - 1) + 20 <= W + 20){ side = 1; near = cp[0] + 56; } else { side = -1; near = cp[0] - 120; } }
+  else { if (cp[0] - 56 - HF_GAP * (n - 1) - 20 >= -20){ side = -1; near = cp[0] - 56; } else { side = 1; near = cp[0] + 100; } }
+  var pics = ids.map(function(id){ var sp = null; try{ sp = TL.folkPic(id, -side); }catch(e){} return sp; });
+  if (pics.some(function(p){ return !p; })) return;
+  var fy = cp[1] + 24, bub = el('<div class="pp-bub pp-hbub" aria-live="polite"></div>'), at = {}, fx = {}, tall = 0;
+  ids.forEach(function(id, i){ var sp = pics[i], F = HOLIDAY_FOLK[id], x = near + side * HF_GAP * i, cv = document.createElement('canvas');
+    var b = el('<button class="pp-hf" data-folk="' + id + '" aria-label="' + esc(F.name) + '" style="left:' + Math.round(x - sp.ax * HF_K) + 'px;top:' + Math.round(fy - sp.ay * HF_K) + 'px"></button>');
+    cv.width = sp.cv.width; cv.height = sp.cv.height; cv.getContext('2d').drawImage(sp.cv, 0, 0); cv.style.width = Math.round(sp.cv.width * HF_K) + 'px'; cv.style.height = Math.round(sp.cv.height * HF_K) + 'px';
+    b.appendChild(cv); world.appendChild(el('<i class="pp-hfsh" style="left:' + x + 'px;top:' + fy + 'px"></i>')); world.appendChild(b);
+    fx[id] = x; at[id] = 0; tall = Math.max(tall, (sp.ay - headRow(sp.cv)) * HF_K);
+    b.onclick = function(e){ e.stopPropagation(); speak(id, true); }; });
+  function speak(id, next){ if (next && bub.getAttribute('data-who') === id) at[id] = (at[id] + 1) % HOLIDAY_FOLK[id].say.length;
+    bub.setAttribute('data-who', id); bub.innerHTML = '<b>' + esc(HOLIDAY_FOLK[id].name) + '</b>' + esc(HOLIDAY_FOLK[id].say[at[id]]);
+    bub.style.left = Math.max(96, Math.min(W - 96, fx[id])) + 'px'; bub.style.top = Math.round(Math.min(fy - tall - 6, cp[1] - 52)) + 'px'; }
+  world.appendChild(bub); speak(ids[0]);
 }
 /* A MISSED DAY, SHUT: the way back to it is the Tour Pass. Nothing here sells it for coins. */
 function pastSheet(dk){
