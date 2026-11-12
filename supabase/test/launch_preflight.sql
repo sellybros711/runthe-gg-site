@@ -88,7 +88,7 @@ has_table as (
     'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
     'sportegories_rulings','stumpire_rulings',
-    'shutdoor_outings','shutdoor_streaks','putt_daily','ad_rewards'
+    'shutdoor_outings','shutdoor_streaks','putt_daily','ad_rewards','ps_dynasty_best'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -770,7 +770,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from proc where name = 'ad_reward_issue')
       and (select count(*) > 0 from proc where name = 'ad_reward_claim')
       and (select count(*) > 0 from proc
-            where name = 'arcade_spend_game' and body like '%arcade_game_cap%'))
+            where name = 'arcade_spend_game' and body like '%arcade_game_cap%')),
+  -- THE DYNASTY BOARD READS ITS OWN TABLE. Without it the board still works, and every
+  -- read scans the whole dynasty history: the Disk IO outage of 2026-11-12.
+  (68, '168_dynasty_board_table',
+      'the Dynasty board reads one row per dynasty, kept by a trigger',
+      'Nothing looks wrong. Every Dynasty board read scans every dynasty season, and enough of them run the database out of its Disk IO budget.',
+      (select count(*) > 0 from has_table where name = 'ps_dynasty_best')
+      and (select count(*) > 0 from proc where name = 'ps_dynasty_best_refresh'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
