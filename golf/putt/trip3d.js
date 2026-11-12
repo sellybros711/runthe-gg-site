@@ -240,7 +240,8 @@ function play(host, o, cb){
   if (o && o.vehicle === 'loch') return lochLeg(host, o, cb);   // Loch Ness is reached by steamboat, out to sea and up the loch (lochLeg, below)
   if (o && o.vehicle === 'plane') return planeLeg(host, o, cb);
   if (o && o.vehicle === 'forest') return forestLeg(host, o, cb);
-  if (o && o.vehicle === 'fog') return fogLeg(host, o, cb);   // London: by the night train from the circus siding to a London terminus, then a hansom cab through the fog (fogLeg, below)
+  if (o && o.vehicle === 'fog') return fogLeg(host, o, cb);
+  if (o && o.vehicle === 'seine') return seineLeg(host, o, cb);   // Notre-Dame: by the night boat across the Channel from the Thames, then up the Seine at dawn to the island (seineLeg, below)   // London: by the night train from the circus siding to a London terminus, then a hansom cab through the fog (fogLeg, below)
   if (o && o.vehicle === 'circus') return circusLeg(host, o, cb);   // the Big Top: by circus train from the loggers' siding, then in with the parade (circusLeg, below)   // the Pacific Forest: by seaplane off the glacier and across the ocean, then up the logging road (forestLeg, below)   // the Himalayas are reached by seaplane off the loch, over the clouds to the peaks (planeLeg, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
@@ -1634,5 +1635,91 @@ function fogLeg(host, o, cb){
   requestAnimationFrame(frame);
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
 }
-root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, forest:forestLeg, circus:circusLeg, fog:fogLeg, PLANETS:PLANETS, ISLES:ISLES };
+/* BY THE NIGHT BOAT ACROSS THE CHANNEL, THEN UP THE SEINE AT DAWN TO NOTRE-DAME (SPACE_TRIP 'seine'): London's last walk ends at
+   the pier on the Thames, where the night boat waits. The camera is at her bow: the dark sea runs on under the stars and a low moon,
+   its light in a broken road on the water, a lighthouse winking far off on the coast ("THE NIGHT BOAT!", "ACROSS THE CHANNEL!").
+   Then the view is from a river boat at dawn going up the Seine between its stone quays, the old houses along both banks with their
+   tiled roofs, the sky pink and gold, and ahead the two square towers of the cathedral rise over the island as the boat comes in
+   ("UP THE SEINE!", "NOTRE-DAME!"). Every house, wave and window is noise: never a grid. A tap skips it; with reduced motion putt.js
+   shows a still of the towers over the Seine at dawn instead (spaceTrip). */
+function seineLeg(host, o, cb){
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; }
+  setRes(140);
+  var done = false, t0 = 0, DUR = 13.2, RIV = 6.6, frames = 0, ftime = 0;
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function hsh(a, b){ var h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); }
+  // a house front on the quay at (along, up): plaster between dark timbers, little windows, a tiled roof on top
+  function front(al, up, side, hh){ var bay = Math.floor(al / 2.6), u = (al / 2.6) - bay, k = hsh(bay * 3 + side, 2), top = hh - 1.6 - k * 2;
+    if (up > top) return up < top + 1.4 - Math.abs(u - 0.5) * 2.8 ? (k > 0.5 ? [138, 58, 42] : [122, 46, 34]) : null;
+    if (up < 2.2) return [184, 168, 130]; if (u < 0.07 || ((up - 2.2) % 2.2) < 0.18) return [58, 38, 22];
+    if (u > 0.3 && u < 0.7 && ((up - 2.2) % 2.2) > 0.7 && ((up - 2.2) % 2.2) < 1.6) return hsh(bay, Math.floor(up / 2.2) + side) > 0.6 ? [240, 200, 120] : [42, 38, 48];
+    return [232, 220, 192]; }
+  function scene(t){ var riv = t >= RIV, s = riv ? t - RIV : t;
+    var cz = riv ? -s * 9.5 : -s * 12, cy = riv ? 1.8 + Math.sin(s * 1.4) * 0.05 : 3.2 + Math.sin(s * 1.7) * 0.25, foc = (W / 2) / Math.tan(70 * Math.PI / 360), hz = H * 0.5 + (riv ? 0 : Math.sin(s * 1.3) * 2);
+    var X = riv ? 7.5 : 1e9, hh = 9;
+    var fogC = riv ? [236, 200, 170] : [16, 22, 44], fogK = riv ? 70 : 140;
+    for (var x = 0; x < W; x++){ var dx = (x + 0.5 - W / 2) / foc, dist = 1e9, side = dx > 0 ? 1 : -1;
+      if (Math.abs(dx) > 1e-4 && X < 1e8) dist = X / Math.abs(dx);
+      for (var y = 0; y < H; y++){ var o2 = (y * W + x) * 4, col = null, fd = 80;
+        if (y > hz){ var gd = cy * foc / (y - hz + 0.5); if (gd < dist){ var gx = dx * gd, gz = cz - gd, n = noise3(gx * 0.7, 3, gz * 0.5 + s * 0.6);
+            if (riv){ var rn = noise3(gx * 2.4, 5, gz * 0.8 + s * 1.2); col = Math.abs(gx) > 5.6 ? (Math.abs(gx) > 6.6 ? [196, 180, 140] : [150, 136, 104]) : rn > 0.8 ? [232, 196, 150] : rn > 0.55 ? [110, 140, 164] : [74, 106, 130]; }
+            else { col = n > 0.64 ? [40, 56, 88] : n < 0.3 ? [8, 12, 26] : [18, 26, 48]; if (Math.abs(dx + 0.25) < 0.08 + gd * 0.002 && noise3(gx * 3, 1, gz * 2) > 0.55) col = [200, 206, 220]; }   // the moon's road on the water
+            fd = gd; } }
+        if (!col && dist < 1e8){ var up = (hz - y) * dist / foc + cy; if (up < hh){ var fc = front(cz - dist, up, side, hh); if (fc){ col = fc; fd = dist; } } }
+        if (!col){ var g = clamp((hz - y) / hz, 0, 1);
+          if (riv){ col = lerpV([250, 214, 150], [86, 92, 150], Math.sqrt(g)); if (g < 0.25) col = lerpV([240, 170, 150], col, g * 4); }
+          else { col = lerpV([24, 30, 60], [4, 6, 18], Math.sqrt(g)); if (hsh(x * 3 + 1, y * 7 + 2) > 0.985 && g > 0.15) col = [230, 232, 250];
+            if (Math.hypot(x - W * 0.38, y - hz * 0.62) < W * 0.04) col = [236, 236, 220];   // the moon
+            if (y > hz - 2 && y <= hz) col = [10, 14, 26]; if (y > hz - 4 && y <= hz && Math.abs(x - W * 0.8) < 1 && Math.sin(t * 3) > 0.5) col = [255, 236, 170]; }   // the far coast and its lighthouse winking
+          fd = riv ? 60 : 0; }
+        if (riv){ // the towers of the cathedral rising ahead over the island, nearer as the boat comes in
+          var near = clamp(s / 6.6, 0, 1), tsz = 0.1 + near * 0.2, base = hz + 1, tcx = W / 2, sc = H * tsz;
+          var tx = (x - tcx) / sc, ty = (base - y) / sc;
+          var spire = Math.abs(tx) < 0.05 * (1 - (ty - 0.8) / 1.0) && ty > 0.8 && ty < 1.8 && Math.abs(tx) < 0.05;
+          if (spire){ col = lerpV([90, 92, 104], fogC, 0.3); fd = 0; }
+          else if (ty > 0 && ty < 1.3 && (Math.abs(tx + 0.42) < 0.2 || Math.abs(tx - 0.42) < 0.2 || Math.abs(tx) < 0.62 && ty < 0.8)){ var inTow = Math.abs(tx) > 0.22, sn = noise3(tx * 30, ty * 30, 1); var c2 = sn > 0.6 ? [186, 170, 136] : sn < 0.3 ? [150, 134, 104] : [168, 152, 120]; if (Math.abs(ty - 0.8) < 0.025 || Math.abs(ty - 0.42) < 0.02) c2 = [214, 200, 166]; if (tx > 0.5 || (tx > 0 && tx < 0.22 && !inTow)) c2 = lerpV(c2, [96, 84, 80], 0.35);
+            if (inTow && ty > 0.85 && ty < 1.15 && Math.abs(Math.abs(Math.abs(tx) - 0.42) - 0.07) < 0.04) c2 = [40, 34, 48];   // the belfry openings
+            if (!inTow && Math.hypot(tx, ty - 0.55) < 0.14) c2 = Math.hypot(tx, ty - 0.55) < 0.05 ? [240, 208, 112] : [150, 50, 60];   // the rose
+            if (!inTow && ty < 0.3 && Math.abs(tx) < 0.12) c2 = [120, 40, 30];   // the great door
+            if (y < hz + 0.5 || ty < 1.3){ col = lerpV(c2, fogC, 0.35 * (1 - near)); fd = 0; } } }
+        col = lerpV(col, fogC, 1 - Math.exp(-fd / fogK));
+        D[o2] = col[0]; D[o2 + 1] = col[1]; D[o2 + 2] = col[2]; D[o2 + 3] = 255; } }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    var Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    if (riv){ // the river boat's bow going up the Seine, its lantern, and a pole laid along it
+      ctx.fillStyle = '#4a3018'; ctx.beginPath(); ctx.moveTo(Wc * 0.18, Hc); ctx.lineTo(Wc / 2, Hc * 0.8); ctx.lineTo(Wc * 0.82, Hc); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#7a5a34'; ctx.beginPath(); ctx.moveTo(Wc * 0.28, Hc); ctx.lineTo(Wc / 2, Hc * 0.84); ctx.lineTo(Wc * 0.72, Hc); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffd88a'; ctx.beginPath(); ctx.arc(Wc / 2, Hc * 0.79, 8 * k9, 0, 7); ctx.fill(); }
+    else { // at the steamer's bow by night: her rail, the black of her deck, and the smoke of her funnel going by
+      ctx.fillStyle = '#0c0c12'; ctx.beginPath(); ctx.moveTo(0, Hc); ctx.lineTo(Wc * 0.42, Hc * 0.82); ctx.lineTo(Wc * 0.58, Hc * 0.82); ctx.lineTo(Wc, Hc); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#c8b890'; ctx.lineWidth = 4 * k9; ctx.beginPath(); ctx.moveTo(0, Hc * 0.92); ctx.lineTo(Wc * 0.42, Hc * 0.8); ctx.lineTo(Wc * 0.58, Hc * 0.8); ctx.lineTo(Wc, Hc * 0.92); ctx.stroke();
+      var sm = (t * 0.5) % 1; ctx.fillStyle = 'rgba(120,124,140,' + (0.4 * (1 - sm)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(Wc * (0.3 - sm * 0.2), Hc * (0.2 + sm * 0.05), (30 + sm * 50) * k9, 0, 7); ctx.fill(); }
+    return { pos:V(0, cy, cz) }; }
+  function render(t){ var cam = scene(t), Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    if (t > RIV - 0.3 && t < RIV + 0.3){ ctx.fillStyle = 'rgba(0,0,0,' + (1 - Math.abs(t - RIV) / 0.3).toFixed(2) + ')'; ctx.fillRect(0, 0, Wc, Hc); }
+    var say = function(txt, c1, c2, wob){ ctx.font = 'bold ' + Math.round(44 * k9) + 'px Anton, Impact, sans-serif'; var fit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText(txt).width)); ctx.font = 'bold ' + Math.round(44 * k9 * fit) + 'px Anton, Impact, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6 * k9; ctx.strokeStyle = c1; ctx.strokeText(txt, Wc / 2 + wob, Hc * 0.3); ctx.fillStyle = c2; ctx.fillText(txt, Wc / 2 + wob, Hc * 0.3); };
+    if (t > 0.6 && t < 3.0) say('THE NIGHT BOAT!', '#0a0e1a', '#ffffff', Math.sin(t * 6) * 2 * k9);
+    else if (t > 3.6 && t < 6.2) say('ACROSS THE CHANNEL!', '#0a0e1a', '#cfe0ff', Math.sin(t * 7) * 2 * k9);
+    else if (t > 7.2 && t < 9.4) say('UP THE SEINE!', '#3a2614', '#ffffff', Math.sin(t * 7) * 2 * k9);
+    else if (t > 10.0 && t < 12.6) say('NOTRE-DAME!', '#3a2614', '#e8c060', Math.sin(t * 9) * 3 * k9);
+    return cam; }
+  if (o.still) return { at:function(t){ var c = render(t); if (t > 11.6) wrap.classList.add('cap'); return c; }, close:finish };
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 96) setRes(Math.max(96, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 11.6) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, forest:forestLeg, circus:circusLeg, fog:fogLeg, seine:seineLeg, PLANETS:PLANETS, ISLES:ISLES };
 })();
