@@ -673,6 +673,42 @@ console.log('\nTHE INJURY REPORT IS BUILT FROM TWO SOURCES');
     twice[0] === twice[1] ? `${twice[0].length} bytes` : 'the output carries a clock');
 }
 
+/* THE BOARD READS ROLES (the owner, 2026-11-12): the roster's club, only starting
+   quarterbacks, and a starter priced on his starts. */
+{
+  const { applyRoles, START_ATTEMPTS } = await import('./build/weekly-pool.mjs');
+  const now = Date.parse('2026-11-12T16:00:00Z');
+  const dt = '2026-11-12T15:00:00Z';
+  const depth = [
+    { dt, team: 'NYG', gsis_id: 'mcc', pos_abb: 'QB', pos_rank: '1' },
+    { dt, team: 'NYG', gsis_id: 'win', pos_abb: 'QB', pos_rank: '2' },
+    { dt, team: 'MIA', gsis_id: 'new', pos_abb: 'QB', pos_rank: '1' },
+    { dt, team: 'MIN', gsis_id: 'cou', pos_abb: 'QB', pos_rank: '1' },
+  ];
+  const players = [
+    { gsis_id: 'mcc', status: 'ACT', latest_team: 'NYG' }, { gsis_id: 'win', status: 'ACT', latest_team: 'NYG' },
+    { gsis_id: 'new', status: 'ACT', latest_team: 'MIA', display_name: 'New Starter' },
+    { gsis_id: 'cou', status: 'ACT', latest_team: 'MIN' }, { gsis_id: 'wr', status: 'ACT', latest_team: 'SF' },
+  ];
+  const g = (id, week, att, fp) => ({ player_id: id, season_type: 'REG', week: String(week),
+    attempts: String(att), fantasy_points: String(fp), receptions: '0' });
+  const rows = [g('mcc', 1, 3, 1), g('mcc', 2, 4, 2), g('mcc', 7, 30, 18), g('mcc', 8, 32, 20),
+    g('win', 1, 35, 16), g('win', 2, 38, 15)];
+  const t = (id, team, pos, games, half) => ({ player_id: id, team, position: pos, games, half,
+    half_ppg: half / games });
+  const todate = [t('mcc', 'NYG', 'QB', 4, 41), t('win', 'NYG', 'QB', 2, 31), t('cou', 'LV', 'QB', 9, 150),
+    t('wr', 'IND', 'WR', 8, 80)];
+  const out = applyRoles(todate, rows, 10, players, depth, now);
+  const by = Object.fromEntries(out.map((p) => [p.player_id, p]));
+  ok('the backup quarterback is not on the board', !by.win);
+  ok('the starter is priced on his starts only (' + START_ATTEMPTS + '+ attempts)',
+    by.mcc && by.mcc.qb1 && by.mcc.starts === 2 && Math.abs(by.mcc.start_ppg - 19) < 1e-9,
+    by.mcc && by.mcc.starts + ' starts at ' + by.mcc.start_ppg);
+  ok('a starter with nothing done yet is on it, from the roster', by.new && by.new.qb1
+    && by.new.games === 0 && by.new.name === 'New Starter' && by.new.team === 'MIA');
+  ok('a man who moved is on his new club', by.cou && by.cou.team === 'MIN' && by.wr.team === 'SF');
+}
+
 /* A BACKUP QUARTERBACK COMES OFF THE BOARD (the owner, 2026-11-12). Read off each club's own
    latest depth chart; a starter anywhere stays; a stale chart takes nobody off. */
 {
