@@ -5590,7 +5590,7 @@ var MEMBER_LEVELS = [
   // ---- MONSTER CASTLE: nine holes, one castle idea each, like Hallows Night. Not harder than the tour, its own.
   // The Drawbridge: the moat runs right across the approach, walled on both banks but for the bridge, and the drawbridge comes down
   // on a slow clock. Over it into the courtyard, round the suits of armour to the cup.
-  { par:3, f:function(T){ var H = hole([pg([[-7.2, 0], [6.6, 0], [8.1, -6.9], [7.6, -13.4], [-8.1, -13.4], [-8.6, -6.4]]), pg([[-8.1, -13.2], [7.6, -13.2], [9.4, -17.4], [-9.6, -17.4]]), pg([[-9.6, -17.2], [9.4, -17.2], [11.4, -26.9], [9.6, -38.4], [1.1, -42.6], [-7.9, -40.1], [-11.6, -29.4]])], [0.3, -2.5], [5.4, -35.6]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-7.2, 0], [6.6, 0], [8.1, -6.9], [7.6, -13.4], [-8.1, -13.4], [-8.6, -6.4]]), pg([[-8.1, -13.2], [7.6, -13.2], [9.4, -17.4], [-9.6, -17.4]]), pg([[-9.6, -17.2], [9.4, -17.2], [11.4, -26.9], [9.6, -38.4], [1.1, -42.6], [-7.9, -40.1], [-11.6, -29.4]])], [0.3, -2.5], [5.4, -35.6]);
     zoneR(H, M.WATER, -9.6, -16.6, 9.4, -14.0); drawb(H, -1.3, -16.6, 1.3, -14.0, 4.2, 0, 0.6);
     addBlock(H, -8.4, -13.4, -1.3, -14.0, 'mcstone'); addBlock(H, 1.3, -13.4, 8.2, -14.0, 'mcstone'); addBlock(H, -9.8, -16.6, -1.3, -17.2, 'mcstone'); addBlock(H, 1.3, -16.6, 9.6, -17.2, 'mcstone');
     rocks(H, [[-4.6, -6.9, 0.5, 'mcurn'], [4.4, -7.6, 0.5, 'mcurn'], [-6.4, -24.1, 0.55, 'mcarmour'], [3.9, -23.4, 0.55, 'mcarmour'], [-3.1, -33.9, 0.5, 'mccandela'], [8.4, -28.4, 0.5, 'mcarmour'], [-8.1, -33.4, 0.45, 'mcurn']]);
@@ -5598,7 +5598,7 @@ var MEMBER_LEVELS = [
     pen(H, T, 5.4, -35.6); teeSide(H, T); bowl(H, 5.4, -35.6, 1.5, 0.14); return H; } },
   // The Portcullis: the gatehouse wall across the bailey, one arch in it off to the right, and the portcullis rising and falling in
   // the arch on its clock. Through it while it is up, and across to the cup tucked in on the left.
-  { par:3, f:function(T){ var H = hole([pg([[-6.4, 0], [7.4, 0], [9.9, -9.6], [10.6, -21.4], [9.1, -33.9], [2.6, -40.1], [-6.6, -39.4], [-10.9, -30.6], [-10.1, -17.9], [-8.4, -8.1]])], [0.6, -2.5], [-5.1, -34.1]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.4, 0], [7.4, 0], [9.9, -9.6], [10.6, -21.4], [9.1, -33.9], [2.6, -40.1], [-6.6, -39.4], [-10.9, -30.6], [-10.1, -17.9], [-8.4, -8.1]])], [0.6, -2.5], [-5.1, -34.1]);
     addBlock(H, -11.4, -18.4, 1.6, -20.6, 'mcstone'); addBlock(H, 5.4, -18.4, 11.1, -20.6, 'mcstone'); addBlock(H, 0.4, -17.9, 1.9, -21.1, 'mctower'); addBlock(H, 5.1, -17.9, 6.6, -21.1, 'mctower');
     gateAt(H, T, -19.5, 1.9, 5.1, 3.6, 0.2, 1); H.movers[H.movers.length - 1].skin = 'mcportcullis';
     rocks(H, [[-4.4, -7.6, 0.5, 'mcurn'], [4.6, -8.9, 0.5, 'mcarmour'], [-6.6, -13.1, 0.5, 'mcarmour'], [6.9, -27.4, 0.55, 'mccandela'], [0.6, -27.9, 0.5, 'mcarmour'], [3.4, -35.6, 0.45, 'mcurn'], [-8.4, -26.6, 0.45, 'mcurn']]);
@@ -5606,7 +5606,7 @@ var MEMBER_LEVELS = [
     pen(H, T, -5.1, -34.1); teeSide(H, T); bowl(H, -5.1, -34.1, 1.5, 0.14); return H; } },
   // The Secret Bookcase: the library's long wall of bookcases, and one of them a door. Roll over the loose book on the carpet and the
   // bookcase swings open for a few seconds; the book lies on the way, a little left of the door.
-  { par:3, f:function(T){ var H = hole([pg([[-7.6, 0], [6.1, 0], [8.4, -8.9], [8.9, -22.6], [10.4, -34.4], [4.9, -41.6], [-4.4, -42.1], [-9.9, -35.1], [-9.4, -21.1], [-9.1, -9.4]])], [-0.9, -2.5], [4.6, -36.9]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-7.6, 0], [6.1, 0], [8.4, -8.9], [8.9, -22.6], [10.4, -34.4], [4.9, -41.6], [-4.4, -42.1], [-9.9, -35.1], [-9.4, -21.1], [-9.1, -9.4]])], [-0.9, -2.5], [4.6, -36.9]);
     addBlock(H, -9.9, -21.4, -2.4, -22.9, 'mcbooks'); addBlock(H, 0.9, -21.4, 9.4, -22.9, 'mcbooks');
     switchDoor(H, T, -22.15, -2.4, 0.9, -1.6, -13.6, 5); H.movers[H.movers.length - 1].skin = 'mcbookdoor';
     addBlock(H, -7.6, -29.6, -4.1, -31.6, 'mctable');
@@ -5615,7 +5615,7 @@ var MEMBER_LEVELS = [
     pen(H, T, 4.6, -36.9); teeSide(H, T); bowl(H, 4.6, -36.9, 1.5, 0.14); return H; } },
   // The Marching Armour: the long gallery, a still suit of armour in every alcove down both walls, and one suit that marches across
   // the middle and back on its clock. Past him, and round the corner at the far end to the cup.
-  { par:3, f:function(T){ var H = hole([pg([[-5.6, 0], [5.1, 0], [6.4, -12.6], [5.9, -26.1], [6.9, -33.4], [-4.4, -34.6], [-6.6, -25.4], [-6.1, -12.1]]), pg([[-4.9, -29.1], [6.6, -28.6], [17.9, -29.9], [19.6, -40.6], [11.4, -44.1], [-3.1, -41.9]])], [-0.4, -2.5], [14.6, -38.9]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-5.6, 0], [5.1, 0], [6.4, -12.6], [5.9, -26.1], [6.9, -33.4], [-4.4, -34.6], [-6.6, -25.4], [-6.1, -12.1]]), pg([[-4.9, -29.1], [6.6, -28.6], [17.9, -29.9], [19.6, -40.6], [11.4, -44.1], [-3.1, -41.9]])], [-0.4, -2.5], [14.6, -38.9]);
     slider(H, T, -16.4, -4.6, 4.4, 3.2, 0.3, 2.2);
     rocks(H, [[-5.1, -6.1, 0.45, 'mcarmour'], [4.6, -7.4, 0.45, 'mcarmour'], [-5.4, -11.6, 0.45, 'mcarmour'], [5.1, -21.6, 0.45, 'mcarmour'], [-5.6, -22.4, 0.45, 'mcarmour'], [1.1, -38.6, 0.5, 'mccandela'], [8.9, -32.1, 0.5, 'mcurn'], [17.1, -33.4, 0.45, 'mcarmour']]);
     addBlock(H, 6.1, -38.4, 9.6, -40.1, 'mcstone');
@@ -5623,7 +5623,7 @@ var MEMBER_LEVELS = [
     pen(H, T, 14.6, -38.9); teeSide(H, T); bowl(H, 14.6, -38.9, 1.5, 0.14); return H; } },
   // The Ballroom: the Vampire's ballroom floor, polished like glass, a ring of pillars round it. The ball glides on the polish, so
   // a soft putt is enough, and the cup is up on the dais past the far pillars.
-  { par:3, f:function(T){ var H = hole([pg([[-6.9, 0], [6.4, 0], [10.4, -9.4], [12.1, -21.6], [9.9, -34.1], [3.1, -41.9], [-4.6, -42.4], [-10.6, -34.9], [-12.4, -21.4], [-10.1, -8.6]])], [-0.2, -2.5], [-3.9, -37.6]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.9, 0], [6.4, 0], [10.4, -9.4], [12.1, -21.6], [9.9, -34.1], [3.1, -41.9], [-4.6, -42.4], [-10.6, -34.9], [-12.4, -21.4], [-10.1, -8.6]])], [-0.2, -2.5], [-3.9, -37.6]);
     zoneC(H, M.ICE, -0.4, -20.9, 6.1); zoneC(H, M.ICE, 2.4, -17.4, 3.6); zoneC(H, M.ICE, -3.1, -24.6, 3.4);
     rocks(H, [[-7.6, -15.4, 0.55, 'mcpillar'], [6.9, -14.1, 0.55, 'mcpillar'], [-7.9, -27.1, 0.55, 'mcpillar'], [7.1, -27.9, 0.55, 'mcpillar'], [-0.6, -30.1, 0.6, 'mcpillar'], [-5.4, -6.6, 0.45, 'mccandela'], [5.1, -6.1, 0.45, 'mccandela'], [5.9, -36.6, 0.45, 'mcurn']]);
     addBlock(H, -9.4, -32.4, -5.1, -33.9, 'mcstone');
@@ -5631,7 +5631,7 @@ var MEMBER_LEVELS = [
     pen(H, T, -3.9, -37.6); teeSide(H, T); bowl(H, -3.9, -37.6, 1.5, 0.14); return H; } },
   // The Wolf's Hollow: the moonlit court below the tower dips into a deep hollow in the middle, where the Werewolf howls at night. A
   // ball that is too soft runs down into it; round the rim, or firm across, to the cup on the far lip.
-  { par:3, f:function(T){ var H = hole([pg([[-6.1, 0], [7.1, 0], [10.9, -8.1], [12.6, -20.4], [11.1, -32.9], [4.1, -40.4], [-5.9, -40.9], [-11.4, -33.4], [-12.9, -19.6], [-10.4, -7.4]])], [0.4, -2.5], [5.6, -35.4]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.1, 0], [7.1, 0], [10.9, -8.1], [12.6, -20.4], [11.1, -32.9], [4.1, -40.4], [-5.9, -40.9], [-11.4, -33.4], [-12.9, -19.6], [-10.4, -7.4]])], [0.4, -2.5], [5.6, -35.4]);
     H.comps.push({ k:'crown', x:-0.6, y:-20.1, rx:6.4, ry:5.6, a:-0.32 });
     rocks(H, [[-0.6, -20.1, 0.6, 'mcstone2'], [-8.1, -11.6, 0.5, 'mcurn'], [7.9, -12.4, 0.5, 'mccandela'], [-8.9, -27.9, 0.5, 'mcpillar'], [8.6, -25.6, 0.5, 'mcurn'], [-3.4, -34.6, 0.5, 'mccandela'], [-4.6, -5.9, 0.45, 'mcurn']]);
     addBlock(H, 1.4, -29.1, 9.9, -30.6, 'mcstone');
@@ -5639,15 +5639,15 @@ var MEMBER_LEVELS = [
     pen(H, T, 5.6, -35.4); teeSide(H, T); bowl(H, 5.6, -35.4, 1.5, 0.14); return H; } },
   // The Golem's Clay: the Golem's workshop floor is wet clay from wall to wall, and a dry swept lane winds through it. Keep to the
   // lane; the clay holds a ball where it lands.
-  { par:3, f:function(T){ var H = hole([pg([[-6.6, 0], [6.9, 0], [9.4, -11.4], [10.9, -24.4], [8.6, -37.1], [0.9, -42.4], [-7.4, -39.9], [-11.1, -28.4], [-10.6, -14.6]])], [0.6, -2.5], [-4.1, -36.4]);
-    zoneC(H, M.MUD, -5.6, -15.4, 3.4); zoneC(H, M.MUD, 6.9, -21.4, 3.1); zoneC(H, M.MUD, -6.4, -26.9, 2.6); zoneC(H, M.MUD, 2.6, -30.4, 2.4); zoneC(H, M.MUD, 7.1, -33.6, 1.9);
-    rocks(H, [[-4.4, -6.4, 0.5, 'mcjar'], [4.9, -7.9, 0.5, 'mcjar'], [1.1, -18.6, 0.55, 'mcjar'], [-1.9, -24.1, 0.5, 'mcurn'], [8.6, -28.4, 0.45, 'mcjar'], [-8.6, -34.1, 0.45, 'mcurn'], [3.9, -39.4, 0.45, 'mcjar']]);
-    addBlock(H, -2.4, -33.1, 1.1, -34.6, 'mctable');
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.6, 0], [6.9, 0], [9.4, -11.4], [10.9, -24.4], [8.6, -37.1], [0.9, -42.4], [-7.4, -39.9], [-11.1, -28.4], [-10.6, -14.6]])], [0.6, -2.5], [-4.1, -36.4]);
+    zoneC(H, M.MUD, -5.6, -15.4, 3.4); zoneC(H, M.MUD, 6.9, -21.4, 3.1); zoneC(H, M.MUD, -6.4, -26.9, 2.6); zoneC(H, M.MUD, 5.1, -29.1, 2.0); zoneC(H, M.MUD, 7.1, -33.6, 1.9);
+    rocks(H, [[-4.4, -6.4, 0.5, 'mcjar'], [4.9, -7.9, 0.5, 'mcjar'], [4.1, -13.6, 0.55, 'mcjar'], [-1.9, -24.1, 0.5, 'mcurn'], [8.6, -28.4, 0.45, 'mcjar'], [-8.6, -34.1, 0.45, 'mcurn'], [3.9, -39.4, 0.45, 'mcjar']]);
+    addBlock(H, -9.9, -30.9, -6.6, -32.4, 'mctable');
     H.comps.push({ k:'plane', gx:-0.0051, gy:-0.0031 }); H.comps.push({ k:'mound', x:5.4, y:-12.6, s:1.8, a:0.12 });
     pen(H, T, -4.1, -36.4); teeSide(H, T); bowl(H, -4.1, -36.4, 1.5, 0.14); return H; } },
   // The Horseman's Bridge: the brook below the old church winds across the course, and the wooden bridge over it has a rail on each
   // side. The Horseman never crosses running water. Over the bridge and up the far bank to the cup.
-  { par:3, f:function(T){ var H = hole([pg([[-7.1, 0], [6.4, 0], [9.6, -9.9], [11.4, -22.1], [9.4, -35.6], [1.9, -42.4], [-6.9, -40.6], [-11.9, -30.1], [-11.1, -16.9], [-9.4, -7.6]])], [-0.6, -2.5], [-4.6, -36.1]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-7.1, 0], [6.4, 0], [9.6, -9.9], [11.4, -22.1], [9.4, -35.6], [1.9, -42.4], [-6.9, -40.6], [-11.9, -30.1], [-11.1, -16.9], [-9.4, -7.6]])], [-0.6, -2.5], [-4.6, -36.1]);
     zoneC(H, M.WATER, -8.9, -18.9, 2.1); zoneC(H, M.WATER, -5.1, -19.9, 2.2); zoneC(H, M.WATER, -1.1, -19.4, 2.1); zoneC(H, M.WATER, 3.1, -18.4, 2.2); zoneC(H, M.WATER, 7.1, -18.9, 2.1); zoneC(H, M.WATER, 10.6, -19.6, 2.2);
     zoneR(H, M.GREEN, 0.6, -22.4, 3.6, -15.6); addBlock(H, 0.3, -22.6, 0.6, -15.4, 'mcrail'); addBlock(H, 3.6, -22.6, 3.9, -15.4, 'mcrail');
     rocks(H, [[-5.4, -7.9, 0.5, 'mcstone2'], [5.1, -8.4, 0.5, 'mcpump'], [-7.6, -27.6, 0.5, 'mcstone2'], [7.9, -27.1, 0.5, 'mcpump'], [1.6, -31.4, 0.5, 'mcstone2'], [-0.9, -39.1, 0.45, 'mcpump'], [-8.9, -12.4, 0.45, 'mcpump']]);
@@ -5655,7 +5655,7 @@ var MEMBER_LEVELS = [
     pen(H, T, -4.6, -36.1); teeSide(H, T); bowl(H, -4.6, -36.1, 1.5, 0.14); return H; } },
   // Monster Castle, the signature hole: in at the courtyard, up the stair to the great hall where the castle clock's pendulum swings
   // across the floor, and down the far stair to the cup in the keep under the moon.
-  { par:4, sig:true, f:function(T){ var H = hole([pg([[-6.9, 0], [6.4, 0], [8.6, -6.9], [7.9, -13.4], [-7.6, -13.4], [-8.9, -6.1]]), pg([[-8.9, -17.4], [9.4, -17.4], [11.6, -28.9], [10.1, -40.4], [-9.1, -40.4], [-11.9, -29.1]], 0.8), pg([[-9.6, -44.4], [9.9, -44.4], [11.1, -53.6], [5.9, -61.4], [-4.1, -62.4], [-10.9, -55.9]])], [0.4, -2.5], [-3.6, -56.6]);
+  { par:4, three:3, sig:true, f:function(T){ var H = hole([pg([[-6.9, 0], [6.4, 0], [8.6, -6.9], [7.9, -13.4], [-7.6, -13.4], [-8.9, -6.1]]), pg([[-8.9, -17.4], [9.4, -17.4], [11.6, -28.9], [10.1, -40.4], [-9.1, -40.4], [-11.9, -29.1]], 0.8), pg([[-9.6, -44.4], [9.9, -44.4], [11.1, -53.6], [5.9, -61.4], [-4.1, -62.4], [-10.9, -55.9]])], [0.4, -2.5], [-3.6, -56.6]);
     climb(H, 2.4, -13.4, -17.4, 2.6); spinner(H, T, 0.4, -28.6, 2.6, 1.0, 2); climb(H, -3.1, -40.4, -44.4, 2.6);
     addBlock(H, -9.1, -34.4, -4.1, -36.1, 'mctable'); addBlock(H, 4.6, -22.9, 9.9, -24.4, 'mctable');
     rocks(H, [[-4.6, -6.4, 0.5, 'mcurn'], [4.6, -7.1, 0.5, 'mcurn'], [-6.9, -22.6, 0.5, 'mcarmour'], [7.4, -33.6, 0.5, 'mcarmour'], [-8.1, -29.4, 0.45, 'mccandela'], [4.9, -49.1, 0.5, 'mcarmour'], [6.6, -57.4, 0.45, 'mccandela'], [-7.9, -48.6, 0.45, 'mcurn']]);
@@ -11304,7 +11304,7 @@ RTT_PUTT._holed = function(n){ if (S && S.play && S.round && S.round.mode === 'p
 RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };
 // a hole built from a function, for trying out a layout in the browser: RTT_PUTT._try(function(T){ return H; }, 'clubhouse')
 RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, tpl:'try' + Date.now(), seed:7, theme:theme || 'clubhouse', name:name || 'Try out' }; S.round = { mode:'try', i:0, cards:[], holes:[d], title:d.name, kick:'Try out' }; playHole(); };
-RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.SIGHTINGS = SIGHTINGS; RTT_PUTT.EXPEDITION = EXPEDITION; RTT_PUTT.CASEBOOK = CASEBOOK; RTT_PUTT._casebook = function(){ caseSheet(); }; RTT_PUTT.sightAt = sightAt; RTT_PUTT.camPic = camPic; RTT_PUTT._album = function(){ albumSheet(); }; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
+RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.FOLK = FOLK; RTT_PUTT.GREETERS = GREETERS; RTT_PUTT.SIGHTINGS = SIGHTINGS; RTT_PUTT.EXPEDITION = EXPEDITION; RTT_PUTT.CASEBOOK = CASEBOOK; RTT_PUTT._casebook = function(){ caseSheet(); }; RTT_PUTT.sightAt = sightAt; RTT_PUTT.camPic = camPic; RTT_PUTT._album = function(){ albumSheet(); }; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 /* The home card wears the world you are in: the top band of that world's signature hole, cut from the
    game's own render by build-cards.mjs, so it is the same pixel art as the courses. */
 var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1, olympus:1, wonderland:1, lookingglass:1, beanstalk:1, mississippi:1, lochness:1, himalayas:1, pacific:1, bigtop:1, london:1, notredame:1, treasure:1 }, CARD_V = 26;

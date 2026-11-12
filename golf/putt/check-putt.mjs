@@ -531,7 +531,7 @@ if (!QUICK){
     const SRC = fs.readFileSync(new URL('./putt.js', import.meta.url), 'utf8'), behind = /data-case>Open the casebook</.test(SRC) && (SRC.match(/caseSheet\(\)/g) || []).length === 3;
     claim(CB[0] === 'london' && all.length >= 4 && new Set(all).size === all.length && !out.length && notAlbum && behind,
       `London's casebook holds ${all.length} clues, each on its own walk and none on a gym's, picked up as clues and kept apart from the Expedition album, and it opens only from its button in the Bag` + (out.length ? ' (' + out.join(', ') + ')' : '')); }
-  claim(TB.levels.length === 18 && TB.worlds.length === 2 && TB.per === 9 && TB.members, `the Members Tour is 18 holes in ${TB.worlds.length} worlds of ${TB.per}`);
+  claim(TB.levels.length === 27 && TB.worlds.length === 3 && TB.per === 9 && TB.members && TB.worlds[2].id === 'monster', `the Members Tour is 27 holes in ${TB.worlds.length} worlds of ${TB.per}, Monster Castle the third`);
   claim(TM.worlds.every(W => P.CAL_THEMES.indexOf(W.theme) < 0), 'the main tour wears none of the calendar themes, which belong to the passes (' + TM.worlds.map(W => W.theme).join(', ') + ')');
   for (const TR of [TM, TB]){
     claim(TR.levels.every((L, i) => !!L.sig === ((i + 1) % TR.per === 0)), `${TR.name}: the last hole of each world, and only it, is a signature hole`);
@@ -762,7 +762,11 @@ if (!QUICK){
     const kitAvg = per(n => { const C = P.buildLevel(n, TR.id); return C.bumpers.length + C.blocks.filter(r => Math.min(r.x1 - r.x0, r.y1 - r.y0) > 0.7).length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.ferries || []).length + (C.devils || []).length + (C.rings || []).length + (C.hazes || []).length + (C.beams || []).length + (C.hops || []).length + (C.cyclones || []).length + (C.eyes || []).length + (C.gazes || []).length + (C.lethes || []).length + (C.bolts || []).length + (C.sizers || []).length + (C.wees || []).length + (C.glasses || []).length + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length + (C.wires || []).length + (C.tides || []).length + (C.bells || []).length + (C.quicks || []).length + (C.mill ? 1 : 0) + C.zones.length; });
     const parAvg = per(n => TR.levels[n - 1].par);
     claim(kitAvg.every((a, w) => !w || a > kitAvg[w - 1]), `${TR.name}: more set pieces a hole world by world (${kitAvg.map(a => a.toFixed(2)).join(', ')})`);
-    claim(parAvg[parAvg.length - 1] > parAvg[0], `${TR.name}: the last world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
+    /* The Members Tour's one trick worlds (Hallows Night, Monster Castle) are held to par 3 and a par 4 signature, its own and not
+       harder (below), so a one trick world after Harvest Moon cannot ask for more putts than Hallows Night: there the climb is asked
+       of the busiest world, and the main tour asks it of its last. */
+    if (TR.members) claim(Math.max(...parAvg) > parAvg[0], `${TR.name}: a later world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
+    else claim(parAvg[parAvg.length - 1] > parAvg[0], `${TR.name}: the last world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
   }
   /* THE LAB: the tester-only prototype world. Same rule as the tours (the obvious route is a birdie
      with room for error, a slightly off putt stays dry), and it pays nothing, so it can never be a
@@ -808,6 +812,23 @@ if (!QUICK){
     const hh = []; for (let n = 1; n <= TB.per; n++) hh.push(kit(n));
     claim(hh.every(k => k <= 2) && TB.levels.slice(0, TB.per).every(L => L.par <= (L.sig ? 4 : 3)), `Hallows Night: one trick a hole, at most two moving or wet pieces (${hh.join(' ')}), par 3 and a par 4 signature`);
     claim(T && T.w === 0 && T.each > 0 && T.all > 0 && /Members only/.test(T.reward), 'Hallows Night pays a trick or treat bonus under par, and a members-only reward for all nine'); }
+  /* MONSTER CASTLE IS ITS OWN TOO (the owner's rule for the Members worlds: "HALLOWS NIGHT IS NOT HARDER THAN THE TOUR, IT IS ITS
+     OWN"). Each hole is one castle idea, held to the Hallows bar, and every moving or wet piece the engine has is counted here, not
+     only the ones Hallows Night was built from: at most two a hole, par 3 and a par 4 signature. It carries no trick or treat (that
+     is Hallows Night's), its rewards are members only, and the Champion's Jacket is still won where it always was, at Harvest Moon. */
+  { const w = TB.worlds.findIndex(W => W.id === 'monster'), K = TB.per, mw = [], pars = [];
+    const moving = n => { const C = P.buildLevel(n, 'members'); return C.movers.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.rivers || []).length + (C.mill ? 1 : 0) + C.zones.filter(z => z.m === M.WATER).length
+      + (C.belts || []).length + (C.ferries || []).length + (C.devils || []).length + (C.beams || []).length + (C.hops || []).length + (C.cyclones || []).length + (C.eyes || []).length + (C.gazes || []).length + (C.lethes || []).length + (C.bolts || []).length
+      + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length + (C.wires || []).length + (C.tides || []).length + (C.bells || []).length + (C.quicks || []).length + (C.wells || []).length + (C.floats || []).length + (C.hazes || []).length; };
+    for (let n = w * K + 1; n <= w * K + K; n++){ mw.push(moving(n)); pars.push(TB.levels[n - 1].par + (TB.levels[n - 1].sig ? 's' : '')); }
+    const sigOk = TB.levels.slice(w * K, w * K + K).every(L => L.par <= (L.sig ? 4 : 3)) && TB.levels[w * K + K - 1].sig;
+    claim(w === 2 && mw.every(k => k <= 2) && sigOk, `Monster Castle: one castle idea a hole, at most two moving or wet pieces of any kind (${mw.join(' ')}), par 3 and a par 4 signature (${pars.join(' ')})`);
+    const Pm = Cn.members, rw = [Pm.sigReward[w], Pm.worldReward[w]];
+    claim(Cn.members.treat.w !== w && rw.every(r => r && /Members only/.test(r)) && Pm.finishW === 1 && P.TOURS.members.worlds[Pm.finishW].id === 'harvest',
+      `Monster Castle pays its own two members-only rewards (${rw.join(', ')}), no trick or treat, and the Champion's Jacket stays Harvest Moon's`);
+    const TSRC = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8'), folk = Object.values(P.FOLK.monster || {}).map(f => f.id).concat([P.GREETERS.monster.folk]);
+    const drawn = folk.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), bad = ['frankenstein', 'dracula', 'lugosi', 'orlok'].filter(x => new RegExp(x, 'i').test(JSON.stringify(P.FOLK.monster) + JSON.stringify(P.GREETERS.monster)));
+    claim(folk.length === 8 && new Set(folk).size === 8 && drawn.length === 8 && !bad.length, `Monster Castle's host and its seven monsters each have a model of their own in trail.js (${drawn.join(', ')}), and none is Frankenstein's creature or Dracula`); }
   head(`4. ${DAYS} DAILY HOLES FROM TODAY`);
   const day0 = new Date(Date.UTC(2026, 9, 1));
   const themesSeen = new Set();
@@ -1628,7 +1649,9 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
       out.greeters = []; for (let w = 0; w < 32; w++){ let P = window.RTT_PUTT._trailPlan(w * 18); if (P.spec.space) P = window.RTT_PUTT._trailPlan(w * 18, 'main', true); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }   // a space world's greeter is on its landed walk
-      for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      for (let w = 0; w < 3; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      // Monster Castle's monsters stand on its walks in place of the local, one to a walk, and say their own lines
+      out.folk = []; for (let f = 19; f < 27; f++){ const P = window.RTT_PUTT._trailPlan(f, 'members'); out.folk.push(P.spec.folk ? P.spec.folk.id + (P.items.some(t => t.k === 'npc') ? '' : '?') : '-'); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       out.secrets = []; out.secretElse = []; out.secretAt = [];
       for (let w = 0; w < 32; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
@@ -1644,7 +1667,8 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     /* seventeen walks can hold one (never the first), and there are more worlds than that, so a walk comes round again only once
        every other walk has had its turn: any seventeen worlds in a row hold their secrets on seventeen different walks */
     claim(wo.secretAt.every(k => k > 1 && k <= 18) && wo.secretAt.every((k, w) => wo.secretAt.slice(Math.max(0, w - 16), w).indexOf(k) < 0), `the secrets sit on a different walk in each run of seventeen worlds, never a world's first (${wo.secretAt.join(' ')})`);
-    claim(wo.greeters.every(Boolean) && wo.notMid, `all thirty-two worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
+    claim(wo.greeters.every(Boolean) && wo.notMid, `all thirty-two worlds and the three Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
+    claim(wo.folk.join() === 'zombie,invisible,hyde,vampire,werewolf,golem,horseman,-', `Monster Castle's monsters stand on its walks, one to a walk (${wo.folk.join(' ')})`);
     // THE HOLES AT EACH END OF A WALK ARE THE REAL HOLES: the one you just played behind you, the next one past the arch,
     // each drawn from its own compiled course, with its cup where the course puts it
     const ft = await pg.evaluate(() => { const P = window.RTT_PUTT._trailPlan(17), f = P.feet || [];
