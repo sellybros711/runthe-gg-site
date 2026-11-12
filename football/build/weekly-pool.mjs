@@ -916,7 +916,7 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
    * WHAT THE CLUBS HAVE SAID ABOUT SUNDAY, read off the SAME FILE the page reads.
    *
    * `injuries.mjs` writes `injuries_<season>_w<week>.json` and `fantasy-injuries.yml`
-   * refreshes it twice a day. Reading it here rather than fetching the CSV again is the
+   * refreshes it hourly through the day. Reading it here rather than fetching the CSV again is the
    * whole point: the price, the red chip on the board and the sheet a reader opens are then
    * one answer about one hamstring, and a build that priced off a report the page does not
    * have would be a board disagreeing with itself.
