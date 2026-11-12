@@ -1389,7 +1389,7 @@ var THEMES = {
   monster:{ name:'Monster Castle', kick:'Members Tour', bg:'#141428', bg2:'#1e1e38', carpet:'#3a5e4a', carpet2:'#345644', wall:'#8a8698', wallHi:'#c8c4d4', wallLo:'#3a3646', ink:'#0e0c18',
     haz:'water', hazCol:'#1e3448', hazCol2:'#5a86a4', hazName:'The Moat', slow:'mud', slowCol:'#9a6a44', slowName:'Golem’s Clay', iceCol:'#bcb4d8', iceCol2:'#e8e4f6',
     bumper:'mcarmour', block:'mcstone', spinner:'#c8a040', slider:'mcknight', flag:'#8a2a4a',
-    decor:['mccandle', 'mcbat'], acc:'#b89cff', river:['#1e3448', '#5a86a4'], kicker:'#c8a040', loopCol:['#c8a040', '#8a8698', '#0e0c18'],
+    decor:['mccandle', 'mckey'], acc:'#b89cff', river:['#1e3448', '#5a86a4'], kicker:'#c8a040', loopCol:['#c8a040', '#8a8698', '#0e0c18'],
     holes:[] },
   treasure:{ name:'Treasure Island', kick:'World 32', bg:'#12262a', bg2:'#1c3436', carpet:'#5e7a38', carpet2:'#567234', wall:'#7a5a36', wallHi:'#b48c5a', wallLo:'#3a2816', ink:'#14100c',
     haz:'water', hazCol:'#1e5a64', hazCol2:'#6ab0a8', hazName:'The Anchorage', slow:'mud', slowCol:'#6a7a3e', slowName:'Marsh Grass', iceCol:'#c8d0d4', iceCol2:'#eef2f4',
@@ -1451,7 +1451,7 @@ var THEMES = {
     holes:['Low Tide', 'Sandcastle', 'Crab Walk', 'The Lighthouse', 'Tide Pool', 'Boardwalk', 'Shell Game', 'Surf’s Up', 'Sunset'] }
 };
 /* the light that comes up out of the cup when the ball drops, one colour a theme (the real greens use gold) */
-var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
+var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', monster:'#b89cff', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
   firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', moon:'#9fe8ff', mars:'#ffb08a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', olympus:'#ffe9a0', wonderland:'#ffb0c8', lookingglass:'#d8e4ff', beanstalk:'#ffe08a', mississippi:'#ffe6a0', lochness:'#d8c8f0', himalayas:'#ffe0a0', pacific:'#c8f0a0', bigtop:'#ffd860', london:'#ffd27a', notredame:'#ffe0a0', treasure:'#ffd25a', candy:'#ff9ad0', beach:'#5ce1ff' };
 Object.keys(GLOW).forEach(function(k){ if (THEMES[k]) THEMES[k].glow = GLOW[k]; });
 // the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
@@ -6638,6 +6638,50 @@ var SKIN = {
     var sp = (r * 5 + Math.atan2(v, u) / 6.28 + 5) % 1; return sp < 0.25 ? '#d89a7a' : '#f4dcc4'; },
   tispade:function(u, v){ if (Math.abs(u) > 0.5 || Math.abs(v) > 0.8) return null; if (v < -0.55) return Math.abs(u) < 0.22 && v > -0.7 ? '#5a3a20' : null;
     if (v < 0.3) return Math.abs(u) < 0.05 ? '#7a5232' : null; return Math.abs(u) < 0.26 - (v - 0.3) * 0.4 ? (u < -0.1 ? '#c8c8cc' : '#8a8a92') : null; },
+  // ---- Monster Castle, drawn plain and bold under the moon: a suit of armour seen from above, his helm and its red plume between
+  // the pauldrons; a stone urn; a candelabrum with its three flames; a fluted pillar; the library's globe; a clay jar of the Golem's
+  // workshop; a round field stone; a pumpkin by the Horseman's bridge; the castle's grey masonry; a round tower's crenels; a
+  // bookcase of spines; the bookcase door; the long oak table; the bridge's wooden rail; the marching armour (the slider); the
+  // portcullis; and, about the course, a lit candle and an iron castle key
+  mcarmour:function(u, v){ var r = Math.hypot(u, v); if (r > 0.9) return null; if (Math.hypot(Math.abs(u) - 0.5, v + 0.05) < 0.36) return Math.hypot(Math.abs(u) - 0.42, v + 0.15) < 0.12 ? '#e8ecf4' : '#8e94a2';   // the pauldrons
+    if (r < 0.42){ if (Math.abs(v - 0.06) < 0.05 && Math.abs(u) < 0.26) return '#14141c'; if (Math.abs(u) < 0.09 && v < 0.02) return '#a8243a'; return u + v < -0.2 ? '#e8ecf4' : '#b4bac6'; }   // the helm, its slit and its plume
+    return r > 0.8 ? '#3a3e4a' : '#6a707e'; },
+  mcurn:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; if (r > 0.72) return '#4a4656'; if (r > 0.56) return u + v < 0 ? '#c8c4d4' : '#9a96a8';
+    if (r < 0.2) return '#6a3a6a'; return Math.sin(Math.atan2(v, u) * 5) > 0.3 ? '#2e5a3a' : '#1e3a2a'; },
+  mccandela:function(u, v){ var r = Math.hypot(u, v); if (r > 0.88) return null; for (var k = 0; k < 3; k++){ var a = k * 2.094 - 1.571, cx = Math.cos(a) * 0.5, cy = Math.sin(a) * 0.5, d = Math.hypot(u - cx, v - cy);
+      if (d < 0.13) return '#fff2b0'; if (d < 0.22) return '#ffb840'; if (d < 0.3) return '#f4ecd8'; }
+    if (r < 0.16) return '#c8a040'; if (Math.abs(r - 0.5) < 0.05) return '#8a6a20'; return r > 0.76 ? '#5a4214' : null; },
+  mcpillar:function(u, v){ var r = Math.hypot(u, v); if (r > 0.92) return null; if (r > 0.8) return '#4a4656'; if (r > 0.62) return Math.sin(Math.atan2(v, u) * 12) > 0 ? '#b4b0c2' : '#8a8698';
+    return u + v < -0.3 ? '#d8d4e4' : '#aeaabc'; },
+  mcglobe:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; if (r > 0.76) return '#c8a040'; if (Math.abs(u + v * 0.3) < 0.04) return '#c8a040';
+    var l = Math.sin(u * 4.1 + Math.sin(v * 3.3) * 1.6) + Math.cos(v * 3.7 - u); return l > 0.9 ? '#8a9a4a' : u + v < -0.4 ? '#4a7aa0' : '#2e5a80'; },
+  mcjar:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; if (r < 0.26) return '#2a1810'; if (r < 0.36) return '#c8946a';
+    return r > 0.74 ? '#6a3e22' : u + v < -0.3 ? '#c8845a' : '#a8643e'; },
+  mcstone2:function(u, v){ var r = Math.hypot(u * 1.05, v) + Math.sin(Math.atan2(v, u) * 6) * 0.04; if (r > 0.9) return null; if (r > 0.78) return '#3a3846';
+    if (Math.sin(u * 8 + v * 5) > 0.88) return '#6a7a5a'; return u + v < -0.3 ? '#a8a4b4' : '#86829a'; },
+  mcpump:function(u, v){ var r = Math.hypot(u, v * 1.1); if (r > 0.86) return null; if (Math.hypot(u, v + 0.06) < 0.12) return '#3a5a1a';
+    if (Math.abs(Math.sin(Math.atan2(v, u) * 4)) < 0.12) return '#b8561a'; return r > 0.74 ? '#a84a14' : u + v < -0.3 ? '#f49a3a' : '#e07a20'; },
+  mcstone:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.97) return null; var row = Math.floor((v + 1) * 2.5), cx = ((u + 1) * 3 + (row % 2) * 0.5) % 1, cy = ((v + 1) * 2.5) % 1;
+    if (cx < 0.06 || cy < 0.1) return '#3a3646'; var g = Math.sin(u * 17 + row * 2.3) * 0.5 + 0.5; return g > 0.75 ? '#a8a4b6' : cy > 0.7 ? '#76728a' : '#8a8698'; },
+  mctower:function(u, v){ var au = Math.abs(u), av = Math.abs(v); if (au > 0.99 || av > 0.99) return null; var edge = au > 0.78 || av > 0.78;
+    if (edge){ var a = (u + v + 4) * 3; return (Math.floor(a) % 2) ? '#a8a4b6' : '#3a3646'; } if (au < 0.12 && av < 0.12) return '#c8a040'; return (Math.floor((u + 1) * 4) + Math.floor((v + 1) * 4)) % 2 ? '#6a6680' : '#5e5a72'; },
+  mcbooks:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.96) return null; if (Math.abs(v) > 0.8) return '#4a2e18'; var sp = Math.floor((u + 1) * 14), f = ((u + 1) * 14) % 1;
+    if (f < 0.12) return '#2a1a0e'; var c = ['#7a2a2a', '#2a4a6a', '#5a6a2a', '#8a6a2a', '#4a2a5a', '#6a3a1a'][sp % 6]; return Math.abs(v) < 0.08 && sp % 3 === 0 ? '#c8a040' : c; },
+  mcbookdoor:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.96) return null; if (Math.abs(v) > 0.78 || Math.abs(u) > 0.9) return '#c8a040'; var sp = Math.floor((u + 1) * 10), f = ((u + 1) * 10) % 1;
+    if (f < 0.14) return '#2a1a0e'; return ['#8a2a3a', '#2e5a7a', '#6a4a8a', '#7a5a2a'][sp % 4]; },
+  mctable:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.95) return null; if (Math.abs(u) > 0.92 || Math.abs(v) > 0.82) return '#2e1a0e';
+    for (var k = -2; k <= 2; k++) if (Math.hypot((u - k * 0.38) * 3, v * 1.2) < 0.32) return Math.hypot((u - k * 0.38) * 3, v * 1.2) < 0.14 ? '#ffe08a' : '#c8a040';
+    var g = Math.sin(u * 31 + v * 3) * 0.5 + 0.5; return g > 0.8 ? '#7a4a28' : '#5e3a1e'; },
+  mcrail:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.99) return null; var k = ((v + 1) * 5) % 1; return k < 0.14 ? '#3a2410' : Math.abs(u) < 0.3 ? '#9a7246' : '#7a5232'; },
+  mcknight:function(u, v){ var au = Math.abs(u), av = Math.abs(v); if (au > 0.98 || av > 0.9) return null; var hr = Math.hypot(u * 1.6, v * 1.1);
+    if (hr < 0.5){ if (Math.abs(v - 0.06) < 0.07 && au < 0.32) return '#14141c'; if (au < 0.1 && v < 0) return '#a8243a'; return u + v < -0.2 ? '#e8ecf4' : '#b4bac6'; }
+    if (au > 0.88) return Math.abs(v) < 0.5 ? '#c8a040' : null; return av > 0.68 ? '#3a3e4a' : (Math.floor((u + 1) * 5) % 2 ? '#8e94a2' : '#6a707e'); },
+  mcportcullis:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.95) return null; var a = ((u + 1) * 5) % 1, b = ((v + 1) * 2) % 1;
+    if (a < 0.26 || b < 0.3) return a < 0.1 || b < 0.1 ? '#5a5a66' : '#2a2a34'; return null; },
+  mccandle:function(u, v){ if (Math.abs(u) > 0.5 || Math.abs(v) > 0.85) return null; if (v < -0.4){ var d = Math.hypot(u * 2.2, v + 0.62); return d < 0.12 ? '#fff4c0' : d < 0.24 ? '#ffb840' : null; }
+    if (v < -0.34) return Math.abs(u) < 0.03 ? '#1a1410' : null; if (v > 0.66) return Math.abs(u) < 0.42 ? '#8a6a20' : null; return Math.abs(u) < 0.2 ? (u < -0.06 ? '#fff8ec' : '#e8dcc8') : null; },
+  mckey:function(u, v){ if (Math.abs(u) > 0.8 || Math.abs(v) > 0.4) return null; var d = Math.hypot(u + 0.5, v); if (d < 0.32) return d < 0.16 ? null : '#6a6676';
+    if (Math.abs(v) < 0.07 && u > -0.2 && u < 0.72) return '#8a8698'; if (u > 0.4 && u < 0.72 && v > 0 && v < 0.3 && ((u * 10) | 0) % 2) return '#8a8698'; return null; },
   ndquill:function(u, v){ var d = Math.abs(u - v * 0.6); if (v < -0.8 || v > 0.8) return null; if (d < 0.03 && v > 0.4) return '#3a2a18'; var w = 0.22 * (1 - Math.abs(v + 0.1) / 0.9); if (d > w || v > 0.45) return null; return d < 0.04 ? '#c8c0a8' : '#f4f0e4'; },
   btticket:function(u, v){ if (Math.abs(u) > 0.9 || Math.abs(v) > 0.5) return null; if (Math.hypot(Math.abs(u) - 0.9, v) < 0.16) return null; if (Math.abs(u - 0.4) < 0.025 && Math.floor(v * 10) % 2) return '#8a1e1a'; return Math.abs(v) > 0.38 ? '#8a1e1a' : '#e85a4a'; },
   // ---- the Pacific Forest, old growth and the loggers' ruins of the Cryptid Expedition, drawn plain and bold: a cedar stump, its
@@ -7068,6 +7112,8 @@ var CSS = '\
 .wm-hallows b{font-family:Cinzel,serif;font-weight:700;font-size:29px;letter-spacing:.08em;background-image:linear-gradient(180deg,#ffe0b0,#ff8a1f 55%,#c2410c);-webkit-text-stroke:.7px #1a0e2c;filter:drop-shadow(0 2px 0 #1a0e2c) drop-shadow(0 0 8px rgba(160,90,255,.75)) drop-shadow(0 0 16px rgba(120,60,220,.45))}\
 .wm-harvest i{background:#4a2a10;color:#ffd27a;border:1px solid #e0912a}\
 .wm-harvest b{font-family:Cinzel,serif;font-weight:700;font-size:29px;letter-spacing:.05em;background-image:linear-gradient(180deg,#fff0c2,#f4a63a 50%,#b85a16);-webkit-text-stroke:.7px #3a1d08;filter:drop-shadow(0 2px 0 #6b3a14) drop-shadow(0 2px 0 #3a1d08) drop-shadow(0 4px 4px rgba(0,0,0,.45))}\
+.wm-monster i{background:#2a2448;color:#e0d4ff;border:1px solid #b89cff}\
+.wm-monster b{font-family:Cinzel,serif;font-weight:700;font-size:27px;letter-spacing:.07em;background-image:linear-gradient(180deg,#ffffff,#d8ccf4 45%,#8a7ab8);-webkit-text-stroke:.7px #0e0c18;filter:drop-shadow(0 2px 0 #3a3646) drop-shadow(0 3px 0 #0e0c18) drop-shadow(0 0 10px rgba(184,156,255,.7))}\
 .pp-path{position:absolute;left:0;top:0;pointer-events:none}.pp-path path{fill:none;stroke:rgba(255,255,255,.75);stroke-width:5;stroke-dasharray:2 11;stroke-linecap:round}\
 .pp-lv{position:absolute;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;border:3px solid #10241a;background:#F1D04A;color:#10241a;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(0,0,0,.35);padding:0}\
 .pp-lv b{font-family:var(--display,inherit);font-size:19px;line-height:1}.pp-lv span{font-size:10px;font-weight:900;line-height:1;opacity:.8}\
@@ -7204,6 +7250,8 @@ var CSS = '\
 .pp-lv.wt-haunted.lock{background:linear-gradient(180deg,#3b3152,#241c36);border-color:#5d5278;color:#9d93b8}.pp-lv.wt-haunted.cur{background:radial-gradient(circle at 50% 40%,#ffd08a,#ff8a1a);border-color:#2a1606;color:#2a1606}.pp-lv.wt-haunted.cur:after{border-radius:50% 50% 14px 14px/62% 62% 14px 14px}\
 .pp-lv.wt-harvest{background:radial-gradient(ellipse 22% 50% at 50% 50%,rgba(0,0,0,.12),transparent 70%),radial-gradient(ellipse 50% 50% at 22% 50%,rgba(0,0,0,.1),transparent 70%),radial-gradient(ellipse 50% 50% at 78% 50%,rgba(0,0,0,.1),transparent 70%),radial-gradient(circle at 40% 32%,#ffc46a,#ef8a1e 60%,#b8560c);border-color:#5a2e0c;color:#3a1c04}\
 .pp-lv.wt-harvest.lock{background:repeating-linear-gradient(170deg,#c8a457 0 3px,#a8843c 3px 5px);border-color:#5a4318;color:#3a2a08}.pp-lv.wt-harvest.cur{background:radial-gradient(circle at 40% 35%,#e0703a,#8b2e10);border-color:#ffe2b0;color:#fff}\
+.pp-lv.wt-monster{border-radius:5px 5px 9px 9px;background:linear-gradient(90deg,transparent 0 18%,#0e0c18 18% 30%,transparent 30% 44%,#0e0c18 44% 56%,transparent 56% 70%,#0e0c18 70% 82%,transparent 82%) top/100% 9px no-repeat,repeating-linear-gradient(0deg,#5e5a72 0 1px,transparent 1px 10px),linear-gradient(180deg,#b4b0c4,#7a768e);border-color:#1e1c2c;color:#0e0c18}\
+.pp-lv.wt-monster.lock{background:linear-gradient(90deg,transparent 0 18%,#0e0c18 18% 30%,transparent 30% 44%,#0e0c18 44% 56%,transparent 56% 70%,#0e0c18 70% 82%,transparent 82%) top/100% 9px no-repeat,linear-gradient(180deg,#3a3652,#201e32);border-color:#5a5478;color:#a8a0c8}.pp-lv.wt-monster.cur{background:linear-gradient(90deg,transparent 0 18%,#0e0c18 18% 30%,transparent 30% 44%,#0e0c18 44% 56%,transparent 56% 70%,#0e0c18 70% 82%,transparent 82%) top/100% 9px no-repeat,radial-gradient(ellipse 30% 40% at 50% 58%,#fff2b0,#ffb840 60%,#8a6ab8);border-color:#e0d4ff;color:#0e0c18;box-shadow:0 0 14px rgba(184,156,255,.9),0 4px 0 rgba(0,0,0,.35)}.pp-lv.wt-monster.cur:after{border-radius:8px 8px 12px 12px}\
 .pp-lv.ace{background:radial-gradient(circle at 38% 32%,#fff6b0,#f1c232 50%,#c58b0e)!important;border-color:#6b4700!important;color:#3a2600!important}\
 .pp-hub{--wa:#f08a24;--wi:#2a1606;--wb1:#3a1f63;--wb2:#1c1438;--wt:rgba(10,18,26,.88)}\
 .pp-hub[data-wt=clubhouse]{--wa:#F1D04A;--wi:#14301c;--wb1:#24653d;--wb2:#123a22;--wt:rgba(14,40,24,.9)}\
@@ -7239,6 +7287,7 @@ var CSS = '\
 .pp-hub[data-wt=iceage]{--wa:#8fd0e0;--wi:#2a241c;--wb1:#5a4630;--wb2:#2a241c;--wt:rgba(42,36,28,.92)}\
 .pp-hub[data-wt=candy]{--wa:#ff5fa2;--wi:#3a1c0c;--wb1:#7a4422;--wb2:#3a1c0c;--wt:rgba(58,28,12,.92)}\
 .pp-hub[data-wt=haunted]{--wa:#ff9a3a;--wi:#2a1606;--wb1:#3a1f63;--wb2:#1c1438;--wt:rgba(28,20,44,.92)}\
+.pp-hub[data-wt=monster]{--wa:#c8b4ff;--wi:#14122a;--wb1:#3a3466;--wb2:#16142c;--wt:rgba(22,20,40,.92)}\
 .pp-hub[data-wt=harvest]{--wa:#f2a93b;--wi:#2b1606;--wb1:#7a4a1e;--wb2:#3a220c;--wt:rgba(52,32,12,.92)}\
 .pp-hub[data-wt] .pp-daily{background:linear-gradient(135deg,var(--wb1),var(--wb2) 62%)!important;box-shadow:0 0 0 2px var(--wa),0 10px 26px rgba(0,0,0,.45);transition:background .4s,box-shadow .4s}\
 .pp-hub[data-wt] .pp-daily .pp-dside .g{background:var(--wa);color:var(--wi)}.pp-hub[data-wt] .pp-dk b{color:var(--wa)}.pp-hub[data-wt] .pp-dside .rw{color:var(--wa)}\
@@ -7341,6 +7390,7 @@ var CSS = '\
 .pp-door[data-door=lookingglass] .pp-dl,.pp-door[data-door=lookingglass] .pp-dr{background:radial-gradient(ellipse at 40% 30%,rgba(255,255,255,.7) 0 14%,transparent 38%),linear-gradient(135deg,rgba(255,255,255,.35) 0 8%,transparent 8% 46%,rgba(255,255,255,.25) 46% 52%,transparent 52%),linear-gradient(180deg,#e8f0ff,#98a8c8);border-color:#c8a040}\
 .pp-door[data-door=london] .pp-dl,.pp-door[data-door=london] .pp-dr{background:radial-gradient(circle at 72% 50%,#d8b048 0 4%,transparent 5%),linear-gradient(180deg,transparent 0 30%,rgba(255,255,255,.07) 30% 31%,transparent 31% 62%,rgba(255,255,255,.07) 62% 63%,transparent 63%),repeating-linear-gradient(90deg,rgba(0,0,0,.2) 0 2px,transparent 2px 24px),linear-gradient(180deg,#1e2622,#0c1210);border-color:#c8a040}\
 .pp-door[data-door=treasure] .pp-dl,.pp-door[data-door=treasure] .pp-dr{background:radial-gradient(circle at 72% 50%,#e8b84a 0 4%,transparent 5%),repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 3px,transparent 3px 16px),linear-gradient(180deg,#8a6236,#4a3018);border-color:#c8302a}\
+.pp-door[data-door=monster] .pp-dl,.pp-door[data-door=monster] .pp-dr{background:repeating-linear-gradient(90deg,rgba(0,0,0,.35) 0 3px,transparent 3px 14px),repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 3px,transparent 3px 22px),linear-gradient(180deg,#6a6680,#2e2a3e);border-color:#b89cff}\
 .pp-door[data-door=notredame] .pp-dl,.pp-door[data-door=notredame] .pp-dr{background:radial-gradient(circle at 72% 50%,#2a2018 0 5%,transparent 6%),repeating-linear-gradient(0deg,transparent 0 22px,rgba(20,14,8,.55) 22px 26px),repeating-linear-gradient(90deg,rgba(0,0,0,.25) 0 2px,transparent 2px 20px),linear-gradient(180deg,#6a4a2a,#3a2614);border-color:#a8742e}\
 .pp-door[data-door=bigtop] .pp-dl,.pp-door[data-door=bigtop] .pp-dr{background:radial-gradient(circle at 72% 50%,#f4c840 0 4%,transparent 5%),repeating-linear-gradient(90deg,#c8302a 0 18px,#f4ecd8 18px 36px);border-color:#f4c840}\
 .pp-door[data-door=pacific] .pp-dl,.pp-door[data-door=pacific] .pp-dr{background:radial-gradient(circle at 72% 50%,#2a2016 0 4%,transparent 5%),repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 3px,transparent 3px 22px),linear-gradient(180deg,#9a6a42,#5a3a22);border-color:#d8582a}\
@@ -7573,8 +7623,12 @@ var PAY = {
     sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball', 'Saturn Ball', 'Prism Ball', 'Jelly Ball', 'Emerald Spectacles', 'Fleece Ball', 'Bronze Helm', 'Asphodel Crown', 'Winged Cap', 'Hatter’s Top Hat', 'White Knight’s Helm', 'Giant’s Thimble Cap', 'Huck’s Straw Hat', 'Highland Tam', 'Glacier Glasses', 'Caulk Boots', 'Ringmaster’s Topper', 'Baker Street Deerstalker', 'Bell-Ringer’s Hood', 'Goatskin Cap'],
     worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles', 'Crystal Specs', 'Wobble Boots', 'Silver Shoes', 'Shepherd Sandals', 'Winged Sandals', 'Pomegranate Ball', 'Ambrosia Ball', 'Cheshire Ball', 'Humpty Ball', 'Magic Bean Ball', 'Riverboat Ball', 'Deep Loch Ball', 'Yeti Print Ball', 'Tree Ring Ball', 'Big Top Ball', 'Gaslight Ball', 'Bourdon Ball', 'Piece of Eight Ball'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
-    sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
-    worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
+    sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)', 'Full Moon Ball (Members only)'],
+    worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)', 'Invisible Man’s Goggles (Members only)'], finish:'Members Champion Jacket (Members only)',
+    /* THE CHAMPION'S JACKET STAYS WHERE IT WAS WON: it was the Members Tour's finish when the tour ended at Harvest Moon, so it is
+       still paid for clearing Harvest Moon (finishW, the world it is paid in) now that Monster Castle comes after it. A player
+       who had cleared Harvest Moon keeps it, and nobody has a world more to play for it. */
+    finishW:1,
     /* TRICK OR TREAT, the Hallows Night bonus: the first time a Hallows hole is beaten UNDER par it hands out a
        treat (coins on top of the hole's own), and all nine fill the candy bag for a reward nobody else has.
        Under par and not just par, so the treat is for playing a hole well rather than for getting round it. */
@@ -7615,6 +7669,7 @@ var REWARD_ITEM = {
   'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
   'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
   'Hallows Crown':'hw:pphallowscrown', 'Harvest Moon Putter':'pu:ppharvest', 'Phantom Mask':'ew:ppphantommask', 'Golden Leaf Ball':'bl:ppgoldleaf',
+  'Full Moon Ball':'bl:ppfullmoon', 'Invisible Man’s Goggles':'ew:ppinvisible',
   'Members Champion Jacket':'tp:ppchampjacket', 'Hallows Lantern Ball':'bl:pphallowslantern', 'Diamond Putter':'pu:ppdiamond' };
 var REWARD_OLD = { 'Clubhouse Polo':'Clubhouse Cleats', 'Sprinkle Trail':'Sprinkle Ball', 'High Score Celebration':'Pixel Shades',
   'Treasure Trail':'Pirate Eyepatch', 'Eruption Celebration':'Lava Rock Cleats', 'Rainbow Trail':'Aviator Goggles', 'Footprint Trail':'Dino Claw Cleats',
@@ -7627,10 +7682,12 @@ var REWARD_SRC = null;
 function rewardSrc(){ if (REWARD_SRC) return REWARD_SRC; var o = {};
   ['main', 'members'].forEach(function(tid){ var PY = PAY[tid], TR = TOURS[tid];
     [PY.sigReward || [], PY.worldReward || []].forEach(function(L){ L.forEach(function(r, w){ o[rewardName(r)] = { tid:tid, w:w }; }); });
-    if (PY.finish) o[rewardName(PY.finish)] = { tid:tid, w:TR.worlds.length - 1, fin:1 };
+    if (PY.finish) o[rewardName(PY.finish)] = { tid:tid, w:finWorld(TR), fin:1 };
     if (PY.treat) o[rewardName(PY.treat.reward)] = { tid:tid, w:PY.treat.w, treat:1 }; });
   o[rewardName(PAY.secret.allReward)] = { secret:1 };
   return (REWARD_SRC = o); }
+// the world whose clearing pays a tour's finish (PAY.finishW, else its last world)
+function finWorld(TR){ var PY = PAY[TR.id] || {}; return PY.finishW != null ? PY.finishW : TR.worlds.length - 1; }
 function sigHole(TR, w){ var K = TR.per || PER; for (var n = Math.min(TR.levels.length, w * K + K); n > w * K; n--) if (TR.levels[n - 1].sig) return n; return 0; }
 // does this record hold the reward: the name is in its rewards, or what pays it has happened (a record from before
 // the reward was paid, or from before it was an item, owns it all the same)
@@ -7659,7 +7716,7 @@ function rewardHint(name, st){ var s = rewardSrc()[name]; if (!s) return '';
   if (s.secret) return 'Beat ' + PAY.secret.ten + ' secret holes in Putt Putt.';
   var TR = TOURS[s.tid], W = TR.worlds[s.w], K = TR.per || PER;
   if (s.treat) return 'Beat all ' + K + ' ' + W.name + ' holes under par in Putt Putt.';
-  if (s.fin) return 'Finish the Members Tour in Putt Putt.';
+  if (s.fin) return 'Clear ' + W.name + ' on the Members Tour in Putt Putt.';
   if (TR.members) return 'Clear ' + W.name + ' on the Members Tour in Putt Putt.';
   var seen = false; try{ seen = revealed(TR, s.w, st || { tours:{}, rv:[] }); }catch(e){}
   return seen ? 'Clear ' + W.name + ' in Putt Putt. Beat its signature hole, ' + TR.names[sigHole(TR, s.w) - 1] + '.' : 'Clear World ' + (s.w + 1) + ' in Putt Putt.'; }
@@ -8075,10 +8132,10 @@ function bagSheet(){
    always says the Putt Putt Tour is theirs to play meanwhile, with a button straight to it. o.n is the hole they
    walked up to, and o.trail says they were standing on its trail, so Keep looking walks them out again. */
 function membersSheet(o){
-  o = o || {}; var TR = TOURS.members, Pm = PAY.members, tot = (TR.levels.length - 2) * Pm.hole + 2 * Pm.sig + 2 * Pm.world + TR.per * Pm.treat.each + Pm.treat.all;
-  var n = o.n || 1, at = o.n ? 'Hole ' + n + ' · ' + levelName(n, 'members') : 'Hallows Night & Harvest Moon';
+  o = o || {}; var TR = TOURS.members, Pm = PAY.members, nw = TR.worlds.length, tot = (TR.levels.length - nw) * Pm.hole + nw * (Pm.sig + Pm.world) + TR.per * Pm.treat.each + Pm.treat.all;
+  var n = o.n || 1, at = o.n ? 'Hole ' + n + ' · ' + levelName(n, 'members') : nw + ' worlds';
   var sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ MEMBERS TOUR · ' + esc(at.toUpperCase()) + '</div><div class="t">This hole is for Tour Pass members</div>\
-    <div class="m">Eighteen holes of the season you won’t find anywhere else: a crypt door on a switch, a coffin to roll into, a cauldron, a haunted mill. Look around all you like. Playing them takes the pass.</div>\
+    <div class="m">' + TR.levels.length + ' holes you won’t find anywhere else: a crypt door on a switch, a haunted mill, a castle drawbridge. Look around all you like. Playing them takes the pass.</div>\
     <div class="pp-memrw"><b>' + tot.toLocaleString() + ' coins</b> to win, a <b>trick or treat bonus</b> on every Hallows hole you beat under par, and rewards only members can earn:<br>' + Pm.sigReward.concat(Pm.worldReward, [Pm.treat.reward]).map(function(r){ return esc(r.replace(' (Members only)', '')); }).join(' · ') + ' · ' + esc(Pm.finish.replace(' (Members only)', '')) + '</div>\
     <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>Opens the Members Tour and doubles your lives: ' + LIVES_PASS + '</small></button>\
     <div class="m pp-memfree">No pass? The Putt Putt Tour is free to play: ' + TOURS.main.levels.length + ' holes across ' + TOURS.main.worlds.length + ' worlds.</div>\
@@ -8414,7 +8471,7 @@ function spaceTrip(theme, label, name, host, cb){
     if (t > DUR) return finish(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 }
-var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', crystara:'Crystal Gate', jellara:'Jelly Gate', oz:'Emerald Gate', cyclops:'Cave Stone', medusa:'Temple Gate', underworld:'Gate of Hades', olympus:'Gate of the Hours', wonderland:'The Little Door', lookingglass:'The Looking-Glass', beanstalk:'The Giant’s Door', mississippi:'The Fence Gate', lochness:'The Keep Gate', himalayas:'The Snow Gate', pacific:'The Ranger Gate', bigtop:'The Ring Curtain', london:'The Door of 221B', notredame:'The Red Door', treasure:'The Stockade Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', crystara:'Crystal Gate', jellara:'Jelly Gate', oz:'Emerald Gate', cyclops:'Cave Stone', medusa:'Temple Gate', underworld:'Gate of Hades', olympus:'Gate of the Hours', wonderland:'The Little Door', lookingglass:'The Looking-Glass', beanstalk:'The Giant’s Door', mississippi:'The Fence Gate', lochness:'The Keep Gate', himalayas:'The Snow Gate', pacific:'The Ranger Gate', bigtop:'The Ring Curtain', london:'The Door of 221B', notredame:'The Red Door', treasure:'The Stockade Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', monster:'The Castle Gate', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
 /* THE WALK IS A PLACE (golf/putt/trail.js). Winning a hole and pressing Next opens the trail to the next
@@ -8850,7 +8907,14 @@ var GREETERS = {
   harvest:{ name:'Farmer Hayes', role:'Farmer', look:{ skin:'tan', polo:'gold', hat:'tan', pants:'navy', hair:'auburn', hairStyle:'short', cap:true, hatStyle:'straw', gender:'male' },
     hi:['Howdy, and welcome to Harvest Moon!', 'I’m Farmer Hayes. This is my field.'],
     tip:['Soft ground in the furrows. Give it a little more.', 'Finish the season and there’s something special waiting.'],
-    bye:'Better get going before dark!' }
+    bye:'Better get going before dark!' },
+  /* Monster Castle's host: Ichabod Crane as Washington Irving wrote him in 1820 and F. O. C. Darley drew him, the lank schoolmaster
+     with the huge ears, the black coat, the tall hat and a book under his arm (trail.js FOLK3D ichabod), the castle's nervous
+     schoolmaster. Never the 1949 cartoon's proportions. */
+  monster:{ name:'Ichabod Crane', role:'The Schoolmaster', folk:'ichabod', look:{ skin:'light', polo:'black', hat:'black', pants:'black', hair:'brown', hairStyle:'short', cap:true, hatStyle:'tophat', top:'blazer', gender:'male' },
+    hi:['Oh! You gave me a fright. Welcome to Monster Castle.', 'I am Ichabod Crane. I teach the castle school. Nobody comes to class.'],
+    tip:['Every hole here has one trick of its own. Read it and it is kind to you.', 'The monsters are friendly. Mostly. Say hello as you pass.', 'If you hear hooves, do not wait for me.'],
+    bye:'I will be right behind you. Well. Nearby.' }
 };
 // the pages a greeter says on the first trail of world w: who they are, how the world plays, what it pays, the hole ahead
 function greetSpec(tid, w, to){
@@ -8870,7 +8934,18 @@ function greetSpec(tid, w, to){
    drawn from the book and Denslow's 1900 plates only, never the 1939 film), say what they tell you as you walk up: who
    they are, then a nudge about the hole ahead, the way the local's holeTips do. A nudge, never the line to play.
    Keyed by the world and the walk's leg (the hole it leads to, 1 to 18). */
-var FOLK = { oz:{
+/* THE FOLK OF MONSTER CASTLE (the Members Tour), as for Oz: the monsters of the old public domain books, each in place of a walk's
+   local on the walk to the hole that is theirs (trail.js FOLK3D, each drawn from its book and never a film's make up). Ichabod Crane
+   greets on the first walk. Spooky fun, never frightening. A nudge, never the line to play. */
+var FOLK_MONSTER = {
+  2:{ id:'zombie', say:['Mmm. I am the Zombie. I tend the castle garden. Even asleep.', 'The gate goes up. The gate comes down. Slow and steady gets through.'] },
+  3:{ id:'invisible', say:['You cannot see me. I am the Invisible Man. I am reading.', 'One book on the floor is loose. Roll over it and a shelf swings open.'] },
+  4:{ id:'hyde', say:['Hyde. Mr. Hyde. The coat is a little big. It is borrowed.', 'That suit of armour marches. Let him pass first.'] },
+  5:{ id:'vampire', say:['Good evening. I am the Vampire. I only come out at night.', 'My floor is polished like glass. A soft putt goes a long way.'] },
+  6:{ id:'werewolf', say:['Awoo! Sorry. I am the Werewolf. The full moon does that.', 'The hollow in my court pulls a slow ball down. Go round it, or go firm.'] },
+  7:{ id:'golem', say:['I am the Golem. I keep this castle safe.', 'My clay holds a ball where it stops. Keep to the swept lane.'] },
+  8:{ id:'horseman', say:['The Headless Horseman tips his pumpkin to you.', 'He points at the bridge. It has a rail on each side.'] } };
+var FOLK = { monster:FOLK_MONSTER, oz:{
   4:{ id:'dorothy', say:['I am Dorothy, from Kansas. A cyclone brought me here too.', 'The twister on the corner carries you along the top. Look where it sets you down.'] },
   5:{ id:'scarecrow', say:['I am the Scarecrow. My head is stuffed with straw.', 'Even I know to time my pole. And the twister by my field sends you back.'] },
   9:{ id:'lion', say:['I am the Cowardly Lion. That ditch frightens me.', 'I leap it anyway. Hit the ramp hard. Short is in the poppies.'] },
@@ -9124,7 +9199,7 @@ function trailSpec(tid, from, landed){
   var leg = (to - 1) % K + 1, st = !cross && tid === 'main' ? stopOf(th, leg) : '', kitAs = st ? th + '~' + st : null;   // the walk goes where its holes go (land.js, STOPS)
   // a world with gyms (gyms.js) carries them on its two trails and none of the small puzzles on the rest
   var gd = !cross && tid === 'main' ? gymAt(th, leg) : null;
-  var folk = !cross && !landed && tid === 'main' && FOLK[th] ? FOLK[th][leg] || null : null;
+  var folk = !cross && !landed && (tid === 'main' || tid === 'members') && FOLK[th] ? FOLK[th][leg] || null : null;
   return { folk:folk, gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:!landed && tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, landed:landed, key:tid + ':' + to + (landed ? ':landed' : ''), tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to + (landed ? ':landed' : '')), theme:th, theme0:th0, cross:cross, space:cross && tid === 'main' && SPACE_TRIP[th] ? SPACE_TRIP[th] : null, vehicle:tid === 'main' ? SPACE_TRIP[th] || null : null, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:landed ? {} : trailLoot(tid, to), holeTo:to <= TR.levels.length && !(cross && tid === 'main' && SPACE_TRIP[th]) ? courseFoot(to, tid) : null, holeFrom:from >= 1 && !landed ? courseFoot(from, tid) : null, greet:from % K === 0 && (tid === 'main' && SPACE_TRIP[th] ? landed : !landed) ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
@@ -9611,7 +9686,7 @@ function tourOut(holed){
       lines.push('Trick or treat! +' + TT.each + ' bonus coins · ' + tk + ' of ' + K + ' treats');
       if (tk >= K && st.rewards.indexOf(TT.reward) < 0){ got += TT.all; grant(st, TT.reward); lines.push('The candy bag is full: +' + TT.all + ' coins and the ' + TT.reward.replace(' (Members only)', '')); } }
     var w = Math.floor((n - 1) / K), worldDone = TR.levels[n - 1].sig && !tp.wpaid[w];
-    if (worldDone){ tp.wpaid[w] = 1; grant(st, PY.sigReward[w]); grant(st, PY.worldReward[w]); if (PY.finish && n === N) grant(st, PY.finish); }
+    if (worldDone){ tp.wpaid[w] = 1; grant(st, PY.sigReward[w]); grant(st, PY.worldReward[w]); if (PY.finish && w === finWorld(TR)) grant(st, PY.finish); }
     psave(st); if (got || worldDone) coins(got + (worldDone ? PY.world : 0), TR.name + ' ' + wl(n, tid));
     if (!TR.lab){ if (s < par) hq('ppHolesWon', 1); hq('ppStars', stars - had); if (s === 1 && ac) hq('ppAces', 1);
       try{ S.host.questDaily && S.host.questDaily('tour'); }catch(e){} }   // the daily quest: clear a Putt Putt Tour hole
@@ -9646,7 +9721,7 @@ function worldComplete(n, s, par, got, tid, lines){
   var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], last = n === TR.levels.length;
   var tp = pload().tours[TR.id], have = worldStars(tp, TR, w), total = starsThrough(tp, TR, w), gate = worldGate(TR, w), nx = TR.worlds[w + 1], shut = nx && !opened(TR, tp, n + 1);
   return popup('<div class="k">' + (TR.members ? '★ ' + esc(Wd.name.toUpperCase()) + ' COMPLETE' : 'WORLD ' + (w + 1) + ' COMPLETE') + '</div><div class="t">' + esc(Wd.name) + '</div><div class="s">Signature hole beaten in ' + s + ' (par ' + par + ').</div>\
-    <div class="pp-reward">New · ' + esc(PY.sigReward[w]) + '<br>New · ' + esc(PY.worldReward[w]) + (PY.finish && last ? '<br>New · ' + esc(PY.finish) : '') + '</div>\
+    <div class="pp-reward">New · ' + esc(PY.sigReward[w]) + '<br>New · ' + esc(PY.worldReward[w]) + (PY.finish && w === finWorld(TR) ? '<br>New · ' + esc(PY.finish) : '') + '</div>\
     <div class="pp-coins">+' + got + ' coins · +' + PY.world.toLocaleString() + ' ' + (TR.members ? 'members' : 'world') + ' bonus</div>' + (lines || []).map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
     '<div class="pp-stars">' + have + ' of ' + worldMax(TR, w) + ' ★</div>' +
     (shut ? '<div class="s">' + esc(wLabel(TR, w + 1)) + ' opens at ' + gate + ' total stars. You have ' + total + '. Replay holes to earn ' + (gate - total) + ' more.</div>' :
