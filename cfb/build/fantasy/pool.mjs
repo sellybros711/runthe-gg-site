@@ -30,8 +30,10 @@
  *             this repo has one (cfb/data/cfb_player_seasons.json, the college game's own
  *             data, keyed on the same ESPN id), and otherwise 80% of what the draftable
  *             men at his position are averaging (the NFL mode's rule, `PROJ_LEVEL`).
- *   plays     the share of his team's games he has played in. A man who has missed games
- *             is priced as a man who misses games.
+ *   (no availability term, the owner's call of 2026-11-12: "a players ranking should be
+ *             based off of their projected score/past scores." A man who missed games is
+ *             priced on the games he played, and the MISSED chip tells the reader. The
+ *             week 11 board had charged a returning starter for every game he sat.)
  *   matchup   what the betting market expects his team to score this week, against what
  *             his team has averaged, to the power 0.6, held between 0.80 and 1.25.
  *
@@ -144,13 +146,12 @@ export function positionLevels(men) {
 export function projectMan(p, levels) {
   const prior = p.prior != null ? p.prior : PROJ_LEVEL * (levels.get(p.position) || 0);
   const rate = (p.games * p.half_ppg + SHRINK_K * prior) / (p.games + SHRINK_K);
-  const plays = p.played_of > 0 ? Math.min(1, Math.max(0, p.games / p.played_of)) : 1;
   let matchup = 1;
   if (p.implied != null && p.team_avg > 0) {
     matchup = Math.min(MATCHUP_HI, Math.max(MATCHUP_LO,
       Math.pow(p.implied / p.team_avg, MATCHUP_EXP)));
   }
-  return { proj: round(Math.max(0, rate * plays * matchup), 1), matchup: round(matchup, 3) };
+  return { proj: round(Math.max(0, rate * matchup), 1), matchup: round(matchup, 3) };
 }
 
 /* ─── the price ───────────────────────────────────────────────────────────────────── */
@@ -258,8 +259,8 @@ export function buildMen(slate, rosters, todate, priors, roles = null) {
  *
  *   1. A QUARTERBACK WHO IS NOT HIS TEAM'S STARTER IS NOT ON THE BOARD (`roles.mjs` says
  *      who starts, and what the box scores cannot see).
- *   2. A STARTER IS PRICED ON HIS STARTS: the games he led his team's passing, the points he
- *      scored in them, and his availability read as full. Relief snaps in a blowout are what
+ *   2. A STARTER IS PRICED ON HIS STARTS: the games he led his team's passing and the points
+ *      he scored in them. Nobody is discounted for games missed (projectMan). Relief snaps in a blowout are what
  *      made a new starter cheap. Shrunk toward his prior exactly like every thin sample. The
  *      card keeps what he has really done.
  *   3. EVERY MAN IS ON HIS ROSTER TEAM already, because the board is read off the rosters.
@@ -283,8 +284,8 @@ export function applyRoles(men, roles) {
    fields in and they are swapped back before the row is written. */
 export function asPriced(m) {
   if (!m.starts) return;
-  m.disp = { games: m.games, half_ppg: m.half_ppg, played_of: m.played_of };
-  m.games = m.starts; m.half_ppg = m.start_ppg; m.played_of = m.starts;
+  m.disp = { games: m.games, half_ppg: m.half_ppg };
+  m.games = m.starts; m.half_ppg = m.start_ppg;
 }
 export function asShown(m) {
   if (!m.disp) return;

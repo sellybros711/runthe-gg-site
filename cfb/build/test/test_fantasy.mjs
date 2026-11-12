@@ -241,8 +241,10 @@ let POOL;
     Math.sign(projectMan(withPrior, levels).proj - projectMan(same, levels).proj)
       === Math.sign(30 - PROJ_LEVEL * levels.get(withPrior.position)));
   const missed = men.find((m) => m.missed_last);
-  const full = { ...missed, games: missed.played_of };
-  ok('missing games costs projection', projectMan(missed, levels).proj < projectMan(full, levels).proj);
+  const full = { ...missed, played_of: missed.games };
+  /* The owner, 2026-11-12: a man is priced on the games he played. The chip says he missed. */
+  ok('missing games does not cost projection',
+    projectMan(missed, levels).proj === projectMan(full, levels).proj);
   const p = pricePool(men);
   ok('prices run $3M to $48M', Math.min(...men.map((m) => m.price_musd)) >= 3
     && Math.max(...men.map((m) => m.price_musd)) === 48);
@@ -272,6 +274,7 @@ section('3b. the board reads roles: only starting quarterbacks');
     NU: [[['chiles', 270]], [['chiles', 220]], [['chiles', 210]], [['chiles', 280]], [['marchiol', 181]]],
     KU: [[['marshall', 330]], [['marshall', 150]], [['marshall', 210]], [['ballard', 285]], [['marshall', 210]]],
     OSU: [[['sayin', 320]], [['sayin', 240]], [['sayin', 230]], [['fahey', 260]], [['fahey', 360]]],
+    FLA: [[['philo', 275]], [['philo', 240]], [['philo', 200]], [['jones', 155]], [['jones', 172], ['philo', 26]]],
     UGA: [[['stockton', 295]], [['stockton', 250]], [['stockton', 270], ['puglisi', 55]], [['stockton', 100]], [['stockton', 186]]],
   };
   for (let w = 1; w <= 5; w++) {
@@ -294,18 +297,21 @@ section('3b. the board reads roles: only starting quarterbacks');
     starts('NU') === 'chiles,marchiol', starts('NU'));
   ok('Kansas: the man who filled in for one game is a backup again', starts('KU') === 'marshall',
     starts('KU'));
-  ok('Ohio State: two missed games and the old starter is not the starter',
-    starts('OSU') === 'fahey', starts('OSU'));
+  ok('Ohio State: a regular absent two games still starts, beside the man in his place',
+    starts('OSU') === 'fahey,sayin', starts('OSU'));
+  ok('Florida: a regular who played behind the new man was benched', starts('FLA') === 'jones',
+    starts('FLA'));
   ok('a starter\'s starts are the games he led', roles.starts.get('fahey').n === 2
+    && roles.starts.get('sayin').n === 3
     && roles.starts.get('hoover').n === 4 && Math.abs(roles.starts.get('fahey').pts - 62) < 1e-9);
   ok('the store without the week just played says nothing', !quarterbacks(store, 7).ready);
   ok('nor in week 1', !quarterbacks(store, 1).ready);
   const q = (id, team_id) => ({ player_id: id, position: 'QB', team_id });
-  const board = [q('sayin', 'OSU'), q('fahey', 'OSU'), q('ballard', 'KU'), q('marshall', 'KU'),
+  const board = [q('sayin', 'OSU'), q('fahey', 'OSU'), q('philo', 'FLA'), q('ballard', 'KU'), q('marshall', 'KU'),
     q('puglisi', 'UGA'), q('elsewhere', 'NOSTORE'), { player_id: 'rb', position: 'RB', team_id: 'OSU' }];
   const b = backupQBs(roles, board);
-  ok('the backups come off', b.has('sayin') && b.has('ballard') && b.has('puglisi'), [...b].join(','));
-  ok('  and the starters stay', !b.has('fahey') && !b.has('marshall'));
+  ok('the backups come off', b.has('philo') && b.has('ballard') && b.has('puglisi'), [...b].join(','));
+  ok('  and the starters stay', !b.has('fahey') && !b.has('sayin') && !b.has('marshall'));
   ok('a team the store cannot speak for loses nobody', !b.has('elsewhere'));
   ok('only quarterbacks', !b.has('rb'));
   ok('a store that is not ready takes nobody off', backupQBs(quarterbacks(store, 7), board).size === 0);
@@ -316,19 +322,20 @@ section('3b. the board reads roles: only starting quarterbacks');
     home: { id: 'UGA', abbr: 'UGA' }, away: { id: 'OSU', abbr: 'OSU' } }];
   const rosters = new Map([
     ['UGA', new Map([['puglisi', { name: 'Ryan Puglisi', pos: 'QB' }]])],
-    ['OSU', new Map([['sayin', { name: 'Julian Sayin', pos: 'QB' }], ['fahey', { name: 'Luke Fahey', pos: 'WR' }]])],
+    ['OSU', new Map([['backup', { name: 'A Backup', pos: 'QB' }], ['fahey', { name: 'Luke Fahey', pos: 'WR' }]])],
   ]);
   const todate = seasonToDate(store, 6, STAT_KEYS);
   const built = buildMen(slate, rosters, todate, new Map(), roles);
   const ids = built.men.map((m) => m.player_id);
-  ok('a starter missing from the roster is added', ids.includes('stockton') && built.dropped.added === 1);
+  ok('a starter missing from the roster is added', ids.includes('stockton') && ids.includes('sayin')
+    && built.dropped.added === 2, String(built.dropped.added));
   ok('  as a quarterback on his own team', built.men.find((m) => m.player_id === 'stockton').position === 'QB'
     && built.men.find((m) => m.player_id === 'stockton').team === 'UGA');
   ok('a man the roster lists at another position is left as it says',
     built.men.find((m) => m.player_id === 'fahey').position === 'WR');
   ok('played_of is never below the games he played', built.men.every((m) => m.played_of >= m.games));
   const kept = applyRoles(built.men, roles);
-  ok('the board keeps only the starters', !kept.some((m) => m.player_id === 'puglisi' || m.player_id === 'sayin')
+  ok('the board keeps only the starters', !kept.some((m) => m.player_id === 'puglisi' || m.player_id === 'backup')
     && kept.some((m) => m.player_id === 'stockton'));
   ok('without roles nobody is dropped', applyRoles(built.men.slice(), null).length === built.men.length);
 
@@ -337,12 +344,14 @@ section('3b. the board reads roles: only starting quarterbacks');
   const w = { player_id: 'wilson', position: 'QB', games: 2, half_ppg: 7, played_of: 5, starts: 1,
     start_ppg: 15.6, prior: null };
   asPriced(w);
-  ok('a starter is priced on his starts, with full availability',
-    w.games === 1 && w.half_ppg === 15.6 && w.played_of === 1);
+  ok('a starter is priced on his starts', w.games === 1 && w.half_ppg === 15.6);
   const lv = new Map([['QB', 20]]);
   const priced = projectMan(w, lv).proj;
   asShown(w);
   ok('  and his card goes back to what he did', w.games === 2 && w.half_ppg === 7 && w.played_of === 5);
+  const missedOne = { player_id: 'm', position: 'RB', games: 4, half_ppg: 12, played_of: 9 };
+  ok('a man who missed games is priced on the games he played',
+    projectMan(missedOne, lv).proj === projectMan({ ...missedOne, played_of: 4 }, lv).proj);
   ok('  which projects him above his relief average', priced > projectMan(w, lv).proj);
   const plain = { player_id: 'x', position: 'RB', games: 3, half_ppg: 9, played_of: 4 };
   asPriced(plain);

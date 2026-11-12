@@ -11,17 +11,23 @@
  *   THE STARTER IS THE MAN WHO LED HIS TEAM IN PASSING IN ITS LATEST GAME. Passing yards,
  *   because the season store keeps yards, touchdowns and picks but not attempts.
  *
- *   AND THE TEAM'S REGULAR STARTER STAYS TOO, UNLESS HE HAS MISSED ITS LAST TWO GAMES.
- *   "Regular" is the man who led its passing in the most of its last four games (a tie goes
- *   to the more recent). He is a starter as well while he is in either of the last two box
- *   scores. Three cases from the week 11 board made the rule:
- *     Indiana: Josh Hoover led four straight, then threw for 119 to Grant Wilson's 156 in
- *       week 9. He played, so it was a blowout or a knock and not a lost job. Both start.
- *     Northwestern: Aidan Chiles led four straight and missed week 10, and Nicco Marchiol
- *       led it. One missed game is a knock he may be back from. Both start.
- *     Kansas, the case it must not catch: Cole Ballard led one game while Isaiah Marshall
- *       was out, and Marshall led the next. Marshall is the regular, so Ballard is a backup.
- *   Two missed games and a man is not the starter (Julian Sayin at Ohio State).
+ *   AND THE TEAM'S REGULAR STARTER STAYS TOO, UNLESS HE HAS BEEN BENCHED. "Regular" is the
+ *   man who led its passing in the most games this season (a tie goes to the more recent).
+ *   The owner, 2026-11-12: "If a player missed 2 games but is coming back, their price
+ *   should be based on what it was as a starter." The box scores cannot say he is coming
+ *   back, so a regular who is simply ABSENT stays, however many games, priced on his starts
+ *   and wearing the MISSED chip. What the box scores CAN say is a benching: since his last
+ *   start he has played behind the new man, in a box score with under half the leader's
+ *   passing yards. Then he is a backup. Cases off the week 11 board:
+ *     Ohio State: Julian Sayin led seven, then is in neither of the last two box scores, and
+ *       Luke Fahey led both. Absent, so both start.
+ *     Florida: Aaron Philo led six, then threw for 26 behind Tramell Jones Jr.'s 172 in
+ *       week 9. Benched, so only Jones starts.
+ *     Indiana: Josh Hoover threw for 119 to Grant Wilson's 156 in week 9. Not under half,
+ *       so a blowout or a knock and not a lost job. Both start.
+ *     Kansas: Cole Ballard led one game while Isaiah Marshall was out, and Marshall led the
+ *       next. Marshall is the regular and the latest, so Ballard is a backup.
+ *   Two quarterbacks from one team is fine when the data cannot tell them apart.
  *
  *   A TEAM THE STORE CANNOT SPEAK FOR SAYS NOTHING, and nobody of its comes off. Before the
  *   store holds the week just played (a box score was missing, or it is week 1), or a team
@@ -29,9 +35,8 @@
  *   as it was, which is the NFL rule for a stale chart.
  *
  * WHAT IT CANNOT SEE, said rather than implied: a quarterback named the starter during the
- * week (he reads as a backup until he has led a game), a starter who lost his job inside his
- * last game (he stays a starter for one more week, beside the man who replaced him), and a
- * benching announced before kickoff. The swap covers what the data cannot: any man can be
+ * week (he reads as a backup until he has led a game), whether an absent regular is hurt,
+ * benched or coming back (he stays), and a benching announced before kickoff. The swap covers what the data cannot: any man can be
  * swapped before his game.
  *
  * Pure, off the season store, so the Monday build and the mid-week job read one answer.
@@ -39,7 +44,8 @@
 
 /* The passing yards column of a stored row (season.mjs: id, team, game, pts, line, stats). */
 const PASS_YDS = 5;
-export const REGULAR_GAMES = 4;
+/* Under this share of the leader's passing yards, a regular who played was playing behind. */
+export const BEHIND_SHARE = 0.5;
 
 /**
  * @returns {{ ready: boolean, teams: Map<string, { starters: Set<string>, latest: string }>,
@@ -75,7 +81,8 @@ export function quarterbacks(store, week) {
         }
         if (!games.has(tid)) games.set(tid, []);
         games.get(tid).push({ gid, w, kick: String(kick), lead: lead ? String(lead[0]) : null,
-          pts: lead ? Number(lead[3]) || 0 : 0, ids: new Set(rows.map((r) => String(r[0]))) });
+          leadYds: lead ? Number(lead[PASS_YDS]) : 0, pts: lead ? Number(lead[3]) || 0 : 0,
+          yds: new Map(rows.map((r) => [String(r[0]), Number(r[PASS_YDS]) || 0])) });
       }
     }
   }
@@ -90,9 +97,9 @@ export function quarterbacks(store, week) {
     const last = gs[gs.length - 1];
     if (!last || !last.lead || last.w < week - 2) continue;
     const set = new Set([last.lead]);
-    /* The regular starter: most games led of the last four, the more recent on a tie. */
+    /* The regular: most games led this season, the more recent on a tie. */
     const tally = new Map();
-    gs.slice(-REGULAR_GAMES).forEach((g, i) => {
+    gs.forEach((g, i) => {
       if (!g.lead) return;
       const t = tally.get(g.lead) || { n: 0, at: -1 };
       t.n++; t.at = i; tally.set(g.lead, t);
@@ -101,9 +108,12 @@ export function quarterbacks(store, week) {
     for (const [id, t] of tally) {
       if (!best || t.n > best.n || (t.n === best.n && t.at > best.at)) { regular = id; best = t; }
     }
-    const before = gs[gs.length - 2];
-    if (regular && regular !== last.lead
-      && (last.ids.has(regular) || (before && before.ids.has(regular)))) set.add(regular);
+    if (regular && regular !== last.lead) {
+      const after = gs.slice(best.at + 1);
+      const benched = after.some((g) => g.yds.has(regular)
+        && g.yds.get(regular) < BEHIND_SHARE * g.leadYds);
+      if (!benched) set.add(regular);
+    }
     teams.set(tid, { starters: set, latest: last.lead });
     for (const id of set) starter.add(id);
   }

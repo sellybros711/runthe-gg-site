@@ -85,23 +85,19 @@ export async function summary(eventId) {
 }
 
 /*
- * A TEAM'S ROSTER, AS MUCH OF IT AS ESPN WILL SEND.
+ * A TEAM'S WHOLE ROSTER, WITH `limit=300`.
  *
- * Plain, it stops at 100 athletes in alphabetical order (offense 47, defense 46, special
- * teams 7 on the probe's roster of 2026-09-27), and FBS rosters run past 110. The week 11
- * board was missing 176 men who had played for slate teams, nearly all with surnames from S
- * on. Whether ESPN honours `limit` on this path has not been seen from here (the sandbox
- * cannot reach it), so both are asked and the bigger answer is kept: an ignored parameter
- * costs one request and changes nothing, an honoured one brings the rest of the roster.
+ * Plain, ESPN stops at 100 athletes in alphabetical order, and FBS rosters run past it. The
+ * week 11 board was missing 176 men who had played for slate teams, nearly all with surnames
+ * from S on, and three teams' starting quarterbacks. The probe of 2026-11-12 (run
+ * 43285149270) read 100 plain ("Washington Jr." last) and 105 with `limit=300` ("Wright"
+ * last), and the same 105 with `limit=200&page=1`, so `limit` lifts the cap. The plain path is
+ * kept only as a fallback for a failed read, and the build logs a roster of exactly 100.
  */
 export const ROSTER_CAP = 100;
-const athletesIn = (j) => ((j && j.athletes) || []).reduce((n, g) => n + ((g.items || []).length), 0);
 export async function roster(teamId) {
   const rel = `/teams/${encodeURIComponent(teamId)}/roster`;
-  const wide = await getJSON(`${rel}?limit=300`);
-  if (athletesIn(wide) > ROSTER_CAP) return wide;
-  const plain = await getJSON(rel);
-  return athletesIn(plain) >= athletesIn(wide) ? plain : wide;
+  return (await getJSON(`${rel}?limit=300`)) || getJSON(rel);
 }
 
 /** The calendar of regular season weeks off a scoreboard payload: [{week, start, end}]. */

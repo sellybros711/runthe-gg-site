@@ -148,11 +148,76 @@ async function main() {
       console.log(cut(items || r.j || r.t, 1200));
     }
   }
+  /* DOES ESPN'S WEBSITE CARRY A COLLEGE DEPTH CHART? (the owner, 2026-11-12). The API says
+     "Depth charts not supported" for college football. The team depth page is a test, not a
+     commitment: a web page is more fragile than the API and ESPN does not sanction reading
+     it. Read only. Ohio State, Georgia, New Mexico State, Texas Tech. */
+  await depthPages(['194', '61', '166', '2641']);
+
   /* Is there a league wide injury list? */
   const li = await get(`${CORE}/injuries?limit=50`);
   head('core league injuries', li);
   console.log(cut(li.j || li.t, 600));
   console.log('\ndone');
+}
+
+/* Every key path in `v` whose name looks like a depth chart, with a cut of what is there. */
+function depthKeys(v, at = '', out = [], seen = new Set()) {
+  if (!v || typeof v !== 'object' || seen.has(v) || out.length > 12) return out;
+  seen.add(v);
+  for (const [k, x] of Object.entries(v)) {
+    const p = at ? `${at}.${k}` : k;
+    if (/depth|dethchrt|dpthchrt/i.test(k)) out.push([p, x]);
+    depthKeys(x, p, out, seen);
+  }
+  return out;
+}
+
+/* The quarterback rows, wherever they are: any object that names QB and carries athletes or
+   names beside it. Printed raw and short, because the shape has never been seen. */
+function qbRows(v, out = [], seen = new Set()) {
+  if (!v || typeof v !== 'object' || seen.has(v) || out.length > 6) return out;
+  seen.add(v);
+  const vals = Object.values(v);
+  if (vals.some((x) => x === 'QB' || (x && typeof x === 'object' && (x.abbreviation === 'QB'
+    || x.abbr === 'QB' || x.key === 'QB')))) out.push(v);
+  for (const x of vals) qbRows(x, out, seen);
+  return out;
+}
+
+async function depthPages(tids) {
+  for (const tid of tids) {
+    try {
+      const r = await fetch(`https://www.espn.com/college-football/team/depth/_/id/${tid}`,
+        { headers: { ...UA, accept: 'text/html,application/xhtml+xml' } });
+      const html = await r.text();
+      head(`website depth page ${tid}`, { status: r.status });
+      console.log('page bytes', html.length, '| has __espnfitt__', html.includes('__espnfitt__'),
+        '| mentions depth', (html.match(/depth/gi) || []).length,
+        '| dethChrt', html.includes('dethChrt'), '| depthChart', /depthchart/i.test(html));
+      const m = html.match(/window\[['"]__espnfitt__['"]\]\s*=\s*(\{[\s\S]*?\});\s*<\/script>/);
+      let j = null;
+      if (m) { try { j = JSON.parse(m[1]); } catch (e) { console.log('embedded JSON did not parse:', e.message); } }
+      if (j) {
+        const keys = depthKeys(j);
+        console.log('depth keys', keys.length);
+        for (const [p, x] of keys.slice(0, 6)) console.log(`  ${p}: ${cut(x, 700)}`);
+        const qbs = qbRows(j);
+        console.log('QB rows', qbs.length);
+        for (const q of qbs.slice(0, 3)) console.log('  ', cut(q, 900));
+      }
+    } catch (e) {
+      head(`website depth page ${tid}`, { status: 0 });
+      console.log(String(e && e.message));
+    }
+    const t = await get(`${ESPN}/teams/${tid}?enable=roster,depthchart`);
+    head(`site team ${tid} ?enable=roster,depthchart`, t);
+    const team = t.j && t.j.team;
+    console.log('team keys', team && Object.keys(team).join(','));
+    console.log('team.depthchart', cut(team && team.depthchart, 1500));
+    const dk = depthKeys(t.j || {});
+    console.log('depth keys anywhere', dk.map(([p, x]) => `${p} (${Array.isArray(x) ? 'array ' + x.length : typeof x})`).join('; ') || 'none');
+  }
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
