@@ -5247,7 +5247,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1710264829,2024-04-10,2024,The Capitol Theatre,Port Chester,NY,1,2,Earthling or Alien?,605,false,,1067,4,37,0,57,false,false,,",",false,jam|peak,,,,Groove
 1710264829,2024-04-10,2024,The Capitol Theatre,Port Chester,NY,1,3,Silver Rising,736,false,,589,6,41,0,36,false,false,,",",false,ballad,,,,Ballad
 1710264829,2024-04-10,2024,The Capitol Theatre,Port Chester,NY,1,4,Atlas Dogs,727,false,,995,9,32,10,46,true,false,First jammed version since 10/6/22 gets into an airy space quickly with Rick sticking to form at first.,",",false,opener,,,,Easy
-1710264829,2024-04-10,2024,The Capitol Theatre,Port Chester,NY,1,5,How It Ends,933,false,Vasudo,307,0,1,0,,false,false,,>,true,,FTP as Goose.,,,Easy
+1710264829,2024-04-10,2024,The Capitol Theatre,Port Chester,NY,1,5,How It Ends,933,false,Vasudo,307,0,1,0,,false,false,,>,true,encore,FTP as Goose.,,,Easy
 1710264829,2024-04-10,2024,The Capitol Theatre,Port Chester,NY,1,6,Tumble,418,false,Vasudo,1414,4,99,0,71,true,false,"Peter goes full Cory Wong mode on the initial jam segment as he takes a stroll around the stage. Eschewing the typical B-flat modulation to go into jam territory, the band fragments out of the funk and quickly builds into gorgeous major-key play led by Vintage Vibe and Rick's emotional soloing. Cotter picks up the tempo post-peak and Rick lets Peter take the lead as they blaze into the finish of an excellent jam and set.",,false,closer|jam|peak,,,,Groove
 1710264829,2024-04-10,2024,The Capitol Theatre,Port Chester,NY,2,7,Gen X Cops,935,true,Vampire Weekend,233,0,1,0,,false,false,,",",false,,"Vampire Weekend. FTP. With Ezra Koenig on guitar and vocals, Chris Tomson on drums, and Chris Baio on bass.",,,Rocker
 1710264829,2024-04-10,2024,The Capitol Theatre,Port Chester,NY,2,8,Cape Cod Kwassa Kwassa ,934,true,Vampire Weekend,1895,0,1,0,36,true,false,"The fabled 31-minute ""Cape Cod"" of Vampire Weekend dreams. Cotter and CT really lock in here as the band gets into uncharted territory. Hits some Allman Brothers bliss (much to the excitement of Rick and Ezra), then some great clav funk ahead of the song's conclusion. ""Those guys can hang!""",",",false,,"Vampire Weekend. FTP. With Ezra Koenig on guitar and vocals, Chris Tomson on drums, Chris Baio on bass, and Jessica tease from Rick.",,Jessica,Groove
@@ -6345,7 +6345,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1743623827,2025-05-10,2025,El Ganzo Oasis,San Jose Del Cabo,,2,11,Dustin Hoffman,970,false,,566,0,1,0,43,false,false,,>,true,jam,FTP.,,,Groove
 1743623827,2025-05-10,2025,El Ganzo Oasis,San Jose Del Cabo,,2,12,726,432,false,,553,6,37,0,38,false,false,,>,true,ballad|encore,,,,Ballad
 1743623827,2025-05-10,2025,El Ganzo Oasis,San Jose Del Cabo,,2,13,Dripfield,738,false,,929,7,56,0,62,false,false,,",",false,closer|jam|peak,Unfinished. With Chank teases from Rick.,,Chank,Space
-1743623827,2025-05-10,2025,El Ganzo Oasis,San Jose Del Cabo,,2,14,How It Ends,933,false,Vasudo,699,81,2,35,,false,false,,,false,,,,,Easy
+1743623827,2025-05-10,2025,El Ganzo Oasis,San Jose Del Cabo,,2,14,How It Ends,933,false,Vasudo,699,81,2,35,,false,false,,,false,encore,,,,Easy
 1743623827,2025-05-10,2025,El Ganzo Oasis,San Jose Del Cabo,,E,15,Thatch,809,false,,1084,4,48,0,69,true,true,"Festival-closing insanity. The band dives headlong into breakneck speed Westville ""Rockdale"" jamming, Rick and Peter in particular chasing each other through a wild tension-filled chase. Trevor uses some deep synth pedals while Cotter propels the whole thing with insistent percussion hits. The evil eventually explodes back into the song proper, but a sly double-time shift on the drums leads to another dip into wild dissonance before coming home. Outstanding version.",,false,opener|closer|jam|peak,,,,Rocker
 1748090458,2025-05-25,2025,Napa Valley Expo,Napa,CA,1,1,Rockdale,714,false,Vasudo,,2,65,0,59,false,false,,",",false,opener|closer|jam,,This show was a VIP set at the Bottlerock Napa festival.,,Groove
 1748090458,2025-05-25,2025,Napa Valley Expo,Napa,CA,1,2,Lead Up,822,false,,,3,32,0,,false,false,,",",false,,,,,Easy
@@ -6359,7 +6359,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1736785860,2025-05-25,2025,Napa Valley Expo,Napa,CA,1,6,Hungersite,740,false,,733,1,64,0,62,false,false,,>,true,opener|jam|peak,,,,Anthem
 1736785860,2025-05-25,2025,Napa Valley Expo,Napa,CA,1,7,Slow Ready,422,false,,491,12,89,10,49,false,false,,>,true,,,,,Space
 1736785860,2025-05-25,2025,Napa Valley Expo,Napa,CA,1,8,Give It Time,931,false,,339,4,18,0,,false,false,,,false,closer|encore,,,,Anthem
-1740507757,2025-05-27,2025,The Masonic,San Francisco,CA,1,1,How It Ends,933,false,Vasudo,586,2,3,0,,false,false,,",",false,,,,,Easy
+1740507757,2025-05-27,2025,The Masonic,San Francisco,CA,1,1,How It Ends,933,false,Vasudo,586,2,3,0,,false,false,,",",false,encore,,,,Easy
 1740507757,2025-05-27,2025,The Masonic,San Francisco,CA,1,2,Iguana Song,971,false,,582,4,2,0,38,false,false,,>,true,opener,,,,Groove
 1740507757,2025-05-27,2025,The Masonic,San Francisco,CA,1,3,Flodown,478,false,Vasudo,567,3,154,0,40,false,false,,",",false,closer,With When The Saints Go Marching In teases from Rick.,,When The Saints Go Marching In,Groove
 1740507757,2025-05-27,2025,The Masonic,San Francisco,CA,1,4,Borne,725,false,,1131,14,44,10,57,false,false,,->,true,jam|peak,,,,Easy
@@ -6400,7 +6400,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1737998824,2025-05-30,2025,Hayden Homes Amphitheater,Bend,OR,E,13,Hot Tea,408,false,Vasudo,497,3,150,0,58,false,false,,,false,closer,,,,Groove
 1738001411,2025-05-31,2025,Spokane Pavilion,Spokane,WA,1,1,Drive,462,false,,787,8,109,10,67,false,false,,->,true,opener|jam,Unfinished.,"Trevor Reads Poetry was played for the first time since September 23, 2023 (118 shows).",,Groove
 1738001411,2025-05-31,2025,Spokane Pavilion,Spokane,WA,1,2,All I Need,414,false,,575,14,148,10,72,false,false,,->,true,jam|peak,"Slow, melodic version. Unfinished.",,,Groove
-1738001411,2025-05-31,2025,Spokane Pavilion,Spokane,WA,1,3,How It Ends,933,false,Vasudo,572,2,4,0,,false,false,,",",false,,,,,Easy
+1738001411,2025-05-31,2025,Spokane Pavilion,Spokane,WA,1,3,How It Ends,933,false,Vasudo,572,2,4,0,,false,false,,",",false,encore,,,,Easy
 1738001411,2025-05-31,2025,Spokane Pavilion,Spokane,WA,1,4,Doc Brown,459,false,Great Blue,480,13,45,10,,false,false,,",",false,,,,,Groove
 1738001411,2025-05-31,2025,Spokane Pavilion,Spokane,WA,1,5,Seekers on the Ridge pt I,609,false,,409,7,50,0,36,false,false,,>,true,,,,,Easy
 1738001411,2025-05-31,2025,Spokane Pavilion,Spokane,WA,1,6,Seekers on the Ridge pt II,610,false,,314,7,50,0,,false,false,,",",false,,,,,Easy
@@ -6459,7 +6459,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,2,12,Dripfield,738,false,,1518,5,58,0,62,true,true,"Rick dives headlong into thick digital sauce as Cotter engages a particularly punishing beat. New veins of wild energy are revealed with each passing minute as the band massively peaks this standout ""Drip.""",,false,closer|jam|peak,,,,Space
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,E,13,The Way It Is,570,true,Bruce Hornsby,509,19,40,10,41,false,false,,,false,,Bruce Hornsby.,,,Easy
 1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,1,Drive,462,false,,1177,3,110,0,67,true,false,"Returning with new lyrics and the original composed section since 3/1/22, the band then opens up the jam into some solid two-guitar bliss play.",",",false,opener|jam,With the original composed bridge for the first time since 3/1/22.,"Indian River was played with the Sanskrit verse for the first time since June 19, 2021 (298 shows).",,Groove
-1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,2,How It Ends,933,false,Vasudo,637,3,5,0,,false,false,,",",false,,,,,Easy
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,2,How It Ends,933,false,Vasudo,637,3,5,0,,false,false,,",",false,encore,,,,Easy
 1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,3,Suzie Q,562,true,Creedence Clearwater Revival,315,0,1,0,,false,false,,",",false,,Creedence Clearwater Revival. FTP.,,,Rocker
 1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,4,Turbulence & The Night Rays,646,false,Vasudo,606,4,41,0,,false,false,,",",false,opener,,,,Rocker
 1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,5,Indian River,410,false,,633,39,116,20,50,false,false,,->,true,,With Sanskrit verse.,,,Space
@@ -6523,7 +6523,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1738002251,2025-06-12,2025,Everwise Amphitheater at White River State Park,Indianapolis,IN,1,7,Animal,764,false,,1052,3,63,0,47,false,false,,,false,opener|closer,With SALT tease from Rick.,,SALT,Groove
 1738002251,2025-06-12,2025,Everwise Amphitheater at White River State Park,Indianapolis,IN,2,8,Pancakes,723,false,Great Blue,1259,6,62,0,62,false,false,,",",false,opener|closer|jam,Unfinished.,,,Groove
 1738002251,2025-06-12,2025,Everwise Amphitheater at White River State Park,Indianapolis,IN,2,9,In Your Eyes,498,true,Peter Gabriel,1070,60,11,35,45,false,false,,>,true,jam|peak,Peter Gabriel.,,,Anthem
-1738002251,2025-06-12,2025,Everwise Amphitheater at White River State Park,Indianapolis,IN,2,10,How It Ends,933,false,Vasudo,719,3,6,0,,false,false,,",",false,,,,,Easy
+1738002251,2025-06-12,2025,Everwise Amphitheater at White River State Park,Indianapolis,IN,2,10,How It Ends,933,false,Vasudo,719,3,6,0,,false,false,,",",false,encore,,,,Easy
 1738002251,2025-06-12,2025,Everwise Amphitheater at White River State Park,Indianapolis,IN,2,11,Tumble,418,false,Vasudo,956,3,120,0,71,true,false,Pure balls-to-the-walls Goontz.,,false,closer|jam|peak,,,,Groove
 1738002251,2025-06-12,2025,Everwise Amphitheater at White River State Park,Indianapolis,IN,E,12,Arcadia,403,false,,421,3,206,0,67,false,false,,,false,closer,,,,Groove
 1736352597,2025-06-15,2025,Merriweather Post Pavilion,Columbia,MD,1,1,SALT,930,false,,606,1,15,0,40,false,false,,",",false,opener|closer|encore,,This show was part of All Good Now festival.,,Rocker
@@ -6567,7 +6567,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1738002485,2025-06-20,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,1,No Rain,525,true,Blind Melon,808,77,18,35,43,false,false,,",",false,opener|jam,Blind Melon.,"No Rain was played for the first time since June 28, 2024 (78 shows).",,Easy
 1738002485,2025-06-20,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,2,Dr. Darkness,712,false,,358,13,42,10,,false,false,,",",false,opener,,,,Rocker
 1738002485,2025-06-20,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,3,Flodown,478,false,Vasudo,646,4,156,0,40,false,false,,",",false,closer,,,,Groove
-1738002485,2025-06-20,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,4,How It Ends,933,false,Vasudo,731,3,7,0,,false,false,,>,true,,,,,Easy
+1738002485,2025-06-20,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,4,How It Ends,933,false,Vasudo,731,3,7,0,,false,false,,>,true,encore,,,,Easy
 1738002485,2025-06-20,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,5,Drive,462,false,,963,7,111,0,67,false,false,,>,true,opener|jam,,,,Groove
 1738002485,2025-06-20,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,6,Seekers on the Ridge pt I,609,false,,399,8,52,10,36,false,false,,>,true,,,,,Easy
 1738002485,2025-06-20,2025,Jacobs Pavilion at Nautica,Cleveland,OH,1,7,Seekers on the Ridge pt II,610,false,,284,8,52,10,,false,false,,>,true,,,,,Easy
@@ -6790,7 +6790,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,1,2,Atlas Dogs,727,false,,453,4,54,0,46,false,false,,>,true,opener,,,,Easy
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,1,3,Earthling or Alien?,605,false,,1216,22,48,20,57,true,false,"The sibling to 2/10/25. Sticks in Cotter's pocket and rides a pulsating wave of Peter's Rhodes through a fluid, psychedelic groove. Some really amazing utilization of delay by Rick leads to a more cacophonous vibe as he and Peter twine their play in an amazing, circular way.",>,true,jam|peak,,,,Groove
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,1,4,Turned Clouds,400,false,,739,22,117,20,,false,false,,",",false,,,,,Groove
-1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,1,5,How It Ends,933,false,Vasudo,598,18,8,10,,false,false,,",",false,,,,,Easy
+1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,1,5,How It Ends,933,false,Vasudo,598,18,8,10,,false,false,,",",false,encore,,,,Easy
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,1,6,Slow Ready,422,false,,611,0,95,0,49,false,false,,,false,,Jam only. Finished version from 9/23/25.,,,Space
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,2,7,Arrow,438,false,,1060,4,86,0,62,false,false,,>,true,opener|closer|jam,Unfinished.,,,Rocker
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,2,8,Rosewood Heart,412,false,,1032,16,65,10,60,false,false,,->,true,jam|peak,,,,Easy
@@ -6829,7 +6829,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1759102128,2025-09-28,2025,The Revelry,Charlotte,NC,1,3,Borne,725,false,,,3,48,0,57,false,false,,",",false,jam|peak,,,,Easy
 1759102128,2025-09-28,2025,The Revelry,Charlotte,NC,1,4,Dustin Hoffman,970,false,,,3,11,0,43,false,false,,",",false,jam,,,,Groove
 1759102128,2025-09-28,2025,The Revelry,Charlotte,NC,1,5,Turned Clouds,400,false,,,2,118,0,,false,false,,",",false,,,,,Groove
-1759102128,2025-09-28,2025,The Revelry,Charlotte,NC,1,6,How It Ends,933,false,Vasudo,,2,9,0,,false,false,,",",false,,,,,Easy
+1759102128,2025-09-28,2025,The Revelry,Charlotte,NC,1,6,How It Ends,933,false,Vasudo,,2,9,0,,false,false,,",",false,encore,,,,Easy
 1759102128,2025-09-28,2025,The Revelry,Charlotte,NC,1,7,Elizabeth,465,false,,,5,64,0,53,false,false,,",",false,opener|jam,,,,Groove
 1759102128,2025-09-28,2025,The Revelry,Charlotte,NC,1,8,Rockdale,714,false,Vasudo,,5,76,0,59,false,false,,,false,opener|closer|jam,,,,Groove
 1759102128,2025-09-28,2025,The Revelry,Charlotte,NC,2,9,Feel It Now,823,false,,,4,34,0,,false,false,,",",false,,,,,Groove
@@ -7031,7 +7031,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,2,12,Jive I,411,false,,602,12,133,10,,false,false,,>,true,,,,,Groove
 1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,2,13,Green River,482,true,Creedence Clearwater Revival,1311,13,36,10,44,true,false,"Hangs out in a collaborative two-guitar space for a bit before slipping neatly into Goontz land thanks to Cotter pushing the tempo. Spur-of-the-moment dance vibes eventually fade but no natural conclusion appears, so the band opts to throw us a somewhat forced -> into ""Loose Ends.""",->,true,,Creedence Clearwater Revival. Unfinished.,,,Rocker
 1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,2,14,Loose Ends,762,false,Vasudo,282,15,18,10,,false,false,,,false,,,,,Easy
-1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,E,15,How It Ends,933,false,Vasudo,832,13,10,10,,false,false,,,false,,,,,Easy
+1762797177,2026-04-14,2026,War Memorial Auditorium,Fort Lauderdale,FL,E,15,How It Ends,933,false,Vasudo,832,13,10,10,,false,false,,,false,encore,,,,Easy
 1762797178,2026-04-15,2026,War Memorial Auditorium,Fort Lauderdale,FL,1,1,Same Old Shenanigans,541,false,,1447,12,61,10,45,true,false,"First of the breakout versions in early 2026. The band really milks the jam for all its worth across 20+ minutes, setting the stage for the versions to come as this becomes the norm.",",",false,closer,,"U.S. Blues was played for the first time since July 4, 2023 (179 shows). Kung Fu Fighting was played for the first time since March 1, 2019 (474 shows). The setlist spelled out ""Suck It Storm.""",,Easy
 1762797178,2026-04-15,2026,War Memorial Auditorium,Fort Lauderdale,FL,1,2,U.S. Blues,659,true,Grateful Dead,452,178,2,50,,false,false,,",",false,closer|encore,Grateful Dead.,,,Rocker
 1762797178,2026-04-15,2026,War Memorial Auditorium,Fort Lauderdale,FL,1,3,California Magic,735,false,,489,7,50,0,,false,false,,",",false,,,,,Easy
@@ -7208,7 +7208,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1765285120,2026-05-22,2026,Electric Brixton,London,,2,7,So Ready,421,false,,1282,3,153,0,38,false,false,,",",false,closer,With Duel of the Fates teases from Rick and Peter.,,Duel of the Fates,Groove
 1765285120,2026-05-22,2026,Electric Brixton,London,,2,8,Big Modern!,945,false,,1731,5,34,0,56,true,false,"Huge European version begins in chunky grooving with Peter throwing ""Rhapsody In Blue"" riffs on piano. Spaces out into a hypnotic, layered space like the 4/10 ""Good2B"" before getting back to more typical ""Modern!"" jamming. Hitting a small peak, Cotter increases the tempo as the band backs off, beginning to build a delightful major-key theme. Peter's exemplary piano work shines as Rick and Trevor develop a new progression, beginning a long-form soaring peak.",->,true,opener|closer|jam|peak,Unfinished. With Rhapsody In Blue tease from Peter.,,Rhapsody In Blue,Groove
 1765285120,2026-05-22,2026,Electric Brixton,London,,2,9,Creatures,420,false,,516,0,142,0,63,false,false,,>,true,jam,Unfinished.,,,Groove
-1765285120,2026-05-22,2026,Electric Brixton,London,,2,10,How It Ends,933,false,Vasudo,571,14,11,10,,false,false,,>,true,,,,,Easy
+1765285120,2026-05-22,2026,Electric Brixton,London,,2,10,How It Ends,933,false,Vasudo,571,14,11,10,,false,false,,>,true,encore,,,,Easy
 1765285120,2026-05-22,2026,Electric Brixton,London,,2,11,Turn On Your Love Light,578,true,Bobby Blue Bland,328,10,55,10,,false,false,,,false,closer|encore,Bobby Blue Bland.,,,Groove
 1765285154,2026-05-23,2026,Electric Brixton,London,,1,1,Royal,987,false,,363,7,11,0,38,false,false,,",",false,opener,,,,Rocker
 1765285154,2026-05-23,2026,Electric Brixton,London,,1,2,Same Old Shenanigans,541,false,,1248,4,64,0,45,false,false,,",",false,closer,,,,Easy
@@ -7414,7 +7414,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450534,2026-06-26,2026,Red Hat Amphitheater,Raleigh,NC,2,10,Red Bird,536,false,,795,5,63,0,59,false,false,,>,true,jam,,,,Anthem
 1769450534,2026-06-26,2026,Red Hat Amphitheater,Raleigh,NC,2,11,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,834,26,38,20,45,false,false,,",",false,closer|jam,Grateful Dead.,,,Easy
 1769450534,2026-06-26,2026,Red Hat Amphitheater,Raleigh,NC,2,12,Tumble,418,false,Vasudo,1078,6,135,0,71,false,false,,,false,closer|jam|peak,,,,Groove
-1769450534,2026-06-26,2026,Red Hat Amphitheater,Raleigh,NC,E,13,How It Ends,933,false,Vasudo,653,16,12,10,,false,false,,,false,,,,,Easy
+1769450534,2026-06-26,2026,Red Hat Amphitheater,Raleigh,NC,E,13,How It Ends,933,false,Vasudo,653,16,12,10,,false,false,,,false,encore,,,,Easy
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,1,Same Old Shenanigans,541,false,,1141,3,66,0,45,false,false,,",",false,closer,,This show was one set due to a weather delay.,,Easy
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,2,Your Direction,647,false,Vasudo,603,3,19,0,36,false,false,,->,true,ballad,,,,Ballad
 1769450535,2026-06-27,2026,Red Hat Amphitheater,Raleigh,NC,1,3,Bloodbuzz Ohio,766,true,The National,695,25,13,20,,false,false,,",",false,,The National.,,,Easy
@@ -7833,3 +7833,17 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1780327773,2026-11-10,2026,The Truth,Nashville,TN,2,14,Don’t Leave Me This Way,964,true,Harold Melvin & The Blue Notes,,5,13,0,,false,false,,,false,closer,Harold Melvin & The Blue Notes.,,,Groove
 1780327773,2026-11-10,2026,The Truth,Nashville,TN,E,15,Hot Love & The Lazy Poet,645,false,Vasudo,,4,49,0,38,false,false,,->,true,opener,Unfinished.,,,Groove
 1780327773,2026-11-10,2026,The Truth,Nashville,TN,E,16,The Empress Of Organos,604,false,Vasudo,,0,112,0,58,false,false,,,false,closer|jam,,,,Groove
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,1,1,Dr. Darkness,712,false,,,16,51,10,,false,false,,",",false,opener,,"Switchin’ was played for the first time since September 3, 2024 (174 shows).",,Rocker
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,1,2,Switchin',564,true,Wes Montgomery,,173,29,50,,false,false,,",",false,opener,Wes Montgomery.,,,Groove
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,1,3,Your Direction,647,false,Vasudo,,3,25,0,36,false,false,,>,true,ballad,,,,Ballad
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,1,4,California Magic,735,false,,,13,56,10,,false,false,,",",false,,,,,Easy
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,1,5,I'm Writing A Novel,424,true,Father John Misty,,16,21,10,,false,false,,",",false,,Father John Misty.,,,Easy
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,1,6,Dustin Hoffman,970,false,,,2,30,0,43,false,false,,",",false,jam,,,,Groove
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,1,7,Give It Time,931,false,,,4,47,0,,false,false,,,false,closer|encore,,,,Anthem
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,2,8,Big Modern!,945,false,,,5,46,0,56,false,false,,->,true,opener|closer|jam|peak,,,,Groove
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,2,9,Drive,462,false,,,5,128,0,67,false,false,,->,true,opener|jam,With Iguana Song teases from Peter.,,Iguana Song,Groove
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,2,10,Running Up That Hill,955,true,Kate Bush,,16,9,10,36,false,false,,>,true,,Kate Bush.,,,Groove
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,2,11,Rosewood Heart,412,false,,,11,71,10,60,false,false,,",",false,jam|peak,,,,Easy
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,2,12,726,432,false,,,16,43,10,38,false,false,,>,true,ballad|encore,,,,Ballad
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,2,13,Big Modern!,945,false,,,0,47,0,56,false,false,,,false,opener|closer|jam|peak,,,,Groove
+1780327774,2026-11-11,2026,The Truth,Nashville,TN,E,14,How It Ends,933,false,Vasudo,,32,13,20,,false,false,,,false,encore,,,,Easy

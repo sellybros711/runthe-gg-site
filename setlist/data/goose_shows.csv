@@ -847,7 +847,7 @@ show_id,show_date,year,tour_id,tour,venue,city,state,country,has_setlist,show_or
 1780327771,2026-11-07,2026,45,Fall Tour 2026,Miller High Life Theatre,Milwaukee,WI,USA,true,1
 1780327772,2026-11-08,2026,45,Fall Tour 2026,Miller High Life Theatre,Milwaukee,WI,USA,true,1
 1780327773,2026-11-10,2026,45,Fall Tour 2026,The Truth,Nashville,TN,USA,true,1
-1780327774,2026-11-11,2026,45,Fall Tour 2026,The Truth,Nashville,TN,USA,false,1
+1780327774,2026-11-11,2026,45,Fall Tour 2026,The Truth,Nashville,TN,USA,true,1
 1780327775,2026-11-13,2026,45,Fall Tour 2026,Mohegan Sun Arena,Uncasville,CT,USA,false,1
 1780327776,2026-11-14,2026,45,Fall Tour 2026,Mohegan Sun Arena,Uncasville,CT,USA,false,1
 1780327777,2026-11-15,2026,45,Fall Tour 2026,Cross Insurance Arena,Portland,ME,USA,false,1
