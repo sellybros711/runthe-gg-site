@@ -856,6 +856,28 @@ if (!QUICK){
   const yr = new Set(); for (let i = 0; i < 365; i++){ const d = new Date(day0.getTime() + i * 86400000); yr.add(P.themeForDay(d.toISOString().slice(0, 10))); }
   claim(yr.size === P.CAL_THEMES.length && P.CAL_THEMES.every(t => yr.has(t)), `a year of dailies wears every calendar theme (${[...yr].join(', ')})`);
   claim(P.themeForDay('2026-10-31') === 'haunted' && P.themeForDay('2026-11-26') === 'harvest' && P.themeForDay('2026-12-25') === 'winter', 'Halloween is haunted, Thanksgiving is harvest, Christmas is winter');
+  /* THE HOLIDAY FOLK stand by today's page of the Daily calendar in their season and on no other day (putt.js HOLIDAY_FOLK). Each has a
+     model of its own in trail.js and two short lines, and none of them walks a tour's trail. The seasons are held here day by day,
+     written out again by hand rather than read off the code: Easter is the Sunday each year's table says. */
+  { const HF = P.HOLIDAY_FOLK, ids = Object.keys(HF), TSRC = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
+    const want = ['santa', 'mrsclaus', 'krampus', 'easterbunny', 'toothfairy', 'cupid', 'fathertime', 'mothernature'];
+    const drawn = ids.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), lines = ids.every(id => HF[id].say.length === 2 && HF[id].say.every(l => l.length <= 60 && !/[\u2013\u2014]/.test(l)));
+    claim(want.every(id => ids.includes(id)) && ids.length === 8 && drawn.length === 8 && lines, `the eight holiday folk each have a model of their own in trail.js (${drawn.join(', ')}) and two short lines`);
+    const onTrail = Object.keys(P.FOLK || {}).flatMap(w => Object.values(P.FOLK[w]).map(f => f.id)).concat(Object.values(P.GREETERS || {}).map(g => g.folk)).filter(id => ids.includes(id));
+    claim(!onTrail.length, 'no holiday folk stands on a tour trail or greets a world: they belong to the Daily' + (onTrail.length ? ' (' + onTrail.join(', ') + ')' : ''));
+    const EASTER = { 2026:'04-05', 2027:'03-28', 2028:'04-16' }, md = d => d.slice(5), inR = (m, a, b) => m >= a && m <= b;
+    claim(Object.keys(EASTER).every(y => P.easterDay(+y) === y + '-' + EASTER[y]) && P.easterDay(2038) === '2038-04-25' && P.easterDay(2008) === '2008-03-23', 'Easter falls where the calendar has it (2026 to 2028, the latest in 2038 and an early one in 2008)');
+    const season = d => { const y = d.slice(0, 4), e = Date.parse(y + '-' + EASTER[y] + 'T12:00:00Z'), t = Date.parse(d + 'T12:00:00Z'), m = md(d);
+      if (t >= e - 7 * 864e5 && t <= e + 864e5) return ['easterbunny'];
+      if (inR(m, '12-01', '12-06')) return ['santa', 'krampus']; if (inR(m, '12-07', '12-26')) return ['santa', 'mrsclaus'];
+      if (m >= '12-27' || m <= '01-06') return ['fathertime']; if (inR(m, '02-01', '02-18')) return ['cupid'];
+      if (inR(m, '02-19', '03-20')) return ['toothfairy']; if (inR(m, '03-21', '05-31')) return ['mothernature']; return []; };
+    const off = [], seen = {}; for (let t = Date.UTC(2026, 0, 1); t <= Date.UTC(2028, 11, 31); t += 864e5){ const d = new Date(t).toISOString().slice(0, 10), got = P.holidayFolk(d), w = season(d);
+      got.forEach(id => { seen[id] = (seen[id] || 0) + 1; }); if (got.join() !== w.join()) off.push(d + ' ' + got.join('+') + ' not ' + w.join('+')); }
+    claim(!off.length && ids.every(id => seen[id] > 0), `three years of days: each of the folk shows in their season and on no other day (${ids.map(id => id + ' ' + seen[id]).join(', ')})` + (off.length ? ': ' + off.slice(0, 4).join('; ') : ''));
+    const fixed = { '2026-12-03':'santa+krampus', '2026-12-24':'santa+mrsclaus', '2026-12-31':'fathertime', '2027-01-01':'fathertime', '2027-02-14':'cupid', '2027-02-28':'toothfairy', '2027-03-28':'easterbunny', '2027-04-22':'mothernature', '2026-10-31':'', '2026-11-26':'', '2027-07-04':'', '2027-01-07':'' };
+    const fx = Object.keys(fixed).filter(d => P.holidayFolk(d).join('+') !== fixed[d]);
+    claim(!fx.length, 'on a fixed clock: Santa and Krampus on 3 December, Santa and Mrs. Claus on Christmas Eve, Father Time at New Year, Cupid on Valentine\'s Day, the Tooth Fairy on Tooth Fairy Day, the Easter Bunny at Easter, Mother Nature on Earth Day, and nobody at Halloween, Thanksgiving, the Fourth of July or 7 January' + (fx.length ? ' (' + fx.join(', ') + ')' : '')); }
   head('5. NOTHING ESCAPES, NOTHING ROLLS FOR EVER');
   claim(escapes === 0, `no shot left the course through a wall (${escapes})`);
   claim(stuck === 0, `no shot was still rolling at the time limit (${stuck})`);
@@ -1110,6 +1132,23 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     claim(calk.days >= 60 && calk.todayDone, `the Daily tab is a calendar of ${calk.days} days with today marked played`);
     claim(calk.lockN > 0 && calk.sheet && calk.noRound, 'without the Tour Pass a missed day is shut, and pressing it opens the Pass sheet rather than a hole');
     claim(calk.pastRound && calk.late && calk.streak === 2 && calk.last, `a Pass holder plays a missed day, and it is filed late without moving the streak (streak ${calk.streak})`);
+    // THE HOLIDAY FOLK on the page, on a fixed clock: each stands by today's page in their season and says their line in the walks'
+    // bubble, a tap gives their next line, and a day with no holiday has nobody. The clock is the game's own day key, put back after.
+    const hol = await pg.evaluate(async () => { const wait = async q => { for (let t = 0; t < 100 && !document.querySelector(q); t++) await new Promise(r => setTimeout(r, 50)); return !!document.querySelector(q); };
+      const keep = _tzKey, out = {}; sbUser = { id:'hol' };
+      for (const day of ['2026-12-03', '2026-12-24', '2027-01-01', '2027-02-14', '2027-02-28', '2027-03-28', '2027-04-22', '2026-11-12', '2027-07-04']){
+        window.RTT_PUTT.close(); const n = +day.replace(/-/g, ''); _tzKey = () => n; openPutt(); await wait('.pp-tabs [data-tab="daily"]');
+        document.querySelector('.pp-tabs [data-tab="daily"]').click(); await wait('.pp-cday.cur');
+        const ids = [...document.querySelectorAll('.pp-calw .pp-hf')].map(e => e.getAttribute('data-folk')), bub = document.querySelector('.pp-calw .pp-hbub'), first = bub ? bub.textContent : '';
+        let second = ''; if (ids.length){ const f = document.querySelector('.pp-hf[data-folk="' + ids[0] + '"]'); f.click(); second = bub.textContent; }
+        const seen = ids.length ? (() => { const r = document.querySelector('.pp-hf').getBoundingClientRect(), b = bub.getBoundingClientRect(), pgR = document.querySelector('.pp-cday.cur').getBoundingClientRect();
+          return r.width > 20 && r.height > 30 && r.left >= -4 && r.right <= innerWidth + 4 && b.left >= -4 && b.right <= innerWidth + 4 && b.bottom <= pgR.top + 2; })() : true;
+        out[day] = { ids:ids.join('+'), first, second, seen, today:document.querySelector('.pp-cday.cur').getAttribute('data-day') === day }; }
+      _tzKey = keep; window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    const HF = await pg.evaluate(() => window.RTT_PUTT.HOLIDAY_FOLK), hw = { '2026-12-03':'santa+krampus', '2026-12-24':'santa+mrsclaus', '2027-01-01':'fathertime', '2027-02-14':'cupid', '2027-02-28':'toothfairy', '2027-03-28':'easterbunny', '2027-04-22':'mothernature', '2026-11-12':'', '2027-07-04':'' };
+    const hbad = Object.keys(hw).filter(d => { const o = hol[d], id = hw[d].split('+')[0]; if (!o.today || o.ids !== hw[d] || !o.seen) return true;
+      return id ? !(o.first === HF[id].name + HF[id].say[0] && o.second === HF[id].name + HF[id].say[1]) : !!o.first; });
+    claim(!hbad.length, `on a fixed clock the Daily tab stands each of the holiday folk by today's page in their season, on screen at 390 x 844, saying their first line and a tap their second, and nobody on a day without a holiday (${Object.keys(hw).map(d => d.slice(5) + ' ' + (hol[d].ids || 'nobody')).join(', ')})` + (hbad.length ? ': ' + hbad.map(d => d + ' ' + JSON.stringify(hol[d])).join('; ') : ''));
     // THE WALK TO THE NEXT HOLE IS A PLACE (trail.js): Next opens a 3D trail of the world, walked with a stick,
     // with a waypoint on the hole ahead. No coin lies loose: chests are hidden off the path, and opening one throws
     // its coins onto the ground to be walked over and paid into the account. A chest behind a locked gate and its
