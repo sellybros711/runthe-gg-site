@@ -241,7 +241,8 @@ function play(host, o, cb){
   if (o && o.vehicle === 'plane') return planeLeg(host, o, cb);
   if (o && o.vehicle === 'forest') return forestLeg(host, o, cb);
   if (o && o.vehicle === 'fog') return fogLeg(host, o, cb);
-  if (o && o.vehicle === 'seine') return seineLeg(host, o, cb);   // Notre-Dame: by the night boat across the Channel from the Thames, then up the Seine at dawn to the island (seineLeg, below)   // London: by the night train from the circus siding to a London terminus, then a hansom cab through the fog (fogLeg, below)
+  if (o && o.vehicle === 'seine') return seineLeg(host, o, cb);
+  if (o && o.vehicle === 'voyage') return voyageLeg(host, o, cb);   // Treasure Island: down the Seine to the sea, aboard the Hispaniola, and LAND HO (voyageLeg, below)   // Notre-Dame: by the night boat across the Channel from the Thames, then up the Seine at dawn to the island (seineLeg, below)   // London: by the night train from the circus siding to a London terminus, then a hansom cab through the fog (fogLeg, below)
   if (o && o.vehicle === 'circus') return circusLeg(host, o, cb);   // the Big Top: by circus train from the loggers' siding, then in with the parade (circusLeg, below)   // the Pacific Forest: by seaplane off the glacier and across the ocean, then up the logging road (forestLeg, below)   // the Himalayas are reached by seaplane off the loch, over the clouds to the peaks (planeLeg, below)
   o = o || {}; if (!PLANETS[o.from || 'earth'] || !PLANETS[o.to || 'moon'] || (o.vehicle && o.vehicle !== 'rocket' && o.vehicle !== 'ship')) throw new Error('trip3d: no such trip');
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
@@ -1721,5 +1722,83 @@ function seineLeg(host, o, cb){
   requestAnimationFrame(frame);
   return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
 }
-root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, forest:forestLeg, circus:circusLeg, fog:fogLeg, seine:seineLeg, PLANETS:PLANETS, ISLES:ISLES };
+/* DOWN THE SEINE TO THE SEA, ABOARD THE HISPANIOLA, AND LAND HO (SPACE_TRIP 'voyage'): Notre-Dame's last walk ends at the quay,
+   where the river boat waits. The camera is at its bow going down the Seine in the morning between the old quays and their houses
+   ("DOWN THE SEINE!"). Then it is aboard the Hispaniola at sea under a high blue sky, her bowsprit and jib before the camera and the
+   long swell running ("THE HISPANIOLA!"), and out of the haze ahead the island rises, nearer and nearer: the green humps of its
+   woods, Spyglass Hill the highest, Skeleton Island off its end and the surf white on the beaches ("LAND HO!", "TREASURE
+   ISLAND!"). Every wave, house and tree is noise: never a grid. A tap skips it; with reduced motion putt.js shows a still of the
+   island over the sea instead (spaceTrip). */
+function voyageLeg(host, o, cb){
+  var wrap = document.createElement('div'); wrap.className = 'pp-trip';
+  wrap.innerHTML = '<canvas></canvas><div class="pp-tripcap"><i></i><b></b></div><small>Tap to skip</small>';
+  wrap.querySelector('i').textContent = o.label || ''; wrap.querySelector('b').textContent = o.name || '';
+  host.appendChild(wrap);
+  var cv = wrap.querySelector('canvas'), cw = host.clientWidth || 390, ch = host.clientHeight || 844, dpr = Math.min(2, root.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  var W, H, buf = document.createElement('canvas'), bx, img, D, slow = 0, slowN = 0;
+  function setRes(w){ W = w; H = Math.round(W * ch / cw); buf.width = W; buf.height = H; bx = buf.getContext('2d'); img = bx.createImageData(W, H); D = img.data; }
+  setRes(140);
+  var done = false, t0 = 0, DUR = 13.6, SEA = 4.4, frames = 0, ftime = 0;
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb && cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function hsh(a, b){ var h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); }
+  // a house front on the quay at (along, up)
+  function front(al, up, side, hh){ var bay = Math.floor(al / 2.6), u = (al / 2.6) - bay, k = hsh(bay * 3 + side, 2), top = hh - 1.6 - k * 2;
+    if (up > top) return up < top + 1.4 - Math.abs(u - 0.5) * 2.8 ? (k > 0.5 ? [138, 58, 42] : [122, 46, 34]) : null;
+    if (up < 2.2) return [184, 168, 130]; if (u < 0.07 || ((up - 2.2) % 2.2) < 0.18) return [58, 38, 22];
+    if (u > 0.3 && u < 0.7 && ((up - 2.2) % 2.2) > 0.7 && ((up - 2.2) % 2.2) < 1.6) return [42, 38, 48];
+    return [232, 220, 192]; }
+  // the island on the horizon at x (as a share of the width from the middle): its height there, nearer as the voyage goes on
+  function isle(tx){ var a = Math.abs(tx); if (a > 1.2) return 0; var h = 0.32 * Math.exp(-Math.pow((tx - 0.12) / 0.16, 2)) + 0.16 * Math.exp(-Math.pow((tx + 0.4) / 0.3, 2)) + 0.12 * Math.exp(-Math.pow((tx - 0.6) / 0.25, 2));
+    h += (noise3(tx * 14, 2, 3) - 0.5) * 0.05; var sk = 0.08 * Math.exp(-Math.pow((tx - 1.02) / 0.07, 2)); return Math.max(h * (1 - Math.pow(a / 1.2, 6)), sk); }
+  function scene(t){ var sea = t >= SEA, s = sea ? t - SEA : t;
+    var cz = sea ? -s * 8 : -s * 10, cy = sea ? 3.0 + Math.sin(s * 1.1) * 0.35 : 1.8 + Math.sin(s * 1.4) * 0.05, foc = (W / 2) / Math.tan(70 * Math.PI / 360), hz = H * 0.52 + (sea ? Math.sin(s * 0.9) * 3 : 0);
+    var X = sea ? 1e9 : 7.5, hh = 9, fogC = sea ? [214, 226, 232] : [236, 214, 176], fogK = sea ? 160 : 70, near = sea ? clamp((s - 1.5) / 7.5, 0, 1) : 0;
+    for (var x = 0; x < W; x++){ var dx = (x + 0.5 - W / 2) / foc, dist = 1e9, side = dx > 0 ? 1 : -1;
+      if (Math.abs(dx) > 1e-4 && X < 1e8) dist = X / Math.abs(dx);
+      var ih = sea ? isle((x - W / 2) / (W * (0.35 + near * 0.6))) * H * (0.1 + near * 0.32) : 0;
+      for (var y = 0; y < H; y++){ var o2 = (y * W + x) * 4, col = null, fd = 80;
+        if (y > hz){ var gd = cy * foc / (y - hz + 0.5); if (gd < dist){ var gx = dx * gd, gz = cz - gd;
+            if (sea){ var sw = noise3(gx * 0.3, 2, gz * 0.25 + s * 0.4), rn = noise3(gx * 1.8, 5, gz * 0.9 + s * 1.1); col = rn > 0.82 ? [236, 240, 232] : sw > 0.6 ? [42, 110, 120] : sw < 0.3 ? [20, 70, 84] : [30, 90, 100]; }
+            else { var rn2 = noise3(gx * 2.4, 5, gz * 0.8 + s * 1.2); col = Math.abs(gx) > 5.6 ? (Math.abs(gx) > 6.6 ? [196, 180, 140] : [150, 136, 104]) : rn2 > 0.8 ? [240, 214, 160] : rn2 > 0.55 ? [110, 140, 164] : [74, 106, 130]; }
+            fd = gd; } }
+        if (!col && dist < 1e8){ var up = (hz - y) * dist / foc + cy; if (up < hh){ var fc = front(cz - dist, up, side, hh); if (fc){ col = fc; fd = dist; } } }
+        if (!col){ var g = clamp((hz - y) / hz, 0, 1);
+          if (sea){ col = lerpV([226, 230, 214], [70, 130, 190], Math.sqrt(g)); var cn = noise3(x * 0.05, y * 0.16, 11) + noise3(x * 0.13, y * 0.3, 12) * 0.35; if (cn > 0.92 && g > 0.35) col = lerpV(col, [255, 255, 255], Math.min(0.7, (cn - 0.92) * 3));   // a high blue sky with a cloud or two
+            if (y <= hz && hz - y < ih){ var top = hz - y > ih - 1.5, n2 = noise3(x * 0.4, y * 0.4, 7); col = top ? [62, 96, 52] : n2 > 0.6 ? [58, 88, 48] : n2 < 0.3 ? [38, 66, 40] : [48, 78, 44]; if (hz - y < 1.5) col = [240, 236, 220]; fd = 120 * (1 - near) + 10; } }
+          else col = lerpV([250, 224, 170], [120, 150, 200], Math.sqrt(g));
+          if (!fd || fd === 80) fd = sea ? 0 : 60; }
+        col = lerpV(col, fogC, 1 - Math.exp(-fd / fogK));
+        D[o2] = col[0]; D[o2 + 1] = col[1]; D[o2 + 2] = col[2]; D[o2 + 3] = 255; } }
+    bx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    var Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    if (sea){ // the Hispaniola's bow: her bowsprit going out, the foot of her jib, and the rail
+      var pit = Math.sin(s * 1.1) * 10 * k9;
+      ctx.fillStyle = '#3a2816'; ctx.beginPath(); ctx.moveTo(Wc * 0.12, Hc); ctx.lineTo(Wc / 2, Hc * 0.8 + pit); ctx.lineTo(Wc * 0.88, Hc); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#5a3e26'; ctx.lineWidth = 9 * k9; ctx.beginPath(); ctx.moveTo(Wc / 2, Hc * 0.84 + pit); ctx.lineTo(Wc * 0.56, Hc * 0.58 + pit * 0.6); ctx.stroke();
+      ctx.fillStyle = 'rgba(244,236,214,.92)'; ctx.beginPath(); ctx.moveTo(Wc * 0.56, Hc * 0.58 + pit * 0.6); ctx.lineTo(Wc * 0.98, Hc * 0.86); ctx.lineTo(Wc * 0.62, Hc * 0.9); ctx.closePath(); ctx.fill(); }
+    else { // the river boat's bow going down the Seine, and its lantern
+      ctx.fillStyle = '#4a3018'; ctx.beginPath(); ctx.moveTo(Wc * 0.18, Hc); ctx.lineTo(Wc / 2, Hc * 0.8); ctx.lineTo(Wc * 0.82, Hc); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#7a5a34'; ctx.beginPath(); ctx.moveTo(Wc * 0.28, Hc); ctx.lineTo(Wc / 2, Hc * 0.84); ctx.lineTo(Wc * 0.72, Hc); ctx.closePath(); ctx.fill(); }
+    return { pos:V(0, cy, cz) }; }
+  function render(t){ var cam = scene(t), Wc = cv.width, Hc = cv.height, k9 = Wc / 390;
+    if (t > SEA - 0.3 && t < SEA + 0.3){ ctx.fillStyle = 'rgba(0,0,0,' + (1 - Math.abs(t - SEA) / 0.3).toFixed(2) + ')'; ctx.fillRect(0, 0, Wc, Hc); }
+    var say = function(txt, c1, c2, wob){ ctx.font = 'bold ' + Math.round(44 * k9) + 'px Anton, Impact, sans-serif'; var fit = Math.min(1, Wc * 0.9 / Math.max(1, ctx.measureText(txt).width)); ctx.font = 'bold ' + Math.round(44 * k9 * fit) + 'px Anton, Impact, sans-serif';
+      ctx.textAlign = 'center'; ctx.lineWidth = 6 * k9; ctx.strokeStyle = c1; ctx.strokeText(txt, Wc / 2 + wob, Hc * 0.3); ctx.fillStyle = c2; ctx.fillText(txt, Wc / 2 + wob, Hc * 0.3); };
+    if (t > 0.6 && t < 3.6) say('DOWN THE SEINE!', '#3a2614', '#ffffff', Math.sin(t * 6) * 2 * k9);
+    else if (t > 5.0 && t < 7.6) say('THE HISPANIOLA!', '#14262a', '#ffffff', Math.sin(t * 7) * 2 * k9);
+    else if (t > 8.4 && t < 10.6) say('LAND HO!', '#14262a', '#ffe08a', Math.sin(t * 9) * 3 * k9);
+    else if (t > 11.0 && t < 13.2) say('TREASURE ISLAND!', '#14262a', '#e8b84a', Math.sin(t * 9) * 3 * k9);
+    return cam; }
+  if (o.still) return { at:function(t){ var c = render(t); if (t > 12) wrap.classList.add('cap'); return c; }, close:finish };
+  function frame(now){ if (done) return; try{ step(now); }catch(e){ return finish(); } if (!done) requestAnimationFrame(frame); }
+  function step(now){ if (!t0) t0 = now; var t = (now - t0) / 1000;
+    var a = performance.now(); render(t); var fe = performance.now() - a; ftime += fe; frames++;
+    if (frames > 4){ slow += fe; slowN++; if (slowN >= 15){ if (slow / slowN > 22 && W > 96) setRes(Math.max(96, Math.round(W * 0.86))); slow = 0; slowN = 0; } }
+    if (t > 12) wrap.classList.add('cap'); if (t > DUR) finish(); }
+  requestAnimationFrame(frame);
+  return { stats:function(){ return { frames:frames, ms:frames ? ftime / frames : 0, W:W }; }, at:function(t){ return render(t); } };
+}
+root.RTT_PUTT_TRIP = { play:play, sail:sail, fall:fall, glass:glassLeg, beanstalk:beanLeg, river:riverLeg, loch:lochLeg, plane:planeLeg, forest:forestLeg, circus:circusLeg, fog:fogLeg, seine:seineLeg, voyage:voyageLeg, PLANETS:PLANETS, ISLES:ISLES };
 })();

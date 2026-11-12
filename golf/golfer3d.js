@@ -1681,6 +1681,17 @@
     for(let k=0;k<3;k++) out.push(ellipsoid(add(hc,sc(hup,hr*(0.45-k*0.22)),sc(look,-hr*(0.85+k*0.2))),AXh,[hr*(0.34-k*0.06),hr*(0.32-k*0.05),hr*(0.32-k*0.06)],dark,{gloss:1}));   // the point falling behind
     return out; };
   HAT_OVER_HAIR.ppbellhood=1;
+  /* THE GOATSKIN CAP (Treasure Island): Ben Gunn's cap, as the maroon of Stevenson's island made it from the goats he lived on: a
+     round crown of shaggy brown and cream hair, tufts standing out all over it, and a ragged fringe round the brow. Modelled on the
+     course golfer too, so it is worn on the trail. */
+  HAT_MODEL.ppgoatskin=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const hair=X2((P&&P.W)||'#8a6a44'), dark=X2((P&&P.G)||'#5a4028'), cream=X2((P&&P.S)||'#c8aa7a');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.62)),AXh,[hr*1.06,hr*0.62,hr*1.06],hair,{gloss:1}));                                       // the round crown
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.34)),AXh,[hr*1.1,hr*0.16,hr*1.1],dark,{gloss:1}));                                         // the fringe round the brow
+    for(let k=0;k<14;k++){ const a=k/14*Math.PI*2, up=0.5+(k%3)*0.22; out.push(ellipsoid(add(hc,sc(hup,hr*up),sc(look,Math.cos(a)*hr*0.92),sc(Lf,Math.sin(a)*hr*0.92)),AXh,[hr*0.2,hr*0.26,hr*0.2],k%2?cream:dark,{gloss:1})); }   // the tufts standing out
+    out.push(ellipsoid(add(hc,sc(hup,hr*1.12)),AXh,[hr*0.42,hr*0.2,hr*0.42],cream,{gloss:1}));                                       // a pale tuft on top
+    return out; };
+  HAT_OVER_HAIR.ppgoatskin=1;
   /* THE WHITE KNIGHT'S HELM (Through the Looking-Glass): his tin helmet as Tenniel drew it, a round crown rising to a sugar-loaf
      point, a dark slit across the front to see through, and a red plume tied at its tip. Modelled on the course golfer too. */
   HAT_MODEL.ppknighthelm=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
@@ -1725,7 +1736,7 @@
     out.push(ellipsoid(add(hc,sc(hup,hr*1.36),sc(Lf,hr*0.18)),AXh,[hr*0.22,hr*0.22,hr*0.22],toorie,{gloss:1}));                    // the toorie
     return out; };
   HAT_OVER_HAIR.pptam=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1, pptopper:1, ppdeerstalker:1, ppbellhood:1};   // a modelled hat that is modelled on the course golfer too
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1, pptopper:1, ppdeerstalker:1, ppbellhood:1, ppgoatskin:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1985,6 +1996,10 @@
     ppgaslight:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const a=Math.atan2(p[1],p[0]), m=Math.abs((((a/(Math.PI/3))%1)+1)%1-0.5);
       if(m>0.44||Math.abs(p[2]-0.55)<0.06) return {c:P.s,gloss:2}; return {c:p[2]>0.2?P.h:P.C,gloss:3}; } },
     // the Bourdon Ball: the bronze of a great bell, warm and burnished, its two raised bands round it and a sheen up its shoulder
+    // the Piece of Eight Ball: an old Spanish silver dollar gilded with the sea's years, its cross of the arms in relief and a milled
+    // rim round its equator
+    ppeight:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2])<0.07) return {c:Math.floor(Math.atan2(p[1],p[0])*12)%2?P.h:P.b,gloss:3};
+      if((Math.abs(p[0])<0.1||Math.abs(p[1])<0.1)&&p[2]>0.35) return {c:P.h,gloss:3}; return {c:p[0]+p[2]>0.5?P.h:P.C,gloss:3}; } },
     ppbourdon:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2]-0.3)<0.06||Math.abs(p[2]+0.25)<0.05) return {c:P.h,gloss:3};
       return {c:p[0]+p[2]>0.5?P.b:P.C,gloss:3}; } },
     // the Tree Ring Ball: the cut end of an old fir, pale wood ringed with its years, a crack out from the heart and bark round its edge
