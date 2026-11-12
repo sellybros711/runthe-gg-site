@@ -72,5 +72,14 @@ run against a scratch Postgres; the order of files each needs is in the matching
 - **A scheduled or catch up build never rebuilds a live week**, because a price never moves once
   somebody has drafted. The guard reads the pointer from `origin/main`, not the checkout: a
   dispatched run checks out the commit main was on when it was queued.
+- **Only starting quarterbacks are on the board, read off the box scores** (`roles.mjs`, the
+  owner's call, 2026-11-12). There is no college depth chart: the starter led his team's passing
+  in its latest game, and the season's regular starter stays unless he has played behind the
+  new man (absent is not benched). The Monday build prices a starter on his starts. A man with
+  three or more games is not discounted for games missed (the MISSED chip says it); under
+  three he keeps the per team game discount, because the box lists only who touched the ball. Mid-week a backup is
+  `{ st: 'off', roster: 'QB2' }` in the injury file, and no price moves.
+- **Rosters are read with `limit=300`.** Plain, ESPN stops at 100 names alphabetically. A
+  starter a short roster leaves out is still added from the store.
 - **`next-week.mjs` is the week, and an unreadable scoreboard fails it.** ESPN answers null rather
   than throwing, which `nextWeek` alone reads as the season over, or as a later week.

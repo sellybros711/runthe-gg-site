@@ -84,8 +84,20 @@ export async function summary(eventId) {
   return getJSON(`/summary?event=${encodeURIComponent(eventId)}`);
 }
 
+/*
+ * A TEAM'S WHOLE ROSTER, WITH `limit=300`.
+ *
+ * Plain, ESPN stops at 100 athletes in alphabetical order, and FBS rosters run past it. The
+ * week 11 board was missing 176 men who had played for slate teams, nearly all with surnames
+ * from S on, and three teams' starting quarterbacks. The probe of 2026-11-12 (run
+ * 43285149270) read 100 plain ("Washington Jr." last) and 105 with `limit=300` ("Wright"
+ * last), and the same 105 with `limit=200&page=1`, so `limit` lifts the cap. The plain path is
+ * kept only as a fallback for a failed read, and the build logs a roster of exactly 100.
+ */
+export const ROSTER_CAP = 100;
 export async function roster(teamId) {
-  return getJSON(`/teams/${encodeURIComponent(teamId)}/roster`);
+  const rel = `/teams/${encodeURIComponent(teamId)}/roster`;
+  return (await getJSON(`${rel}?limit=300`)) || getJSON(rel);
 }
 
 /** The calendar of regular season weeks off a scoreboard payload: [{week, start, end}]. */
