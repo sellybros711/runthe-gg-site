@@ -6457,9 +6457,223 @@ Object.assign(FOLK3D, {
     if (t >= 2.05 && t < 2.42 && Math.hypot(u, v) < 0.22 && Math.hypot(u, v) > 0.12) return t > 2.36 ? '#c8a040' : '#2a3a6a';   // the high collar with its brass edge (never red: with no head above, red would read as a wound), and nothing at all above it
     return null; } }
 });
+/* THE HOLIDAY FOLK (putt.js HOLIDAY_FOLK): they stand by today's page of the Daily calendar in their season, never on the main tour.
+   Each is drawn from its public domain source (mythiball/PD_SOURCES.md) and kept out of its AVOID column. Santa as Clement Clarke
+   Moore wrote him (1823) and Thomas Nast drew him (1881): round and jolly, a red suit trimmed with white fur, a wide black belt, a
+   white beard and a nose like a cherry, a fur cap with a sprig of holly and his sack of toys on his back (never a Sundblom painting).
+   Mrs. Claus as Katharine Lee Bates wrote her (1889): a red gown trimmed with fur, her white hair in a bun, a white bonnet with
+   snowflakes on it and ribbons the colours of a sunrise, her spectacles, and a mug of cocoa. Krampus from the Alpine postcards of
+   1880 to 1914, drawn for all ages: black shaggy fur, two curled horns, a cowbell on a red ribbon and the tip of a red tongue, a
+   grumbly furry helper who carries a present for Santa. No chains, no birch switches, no basket, nothing frightening, and never the
+   2015 film. The Easter Bunny of the Osterhase stories and the old postcards: a brown HARE with long black tipped ears, a blue
+   jacket with a white collar and a basket of coloured eggs (no owned cartoon rabbit). The Tooth Fairy as Arthur Rackham drew his
+   fairies (1906): a small sprite in a lilac petal dress on gossamer blue wings, a tooth on the tip of her wand and a pouch at her
+   side (never Barker's Flower Fairies, never Tinker Bell). Cupid of the Romans and Botticelli: a chubby child with golden curls,
+   white wings, a white wrap and his bow (no clip art heart). Father Time of Petrarch's Triumph: a long white beard, a robe, an
+   hourglass in one hand and a scythe in the other, a farm tool held gently and never raised. Mother Nature of the old Natura
+   allegories: warm skin, long brown hair, a wreath of leaves and flowers, a green robe, a leafy mantle and a bluebird on her hand. */
+Object.assign(FOLK3D, {
+  // Santa: black boots with fur tops, red trousers, the round belly in its red coat, a black belt and a brass buckle, his sack of toys
+  santa:{ r:1.2, h:3.5, at:function(u, v, t){ var av = Math.abs(v), sh = hash((u * 20) | 0, (v * 20 + t * 13) | 0, 101);
+    var fur = sh < 0.3 ? '#e4e0d8' : '#fbfaf6', red = u + v * 0.3 > 0.05 ? '#c8262c' : '#a81e24';
+    if (t < 0.16 && el3(u, av, t, 0.08, 0.16, 0.08, 0.23, 0.11, 0.1) <= 1) return '#1a1410';   // black boots
+    if (cap3(u, av, t, [0, 0.16, 0.1], [0, 0.16, 0.42], 0.11)) return t > 0.32 ? fur : '#1a1410';   // their tops, cuffed in fur
+    if (cap3(u, av, t, [0, 0.16, 0.4], [0, 0.15, 0.9], 0.12)) return red;   // red trousers
+    if (Math.hypot(u + 0.46, v + 0.2) < 0.11 && t >= 2.0 && t < 2.24) return t > 2.2 ? '#f0e0b0' : (Math.floor(Math.atan2(v + 0.2, u + 0.46) * 2) & 1 ? '#d8302a' : '#e8c040');   // a toy drum,
+    if (el3(u, v, t, -0.42, 0.08, 2.08, 0.08, 0.08, 0.1) <= 1) return '#2f8a4a';   // and a green toy, peeping out of
+    if (el3(u, v, t, -0.44, -0.08, 1.72, 0.22, 0.3, 0.4) <= 1) return sh < 0.25 ? '#8a6a40' : '#a07c4c';   // his sack of toys
+    if (t >= 0.86 && t < 2.22 && el3(u, v, t, 0.06, 0, 1.5, 0.42, 0.42, 0.64) <= 1){
+      if (Math.abs(t - 1.36) < 0.065) return u > 0.3 && av < 0.09 ? '#e8c040' : '#1a1410';   // the wide belt, its brass buckle
+      if (t < 0.99 || (u > 0.32 && av < 0.07)) return fur;   // fur at the hem and down the front
+      return red; }
+    if (cap3(u, av, t, [0, 0.38, 2.0], [0.2, 0.47, 1.42], 0.1)) return t < 1.56 ? fur : red;   // his arms, fur at the cuffs
+    if (el3(u, av, t, 0.23, 0.48, 1.34, 0.08, 0.07, 0.08) <= 1) return '#1a1410';   // black mittens
+    if (u > -0.04 && t < 2.44 && el3(u, v, t, 0.12, 0, 2.26, 0.18, 0.24, 0.3) <= 1) return sh < 0.3 ? '#e8e6e0' : '#ffffff';   // the white beard
+    if (el3(u, v, t, 0.25, 0, 2.5, 0.06, 0.05, 0.05) <= 1) return '#e04a52';   // a nose like a cherry
+    var d = Math.hypot(u, v, t - 2.5);
+    if (d < 0.25){ if (u > 0.18 && Math.abs(av - 0.09) < 0.03 && Math.abs(t - 2.56) < 0.03) return '#1a1410';   // eyes that twinkle
+      if (u > 0.17 && Math.abs(av - 0.09) < 0.05 && Math.abs(t - 2.62) < 0.02) return '#ffffff';   // white brows
+      if (u > 0.19 && av < 0.13 && t > 2.42 && t < 2.47) return '#ffffff';   // the moustache
+      if (u > 0.17 && Math.abs(av - 0.15) < 0.05 && Math.abs(t - 2.49) < 0.04) return '#f08a8a';   // cheeks like roses
+      return u < -0.06 ? '#f4f2ec' : '#f4caa8'; }
+    if (el3(u, v, t, 0.14, 0.22, 2.79, 0.06, 0.03, 0.04) <= 1) return '#2a8a3a';   // a sprig of holly in his cap
+    if (el3(u, v, t, 0.18, 0.25, 2.75, 0.035, 0.035, 0.035) <= 1) return '#d8202a';
+    if (t >= 2.66 && t < 2.78 && Math.hypot(u, v) < 0.28) return fur;   // the fur band of his cap
+    if (t >= 2.76 && t < 3.3 && Math.hypot(u + (t - 2.76) * 0.5, v) < 0.25 * (1 - (t - 2.76) / 0.6)) return red;   // the cap, falling back
+    if (el3(u, v, t, -0.3, 0, 3.26, 0.08, 0.08, 0.08) <= 1) return fur;   // its bobble
+    return null; } },
+  // Mrs. Claus: a red gown to the floor trimmed with fur, her bonnet and its sunrise ribbons, spectacles, a mug of cocoa in both hands
+  mrsclaus:{ r:1.0, h:3.2, at:function(u, v, t){ var av = Math.abs(v), sh = hash((u * 20) | 0, (v * 20 + t * 13) | 0, 103);
+    var fur = sh < 0.3 ? '#e4e0d8' : '#fbfaf6', red = u + v * 0.3 > 0 ? '#c42a3a' : '#a42232';
+    if (t < 0.1 && el3(u, av, t, 0.2, 0.1, 0.05, 0.12, 0.07, 0.06) <= 1) return '#1a1410';   // her shoes, under the hem
+    if (t >= 0.04 && t < 1.5 && Math.hypot(u, v) < 0.24 + (1.5 - t) * 0.3) return t < 0.17 || (u > 0.22 && av < 0.05) ? fur : red;   // the gown, fur at the hem and down the front
+    if (Math.hypot(u - 0.34, v) < 0.08 && t >= 1.46 && t < 1.62) return t > 1.59 ? '#6a3a20' : Math.abs(t - 1.53) < 0.02 ? '#d8303a' : '#f6f4ee';   // the mug, cocoa in it
+    if (el3(u, av, t, 0.29, 0.09, 1.52, 0.06, 0.05, 0.06) <= 1) return '#f4caa8';   // her hands round it
+    if (cap3(u, av, t, [0, 0.26, 1.9], [0.25, 0.12, 1.54], 0.075)) return Math.hypot(u - 0.25, av - 0.12, t - 1.54) < 0.12 ? fur : red;   // her sleeves, fur at the cuffs
+    if (el3(u, v, t, 0, 0, 1.74, 0.22, 0.27, 0.34) <= 1) return t > 1.96 ? fur : red;   // the bodice, a fur collar
+    if (cap3(u, v, t, [0, 0, 1.98], [0, 0, 2.08], 0.06)) return '#f4caa8';
+    if (cap3(u, av, t, [0.06, 0.2, 2.18], [0.15, 0.05, 2.02], 0.028)) return t > 2.12 ? '#ff6a8a' : '#ff9a3a';   // the ribbons, the colours of a sunrise,
+    if (el3(u, av, t, 0.18, 0.06, 2.0, 0.04, 0.06, 0.04) <= 1) return '#ffc23a';   // tied in a bow under her chin
+    if (el3(u, v, t, -0.27, 0, 2.36, 0.1, 0.11, 0.1) <= 1) return sh < 0.3 ? '#e4e2dc' : '#f6f4ee';   // her white bun
+    var b = Math.hypot(u + 0.03, v, t - 2.28);
+    if (b < 0.31 && b > 0.235 && u > -0.14 && u < 0.08){ var fl = hash(Math.floor(v * 14 + 20), Math.floor(t * 14), 7); return fl < 0.16 ? '#9cc4e8' : '#fbfaf6'; }   // the bonnet, snowflakes on it
+    if (u > 0.04 && u < 0.12 && Math.hypot(v, t - 2.28) < 0.33 && Math.hypot(v, t - 2.28) > 0.23) return '#f2eee6';   // its brim round her face
+    var d = Math.hypot(u, v, t - 2.26);
+    if (d < 0.22){ var ex = av - 0.08, ey = t - 2.29, er = Math.hypot(ex, ey);
+      if (u > 0.14 && er > 0.03 && er < 0.048) return '#c8a040';   // her spectacles,
+      if (u > 0.16 && av < 0.035 && Math.abs(t - 2.3) < 0.012) return '#c8a040';
+      if (u > 0.15 && er < 0.018) return '#1a1410';   // kind eyes behind them
+      if (u > 0.17 && Math.abs(av - 0.13) < 0.04 && Math.abs(t - 2.2) < 0.035) return '#f4a0a0';
+      if (u > 0.18 && av < 0.06 && Math.abs(t - 2.16) < 0.014) return '#b84a4a';   // a smile
+      return u < -0.04 || t > 2.38 ? '#f4f2ec' : '#f4caa8'; }   // her white hair, parted
+    return null; } },
+  // Krampus, Santa's grumbly helper: shaggy black fur, two curled horns, round eyes under cross brows, a cowbell, a present to carry
+  krampus:{ r:1.1, h:3.7, at:function(u, v, t){ var av = Math.abs(v), fr = hash((u * 22) | 0, (v * 19 + t * 25) | 0, 107);
+    var pelt = fr < 0.3 ? '#2a201c' : fr < 0.75 ? '#3a2e28' : '#4a3a30';
+    if (t < 0.14 && el3(u, av, t, 0.07, 0.15, 0.07, 0.15, 0.1, 0.08) <= 1) return Math.abs(av - 0.15) < 0.015 && u > 0.08 ? '#4a4440' : '#1a1614';   // two cloven hooves
+    if (cap3(u, av, t, [0, 0.15, 0.1], [0, 0.16, 1.0], 0.13 + fr * 0.03)) return pelt;   // shaggy legs
+    if (u > 0.28 && Math.abs(u - 0.4) < 0.15 && av < 0.17 && Math.abs(t - 1.5) < 0.13){ if (av < 0.025 || Math.abs(t - 1.5) < 0.025) return '#d8303a'; return '#2f8a4a'; }   // the present, a red ribbon round it
+    if (cap3(u, av, t, [0, 0.36, 2.2], [0.24, 0.2, 1.55], 0.1 + fr * 0.02)) return pelt;   // his arms round it
+    if (el3(u, av, t, 0.27, 0.19, 1.5, 0.07, 0.06, 0.07) <= 1) return '#5a4a44';   // his hands
+    if (t >= 2.29 && t < 2.36 && Math.hypot(u, v) < 0.27 && Math.hypot(u, v) > 0.18 && u > -0.05) return '#c8262c';   // a red ribbon,
+    if (el3(u, v, t, 0.3, 0, 2.18, 0.08, 0.09, 0.1) <= 1) return t < 2.1 ? '#b08a28' : '#e8c040';   // and on it his cowbell
+    if (t >= 0.9 && t < 2.42 && el3(u, v, t, 0, 0, 1.64, 0.34 + fr * 0.03, 0.38 + fr * 0.03, 0.76) <= 1) return pelt;   // the shaggy body
+    if (el3(u, av, t, -0.02, 0.3, 2.74, 0.05, 0.12, 0.05) <= 1) return av > 0.36 ? '#8a5a52' : pelt;   // ears out to the side
+    var hl = [[0.04, 0.15, 2.88], [-0.02, 0.23, 3.18], [-0.14, 0.29, 3.38], [-0.27, 0.27, 3.32]];   // two horns, curled back
+    for (var k = 0; k < 3; k++) if (cap3(u, av, t, hl[k], hl[k + 1], 0.06 - k * 0.012)) return Math.floor((t + u) * 18) % 3 ? '#d8c8a8' : '#b8a888';
+    var d = Math.hypot(u, v * 0.95, t - 2.68);
+    if (el3(u, v, t, 0.33, 0, 2.62, 0.05, 0.06, 0.04) <= 1) return '#2a1a18';   // his nose
+    if (el3(u, v, t, 0.31, 0.04, 2.48, 0.03, 0.04, 0.025) <= 1) return '#d8505a';   // the tip of his tongue, out a little
+    if (el3(u, v, t, 0.22, 0, 2.56, 0.12, 0.16, 0.11) <= 1) return '#8a6a52';   // the muzzle, paler
+    if (d < 0.3){ if (u > 0.2 && Math.abs(t - (2.8 + (av - 0.05) * 0.35)) < 0.02 && av > 0.04 && av < 0.18) return '#1a1410';   // brows down in the middle: grumbly
+      if (u > 0.19 && Math.abs(av - 0.11) < 0.06 && Math.abs(t - 2.72) < 0.05) return Math.abs(av - 0.1) < 0.025 && Math.abs(t - 2.71) < 0.03 ? '#1a1410' : '#ffffff';   // round eyes
+      return pelt; }
+    return null; } },
+  // the Easter Bunny, a brown hare standing up: long black tipped ears, a blue jacket and white collar, a basket of coloured eggs
+  easterbunny:{ r:1.0, h:3.5, at:function(u, v, t){ var av = Math.abs(v), fr = hash((u * 24) | 0, (v * 21 + t * 27) | 0, 109);
+    var coat = fr < 0.3 ? '#8a5a32' : fr < 0.8 ? '#9a6a3e' : '#b07a48';
+    if (t < 0.14 && el3(u, av, t, 0.16, 0.14, 0.07, 0.27, 0.09, 0.07) <= 1) return t < 0.04 ? '#e8d8bc' : coat;   // long hind feet
+    if (cap3(u, av, t, [0, 0.14, 0.1], [0, 0.15, 0.86], 0.12)) return coat;
+    if (el3(u, v, t, -0.32, 0, 1.0, 0.1, 0.11, 0.1) <= 1) return '#fbfaf6';   // his white scut
+    var bu = u - 0.14, bv = v - 0.46;
+    if (Math.hypot(bu, bv) < 0.17 && t >= 0.78 && t < 1.02) return (Math.floor(t * 30) + Math.floor(Math.atan2(bv, bu) * 4)) & 1 ? '#c89a52' : '#a87a3a';   // the wicker basket
+    if (t >= 1.0 && t < 1.12 && Math.hypot(bu, bv) < 0.15){ var e = hash(Math.floor(bu * 14 + 9), Math.floor(bv * 14 + 9), 5); return e < 0.25 ? '#ff7aa8' : e < 0.5 ? '#7ad0ff' : e < 0.75 ? '#ffe04a' : '#9ae07a'; }   // coloured eggs in it
+    if (t > 1.02 && Math.abs(Math.hypot(bu, t - 1.02) - 0.16) < 0.022 && Math.abs(bv) < 0.025) return '#a87a3a';   // its handle
+    if (el3(u, v, t, 0.13, 0.44, 1.2, 0.06, 0.06, 0.06) <= 1) return coat;   // the paw that holds it
+    if (cap3(u, v, t, [0, 0.3, 1.74], [0.12, 0.43, 1.25], 0.08)) return '#2a5ab0';   // his sleeves
+    if (cap3(u, v, t, [0, -0.3, 1.74], [0.08, -0.38, 1.3], 0.08)) return '#2a5ab0';
+    if (el3(u, v, t, 0.09, -0.39, 1.24, 0.06, 0.06, 0.06) <= 1) return coat;
+    if (t >= 1.76 && t < 1.9 && Math.hypot(u, v) < 0.27) return '#fbfaf6';   // the white collar
+    if (el3(u, v, t, 0, 0, 1.36, 0.28, 0.32, 0.56) <= 1){ if (t < 1.0) return coat;
+      if (u > 0.18 && av < 0.06) return Math.abs(((t * 6) % 1) - 0.5) < 0.12 && u > 0.24 ? '#e8c040' : '#e8d8bc';   // his pale front, brass buttons
+      return u + v * 0.3 > 0 ? '#2a5ab0' : '#22489a'; }   // the blue jacket
+    if (cap3(u, av, t, [0, 0.1, 2.28], [-0.06, 0.16, 3.3], 0.07)) return t > 3.12 ? '#1a1410' : u > 0.04 && av < 0.15 ? '#e8a8a0' : coat;   // the long ears, black at the tips
+    if (el3(u, v, t, 0.33, 0, 2.08, 0.03, 0.04, 0.03) <= 1) return '#e08890';   // a pink nose
+    if (el3(u, v, t, 0.24, 0, 2.03, 0.1, 0.13, 0.09) <= 1) return '#e8d8bc';   // the pale muzzle
+    if (el3(u, v, t, 0.06, 0, 2.12, 0.25, 0.22, 0.25) <= 1){ if (u > 0.08 && Math.abs(av - 0.15) < 0.04 && Math.abs(t - 2.19) < 0.04) return Math.abs(t - 2.21) < 0.013 && av > 0.15 ? '#ffffff' : '#2a1a10';   // a hare's eyes, set wide
+      return coat; }
+    return null; } },
+  // the Tooth Fairy, a sprite in the air: a lilac petal dress, gossamer blue wings, a pouch at her side, a tooth on her wand
+  toothfairy:{ r:1.0, h:3.0, at:function(u, v, t){ var av = Math.abs(v), z = t - 0.45;
+    if (z < 0) return null;
+    if (z < 0.06 && el3(u, av, z, 0.03, 0.07, 0.03, 0.07, 0.04, 0.04) <= 1) return '#9a7ac8';   // little slippers
+    if (cap3(u, av, z, [0, 0.07, 0.02], [0, 0.07, 0.62], 0.04)) return '#f2d0b0';
+    var aw = Math.atan2(v, u), lob = 0.78 + 0.22 * Math.cos(aw * 6);
+    if (z >= 0.5 && z < 1.2 && Math.hypot(u, v) < (0.13 + (1.2 - z) * 0.3) * lob) return Math.floor(aw * 6 / Math.PI + 12) & 1 ? '#b89ad8' : '#d4c0f0';   // the petal skirt
+    if (el3(u, v, z, 0.1, -0.21, 1.08, 0.06, 0.05, 0.07) <= 1) return Math.abs(z - 1.13) < 0.015 ? '#c8a040' : '#8a6a4a';   // her pouch, for the teeth
+    if (el3(u, v, z, 0, 0, 1.34, 0.12, 0.15, 0.22) <= 1) return '#9a7ac8';   // the bodice
+    if (cap3(u, v, z, [0.18, 0.33, 1.7], [0.2, 0.35, 2.2], 0.02)) return '#e0e4ec';   // the silver wand,
+    if (el3(u, v, z, 0.2, 0.35, 2.27, 0.06, 0.06, 0.06) <= 1 || cap3(u, v, z, [0.2, 0.31, 2.24], [0.2, 0.31, 2.16], 0.022) || cap3(u, v, z, [0.2, 0.39, 2.24], [0.2, 0.39, 2.16], 0.022)) return '#ffffff';   // a tooth on its tip
+    if (cap3(u, v, z, [0, 0.15, 1.48], [0.17, 0.32, 1.7], 0.035)) return '#f2d0b0';   // her arms
+    if (cap3(u, v, z, [0, -0.15, 1.48], [0.05, -0.2, 1.14], 0.035)) return '#f2d0b0';
+    // the wings, two pairs behind her shoulders, the veins drawn in
+    if (u < -0.06 && u > -0.2){ var wv = av, wu = [[0.36, 1.68, 0.32, 0.26], [0.27, 1.26, 0.22, 0.17]];
+      for (var k = 0; k < 2; k++){ var W = wu[k], q = el3(wv, z, 0, W[0], W[1], 0, W[2], W[3], 1); if (q <= 1) return q > 0.8 ? '#eaf6ff' : Math.abs((wv - 0.12) * 1.6 - (z - W[1] + 0.2)) < 0.03 ? '#8ab8e8' : '#c4e2fc'; } }
+    if (el3(u, v, z, -0.11, 0, 1.52, 0.08, 0.14, 0.24) <= 1) return '#a85a2a';   // her hair, down her back
+    if (el3(u, v, z, 0.06, 0.12, 1.86, 0.04, 0.04, 0.04) <= 1) return '#e8a0d8';   // a flower in it
+    var d = Math.hypot(u, v, z - 1.72);
+    if (d < 0.17){ if (u > 0.12 && Math.abs(av - 0.06) < 0.025 && Math.abs(z - 1.75) < 0.025) return '#2a1a2a';
+      if (u > 0.13 && av < 0.045 && Math.abs(z - 1.65) < 0.012) return '#c0505a';
+      if (u > 0.12 && Math.abs(av - 0.1) < 0.03 && Math.abs(z - 1.68) < 0.025) return '#f4a8b0';
+      return u < -0.02 || z > 1.82 ? '#a85a2a' : '#f2d0b0'; }
+    return null; } },
+  // Cupid, a chubby child: golden curls, white wings, a white wrap, his bow in one hand and an arrow in the other
+  cupid:{ r:0.9, h:2.2, k:1.15, at:function(u, v, t){ var av = Math.abs(v), z = t - 0.2, skin = '#f6d2b4';
+    if (z < 0) return null;
+    if (cap3(u, av, z, [0.03, 0.1, 0.03], [0, 0.11, 0.42], 0.085)) return skin;   // chubby legs
+    if (Math.abs(Math.hypot(u - 0.06, z - 0.86) - 0.34) < 0.026 && u > 0.18 && Math.abs(v + 0.34) < 0.03) return '#e0b040';   // the golden bow,
+    if (Math.abs(u - 0.18) < 0.012 && Math.abs(z - 0.86) < 0.31 && Math.abs(v + 0.34) < 0.012) return '#f6f4ee';   // its string
+    if (cap3(u, v, z, [0.16, 0.3, 0.5], [0.16, 0.3, 1.08], 0.014)) return z < 0.62 ? '#ffffff' : '#c89a52';   // the arrow, white feathers at its foot
+    if (el3(u, v, z, 0.16, 0.3, 1.12, 0.025, 0.025, 0.05) <= 1) return '#e0b040';
+    if (el3(u, v, z, 0.38, -0.34, 0.86, 0.05, 0.05, 0.05) <= 1 || el3(u, v, z, 0.16, 0.27, 0.8, 0.05, 0.05, 0.05) <= 1) return skin;   // his hands
+    if (cap3(u, v, z, [0, -0.2, 1.0], [0.36, -0.33, 0.88], 0.065) || cap3(u, v, z, [0, 0.2, 1.0], [0.14, 0.27, 0.82], 0.065)) return skin;   // plump arms
+    // white wings, feathered in rows
+    if (u < -0.08 && u > -0.22){ var q = el3(av, z, 0, 0.36, 1.12, 0, 0.3, 0.26, 1); if (q <= 1 && z > 0.82 - (av - 0.1) * 0.3) return Math.floor((z - av * 0.5) * 16) & 1 ? '#ffffff' : '#e2e6ee'; }
+    if (el3(u, v, z, 0.04, 0, 0.74, 0.25, 0.26, 0.32) <= 1){ if (z < 0.64 || Math.abs((z - 0.7) - v * 0.85) < 0.08) return Math.floor((u + z) * 14) % 3 ? '#fbfaf6' : '#e4e0d8';   // the white wrap and its sash
+      return skin; }
+    var d = Math.hypot(u, v, z - 1.3);
+    if (d < 0.24){ if (u > 0.16 && Math.abs(av - 0.08) < 0.03 && Math.abs(z - 1.33) < 0.035) return '#3a2a1a';   // big eyes
+      if (u > 0.17 && av < 0.06 && Math.abs(z - 1.21) < 0.015) return '#d0606a';
+      if (u > 0.15 && Math.abs(av - 0.14) < 0.04 && Math.abs(z - 1.24) < 0.035) return '#f8a8a8';   // rosy cheeks
+      if (u < 0.04 || z > 1.44) return vn(u * 18, v * 18 + z * 18, 41) < 0.45 ? '#d8a028' : '#f0c040';
+      return skin; }
+    if (d < 0.29 && (u < 0.06 || z > 1.42) && vn(u * 16 + 3, v * 16 + z * 16, 43) > 0.4) return vn(u * 18, v * 18 + z * 18, 41) < 0.45 ? '#d8a028' : '#f0c040';   // golden curls
+    return null; } },
+  // Father Time: sandals, a long pale robe with a rope belt, the long white beard, the hourglass, the scythe held upright
+  fathertime:{ r:1.2, h:4.3, at:function(u, v, t){ var av = Math.abs(v), fold = Math.floor(Math.atan2(v, u) * 5) & 1;
+    if (t < 0.1 && el3(u, av, t, 0.1, 0.12, 0.05, 0.17, 0.08, 0.06) <= 1) return '#8a5a32';   // sandals
+    if (cap3(u, v, t, [0.14, 0.44, 0.0], [0.12, 0.44, 3.86], 0.035)) return '#8a6a40';   // the scythe's long wooden handle,
+    if (t > 3.4 && u > 0.12 && Math.abs(v - 0.44) < 0.022 && Math.abs(Math.hypot(u - 0.12, t - 3.4) - 0.44) < 0.05) return Math.hypot(u - 0.12, t - 3.4) > 0.47 ? '#eef0f4' : '#b8bcc4';   // its blade, a farm tool
+    var hz = t - 1.73, hr = Math.hypot(u - 0.36, v + 0.24);
+    if (Math.abs(hz) > 0.13 && Math.abs(hz) < 0.165 && hr < 0.11) return '#8a6a40';   // the hourglass: its wooden ends,
+    if (Math.abs(hz) <= 0.13 && hr < 0.025 + Math.abs(hz) * 0.6){ if (hz < -0.04 && hz > -0.13 || (hz > 0 && hz < 0.05)) return '#e8c870'; return '#dff0f8'; }   // the glass, the sand running down
+    if (el3(u, v, t, 0.36, -0.24, 1.52, 0.06, 0.06, 0.06) <= 1) return '#f0c8a8';   // the hand under it
+    if (cap3(u, v, t, [0, -0.3, 2.2], [0.3, -0.27, 1.56], 0.08)) return fold ? '#d8d4cc' : '#c4c0b8';
+    if (cap3(u, v, t, [0, 0.3, 2.2], [0.13, 0.43, 1.66], 0.08)) return fold ? '#d8d4cc' : '#c4c0b8';
+    if (el3(u, v, t, 0.13, 0.44, 1.6, 0.06, 0.06, 0.06) <= 1) return '#f0c8a8';   // the hand on the handle
+    if (u > -0.04 && t < 2.52 && t > 1.6 && el3(u, v, t, 0.14, 0, 2.14, 0.16, 0.2 * Math.min(1, (t - 1.6) / 0.35 + 0.2), 0.5) <= 1) return Math.floor(v * 30) & 1 ? '#f8f8f4' : '#e8e8e2';   // the long white beard
+    if (t >= 0.06 && t < 2.0 && Math.hypot(u, v) < 0.26 + (2.0 - t) * 0.08) return Math.abs(t - 1.45) < 0.04 ? '#a8884a' : fold ? '#d8d4cc' : '#c4c0b8';   // the robe, a rope belt
+    if (el3(u, v, t, 0, 0, 2.1, 0.24, 0.3, 0.32) <= 1) return fold ? '#d8d4cc' : '#c4c0b8';
+    if (el3(u, v, t, 0.14, 0, 2.87, 0.05, 0.04, 0.06) <= 1) return '#f4f2ec';   // his one forelock
+    if (el3(u, v, t, 0.24, 0, 2.56, 0.05, 0.04, 0.06) <= 1) return '#e8b49a';   // a kind old nose
+    var d = Math.hypot(u, v, t - 2.62);
+    if (d < 0.25){ if (u > 0.17 && Math.abs(av - 0.08) < 0.04 && Math.abs(t - (2.63 + Math.abs(av - 0.08) * 0.6)) < 0.014) return '#3a2a20';   // eyes, smiling shut
+      if (u > 0.16 && Math.abs(av - 0.09) < 0.06 && Math.abs(t - 2.7) < 0.025) return '#ffffff';   // bushy brows
+      return u < -0.02 || (av > 0.16 && t < 2.74) ? '#f4f2ec' : '#f0c8a8'; }   // bald on top, white hair round the back
+    return null; } },
+  // Mother Nature: a green robe to the floor, a leafy mantle, long brown hair, a wreath of leaves and flowers, a bluebird on her hand
+  mothernature:{ r:1.1, h:3.6, at:function(u, v, t){ var av = Math.abs(v), lf = hash(Math.floor(u * 9 + 20), Math.floor(v * 9 + 20) * 7 + Math.floor(t * 9), 111), skin = '#d8a07a';
+    var leaf = lf < 0.06 ? '#f4a0c0' : lf < 0.4 ? '#5aa83a' : lf < 0.75 ? '#4a9a30' : '#7ac04a';
+    if (el3(u, v, t, 0.44, 0.34, 2.53, 0.05, 0.045, 0.045) <= 1) return '#3a7ad8';   // the bluebird: its head,
+    if (el3(u, v, t, 0.5, 0.34, 2.53, 0.03, 0.015, 0.015) <= 1) return '#e8b040';   // its beak,
+    if (el3(u, v, t, 0.38, 0.34, 2.45, 0.08, 0.055, 0.06) <= 1) return u > 0.41 && t < 2.47 ? '#f08a3a' : '#3a7ad8';   // its orange breast,
+    if (cap3(u, v, t, [0.33, 0.34, 2.44], [0.24, 0.34, 2.4], 0.025)) return '#2a5ab0';   // and its tail
+    if (el3(u, v, t, 0.38, 0.34, 2.35, 0.05, 0.05, 0.05) <= 1) return skin;   // her hand, held up for it
+    if (cap3(u, v, t, [0.28, 0.34, 2.02], [0.37, 0.34, 2.32], 0.05)) return skin;
+    if (cap3(u, v, t, [0, 0.28, 2.15], [0.28, 0.34, 2.02], 0.07)) return '#3a8a4a';   // her sleeves
+    if (cap3(u, v, t, [0, -0.28, 2.15], [0.06, -0.34, 1.52], 0.07)) return '#3a8a4a';
+    if (el3(u, v, t, 0.07, -0.35, 1.46, 0.05, 0.05, 0.06) <= 1) return skin;
+    if (u < 0.05 && t > 0.6 && el3(u, v, t, -0.06, 0, 1.6, 0.3, 0.37, 0.62) <= 1) return leaf;   // the leafy mantle, over her shoulders
+    if (t >= 0.02 && t < 1.95 && Math.hypot(u, v) < 0.22 + (1.95 - t) * 0.16) return t < 0.12 ? '#2a6a36' : (Math.floor(Math.atan2(v, u) * 5) & 1 ? '#3a8a4a' : '#2f7a40');   // the green robe
+    if (el3(u, v, t, 0, 0, 2.0, 0.2, 0.26, 0.3) <= 1) return '#3a8a4a';
+    if (cap3(u, v, t, [0, 0, 2.2], [0, 0, 2.32], 0.06)) return skin;
+    var wr = Math.hypot(u, v);
+    if (t >= 2.6 && t < 2.71 && wr > 0.17 && wr < 0.27){ var fl = hash(Math.floor(Math.atan2(v, u) * 5 + 20), 3, 113); return fl < 0.18 ? '#f8d040' : fl < 0.32 ? '#f4a0c0' : fl < 0.42 ? '#ffffff' : fl < 0.7 ? '#4a9a30' : '#6ab83a'; }   // the wreath
+    if (el3(u, v, t, -0.14, 0, 2.18, 0.1, 0.22, 0.42) <= 1) return '#6a4224';   // long brown hair, down her back
+    var d = Math.hypot(u, v, t - 2.5);
+    if (d < 0.22){ if (u > 0.15 && Math.abs(av - 0.075) < 0.03 && Math.abs(t - 2.53) < 0.025) return '#2a1a10';
+      if (u > 0.17 && av < 0.05 && Math.abs(t - 2.42) < 0.013) return '#b0505a';
+      return u < -0.02 || t > 2.62 || av > 0.16 ? '#6a4224' : skin; }
+    return null; } }
+});
 // a figure's build, facing f, turned 53 degrees toward the camera
 // (k: a figure drawn larger than life, so a little girl still reads on a phone)
 function folkFn(id, f){ var F = FOLK3D[id], ax = f * 0.6, ay = 0.8, k = F.k || 1, R = F.r * k + 0.2;
   return function(B){ B.solid(-R, -R, 0, R, R, F.h * k + 0.1, function(px, py, pz){ return F.at((px * ax + py * ay) / k, (px * ay - py * ax) / k, pz / k); }, 0.0625); }; }
-window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
+/* ONE OF THE FOLK ON THEIR OWN, off any walk (putt.js stands the holiday folk by today's page of the Daily calendar with it): facing f,
+   lit and outlined like a trail's props, at the fine walks' grain. Null when hole3d.js is not on the page. */
+var FOLK_P = { spec:{ fine:true }, seed:1 };
+function folkPic(id, f){ var F = FOLK3D[id]; if (!F) return null; f = f < 0 ? -1 : 1; var k = F.k || 1;
+  return propSprite('folkpic:' + id + ':' + f, FOLK_P, folkFn(id, f), 2 * F.r * k + 0.4, 2 * F.r * k + 0.4, F.h * k); }
+window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT, folkPic:folkPic };
 })();
