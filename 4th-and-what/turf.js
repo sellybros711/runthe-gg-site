@@ -78,7 +78,13 @@
       canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
       return V;
     };
-    function top() { return o.Y0 + (o.ahead || 27); }
+    /* the view never runs past an end line (the owner, 2026-11-12: "when you're
+       at the 1, the field shouldn't be pulled all the way down"): near a goal
+       line it stops at the back of the end zone and the ball sits higher or lower */
+    function top() {
+      var span = (o.behind || 11) + (o.ahead || 27), t = o.Y0 + (o.ahead || 27);
+      return Math.max(Math.min(t, 110.5), -10.5 + span);
+    }
     function sx(xa) { return (xa - xMin) * S; }
     function sy(ya) { return (yTop - ya) * S; }
     function rx(x) { return sx(o.BX + x); }
