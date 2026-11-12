@@ -20,7 +20,7 @@ name: Refresh the Fantasy Challenge injury report
 #
 # `fantasy-live.yml` writes to Supabase and commits nothing, because it runs every ten
 # minutes through a game day and a hundred commits a weekend is a hundred Cloudflare
-# deploys. This one runs twice a day and only commits when the report has actually moved,
+# deploys. This one runs hourly through the day and only commits when the report has actually moved,
 # which is about three times a week. A static file is then the simplest thing that can work:
 # no migration, no round trip, and a week with no file behaves exactly as the mode did
 # before any of this existed.
@@ -35,11 +35,18 @@ name: Refresh the Fantasy Challenge injury report
 
 on:
   schedule:
-    # Two passes a day, in UTC. The first is early evening Eastern, which is after the
-    # Wednesday, Thursday and Friday reports are filed; the second is late morning Eastern,
-    # which catches an overnight move and the Sunday inactives before the one o'clock games.
-    - cron: '20 22 * * *'
-    - cron: '20 15 * * *'
+    # EVERY HOUR FROM LATE MORNING TO NIGHT, EASTERN (the owner's call, 2026-11-12). In UTC.
+    #
+    # The two passes a day this replaced ran at 10:20am and 5:20pm Eastern, and nflverse
+    # publishes its injury, roster and depth chart files about 11am Eastern. So the morning
+    # pass read yesterday's files every day, and a change landed six hours late at best:
+    # Malik Willis went on injured reserve and stayed on the week 10 board overnight.
+    # Hourly from 11:20am to 8:20pm Eastern (12:20pm to 9:20pm in daylight time) picks up
+    # any nflverse push within the hour, covers the Thursday night lock, and the Sunday
+    # 11:20am pass is before the one o'clock games. A run with nothing new commits nothing,
+    # so a quiet hour costs a minute of Actions and no deploy.
+    - cron: '20 16-23 * * *'
+    - cron: '20 0-1 * * *'
   workflow_dispatch:
     inputs:
       week:
