@@ -673,6 +673,36 @@ console.log('\nTHE INJURY REPORT IS BUILT FROM TWO SOURCES');
     twice[0] === twice[1] ? `${twice[0].length} bytes` : 'the output carries a clock');
 }
 
+/* A BACKUP QUARTERBACK COMES OFF THE BOARD (the owner, 2026-11-12). Read off each club's own
+   latest depth chart; a starter anywhere stays; a stale chart takes nobody off. */
+{
+  const { backupQBs, buildInjuries } = await import('./build/injuries.mjs');
+  const now = Date.parse('2026-11-12T16:00:00Z');
+  const d = (dt, team, id, rank) => ({ dt, team, gsis_id: id, pos_abb: 'QB', pos_rank: String(rank) });
+  const depth = [
+    d('2026-11-12T15:00:00Z', 'NYG', 'mccarthy', 1), d('2026-11-12T15:00:00Z', 'NYG', 'winston', 2),
+    d('2026-11-10T15:00:00Z', 'NYG', 'winston', 1),            /* an older stamp is ignored */
+    d('2026-11-12T15:00:00Z', 'BAL', 'brissett', 1),            /* moved clubs, starts there */
+    d('2026-11-12T15:00:00Z', 'ARI', 'beck', 1),
+    d('2026-10-20T15:00:00Z', 'OLD', 'stale1', 1), d('2026-10-20T15:00:00Z', 'OLD', 'stale2', 2),
+  ];
+  const q = (id, team) => ({ player_id: id, position: 'QB', team });
+  const pool = [q('mccarthy', 'NYG'), q('winston', 'NYG'), q('brissett', 'ARI'), q('gone', 'ARI'),
+    q('stale2', 'OLD'), q('nochart', 'XYZ'), { player_id: 'rb2', position: 'RB', team: 'NYG' }];
+  const b = backupQBs(depth, pool, now);
+  ok('the starter on his club\'s latest chart stays', !b.has('mccarthy'));
+  ok('the man behind him comes off', b.has('winston'));
+  ok('a starter traded since the board was built stays', !b.has('brissett'));
+  ok('a man missing from a fresh chart comes off', b.has('gone'));
+  ok('a chart more than eight days old takes nobody off', !b.has('stale2'));
+  ok('a club with no chart takes nobody off', !b.has('nochart'));
+  ok('only quarterbacks', !b.has('rb2'));
+  const r = buildInjuries({ season: 2026, week: 10, ids: ['winston', 'mccarthy'], injuries: [],
+    players: [{ gsis_id: 'winston', status: 'ACT' }, { gsis_id: 'mccarthy', status: 'ACT' }], backups: b });
+  ok('and the report marks him off as QB2', r.men.winston && r.men.winston.st === 'off'
+    && r.men.winston.roster === 'QB2' && !r.men.mccarthy, JSON.stringify(r.men));
+}
+
 /* ---------------------------------------------------------------- */
 /*
  * THE CLUB COLOURS, ASKED OF THE POOL RATHER THAN OF A BOARD.
