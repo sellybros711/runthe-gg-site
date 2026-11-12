@@ -6454,7 +6454,7 @@ Object.assign(FOLK3D, {
     if (t >= 0.9 && t < 2.15 && el3(u, v, t, 0, 0, 1.52, 0.27, 0.33, 0.64) <= 1){ if (u > 0.18 && Math.abs(av - 0.09) < 0.03 && Math.abs(((t * 6) % 1) - 0.5) < 0.14) return '#e8c060'; if (u > 0.18 && av < 0.05) return '#c8302a'; return '#2a3a6a'; }   // the Hessian coat, its brass buttons and red facing
     if (cap3(u, av, t, [0, 0.33, 2.0], [0.12, 0.38, 1.3], 0.085)) return '#2a3a6a';
     if (el3(u, av, t, 0.13, 0.39, 1.26, 0.06, 0.06, 0.06) <= 1) return '#1a1410';   // black gauntlets
-    if (t >= 2.05 && t < 2.42 && Math.hypot(u, v) < 0.22 && Math.hypot(u, v) > 0.12) return t > 2.36 ? '#c8302a' : '#2a3a6a';   // the high collar, and nothing at all above it
+    if (t >= 2.05 && t < 2.42 && Math.hypot(u, v) < 0.22 && Math.hypot(u, v) > 0.12) return t > 2.36 ? '#c8a040' : '#2a3a6a';   // the high collar with its brass edge (never red: with no head above, red would read as a wound), and nothing at all above it
     return null; } }
 });
 // a figure's build, facing f, turned 53 degrees toward the camera
