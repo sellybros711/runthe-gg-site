@@ -1144,7 +1144,8 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         const seen = ids.length ? (() => { const r = document.querySelector('.pp-hf').getBoundingClientRect(), b = bub.getBoundingClientRect(), pgR = document.querySelector('.pp-cday.cur').getBoundingClientRect();
           return r.width > 20 && r.height > 30 && r.left >= -4 && r.right <= innerWidth + 4 && b.left >= -4 && b.right <= innerWidth + 4 && b.bottom <= pgR.top + 2; })() : true;
         out[day] = { ids:ids.join('+'), first, second, seen, today:document.querySelector('.pp-cday.cur').getAttribute('data-day') === day }; }
-      _tzKey = keep; window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+      // back to the Tour's map before closing, so the checks after this one open where they always have
+      _tzKey = keep; const mt = document.querySelector('.pp-tabs [data-tab="main"]'); if (mt) mt.click(); window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
     const HF = await pg.evaluate(() => window.RTT_PUTT.HOLIDAY_FOLK), hw = { '2026-12-03':'santa+krampus', '2026-12-24':'santa+mrsclaus', '2027-01-01':'fathertime', '2027-02-14':'cupid', '2027-02-28':'toothfairy', '2027-03-28':'easterbunny', '2027-04-22':'mothernature', '2026-11-12':'', '2027-07-04':'' };
     const hbad = Object.keys(hw).filter(d => { const o = hol[d], id = hw[d].split('+')[0]; if (!o.today || o.ids !== hw[d] || !o.seen) return true;
       return id ? !(o.first === HF[id].name + HF[id].say[0] && o.second === HF[id].name + HF[id].say[1]) : !!o.first; });
