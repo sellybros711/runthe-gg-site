@@ -6677,6 +6677,77 @@ window.RTT_PUTT_LAND = (function(){
           if (rg > 0.42 && rg < 0.7) return R(st > 0.6 ? '#8a2a22' : st > 0.3 ? '#6a1e1a' : '#a88a4a'); return R(st > 0.5 ? '#6a4a2e' : '#5a3a22'); }],
         ldbwall:['#2a3a32', '#344a3e', '#1a2620', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.8) return R('#14100c'); if (Math.abs(z - 3.4) < 0.12) return R('#c8a040'); if (z < 0.6) return R('#3a2416');
           var n = vn(c.ti * 0.5, z * 0.4, 2025); return R(n > 0.66 ? '#4a5a3a' : n > 0.4 ? '#2a3a32' : '#344a3e'); }] } }; };
+  /* ---------------- TREASURE ISLAND IS A JOURNEY (World 32): Stevenson's island of 1883 as Wyeth painted it in 1911. Ashore on the
+     beach where the jolly boat runs in (1 and 2), along the anchorage with the Hispaniola lying off (3 and 4), through the marsh (5
+     and 6), into the woods of pine and live oak (7 and 8), up to the stockade and its log house (9 and 10), round Ben Gunn's cove
+     (11 and 12), by North Inlet (13 and 14), up the shoulder of Spyglass Hill (15 and 16) and out on the plateau of the tall tree
+     (17 and 18). The island's turf lies round the course in its long gold light, its edge and its sand wander on noise, the
+     anchorage glints beyond, and nothing is a grid. Never Pirate Cove's palms, planks and lagoon. */
+  STOPS.treasure = [[1, 'beach'], [3, 'anchorage'], [5, 'marsh'], [7, 'woods'], [9, 'stockade'], [11, 'cove'], [13, 'inlet'], [15, 'hill'], [17, 'plateau']];
+  (function(){
+  var TIO = { beach:{ sand:0.42, sea:true, trees:0.008 }, anchorage:{ sand:0.5, sea:true, trees:0.006 }, marsh:{ reeds:true, trees:0.012 }, woods:{ trees:0.05 }, stockade:{ trees:0.025 },
+    cove:{ sand:0.5, sea:true, trees:0.015 }, inlet:{ sand:0.55, sea:true, trees:0.012 }, hill:{ hills:1.6, trees:0.03 }, plateau:{ hills:1.1, trees:0.035 } };
+  BUILD.treasure = function(L){ var o = TIO[L.stop] || TIO.beach, seed = L.seed;
+    var O = { h:function(x, y){ var c = L.clearAt(x, y), e = 4.4 + fbm(x * 0.07, y * 0.07, seed + 3301) * 3.2; if (o.sea && fbm(x * 0.02, y * 0.02, seed + 3302) > 0.62 && c > e + 3) return -0.6;
+        return (fbm(x * 0.05, y * 0.05, seed) - 0.4) * (o.hills || 1.0) * sm(1.3, 5, c); },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = 4.4 + fbm(x * 0.07, y * 0.07, seed + 3301) * 3.2, sd = fbm(x * 0.035, y * 0.035, seed + 3303);
+        if (o.sea && fbm(x * 0.02, y * 0.02, seed + 3302) > 0.62 && c > e + 3) return ['tisea', {}];
+        if (o.reeds && fbm(x * 0.04, y * 0.04, seed + 3304) > 0.64 && c > e + 1.5) return ['timarsh', {}];
+        if (c < e + 0.6) return ['titurf', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (o.sand && sd > 1 - o.sand) return ['tisand', {}]; return ['titurf', {}]; },
+      fill:{ on:['titurf'], trees:o.trees, lows:0.12, tree:function(B, x, y, i){ tiPineAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 3305); if (k < 0.5) tiRockAt(B, x, y, i + seed); else tiKegAt(B, x, y, i + seed); } },
+      bg:'#12262a', gain:2, mats:tiMats() };
+    var sp = []; for (var i = 0; i < 3; i++){ var q = L.spot(i ? 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.35 + L.side(x) * 1.2 + hash(x | 0, y | 0, seed + 3306 + i) * 2; }); if (q) sp.push(q); }
+    O.build = function(B){ sp.forEach(function(q, k){ var st = L.stop;
+      if (st === 'stockade') return k === 0 ? tiPalisadeAt(B, q.x, q.y) : k === 1 ? tiHouseAt(B, q.x, q.y) : tiRockAt(B, q.x, q.y, k, 1.8);
+      if (st === 'plateau' || st === 'hill') return k === 0 ? tiBigPineAt(B, q.x, q.y) : tiRockAt(B, q.x, q.y, k, 2.2);
+      if (st === 'beach' || st === 'cove') return k === 0 ? tiChestAt(B, q.x, q.y) : tiRockAt(B, q.x, q.y, k, 1.6);
+      return tiRockAt(B, q.x, q.y, k, k ? 1.4 : 2.4); }); };
+    return O; };
+  function tiMats(){ return {
+    titurf:['#5e7a38', '#688440', '#4e6a30', 0.1, function(c, R){ if (c.rim === 1) return R('#7a9048'); var b = blot(c, 0.15, 3307), st = hash(c.ti, c.tj, 3308);
+      if (st > 0.994) return R('#e8c860'); return R(b > 0.64 ? '#688440' : b < 0.3 ? '#4e6a30' : '#5e7a38'); }],
+    tisand:['#c8b07c', '#d8c08a', '#b8a070', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 3309); return R(st > 0.985 ? '#f4e8c8' : blot(c, 0.2, 3310) > 0.6 ? '#d8c08a' : '#c8b07c'); }],
+    timarsh:['#6a7a3e', '#7a8a46', '#5a6a32', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 3311); return R(st > 0.9 ? '#9aa85a' : st < 0.1 ? '#3e4a26' : blot(c, 0.2, 3312) > 0.55 ? '#7a8a46' : '#6a7a3e'); }],
+    tisea:['#1e5a64', '#266a72', '#164a54', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 3313); return R(st > 0.97 ? '#6ab0a8' : blot(c, 0.25, 3314) > 0.6 ? '#266a72' : '#1e5a64'); }] }; }
+  // a pine of the island, a grey boulder, a little keg of the ship's stores
+  function tiPineAt(B, x, y, i){ var zb = B.gz(x, y), H = 8 + hash(i, 2, 3315) * 4, R0 = 1.8 + hash(i, 3, 3316) * 0.8;
+    B.solid(x - R0, y - R0, zb, x + R0, y + R0, zb + H + 1, function(px, py, pz){ var dx = px - x, dy = py - y, h = pz - zb, rr = Math.hypot(dx, dy);
+      if (h < H * 0.45) return rr < 0.28 ? '#5a3e26' : null; var f = (h - H * 0.45) / (H * 0.55 + 1), w = R0 * (1 - f) * (0.75 + ((f * 5) % 1) * 0.35); if (rr > w) return null;
+      return vn(px * 1.4, py * 1.4 + pz, i) > 0.55 ? '#345a30' : '#2a4a2a'; }, B.ART); }
+  function tiBigPineAt(B, x, y){ var zb = B.gz(x, y), H = 17, R0 = 3.4;
+    B.solid(x - R0, y - R0, zb, x + R0, y + R0, zb + H + 1, function(px, py, pz){ var dx = px - x, dy = py - y, h = pz - zb, rr = Math.hypot(dx, dy);
+      if (h < H * 0.42) return rr < 0.55 ? (Math.sin(h * 5 + dx * 3) > 0.7 ? '#4a3020' : '#5a3e26') : null; var f = (h - H * 0.42) / (H * 0.58 + 1), w = R0 * (1 - f) * (0.78 + ((f * 6) % 1) * 0.3); if (rr > w) return null;
+      return vn(px, py + pz, 3317) > 0.55 ? '#345a30' : '#2a4a2a'; }); }
+  function tiRockAt(B, x, y, i, sz){ var zb = B.gz(x, y), r0 = sz || 0.8;
+    B.solid(x - r0 - 0.3, y - r0 - 0.3, zb, x + r0 + 0.3, y + r0 + 0.3, zb + r0 * 1.2, function(px, py, pz){ var tt = pz - zb, r = Math.hypot((px - x) / r0, (py - y) / (r0 * 0.9), tt / (r0 * 1.1));
+      if (r > 0.95 + vn(px * 2, py * 2 + pz, i) * 0.15) return null; return tt > r0 * 0.7 && vn(px * 3, py * 3, i + 5) > 0.62 ? '#8a9a52' : vn(px * 2, pz * 2, i + 9) > 0.5 ? '#948e7c' : '#7a7466'; }); }
+  function tiKegAt(B, x, y, i){ var zb = B.gz(x, y);
+    B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + 0.9, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, py - y), w = 0.36 + Math.sin(tt / 0.85 * Math.PI) * 0.06;
+      if (r > w) return null; if (Math.abs(tt - 0.15) < 0.04 || Math.abs(tt - 0.7) < 0.04) return '#3a3a40'; return tt > 0.82 ? '#8a6238' : '#7e5a34'; }); }
+  function tiChestAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 1.2, y - 0.8, zb, x + 1.2, y + 0.8, zb + 1.5, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 1.1 || Math.abs(dy) > 0.7) return null;
+      if (t > 1.0 && Math.hypot(dx / 1.1, (t - 1.0) / 0.45) > 1) return null; if (Math.abs(Math.abs(dx) - 0.6) < 0.07 || Math.abs(t - 0.9) < 0.05) return '#c8a040';
+      if (dy > 0.6 && Math.abs(Math.abs(dx) - Math.abs(t - 0.5) * 1.4) < 0.07 && t < 0.85) return '#e8dcc0'; return '#4a3018'; }); }
+  function tiPalisadeAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 5, y - 0.6, zb, x + 5, y + 0.6, zb + 4, function(px, py, pz){ var dx = px - x, t = pz - zb, lg = (dx + 9) * 2.4, f = lg % 1, top = 3.4 + (hash(Math.floor(lg), 1, 3318) - 0.5) * 0.5 - Math.abs(f - 0.5) * 1.2;
+      if (Math.abs(dx) > 4.8 || Math.abs(py - y) > 0.3) return null; if (Math.abs(dx) < 0.9 && t < 2.6) return null; if (t > top) return null; return f < 0.08 || f > 0.92 ? '#3a2816' : t > top - 0.3 ? '#c8a070' : '#7a5a36'; }); }
+  function tiHouseAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3.4, y - 2.4, zb, x + 3.4, y + 2.4, zb + 5, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 3.2 || Math.abs(dy) > 2.2) return null;
+      if (t > 3){ var sl = (5 - t) / 2; if (Math.abs(dy) > 2.2 * sl + 0.2) return null; return Math.floor(t * 4 + dx) % 2 ? '#5a4028' : '#4a3420'; }
+      if (dy > 1.9 && Math.abs(dx) < 0.7 && t < 2.2) return '#2a1c10'; var row = (t * 2.2) % 1; return row < 0.12 ? '#3a2816' : row > 0.7 ? '#8a6238' : '#7a5a36'; }); }
+  // Ben Gunn's Cave: the maroon's hiding place in the hill, a floor of dry sand, walls of rough grey rock, and along them the
+  // treasure he moved here by himself, bar by bar (gold, piled), his goatskins and his little coracle
+  BUILD['s-gunncave'] = function(L){ var R0 = room(L, { floor:'tgfloor', wall:'tgwall', wallH:5.6, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 5, 3321, 2.4).forEach(function(q, k){ if (k % 2) tiRockAt(B, q[0], q[1], k, 1.0); else { var zb = B.gz(q[0], q[1]);
+          B.solid(q[0] - 1, q[1] - 0.7, zb, q[0] + 1, q[1] + 0.7, zb + 1.2, function(px, py, pz){ var t = pz - zb, dx = px - q[0], dy = py - q[1]; if (Math.abs(dx) > 0.9 - t * 0.3 || Math.abs(dy) > 0.6 - t * 0.2) return null;
+            return (Math.floor(dx * 4) + Math.floor(t * 5) + Math.floor(dy * 4)) % 2 ? '#e8c048' : '#c89a28'; }); } }); },
+      bg:'#0e0c0a', gain:2,
+      mats:{ tgfloor:['#b8a070', '#c8b07c', '#a8905e', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 3323); return R(st > 0.97 ? '#e8d8a8' : blot(c, 0.2, 3324) > 0.6 ? '#c8b07c' : '#b8a070'); }],
+        tgwall:['#6a665c', '#7a7466', '#4a463e', 0.18, function(c, R){ var z = c.z || 0; if (z > 5) return R('#2a2620'); var n = vn(c.ti * 0.4, z * 0.7, 3325); return R(n > 0.66 ? '#8a8474' : n > 0.35 ? '#6a665c' : '#56524a'); }] } }; };
+  })();
   /* ---------------- NOTRE-DAME IS A JOURNEY (World 31): Paris in 1482 as Hugo wrote it, round the cathedral on its island. In at
      the parvis under the two towers, where the river boat puts in below (1 and 2), along the island's quay (3 and 4), through the
      market (5 and 6), down the old streets (7 and 8), round the cloister (9 and 10), over the bridge with its houses (11 and 12),

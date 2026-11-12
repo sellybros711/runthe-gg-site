@@ -62,10 +62,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=149"></script>
-<script defer src="putt/land.js?v=34"></script>
+<script defer src="putt/putt.js?v=150"></script>
+<script defer src="putt/land.js?v=35"></script>
 <script defer src="putt/hole3d.js?v=24"></script>
-<script defer src="putt/trip3d.js?v=21"></script>
+<script defer src="putt/trip3d.js?v=22"></script>
 <script defer src="putt/gyms.js?v=4"></script>
 <script defer src="putt/gymkinds/push.js?v=3"></script>
 <script defer src="putt/gymkinds/trickshot.js?v=2"></script>
@@ -98,12 +98,13 @@
 <script defer src="putt/gymkinds/cannon.js?v=1"></script>
 <script defer src="putt/gymkinds/lantern.js?v=1"></script>
 <script defer src="putt/gymkinds/ringer.js?v=1"></script>
-<script defer src="putt/trail.js?v=70"></script>
-<script defer src="putt/mapland.js?v=26"></script>
+<script defer src="putt/gymkinds/spade.js?v=1"></script>
+<script defer src="putt/trail.js?v=71"></script>
+<script defer src="putt/mapland.js?v=27"></script>
 <!-- Share clips of a hole's putts from the card after it (reads putt.js, never changes it). -->
 <script defer src="putt/clips.js?v=3"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=43"></script>
+<script defer src="golfer3d.js?v=44"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11396,6 +11397,8 @@ const PP_REWARDS=[
  {cat:'ball',id:'ppbigtop',name:'Big Top Ball',hist:'A Putt Putt world prize',col:'#c8302a',tracer:{g:'rgba(244,200,64,.55)',c:'#fff2b0'}},
  {cat:'hw',id:'ppdeerstalker',name:'Baker Street Deerstalker',hist:'A Putt Putt world prize'},
  {cat:'hw',id:'ppbellhood',name:'Bell-Ringer’s Hood',hist:'A Putt Putt world prize'},
+ {cat:'hw',id:'ppgoatskin',name:'Goatskin Cap',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppeight',name:'Piece of Eight Ball',hist:'A Putt Putt world prize',col:'#d8a838',tracer:{g:'rgba(232,184,74,.55)',c:'#fff4c8'}},
  {cat:'ball',id:'ppbourdon',name:'Bourdon Ball',hist:'A Putt Putt world prize',col:'#b07a34',tracer:{g:'rgba(232,192,112,.55)',c:'#fff0c8'}},
  {cat:'ball',id:'ppgaslight',name:'Gaslight Ball',hist:'A Putt Putt world prize',col:'#f4b040',tracer:{g:'rgba(255,214,120,.55)',c:'#fff2c8'}},
  {cat:'ball',id:'pptreering',name:'Tree Ring Ball',hist:'A Putt Putt world prize',col:'#d8b07a',tracer:{g:'rgba(168,120,78,.55)',c:'#f4e2b8'}},
@@ -12167,7 +12170,7 @@ Object.assign(COS_BOOST,{
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
   'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'hw:ppastrohelmet':{sht:2},
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
-  'hw:ppbellhood':{sht:2}, 'bl:ppbourdon':{dist:2}, 'hw:ppdeerstalker':{acc:2}, 'bl:ppgaslight':{scr:2}, 'hw:pptopper':{clu:2}, 'bl:ppbigtop':{acc:2}, 'ct:ppcaulkboots':{sht:2}, 'bl:pptreering':{dist:2}, 'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}, 'bl:ppprism':{sht:2}, 'ew:ppcrystalspecs':{acc:2}, 'bl:ppjelly':{scr:2}, 'ct:ppwobbleboots':{sht:2}, 'ew:ppemeraldspecs':{app:2}, 'ct:ppsilvershoes':{acc:2}, 'bl:ppfleece':{app:2}, 'ct:ppsandals':{bnk:2}, 'hw:ppbronzehelm':{acc:2}, 'ct:ppwingsandals':{dist:2}, 'hw:ppasphodel':{scr:2}, 'bl:pppomegranate':{bnk:2}, 'hw:ppwingcap':{dist:2}, 'bl:ppambrosia':{acc:2}, 'hw:pphattop':{app:2}, 'bl:ppcheshire':{scr:2}, 'hw:ppknighthelm':{bnk:2}, 'bl:pphumpty':{sht:2}, 'hw:ppthimble':{clu:2}, 'bl:ppmagicbean':{dist:2}, 'hw:ppstrawhat':{scr:2}, 'hw:pptam':{clu:2}, 'bl:ppriverboat':{acc:2}, 'bl:ppdeeploch':{bnk:2}, 'ew:ppglacier':{acc:2}, 'bl:ppyetiprint':{app:2}
+  'hw:ppgoatskin':{bnk:2}, 'bl:ppeight':{app:2}, 'hw:ppbellhood':{sht:2}, 'bl:ppbourdon':{dist:2}, 'hw:ppdeerstalker':{acc:2}, 'bl:ppgaslight':{scr:2}, 'hw:pptopper':{clu:2}, 'bl:ppbigtop':{acc:2}, 'ct:ppcaulkboots':{sht:2}, 'bl:pptreering':{dist:2}, 'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}, 'bl:ppprism':{sht:2}, 'ew:ppcrystalspecs':{acc:2}, 'bl:ppjelly':{scr:2}, 'ct:ppwobbleboots':{sht:2}, 'ew:ppemeraldspecs':{app:2}, 'ct:ppsilvershoes':{acc:2}, 'bl:ppfleece':{app:2}, 'ct:ppsandals':{bnk:2}, 'hw:ppbronzehelm':{acc:2}, 'ct:ppwingsandals':{dist:2}, 'hw:ppasphodel':{scr:2}, 'bl:pppomegranate':{bnk:2}, 'hw:ppwingcap':{dist:2}, 'bl:ppambrosia':{acc:2}, 'hw:pphattop':{app:2}, 'bl:ppcheshire':{scr:2}, 'hw:ppknighthelm':{bnk:2}, 'bl:pphumpty':{sht:2}, 'hw:ppthimble':{clu:2}, 'bl:ppmagicbean':{dist:2}, 'hw:ppstrawhat':{scr:2}, 'hw:pptam':{clu:2}, 'bl:ppriverboat':{acc:2}, 'bl:ppdeeploch':{bnk:2}, 'ew:ppglacier':{acc:2}, 'bl:ppyetiprint':{app:2}
 });
 // THE PRO SHOP LINE (PRO_LINE): the ladder's power for its rarity, a common 1 point and a rare 2, leaning on the stats gear
 // touches least (Bunker, Short Game, Accuracy, Scrambling). Its outerwear and legwear are style and carry none.
@@ -15438,9 +15441,9 @@ function replayTour(){
 const FT_SCREENS=['title','protour','putthub','me'];
 const FT_HUBS=['protour','putthub','me'];
 const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
-const FT_PLATE_V=21;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
+const FT_PLATE_V=22;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
 // the worlds that have a picture for the home's Putt Putt side. A world added without one shows the Clubhouse
-const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars','saturn','crystara','jellara','oz','cyclops','medusa','underworld','olympus','wonderland','lookingglass','beanstalk','mississippi','lochness','himalayas','pacific','bigtop','london','notredame'];
+const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars','saturn','crystara','jellara','oz','cyclops','medusa','underworld','olympus','wonderland','lookingglass','beanstalk','mississippi','lochness','himalayas','pacific','bigtop','london','notredame','treasure'];
 // THE FIRST TEE IS THE HOME, for everybody (live since 2026-10-18; the classic home and the PUTT_LIVE switch were
 // removed the same day, at the owner's call). It does not wait for putt.js: its Putt Putt side is drawn once the module
 // has run.
@@ -18378,6 +18381,8 @@ PXG_HATS.ppdeerstalker=PXG_HATS.tweed;   // Baker Street Deerstalker (London Mys
 PXG_HERITAGE_HAT_PAL.ppdeerstalker={'1':'#7a6a50','2':'#5a4e3a','3':'#9a8a68'};
 PXG_HATS.ppbellhood=PXG_HATS.reaperhood;   // Bell-Ringer’s Hood (Notre-Dame): the hood's outline, in coarse brown wool
 PXG_HERITAGE_HAT_PAL.ppbellhood={'1':'#6a4a2a','2':'#4a3018','3':'#8a6a3e','4':'#3a2414','5':'#5a3e22','6':'#e8dcc0'};
+PXG_HATS.ppgoatskin=PXG_HATS.reaperhood;   // Goatskin Cap (Treasure Island): Ben Gunn's cap of shaggy goatskin, the hood's outline in brown and cream hair
+PXG_HERITAGE_HAT_PAL.ppgoatskin={'1':'#8a6a44','2':'#5a4028','3':'#c8aa7a','4':'#3a2818','5':'#a8845a','6':'#e8d8b0'};
 PXG_HATS.pptam=PXG_HATS.pphallcap;   // Highland Tam (Loch Ness): a knitted bonnet in heather tartan, the cap's outline in wool with a red toorie
 PXG_HERITAGE_HAT_PAL.pptam={R:'#8a6aaa',Q:'#6a4a8a',P:'#4a3a6a',E:'#2a2040',L:'#2e5a3a',F:'#1e3a28',K:'#c8a8e0',J:'#6a4a8a',G:'#c8302a',Y:'#ff8a7a',H:'#8a1e1a',D:'#c8302a',S:'#4a3a5a'};
 PXG_HERITAGE_HAT_PAL.ppbronzehelm={k:'#3a2410',W:'#c8913a',w:'#a8742e',G:'#e8b860',g:'#ffe9a8',S:'#7a5420',L:'#ffe9a8',r:'#b83a2a',s:'#7a5420'};
@@ -18451,6 +18456,8 @@ PXG_BALL.ppbigtop=PXG_BALL.ppjelly;
 PXG_BALL_PAL.ppbigtop={o:'#7a1418',C:'#c8302a',h:'#f4c840',b:'#2a5ab8',s:'#1a0a12',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL.ppgaslight=PXG_BALL.ppjelly;
 PXG_BALL_PAL.ppgaslight={o:'#6a4410',C:'#f4b040',h:'#ffe6a0',b:'#c8802a',s:'#141418',W:'#ffffff',T:'#e8ebf0'};
+PXG_BALL.ppeight=PXG_BALL.ppjelly;
+PXG_BALL_PAL.ppeight={o:'#6a4a10',C:'#d8a838',h:'#fff0a8',b:'#a87a20',s:'#2a1a08',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL.ppbourdon=PXG_BALL.ppjelly;
 PXG_BALL_PAL.ppbourdon={o:'#4a2e10',C:'#a8742e',h:'#e8c070',b:'#c89040',s:'#2a1a0c',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL.pptreering=PXG_BALL.ppjelly;

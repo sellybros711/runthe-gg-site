@@ -82,9 +82,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', lochness:'lanterns', himalayas:'lanterns', pacific:'lanterns', bigtop:'lanterns', london:'gas lamps', notredame:'candles', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], lookingglass:['#c8d8ff', '#ffffff'], beanstalk:['#ffe08a', '#fffbe8'], mississippi:['#ffd860', '#fff6dc'], lochness:['#ffe08a', '#fffbe8'], himalayas:['#ffc860', '#fff6dc'], pacific:['#ffb050', '#fff2c8'], bigtop:['#ffd860', '#fffbe8'], london:['#ffe6a0', '#fffaf0'], notredame:['#ffd890', '#fff4e0'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', lochness:'rock', himalayas:'rocksnow', pacific:'rock', bigtop:'rock', london:'rock', notredame:'rock', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', lochness:'lanterns', himalayas:'lanterns', pacific:'lanterns', bigtop:'lanterns', london:'gas lamps', notredame:'candles', treasure:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], lookingglass:['#c8d8ff', '#ffffff'], beanstalk:['#ffe08a', '#fffbe8'], mississippi:['#ffd860', '#fff6dc'], lochness:['#ffe08a', '#fffbe8'], himalayas:['#ffc860', '#fff6dc'], pacific:['#ffb050', '#fff2c8'], bigtop:['#ffd860', '#fffbe8'], london:['#ffe6a0', '#fffaf0'], notredame:['#ffd890', '#fff4e0'], treasure:['#ffd070', '#fff4d8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', lochness:'rock', himalayas:'rocksnow', pacific:'rock', bigtop:'rock', london:'rock', notredame:'rock', treasure:'rock', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -234,6 +234,12 @@ var KIT = {
   // Notre-Dame: the lawns of the cathedral close in the dusk greens, limestone paving of the parvis spread over them on its own
   // noise, the walk a worn way of pale stone, broad trees along it, stone posts, market baskets and well heads by the path, the
   // Seine for the water and the market's straw for the slow ground
+  // Treasure Island: the island's turf in the long gold light, its sand on its own noise, the walk a worn way of sand and pine
+  // needles, pines and live oaks along it (never Pirate Cove's palms), boulders, kegs and driftwood by the path, the anchorage for
+  // the water and the marsh grass for the slow ground
+  treasure:{ g:['#5e7a38', '#688440', '#4e6a30', 0.2], gpat:'tiTurf', p:['#c8aa72', '#d4b880', '#b8986a'], paved:false, tree:['pine', 'broad', 'pine'], leaves:['#2a4a2a', '#345a30', '#1e3a22'], bark:'#5a3e26',
+    low:['tirocklow', 'tikeglow', 'tidriftlow'], brk:'crate', haz:'slow', hazC:['#6a7a3e', '#5a6a32'], waterC:['#1e5a64', '#6ab0a8'], seaC:['#1e5a64', '#6ab0a8'], bogC:['#6a7a3e', '#5a6a32'], lm:['tiStockadeLm', 'tiRockLm', 'tiChestLm'], wall:['#7a5a36', '#3a2816'],
+    npc:{ skin:'tan', polo:'white', hat:'red', pants:'navy', hair:'black', hairStyle:'short', cap:true, shoes:'brown', gender:'male' }, who:'the bosun' },
   notredame:{ g:['#4a6e48', '#527a4e', '#3e5e3e', 0.18], gpat:'ndLawn', p:['#b8a882', '#c8b890', '#a8986e'], paved:false, tree:['broad', 'broad', 'broad'], leaves:['#3a6a34', '#4a7a3e', '#2e5a2c'], bark:'#5a4a36',
     low:['ndpostlow', 'ndbasketlow', 'ndwelllow'], brk:'crate', haz:'slow', hazC:['#b89a4a', '#a0843a'], waterC:['#34566a', '#8ab0bc'], seaC:['#34566a', '#8ab0bc'], bogC:['#b89a4a', '#a0843a'], lm:['ndHouseLm', 'ndPortalLm', 'ndGargLm'], wall:['#b8a882', '#5a4e3a'],
     npc:{ skin:'light', polo:'brown', hat:'brown', pants:'brown', hair:'brown', hairStyle:'short', cap:true, shoes:'brown', gender:'male' }, who:'the sexton' },
@@ -598,10 +604,13 @@ function plan(spec){
     else if (spec.vehicle === 'fog') place('ldHansom', lx, L + 5, 3, 3.4, { w:6, d:2.4 });
     // Notre-Dame: across the Channel by night and up the Seine at dawn, so the walk sets off from the river boat at the island's quay
     else if (spec.vehicle === 'seine') place('ndBoat', lx, L + 5, 3, 4, { w:7, d:2.6 });
+    // Treasure Island: down the Seine to the sea and aboard the Hispaniola, so the walk sets off from the jolly boat run up on the beach
+    else if (spec.vehicle === 'voyage') place('tiJollyBoat', lx, L + 5, 3, 2.6, { w:6, d:2.6, beach:true });
     // the sea route (Cyclops Isle on): the Greek ship run up on the sand where it came ashore
     else if (spec.vehicle === 'sea') place('seaShip', lx, L + 5, 3, 7, { w:6, d:12, beach:true });
     else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); } used.push({ x:lx, y:L + 5, r:5.5 }); }
-  if (SPACE && spec.space === 'seine'){ place('ndSteamer', archX, -4.5, 3, 6, { w:12, d:4 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the night boat at the Thames pier, bound across the Channel for Paris
+  if (SPACE && spec.space === 'voyage'){ place('ndBoat', archX, -4.5, 3, 4, { w:7, d:2.6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the river boat at the quay, bound down the Seine to the sea and the Hispaniola
+  else if (SPACE && spec.space === 'seine'){ place('ndSteamer', archX, -4.5, 3, 6, { w:12, d:4 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the night boat at the Thames pier, bound across the Channel for Paris
   else if (SPACE && spec.space === 'fog'){ place('btTrain', archX, -4.5, 3, 4.6, { w:12, d:3.6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the circus train again, its lamps lit, bound through the night for London
   else if (SPACE && spec.space === 'circus'){ place('btTrain', archX, -4.5, 3, 4.6, { w:12, d:3.6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the circus train at the loggers' rail siding, bound for the circus lot
   else if (SPACE && spec.space === 'forest'){ place('hmSeaplane', archX, -4.5, 3, 4, { w:11, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the seaplane on the glacial lake again, bound across the ocean to the forest
@@ -916,8 +925,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { ndpostlow:0.5, ndbasketlow:0.7, ndwelllow:0.9, ldlamplow:0.6, ldbarrellow:0.8, ldpillarlow:0.7, btdrumlow:0.8, btballlow:0.8, btpinslow:0.7, pffernlow:1, pfstumplow:0.9, pfmosslow:1, bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6, lnheatherlow:0.6, lnboulderlow:0.8, hmrocklow:0.8, hmjuniperlow:0.7 };
-var LOWH = { ndpostlow:1.2, ndbasketlow:0.9, ndwelllow:1.4, ldlamplow:2.6, ldbarrellow:1.2, ldpillarlow:1.7, btdrumlow:1.1, btballlow:1.5, btpinslow:1.3, pffernlow:1.4, pfstumplow:1.1, pfmosslow:1.2, bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3, lnheatherlow:1.1, lnboulderlow:1.2, hmrocklow:1.2, hmjuniperlow:1.3 };
+var LOWR = { tirocklow:0.8, tikeglow:0.5, tidriftlow:0.9, ndpostlow:0.5, ndbasketlow:0.7, ndwelllow:0.9, ldlamplow:0.6, ldbarrellow:0.8, ldpillarlow:0.7, btdrumlow:0.8, btballlow:0.8, btpinslow:0.7, pffernlow:1, pfstumplow:0.9, pfmosslow:1, bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6, lnheatherlow:0.6, lnboulderlow:0.8, hmrocklow:0.8, hmjuniperlow:0.7 };
+var LOWH = { tirocklow:1.1, tikeglow:0.9, tidriftlow:0.5, ndpostlow:1.2, ndbasketlow:0.9, ndwelllow:1.4, ldlamplow:2.6, ldbarrellow:1.2, ldpillarlow:1.7, btdrumlow:1.1, btballlow:1.5, btpinslow:1.3, pffernlow:1.4, pfstumplow:1.1, pfmosslow:1.2, bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3, lnheatherlow:1.1, lnboulderlow:1.2, hmrocklow:1.2, hmjuniperlow:1.3 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -936,7 +945,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'], lookingglass:['A chest. Its lock is on the other side.'], beanstalk:['A chest, as big as a giant’s boot.'], mississippi:['A chest, washed up on the bank.'], lochness:['A chest, half sunk in the heather.'], himalayas:['A chest, frozen into the snow. Somebody left it on the way up.'], pacific:['A chest under the ferns. Moss all over it.'], bigtop:['A strongbox off the show wagon. Still locked.'], london:['A strongbox. Somebody left it in a hurry.'], notredame:['A chest under the bell frame. It hums when the bells ring.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'], lookingglass:['A chest. Its lock is on the other side.'], beanstalk:['A chest, as big as a giant’s boot.'], mississippi:['A chest, washed up on the bank.'], lochness:['A chest, half sunk in the heather.'], himalayas:['A chest, frozen into the snow. Somebody left it on the way up.'], pacific:['A chest under the ferns. Moss all over it.'], bigtop:['A strongbox off the show wagon. Still locked.'], london:['A strongbox. Somebody left it in a hurry.'], notredame:['A chest under the bell frame. It hums when the bells ring.'], treasure:['A sea chest. Somebody painted an X on the lid.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -968,12 +977,12 @@ var SECRET_SAY = {
   himalayas:'There is a cave in the ice somewhere on this trail. They say a hole is inside, and prints.',
   pacific:'There is a cedar on this trail so old it is hollow. They say a hole is inside it.',
   bigtop:'The wardrobe wagon is parked on this trail. They say there is a hole inside it.',
-  london:'Mr. Holmes keeps rooms on this street. They say there is a hole up his stairs.', notredame:'Quasimodo has a room of his own. They say there is a hole in it.',
+  london:'Mr. Holmes keeps rooms on this street. They say there is a hole up his stairs.', notredame:'Quasimodo has a room of his own. They say there is a hole in it.', treasure:'Ben Gunn has a cave on this island. They say there is a hole inside it.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave', underworld:'cave', wonderland:'secretdoor', lookingglass:'secretdoor', beanstalk:'secretdoor', mississippi:'cave', lochness:'cave', himalayas:'cave', pacific:'cave', bigtop:'secretdoor', london:'secretdoor', notredame:'secretdoor', olympus:'secretdoor' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor', crystara:'cave', jellara:'cave', oz:'secretdoor', cyclops:'cave', medusa:'cave', underworld:'cave', wonderland:'secretdoor', lookingglass:'secretdoor', beanstalk:'secretdoor', mississippi:'cave', lochness:'cave', himalayas:'cave', pacific:'cave', bigtop:'secretdoor', london:'secretdoor', notredame:'secretdoor', treasure:'cave', olympus:'secretdoor' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -1464,6 +1473,7 @@ var LIFE = {
   bigtop:{ fly:['song', 3], mote:[['petal', 12], ['spark', 4]] },
   london:{ fly:['crow', 2], mote:[['dust', 14], ['leaf', 6]] },
   notredame:{ fly:['crow', 3], mote:[['dust', 12], ['leaf', 6]] },
+  treasure:{ fly:['gull', 4], mote:[['leaf', 10], ['dust', 6]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -2627,7 +2637,7 @@ function run(box, P, pic, api){
     // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
     if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
-    label = P.gate && P.gate.pad ? (P.spec.space === 'seine' ? 'The night boat' : P.spec.space === 'fog' ? 'The night train' : P.spec.space === 'circus' ? 'The circus train' : P.spec.space === 'plane' || P.spec.space === 'forest' ? 'The seaplane' : P.spec.space === 'loch' ? 'The steamboat' : P.spec.space === 'beanstalk' || P.spec.space === 'river' ? 'The beanstalk' : P.spec.space === 'glass' ? 'The looking-glass' : P.spec.space === 'fall' ? 'The rabbit hole' : P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
+    label = P.gate && P.gate.pad ? (P.spec.space === 'voyage' ? 'The river boat' : P.spec.space === 'seine' ? 'The night boat' : P.spec.space === 'fog' ? 'The night train' : P.spec.space === 'circus' ? 'The circus train' : P.spec.space === 'plane' || P.spec.space === 'forest' ? 'The seaplane' : P.spec.space === 'loch' ? 'The steamboat' : P.spec.space === 'beanstalk' || P.spec.space === 'river' ? 'The beanstalk' : P.spec.space === 'glass' ? 'The looking-glass' : P.spec.space === 'fall' ? 'The rabbit hole' : P.spec.space === 'ship' || P.spec.space === 'sea' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
     cls(pin, 'on', false); cls(way, 'on', true); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
     put(way.style, 'left', Math.round(cxs + vx * s2) + 'px'); put(way.style, 'top', Math.round(cys + vy * s2) + 'px'); put(wayI.style, 'transform', 'rotate(' + Math.round(Math.atan2(vy, vx) * 180 / Math.PI + 90) + 'deg)');
@@ -5151,6 +5161,88 @@ BUILD.ndSteamer = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx
   if (ax < 2 && Math.abs(dy) < hd - 0.6 && tt < 2.6 && dx < 0) return Math.abs(tt - 2.1) < 0.15 && Math.floor(dx * 2) % 2 ? '#ffd88a' : '#e8e0cc'; return null; }); };
 LMSIZE.ndTowerLm = [7, 7, 16]; LMSIZE.ndPortalLm = [8, 3, 8]; LMSIZE.ndRoseLm = [9, 2, 10]; LMSIZE.ndButtressLm = [8, 2, 7]; LMSIZE.ndHouseLm = [6, 4, 9]; LMSIZE.ndStallLm = [3.6, 2.2, 2.4];
 LMSIZE.ndGargLm = [2, 2, 3.6]; LMSIZE.ndQuayLm = [8, 1.6, 2.4]; LMSIZE.ndBridgeLm = [10, 3, 6]; LMSIZE.ndSpireLm = [2.4, 2.4, 14]; LMSIZE.ndBoat = [7, 2.6, 4]; LMSIZE.ndBoatLm = [7, 2.6, 4]; LMSIZE.ndSteamer = [12, 4, 6];
+/* ---- Treasure Island's stops on the walk, the same places its holes stand in (land.js): the beach where the jolly boat runs in, the
+   anchorage with the Hispaniola lying off, the marsh, the woods of pine and live oak, the stockade and its log house, Ben Gunn's
+   cove, North Inlet, the shoulder of Spyglass Hill and the plateau of the tall tree. The island's turf lies in its long gold light
+   with the sand spread over it on its own noise: never a grid, and never Pirate Cove's palms and planks. */
+GPAT.tiTurf = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 3301), b = vn(c.ti * 0.013, c.tj * 0.013, 3302), st = hash(c.ti, c.tj, 3303);
+  if (st > 0.995) return '#e8c860'; if (b > 0.74) return GPAT.tiSand(c); return a > 0.64 ? '#688440' : a < 0.3 ? '#4e6a30' : '#5e7a38'; };
+GPAT.tiSand = function(c){ var b = vn(c.ti * 0.07, c.tj * 0.07, 3304), st = hash(c.ti, c.tj, 3305);
+  if (st > 0.985) return '#f4e8c8'; if (st < 0.012) return '#8a7a5a'; return b > 0.62 ? '#d8c08a' : b < 0.3 ? '#b8a070' : '#c8b07c'; };
+GPAT.tiShore = function(c){ var w = vn(c.ti * 0.012, c.tj * 0.012, 3306); return w < 0.5 ? GPAT.tiTurf(c) : GPAT.tiSand(c); };
+KIT['treasure~beach'] = kitFrom(KIT.treasure, { gpat:'tiShore', nlm:3, dens:0.25, lm:['tiJollyBoatLm', 'tiRockLm', 'tiChestLm'] });
+KIT['treasure~anchorage'] = kitFrom(KIT.treasure, { gpat:'tiShore', nlm:3, dens:0.25, lm:['tiShipLm', 'tiRockLm', 'tiJollyBoatLm'] });
+KIT['treasure~marsh'] = kitFrom(KIT.treasure, { nlm:3, dens:0.3, lm:['tiRockLm', 'tiDriftLm', 'tiRockLm'] });
+KIT['treasure~woods'] = kitFrom(KIT.treasure, { nlm:3, dens:0.45, lm:['tiRockLm', 'tiCaveLm', 'tiDriftLm'] });
+KIT['treasure~stockade'] = kitFrom(KIT.treasure, { nlm:3, dens:0.3, lm:['tiStockadeLm', 'tiLogHouseLm', 'tiStockadeLm'] });
+KIT['treasure~cove'] = kitFrom(KIT.treasure, { gpat:'tiShore', nlm:3, dens:0.3, lm:['tiCaveLm', 'tiRockLm', 'tiChestLm'] });
+KIT['treasure~inlet'] = kitFrom(KIT.treasure, { gpat:'tiShore', nlm:3, dens:0.3, lm:['tiShipLm', 'tiDriftLm', 'tiRockLm'] });
+KIT['treasure~hill'] = kitFrom(KIT.treasure, { nlm:3, dens:0.35, lm:['tiRockLm', 'tiTallTreeLm', 'tiRockLm'] });
+KIT['treasure~plateau'] = kitFrom(KIT.treasure, { nlm:3, dens:0.35, lm:['tiTallTreeLm', 'tiPitLm', 'tiRockLm'] });
+LIFE_AS['treasure~beach'] = { fly:['gull', 4], mote:[['dust', 8]] };
+LIFE_AS['treasure~anchorage'] = { fly:['gull', 5], mote:[['dust', 8]] };
+LIFE_AS['treasure~marsh'] = { fly:['song', 3], mote:[['firefly', 8], ['leaf', 6]] };
+LIFE_AS['treasure~woods'] = { fly:['parrot', 3], mote:[['leaf', 12]] };
+LIFE_AS['treasure~stockade'] = { fly:['crow', 2], mote:[['leaf', 8], ['dust', 6]] };
+LIFE_AS['treasure~cove'] = { fly:['gull', 3], mote:[['dust', 8]] };
+LIFE_AS['treasure~inlet'] = { fly:['gull', 4], mote:[['leaf', 6]] };
+LIFE_AS['treasure~hill'] = { fly:['crow', 2], mote:[['leaf', 10]] };
+LIFE_AS['treasure~plateau'] = { fly:['parrot', 2], mote:[['leaf', 10], ['dust', 4]] };
+// a grey boulder by the path, a little keg of the ship's stores, and a bleached piece of driftwood
+BUILD.tirocklow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.9, y - 0.9, zb, x + 0.9, y + 0.9, zb + 1.1, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, (py - y) * 1.1, tt * 1.25);
+    if (r > 0.8 + vn(px * 3, py * 3 + pz, i) * 0.2) return null; return tt > 0.75 && hash(Math.floor(px * 6), Math.floor(py * 6), i) > 0.7 ? '#8a9a52' : vn(px * 4, pz * 4, i + 3) > 0.5 ? '#948e7c' : '#7a7466'; }, 0.125); };
+BUILD.tikeglow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + 0.9, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, py - y), w = 0.36 + Math.sin(tt / 0.85 * Math.PI) * 0.06;
+    if (r > w) return null; if (Math.abs(tt - 0.15) < 0.04 || Math.abs(tt - 0.7) < 0.04) return '#3a3a40'; if (tt > 0.82) return '#8a6238'; return Math.floor(Math.atan2(py - y, px - x) * 4) % 2 ? '#9a7246' : '#7e5a34'; }, 0.125); };
+BUILD.tidriftlow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), a = hash(i, 4, 3307) * Math.PI, ca = Math.cos(a), sa = Math.sin(a);
+  B.solid(x - 1.3, y - 1.3, zb, x + 1.3, y + 1.3, zb + 0.5, function(px, py, pz){ var dx = px - x, dy = py - y, u = dx * ca + dy * sa, v = -dx * sa + dy * ca, tt = pz - zb;
+    if (Math.abs(u) > 1.1 || Math.hypot(v, tt - 0.2) > 0.18 + Math.sin(u * 3) * 0.04) return null; return Math.sin(u * 14) > 0.6 ? '#a89a84' : '#c8bca4'; }, 0.125); };
+// the stockade: a palisade of pointed logs on its knoll, its gate, and the flag on its staff
+BUILD.tiStockadeLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2; if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null;
+  if (Math.hypot(dx - hw * 0.6, dy) < 0.08 && tt < t.h) return '#5a3e26'; if (Math.abs(dx - hw * 0.6 - 0.5) < 0.5 && tt > t.h - 1.2 && tt < t.h - 0.4 && Math.abs(dy) < 0.06) return Math.abs(tt - (t.h - 0.8)) < 0.12 ? '#f4f0e6' : '#c8302a';   // the flag
+  var lg = (dx + 9) * 2.4, f = lg % 1, top = 3.4 + (hash(Math.floor(lg), 1, 3308) - 0.5) * 0.5 - Math.abs(f - 0.5) * 1.2; if (dy < hd - 0.5) return null;
+  if (Math.abs(dx) < 0.9 && tt < 2.6) return null; if (tt > top) return null; return f < 0.08 || f > 0.92 ? '#3a2816' : tt > top - 0.3 ? '#c8a070' : '#7a5a36'; }); };
+// the log house in the stockade: walls of logs, a roof of bark, a loophole or two, and its door
+BUILD.tiLogHouseLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2; if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null;
+  if (tt > t.h - 2){ var sl = (t.h - tt) / 2; if (Math.abs(dy) > hd * sl + 0.2) return null; return Math.floor(tt * 4 + dx) % 2 ? '#5a4028' : '#4a3420'; }
+  if (dy > hd - 0.4 && Math.abs(dx) < 0.7 && tt < 2.2) return '#2a1c10'; if (dy > hd - 0.4 && Math.abs(Math.abs(dx) - hw * 0.6) < 0.2 && Math.abs(tt - 1.8) < 0.12) return '#14100c';
+  var row = (tt * 2.2) % 1; return row < 0.12 ? '#3a2816' : row > 0.7 ? '#8a6238' : '#7a5a36'; }); };
+// a great grey boulder of the island, lichened, half sunk in the turf
+BUILD.tiRockLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx / (t.w / 2 - 0.2), dy / (t.d / 2 - 0.2), tt / t.h); if (r > 0.95 + vn(dx * 0.8, dy * 0.8 + tt * 0.6, i + 31) * 0.12) return null;
+  return tt > t.h * 0.6 && vn(dx * 2, dy * 2, i + 5) > 0.62 ? '#8a9a52' : vn(dx * 1.4, tt * 1.4, i + 9) > 0.5 ? '#948e7c' : '#7a7466'; }); };
+// Billy Bones's old sea chest from the Admiral Benbow: dark oak bound with brass, its lid a little open, an X painted on it
+BUILD.tiChestLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2; if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null;
+  if (tt > t.h - 0.5 && Math.hypot(dx / hw, dy / hd) > 1.2) return null; if (Math.abs(Math.abs(dx) - hw * 0.6) < 0.08 || Math.abs(tt - t.h * 0.55) < 0.06) return '#c8a040';
+  if (dy > hd - 0.1 && Math.abs(Math.abs(dx) - Math.abs(tt - t.h * 0.75) * 1.4) < 0.08 && tt > t.h * 0.6) return '#e8dcc0'; return '#4a3018'; }); };
+// the Hispaniola lying at anchor: a black hull with a gold line, her two masts and their furled sails, the red ensign at her stern
+BUILD.tiShipLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2, ax = Math.abs(dx), half = hd * (1 - Math.pow(Math.max(0, dx) / hw, 2)) * (dx < -hw * 0.8 ? 0.8 : 1);
+  if (tt < 2.2 && Math.abs(dy) < half && ax < hw){ if (tt > 2.0) return '#8a6238'; return Math.abs(tt - 1.5) < 0.12 ? '#e8b84a' : '#1a1612'; }
+  for (var mq = -1; mq <= 1; mq += 2){ var mx = mq * hw * 0.3; if (Math.hypot(dx - mx, dy) < 0.12 && tt < t.h) return '#5a3e26';
+    if (Math.abs(dy) < 0.12 && Math.abs(dx - mx) < 1.8 && Math.abs(tt - t.h * (0.5 + Math.abs(dx - mx) * 0.04)) < 0.25) return '#e8dcc0'; }
+  if (dx < -hw + 0.8 && Math.abs(dy) < 0.06 && tt > 2.4 && tt < 3.2) return '#c8302a'; return null; }); };
+// the jolly boat run up on the sand: a white hull with a blue strake, her oars shipped
+BUILD.tiJollyBoat = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2, ax = Math.abs(dx), half = hd * (1 - Math.pow(ax / hw, 3));
+  if (tt < 1.1 && Math.abs(dy) < half){ if (tt > 0.9 && Math.abs(dy) < half - 0.2) return Math.floor(dx * 3) % 2 ? '#8a6238' : '#7a5232'; return tt > 0.7 ? '#2a4a7a' : '#e8e4dc'; }
+  if (Math.abs(dy) < 0.06 && Math.abs(Math.abs(dx) - 0.6) < 1.6 && Math.abs(tt - 1.2) < 0.08) return '#a8845a'; return null; }); };
+BUILD.tiJollyBoatLm = BUILD.tiJollyBoat;
+// a bleached tree trunk of driftwood, its roots up
+BUILD.tiDriftLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2; if (Math.abs(dx) > hw) return null;
+  if (Math.hypot(dy, tt - 0.5) < 0.45 - Math.abs(dx) / hw * 0.1) return Math.sin(dx * 9) > 0.6 ? '#a89a84' : '#c8bca4';
+  if (dx > hw - 1.2 && Math.abs(Math.sin(Math.atan2(tt - 0.5, dy) * 4)) < 0.25 && Math.hypot(dy, tt - 0.5) < 1.4) return '#b8ac94'; return null; }); };
+// Ben Gunn's cave in the hill: a mouth of dark rock under a brow of turf and creeper
+BUILD.tiCaveLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2, r = Math.hypot(dx / hw, dy / hd, tt / t.h); if (r > 1) return null;
+  if (dy > 0 && Math.abs(dx) < hw * 0.35 && tt < t.h * 0.55 - Math.pow(dx / (hw * 0.35), 2) * t.h * 0.2) return '#0e0c0a';
+  if (tt > t.h * 0.7) return vn(dx, dy, i + 7) > 0.45 ? '#4e6a30' : '#5e7a38'; return vn(dx * 1.3, tt * 1.3, i) > 0.5 ? '#7a7466' : '#5a564c'; }); };
+// the tall tree: a great pine head and shoulders over the wood, the one on the map
+BUILD.tiTallTreeLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (tt < t.h * 0.45) return r < 0.5 ? (Math.sin(tt * 6 + dx * 3) > 0.7 ? '#4a3020' : '#5a3e26') : null;
+  var f = (tt - t.h * 0.45) / (t.h * 0.55), w = (t.w / 2 - 0.3) * (1 - f) * (0.8 + ((f * 6) % 1) * 0.3); if (r > w) return null; return vn(dx * 2, dy * 2 + tt, i) > 0.55 ? '#345a30' : '#2a4a2a'; }); };
+// the treasure pit, found dug and empty: its heaped spoil, a spade left in it and a broken box (nothing else)
+BUILD.tiPitLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2, r = Math.hypot(dx / hw, dy / hd); if (r > 1) return null;
+  if (r < 0.55) return tt < 0.05 ? '#3a2a18' : null; if (tt < 0.5 * (1 - Math.abs(r - 0.78) / 0.22)) return vn(dx * 3, dy * 3, i) > 0.5 ? '#c8b07c' : '#a8905e';
+  if (Math.abs(dx - hw * 0.3) < 0.06 && Math.abs(dy) < 0.06 && tt < 1.6) return '#7a5232'; if (Math.abs(dx - hw * 0.3) < 0.2 && Math.abs(dy) < 0.04 && tt < 0.4) return '#9a9aa4'; return null; }); };
+LMSIZE.tiStockadeLm = [10, 2, 6]; LMSIZE.tiLogHouseLm = [7, 5, 5]; LMSIZE.tiRockLm = [5, 4, 3.4]; LMSIZE.tiChestLm = [2.4, 1.4, 1.6]; LMSIZE.tiShipLm = [14, 4, 11];
+LMSIZE.tiJollyBoat = [6, 2.6, 2.6]; LMSIZE.tiJollyBoatLm = [6, 2.6, 2.6]; LMSIZE.tiDriftLm = [6, 2, 1.6]; LMSIZE.tiCaveLm = [7, 4, 5]; LMSIZE.tiTallTreeLm = [6, 6, 18]; LMSIZE.tiPitLm = [5, 4, 1.8];
 /* ---- Loch Ness's stops on the walk, the same places its holes stand in (land.js): the timber pier where the steamer puts in, the
    crofts and their peat stacks, the ring of standing stones on the moor, the ruined keep on its headland, the mist on the water,
    the lighthouse on its rock and the deep water. An original Highland loch, nobody's real castle or village. The turf is soft warped
@@ -6070,6 +6162,137 @@ Object.assign(FOLK3D, {
     if (el3(u, v, t, 0.24, 0, 1.3, 0.07, 0.12, 0.06) <= 1) return '#e4c4a8';
     var d = Math.hypot(u, v, t - 2.2);
     if (d < 0.22){ if (u > 0.14 && Math.abs(av - 0.07) < 0.03 && Math.abs(t - 2.24) < 0.025) return '#1a1410'; if (u > 0.14 && Math.abs(t - 2.31) < 0.02 && av < 0.12) return '#4a4a4e'; return u < -0.06 && t < 2.3 ? '#8a8a90' : '#e4c4a8'; }   // a stern face, grey hair cropped round
+    return null; } }
+});
+/* THE FOLK OF TREASURE ISLAND (putt.js FOLK.treasure and GREETERS.treasure). Stevenson's people as he wrote them in 1883 and
+   N. C. Wyeth painted them in 1911, and the crew in Howard Pyle's look: nothing from any film, show or game. Jim Hawkins the cabin
+   boy: a blue sea jacket over a red waistcoat, buff breeches, white stockings, his brown hair tied back. Long John Silver: tall and
+   broad, clean shaven and smiling, a blue sea coat with brass buttons, buff breeches, a black tricorn, his left leg gone at the hip
+   and his crutch under his left arm, and Captain Flint the green parrot on his shoulder. No eye patch: it is not in the book.
+   Squire Trelawney, big and ruddy in a plum coat laced with gold; Captain Smollett, sharp and upright in his navy coat; Dr.
+   Livesey in black with his hair powdered white and tied, his bag in his hand; Ben Gunn the maroon in goatskin and old sail cloth,
+   his beard grown wild, a brass buckled belt; and a pirate of the crew with a red kerchief tied at the nape, gold hoops in his ears,
+   a striped shirt under an open coat, a sash, and his cutlass in its sheath. */
+// a black tricorn: its crown, and the brim turned up in three points, one to the front
+function tri3(u, v, t, c, col, lace){ var ht = t - c, r = Math.hypot(u, v);
+  if (ht >= 0.04 && ht < 0.24 && r < 0.17 - (ht - 0.04) * 0.25) return col;
+  if (ht >= 0 && ht < 0.11){ var a = Math.atan2(v, u), pts = 0.25 + 0.07 * Math.cos(3 * a); if (r < pts && r > pts - 0.09 && ht > (pts - r) * 0.7) return lace && r > pts - 0.03 ? lace : col; if (r < pts && ht < 0.03) return col; }
+  return null; }
+Object.assign(FOLK3D, {
+  hawkins:{ r:0.8, h:2.9, k:1.15, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.12 && el3(u, av, t, 0.06, 0.11, 0.06, 0.16, 0.08, 0.07) <= 1) return t > 0.08 && u > 0.12 ? '#c8a040' : '#2a1a10';   // buckled shoes
+    if (cap3(u, av, t, [0, 0.11, 0.1], [0, 0.11, 0.5], 0.075)) return '#f0ece0';   // white stockings
+    if (cap3(u, av, t, [0, 0.11, 0.48], [0, 0.11, 0.86], 0.09)) return '#c8b088';   // buff breeches
+    if (t >= 0.82 && t < 1.62 && el3(u, v, t, 0, 0, 1.22, 0.22, 0.27, 0.44) <= 1){
+      if (u > 0.1 && av < 0.1 && t > 0.9) return Math.abs(((t * 9) % 1) - 0.5) < 0.12 && av < 0.02 ? '#e8c060' : '#b83028';   // the red waistcoat
+      if (Math.abs(t - 0.92) < 0.04) return '#4a3018';   // his belt
+      return '#2a4a7a'; }   // the blue sea jacket
+    if (cap3(u, av, t, [0, 0.27, 1.55], [0.06, 0.3, 1.0], 0.065)) return '#2a4a7a';
+    if (el3(u, av, t, 0.06, 0.3, 0.97, 0.05, 0.05, 0.05) <= 1) return '#f0c8a0';
+    if (u > -0.2 && Math.abs(v + 0.28) < 0.04 && t > 0.7 && t < 0.98 && u < 0.3) return '#9a9aa4';   // the cutlass in its sheath
+    var d = Math.hypot(u, v, t - 1.86);
+    if (d < 0.2){ if (u > 0.14 && Math.abs(av - 0.07) < 0.03 && Math.abs(t - 1.9) < 0.03) return '#1a1410'; if (u > 0.15 && Math.abs(t - 1.79) < 0.02 && av < 0.08) return '#a84a3a'; return u < -0.04 || t > 1.98 ? '#6a4224' : '#f0c8a0'; }   // a keen young face, his brown hair
+    if (el3(u, v, t, -0.2, 0, 1.78, 0.06, 0.05, 0.1) <= 1) return '#6a4224';   // tied back
+    return null; } },
+  silver:{ r:1.2, h:3.9, k:1.15, at:function(u, v, t){ var av = Math.abs(v);
+    // Captain Flint the parrot on his right shoulder: green, a yellow nape, a red flash in her wing, her hooked beak
+    var pv = v - 0.34, pt = t - 2.3;
+    if (el3(u, pv, pt, 0, 0, 0.16, 0.14, 0.13, 0.2) <= 1) return pt > 0.25 ? '#f0d040' : Math.abs(pv) > 0.07 && pt < 0.14 ? '#d8302a' : '#38b048';
+    if (cap3(u, pv, pt, [-0.04, 0, 0.0], [-0.16, 0, -0.26], 0.045)) return '#1e8a32';   // her tail
+    if (el3(u, pv, pt, 0.11, 0, 0.3, 0.05, 0.035, 0.05) <= 1) return '#2a2a2a';   // her beak
+    // the crutch under his left arm, its pad in the armpit and its foot on the ground
+    if (cap3(u, v, t, [0.08, -0.46, 0.0], [0.02, -0.42, 1.78], 0.055)) return '#9a6a3a';
+    if (cap3(u, v, t, [-0.06, -0.4, 1.8], [0.1, -0.4, 1.8], 0.05)) return '#4a3018';
+    if (cap3(u, v, t, [0.04, -0.41, 1.04], [0.12, -0.42, 1.04], 0.03)) return '#4a3018';   // its hand grip
+    if (t < 0.14 && el3(u, v, t, 0.07, 0.13, 0.06, 0.19, 0.1, 0.08) <= 1) return t > 0.1 && u > 0.16 ? '#c8a040' : '#1a1410';   // his one buckled shoe
+    if (cap3(u, v, t, [0, 0.13, 0.12], [0, 0.13, 0.62], 0.085)) return '#e8e0cc';   // a white stocking
+    if (cap3(u, v, t, [0, 0.13, 0.6], [0, 0.11, 1.0], 0.11)) return '#c8aa7a';   // buff breeches
+    if (cap3(u, v, t, [0, -0.1, 0.92], [0.02, -0.12, 1.04], 0.1)) return '#c8aa7a';   // the left leg gone at the hip, a fold of breeches
+    if (t >= 0.78 && t < 2.15 && el3(u, v, t, 0, 0, 1.46, 0.3, 0.36, 0.7) <= 1){
+      if (u > 0.16 && av < 0.09 && t > 1.1) return Math.abs(((t * 7) % 1) - 0.5) < 0.1 ? '#e8c060' : '#e8dcc0';   // his waistcoat front, brass buttons
+      if (Math.abs(t - 1.12) < 0.04) return '#3a2816';   // his belt
+      return (Math.floor(t * 12) + Math.floor(u * 10)) % 5 ? '#24407a' : '#1e3668'; }   // the blue sea coat
+    if (cap3(u, av, t, [0, 0.36, 2.0], [0.1, 0.4, 1.3], 0.085)) return '#24407a';
+    if (el3(u, av, t, 0.1, 0.41, 1.26, 0.06, 0.06, 0.06) <= 1) return '#e8c0a0';
+    var tr = tri3(u, v, t, 2.66, '#1a1612', '#c8a040'); if (tr) return tr;
+    var d = Math.hypot(u, v * 0.95, t - 2.46);
+    if (d < 0.25){ if (u > 0.16 && Math.abs(av - 0.08) < 0.03 && Math.abs(t - 2.5) < 0.03) return '#1a1410';   // both his bright eyes
+      if (u > 0.18 && Math.abs(t - 2.36) < 0.025 && av < 0.12) return '#a84a3a';   // a broad smile, clean shaven
+      return u < -0.08 ? '#6a4a30' : '#ecc4a0'; }   // a big plain face, his hair under the hat
+    return null; } },
+  trelawney:{ r:1.1, h:3.8, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.07, 0.14, 0.06, 0.2, 0.1, 0.08) <= 1) return t > 0.1 && u > 0.16 ? '#e8c060' : '#1a1410';
+    if (cap3(u, av, t, [0, 0.14, 0.12], [0, 0.14, 0.62], 0.09)) return '#f0ece0';
+    if (cap3(u, av, t, [0, 0.14, 0.6], [0, 0.14, 1.0], 0.11)) return '#e8dcc0';   // pale breeches
+    if (t >= 0.8 && t < 2.1 && el3(u, v, t, 0, 0, 1.46, 0.33, 0.38, 0.68) <= 1){
+      if (u > 0.18 && av < 0.1 && t > 1.3) return '#e8d8a0';   // the waistcoat of cream silk
+      if (Math.abs(Math.abs(v) - 0.12) < 0.03 && u > 0.2) return '#e8c060';   // gold lace down his coat
+      return '#6a2a4a'; }   // the plum coat
+    if (cap3(u, av, t, [0, 0.38, 1.95], [0.14, 0.42, 1.3], 0.09)) return '#6a2a4a';
+    if (el3(u, av, t, 0.14, 0.43, 1.26, 0.07, 0.07, 0.07) <= 1) return '#f0bca0';
+    var tr = tri3(u, v, t, 2.6, '#1a1612', '#e8c060'); if (tr) return tr;
+    var d = Math.hypot(u, v, t - 2.4);
+    if (d < 0.25){ if (u > 0.16 && Math.abs(av - 0.08) < 0.03 && Math.abs(t - 2.44) < 0.03) return '#1a1410'; if (u > 0.17 && av < 0.16 && Math.abs(t - 2.34) < 0.05) return '#e8a08a'; return u < -0.08 ? '#e8e4dc' : '#f0bca0'; }   // a ruddy face, a white wig
+    if (el3(u, v, t, -0.16, 0, 2.28, 0.1, 0.24, 0.12) <= 1) return '#e8e4dc';
+    return null; } },
+  smollett:{ r:1.0, h:3.7, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.07, 0.13, 0.06, 0.19, 0.1, 0.08) <= 1) return '#0e0e10';
+    if (cap3(u, av, t, [0, 0.13, 0.12], [0, 0.13, 0.62], 0.085)) return '#e8e4dc';
+    if (cap3(u, av, t, [0, 0.13, 0.6], [0, 0.13, 1.0], 0.1)) return '#e8e4dc';
+    if (t >= 0.8 && t < 2.08 && el3(u, v, t, 0, 0, 1.44, 0.27, 0.32, 0.66) <= 1){
+      if (u > 0.14 && av < 0.07) return Math.abs(((t * 6) % 1) - 0.5) < 0.12 ? '#e8c060' : '#e8e4dc';   // the white waistcoat and its buttons
+      if (t > 1.95 && Math.abs(av - 0.26) < 0.06) return '#e8c060';   // gold at his shoulders
+      return '#1a2a4a'; }   // the navy coat
+    if (cap3(u, av, t, [0, 0.32, 1.95], [0.02, 0.34, 1.18], 0.08)) return '#1a2a4a';
+    if (el3(u, av, t, 0.02, 0.35, 1.14, 0.06, 0.06, 0.06) <= 1) return '#ecc8a8';
+    var tr = tri3(u, v, t, 2.55, '#141418', '#e8c060'); if (tr) return tr;
+    var d = Math.hypot(u, v, t - 2.36);
+    if (d < 0.22){ if (u > 0.14 && Math.abs(av - 0.075) < 0.03 && Math.abs(t - 2.4) < 0.025) return '#1a1410'; if (u > 0.15 && Math.abs(t - 2.29) < 0.02 && av < 0.07) return '#7a4a3a'; return u < -0.06 ? '#5a4030' : '#ecc8a8'; }   // a sharp, stern face
+    return null; } },
+  livesey:{ r:1.0, h:3.6, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.07, 0.13, 0.06, 0.19, 0.1, 0.08) <= 1) return t > 0.1 && u > 0.16 ? '#c8c8d0' : '#0e0e10';
+    if (cap3(u, av, t, [0, 0.13, 0.12], [0, 0.13, 0.62], 0.085)) return '#1a1a1e';   // black stockings
+    if (cap3(u, av, t, [0, 0.13, 0.6], [0, 0.13, 1.0], 0.1)) return '#1a1a1e';
+    if (t >= 0.8 && t < 2.08 && el3(u, v, t, 0, 0, 1.44, 0.28, 0.33, 0.66) <= 1){ if (u > 0.16 && av < 0.05 && t > 1.85) return '#f4f0e6'; return (Math.floor(t * 12) + Math.floor(v * 10)) % 4 ? '#1e1e24' : '#26262e'; }   // the black coat and his white stock
+    if (cap3(u, av, t, [0, 0.33, 1.95], [0.08, 0.36, 1.2], 0.08)) return '#1e1e24';
+    if (el3(u, av, t, 0.08, 0.37, 1.16, 0.06, 0.06, 0.06) <= 1) return '#ecc8a8';
+    if (Math.abs(v - 0.4) < 0.12 && u > -0.1 && u < 0.3 && t > 0.78 && t < 1.08) return t > 1.05 ? '#2a1a10' : '#5a3a20';   // his bag
+    var d = Math.hypot(u, v, t - 2.3);
+    if (d < 0.22){ if (u > 0.14 && Math.abs(av - 0.075) < 0.03 && Math.abs(t - 2.34) < 0.025) return '#1a1410'; if (u > 0.15 && Math.abs(t - 2.23) < 0.02 && av < 0.08) return '#a85a4a'; return u < -0.06 || t > 2.44 ? '#f4f4f0' : '#ecc8a8'; }   // a kind face, the powdered hair
+    if (el3(u, v, t, -0.22, 0, 2.18, 0.06, 0.05, 0.12) <= 1) return '#2a2a30';   // tied back in a black ribbon
+    if (Math.hypot(u + 0.02, v, t - 2.34) < 0.27 && t > 2.25 && u < 0.08) return '#f4f4f0';
+    return null; } },
+  bengunn:{ r:1.0, h:3.3, at:function(u, v, t){ var av = Math.abs(v), shag = hash((u * 27) | 0, (v * 23 + t * 31) | 0, 91);
+    if (t < 0.1 && el3(u, av, t, 0.06, 0.12, 0.05, 0.17, 0.08, 0.06) <= 1) return '#b8845a';   // bare feet, brown from the sun
+    if (cap3(u, av, t, [0, 0.12, 0.08], [0, 0.12, 0.46], 0.07)) return '#b8845a';
+    if (cap3(u, av, t, [0, 0.12, 0.44], [0, 0.12, 0.88], 0.1)) return shag > 0.5 ? '#8a6a44' : '#6a4e30';   // goatskin breeches, the hair out
+    if (t >= 0.74 && t < 1.86 && el3(u, v, t, 0, 0, 1.28, 0.28, 0.33, 0.6) <= 1){
+      if (Math.abs(t - 0.94) < 0.045) return u > 0.24 && av < 0.06 ? '#e8c060' : '#4a3018';   // the old belt and its brass buckle
+      if (u > 0.05 && (Math.floor(t * 5) + Math.floor(v * 6)) % 3 === 0) return '#c8bca0';   // patches of old sail cloth
+      return shag > 0.55 ? '#a8845a' : shag > 0.25 ? '#8a6a44' : '#e8d8b0'; }   // shaggy goatskin
+    if (cap3(u, av, t, [0, 0.33, 1.72], [0.14, 0.38, 1.12], 0.075)) return '#b8845a';
+    var d = Math.hypot(u, v, t - 2.06);
+    if (d < 0.21){ if (u > 0.14 && Math.abs(av - 0.07) < 0.03 && Math.abs(t - 2.1) < 0.03) return '#1a1410'; return u < -0.06 || t > 2.18 ? '#8a7a68' : '#c8946a'; }   // a sunburnt face, wild hair
+    if (u > 0.04 && el3(u, v, t, 0.1, 0, 1.86, 0.16, 0.2, 0.2) <= 1) return shag > 0.4 ? '#a89a88' : '#8a7a68';   // the beard grown wild
+    if (d < 0.27 && t > 2.08 && Math.sin(v * 37 + u * 23) > -0.2) return '#8a7a68';
+    return null; } },
+  pirate:{ r:1.1, h:3.6, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.07, 0.13, 0.06, 0.19, 0.1, 0.08) <= 1) return '#2a1a10';
+    if (cap3(u, av, t, [0, 0.13, 0.12], [0, 0.13, 0.55], 0.09)) return '#5a3a20';   // sea boots
+    if (cap3(u, av, t, [0, 0.13, 0.52], [0, 0.13, 0.98], 0.105)) return '#e8dcc0';   // canvas breeches
+    if (t >= 0.86 && t < 1.04 && Math.hypot(u, v) < 0.33) return '#c8302a';   // the sash
+    if (u > -0.3 && u < 0.2 && Math.abs(v + 0.34) < 0.04 && t > 0.62 && t < 0.98 && Math.abs(u + 0.05 - (t - 0.8) * 0.8) < 0.06) return '#2a2a30';   // the cutlass's sheath
+    if (el3(u, v, t, 0.06, -0.34, 1.02, 0.05, 0.06, 0.04) <= 1) return '#c8a040';   // its brass hilt
+    if (t >= 1.0 && t < 2.06 && el3(u, v, t, 0, 0, 1.5, 0.28, 0.33, 0.6) <= 1){
+      if (u > 0.12 && av < 0.14) return Math.floor(t * 12) % 2 ? '#e8e4dc' : '#2a4a8a';   // the striped shirt under the open coat
+      return '#4a3a2a'; }   // the old brown coat
+    if (cap3(u, av, t, [0, 0.33, 1.95], [0.12, 0.38, 1.3], 0.08)) return '#4a3a2a';
+    if (el3(u, av, t, 0.12, 0.39, 1.26, 0.06, 0.06, 0.06) <= 1) return '#d8a882';
+    if (Math.abs(av - 0.22) < 0.025 && Math.abs(u - 0.02) < 0.04 && Math.abs(t - 2.24) < 0.06 && Math.abs(Math.hypot(u - 0.02, t - 2.24) - 0.045) < 0.02) return '#e8c040';   // gold hoops in his ears
+    var d = Math.hypot(u, v, t - 2.32);
+    if (d < 0.23){ if (t > 2.38 || u < -0.08) return t > 2.36 ? '#c8302a' : '#2a1a10';   // the red kerchief tied over his head
+      if (u > 0.15 && Math.abs(av - 0.075) < 0.03 && Math.abs(t - 2.34) < 0.025) return '#1a1410'; if (u > 0.16 && Math.abs(t - 2.24) < 0.02 && av < 0.09) return '#7a3a2a'; return '#d8a882'; }
+    if (el3(u, v, t, -0.26, 0, 2.36, 0.08, 0.05, 0.06) <= 1 || cap3(u, v, t, [-0.26, 0, 2.34], [-0.36, 0.06, 2.18], 0.03)) return '#c8302a';   // its knot at the nape, the ends hanging
     return null; } }
 });
 // a figure's build, facing f, turned 53 degrees toward the camera

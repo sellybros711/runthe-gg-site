@@ -63,6 +63,7 @@ var PAL={
   mississippi:{ g:['#5e8a3a','#6a9a44','#7ab24e','#8ac05a'], sp:[['#f4f0d8',.012],['#e8c860',.008]], tree:'round', leaf:['#2e5a22','#3e7a2e','#5a9a3e','#4a8a34'], trunk:'#6a5a44', path:['#d8c8a0','#e8dab8'], water:['#4e6e76','#5e7f86','#6e8c94','#b8d0d0'], shadow:.62 },
   himalayas:{ g:['#d8e4f0','#e8f0f8','#f4f8fc','#ffffff'], sp:[['#a8bcd0',.014],['#86827a',.01]], tree:'round', leaf:['#173a2a','#1e3f30','#28503e','#f6f9fd'], trunk:'#4a3626', path:['#a8a49a','#b8b4aa'], water:['#3a94a8','#5ab4c4','#7ac8d4','#e8f8fc'], shadow:.7 },
   london:{ g:['#26402c','#2e4a34','#385a3c','#4a6a46'], sp:[['#4e5256',.02],['#ffd27a',.004]], tree:'round', leaf:['#203e22','#2a4a2a','#345a32','#3e6a3a'], trunk:'#6a6450', path:['#4e5256','#5a5e62'], water:['#1a262c','#22323a','#2a3e46','#6a8088'], shadow:.6 },
+  treasure:{ g:['#4e6a30','#5e7a38','#688440','#7a9048'], sp:[['#c8b07c',.02],['#e8c860',.004]], tree:'pine', leaf:['#1e3a22','#2a4a2a','#345a30','#466a3a'], trunk:'#5a3e26', path:['#c8aa72','#d4b880'], water:['#164a54','#1e5a64','#266a72','#6ab0a8'], shadow:.62 },
   notredame:{ g:['#3e5e3e','#4a6e48','#527a4e','#6a8a5a'], sp:[['#b8a882',.02],['#e8c060',.004]], tree:'round', leaf:['#2e5a2c','#3a6a34','#4a7a3e','#5a8a4a'], trunk:'#5a4a36', path:['#b8a882','#c8b890'], water:['#2a4a5c','#34566a','#3e6276','#8ab0bc'], shadow:.6 },
   bigtop:{ g:['#4a7a32','#5a8a3a','#689a44','#7aa44a'], sp:[['#d8b878',.016],['#f4c840',.006]], tree:'round', leaf:['#2e5a22','#3a6a2a','#4a7a32','#5a8a3a'], trunk:'#5a4630', path:['#d8b878','#e8cc90'], water:['#2a2234','#3a3048','#4a4060','#e8dcc0'], shadow:.62 },
   pacific:{ g:['#2e5a2e','#386a34','#467a3c','#5a8a44'], sp:[['#6a4a2a',.012],['#8ab06a',.012]], tree:'pine', leaf:['#16301e','#1e3f26','#2a5230','#3e6a38'], trunk:'#4a2a1a', path:['#7a5a3a','#8a6a46'], water:['#24484a','#3a6a6a','#5a8a84','#c8e8e0'], shadow:.62 },
@@ -745,6 +746,24 @@ WORLD.pacific=function(P,th,seed){
     else { for(y=3;y<6;y++)for(x=0;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(x===0||x===5?'#d8b07a':y===4?'#5a3a22':'#7a5234')); } }
   // the footprints: a line of big bare prints in the mud along the creek
   for(var fq=0;fq<8;fq++){ var fy=Math.round(P.h*0.2+fq*P.h*0.07), fx=Math.round(P.w*(0.26+0.08*Math.sin(fy*0.017+seed*0.01))+P.w*0.09+(fq%2?3:0)); P.set(fx,fy,hex('#2a1e12')); P.set(fx,fy+1,hex('#2a1e12')); P.set(fx+1,fy+1,hex('#3a2a1a')); }
+};
+WORLD.treasure=function(P,th,seed){
+  var tk=[], x, y;
+  // Stevenson's island in the long gold light: the turf in its greens with the sand spread over it on its own noise, the anchorage
+  // down one side with a fringe of beach, the walk a way of sand, pines with their shadows, grey boulders, and the stockade's
+  // palisade with its log house
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var cx=P.w*(0.9-0.05*Math.sin(y*0.025+seed*0.01))+(fbm(x*.03,y*.03,seed+5)-.5)*12, st=hash(x,y,seed+9), a=fbm(x*.05,y*.05,seed+11);
+    if(x>cx+3){ P.set(x,y,hex(fbm(x*.2,y*.2,seed+13)>.64?'#266a72':'#1e5a64')); continue; }
+    if(x>cx-1){ P.set(x,y,hex(st>.9?'#f4e8c8':'#d8c08a')); continue; }
+    if(fbm(x*.035,y*.035,seed+15)>.64){ P.set(x,y,hex(st>.97?'#f4e8c8':a>.5?'#d8c08a':'#c8b07c')); continue; }
+    P.set(x,y,hex(st>.995?'#e8c860':a>.64?'#688440':a<.3?'#4e6a30':'#5e7a38')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+17)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#a8905e':fbm(x*.2,y*.2,seed+19)>.6?'#d4b880':'#c8aa72')); else if(pd<e+1.5)P.shade(x,y,.8); }
+  for(var bq=0;bq<26;bq++){ var bb=spot(P,P.w*hash(bq,5,seed)*0.85,P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.6,.9,function(a,b){ P.shade(a,b,.7); });
+    if(kd<.55){ for(y=0;y<7;y++)for(x=0;x<7;x++){ var w=(7-y)*0.42; if(Math.abs(x-3)<w) P.set(bb[0]+x,bb[1]+y,hex(y===6?'#5a3e26':(x+y)%3?'#2a4a2a':'#345a30')); } }
+    else if(kd<.8){ for(y=2;y<6;y++)for(x=1;x<6;x++) if(Math.hypot(x-3.5,(y-4)*1.2)<2.6) P.set(bb[0]+x,bb[1]+y,hex(y===2?'#bab4a0':(x+y)%2?'#948e7c':'#7a7466')); }
+    else { for(x=0;x<7;x++){ P.set(bb[0]+x,bb[1]+2,hex(x%2?'#c8a070':'#7a5a36')); P.set(bb[0]+x,bb[1]+3,hex('#7a5a36')); } for(y=4;y<6;y++)for(x=2;x<5;x++) P.set(bb[0]+x,bb[1]+y,hex(y===4?'#4a3420':'#7a5a36')); } }
 };
 WORLD.notredame=function(P,th,seed){
   var tk=[], x, y;
