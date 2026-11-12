@@ -1671,6 +1671,16 @@
     out.push(ellipsoid(add(hc,sc(hup,hr*1.08)),AXh,[hr*0.14,hr*0.08,hr*0.22],dark,{gloss:1,noCast:1}));                           // the little bow on top
     return out; };
   HAT_OVER_HAIR.ppdeerstalker=1;
+  /* THE BELL-RINGER'S HOOD (Notre-Dame): a hood of coarse brown wool as the poor of Hugo's Paris wore it, drawn up round the head,
+     its point falling behind. Modelled on the course golfer too, so it is worn on the
+     trail. */
+  HAT_MODEL.ppbellhood=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const wool=X2((P&&P.W)||'#6a4a2a'), dark=X2((P&&P.G)||'#4a3018'), lite=X2((P&&P.S)||'#8a6a3e');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.3),sc(look,-hr*0.12)),AXh,[hr*1.02,hr*0.9,hr*1.08],wool,{gloss:1}));                       // the hood round the head
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.22),sc(look,hr*0.78)),AXh,[hr*0.16,hr*0.72,hr*0.78],lite,{gloss:1}));                      // its rolled edge round the face
+    for(let k=0;k<3;k++) out.push(ellipsoid(add(hc,sc(hup,hr*(0.45-k*0.22)),sc(look,-hr*(0.85+k*0.2))),AXh,[hr*(0.34-k*0.06),hr*(0.32-k*0.05),hr*(0.32-k*0.06)],dark,{gloss:1}));   // the point falling behind
+    return out; };
+  HAT_OVER_HAIR.ppbellhood=1;
   /* THE WHITE KNIGHT'S HELM (Through the Looking-Glass): his tin helmet as Tenniel drew it, a round crown rising to a sugar-loaf
      point, a dark slit across the front to see through, and a red plume tied at its tip. Modelled on the course golfer too. */
   HAT_MODEL.ppknighthelm=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
@@ -1715,7 +1725,7 @@
     out.push(ellipsoid(add(hc,sc(hup,hr*1.36),sc(Lf,hr*0.18)),AXh,[hr*0.22,hr*0.22,hr*0.22],toorie,{gloss:1}));                    // the toorie
     return out; };
   HAT_OVER_HAIR.pptam=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1, pptopper:1, ppdeerstalker:1};   // a modelled hat that is modelled on the course golfer too
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1, pptopper:1, ppdeerstalker:1, ppbellhood:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1974,6 +1984,9 @@
     // and a ring round its crown
     ppgaslight:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const a=Math.atan2(p[1],p[0]), m=Math.abs((((a/(Math.PI/3))%1)+1)%1-0.5);
       if(m>0.44||Math.abs(p[2]-0.55)<0.06) return {c:P.s,gloss:2}; return {c:p[2]>0.2?P.h:P.C,gloss:3}; } },
+    // the Bourdon Ball: the bronze of a great bell, warm and burnished, its two raised bands round it and a sheen up its shoulder
+    ppbourdon:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2]-0.3)<0.06||Math.abs(p[2]+0.25)<0.05) return {c:P.h,gloss:3};
+      return {c:p[0]+p[2]>0.5?P.b:P.C,gloss:3}; } },
     // the Tree Ring Ball: the cut end of an old fir, pale wood ringed with its years, a crack out from the heart and bark round its edge
     pptreering:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
       const r=Math.hypot(p[0],p[1]); if(Math.abs(p[2])<0.35) return {c:P.b,gloss:1};

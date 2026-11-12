@@ -6677,6 +6677,127 @@ window.RTT_PUTT_LAND = (function(){
           if (rg > 0.42 && rg < 0.7) return R(st > 0.6 ? '#8a2a22' : st > 0.3 ? '#6a1e1a' : '#a88a4a'); return R(st > 0.5 ? '#6a4a2e' : '#5a3a22'); }],
         ldbwall:['#2a3a32', '#344a3e', '#1a2620', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.8) return R('#14100c'); if (Math.abs(z - 3.4) < 0.12) return R('#c8a040'); if (z < 0.6) return R('#3a2416');
           var n = vn(c.ti * 0.5, z * 0.4, 2025); return R(n > 0.66 ? '#4a5a3a' : n > 0.4 ? '#2a3a32' : '#344a3e'); }] } }; };
+  /* ---------------- NOTRE-DAME IS A JOURNEY (World 31): Paris in 1482 as Hugo wrote it, round the cathedral on its island. In at
+     the parvis under the two towers, where the river boat puts in below (1 and 2), along the island's quay (3 and 4), through the
+     market (5 and 6), down the old streets (7 and 8), round the cloister (9 and 10), over the bridge with its houses (11 and 12),
+     along the gallery of the chimeras (13 and 14), up among the towers (15 and 16) and out over the roofs of Paris (17 and 18).
+     The close's lawns lie all round the course in their dusk greens: their edge wanders on noise, the parvis's pale paving is
+     spread on noise of its own, and nothing is a grid. */
+  STOPS.notredame = [[1, 'parvis'], [3, 'quay'], [5, 'market'], [7, 'streets'], [9, 'cloister'], [11, 'bridge'], [13, 'gallery'], [15, 'towers'], [17, 'roofs']];
+  (function(){ BUILD.notredame = function(L){ var s = L.stop; return s === 'parvis' ? ndParvisStop(L) : s === 'market' ? ndMarketStop(L) : s === 'streets' ? ndStreetStop(L) : s === 'cloister' ? ndCloisterStop(L) : s === 'bridge' ? ndBridgeStop(L) : s === 'gallery' ? ndGalleryStop(L) : s === 'towers' ? ndTowerStop(L) : s === 'roofs' ? ndRoofStop(L) : ndQuayStop(L); };
+  function ndEdge(L, x, y){ return 4.2 + fbm(x * 0.07, y * 0.07, L.seed + 3101) * 3.4; }
+  function ndMats(){ return {
+      ndlawn:['#4a6e48', '#527a4e', '#3e5e3e', 0.1, function(c, R){ if (c.rim === 1) return R('#6a8a5a'); var b = blot(c, 0.15, 3105), st = hash(c.ti, c.tj, 3106);
+        if (st > 0.994) return R('#e8c060'); return R(b > 0.64 ? '#527a4e' : b < 0.3 ? '#3e5e3e' : '#4a6e48'); }],
+      ndpave:['#b8a882', '#c8b890', '#a8986e', 0.1, function(c, R){ var w = vn(c.ti * 0.3, c.tj * 0.26, 3107), b = blot(c, 0.2, 3108), st = hash(c.ti, c.tj, 3109);
+        if (w < 0.33) return R('#8a7e62'); if (st > 0.97) return R('#e4d8b4'); return R(b > 0.62 ? '#c8b890' : b < 0.3 ? '#a8986e' : '#b8a882'); }],
+      ndstraw:['#b89a4a', '#c8aa5a', '#a0843a', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 3110); return R(st > 0.9 ? '#e0c878' : st < 0.08 ? '#8a7030' : blot(c, 0.2, 3111) > 0.55 ? '#c8aa5a' : '#b89a4a'); }],
+      ndriver:['#34566a', '#3e6276', '#2a4a5c', 0.1, function(c, R){ var st = hash(c.ti, c.tj, 3112); return R(st > 0.97 ? '#8ab0bc' : blot(c, 0.25, 3113) > 0.6 ? '#3e6276' : '#34566a'); }] }; }
+  function ndBase(L, o){ var seed = L.seed;
+    return {
+      h:function(x, y){ var c = L.clearAt(x, y); return (fbm(x * 0.05, y * 0.05, seed) - 0.4) * (o.hills || 1.0) * sm(1.3, 5, c); },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = ndEdge(L, x, y), sw = fbm(x * 0.03, y * 0.03, seed + 3114);
+        if (o.river && fbm(x * 0.02, y * 0.02, seed + 3115) > 0.64 && c > e + 2.5) return ['ndriver', {}];
+        if (o.straw && fbm(x * 0.04, y * 0.04, seed + 3116) > 0.66 && c > e + 1.5) return ['ndstraw', {}];
+        if (c < e + 0.6) return [o.pave ? 'ndpave' : 'ndlawn', { rim:c > e - 0.3 ? 1 : 0 }];
+        if (sw > (o.pave ? 0.5 : 0.64)) return ['ndpave', {}];
+        return ['ndlawn', {}]; },
+      fill:{ on:['ndlawn'], trees:o.trees == null ? 0.02 : o.trees, lows:0.12, tree:function(B, x, y, i){ ndTreeAt(B, x, y, i + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 3117); if (k < 0.4) ndPostAt(B, x, y, i + seed); else if (k < 0.7) ndBasketAt(B, x, y, i + seed); else ndWellAt(B, x, y, i + seed); } },
+      bg:'#1c2034', gain:2, mats:ndMats() }; }
+  // a broad tree of the close; a limestone post; a market basket; a well head
+  function ndTreeAt(B, x, y, i){ var zb = B.gz(x, y), H = 6 + hash(i, 2, 3118) * 3, R0 = 2.2 + hash(i, 3, 3119);
+    B.solid(x - R0, y - R0, zb, x + R0, y + R0, zb + H + R0, function(px, py, pz){ var dx = px - x, dy = py - y, h = pz - zb, rr = Math.hypot(dx, dy);
+      if (h < H && rr < 0.3) return '#5a4a36';
+      var cr = Math.hypot(dx, dy, (h - H) * 1.3); if (cr < R0 && h > H - 1.2){ var n = vn(px * 1.2, py * 1.2 + pz, i + 7); return cr > R0 - 0.5 && n < 0.45 ? null : n > 0.6 ? '#4a7a3e' : n < 0.3 ? '#2e5a2c' : '#3a6a34'; } return null; }, B.ART); }
+  function ndPostAt(B, x, y, i){ var zb = B.gz(x, y);
+    B.solid(x - 0.4, y - 0.4, zb, x + 0.4, y + 0.4, zb + 1.3, function(px, py, pz){ var r = Math.hypot(px - x, py - y), h = pz - zb;
+      if (h > 1.0) return Math.hypot(px - x, py - y, h - 1.0) < 0.27 ? '#d8cca8' : null; return r < 0.25 ? (Math.abs(h - 0.15) < 0.05 ? '#8a7e62' : '#c8b890') : null; }); }
+  function ndBasketAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.7, y - 0.7, zb, x + 0.7, y + 0.7, zb + 1, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y);
+      if (t < 0.6) return r < 0.45 + t * 0.1 ? (Math.floor(t * 10 + Math.atan2(py - y, px - x) * 3) % 2 ? '#a8783a' : '#8a5e2a') : null;
+      if (t < 0.9 && Math.hypot(px - x, py - y, t - 0.6) < 0.44) return hash(Math.floor(px * 6), Math.floor(py * 6), k) > 0.5 ? '#c8b040' : '#d8a050'; return null; }); }
+  function ndWellAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 0.9, y - 0.9, zb, x + 0.9, y + 0.9, zb + 1.6, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y);
+      if (t < 0.85) return r < 0.75 && r > 0.5 ? (Math.floor(t * 6) % 2 ? '#b8a882' : '#c8b890') : r <= 0.5 && t < 0.6 ? '#1a2a34' : null;
+      if (Math.abs(r - 0.62) < 0.05 && Math.abs(px - x) < 0.06) return '#2a2a30'; if (t > 1.45 && Math.abs(py - y) < 0.05 && Math.abs(px - x) < 0.66) return '#2a2a30'; return null; }); }
+  // the cathedral's own stones by the course: a square tower, a portal, the rose window's wall, a flying buttress, a house of old
+  // Paris, a market stall, a gargoyle on its pillar, the quay with its river steps, the bridge with its houses
+  function stoneCol(dx, t, salt){ var bh = hash(Math.floor(dx * 2), Math.floor(t * 2.4), salt); return bh > 0.75 ? '#c8b890' : bh > 0.3 ? '#bcac86' : '#ac9c78'; }
+  function ndTowerAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3.5, y - 3.5, zb, x + 3.5, y + 3.5, zb + 16, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, ax = Math.abs(dx), ay = Math.abs(dy); if (ax > 3.3 || ay > 3.3) return null;
+      if (t > 15.2){ if (ax < 2.9 && ay < 2.9 && t > 15.4) return null; return Math.floor(dx * 3 + dy * 3) % 2 && t > 15.5 ? null : '#d8cca8'; }
+      if (ax > 2.6 && ay > 2.6) return '#b0a07a'; var f = ay > 3.05 ? dx : dy, af = Math.abs(f);
+      if ((ay > 3.05 || ax > 3.05) && t > 7.6 && t < 14.4 && Math.abs(af - 1.3) < 0.6){ if (t > 14.4 - Math.pow((af - 1.3) / 0.6, 2) * 0.8) return '#c8b890'; return Math.floor(t * 3) % 2 ? '#1a1820' : '#4a3a28'; }
+      if (Math.abs(t - 7.2) < 0.15) return '#e4d8b4'; return stoneCol(dx + dy, t, 3121); }); }
+  function ndPortalAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4, y - 1.5, zb, x + 4, y + 1.5, zb + 8, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, ax = Math.abs(dx); if (ax > 3.8 || Math.abs(dy) > 1.3) return null;
+      if (dy > 0.7 && ax < 1.8 && t < 4.2 - Math.pow(ax / 1.8, 2) * 1.6){ if (dy > 1.0) return null; return ax < 0.06 ? '#1a1008' : '#8a2a1e'; }
+      if (dy > 0.9 && t > 4.6 && t < 6.2 && Math.abs(((dx + 9) % 1.2) - 0.6) < 0.25) return t > 6.0 ? '#8a7e62' : '#e4d8b4';
+      if (t > 7.5) return '#d8cca8'; return stoneCol(dx, t, 3122); }); }
+  function ndRoseAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4.5, y - 1, zb, x + 4.5, y + 1, zb + 10, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 4.3 || Math.abs(dy) > 0.8) return null;
+      var rz = t - 6, rr = Math.hypot(dx, rz); if (dy > 0.5 && rr < 3.4){ if (rr > 3.15) return '#8a7e62'; if (rr < 0.6) return '#f0d070'; var an = Math.atan2(rz, dx); if (Math.abs(Math.sin(an * 8)) < 0.12) return '#4a4232'; return Math.floor(rr * 1.2 + an * 2.5) % 2 ? '#2a4aa0' : '#a8282a'; }
+      if (t > 9.5) return '#d8cca8'; return stoneCol(dx, t, 3123); }); }
+  function ndHouseAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 3, y - 2, zb, x + 3, y + 2, zb + 9, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, jut = t > 3 ? 0.5 : 0; if (Math.abs(dx) > 2.8 || dy > 1.3 + jut || dy < -1.8) return null;
+      if (t > 6){ var sl = (9 - t) / 3; if (Math.abs(dx) > 2.8 * sl + 0.2) return null; return Math.floor(t * 3 + dx) % 2 ? '#8a3a2a' : '#7a2e22'; }
+      if (dy < 0.6 + jut) return '#3a2a1e'; var u = ((dx + 9) * 1.1) % 1, v = (t % 2.6) / 2.6;
+      if (u < 0.08 || v < 0.06 || Math.abs(u - v) < 0.05 && t > 3) return '#3a2616'; if (t < 2.4 && Math.abs(dx) < 0.6) return '#5a3a20';
+      if (u > 0.3 && u < 0.7 && v > 0.35 && v < 0.75) return (Math.floor(dx) + Math.floor(t)) % 3 ? '#f0c878' : '#2a2630'; return '#e8dcc0'; }); }
+  function ndStallAt(B, x, y, k){ var zb = B.gz(x, y);
+    B.solid(x - 1.8, y - 1.1, zb, x + 1.8, y + 1.1, zb + 2.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 1.6 || Math.abs(dy) > 0.9) return null;
+      if (t > 1.9) return Math.floor((dx + 9) * 2) % 2 ? '#2a4aa0' : '#e8dcb8'; if (Math.abs(Math.abs(dx) - 1.5) < 0.1 && Math.abs(Math.abs(dy) - 0.8) < 0.1) return '#4a3018';
+      if (t > 0.85 && t < 1.1) return '#6a4a28'; if (t >= 1.1 && t < 1.4 && Math.abs(dy) < 0.7) return hash(Math.floor(dx * 4), Math.floor(dy * 4), 3124 + k) > 0.5 ? '#c8b040' : '#c88a3a'; return null; }); }
+  function ndGargAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 1, y - 1, zb, x + 1, y + 1, zb + 3.6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, r = Math.hypot(dx, dy);
+      if (t < 2.4) return r < 0.5 ? (Math.abs(t - 2.3) < 0.08 ? '#e4d8b4' : '#b8a882') : null; var g = t - 2.4;
+      if (Math.hypot(dx, dy + 0.1, g - 0.4) < 0.42) return '#8a826c'; if (Math.hypot(dx, dy - 0.38, g - 0.62) < 0.24) return Math.hypot(Math.abs(dx) - 0.1, dy - 0.56, g - 0.68) < 0.05 ? '#e8c060' : '#9a927c';
+      if (Math.abs(Math.abs(dx) - 0.38) < 0.08 && dy < 0.1 && dy > -0.4 && g > 0.3 && g < 0.95) return '#6a6250'; return null; }); }
+  function ndQuayAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4, y - 0.8, zb, x + 4, y + 0.8, zb + 2.4, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 3.8 || Math.abs(dy) > 0.6) return null;
+      if (Math.abs(dx) < 1 && t < 2.1) return t < (dx + 1) * 1.05 ? '#a8986e' : null; if (t > 2.1) return '#e4d8b4'; return Math.floor(t * 2.5) % 2 ? '#b8a882' : '#c8b890'; }); }
+  function ndBridgeAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 5, y - 1.5, zb, x + 5, y + 1.5, zb + 6, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 4.8 || Math.abs(dy) > 1.3) return null;
+      if (t < 2.2) return t < 1.6 - dx * dx / 23 * 1.6 ? null : '#b8a882';
+      var hx = ((dx + 9) % 2) / 2, hh = 4.4 + (hx < 0.5 ? hx : 1 - hx) * 1.2; if (t > hh) return null; if (t > hh - 0.6) return '#7a2e22'; if (hx < 0.06) return '#3a2616';
+      return Math.abs(hx - 0.5) < 0.15 && t > 3 && t < 3.6 ? '#f0c878' : '#e8dcc0'; }); }
+  function ndButtressAt(B, x, y){ var zb = B.gz(x, y);
+    B.solid(x - 4, y - 1, zb, x + 4, y + 1, zb + 7, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, u = (dx + 3.8) / 7.6; if (Math.abs(dx) > 3.8 || Math.abs(dy) > 0.8) return null;
+      if (u < 0.2){ if (t > 5.8) return Math.abs(dx + 3) < (7 - t) * 0.5 ? '#d8cca8' : null; return '#bcac86'; }
+      var top = 3.85 + u * 2.45, und = top - 0.7 - Math.sin(u * Math.PI) * 1.4; if (t < top && t > und && Math.abs(dy) < 0.5) return Math.floor(u * 12) % 2 ? '#c8b890' : '#b8a882';
+      if (u > 0.92) return '#ac9c78'; return null; }); }
+  function ndSpots(L, n, salt, pad){ var sp = [], i; for (i = 0; i < n; i++){ var q = L.spot(i ? pad || 1.3 : 3.4, function(x, y){ return L.north(x, y) * 0.35 + L.side(x) * 1.2 + hash(x | 0, y | 0, L.seed + salt + i) * 2; }); if (q) sp.push(q); } return sp; }
+  function ndQuayStop(L){ var O = ndBase(L, { pave:true, river:true, trees:0.015 }), sp = ndSpots(L, 3, 3131);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) ndQuayAt(B, q.x, q.y); else ndHouseAt(B, q.x, q.y); }); }; return O; }
+  function ndParvisStop(L){ var O = ndBase(L, { pave:true, trees:0.01 }), sp = ndSpots(L, 3, 3141);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ndPortalAt(B, q.x, q.y); else if (k === 1) ndRoseAt(B, q.x, q.y); else ndWellAt(B, q.x, q.y, k); }); }; return O; }
+  function ndMarketStop(L){ var O = ndBase(L, { pave:true, straw:true, trees:0.015 }), sp = ndSpots(L, 4, 3151);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 3) ndStallAt(B, q.x, q.y, k); else ndHouseAt(B, q.x, q.y); }); }; return O; }
+  function ndStreetStop(L){ var O = ndBase(L, { trees:0.02 }), sp = ndSpots(L, 3, 3161);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) ndHouseAt(B, q.x, q.y); else ndBasketAt(B, q.x, q.y, k); }); }; return O; }
+  function ndCloisterStop(L){ var O = ndBase(L, { trees:0.035 }), sp = ndSpots(L, 3, 3171);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ndButtressAt(B, q.x, q.y); else if (k === 1) ndPortalAt(B, q.x, q.y); else ndWellAt(B, q.x, q.y, k); }); }; return O; }
+  function ndBridgeStop(L){ var O = ndBase(L, { pave:true, river:true, trees:0.01 }), sp = ndSpots(L, 3, 3181);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ndBridgeAt(B, q.x, q.y); else if (k === 1) ndQuayAt(B, q.x, q.y); else ndHouseAt(B, q.x, q.y); }); }; return O; }
+  function ndGalleryStop(L){ var O = ndBase(L, { pave:true, trees:0.01 }), sp = ndSpots(L, 3, 3191);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k < 2) ndGargAt(B, q.x, q.y); else ndRoseAt(B, q.x, q.y); }); }; return O; }
+  function ndTowerStop(L){ var O = ndBase(L, { pave:true, hills:0.8, trees:0.01 }), sp = ndSpots(L, 3, 3201);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ndTowerAt(B, q.x, q.y); else if (k === 1) ndButtressAt(B, q.x, q.y); else ndGargAt(B, q.x, q.y); }); }; return O; }
+  function ndRoofStop(L){ var O = ndBase(L, { hills:0.9, trees:0.02 }), sp = ndSpots(L, 3, 3211);
+    O.build = function(B){ sp.forEach(function(q, k){ if (k === 0) ndTowerAt(B, q.x, q.y); else if (k === 1) ndHouseAt(B, q.x, q.y); else ndGargAt(B, q.x, q.y); }); }; return O; }
+
+  // The Bell-Ringer's Loft: Quasimodo's room high in the tower among the oak beams, its floor of old boards with straw strewn on it,
+  // its stone walls, and the little gargoyles he keeps for company along them
+  BUILD['s-ringerloft'] = function(L){ var R0 = room(L, { floor:'ndlfloor', wall:'ndlwall', wallH:5.4, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 3221, 2.4).forEach(function(q, k){ if (k % 2) ndGargAt(B, q[0], q[1]); else ndBasketAt(B, q[0], q[1], k + 3); }); },
+      bg:'#14121c', gain:2,
+      mats:{ ndlfloor:['#5a3a22', '#6a4a2e', '#3a2416', 0.12, function(c, R){ var st = hash(c.ti, c.tj, 3223), sw = vn(c.ti * 0.06, c.tj * 0.06, 3224); if (Math.abs(((c.ti * 0.25) % 1) - 0.5) < 0.06) return R('#3a2416');
+          if (sw > 0.66) return R(st > 0.5 ? '#c8aa5a' : '#b89a4a'); return R(st > 0.5 ? '#6a4a2e' : '#5a3a22'); }],
+        ndlwall:['#a8986e', '#b8a882', '#8a7e62', 0.18, function(c, R){ var z = c.z || 0; if (z > 4.6) return R(Math.floor(c.ti * 0.5) % 2 ? '#4a3420' : '#3a2616'); if (z < 0.5) return R('#7a6e56');
+          var n = vn(c.ti * 0.5, z * 0.8, 3225); return R(n > 0.66 ? '#b8a882' : n > 0.35 ? '#a8986e' : '#9a8a64'); }] } }; };
+  })();
   /* ---------------- THE BIG TOP IS A JOURNEY (World 29): an original travelling show of the 1880s to the 1910s on a fairground lot,
      nobody's real circus. Off the rail siding where the circus train comes in (1 and 2), across the lot where the tents go up (3 and
      4), down the midway (5 and 6), along the tent rows (7 and 8), through the wagon yard (9 and 10), past the prop tent (11 and 12),
