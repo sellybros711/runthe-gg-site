@@ -3,7 +3,8 @@ name: College fantasy, who is out
 # WHO CANNOT PLAY THIS WEEK, as well as college football lets anybody know. There is no
 # league wide report, so `cfb/build/fantasy/injuries.mjs` reads every slate team's roster
 # from ESPN (the out and suspended groups, and any designation ESPN carries), the box score
-# of each team's last game (who missed it), and the site's own rulings file.
+# of each team's last game (who missed it), the season store (which quarterback is not
+# starting, `roles.mjs`), and the site's own rulings file.
 #
 # A PRICE MAY NEVER MOVE ONCE ANYBODY HAS DRAFTED AGAINST IT, and news moves all week, which
 # is why this is its own file and its own job rather than a step in the Monday build.
@@ -17,14 +18,28 @@ name: College fantasy, who is out
 # before his game, so the server keeps no out list. This file is what lets the page SAY why
 # somebody might want to.
 
+# THE CADENCE IS THE SOURCE'S (2026-11-12). The NFL job went hourly because nflverse
+# publishes every day about 11am Eastern. This one has no such feed. Read off its own runs:
+# from week 10 to week 11 every one of the twice daily passes wrote a byte identical file
+# (only who missed his team's last game), and the job has never once committed. ESPN's
+# college rosters carry no injuries and no status, and the out and suspended groups have
+# been empty all season. What can move the file is:
+#   the season store, which only the Monday build moves, and that build runs this script;
+#   the site's rulings, `cfb/data/fantasy/ruled_out.json`, edited by hand;
+#   this script, when its rule changes (the backup quarterback rule, on its merge).
+# So it runs the moment either of the last two lands on main, and once a day as a backstop
+# in case ESPN ever starts filling its groups. Hourly would be ten runs a day reading
+# nothing new. GitHub's scheduler fires these crons hours late in practice (the 15:20 UTC
+# pass has been starting near 21:00), which is one more reason the push is the real trigger.
 on:
+  push:
+    branches: [main]
+    paths:
+      - cfb/data/fantasy/ruled_out.json
+      - cfb/build/fantasy/injuries.mjs
+      - cfb/build/fantasy/roles.mjs
   schedule:
-    # Every day at late morning and early evening Eastern, in UTC.
     - cron: '20 15 * * *'
-    - cron: '20 22 * * *'
-    # And twice more on a Saturday, because that is the day the news lands.
-    - cron: '20 13 * * 6'
-    - cron: '20 18 * * 6'
   workflow_dispatch:
 
 permissions:

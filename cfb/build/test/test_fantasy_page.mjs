@@ -178,6 +178,7 @@ export async function run(ROOT, POOL) {
       const qb = POOL.pool.filter((m) => m.position === 'QB');
       inj.men[qb[0].player_id] = { st: 'suspended' };
       inj.men[qb[1].player_id] = { st: 'missed' };
+      inj.men[qb[2].player_id] = { st: 'off', roster: 'QB2' };
       const { page, boom, posted, strays } = await openPage('/cfb/fantasy/',
         { at: LOCK - 36 * 3600e3, injuries: inj });
       await waitScreen(page, 's-home');
@@ -199,6 +200,7 @@ export async function run(ROOT, POOL) {
         await signOne(page);
       }
       ok('a suspended man is never on the board', !seen.has(qb[0].player_id));
+      ok('a backup quarterback is never on the board', !seen.has(qb[2].player_id));
       ok('the team codes wear a colour', colours.length > 0 && colours.every(Boolean),
         `${colours.filter(Boolean).length} of ${colours.length}`);
       await waitScreen(page, 's-review');

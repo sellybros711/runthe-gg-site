@@ -1158,7 +1158,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var cls = (e.st === 'questionable' || e.st === 'missed') ? ' q'
       : (e.st === 'none' ? ' none' : '');
     return '<span class="inj' + cls + '" data-inj="' + esc(m.player_id) + '">'
-      + esc(INJ_WORD[e.st] || 'INJ') + '</span>';
+      + esc(ROSTER_WORD[e.roster] || INJ_WORD[e.st] || 'INJ') + '</span>';
   };
 
   /*
@@ -1231,6 +1231,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     missed: 'He missed his team\'s last game.',
     none: 'Listed on the injury report.',
   };
+  /* A QUARTERBACK WHO IS NOT STARTING (the owner, 2026-11-12). The injury file codes him
+     `{ st: 'off', roster: 'QB2' }`, the NFL file's shape. He is off the board like an out
+     man, and only a lineup drafted before the file said so still holds him. Read off the
+     box scores (`cfb/build/fantasy/roles.mjs`): he did not lead his team's passing lately. */
+  var ROSTER_WORD = { QB2: 'BACKUP' };
+  var ROSTER_SAY = { QB2: 'Not his team\'s starting quarterback this week.' };
 
   /*
    * WHAT IT SAYS IS ONLY WHAT IS KNOWN, AND IT SAYS WHERE IT CAME FROM.
@@ -1246,11 +1252,11 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var m = BY_ID[id], e = injOf(m);
     if (!m || !e) return;
     $('inj-name').textContent = m.name;
-    var bits = [INJ_SAY[e.st] || 'Listed on the injury report.'];
+    var bits = [ROSTER_SAY[e.roster] || INJ_SAY[e.st] || 'Listed on the injury report.'];
     if (e.d) bits.push(String(e.d).replace(/\.$/, '') + '.');
     $('inj-line').textContent = bits.join(' ');
     var src = e.by === 'site' ? 'Ruled out for week ' + POOL.week + ' by RunThe.GG.'
-      : (e.st === 'missed' ? 'Read off the box scores.' : 'Read off ESPN\'s roster.');
+      : (e.st === 'missed' || e.roster ? 'Read off the box scores.' : 'Read off ESPN\'s roster.');
     $('inj-when').textContent = src + ' Any player can be swapped before his game.';
     $('inj-sheet').hidden = false;
   }
@@ -2134,7 +2140,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var rest = men.filter(function(m){ return !isFlagged(m); });
     var html = flagged.map(function(m){
       return '<div class="swapcall"><p><b>' + esc(m.name) + '</b> '
-        + esc(SWAP_WHY[m.inj.st] || 'is on the report') + '. Swap him before '
+        + esc((m.inj.roster === 'QB2' ? 'is not starting' : SWAP_WHY[m.inj.st])
+          || 'is on the report') + '. Swap him before '
         + esc(kickLabel(m.kick)) + '.</p>'
         + '<button type="button" data-swap="' + esc(m.player_id) + '">Swap</button></div>';
     }).join('');

@@ -124,6 +124,29 @@ async function main() {
     console.log('athletes with an injury or a non active status', hurt.length,
       cut(hurt.slice(0, 3).map((a) => ({ id: a.id, name: a.displayName, pos: a.position
         && a.position.abbreviation, injuries: a.injuries, status: a.status })), 1500));
+
+    /* THE ROSTER STOPS AT 100, ALPHABETICALLY (2026-11-12): does `limit` lift it? Printed
+       as a count and the last surname, so the answer is one line. */
+    const count = (j) => ((j && j.athletes) || []).flatMap((g) => g.items || []);
+    for (const q of ['', '?limit=300', '?limit=200&page=1']) {
+      const r = await get(`${ESPN}/teams/${tid}/roster${q}`);
+      const all = count(r.j);
+      const last = all.map((a) => a.lastName || '').sort().pop();
+      console.log(`roster${q || ' (plain)'}: HTTP ${r.status}, ${all.length} athletes, last surname ${last}`);
+    }
+
+    /* IS THERE A COLLEGE DEPTH CHART? The NFL rule reads one. Every path ESPN uses for the
+       NFL's, asked of college football. */
+    for (const [name, url] of [
+      ['site depthcharts', `${ESPN}/teams/${tid}/depthcharts`],
+      ['core depthcharts', `${CORE}/seasons/${season}/teams/${tid}/depthcharts`],
+      ['site team (depth enabled)', `${ESPN}/teams/${tid}?enable=roster,depthchart`],
+    ]) {
+      const r = await get(url);
+      head(`${name} ${tid}`, r);
+      const items = r.j && (r.j.items || r.j.depthchart || (r.j.team && r.j.team.depthchart));
+      console.log(cut(items || r.j || r.t, 1200));
+    }
   }
   /* Is there a league wide injury list? */
   const li = await get(`${CORE}/injuries?limit=50`);
