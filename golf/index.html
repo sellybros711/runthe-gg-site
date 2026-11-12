@@ -62,8 +62,8 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=150"></script>
-<script defer src="putt/land.js?v=35"></script>
+<script defer src="putt/putt.js?v=151"></script>
+<script defer src="putt/land.js?v=36"></script>
 <script defer src="putt/hole3d.js?v=24"></script>
 <script defer src="putt/trip3d.js?v=22"></script>
 <script defer src="putt/gyms.js?v=4"></script>
@@ -99,12 +99,12 @@
 <script defer src="putt/gymkinds/lantern.js?v=1"></script>
 <script defer src="putt/gymkinds/ringer.js?v=1"></script>
 <script defer src="putt/gymkinds/spade.js?v=1"></script>
-<script defer src="putt/trail.js?v=71"></script>
-<script defer src="putt/mapland.js?v=27"></script>
+<script defer src="putt/trail.js?v=72"></script>
+<script defer src="putt/mapland.js?v=28"></script>
 <!-- Share clips of a hole's putts from the card after it (reads putt.js, never changes it). -->
 <script defer src="putt/clips.js?v=3"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=44"></script>
+<script defer src="golfer3d.js?v=45"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11409,6 +11409,8 @@ const PP_REWARDS=[
  {cat:'ew',id:'ppphantommask',name:'Phantom Mask',hist:'A Members Tour prize'},
  {cat:'putter',id:'ppharvest',name:'Harvest Moon Putter',hist:'A Members Tour prize'},
  {cat:'ball',id:'ppgoldleaf',name:'Golden Leaf Ball',hist:'A Members Tour prize',col:'#b8501a',tracer:{g:'rgba(184,80,26,.5)',c:'#e88a4a'}},
+ {cat:'ball',id:'ppfullmoon',name:'Full Moon Ball',hist:'A Members Tour prize',col:'#e8e4d4',tracer:{g:'rgba(200,196,255,.55)',c:'#f4f2ff'}},
+ {cat:'ew',id:'ppinvisible',name:'Invisible Man’s Goggles',hist:'A Members Tour prize'},
  {cat:'top',id:'ppchampjacket',name:'Members Champion Jacket',hist:'A Members Tour prize'},
  {cat:'ball',id:'pphallowslantern',name:'Hallows Lantern Ball',hist:'The Members Tour candy bag prize',col:'#7a4ad8',tracer:{g:'rgba(122,74,216,.5)',c:'#b48cff'}},
  {cat:'putter',id:'ppdiamond',name:'Diamond Putter',hist:'The secret holes prize'} ];
@@ -12169,7 +12171,7 @@ Object.assign(COS_BOOST,{
   'hw:ppvisor':{acc:2}, 'hw:pphallcap':{clu:2}, 'hw:pptricorn':{dist:2}, 'hw:ppminer':{app:2}, 'hw:ppexplorer':{bnk:2}, 'hw:pphallowscrown':{scr:2},
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
   'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'hw:ppastrohelmet':{sht:2},
-  'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
+  'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2}, 'bl:ppfullmoon':{clu:2}, 'ew:ppinvisible':{scr:2},
   'hw:ppgoatskin':{bnk:2}, 'bl:ppeight':{app:2}, 'hw:ppbellhood':{sht:2}, 'bl:ppbourdon':{dist:2}, 'hw:ppdeerstalker':{acc:2}, 'bl:ppgaslight':{scr:2}, 'hw:pptopper':{clu:2}, 'bl:ppbigtop':{acc:2}, 'ct:ppcaulkboots':{sht:2}, 'bl:pptreering':{dist:2}, 'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}, 'bl:ppprism':{sht:2}, 'ew:ppcrystalspecs':{acc:2}, 'bl:ppjelly':{scr:2}, 'ct:ppwobbleboots':{sht:2}, 'ew:ppemeraldspecs':{app:2}, 'ct:ppsilvershoes':{acc:2}, 'bl:ppfleece':{app:2}, 'ct:ppsandals':{bnk:2}, 'hw:ppbronzehelm':{acc:2}, 'ct:ppwingsandals':{dist:2}, 'hw:ppasphodel':{scr:2}, 'bl:pppomegranate':{bnk:2}, 'hw:ppwingcap':{dist:2}, 'bl:ppambrosia':{acc:2}, 'hw:pphattop':{app:2}, 'bl:ppcheshire':{scr:2}, 'hw:ppknighthelm':{bnk:2}, 'bl:pphumpty':{sht:2}, 'hw:ppthimble':{clu:2}, 'bl:ppmagicbean':{dist:2}, 'hw:ppstrawhat':{scr:2}, 'hw:pptam':{clu:2}, 'bl:ppriverboat':{acc:2}, 'bl:ppdeeploch':{bnk:2}, 'ew:ppglacier':{acc:2}, 'bl:ppyetiprint':{app:2}
 });
 // THE PRO SHOP LINE (PRO_LINE): the ladder's power for its rarity, a common 1 point and a rare 2, leaning on the stats gear
@@ -16029,7 +16031,7 @@ function scrPuttHub(){
     </div>
     <div class="ft-pp-tiles">
       <button type="button" class="ft-pp-tile" data-k="daily"><b>Daily Hole</b><span>${esc(d.name||'Today')} · ${d.done?`${d.s} on a par ${d.par}`:'one try, never costs a life'}</span><em>${d.done?'Done':'+'+window.RTT_PUTT.COINS.daily+' coins'}</em></button>
-      <button type="button" class="ft-pp-tile" data-k="members"><b>Members Tour</b><span>Hallows Night · Harvest Moon</span><em>${m.members?'Open':'Tour Pass'}</em></button>
+      <button type="button" class="ft-pp-tile" data-k="members"><b>Members Tour</b><span>Hallows Night · Harvest Moon · Monster Castle</span><em>${m.members?'Open':'Tour Pass'}</em></button>
       <div class="ft-pp-tile wide" data-k="lives"><div><b>Lives</b><span>${ftHearts(m.lives,m.max)}</span><span>${out&&m.refillAt?`Next life in ${esc(hmShort(m.refillAt-Date.now()))}`:'Each one comes back 24 hours after you lose it.'}${PL&&m.max<PL.pass?` A Tour Pass doubles them: ${PL.pass}.`:''}</span></div><em>${m.lives}/${m.max}</em></div>
     </div>
   </div>`);
@@ -18405,11 +18407,13 @@ PXG_EW_PAL.ppaviatorgoggles={'#':'#181019','@':'#ffe08a','%':'#d9a441','&':'#8f6
 // Snow Goggles
 PXG_EYEWEAR.ppsnowgoggles=pxgRows([[12,15,'###############'],[13,14,'#@@@%%%%%%%%%%%&#'],[14,10,'#+=#@%PPPPPPffPfPPP%&#=+#'],[15,10,'#~+#@%QQQQQffQfQQQQ&&#+~#'],[16,10,'#~~#%&RRRRfRRRRRRRR&&#~~#'],[17,13,'#%&OOOOOO###OOOOO&#'],[18,14,'#&&&&&#...#&&&**#'],[19,15,'#####.....#####']]);
 PXG_EYEWEAR.pptitangoggles=PXG_EYEWEAR.ppsnowgoggles;
+PXG_EYEWEAR.ppinvisible=PXG_EYEWEAR.ppaviatorgoggles;   // Invisible Man’s Goggles (Monster Castle): Wells's dark blue goggles, the aviator goggles' outline in dark steel and blue glass
 PXG_EYEWEAR.ppcrystalspecs=PXG_EYEWEAR.pppixelshades;
 PXG_EW_PAL.ppcrystalspecs=Object.assign({},PXG_EW_PAL.pppixelshades,{'%':'#c8a8ff',Q:'#9ff0ff'});
 PXG_EYEWEAR.ppemeraldspecs=PXG_EYEWEAR.pppixelshades;
 PXG_EW_PAL.ppemeraldspecs=Object.assign({},PXG_EW_PAL.pppixelshades,{'@':'#c8ffe0','%':'#2fb36a','&':'#14683a','*':'#5affa0','+':'#1a8a4c',P:'#e8fff0',E:'#0e3a20',Q:'#4ad88a',O:'#1a8a4c'});
 PXG_EW_PAL.pptitangoggles={'#':'#181019','@':'#fff2d0','%':'#e8c88c','&':'#b8905a','*':'#8a6a3a','+':'#ffd98a','=':'#fff2d0','~':'#a87a40',f:'#ffffff',P:'#ffd0a0',Q:'#ffa860',R:'#e8742a',O:'#a83a14'};
+PXG_EW_PAL.ppinvisible={'#':'#14141c','@':'#8a8aa0','%':'#5a5a70','&':'#3a3a4e','*':'#4a3a26','+':'#2e2418','=':'#8a8aa0',P:'#6a8ad8',Q:'#2a4aa0',R:'#1a2a6a',E:'#0e1640'};
 PXG_EYEWEAR.ppglacier=pxgRows([[14,13,'&%%%%%%%...%%%%%%%&'],[15,13,'&%QQQQQ%%%%%QQQQQ%&'],[16,13,'&%QQQQQ%...%QQQQQ%&'],[17,13,'.%%%%%%%...%%%%%%%.']]);   // Glacier Glasses (the Himalayas): round dark lenses in a brass rim, leather side shields
 PXG_EW_PAL.ppglacier={'%':'#b8903a','&':'#5a3a22',Q:'#1e2a3a'};
 PXG_EW_PAL.ppsnowgoggles={'#':'#181019','@':'#ffffff','%':'#e6eef8','&':'#b4c4da','*':'#8496b4','+':'#d8eefa','=':'#ffffff','~':'#94b8d4',f:'#ffffff',P:'#e4f4ff',Q:'#a6d8f6',R:'#8fa6f0',O:'#8a62dc'};
@@ -18456,6 +18460,8 @@ PXG_BALL.ppbigtop=PXG_BALL.ppjelly;
 PXG_BALL_PAL.ppbigtop={o:'#7a1418',C:'#c8302a',h:'#f4c840',b:'#2a5ab8',s:'#1a0a12',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL.ppgaslight=PXG_BALL.ppjelly;
 PXG_BALL_PAL.ppgaslight={o:'#6a4410',C:'#f4b040',h:'#ffe6a0',b:'#c8802a',s:'#141418',W:'#ffffff',T:'#e8ebf0'};
+PXG_BALL.ppfullmoon=PXG_BALL.ppjelly;   // Full Moon Ball (Monster Castle): the Werewolf's moon, pale and cratered
+PXG_BALL_PAL.ppfullmoon={o:'#5a5a72',C:'#e8e4d4',h:'#ffffff',b:'#b8b4c8',s:'#3a3a4e',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL.ppeight=PXG_BALL.ppjelly;
 PXG_BALL_PAL.ppeight={o:'#6a4a10',C:'#d8a838',h:'#fff0a8',b:'#a87a20',s:'#2a1a08',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL.ppbourdon=PXG_BALL.ppjelly;
