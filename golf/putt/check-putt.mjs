@@ -1133,8 +1133,12 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     claim(calk.lockN > 0 && calk.sheet && calk.noRound, 'without the Tour Pass a missed day is shut, and pressing it opens the Pass sheet rather than a hole');
     claim(calk.pastRound && calk.late && calk.streak === 2 && calk.last, `a Pass holder plays a missed day, and it is filed late without moving the streak (streak ${calk.streak})`);
     // THE HOLIDAY FOLK on the page, on a fixed clock: each stands by today's page in their season and says their line in the walks'
-    // bubble, a tap gives their next line, and a day with no holiday has nobody. The clock is the game's own day key, put back after.
-    const hol = await pg.evaluate(async () => { const wait = async q => { for (let t = 0; t < 100 && !document.querySelector(q); t++) await new Promise(r => setTimeout(r, 50)); return !!document.querySelector(q); };
+    // bubble, a tap gives their next line, and a day with no holiday has nobody. The clock is the game's own day key. It runs on a page
+    // of its own (a fresh context, its own storage), because a clock moved forward leaves days behind it that the checks after it trip on.
+    const hpg = await b.newPage({ viewport:{ width:390, height:844 } }); hpg.on('pageerror', e => errs.push(e.message));
+    await hpg.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort()); await hpg.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
+    await hpg.waitForFunction(() => window.RTT_PUTT && typeof puttOn === 'function' && window.RTT_PUTT_TRAIL && window.RTT_PUTT_3D, null, { timeout:30000 });
+    const hol = await hpg.evaluate(async () => { window.RTT_PUTT_MAPFIRST = true; const wait = async q => { for (let t = 0; t < 100 && !document.querySelector(q); t++) await new Promise(r => setTimeout(r, 50)); return !!document.querySelector(q); };
       const keep = _tzKey, out = {}; sbUser = { id:'hol' };
       for (const day of ['2026-12-03', '2026-12-24', '2027-01-01', '2027-02-14', '2027-02-28', '2027-03-28', '2027-04-22', '2026-11-12', '2027-07-04']){
         window.RTT_PUTT.close(); const n = +day.replace(/-/g, ''); _tzKey = () => n; openPutt(); await wait('.pp-tabs [data-tab="daily"]');
@@ -1144,9 +1148,9 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         const seen = ids.length ? (() => { const r = document.querySelector('.pp-hf').getBoundingClientRect(), b = bub.getBoundingClientRect(), pgR = document.querySelector('.pp-cday.cur').getBoundingClientRect();
           return r.width > 20 && r.height > 30 && r.left >= -4 && r.right <= innerWidth + 4 && b.left >= -4 && b.right <= innerWidth + 4 && b.bottom <= pgR.top + 2; })() : true;
         out[day] = { ids:ids.join('+'), first, second, seen, today:document.querySelector('.pp-cday.cur').getAttribute('data-day') === day }; }
-      // back to the Tour's map before closing, so the checks after this one open where they always have
-      _tzKey = keep; const mt = document.querySelector('.pp-tabs [data-tab="main"]'); if (mt) mt.click(); window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
-    const HF = await pg.evaluate(() => window.RTT_PUTT.HOLIDAY_FOLK), hw = { '2026-12-03':'santa+krampus', '2026-12-24':'santa+mrsclaus', '2027-01-01':'fathertime', '2027-02-14':'cupid', '2027-02-28':'toothfairy', '2027-03-28':'easterbunny', '2027-04-22':'mothernature', '2026-11-12':'', '2027-07-04':'' };
+      _tzKey = keep; window.RTT_PUTT.close(); return out; });
+    const HF = await hpg.evaluate(() => window.RTT_PUTT.HOLIDAY_FOLK); await hpg.close();
+    const hw = { '2026-12-03':'santa+krampus', '2026-12-24':'santa+mrsclaus', '2027-01-01':'fathertime', '2027-02-14':'cupid', '2027-02-28':'toothfairy', '2027-03-28':'easterbunny', '2027-04-22':'mothernature', '2026-11-12':'', '2027-07-04':'' };
     const hbad = Object.keys(hw).filter(d => { const o = hol[d], id = hw[d].split('+')[0]; if (!o.today || o.ids !== hw[d] || !o.seen) return true;
       return id ? !(o.first === HF[id].name + HF[id].say[0] && o.second === HF[id].name + HF[id].say[1]) : !!o.first; });
     claim(!hbad.length, `on a fixed clock the Daily tab stands each of the holiday folk by today's page in their season, on screen at 390 x 844, saying their first line and a tap their second, and nobody on a day without a holiday (${Object.keys(hw).map(d => d.slice(5) + ' ' + (hol[d].ids || 'nobody')).join(', ')})` + (hbad.length ? ': ' + hbad.map(d => d + ' ' + JSON.stringify(hol[d])).join('; ') : ''));
