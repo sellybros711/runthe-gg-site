@@ -30,10 +30,13 @@
  *             this repo has one (cfb/data/cfb_player_seasons.json, the college game's own
  *             data, keyed on the same ESPN id), and otherwise 80% of what the draftable
  *             men at his position are averaging (the NFL mode's rule, `PROJ_LEVEL`).
- *   (no availability term, the owner's call of 2026-11-12: "a players ranking should be
- *             based off of their projected score/past scores." A man who missed games is
- *             priced on the games he played, and the MISSED chip tells the reader. The
- *             week 11 board had charged a returning starter for every game he sat.)
+ *   plays     NO DISCOUNT FROM THREE GAMES ON (the owner, 2026-11-12: "a players ranking
+ *             should be based off of their projected score/past scores"). A man with three or
+ *             more games is priced on the games he played, and the MISSED chip tells the
+ *             reader. Under three he keeps the share of his team's games he played, because
+ *             the box score lists only men who touched the ball: without it a depth receiver
+ *             with one catch all season read as one game of one (Ivan Carreon, $3.2M to
+ *             $14.9M on the week 11 comparison; $6.3M with it). "yes add it", the owner.
  *   matchup   what the betting market expects his team to score this week, against what
  *             his team has averaged, to the power 0.6, held between 0.80 and 1.25.
  *
@@ -81,6 +84,8 @@ const NOTRE_DAME = '87';
 const isPower = (t) => POWER_CONF.has(t.conf) || t.id === NOTRE_DAME;
 
 export const SHRINK_K = 2;
+/* From this many games a man is priced on the games he played, with no discount for absence. */
+export const FULL_GAMES = 3;
 export const PROJ_LEVEL = 0.80;
 export const MATCHUP_EXP = 0.6;
 export const MATCHUP_LO = 0.80;
@@ -146,12 +151,14 @@ export function positionLevels(men) {
 export function projectMan(p, levels) {
   const prior = p.prior != null ? p.prior : PROJ_LEVEL * (levels.get(p.position) || 0);
   const rate = (p.games * p.half_ppg + SHRINK_K * prior) / (p.games + SHRINK_K);
+  const plays = p.games >= FULL_GAMES || !(p.played_of > 0) ? 1
+    : Math.min(1, Math.max(0, p.games / p.played_of));
   let matchup = 1;
   if (p.implied != null && p.team_avg > 0) {
     matchup = Math.min(MATCHUP_HI, Math.max(MATCHUP_LO,
       Math.pow(p.implied / p.team_avg, MATCHUP_EXP)));
   }
-  return { proj: round(Math.max(0, rate * matchup), 1), matchup: round(matchup, 3) };
+  return { proj: round(Math.max(0, rate * plays * matchup), 1), matchup: round(matchup, 3) };
 }
 
 /* ─── the price ───────────────────────────────────────────────────────────────────── */
@@ -260,7 +267,8 @@ export function buildMen(slate, rosters, todate, priors, roles = null) {
  *   1. A QUARTERBACK WHO IS NOT HIS TEAM'S STARTER IS NOT ON THE BOARD (`roles.mjs` says
  *      who starts, and what the box scores cannot see).
  *   2. A STARTER IS PRICED ON HIS STARTS: the games he led his team's passing and the points
- *      he scored in them. Nobody is discounted for games missed (projectMan). Relief snaps in a blowout are what
+ *      he scored in them, never discounted for games missed. Anybody else with three or more
+ *      games is not discounted either (projectMan). Relief snaps in a blowout are what
  *      made a new starter cheap. Shrunk toward his prior exactly like every thin sample. The
  *      card keeps what he has really done.
  *   3. EVERY MAN IS ON HIS ROSTER TEAM already, because the board is read off the rosters.
@@ -284,8 +292,8 @@ export function applyRoles(men, roles) {
    fields in and they are swapped back before the row is written. */
 export function asPriced(m) {
   if (!m.starts) return;
-  m.disp = { games: m.games, half_ppg: m.half_ppg };
-  m.games = m.starts; m.half_ppg = m.start_ppg;
+  m.disp = { games: m.games, half_ppg: m.half_ppg, played_of: m.played_of };
+  m.games = m.starts; m.half_ppg = m.start_ppg; m.played_of = m.starts;
 }
 export function asShown(m) {
   if (!m.disp) return;

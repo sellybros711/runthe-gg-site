@@ -242,9 +242,10 @@ let POOL;
       === Math.sign(30 - PROJ_LEVEL * levels.get(withPrior.position)));
   const missed = men.find((m) => m.missed_last);
   const full = { ...missed, played_of: missed.games };
-  /* The owner, 2026-11-12: a man is priced on the games he played. The chip says he missed. */
-  ok('missing games does not cost projection',
-    projectMan(missed, levels).proj === projectMan(full, levels).proj);
+  /* The owner, 2026-11-12: from three games a man is priced on the games he played, and the
+     chip says he missed. Every man in this fixture has three or four. */
+  ok('missing games does not cost projection from three games on', missed.games >= 3
+    && projectMan(missed, levels).proj === projectMan(full, levels).proj);
   const p = pricePool(men);
   ok('prices run $3M to $48M', Math.min(...men.map((m) => m.price_musd)) >= 3
     && Math.max(...men.map((m) => m.price_musd)) === 48);
@@ -344,14 +345,23 @@ section('3b. the board reads roles: only starting quarterbacks');
   const w = { player_id: 'wilson', position: 'QB', games: 2, half_ppg: 7, played_of: 5, starts: 1,
     start_ppg: 15.6, prior: null };
   asPriced(w);
-  ok('a starter is priced on his starts', w.games === 1 && w.half_ppg === 15.6);
+  ok('a starter is priced on his starts, never discounted', w.games === 1 && w.half_ppg === 15.6
+    && w.played_of === 1);
   const lv = new Map([['QB', 20]]);
   const priced = projectMan(w, lv).proj;
   asShown(w);
   ok('  and his card goes back to what he did', w.games === 2 && w.half_ppg === 7 && w.played_of === 5);
-  const missedOne = { player_id: 'm', position: 'RB', games: 4, half_ppg: 12, played_of: 9 };
-  ok('a man who missed games is priced on the games he played',
-    projectMan(missedOne, lv).proj === projectMan({ ...missedOne, played_of: 4 }, lv).proj);
+  /* THE THREE GAME GUARD ("yes add it", the owner). The box score lists only men who
+     touched the ball, so one catch all season reads as one game. */
+  const three = { player_id: 'm', position: 'RB', games: 3, half_ppg: 12, played_of: 9 };
+  ok('a three game man is not discounted for the games he missed',
+    projectMan(three, lv).proj === projectMan({ ...three, played_of: 3 }, lv).proj);
+  const one = { player_id: 'o', position: 'WR', games: 1, half_ppg: 23.3, played_of: 9 };
+  ok('a one game man stays discounted by his share of his team\'s games',
+    projectMan(one, lv).proj < projectMan({ ...one, played_of: 1 }, lv).proj
+    && Math.abs(projectMan(one, lv).proj * 9 - projectMan({ ...one, played_of: 1 }, lv).proj) < 1);
+  const two = { player_id: 't', position: 'TE', games: 2, half_ppg: 10, played_of: 9 };
+  ok('  and so does a two game man', projectMan(two, lv).proj < projectMan({ ...two, played_of: 2 }, lv).proj);
   ok('  which projects him above his relief average', priced > projectMan(w, lv).proj);
   const plain = { player_id: 'x', position: 'RB', games: 3, half_ppg: 9, played_of: 4 };
   asPriced(plain);
