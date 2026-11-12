@@ -6642,7 +6642,7 @@ Object.assign(FOLK3D, {
       return u < -0.02 || (av > 0.16 && t < 2.74) ? '#f4f2ec' : '#f0c8a8'; }   // bald on top, white hair round the back
     return null; } },
   // Mother Nature: a green robe to the floor, a leafy mantle, long brown hair, a wreath of leaves and flowers, a bluebird on her hand
-  mothernature:{ r:1.1, h:3.6, at:function(u, v, t){ var av = Math.abs(v), lf = hash(Math.floor(u * 9 + 20), Math.floor(v * 9 + 20) * 7 + Math.floor(t * 9), 111), skin = '#d8a07a';
+  mothernature:{ r:1.1, h:3.6, at:function(u, v, t){ var av = Math.abs(v), lf = hash(Math.floor(u * 9 + 20), Math.floor(v * 9 + 20) * 7 + Math.floor(t * 9), 111), skin = '#e2ac86';
     var leaf = lf < 0.06 ? '#f4a0c0' : lf < 0.4 ? '#5aa83a' : lf < 0.75 ? '#4a9a30' : '#7ac04a';
     if (el3(u, v, t, 0.44, 0.34, 2.53, 0.05, 0.045, 0.045) <= 1) return '#3a7ad8';   // the bluebird: its head,
     if (el3(u, v, t, 0.5, 0.34, 2.53, 0.03, 0.015, 0.015) <= 1) return '#e8b040';   // its beak,
@@ -6663,7 +6663,7 @@ Object.assign(FOLK3D, {
     var d = Math.hypot(u, v, t - 2.5);
     if (d < 0.24){ if (u > 0.16 && Math.abs(av - 0.08) < 0.032 && Math.abs(t - 2.53) < 0.028) return '#2a1a10';
       if (u > 0.17 && av < 0.05 && Math.abs(t - 2.42) < 0.013) return '#b0505a';
-      return u < -0.02 || t > 2.62 || av > 0.16 ? '#6a4224' : skin; }
+      return u < -0.04 || t > 2.64 || (av > 0.19 && u < 0.1) ? '#6a4224' : skin; }
     return null; } }
 });
 // a figure's build, facing f, turned 53 degrees toward the camera

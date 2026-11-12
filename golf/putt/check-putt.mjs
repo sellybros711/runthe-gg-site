@@ -861,7 +861,7 @@ if (!QUICK){
      written out again by hand rather than read off the code: Easter is the Sunday each year's table says. */
   { const HF = P.HOLIDAY_FOLK, ids = Object.keys(HF), TSRC = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
     const want = ['santa', 'mrsclaus', 'krampus', 'easterbunny', 'toothfairy', 'cupid', 'fathertime', 'mothernature'];
-    const drawn = ids.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), lines = ids.every(id => HF[id].say.length === 2 && HF[id].say.every(l => l.length <= 60 && !/[\u2013\u2014]/.test(l)));
+    const drawn = ids.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), lines = ids.every(id => HF[id].say.length === 2 && HF[id].say.every(l => l.length <= 60 && !l.split('').some(c => c.charCodeAt(0) === 8211 || c.charCodeAt(0) === 8212)));
     claim(want.every(id => ids.includes(id)) && ids.length === 8 && drawn.length === 8 && lines, `the eight holiday folk each have a model of their own in trail.js (${drawn.join(', ')}) and two short lines`);
     const onTrail = Object.keys(P.FOLK || {}).flatMap(w => Object.values(P.FOLK[w]).map(f => f.id)).concat(Object.values(P.GREETERS || {}).map(g => g.folk)).filter(id => ids.includes(id));
     claim(!onTrail.length, 'no holiday folk stands on a tour trail or greets a world: they belong to the Daily' + (onTrail.length ? ' (' + onTrail.join(', ') + ')' : ''));
