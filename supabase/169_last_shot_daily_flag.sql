@@ -6,8 +6,8 @@
 -- Lab game: an admin can turn it off at /arcade/lab/admin/ or with
 --   update arcade_lab_flags set mode = 'off' where flag = 'arcade_last_shot';
 --
--- Safe to run twice: the insert does nothing if the row exists, and the
--- update only moves a row that is still 'off' from the insert.
+-- Safe to run twice: the insert does nothing if the row exists, so an admin's
+-- later switch is never undone by a re-run.
 
 insert into public.arcade_lab_flags (flag, mode) values ('arcade_last_shot', 'testers')
   on conflict (flag) do nothing;
