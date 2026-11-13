@@ -10,6 +10,7 @@ import * as hoopshoot from './games/hoopshoot/sim.js';
 import * as whack from './games/whack/sim.js';
 import * as dropboard from './games/dropboard/sim.js';
 import * as pinball from './games/pinball/sim.js';
+import * as lastShotDaily from '../_lastshot/daily.js';
 
 /* content: the game plays a published, editor approved slate (see content/)
    rather than a day derived from the seed alone. */
@@ -28,9 +29,21 @@ export const GAMES = Object.freeze({
     desc: 'Three balls. Light the bases, hit the ramp.', sim: pinball }
 });
 
+/* Games built elsewhere that use the daily service (today, start, run,
+   leaderboard, gems) and nothing else: no shell page, no modules, no gate
+   here. Their own page serves them. Kept out of GAMES because the page
+   build and the gate read every GAMES entry as a game in games/<dir>/. */
+export const EXTERNAL = Object.freeze({
+  'last-shot': { id: 'last-shot', flag: 'arcade_last_shot', name: 'Last Shot', path: '/last-shot#daily', external: true,
+    desc: 'Draw the last play. One shot a day.', sim: lastShotDaily }
+});
+
+/* Any game the daily service knows. */
+export const gameById = id => GAMES[id] || EXTERNAL[id] || null;
+
 /* The flags that exist, built or not, so the table and the gate agree. */
 export const FLAGS = Object.freeze(['arcade_roll_ball', 'arcade_field_goal_flick', 'arcade_hoop_shoot',
-  'arcade_whack_right_player', 'arcade_drop_board', 'arcade_pinball']);
+  'arcade_whack_right_player', 'arcade_drop_board', 'arcade_pinball', 'arcade_last_shot']);
 
 /* Who may see a game: 'admin', 'tester', 'player' (public mode) or null.
    The same rule as stumpire_access(): an admin always, a tester while the

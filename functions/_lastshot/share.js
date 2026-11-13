@@ -4,6 +4,7 @@
  * hand a non-tester the route.
  *
  *   Last Shot WINNER 89-88 · 2.1
+ *   (a tie that went to overtime: Last Shot WINNER 88-88 OT · 2.1)
  *   ⬜🟦🟨🟩
  *   https://runthe.gg/arcade/
  */
@@ -22,6 +23,18 @@ export function squaresOf(play, res) {
 }
 
 export function shareText(play, res) {
-  const head = 'Last Shot ' + (res.outcome === 'win' ? 'WINNER' : 'LOSE') + ' ' + res.us + '-' + res.them + (res.shotAt != null ? ' · ' + res.shotAt.toFixed(1) : '');
+  const head = 'Last Shot ' + (res.outcome === 'win' ? 'WINNER' : 'LOSE') + ' ' + res.us + '-' + res.them + (res.how === 'ot' ? ' OT' : '') + (res.shotAt != null ? ' · ' + res.shotAt.toFixed(1) : '');
   return head + '\n' + squaresOf(play, res).join('') + '\n' + SHARE_URL;
+}
+
+/* The Daily's share line: the number, the stars as squares, the score's own
+ * words, the arcade's url. Never the defense or the play, so it spoils nothing.
+ *
+ *   Last Shot #35
+ *   ⭐⭐⬛
+ *   Won · 2 stars · 64% look
+ *   https://runthe.gg/arcade/
+ */
+export function dailyShareText(dayNumber, squares, scoreText) {
+  return 'Last Shot #' + dayNumber + '\n' + (Array.isArray(squares) ? squares.join('') : '') + '\n' + scoreText + '\n' + SHARE_URL;
 }

@@ -358,14 +358,17 @@ export function cleanSituation(sit) {
   const c = Number(sit.clock);
   if (Number.isFinite(c)) out.clock = Math.round(Math.max(CLOCK_MIN, Math.min(CLOCK_MAX, c)) * 10) / 10;
   if (IDS.includes(sit.handler)) out.handler = sit.handler;
+  /* down 1, 2 or 3 (2026-11-13). Down 1 is the default and is left out. */
+  if ([2, 3].includes(Number(sit.down))) out.down = Number(sit.down);
   return Object.keys(out).length ? out : null;
 }
 export function scenarioFor(sc, sit) {
   const s = cleanSituation(sit);
   if (!s) return sc;
-  return { ...sc, clock: s.clock ?? sc.clock, handler: s.handler ?? sc.handler };
+  return { ...sc, clock: s.clock ?? sc.clock, handler: s.handler ?? sc.handler, us: s.down ? sc.them - s.down : sc.us };
 }
 export function situationKey(sc, sit) {
   const s = scenarioFor(sc, sit);
-  return s.clock.toFixed(1) + '/' + s.handler;
+  const down = s.them - s.us;
+  return s.clock.toFixed(1) + '/' + s.handler + (down !== 1 ? '/d' + down : '');
 }

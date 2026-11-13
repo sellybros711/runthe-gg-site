@@ -10,6 +10,9 @@
  *   POST claim                     move a guest's runs and gems to the account
  *   admin/...                      flags, prompts, themes, slates, reports (admins only)
  *
+ * EXTERNAL GAMES (registry.js; Last Shot) use today, start, run and
+ * leaderboard only. Their own page serves them.
+ *
  * CONTENT GAMES (Whack the Right Player, Drop Board) play a published slate:
  * a snapshot an editor approved, frozen in arcade_slates. Their day's config
  * is that snapshot, never the live dataset, so a result never moves.
@@ -24,7 +27,7 @@
  * THE SERVER'S SCORE IS THE SCORE. A run arrives as a seed and an input log;
  * the pure sim replays it and the claimed score must match.
  */
-import { GAMES, FLAGS, accessFor } from './registry.js';
+import { GAMES, EXTERNAL, FLAGS, accessFor, gameById } from './registry.js';
 import { dateKey, prevDateKey, seedFor, dayNumber } from './shared/seed.js';
 import { admin } from './admin.js';
 
@@ -49,7 +52,7 @@ export async function handle(req, ctx) {
   const flags = await db.flags();
 
   if (parts.length === 1 && parts[0] === 'me' && req.method === 'GET') {
-    const games = Object.values(GAMES)
+    const games = [...Object.values(GAMES), ...Object.values(EXTERNAL)]
       .map(g => ({ g, access: accessFor(role, flags[g.flag]) }))
       .filter(x => x.access && (x.access !== 'player' || who))
       .map(x => ({ id: x.g.id, name: x.g.name, path: x.g.path, desc: x.g.desc, access: x.access, flag: flags[x.g.flag] || 'off' }));
@@ -74,7 +77,7 @@ export async function handle(req, ctx) {
     return admin(parts.slice(1), req, ctx);
   }
 
-  const game = GAMES[parts[0]];
+  const game = gameById(parts[0]);
   if (!game || parts.length !== 2) return NOT_FOUND;
   const access = accessFor(role, flags[game.flag]);
   if (!access || !who) return NOT_FOUND;
