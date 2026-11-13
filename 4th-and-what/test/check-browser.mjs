@@ -182,11 +182,20 @@ async function run(name, viewport, scale) {
   await page.click('#pDists .dist[data-d="5"]');
   ok(await page.isVisible('#vPlay') && (await page.getAttribute('#pDists .dist[data-d="5"]', 'aria-pressed')) === 'true' && (await page.textContent('#pToGo')) === '5 yds', 'a tile picks the distance and stays on the screen');
   await page.click('#pGo');
-  ok(await page.isVisible('#vStudio') && await page.isVisible('#sSnap') && !(await page.isVisible('.studiobar')) && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'draw it: the field, the tools and Snap it');
-  ok((await page.textContent('#sSit')) === '4th & 5 · Opp 40', 'the situation is on the draw screen');
-  await shot('0-draw');
-  await page.click('#sSnap');
+  /* Call it (the owner, 2026-11-13): the defense's look, three cards and your own */
+  const call = await page.evaluate(() => ({ n: document.querySelectorAll('#cCards .ccard').length, read: document.getElementById('cRead').textContent, sit: document.getElementById('cSit').textContent,
+    kinds: window.FAW_CALLS.hand().map(h => h.type).join(','), off: document.getElementById('cSnap').disabled }));
+  ok(await page.isVisible('#vCall') && call.n === 4 && call.kinds === 'run,quick,shot' && /^(Two|One|Nobody) deep · \d+ in the box$/.test(call.read) && call.sit === '4th & 5 · Opp 40' && call.off &&
+    (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Call it: the look (' + call.read + '), a run, a quick pass, a shot and your own; Snap it waits for a pick');
+  await shot('0-call');
+  await page.click('#cCards .ccard:nth-child(2)');
+  const look = await page.evaluate(() => { const K = window.FAW_CALLS; return { seed: K.seed(), shell: window.FAW_ENGINE.look(window.FAW_APP.SC, K.hand()[1].play, K.seed()).shell }; });
+  ok(!(await page.isDisabled('#cSnap')) && (await page.getAttribute('#cCards .ccard:nth-child(2)', 'aria-pressed')) === 'true', 'a card picks the play');
+  await shot('0-picked');
+  await page.click('#cSnap');
   ok(await page.isVisible('#watch'), 'Snap it plays it in the stadium');
+  const played1 = await page.evaluate(() => { const r = window.FAW_FLOW.last(); return { seed: r.seed, shell: r.shell }; });
+  ok(played1.seed === look.seed && played1.shell === look.shell, 'the snap is the look the player read: ' + played1.shell);
   await page.waitForTimeout(500); await page.click('#bSkip');
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
   const card = await page.evaluate(() => ({ t: document.getElementById('rTitle').textContent, why: document.getElementById('rWhy').textContent }));
@@ -203,6 +212,18 @@ async function run(name, viewport, scale) {
   await page.waitForTimeout(400); await page.click('#bSkip');
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
   ok(true, 'Run it back snaps it again');
+  /* New play: a new look; Draw your own is the draw screen, against that look */
+  await page.click('#rNew');
+  const seed2 = await page.evaluate(() => window.FAW_CALLS.seed());
+  ok(await page.isVisible('#vCall') && seed2 !== look.seed, 'New play: a new look and a new hand');
+  await page.click('#cCards .ccard.own');
+  ok(await page.isVisible('#vStudio') && await page.isVisible('#sSnap') && !(await page.isVisible('.studiobar')) && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'draw it: the field, the tools and Snap it');
+  ok((await page.textContent('#sSit')) === '4th & 5 · Opp 40' && /deep · \d+ in the box$/.test(await page.textContent('.gamebar .hint')), 'the situation and the look are on the draw screen');
+  await shot('0-draw');
+  await page.click('#sSnap');
+  await page.waitForTimeout(400); await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  ok(await page.evaluate(() => window.FAW_FLOW.last().seed) === seed2, 'the drawn play snaps against the look it was drawn against');
   await page.click('#rBreak');
   ok(await page.isVisible('#vReplay') && !(await page.isVisible('#watch')), 'See the breakdown opens the snap on turf');
   await page.waitForFunction(() => document.getElementById('gTime').value === '1000', null, { timeout: 30000 });
@@ -231,6 +252,28 @@ async function run(name, viewport, scale) {
   await page.waitForFunction(() => document.getElementById('gTime').value === '1000', null, { timeout: 30000 });
   const r2 = await page.evaluate(() => { const r = window.FAW_GAME.last(); return { call: r.callKey, Y0: r.Y0, res: document.getElementById('gStats').textContent }; });
   ok(r2.call === 'cover2' && r2.Y0 === 28 && !/Turnover on downs/.test(r2.res), 'a 3rd down snap from the own 28 against Cover 2 (' + r2.res.slice(6, 40) + ')');
+
+  /* ---------- Go For It (the owner, 2026-11-13): a run of 4th downs, three stops and done ---------- */
+  await page.click('.tab[data-view="play"]');
+  ok(/Go for it/i.test(await page.textContent('#goStart')), 'Play leads with Go For It');
+  const scBefore = await page.evaluate(() => JSON.stringify(window.FAW_APP.SC));
+  await page.click('#goStart');
+  const g0 = await page.evaluate(() => ({ sit: document.getElementById('cSit').textContent, chip: document.getElementById('cRun').textContent, seed: window.FAW_CALLS.seed(), runSeed: window.FAW_GO.run().seed }));
+  ok(await page.isVisible('#vCall') && g0.sit === '4th & 1 · Own 35' && /^0 converted · 0 yds · \u25CF{3}$/.test(g0.chip) && g0.seed === g0.runSeed, 'a run starts at 4th and 1 on your own 35, three stops to spare: ' + g0.chip);
+  for (let i = 0; i < 40; i++) {
+    await page.click('#cCards .ccard:nth-child(1)'); await page.click('#cSnap');
+    await page.waitForTimeout(300); if (await page.isVisible('#bSkip')) await page.click('#bSkip');
+    await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+    const gc = await page.evaluate(() => ({ go: !document.getElementById('rGo').hidden, playRow: getComputedStyle(document.querySelector('.rplay')).display, over: !document.getElementById('rGoAgain').hidden, run: window.FAW_GO.run(), best: localStorage.getItem('faw_go_best') }));
+    if (i === 0) ok(gc.go && gc.playRow === 'none', 'the card shows the run and hides Run it back and New play');
+    if (gc.over) { ok(gc.run.stops === 3 && (gc.run.n === 0 || JSON.parse(gc.best).n === gc.run.n), 'three stops end the run, and the best is kept: ' + gc.run.n + ' converted'); break; }
+    await page.click('#rGoOn');
+    ok(i > 0 || (await page.evaluate(() => window.FAW_CALLS.seed() === window.FAW_GO.run().seed)), 'Next down: the run\'s next seed is the look on the field');
+  }
+  await page.click('#rGoAgain');
+  ok(await page.evaluate(() => window.FAW_GO.run().n === 0 && window.FAW_GO.run().stops === 0), 'Go again starts a fresh run');
+  await page.click('#cBack');
+  ok(await page.evaluate((b) => !window.FAW_GO.active() && JSON.stringify(window.FAW_APP.SC) === b, scBefore), 'leaving the run puts practice back where it was');
 
   /* ---------- the Studio ---------- */
   await tab('studio');

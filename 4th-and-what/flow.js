@@ -51,7 +51,8 @@
     });
   }
   function choose(d) { A.SC.distance = d; spotLine(); }
-  function pick(d) { if (d != null) A.SC.distance = d; spotLine(); A.show('studio', { mode: 'game' }); }
+  /* Play now goes to Call it (calls.js): the defense's look and three cards */
+  function pick(d) { if (d != null) A.SC.distance = d; spotLine(); A.show('call'); }
   $('pGo').addEventListener('click', function () { pick(); });
 
   /* THE STRIP: the whole field, your end zone on the left and theirs on the
@@ -107,20 +108,37 @@
     });
   });
   /* the situation goes back to where it was picked: the daily's is the day's */
-  $('sSit').addEventListener('click', function () { A.show(window.FAW_DAILY && window.FAW_DAILY.active() ? 'daily' : 'play'); });
+  $('sSit').addEventListener('click', function () { A.show(window.FAW_DAILY && window.FAW_DAILY.active() ? 'daily' : 'call'); });
 
   /* ---------- 2 and 3. Snap it, watch it ---------- */
   function ready(p) { return (p.handoff && p.handoff.to) || (p.targets && p.targets.length); }
-  function snap() {
-    var p = A.copy(A.draft.play);
+  /* THE SNAP'S SEED is fixed before the snap, so the defense a player reads
+     (Call it, and the draw screen) is the defense he plays: the daily's
+     first snap is against the day's defense, ?seed= replays one, and every
+     other snap gets a fresh one that is kept until it is played. */
+  var pend = null;
+  function pending() {
+    var D = window.FAW_DAILY, ds = D && D.active() ? D.seed() : null;
+    if (ds != null) return ds;
+    var G = window.FAW_GO, gs = G ? G.seed() : null;
+    if (gs != null) return gs;
+    if (forced != null) return +forced >>> 0;
+    if (pend == null) pend = RNG.freshSeed();
+    return pend;
+  }
+  /* snap(play, name): a card's play, or the draft drawn in the Studio */
+  var playedName = '';
+  function snap(given, name) {
+    var p = A.copy(given || A.draft.play);
     if (!ready(p)) { A.toast('sToast', 'Give it a read (Read, then tap a receiver) or make it a run first.'); $('sHint').textContent = 'Give it a read, or make it a run.'; return false; }
-    /* the daily's first snap is against the day's defense; every other one is fresh */
-    var D = window.FAW_DAILY, ds = D ? D.seed() : null;
-    var seed = ds != null ? ds : forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
-    played = p;
+    var D = window.FAW_DAILY;
+    if (window.FAW_FEEL) window.FAW_FEEL.unlock();
+    var seed = pending(); forced = null; pend = null;
+    played = p; playedName = name || A.draft.name || A.nameFor(p);
     if (window.FAW_CLIP) window.FAW_CLIP.cancel();
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
+    if (window.FAW_GO) window.FAW_GO.snapped(res);
     remember(res, p, D && D.active());
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
@@ -128,7 +146,7 @@
     A.watch3d(res, showCard);
     return true;
   }
-  $('sSnap').addEventListener('click', snap);
+  $('sSnap').addEventListener('click', function () { snap(); });
 
   /* ---------- every snap you ran (the owner, 2026-11-01: "I ran 2 plays, I
      should be able to see the result of both") ----------
@@ -194,6 +212,7 @@
     $('rWhy').textContent = r.reason;
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
+    if (window.FAW_GO) window.FAW_GO.card(r);
     renderSnaps();
     clipFor(r);
     c.hidden = false;
@@ -219,7 +238,7 @@
     x.fillStyle = res.win ? '#36d399' : '#ef4b3f'; x.font = 'italic 900 120px "Barlow Condensed", Inter, sans-serif';
     x.fillText(res.title, 60, 960);
     x.fillStyle = '#fff'; x.font = '800 44px Inter, sans-serif';
-    x.fillText((A.draft.name || A.nameFor(played)).slice(0, 34), 60, 1100);
+    x.fillText(playedName.slice(0, 34), 60, 1100);
     x.fillStyle = '#8fa2b8'; x.font = '600 36px Inter, sans-serif';
     var gained = res.outcome === 'incomplete' || res.outcome === 'throwaway' ? 'No gain' : (res.yards >= 0 ? 'Gained ' + res.yards : 'Lost ' + (-res.yards));
     x.fillText(gained + ' · vs ' + res.callName, 60, 1165);
@@ -227,14 +246,16 @@
     card = c; return c;
   }
   function close3d() { $('watch').hidden = true; $('rCard').hidden = true; }
-  $('rAgain').addEventListener('click', function () { snap(); });
-  $('rEdit').addEventListener('click', function () { close3d(); A.show('studio', { mode: 'game' }); });
-  $('rNew').addEventListener('click', function () {
+  /* Run it back: the same play against a fresh defense, at once */
+  $('rAgain').addEventListener('click', function () { snap(played, playedName); });
+  /* Edit play: the play just snapped, on the draw screen */
+  $('rEdit').addEventListener('click', function () {
     close3d();
-    var f = A.draft.play.formation;
-    A.setDraft({ play: A.emptyPlay(f), name: '', nameEdited: false, tag: 'pass', fav: false, notes: '', situations: [], ref: null });
-    A.show('play');
+    if (JSON.stringify(played) !== JSON.stringify(A.draft.play)) A.setDraft({ play: A.copy(played), name: '', nameEdited: false, tag: A.tagOf(played), fav: false, notes: '', situations: [], ref: null });
+    A.show('studio', { mode: 'game' });
   });
+  /* New play: a new look and a new hand */
+  $('rNew').addEventListener('click', function () { close3d(); A.show('call'); });
   $('rSave').addEventListener('click', function () {
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
     if (b) { A.toast('rToast', 'It is already in ' + b.name + '. This snap counted in its stats.'); return; }
@@ -249,7 +270,7 @@
     c.toBlob(function (blob) {
       if (!blob) return;
       var u = URL.createObjectURL(blob), a = document.createElement('a');
-      a.href = u; a.download = (A.draft.name || A.nameFor(played)).replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-card.png'; a.click();
+      a.href = u; a.download = playedName.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-card.png'; a.click();
       setTimeout(function () { URL.revokeObjectURL(u); }, 1000);
     });
   });
@@ -260,7 +281,7 @@
      for one more tap. A browser that cannot record shares the line alone. */
   var CL = window.FAW_CLIP;
   function shareLine() { var D = window.FAW_DAILY; return D && D.active() ? D.share(res) : SH.text(res); }
-  function clipName() { return (A.draft.name || A.nameFor(played) || '4th-and-what').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(); }
+  function clipName() { return (playedName || '4th-and-what').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(); }
   function clipFor(r) {
     $('rShare').textContent = 'Share';
     if (!CL || !CL.supported()) return;
@@ -294,5 +315,5 @@
   A.on('replay', renderSnaps);
   A.on('studio', spotLine);
 
-  window.FAW_FLOW = { snaps: snapsNow, openSnap: openSnap, refresh: spotLine, pick: pick, snap: snap, last: function () { return res; }, card: makeCard };
+  window.FAW_FLOW = { snaps: snapsNow, openSnap: openSnap, refresh: spotLine, pick: pick, snap: snap, pending: pending, last: function () { return res; }, card: makeCard };
 })();

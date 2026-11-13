@@ -13,7 +13,7 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
 - **Players run exactly what was drawn.** The engine may decide when the QB throws, never where a
   receiver goes. The route and concept libraries (`routes.js`) only make drawn points.
 - **The layout is the owner's template** (2026-10-31): Play, Studio, Learn, Playbooks, Test vs
-  Defense, Print, on turf. The page opens on Home (the owner, 2026-11-01): the 4TH & WHAT banner over hundreds of plays rotating, which is the way into the daily: a card in its bottom right corner says the day's down, spot, teams and clock (the owner, 2026-11-06), never what really happened, "Draw a play", "Playbook Builder" and "Daily Defense", then the site footer. **Play is the video game** (the owner, 2026-10-31): 4th and what? (since 2026-11-06 the owner's mockup: a night stadium, the field strip to spot the ball, a tile picks the distance, Play now goes), draw it, snap it in the 3D stadium, then the result card (Run it back, Save play, Save card, the breakdown). Keep Play a game first. The Studio (since 2026-11-06, the owner's mockup) is the same night stadium: the play's setup in the command deck (formation, name, tag, star, save, level and hash), a searchable library, the tools above the glowing field (the owner, 2026-11-06), and one dock under it for field view, Save to playbook, Test vs Defense and Run play. Watch in 3D keeps the pixel stadium. Share sends a video of the snap (`clip.js`, the owner 2026-11-06): it is recorded behind the result card, so the tap can hand the phone the file, and a browser that cannot record shares the line alone. Teams, team codes and player
+  Defense, Print, on turf. The page opens on Home (the owner, 2026-11-01): the 4TH & WHAT banner over hundreds of plays rotating, which is the way into the daily: a card in its bottom right corner says the day's down, spot, teams and clock (the owner, 2026-11-06), never what really happened, "Draw a play", "Playbook Builder" and "Daily Defense", then the site footer. **Play is the video game** (the owner, 2026-10-31): 4th and what? (since 2026-11-06 the owner's mockup: a night stadium, the field strip to spot the ball, a tile picks the distance, Play now goes), Call it (since 2026-11-13: the defense lines up and shows its look, three cards and Draw your own), snap it in the 3D stadium, then the result card (Run it back, Save play, Save card, the breakdown). Keep Play a game first. The Studio (since 2026-11-06, the owner's mockup) is the same night stadium: the play's setup in the command deck (formation, name, tag, star, save, level and hash), a searchable library, the tools above the glowing field (the owner, 2026-11-06), and one dock under it for field view, Save to playbook, Test vs Defense and Run play. Watch in 3D keeps the pixel stadium. Share sends a video of the snap (`clip.js`, the owner 2026-11-06): it is recorded behind the result card, so the tap can hand the phone the file, and a browser that cannot record shares the line alone. Teams, team codes and player
   tracking are the next build, with their own SQL.
 - **The daily is one real NFL 4th down a day** (the owner, 2026-11-01). `daily.js` picks it from
   `data/fourths.json` (built by `build/fourths.mjs` from nflverse play-by-play, CC-BY 4.0, credited
@@ -38,6 +38,26 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   the others in `statsBy[level]` (`B.statsOf`). The daily 4th down and Daily Defense are always the
   NFL from the middle. The NFL patch is empty: never retune the NFL through a level. High school
   and college are sensible ranges, not exact data; say so in copy that quotes them.
+- **The look is the snap** (the owner, 2026-11-13: play cards and a pre-snap read). The snap's seed is
+  fixed before the snap (`FAW_FLOW.pending()`), and Call it and the draw screen show
+  `FAW_ENGINE.look()` with it: the defense lined up and its shell, never the call or the blitz. The
+  coverage is the first roll, the defense aligns to show it (`config.js` `shell`: two deep for cover 2,
+  one deep for 1 and 3, nobody deep for 0), and a `shell.disguise` share of snaps shows another and
+  rotates after the snap. The disguise and the hand (`calls.js` `deal`) each roll on their own stream
+  off the seed, so they never move the play's dice. A run, a quick pass and a shot, never a run from
+  Empty, a sneak only at 1 or 2.
+- **Go For It is the main mode** (the owner, 2026-11-13). `goforit.js`: a run of 4th downs at the NFL
+  from the middle, each through Call it with the run's own seed. Convert and go again from the spot,
+  the distance by `LADDER` (how many converted); a touchdown restarts from your own 25; a stop is a
+  new possession from your own 35. `STOPS` (3) stops end the run (the plan said one; measured, one
+  stop ended 58% of runs on the first snap). The run and its next seed are kept on the device, so a
+  reload resumes the same down against the same look. The best run is kept on the device too.
+  Practice (any down, spot, level and hash) is the second button.
+- **The feel** (the owner, 2026-11-13: sound on by default, with mute). `feel.js` makes every sound with
+  Web Audio (nothing to download) and starts on the Snap it tap; `faw_sound` keeps the choice. The 3D
+  picture zooms and slides to follow the ball (`play.js`, `ui.zoom`), never past an edge. A spot within
+  a yard of the sticks hides its caption for the measurement. The stamp's margin is the engine's spot
+  against the line to gain (`A.marginText`). Presentation only: nothing here touches the sim.
 - **Only Move moves a player** (the owner, 2026-10-31). No other tool, and no long press, ever
   changes where a man lines up.
 - **A run is what was drawn** (the owner, 2026-11-01: "i ran a run play and the play didn't

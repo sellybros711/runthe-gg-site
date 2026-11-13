@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="style.css?v=23">
 </head>
 <body>
 <header class="topbar">
@@ -35,6 +35,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
   <div class="navr">
     <a class="home" href="/" aria-label="RunThe.GG home">RunThe.GG</a>
     <button class="icon" id="bGuide" type="button" aria-label="How it works">?</button>
+    <button class="icon" id="bSound" type="button" aria-label="Sound on" aria-pressed="true"><svg class="son" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z" fill="currentColor"/></svg><svg class="soff" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zm12.6.2L15.2 10.6 16.6 12l-1.4 1.4 1.4 1.4L18 13.4l1.4 1.4 1.4-1.4-1.4-1.4 1.4-1.4-1.4-1.4L18 10.6z" fill="currentColor"/></svg></button>
   </div>
 </header>
 
@@ -142,6 +143,13 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <h1><span class="p4">4TH</span> <span class="pand">AND</span> <span class="pwhat">WHAT?</span></h1>
         <p class="kicker">You're going for it.</p>
       </div>
+      <!-- GO FOR IT (goforit.js, the owner 2026-11-13): the main mode, a run of 4th downs -->
+      <div class="gohero">
+        <button type="button" class="playnow" id="goStart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span>Go for it</span></button>
+        <p class="gosub" id="goSub"></p>
+        <p class="gobest" id="goBest" hidden></p>
+      </div>
+      <p class="pracsep"><span>Or practice any down</span></p>
       <div class="pspot">
         <p class="pspoth">Set starting field position</p>
         <p class="pspotk">&raquo; Choose your spot</p>
@@ -164,7 +172,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <span class="lsep" aria-hidden="true"></span>
         <div class="seg" id="pHash" role="group" aria-label="Ball on the"><button type="button" data-hash="left">Left hash</button><button type="button" data-hash="mid">Middle</button><button type="button" data-hash="right">Right hash</button></div>
       </div>
-      <button type="button" class="playnow" id="pGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Play now</button>
+      <button type="button" class="playnow" id="pGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Practice it</button>
       <p class="spotline"><span id="pSpot"></span> <button type="button" class="link" id="pMore">Change</button></p>
       <div class="pmore" id="pMoreBox" hidden>
         <label class="field"><span>Down</span><select id="pDown"></select></label>
@@ -177,6 +185,21 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <button type="button" data-go="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h3v10zm6.5 0V4h3v16zM17 20v-7h3v7z"/></svg>Test vs Defense</button>
         <button type="button" data-go="trivia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3zm-1 4v1a2 2 0 0 0 2 2V7zm12 0v3a2 2 0 0 0 2-2V7z"/></svg>Improve your IQ</button>
       </nav>
+    </div>
+  </section>
+
+  <!-- CALL IT (calls.js, the owner 2026-11-13): the defense lines up and shows its look, you are
+       dealt three plays (a run, a quick pass, a shot) or draw your own, then Snap it -->
+  <section class="view call" id="vCall" hidden>
+    <div class="callwrap">
+      <div class="callhead">
+        <button type="button" class="chip" id="cBack" aria-label="Change the down and distance"><span id="cSit"></span></button>
+        <span class="crun" id="cRun" hidden></span>
+        <div class="cread"><b id="cRead"></b><span id="cHint"></span></div>
+      </div>
+      <div class="fieldwrap callfield"><canvas id="cField" aria-label="The defense, lined up"></canvas></div>
+      <div class="ccards" id="cCards" role="group" aria-label="Your play call"></div>
+      <button type="button" class="playnow csnap" id="cSnap" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span id="cSnapTxt">Pick a play</span></button>
     </div>
   </section>
 
@@ -414,6 +437,8 @@ document.documentElement.setAttribute('data-theme', 'dark');
     <canvas id="cLive" aria-label="The play in the stadium"></canvas>
     <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
     <div class="cap" id="cap" aria-live="polite"></div>
+    <div class="measure" id="measure" hidden aria-hidden="true"><i></i><span>Measurement</span><i></i></div>
+    <div class="stamp" id="stamp" hidden><b id="stampBig"></b><span id="stampSub"></span></div>
     <button type="button" class="skip" id="bSkip">Skip</button>
     <button type="button" class="close" id="bClose3d" aria-label="Close">&#10005;</button>
     <div class="rescard" id="rCard" hidden>
@@ -427,7 +452,15 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <p class="rdreal"><b>What really happened:</b> <span id="rReal"></span> <span id="rVerdict"></span></p>
         <p class="rdstats" id="rDayStats" hidden></p>
       </div>
-      <div class="racts">
+      <div class="rgo" id="rGo" hidden>
+        <p class="rgohead" id="rGoHead"></p>
+        <p class="rgotally" id="rGoTally"></p>
+        <p class="rgonext" id="rGoNext"></p>
+        <button type="button" class="playnow rgobtn" id="rGoOn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Next down</button>
+        <button type="button" class="playnow rgobtn" id="rGoAgain" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Go again</button>
+        <button type="button" class="btn" id="rGoShare" hidden>Share your run</button>
+      </div>
+      <div class="racts rplay">
         <button type="button" class="btn gold" id="rAgain">Run it back</button>
         <button type="button" class="btn" id="rEdit">Edit play</button>
         <button type="button" class="btn" id="rNew">New play</button>
@@ -467,10 +500,10 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/assets/cloudsave.js?v=3"></script>
-<script src="config.js?v=8"></script>
+<script src="config.js?v=9"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=8"></script>
+<script src="engine.js?v=9"></script>
 <script src="names.js?v=2"></script>
 <script src="routes.js?v=2"></script>
 <script src="book.js?v=3"></script>
@@ -481,15 +514,18 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="rig.js?v=1"></script>
 <script src="stage.js?v=2"></script>
 <script src="share.js?v=2"></script>
-<script src="play.js?v=2"></script>
-<script src="app.js?v=7"></script>
+<script src="feel.js?v=1"></script>
+<script src="play.js?v=3"></script>
+<script src="app.js?v=9"></script>
 <script src="home.js?v=4"></script>
-<script src="studio.js?v=5"></script>
+<script src="studio.js?v=6"></script>
 <script src="game.js?v=4"></script>
 <script src="clip.js?v=1"></script>
-<script src="flow.js?v=7"></script>
+<script src="flow.js?v=10"></script>
 <script src="daily.js?v=6"></script>
 <script src="trivia.js?v=4"></script>
+<script src="calls.js?v=1"></script>
+<script src="goforit.js?v=1"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=2"></script>
