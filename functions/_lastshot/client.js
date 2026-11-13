@@ -806,11 +806,12 @@ function showFiled() {
 /* The daily result card: WINNER or LOSE, the stars and the checklist, the
    score's text, today's defense, the rank, the board, gems, Share. */
 function showDailyCard(result, res) {
-  const scored = dly && dly.local.scored;
-  const ch = scored ? { clock: day.config.clock, down: day.config.down, set: day.config.set, scheme: null, seed: day.seed, play: scored } : null;
+  /* No Beat my play on the daily: the link carries today's seed, and
+     watching it would show a friend today's defense before their one
+     scored shot (2026-11-13). Share says how it went, never how. */
   const parts = D.dailyCard($('card'), { day, result, reduce: reduced() }, {
     share: b => doShare(dailyShareText(day.dayNumber, result.squares, result.scoreText), b),
-    beat: ch ? b => shareChallenge(ch, b) : null,
+    beat: null,
     practice: () => { backToBoard(); dayBarSync(); },
     home: goHome
   });

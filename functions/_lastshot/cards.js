@@ -24,13 +24,13 @@ export function adder(c) {
 export function factsOf(res) {
   return { win: res.outcome === 'win', ot: res.how === 'ot', p: res.shot ? res.shot.p : null, shotAt: res.shotAt, bailout: !!(res.shot && res.shot.bailout) };
 }
-/* The daily's filed detail has no bailout flag, but the stars give it away:
-   a win with an open look, late enough, that still missed the third star was
-   a heave at the bail-out mark. */
+/* The daily's filed detail carries bailout (from 2026-11-13). A run filed
+   before that has none, and the stars give it away: a win with an open look,
+   late enough, that still missed the third star was a heave. */
 export function factsOfDetail(d) {
   const win = d.outcome === 'win', p = typeof d.p === 'number' ? d.p : null;
   const late = d.shotAt != null && d.shotAt <= CLUTCH;
-  return { win, ot: d.how === 'ot', p, shotAt: d.shotAt, bailout: win && p != null && p >= LOOK && late && d.stars < 3 };
+  return { win, ot: d.how === 'ot', p, shotAt: d.shotAt, bailout: typeof d.bailout === 'boolean' ? d.bailout : win && p != null && p >= LOOK && late && d.stars < 3 };
 }
 
 /* The verdict, the final score and the stars, side by side. */

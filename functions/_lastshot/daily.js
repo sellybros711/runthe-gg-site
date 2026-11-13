@@ -100,7 +100,7 @@ export function replay(seed, inputs, cfg) {
   const detail = {
     outcome: res.outcome, how: res.how, stars: starsOf(res), us: res.us, them: res.them, down: cfg.down,
     shotAt: res.shotAt, p: res.shot ? res.shot.p : null, open: res.shot ? res.shot.open : null,
-    zone: res.shot ? res.shot.zone : null, shooter: res.shooter, scheme: res.scheme, schemeName: res.schemeName,
+    zone: res.shot ? res.shot.zone : null, bailout: !!(res.shot && res.shot.bailout), shooter: res.shooter, scheme: res.scheme, schemeName: res.schemeName,
     ot: res.ot, reason: res.reason
   };
   return { score: scoreOf(res), frames: MIN_FRAMES, detail };

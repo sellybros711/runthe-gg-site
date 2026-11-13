@@ -12,7 +12,7 @@
  * and a dropped connection (one line, the play kept, nothing played), a forged
  * score refused, the scored run posting the score daily.js gives, the result
  * card (stars, score text, today's defense, the rank, the top ten with me,
- * gems), the share text (no spoiler, the arcade link), Beat my play from the
+ * gems), the share text (no spoiler, the arcade link), no Beat my play on the
  * daily, practice after, a reload after playing, already played from another
  * device, and #daily straight in.
  *
@@ -31,7 +31,6 @@ import { fakeArcade } from './fake-arcade.mjs';
 import { dailyConfig, dailyScenario, replay, scoreText, squares, gems, cleanPlay } from '../daily.js';
 import { simulate } from '../sim.js';
 import { scoreOf } from '../daily.js';
-import { decode } from '../challenge.js';
 import { SCHEME_NAMES } from '../scenario.js';
 import { dateKey, seedFor, dayNumber } from '../../_arcadelab/shared/seed.js';
 
@@ -200,13 +199,8 @@ async function run(name, viewport, mobile, uid) {
   ok(shared === want, 'the share text: ' + JSON.stringify(shared));
   ok(!Object.values(SCHEME_NAMES).some(n => shared.includes(n)) && !/last-shot/.test(shared), 'no defense and no gated path in it');
 
-  // Beat my play from the daily: the day's seed, the situation, no scheme
-  await page.click('#bBeat');
-  const beat = await clip();
-  const code = (/#beat=([A-Za-z0-9_-]+)$/.exec(beat) || [])[1];
-  const ch = code ? decode(code) : null;
-  ok(beat.startsWith('I drew this one. Beat it.\n' + BASE + '/last-shot#beat=') && !!ch, 'Beat my play copies the line and a link');
-  ok(ch && ch.seed === SEED && ch.scheme === null && ch.clock === CFG.clock && ch.down === CFG.down && ch.set === CFG.set && ch.play.steps.length === 4, 'the link: the day\'s seed and spot, no scheme');
+  // no Beat my play on the daily: its link would carry today's seed, and with it today's defense
+  ok((await page.locator('#bBeat').count()) === 0, 'no Beat my play on the daily card (it would spoil the defense)');
 
   // practice after: allowed, the scored button gone
   await page.click('#bDayPractice');
@@ -226,7 +220,7 @@ async function run(name, viewport, mobile, uid) {
   await page.waitForSelector('#card.daily', { timeout: 10000 });
   ok((await page.textContent('#dScore')) === scoreText(post.score) && await page.isHidden('#dayShot'), 'a second visit: the filed card, no scored button');
   await page.waitForFunction(() => document.querySelectorAll('.dboard li').length > 0, null, { timeout: 10000 });
-  ok((await page.locator('.dboard li.me').count()) === 1 && await page.isVisible('#bBeat'), 'the board, and Beat my play from the kept play');
+  ok((await page.locator('.dboard li.me').count()) === 1 && (await page.locator('#bBeat').count()) === 0, 'the board, and still no Beat my play');
   const st = await starts();
   ok(st === 1, 'reloads never post start again (still ' + st + ')');
 
@@ -279,7 +273,6 @@ async function otherDevice() {
   await page.waitForSelector('#card.daily', { timeout: 20000 });
   ok((await page.textContent('#dScore')) === scoreText(score) && await page.isHidden('#dayShot'), 'already played: the filed result shows, the button is gone');
   ok(await page.isHidden('#dayErr'), 'and no error line');
-  ok((await page.locator('#bBeat').count()) === 0, 'no Beat my play without the filed play on this device');
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await ctx.close();
 }
