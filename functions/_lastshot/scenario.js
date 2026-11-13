@@ -137,6 +137,8 @@ export const SCENARIO = Object.freeze({
     /* Up 2 after a three, a two only ties it (overtime, a coin flip) and a
        three beats you: this share of their scores still loses it for you. */
     answerNeedThree: 0.6,
+    /* A tie goes to overtime, a coin you flip. */
+    overtimeWin: 0.5,
 
     /* ZONES. How often the rolled defense is a zone (late in a close game,
        about one possession in four at most levels below the pros). */

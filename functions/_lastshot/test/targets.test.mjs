@@ -122,7 +122,7 @@ test('the result carries what the page needs for the readout and the cutaway', (
       const a = r.answer;
       assert.ok(a.at > 0 && a.at < a.startAt && a.startAt <= r.shotAt, JSON.stringify(a) + ' shot at ' + r.shotAt);
       assert.ok(a.kind === 'two' || a.kind === 'three');
-      assert.equal(r.how, a.scored ? 'answer' : 'stop');
+      assert.equal(r.how, a.scored ? 'answer' : a.tied ? 'ot' : 'stop');
     }
   }
 });
