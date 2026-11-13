@@ -46,6 +46,18 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   rotates after the snap. The disguise and the hand (`calls.js` `deal`) each roll on their own stream
   off the seed, so they never move the play's dice. A run, a quick pass and a shot, never a run from
   Empty, a sneak only at 1 or 2.
+- **Go For It is the main mode** (the owner, 2026-11-13). `goforit.js`: a run of 4th downs at the NFL
+  from the middle, each through Call it with the run's own seed. Convert and go again from the spot,
+  the distance by `LADDER` (how many converted); a touchdown restarts from your own 25; a stop is a
+  new possession from your own 35. `STOPS` (3) stops end the run (the plan said one; measured, one
+  stop ended 58% of runs on the first snap). The run and its next seed are kept on the device, so a
+  reload resumes the same down against the same look. The best run is kept on the device too.
+  Practice (any down, spot, level and hash) is the second button.
+- **The feel** (the owner, 2026-11-13: sound on by default, with mute). `feel.js` makes every sound with
+  Web Audio (nothing to download) and starts on the Snap it tap; `faw_sound` keeps the choice. The 3D
+  picture zooms and slides to follow the ball (`play.js`, `ui.zoom`), never past an edge. A spot within
+  a yard of the sticks hides its caption for the measurement. The stamp's margin is the engine's spot
+  against the line to gain (`A.marginText`). Presentation only: nothing here touches the sim.
 - **Only Move moves a player** (the owner, 2026-10-31). No other tool, and no long press, ever
   changes where a man lines up.
 - **A run is what was drawn** (the owner, 2026-11-01: "i ran a run play and the play didn't

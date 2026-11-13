@@ -253,6 +253,28 @@ async function run(name, viewport, scale) {
   const r2 = await page.evaluate(() => { const r = window.FAW_GAME.last(); return { call: r.callKey, Y0: r.Y0, res: document.getElementById('gStats').textContent }; });
   ok(r2.call === 'cover2' && r2.Y0 === 28 && !/Turnover on downs/.test(r2.res), 'a 3rd down snap from the own 28 against Cover 2 (' + r2.res.slice(6, 40) + ')');
 
+  /* ---------- Go For It (the owner, 2026-11-13): a run of 4th downs, three stops and done ---------- */
+  await page.click('.tab[data-view="play"]');
+  ok(/Go for it/i.test(await page.textContent('#goStart')), 'Play leads with Go For It');
+  const scBefore = await page.evaluate(() => JSON.stringify(window.FAW_APP.SC));
+  await page.click('#goStart');
+  const g0 = await page.evaluate(() => ({ sit: document.getElementById('cSit').textContent, chip: document.getElementById('cRun').textContent, seed: window.FAW_CALLS.seed(), runSeed: window.FAW_GO.run().seed }));
+  ok(await page.isVisible('#vCall') && g0.sit === '4th & 1 · Own 35' && /^0 converted · 0 yds · \u25CF{3}$/.test(g0.chip) && g0.seed === g0.runSeed, 'a run starts at 4th and 1 on your own 35, three stops to spare: ' + g0.chip);
+  for (let i = 0; i < 40; i++) {
+    await page.click('#cCards .ccard:nth-child(1)'); await page.click('#cSnap');
+    await page.waitForTimeout(300); if (await page.isVisible('#bSkip')) await page.click('#bSkip');
+    await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+    const gc = await page.evaluate(() => ({ go: !document.getElementById('rGo').hidden, playRow: getComputedStyle(document.querySelector('.rplay')).display, over: !document.getElementById('rGoAgain').hidden, run: window.FAW_GO.run(), best: localStorage.getItem('faw_go_best') }));
+    if (i === 0) ok(gc.go && gc.playRow === 'none', 'the card shows the run and hides Run it back and New play');
+    if (gc.over) { ok(gc.run.stops === 3 && (gc.run.n === 0 || JSON.parse(gc.best).n === gc.run.n), 'three stops end the run, and the best is kept: ' + gc.run.n + ' converted'); break; }
+    await page.click('#rGoOn');
+    ok(i > 0 || (await page.evaluate(() => window.FAW_CALLS.seed() === window.FAW_GO.run().seed)), 'Next down: the run\'s next seed is the look on the field');
+  }
+  await page.click('#rGoAgain');
+  ok(await page.evaluate(() => window.FAW_GO.run().n === 0 && window.FAW_GO.run().stops === 0), 'Go again starts a fresh run');
+  await page.click('#cBack');
+  ok(await page.evaluate((b) => !window.FAW_GO.active() && JSON.stringify(window.FAW_APP.SC) === b, scBefore), 'leaving the run puts practice back where it was');
+
   /* ---------- the Studio ---------- */
   await tab('studio');
   ok(await page.isVisible('#vStudio'), 'the Studio');

@@ -16,6 +16,15 @@
  * Legible on purpose: a beat at the set, the picture slows near the throw,
  * the catch and the tackle, and captions say what just happened.
  *
+ * THE CAMERA (since 2026-11-13, the launch plan's feel): the stadium is drawn
+ * once per spot, so the camera cannot move; instead, when the caller asks for
+ * it (ui.zoom), the picture is scaled and slid so the ball stays near the
+ * middle, closer in at the throw, the catch and the tackle, never past an
+ * edge. The ui hears each event as it happens (ui.event, for the sound), the
+ * snap (ui.snap), how far the play has gone (ui.progress), a measurement when
+ * the spot is within a yard of the line to gain (ui.measure), and the result
+ * (ui.final) before the card.
+ *
  * Plain script: window.FAW_LIVE.
  */
 (function (root) {
@@ -55,7 +64,23 @@
     var frames = res.frames, ids = res.ids, dt = res.dt;
     var lastT = frames[frames.length - 1].t;
     var SET = 0.75;                                 /* the beat at the line before the snap */
-    var t = -SET, raf = 0, done = false, prev = 0, capAt = -1;
+    var t = -SET, raf = 0, done = false, prev = 0, capAt = -1, snapped = false;
+    var closeEnd = !!ui.measure && res.outcome === 'down' && res.marker < 100 && res.spotY != null && Math.abs(res.spotY - res.marker) <= 1;
+    /* the camera: a zoom z about the focus f (fractions of the picture) */
+    var Z = ui.zoom ? { z: 1.3, fx: 0.5, fy: 0.62 } : null;
+    function aim(tt, F, bx, by, bz) {
+      if (!Z) return;
+      var g = cam.pr([bx, by, Math.max(0, bz * 0.5)]); if (!g) return;
+      var near = rate(Math.max(0, tt)) < 1, zt = tt < 0 ? 1.3 : near ? 1.75 : 1.45;
+      var fx = g[0] / W, fy = g[1] / H, k = tt < 0 ? 1 : 0.1;
+      Z.z += (zt - Z.z) * (tt < 0 ? 1 : 0.06); Z.fx += (fx - Z.fx) * k; Z.fy += (fy - Z.fy) * k;
+      /* slide so the focus sits in the middle, kept inside the picture */
+      var z = Z.z, tx = 0.5 - Z.fx, ty = 0.55 - Z.fy;
+      tx = Math.min(Z.fx * (z - 1), Math.max(tx, -(1 - Z.fx) * (z - 1)));
+      ty = Math.min(Z.fy * (z - 1), Math.max(ty, -(1 - Z.fy) * (z - 1)));
+      canvas.style.transformOrigin = (Z.fx * 100).toFixed(2) + '% ' + (Z.fy * 100).toFixed(2) + '%';
+      canvas.style.transform = 'translate(' + (tx * 100).toFixed(2) + '%, ' + (ty * 100).toFixed(2) + '%) scale(' + z.toFixed(3) + ')';
+    }
     var slows = res.events.filter(function (e) { return /throw|catch|incomplete|sack|td|spot|broken|fumble|checkdown/.test(e.kind); })
       .map(function (e) { return { t: e.t, k: e.kind === 'throw' || e.kind === 'checkdown' ? T.slow.throw : e.kind === 'catch' || e.kind === 'incomplete' ? T.slow.catch : T.slow.tackle }; });
     function rate(tt) { var k = 1; slows.forEach(function (s) { if (Math.abs(tt - s.t) < T.slow.window) k = Math.min(k, s.k); }); return k; }
@@ -101,13 +126,19 @@
       }
       ST.vignette(ctx, W, H);
       ui.pressure(pre || res.isRun ? 0 : F.a.pressure);
+      aim(tt, F, bx, by, bz);
     }
 
     function caption(tt) {
       if (tt < 0) { ui.caption(tt < -SET * 0.45 ? 'Set.' : 'Hut.'); return; }
       for (var i = res.events.length - 1; i >= 0; i--) {
         var e = res.events[i];
-        if (e.t <= tt) { if (i !== capAt) { capAt = i; ui.caption(e.text); } return; }
+        if (e.t <= tt) {
+          /* a spot within a yard of the sticks keeps its secret for the measurement */
+          var hide = closeEnd && i === res.events.length - 1;
+          if (i !== capAt) { for (var j = Math.max(0, capAt + 1); j <= i; j++) if (ui.event) ui.event(res.events[j]); capAt = i; ui.caption(hide ? 'It is close.' : e.text); }
+          return;
+        }
       }
       if (capAt !== -2) { capAt = -2; ui.caption(''); }
     }
@@ -116,17 +147,30 @@
       if (done) return;
       var real = prev ? Math.min(0.05, (now - prev) / 1000) : 0; prev = now;
       t += real * (t < 0 ? 1 : rate(t));
+      if (!snapped && t >= 0) { snapped = true; if (ui.snap) ui.snap(); }
+      if (ui.progress && t >= 0) ui.progress(t / lastT);
       if (t >= lastT) { t = lastT; draw(t); caption(t); finish(); return; }
       draw(t); caption(t);
       raf = root.requestAnimationFrame(tick);
     }
-    function finish() { if (done) return; done = true; root.cancelAnimationFrame(raf); setTimeout(function () { ui.done(res); }, 250); }
+    /* the end: a measurement when it is within a yard of the sticks (not
+       when skipped), then the result, then the card */
+    function finish(skipped) {
+      if (done) return; done = true; root.cancelAnimationFrame(raf);
+      var close = !skipped && res.outcome === 'down' && res.marker < 100 && res.spotY != null && Math.abs(res.spotY - res.marker) <= 1;
+      var wait = 250;
+      if (close && ui.measure) { ui.measure(res); wait = 1700; }
+      setTimeout(function () {
+        if (ui.final) { ui.final(res, skipped); setTimeout(function () { ui.done(res); }, skipped ? 350 : 950); }
+        else ui.done(res);
+      }, wait);
+    }
     /* the set is drawn in full before the clock starts: every man's stance traced */
     frameStart = performance.now() + 1e9;
     draw(-SET);
     raf = root.requestAnimationFrame(tick);
     return {
-      skip: function () { if (done) return; t = lastT; draw(t); caption(t); ui.caption(res.events.length ? res.events[res.events.length - 1].text : ''); finish(); },
+      skip: function () { if (done) return; closeEnd = false; t = lastT; draw(t); caption(t); ui.caption(res.events.length ? res.events[res.events.length - 1].text : ''); finish(true); },
       stop: function () { done = true; root.cancelAnimationFrame(raf); }
     };
   }

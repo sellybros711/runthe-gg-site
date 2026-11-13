@@ -782,3 +782,41 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
   .ccard b { font-size: 14px; } .ccard small { font-size: 9px; } .ccard .ctype { font-size: 9px; padding: 2px 6px; }
   .csnap { padding: 10px 30px; }
 }
+
+/* ---------- Go For It (goforit.js, the owner 2026-11-13) ---------- */
+.gohero { display: grid; justify-items: center; gap: 6px; margin: 4px auto 18px; }
+.gohero .playnow { margin: 0; }
+.gosub { margin: 0; color: #e9eff6; font-weight: 800; }
+.gobest { margin: 0; color: var(--gold); font: italic 900 18px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+.pracsep { display: flex; align-items: center; gap: 12px; max-width: 1000px; margin: 0 auto 26px; color: #8fa2b8; font: italic 900 15px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+.pracsep::before, .pracsep::after { content: ''; flex: 1; height: 1px; background: #1d3a55; }
+#pGo { --rim: var(--teal); --fill: linear-gradient(#0f2d3a, #0a1e28); color: #8fe7ff; font-size: clamp(24px, 3vw, 34px); padding: 10px 50px; filter: drop-shadow(0 0 12px rgba(25, 198, 167, .4)); }
+#pGo svg { fill: #8fe7ff; }
+.crun { padding: 6px 12px; border-radius: 999px; background: rgba(245, 183, 42, .14); border: 1px solid rgba(245, 183, 42, .6); color: var(--gold); font: italic 900 16px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
+.rgo { display: grid; justify-items: center; gap: 4px; margin: 6px 0 10px; padding: 10px; border-radius: 12px; background: rgba(245, 183, 42, .08); border: 1px solid rgba(245, 183, 42, .4); }
+.rgo p { margin: 0; }
+.rgohead { color: var(--gold); font: italic 900 22px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+.rgotally { color: #fff; font: 900 18px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
+.rgonext { color: #cfd9e4; font-size: 14px; font-weight: 700; }
+.rgobtn { margin: 6px auto 0; font-size: 30px; padding: 8px 40px; min-width: 0; }
+.rescard.go .rplay { display: none; }
+
+/* ---------- the feel (feel.js and play.js, the owner 2026-11-13) ----------
+   The camera slides and scales the pixel picture (play.js), so it eases.
+   The measurement: the chains come out. The stamp: the result, big, before
+   the card. The sound button lives in the top bar. */
+#cLive { transition: transform .08s linear; will-change: transform; }
+.measure { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 10px;
+  background: rgba(6, 12, 20, .85); border: 2px solid #ff8a2a; color: #ffb36b; font: italic 900 22px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .06em;
+  animation: measPulse .5s ease-in-out infinite alternate; }
+.measure i { width: 4px; height: 34px; background: repeating-linear-gradient(#ffb36b 0 4px, transparent 4px 7px); border-radius: 2px; }
+@keyframes measPulse { from { box-shadow: 0 0 0 rgba(255, 138, 42, 0); } to { box-shadow: 0 0 24px rgba(255, 138, 42, .7); } }
+.stamp { position: absolute; left: 0; right: 0; top: 34%; display: grid; justify-items: center; gap: 6px; pointer-events: none; animation: stampIn .35s cubic-bezier(.2, 1.6, .4, 1) both; }
+.stamp b { font: italic 900 clamp(48px, 13vw, 92px)/.9 'Barlow Condensed', 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .01em; -webkit-text-stroke: 2px rgba(0, 0, 0, .55); text-shadow: 0 6px 0 rgba(0, 0, 0, .45); }
+.stamp span { font: italic 900 24px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; color: #fff; text-shadow: 0 2px 0 #000; }
+.stamp.win b { color: #49e07a; filter: drop-shadow(0 0 18px rgba(73, 224, 122, .7)); }
+.stamp.td b { color: var(--gold); filter: drop-shadow(0 0 24px rgba(245, 183, 42, .9)); }
+.stamp.lose b { color: var(--red); filter: drop-shadow(0 0 14px rgba(239, 75, 63, .6)); }
+@keyframes stampIn { from { transform: scale(2.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+#bSound .soff { display: none; } #bSound.off .son { display: none; } #bSound.off .soff { display: inline; } #bSound.off { color: #8fa2b8; }
+@media (prefers-reduced-motion: reduce) { .stamp, .measure { animation: none; } #cLive { transition: none; } }
