@@ -2959,8 +2959,8 @@
   },
   "hoops/design/style-guide.html": {
     "../career-kit.js": {
-      "v": "12",
-      "sha": "ef3c2ac4dde9a399"
+      "v": "13",
+      "sha": "b485b23049c57654"
     },
     "../util.js": {
       "v": "1",
@@ -3077,8 +3077,8 @@
       "sha": "bc4fd85f6f528926"
     },
     "career-kit.js": {
-      "v": "12",
-      "sha": "ef3c2ac4dde9a399"
+      "v": "13",
+      "sha": "b485b23049c57654"
     },
     "sound.js": {
       "v": "2",
@@ -3125,8 +3125,8 @@
       "sha": "14d401c9313d16be"
     },
     "career-ui.js": {
-      "v": "64",
-      "sha": "6a39d25dc5ef1e0e"
+      "v": "65",
+      "sha": "b7ab922156ceda92"
     }
   },
   "ideas/index.html": {

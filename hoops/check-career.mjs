@@ -1707,29 +1707,39 @@ async function browser() {
        of the screen: fixed, at most 45% of it, every answer reachable without
        scrolling the page, the column padded so nothing hides behind it, and
        no step button while it waits. Asked at two phones and a desktop, where
-       the card stays in the column. A long setup folds behind More. */
+       the card stays in the column. A long setup folds behind More.
+       RE-SPECCED FOR THE TABS (the owner's call, 2026-11-10): the foot of the
+       screen is the tab bar now, so the tray docks on top of it rather than on
+       the bottom edge, and an answer counts as reachable only above it. Retire
+       now left the column for Player, so "the last of the column" is the
+       lowest thing the column shows, not the Retire button, which would pass
+       by being hidden. Everything else in this arm is as it was. */
     if (!trayed && st.card && st.steps >= 5) {
       trayed = true;
       const probe = () => page.evaluate(() => {
         const c = document.querySelector('#cr-card'), o = [...c.querySelectorAll('.cr-choice')];
         const r = c.getBoundingClientRect(), y0 = window.scrollY, H = window.innerHeight;
         const fixed = getComputedStyle(c).position === 'fixed';
+        const tb = document.querySelector('.k-tabbar'), tq = tb ? tb.getBoundingClientRect() : null;
+        const dock = tq && tq.height > 0 && tq.width >= window.innerWidth - 1 ? Math.round(tq.top) : H;
         let reach = true;
-        o.forEach((b) => { b.scrollIntoView({ block: 'nearest' }); const q = b.getBoundingClientRect(); if (q.top < 0 || q.bottom > H + 0.5) reach = false; });
+        o.forEach((b) => { b.scrollIntoView({ block: 'nearest' }); const q = b.getBoundingClientRect(); if (q.top < 0 || q.bottom > dock + 0.5) reach = false; });
         const moved = Math.abs(window.scrollY - y0) > 1 && fixed;
         c.scrollTop = 0;
         window.scrollTo(0, document.documentElement.scrollHeight);
-        const q = document.querySelector('#cr-quit'), qb = q ? q.getBoundingClientRect().bottom : 0, top2 = c.getBoundingClientRect().top;
-        return { fixed, h: r.height, H, bottom: Math.round(r.bottom), reach, moved, clear: !q || !fixed || qb <= top2 + 1, next: !!document.querySelector('#cr-next'), rise: c.className };
+        const col = [...document.querySelectorAll('#s-car .cr-grid *')].filter((e) => e !== c && !c.contains(e) && getComputedStyle(e).position !== 'fixed' && e.getBoundingClientRect().height > 0);
+        const qb = col.length ? Math.max(...col.map((e) => e.getBoundingClientRect().bottom)) : Infinity, top2 = c.getBoundingClientRect().top;
+        const under = col.filter((e) => e.getBoundingClientRect().bottom > top2 + 1).slice(0, 2).map((e) => (e.id || e.className || e.tagName).toString().slice(0, 30) + ' ' + Math.round(e.getBoundingClientRect().bottom)).join(', ');
+        return { fixed, h: r.height, H, dock, bottom: Math.round(r.bottom), reach, moved, clear: !fixed || qb <= top2 + 1, under, top2: Math.round(top2), next: !!document.querySelector('#cr-next'), rise: c.className };
       });
       for (const [w, h] of [[390, 844], [360, 640]]) {
         await page.setViewportSize({ width: w, height: h });
         await page.evaluate(() => RTF_CAREER_UI.paintPress({ beats: [], result: null }));
         const t = await probe();
-        ok(t.fixed && t.bottom === t.H, `at ${w}x${h} the card is a tray docked to the bottom (${t.fixed ? 'fixed' : 'in the column'}, bottom ${t.bottom} of ${t.H})`);
+        ok(t.fixed && t.bottom === t.dock, `at ${w}x${h} the card is a tray docked to the foot of the screen, on the tab bar (${t.fixed ? 'fixed' : 'in the column'}, bottom ${t.bottom}, tabs at ${t.dock} of ${t.H})`);
         ok(t.h <= t.H * 0.46, `at ${w}x${h} the tray is at most 45% of the screen (${Math.round(t.h)}px)`);
         ok(t.reach && !t.moved, `at ${w}x${h} every answer is reachable without scrolling the page`);
-        ok(t.clear, `at ${w}x${h} the column is padded so the last of it clears the tray`);
+        ok(t.clear, `at ${w}x${h} the column is padded so the last of it clears the tray (${t.under || 'all clear'} against ${t.top2})`);
         ok(!t.next, `at ${w}x${h} there is no step button while a card waits`);
         const more = await page.evaluate(() => {
           const L = RTF_CAREER_UI.state().cur, c = L.pending[0], was = c.text;
@@ -1880,6 +1890,7 @@ async function browser() {
   await scenesWalk(b, serve);
   await pathsWalk(b, serve);
   await deskWalk(b, serve);
+  await appWalk(b, serve);
   await b.close();
 
   /* PHASE E, through the page: the Vault, the share card, a son, and an Easy
@@ -2100,6 +2111,7 @@ async function browser() {
     /* THE BACK OF THE CARD: the two chapters are rows, the same names the
        chapters say, and the story does not tell them twice. */
     if (await find('hall')) {
+      if (await page.$('#cr-t-me')) await page.click('#cr-t-me');
       await page.click('#cr-quit'); await page.click('#cr-retire-yes');
       for (let k = 0; k < 8 && !(await page.evaluate(() => !!RTF_CAREER_UI.state().last)); k++) { await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) c.click(); }); await page.waitForTimeout(100); }
       const h = await page.evaluate(() => { const card = RTF_CAREER_UI.state().last, el = document.querySelector('.cr-cback');
@@ -2124,6 +2136,196 @@ async function browser() {
      nothing is cut, and a held column taller than the window still shows its
      foot. The Hall card's set is drawn at the card's own shape, whole pixels
      a cell, on a desktop and on a phone. */
+  /* ── 7e. THE APP SHELL AND THE SHEETS (the owner's call, 2026-11-10) ─────
+     Career is an app: one app bar that is the player, five tabs (a bar at the
+     foot of a phone, a rail down a desktop), the tray and the next button on
+     the tabs, a bar when a card waits on another tab, Retire on Player, the
+     site's own bar gone while Career is up. And every sheet closes on Escape,
+     opened by a tap or a click, even after a tap on its own words: Your moves
+     never did, because it drew its tiles after it opened and focus stayed
+     outside it. Asked at 390x844 and 360x640 by touch and 1440x900 by mouse. */
+  async function appWalk(b, serve) {
+    section('7e. the app shell: one bar, five tabs, the tray on the tabs, and sheets that close');
+    for (const [w, h, touch] of [[390, 844, true], [360, 640, true], [1440, 900, false]]) {
+      const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, reducedMotion: 'reduce', hasTouch: touch });
+      const page = await ctx.newPage();
+      const boom = [];
+      page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+      await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+      await page.route('**/*', serve);
+      await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+      await page.evaluate(() => document.querySelector('#b-career').click());
+      await page.waitForSelector('#cr-go');
+      await page.click('#cr-go');
+      const press = (sel) => touch ? page.tap(sel, { timeout: 4000 }) : page.click(sel, { timeout: 4000 });
+      const tryPress = async (sel) => { try { await press(sel); return true; } catch (e) { return false; } };
+      const find = (kind) => page.evaluate((kind) => {
+        const C = window.RTF_CAREER, st = RTF_CAREER_UI.state(), lg = st.cur.league;
+        const P = {
+          mid: (L) => L.team && L.stage === 'nba' && L.history.length >= 2 && L.season && L.season.g > 20 && !L.pending.length && C.actsOpen(L).some((a) => a.ok),
+          card: (L) => L.team && L.stage === 'nba' && L.history.length >= 2 && L.pending.length && L.pending[0].options.length >= 2 && !/^(retire|nooffer|careerinj|ontop)$/.test(L.pending[0].id),
+        };
+        for (let i = 0; i < 200; i++) {
+          const L = C.newLife({ seed: 'app' + kind + i, league: lg, start: 'draft', pos: C.POS[i % 5] });
+          let g = 0;
+          while (!L.retired && g++ < 6000) {
+            if (P[kind](L)) { st.cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); window.scrollTo(0, 0); return true; }
+            if (L.pending.length) { const c = L.pending[0]; const k = c.options.findIndex((o) => /one more|keep playing|come back|ten day|overseas/i.test(o.label)); C.choose(L, k < 0 ? 0 : k); }
+            else C.step(L);
+          }
+        }
+        return false;
+      }, kind);
+      const vis = (sel) => page.evaluate((sel) => { const e = document.querySelector(sel); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; }, sel);
+      const tag = `${w}x${h}`;
+      if (!(await find('mid'))) { ok(false, `${tag}: found a career mid season`); await ctx.close(); continue; }
+      await page.waitForTimeout(300);
+      /* the site's own bar and footer are gone, the app bar is the player */
+      const bar = await page.evaluate(() => {
+        const L = RTF_CAREER_UI.state().cur, C = window.RTF_CAREER, ab = document.querySelector('.k-abar');
+        const seen = (e) => !!e && e.getBoundingClientRect().height > 0;
+        if (!ab) return { site: seen(document.querySelector('.appbar')), foot: seen(document.querySelector('footer.legal')), ab: false };
+        const r = ab.getBoundingClientRect(), sub = (ab.querySelector('.k-who span') || {}).textContent || '';
+        const club = (document.querySelector('.cr-id .k-id .k-tag') || {}).textContent || '';
+        return { site: seen(document.querySelector('.appbar')), foot: seen(document.querySelector('footer.legal')), ab: seen(ab), top: Math.round(r.top), fixed: getComputedStyle(ab).position === 'fixed',
+          name: (ab.querySelector('.k-who b') || {}).textContent === L.name, sub, club, want: L.pos + ' · #' + L.num + ' · ' + club,
+          ovr: (document.querySelector('#cr-ab-ovr') || {}).textContent, card: (document.querySelector('#cr-ovr') || {}).textContent, eng: String(C.show(C.ovrOf(L))),
+          face: !!ab.querySelector('#cr-lookbtn .rtf-baller'), count: document.querySelectorAll('.k-abar').length };
+      });
+      ok(!bar.site && !bar.foot, `${tag}: the site's top bar and footer are gone while Career is up (bar ${bar.site}, footer ${bar.foot})`);
+      ok(bar.ab && bar.count === 1 && bar.top === 0 && bar.fixed && bar.face, `${tag}: one app bar, fixed at the top, wearing the player's face (${bar.ab ? bar.top : 'none'})`);
+      ok(bar.ab && bar.name && bar.sub === bar.want && bar.club.length > 1, `${tag}: it names him the way his card does ("${bar.sub || ''}")`);
+      ok(bar.ab && bar.ovr === bar.eng && bar.card === bar.eng, `${tag}: and its overall is the engine's and the card's (${bar.ovr}, ${bar.card}, ${bar.eng})`);
+      /* five tabs, big enough, where the thumb or the eye is */
+      const tabs = await page.evaluate(() => {
+        const t = [...document.querySelectorAll('.k-tabbar [data-ctab]')], H = innerHeight, W = innerWidth;
+        return t.map((b) => { const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { id: b.getAttribute('data-ctab'), label: (b.querySelector('span') || {}).textContent, w: r.width, h: r.height, l: Math.round(r.left), t: Math.round(r.top), b: Math.round(r.bottom), mine: !!hit && b.contains(hit), H, W }; });
+      });
+      ok(tabs.map((x) => x.label).join(',') === 'Now,Moves,Team,Player,Legacy', `${tag}: five tabs, Now, Moves, Team, Player, Legacy (${tabs.map((x) => x.label).join(', ') || 'none'})`);
+      ok(tabs.length === 5 && tabs.every((x) => x.w >= 44 && x.h >= 44 && x.mine), `${tag}: every tab is at least 44 by 44 and nothing covers it`);
+      if (w < 920) ok(tabs.length === 5 && tabs.every((x) => x.b === x.H && x.t === tabs[0].t), `${tag}: on a phone they are one bar at the foot of the screen`);
+      else ok(tabs.length === 5 && tabs.every((x, i) => x.l === 0 && (!i || x.t >= tabs[i - 1].b)), `${tag}: on a desktop they are a rail down the left`);
+      /* each tab shows its own part of the career */
+      const show = async (t) => { const okp = await tryPress('#cr-t-' + t); await page.waitForTimeout(250); return okp && (await page.evaluate((t) => { const b = document.querySelector('#cr-t-' + t); return !!b && b.getAttribute('aria-current') === 'page'; }, t)); };
+      const side = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const quitNow = await vis('#cr-quit');
+      ok(!quitNow && (await vis('#cr-stage')) && (await vis('#cr-next')), `${tag}: Now holds the stage and the next button, and not Retire now`);
+      const mv = (await show('moves')) && await page.evaluate(() => {
+        const sh = document.querySelector('#cr-sheet'), g = document.querySelector('#cr-sheet [data-mgroup]'), t = document.querySelector('#cr-t-moves').getBoundingClientRect();
+        const hit = document.elementFromPoint(t.left + t.width / 2, t.top + t.height / 2);
+        return !sh.hidden && !!g && g.getBoundingClientRect().height > 0 && !!hit && !!hit.closest('#cr-t-moves');
+      });
+      ok(mv, `${tag}: Moves is your moves, a screen between the bars with the tabs still there`);
+      const tm = (await show('team')) && (await vis('[data-tab="people"]')) && !(await vis('#cr-stage')) && (await page.evaluate(() => document.querySelector('#cr-sheet').hidden));
+      ok(tm, `${tag}: Team holds the roster, People and the league, and Moves has closed`);
+      const pl = (await show('me')) && (await vis('.cr-id')) && (await vis('#cr-quit')) && (await page.evaluate(() => { const f = document.querySelector('.cr-rtfold'); return !!f && f.open; }));
+      ok(pl, `${tag}: Player holds the card, the ratings open, and Retire now`);
+      if (pl) {
+        await press('#cr-quit');
+        const rt = await page.evaluate(() => !document.querySelector('#cr-sheet').hidden && !!document.querySelector('#cr-retire-yes'));
+        ok(rt, `${tag}: Retire now still asks first`);
+        await page.evaluate(() => { const x = document.querySelector('#cr-sheet-x'); if (x) x.click(); });
+      }
+      const lg = (await show('legacy')) && (await vis('[data-tab="seasons"]')) && !(await vis('[data-tab="people"]'));
+      ok(lg, `${tag}: Legacy holds the seasons, the trophies and the legacy`);
+      ok((await side()) <= 0, `${tag}: no tab scrolls sideways (${await side()}px)`);
+      await show('now');
+      /* THE SHEETS CLOSE ON ESCAPE. Opened as a player opens them, then a tap
+         on the sheet's own words, then Escape. */
+      const sheets = [
+        ['Your moves', async () => (await tryPress('#cr-off')), '#cr-sheet'],
+        ['Your look', async () => (await tryPress('#cr-lookbtn')), '#cr-sheet'],
+        ['Retire now', async () => { if (await page.$('#cr-t-me')) await tryPress('#cr-t-me'); return tryPress('#cr-quit'); }, '#cr-sheet'],
+        ['the Locker', async () => { if (await page.$('#cr-t-me')) { await tryPress('#cr-t-me'); return tryPress('[data-prow="locker"]'); } return tryPress('#ab-coins'); }, '#rtf-locker'],
+      ];
+      for (const [name, opener, scrim] of sheets) {
+        await show('now').catch(() => {});
+        await page.evaluate(() => window.scrollTo(0, 0));
+        const opened = (await opener()) && (await page.waitForSelector(scrim + ':not([hidden])', { timeout: 3000 }).then(() => true).catch(() => false));
+        if (!opened) { ok(false, `${tag}: ${name} opens by ${touch ? 'tap' : 'click'}`); continue; }
+        await page.waitForTimeout(250);
+        const words = await page.evaluate((scrim) => { const s = document.querySelector(scrim), h = s && s.querySelector('h3, .lk-sub, p'); if (!h) return null; const r = h.getBoundingClientRect(); return { x: r.left + Math.min(20, r.width / 2), y: r.top + r.height / 2 }; }, scrim);
+        if (words) { if (touch) await page.touchscreen.tap(words.x, words.y); else await page.mouse.click(words.x, words.y); }
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(250);
+        const shut = await page.evaluate((scrim) => document.querySelector(scrim).hidden, scrim);
+        ok(shut, `${tag}: ${name}, opened by ${touch ? 'a tap' : 'a click'}, closes on Escape after a tap on its words`);
+        if (!shut) await page.evaluate((scrim) => { const s = document.querySelector(scrim); const x = s.querySelector('#cr-sheet-x, .lk-x'); if (x) x.click(); s.hidden = true; }, scrim);
+      }
+      /* the roster from a card, stood in, the way 7 asks it */
+      await show('now').catch(() => {});
+      const ros = await page.evaluate(() => {
+        const L = RTF_CAREER_UI.state().cur;
+        L.pending.unshift({ id: 'rostest', kind: 'fa', key: 'rostest', eyebrow: 'Free agency', scene: "Agent's office", title: 'Two offers. Where do you sign?',
+          options: [{ label: 'Sign with the Rockets', hint: '4 years, $34M a year', club: 'HOU' }, { label: 'Sign with the Jazz', hint: '4 years, $32M a year', club: 'UTA' }] });
+        RTF_CAREER_UI.paintPress({ beats: [], result: null });
+        return !!document.querySelector('#cr-card [data-ros="1"]');
+      });
+      if (ros) {
+        await tryPress('#cr-card [data-ros="1"]');
+        const op = await page.waitForSelector('#cr-sheet:not([hidden])', { timeout: 3000 }).then(() => true).catch(() => false);
+        await page.keyboard.press('Escape'); await page.waitForTimeout(250);
+        ok(op && (await page.evaluate(() => document.querySelector('#cr-sheet').hidden)), `${tag}: a club's roster from a card closes on Escape`);
+        await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; if (L.pending[0] && L.pending[0].id === 'rostest') L.pending.shift(); RTF_CAREER_UI.paintPress({ beats: [], result: null }); });
+      } else ok(false, `${tag}: a stood-in offer carries a Roster button`);
+      /* A CARD WAITING WHILE YOU READ ANOTHER TAB */
+      if (await find('card')) {
+        await page.waitForTimeout(250);
+        const onNow = await page.evaluate(() => {
+          const c = document.querySelector('#cr-card'), t = document.querySelector('.k-tabbar'), o = document.querySelector('#cr-card .cr-choice');
+          if (!c || !t) return null;
+          const r = c.getBoundingClientRect(), q = t.getBoundingClientRect(), a = o.getBoundingClientRect(), ab = document.querySelector('.k-actx').getBoundingClientRect();
+          return { fixed: getComputedStyle(c).position === 'fixed', bottom: Math.round(r.bottom), tabTop: Math.round(q.top), rail: q.width < innerWidth / 2, first: a.top >= ab.bottom - 1 && a.bottom <= (q.width < innerWidth / 2 ? innerHeight : q.top) + 0.5 };
+        });
+        if (w < 720) ok(onNow && onNow.fixed && onNow.bottom === onNow.tabTop, `${tag}: the tray stands on the tab bar (${onNow && onNow.bottom} on ${onNow && onNow.tabTop})`);
+        else ok(onNow && !onNow.fixed, `${tag}: on a desktop the card is in the column`);
+        ok(onNow && onNow.first, `${tag}: its first answer is on screen, between the bars`);
+        const away = (await show('team')) && await page.evaluate(() => {
+          const L = RTF_CAREER_UI.state().cur, wb = document.querySelector('#cr-wait'), dot = document.querySelector('#cr-t-now .k-dot');
+          const c = document.querySelector('#cr-card');
+          return { bar: !!wb && !wb.hidden && wb.getBoundingClientRect().height > 0 && wb.textContent.indexOf(L.pending[0].title) >= 0, dot: !!dot, tray: !!c && c.getBoundingClientRect().height > 0 };
+        });
+        ok(away && away.bar && away.dot && !away.tray, `${tag}: on Team a bar says a decision is waiting and names it, Now wears a dot, and the tray steps aside`);
+        const back = (await tryPress('#cr-wait-go')) && (await page.waitForTimeout(250), true) && await page.evaluate(() => {
+          const n = document.querySelector('#cr-t-now'), o = document.querySelector('#cr-card .cr-choice'), r = o && o.getBoundingClientRect();
+          return !!n && n.getAttribute('aria-current') === 'page' && !!r && r.top >= 0 && r.bottom <= innerHeight && document.querySelector('#cr-wait').hidden;
+        });
+        ok(back, `${tag}: Answer goes back to Now and the card`);
+      } else ok(false, `${tag}: found a career with a card waiting`);
+      /* THE NEXT THING IS ALWAYS ON SCREEN, between the bars, press after press */
+      if (await find('mid')) {
+        const off = [];
+        let n = 0;
+        for (let i = 0; i < 40; i++) {
+          const tk = await page.$('#tkov:not([hidden]) #tk-go');
+          if (tk) { await tk.click(); await page.waitForTimeout(120); continue; }
+          const sel = (await page.$('.cr-choice')) ? '.cr-choice' : (await page.$('#cr-next')) ? '#cr-next' : null;
+          if (!sel || !(await page.evaluate(() => !!RTF_CAREER_UI.state().cur))) break;
+          await page.waitForFunction((sel) => { const e = document.querySelector(sel); return e && !e.disabled; }, sel, { timeout: 3000 }).catch(() => {});
+          if (!(await tryPress(sel))) { off.push('press ' + i + ' failed'); break; }
+          n++;
+          await page.waitForTimeout(450);
+          const at = await page.evaluate(() => {
+            const e = document.querySelector('.cr-choice') || document.querySelector('#cr-next'); if (!e) return null;
+            const r = e.getBoundingClientRect(), ab = document.querySelector('.k-actx'), tb = document.querySelector('.k-tabbar');
+            const top = ab ? ab.getBoundingClientRect().bottom : 0, q = tb ? tb.getBoundingClientRect() : null, foot = q && q.width >= innerWidth - 1 ? q.top : innerHeight;
+            return { ok: r.top >= top - 1 && r.bottom <= foot + 0.5, y: Math.round(r.top), b: Math.round(r.bottom), top: Math.round(top), foot: Math.round(foot) };
+          });
+          if (at && !at.ok && off.length < 3) off.push(`press ${i}: ${at.y}-${at.b} outside ${at.top}-${at.foot}`);
+        }
+        ok(n >= 20 && !off.length, `${tag}: after each of ${n} presses the next answer or button is on screen between the bars (${off.join('; ') || 'all'})`);
+      } else ok(false, `${tag}: found a second career mid season`);
+      /* and the site's bar is back on the front page */
+      await page.evaluate(() => { const h = document.querySelector('#cr-home'); if (h) h.click(); else window.RTF_PAGE.goHome(); });
+      await page.waitForTimeout(250);
+      const home = await page.evaluate(() => { const a = document.querySelector('.appbar'), s = document.querySelector('#cr-shell'); return { bar: !!a && a.getBoundingClientRect().height > 0, shell: !!s && s.getBoundingClientRect().height + s.offsetHeight > 0 }; });
+      ok(home.bar && !home.shell, `${tag}: on the front page the site's bar is back and the app shell is gone`);
+      ok(boom.length === 0, `${tag}: no page errors (${boom.join(' | ') || 'none'})`);
+      await ctx.close();
+    }
+  }
+
   async function deskWalk(b, serve) {
     section('7d. the desktop layout and the Hall card');
     const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
@@ -2212,6 +2414,7 @@ async function browser() {
       return false;
     });
     if (found) {
+      if (await page.$('#cr-t-me')) await page.click('#cr-t-me');
       await page.click('#cr-quit'); await page.click('#cr-retire-yes');
       for (let k = 0; k < 8 && !(await page.evaluate(() => !!RTF_CAREER_UI.state().last)); k++) { await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) c.click(); }); await page.waitForTimeout(100); }
       await page.evaluate(() => window.scrollTo(0, 0));
