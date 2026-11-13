@@ -60,3 +60,18 @@ test('whole runs on the real engine: they end, and a good reader goes further th
   assert.ok(a > b, 'reading the shell pays over a run: ' + a.toFixed(2) + ' against ' + b.toFixed(2));
   assert.ok(a > 2 && a < 8, 'a run lasts a few conversions, not forever: ' + a.toFixed(2));
 });
+
+test("today's run: the same seeds for everybody, and a post the server takes", () => {
+  assert.equal(G.dailySeed('2026-11-13', 0), G.dailySeed('2026-11-13', 0));
+  assert.notEqual(G.dailySeed('2026-11-13', 0), G.dailySeed('2026-11-13', 1));
+  assert.notEqual(G.dailySeed('2026-11-13', 0), G.dailySeed('2026-11-14', 0));
+  /* a whole day's run on the engine, posted the way supabase/169 checks it */
+  let s = G.newRun(G.dailySeed('2026-11-13', 0)); s.daily = '2026-11-13';
+  while (!s.over) {
+    const sc = Object.assign({}, C.SCENARIO, { down: 4, distance: s.distance, ballOn: s.ballOn });
+    s = G.after(s, E.run(sc, K.deal(sc, s.seed)[1].play, s.seed), G.dailySeed(s.daily, s.log.length + 1));
+  }
+  const p = G.postOf(s);
+  assert.ok(p.snaps === p.log.length && p.converted < p.snaps && p.tds <= p.converted && p.yards >= 0);
+  assert.ok(p.log.every((l, k) => l.seed === G.dailySeed('2026-11-13', k)), 'snap k is the day\'s seed k');
+});

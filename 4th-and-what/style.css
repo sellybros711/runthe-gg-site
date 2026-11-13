@@ -847,3 +847,15 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
 .moment { padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; color: #5d6f84; border: 1px dashed #2a4a66; }
 .moment.got { color: #141000; background: linear-gradient(#ffd84a, var(--gold)); border: 1px solid #ffe27a; }
 .rescard .rmoment { margin: -4px 0 10px; color: var(--gold); font: italic 900 18px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
+
+/* ---------- today's run and its board (goforit.js, supabase/169) ---------- */
+.godaily { margin-top: 8px; padding: 10px 26px; border-radius: 999px; cursor: pointer; color: #8fe7ff; background: rgba(25, 198, 167, .12); border: 2px solid var(--teal);
+  font: italic 900 20px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .04em; box-shadow: 0 0 16px rgba(25, 198, 167, .3); }
+.godaily:hover { background: rgba(25, 198, 167, .22); }
+.godailysub { color: #9fb2c8; font-size: 13px; }
+.rgoboard { width: 100%; margin-top: 6px; padding: 8px 10px; border-radius: 10px; background: rgba(4, 10, 18, .6); text-align: left; }
+.rgoboard p { margin: 2px 0; font-size: 13px; }
+.rgbhead { color: var(--gold); font-weight: 900; }
+.rgbnote { color: #9fb2c8; }
+.rgbrow.mine { color: #8fe7ff; font-weight: 800; }
+.rescard.go .rsnaps { display: none !important; }

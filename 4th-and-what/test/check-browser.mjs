@@ -62,6 +62,10 @@ async function run(name, viewport, scale) {
     window.FAW_DAILY_API = { signedIn: () => true,
       submit: r => { window.__posts.push(r); return Promise.resolve({ taken: true, streak: 3, best: 5, players: 10, convertedAll: 4 }); },
       day: () => Promise.resolve({ players: 9, converted: 4 }), mine: () => Promise.resolve(null) };
+    window.__goPosts = [];
+    window.FAW_GO_API = { signedIn: () => true,
+      submit: (d, p) => { window.__goPosts.push({ d, p }); return Promise.resolve({ taken: true, rank: 2, players: 7, converted: p.converted, yards: p.yards, tds: p.tds }); },
+      board: () => Promise.resolve([{ rank: 1, username: 'reid', converted: 9, yards: 140, tds: 1, mine: false, players: 7 }, { rank: 2, username: 'you', converted: 1, yards: 5, tds: 0, mine: true, players: 7 }]) };
   });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
   const page = await ctx.newPage();
@@ -279,6 +283,27 @@ async function run(name, viewport, scale) {
   ok(await page.evaluate(() => window.FAW_GO.run().n === 0 && window.FAW_GO.run().stops === 0), 'Go again starts a fresh run');
   await page.click('#cBack');
   ok(await page.evaluate((b) => !window.FAW_GO.active() && JSON.stringify(window.FAW_APP.SC) === b, scBefore), 'leaving the run puts practice back where it was');
+  /* today's run (Phase 2): the day's seeds, posted once, the board on the card */
+  await page.click('#goDaily');
+  const td = await page.evaluate(() => { const G = window.FAW_GO, d = window.FAW_DAILY.day(); return { daily: G.run().daily === d, seed: window.FAW_CALLS.seed() === G.core.dailySeed(d, 0) }; });
+  ok(td.daily && td.seed, "Today's run: the day's first seed is the look on the field");
+  for (let i = 0; i < 60; i++) {
+    await page.click('#cCards .ccard:nth-child(2)'); await page.click('#cSnap');
+    await page.waitForTimeout(300); if (await page.isVisible('#bSkip')) await page.click('#bSkip');
+    await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+    if (await page.isVisible('#rGoAgain')) break;
+    const k = await page.evaluate(() => { const G = window.FAW_GO, r = G.run(); return r.seed === G.core.dailySeed(r.daily, r.log.length); });
+    if (!k) { ok(false, "every snap of today's run is the day's seed for its number"); break; }
+    await page.click('#rGoOn');
+  }
+  await page.waitForFunction(() => window.FAW_GO.posted() && !window.FAW_GO.posted().pending, null, { timeout: 5000 });
+  const tp = await page.evaluate(() => ({ posts: window.__goPosts, board: document.getElementById('rGoBoard').textContent, again: localStorage.getItem('faw_go_day_' + window.FAW_DAILY.day()) }));
+  const p0 = tp.posts[0] && tp.posts[0].p;
+  ok(tp.posts.length === 1 && p0.snaps === p0.log.length && p0.converted < p0.snaps && p0.tds <= p0.converted && /number 2 of 7/.test(tp.board) && /reid/.test(tp.board) && !!tp.again,
+    "the day's run is posted once, as the server wants it, and the board is on the card: " + tp.board.slice(0, 60));
+  await page.click('#bClose3d').catch(() => {}); await page.evaluate(() => { document.getElementById('watch').hidden = true; });
+  await page.click('.tab[data-view="play"]');
+  ok(/Today's run is in/.test(await page.textContent('#goDaily')) && /number 2 on the board/.test(await page.textContent('#goDailySub')), 'Play says today\'s run is in, with the rank');
   const rec = await page.evaluate(() => ({ shown: !document.getElementById('pRecord').hidden, line: document.getElementById('prLine').textContent, n: document.querySelectorAll('#prMoments .moment').length, p: window.FAW_PROFILE.get() }));
   ok(rec.shown && /^\d+ of \d+ converted \(\d+%\)/.test(rec.line) && rec.n === 8 && rec.p.snaps >= 3, 'your record is on Play after the snaps: ' + rec.line);
 
