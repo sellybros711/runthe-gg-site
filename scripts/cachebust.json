@@ -2757,6 +2757,10 @@
     "/assets/cloudsave.js": {
       "v": "3",
       "sha": "7c8b2c13e2f5ecd5"
+    },
+    "/assets/playbook.js": {
+      "v": "1",
+      "sha": "77ccc1ef68c895e3"
     }
   },
   "functions/_stumpire/web/admin.html": {
