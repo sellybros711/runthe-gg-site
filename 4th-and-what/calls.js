@@ -60,7 +60,14 @@
   function readText(look) { return SHELL_TEXT[look.shell] + ' · ' + look.box + ' in the box'; }
   function hintText(look) { return SHELL_HINT[look.shell]; }
 
-  var CORE = { TYPE: TYPE, LABEL: LABEL, deal: deal, readText: readText, hintText: hintText };
+  /* after the snap, the read's answer: what they showed, and what it was */
+  var SHOWED = { two: 'two deep', one: 'one deep', zero: 'nobody deep' };
+  function revealText(res) {
+    if (!res.shell || !res.callName) return '';
+    return 'They showed ' + SHOWED[res.shell] + (res.disguised ? ' and rotated to ' + res.callName + '.' : '. It was ' + res.callName + '.');
+  }
+
+  var CORE = { TYPE: TYPE, LABEL: LABEL, deal: deal, readText: readText, hintText: hintText, revealText: revealText };
   if (isNode) { module.exports = CORE; return; }
 
   /* ================= the page ================= */
@@ -115,5 +122,5 @@
   A.on('call', open);
   window.addEventListener('resize', function () { if (!$('vCall').hidden && hand.length) draw(); });
 
-  root.FAW_CALLS = { deal: deal, readText: readText, hintText: hintText, hand: function () { return hand; }, seed: function () { return seed; }, choose: choose };
+  root.FAW_CALLS = { deal: deal, readText: readText, hintText: hintText, revealText: revealText, hand: function () { return hand; }, seed: function () { return seed; }, choose: choose };
 })(typeof window !== 'undefined' ? window : this);

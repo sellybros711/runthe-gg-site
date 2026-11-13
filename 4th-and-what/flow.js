@@ -204,12 +204,19 @@
   function title(r) { return r.title.charAt(0) + r.title.slice(1).toLowerCase(); }
   function showCard() {
     var r = res, c = $('rCard');
-    c.className = 'rescard ' + (r.win ? 'win' : 'lose');
+    /* THE CARD THAT HITS (the launch plan, 1D): one big word, the margin,
+       one line of why, and the read's answer; one big button; the rest small */
+    var td = r.outcome === 'touchdown';
+    c.className = 'rescard ' + (td ? 'win td' : r.win ? 'win' : 'lose');
     $('rDown').textContent = A.sitText().down + ' · ' + A.sitText().spot;
-    $('rTitle').textContent = title(r);
+    $('rTitle').textContent = td ? 'Touchdown' : r.win ? 'First down' : r.outcome === 'interception' ? 'Picked off' : 'Stopped';
     var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
-    $('rLine').textContent = gained + ' · ' + r.callName;
-    $('rWhy').textContent = r.reason;
+    var line = A.marginText(r) || gained + '.', why = r.reason;
+    /* the line already says it: no "Incomplete. Incomplete." */
+    if (why.indexOf(line) === 0) why = why.slice(line.length).trim();
+    $('rLine').textContent = line;
+    $('rWhy').textContent = why;
+    $('rRead').textContent = window.FAW_CALLS ? window.FAW_CALLS.revealText(r) : r.callName;
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
     if (window.FAW_GO) window.FAW_GO.card(r);
