@@ -46,13 +46,15 @@ export const SCENARIO = Object.freeze({
   matchups: { X1: 'O1', X2: 'O2', X3: 'O3', X4: 'O4', X5: 'O5' },
 
   /* Make rate by archetype and zone for an open, set shot (contest, movement
-     and a bail-out scale it down, see shot.js). */
+     and a bail-out scale it down, see shot.js). ARCADE TRUE (the owner,
+     2026-11-13): positioning and play calling are real, and a good look falls
+     more often than it would in the NBA. Getting open is what pays. */
   archetypes: {
-    PG: { label: 'PG', role: 'handler', rim: 0.60, two: 0.44, three: 0.37 },
-    SG: { label: 'SG', role: 'best shooter', rim: 0.60, two: 0.47, three: 0.43 },
-    SF: { label: 'SF', role: 'slasher', rim: 0.70, two: 0.42, three: 0.34 },
-    PF: { label: 'PF', role: 'screener', rim: 0.65, two: 0.40, three: 0.28 },
-    C: { label: 'C', role: 'rim finisher', rim: 0.76, two: 0.30, three: 0.08 }
+    PG: { label: 'PG', role: 'handler', rim: 0.72, two: 0.55, three: 0.58 },
+    SG: { label: 'SG', role: 'best shooter', rim: 0.72, two: 0.66, three: 0.80 },
+    SF: { label: 'SF', role: 'slasher', rim: 0.82, two: 0.55, three: 0.60 },
+    PF: { label: 'PF', role: 'screener', rim: 0.80, two: 0.52, three: 0.45 },
+    C: { label: 'C', role: 'rim finisher', rim: 0.86, two: 0.38, three: 0.15 }
   },
 
   tuning: {
@@ -114,24 +116,27 @@ export const SCENARIO = Object.freeze({
     gatherCatch: 0.45, gatherDribble: 0.35, gatherRim: 0.2,
 
     /* Shot quality: the contest share at 0, 2, 4 and 6 feet (6 or more is
-       open), separately for jumpers and at the rim. */
-    contestJumper: [0.68, 0.78, 0.9, 1.0], contestRim: [0.62, 0.74, 0.9, 1.0],
+       open), separately for jumpers and at the rim. Steep on purpose: a hand
+       in the face is a miss most of the time, a clean look mostly falls. */
+    contestJumper: [0.15, 0.3, 0.65, 1.0], contestRim: [0.45, 0.6, 0.8, 1.0],
     /* At the rim, each point of size the defender has on the shooter makes
        his contest this much stronger (and weaker the other way round). */
     sizeEdge: 0.18,
     /* Off the dribble and on the move. */
-    pullupThree: 0.88, pullupTwo: 0.92, runningThree: 0.94, runningTwo: 0.96,
+    pullupThree: 0.72, pullupTwo: 0.82, runningThree: 0.94, runningTwo: 0.96,
     /* A shot forced up at the bail-out mark. */
-    bailout: 0.62,
-    minMake: 0.02, maxMake: 0.85,
+    bailout: 0.5,
+    minMake: 0.02, maxMake: 0.9,
     shotFlight: 1.0,
 
     /* Their possession after an early make: chance they score, rising with
-       the time they get, capped (a full possession with a timeout). */
-    answerBase: 0.32, answerPerSec: 0.013, answerMax: 0.5,
+       the time they get, capped (a full possession with a timeout). Steep
+       (2026-11-13): the clock is half the decision, so a make with 15 seconds
+       left is answered most of the time and one with 6 left mostly is not. */
+    answerBase: 0.35, answerPerSec: 0.045, answerMax: 0.85,
     /* Up 2 after a three, a two only ties it (overtime, a coin flip) and a
        three beats you: this share of their scores still loses it for you. */
-    answerNeedThree: 0.7,
+    answerNeedThree: 0.6,
 
     /* ZONES. How often the rolled defense is a zone (late in a close game,
        about one possession in four at most levels below the pros). */

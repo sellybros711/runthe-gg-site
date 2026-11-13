@@ -28,8 +28,13 @@ export function simulate(sc, play, seed, opt = {}) {
   if (bad.length) throw new Error('play cannot run: ' + bad.join(' '));
   const T = sc.tuning, rng = mulberry32(seed >>> 0);
   const rolled = rollDefense(rng(), T.zoneShare || 0);
+  /* GO AT (the owner, 2026-11-13). The coach picks when the play starts; until
+     then the handler holds the ball up top and everybody waits. The hold has
+     nothing to decide, so the sim starts at goAt and the page plays the hold
+     back fast. A play with no goAt goes at once, as every play did before. */
+  const goAt = goAtOf(sc, play);
   const st = {
-    clock: sc.clock, scheme: DEFENSES.includes(opt.scheme) ? opt.scheme : rolled, screened: {}, lastScreen: null,
+    clock: goAt, scheme: DEFENSES.includes(opt.scheme) ? opt.scheme : rolled, screened: {}, lastScreen: null,
     O: {}, X: [], ball: { holder: sc.handler, pos: null, flight: null }, k: -1, pass: null, shot: null,
     events: [], frames: [], end: null, bailPending: false, passes: []
   };
@@ -100,7 +105,9 @@ export function simulate(sc, play, seed, opt = {}) {
   }
   frame(st);
   if (opt.preview) return { seed: seed >>> 0, preview: true, scheme: st.scheme, schemeName: SCHEME_NAMES[st.scheme], endClock: round1(st.clock), events: st.events, frames: st.frames };
-  return result(sc, play, st, seed);
+  const res = result(sc, play, st, seed);
+  res.startClock = sc.clock; res.goAt = goAt;
+  return res;
 }
 
 /* ---------- steps ----------
@@ -339,10 +346,17 @@ function shoot(sc, st, T, rng, cap, who, bailout) {
   st.release = null;
   st.shotHelp = st.help ? st.help.x : null;
   p.path = []; p.pending = null;
-  cap(bailout ? 'Bail out' : q.open >= 6 ? 'Wide open' : q.open >= 4 ? 'Open look' : q.open >= 2 ? 'Hand in the face' : 'Contested', { slow: true, shot: true });
+  cap(bailout ? 'Bail out' : q.open >= 6 ? 'Wide open' : q.open >= 4 ? 'Open look' : q.open >= 2 ? 'Hand in the face' : 'Contested',
+    { slow: true, shot: true, p: Math.round(q.p * 100) / 100, open: Math.round(q.open * 10) / 10, zone: q.zone });
 }
 
 /* Their possession, if the make left them time. */
+/* When the play starts: the play's goAt, inside 1.0 and the clock. */
+export function goAtOf(sc, play) {
+  const g = Number(play && play.goAt);
+  return Number.isFinite(g) ? Math.round(Math.max(1, Math.min(sc.clock, g)) * 10) / 10 : sc.clock;
+}
+
 export function answerOdds(sc, at, points) {
   const T = sc.tuning;
   if (at < sc.winWindow) return 0;
@@ -361,7 +375,11 @@ function finish(sc, st, T, rng, cap) {
   const lead = st.us - sc.them;
   const p = answerOdds(sc, s.at, s.q.points);
   const scored = rng() < p;
-  st.answer = { p, scored, points: lead + 1 };
+  /* when their shot goes up, for the page's cutaway (a draw after every other,
+     so it moves nothing before it) */
+  const left = Math.max(0, s.at - (s.q.zone === 'rim' ? 0.6 : 1.0));
+  const theirAt = round1(Math.max(0.3, Math.min(left - 1.5, 1.2 + rng() * Math.min(4, Math.max(0, left - 2.7)))));
+  st.answer = { p, scored, points: lead + 1, at: theirAt, startAt: round1(left), kind: lead + 1 >= 3 ? 'three' : 'two' };
   if (scored) { st.them = st.us + 1; end(st, 'lose', 'answer', cap, 'They answered'); }
   else end(st, 'win', 'stop', cap, 'They missed');
 }
@@ -504,7 +522,7 @@ function result(sc, play, st, seed) {
     shotAt: s ? s.at : null,
     shooter: s ? s.who : null,
     shot: s ? { zone: s.q.zone, points: s.q.points, open: r2(s.q.open), by: s.q.by, byArch: s.q.byArch, moving: s.q.moving, pullup: s.q.pullup, bailout: s.q.bailout, p: r2(s.q.p), made: s.made } : null,
-    answer: st.answer ? { p: r2(st.answer.p), scored: st.answer.scored } : null,
+    answer: st.answer ? { p: r2(st.answer.p), scored: st.answer.scored, points: st.answer.points, at: st.answer.at, startAt: st.answer.startAt, kind: st.answer.kind } : null,
     scheme: st.scheme, schemeName: SCHEME_NAMES[st.scheme],
     screen: st.lastScreen, screens: (st.uses || []).map(u => ({ screener: u.screener, cutter: u.cutter, name: u.name, t: u.t })),
     passes: st.passes,

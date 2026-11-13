@@ -137,10 +137,11 @@ test('bad play: reaches the bail-out every time and loses most of the time', () 
 test('the good plays win clearly more often than the bad one', () => {
   const { pin, pnr, bad } = SWEEP;
   assert.equal(pin.bail, 0); assert.equal(pnr.bail, 0);
-  assert.ok(pin.rate >= 0.3 && pin.rate <= 0.5, 'pin-down ' + pin.rate);
-  assert.ok(pnr.rate >= 0.38 && pnr.rate <= 0.6, 'pick and roll ' + pnr.rate);
-  assert.ok(pin.rate > bad.rate + 0.12, 'pin-down ' + pin.rate + ' vs bad ' + bad.rate);
-  assert.ok(pnr.rate > bad.rate + 0.2, 'pick and roll ' + pnr.rate + ' vs bad ' + bad.rate);
+  // arcade true (2026-11-13): a good set wins about half or better, a bad one rarely
+  assert.ok(pin.rate >= 0.5 && pin.rate <= 0.7, 'pin-down ' + pin.rate);
+  assert.ok(pnr.rate >= 0.4 && pnr.rate <= 0.6, 'pick and roll ' + pnr.rate);
+  assert.ok(pin.rate > bad.rate + 0.3, 'pin-down ' + pin.rate + ' vs bad ' + bad.rate);
+  assert.ok(pnr.rate > bad.rate + 0.25, 'pick and roll ' + pnr.rate + ' vs bad ' + bad.rate);
 });
 
 test('the scheme materially changes the shooter\'s contest distance', () => {

@@ -37,8 +37,13 @@ export const IDS = Object.freeze(['O1', 'O2', 'O3', 'O4', 'O5']);
 /* Two sentences for the player. Short, no dashes. */
 export const ORDER_RULE = 'Steps run in order. A cut goes with the screen before it, the screener rolls once it is used, and the pass is timed to meet the cutter.';
 
+/* Go at: the clock reading when the play starts (the owner, 2026-11-13).
+   A new play holds to GO_AT_NEW; an old one with no goAt goes at once. */
+export const GO_AT_MIN = 1.0;
+export const GO_AT_NEW = 8.0;
+
 export function emptyPlay(sc) {
-  return { spots: JSON.parse(JSON.stringify(sc.spots)), steps: [] };
+  return { spots: JSON.parse(JSON.stringify(sc.spots)), steps: [], goAt: Math.min(sc.clock, GO_AT_NEW) };
 }
 
 /* Who has the ball after the steps so far. */
@@ -67,6 +72,8 @@ export function problems(sc, play, opt = {}) {
   const shots = play.steps.filter(s => s && s.kind === 'shoot');
   if (shots.length === 0 && !opt.preview) out.push('Pick a shooter.');
   if (shots.length > 1) out.push('One shooter only.');
+  /* past the clock is fine: the play goes at once (a book play reused on a short clock) */
+  if (play.goAt != null && !(Number(play.goAt) >= GO_AT_MIN)) out.push('Go at needs ' + GO_AT_MIN.toFixed(1) + ' seconds or more.');
   let h = sc.handler;
   play.steps.forEach((s, i) => {
     if (!s || !s.kind) { out.push('Step ' + (i + 1) + ' is broken.'); return; }
@@ -89,7 +96,7 @@ export function playKey(play) {
   const r = n => Math.round(n * 10) / 10;
   const spots = IDS.map(id => r(play.spots[id].x) + ',' + r(play.spots[id].y)).join(';');
   const steps = play.steps.map(s => s.kind[0] + (s.who || s.from + s.to) + (s.pts ? ':' + s.pts.map(p => r(p.x) + ',' + r(p.y)).join(' ') : '')).join('|');
-  return spots + '#' + steps;
+  return spots + '#' + steps + (play.goAt != null ? '@' + r(Number(play.goAt)) : '');
 }
 
 /* ---------- polylines ---------- */
