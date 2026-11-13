@@ -39,11 +39,11 @@ export function simulate(sc, play, seed, opt = {}) {
     events: [], frames: [], end: null, bailPending: false, passes: []
   };
   for (const id of IDS) st.O[id] = { id, arch: sc.roster[id].arch, pos: { ...play.spots[id] }, path: [], vel: { x: 0, y: 0 }, segEnds: 0, screen: null, pending: null };
-  for (const [xid, man] of Object.entries(sc.matchups)) {
-    const x = { id: xid, man, pos: null, aim: null, vel: { x: 0, y: 0 }, holdT: 0, underT: 0 };
-    x.pos = targetFor(x, st, T); x.aim = { ...x.pos };
-    st.X.push(x);
-  }
+  for (const [xid, man] of Object.entries(sc.matchups)) st.X.push({ id: xid, man, pos: null, aim: null, vel: { x: 0, y: 0 }, holdT: 0, underT: 0 });
+  /* Placed once all five exist: a zone picks who takes the ball from the
+     whole shape, so placing them one by one left the ball unguarded at the
+     start (fixed 2026-11-13). Man to man reads only its own man. */
+  for (const x of st.X) { x.pos = targetFor(x, st, T); x.aim = { ...x.pos }; }
   const cap = (text, extra) => st.events.push({ t: round1(st.clock), kind: 'caption', text, ...extra });
   if (isZone(st.scheme)) cap('They are in a ' + SCHEME_NAMES[st.scheme], { slow: true });
 

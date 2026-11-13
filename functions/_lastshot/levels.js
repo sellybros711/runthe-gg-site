@@ -33,12 +33,12 @@ export const CHAPTERS = Object.freeze([
   { id: 1, name: 'Down 1', note: 'Any bucket in the last 5 seconds wins.' },
   { id: 2, name: 'Down 2', note: 'A two ties it. Overtime is a coin flip. A three wins.' },
   { id: 3, name: 'Zones', note: 'The scout says zone. Find the gap.' },
-  { id: 4, name: 'Down 3', note: 'Only a three saves you.' }
+  { id: 4, name: 'Down 3', note: 'Only a three ties it. Then overtime.' }
 ]);
 
 export const LEVELS = Object.freeze([
   L('1-1', 1, 'Draw it up', { clock: 22 }, 'box'),
-  L('1-2', 1, 'No time to wait', { clock: 8 }, 'box'),
+  L('1-2', 1, 'Spread the floor', { clock: 9 }, 'out41'),
   L('1-3', 1, 'Horns', { clock: 14 }, 'horns'),
   L('1-4', 1, 'Quick hitter', { clock: 5.5 }, 'high14'),
   L('1-5', 1, 'They switch everything', { clock: 22 }, 'box', 'switch'),
@@ -49,7 +49,7 @@ export const LEVELS = Object.freeze([
   L('2-3', 2, 'Spread them out', { clock: 6, down: 2 }, 'out41'),
   L('2-4', 2, 'They fight over', { clock: 20, down: 2 }, 'box', 'over'),
   L('2-5', 2, 'Wings up', { clock: 16, down: 2 }, 'high14'),
-  L('2-6', 2, 'Four seconds', { clock: 4, down: 2 }, 'box'),
+  L('2-6', 2, 'Five seconds', { clock: 5, down: 2 }, 'box'),
 
   L('3-1', 3, 'The 2-3', { clock: 20 }, 'box', 'zone23'),
   L('3-2', 3, 'The 1-3-1', { clock: 16 }, 'horns', 'zone131'),
@@ -60,10 +60,10 @@ export const LEVELS = Object.freeze([
 
   L('4-1', 4, 'Need three', { clock: 22, down: 3 }, 'box'),
   L('4-2', 4, 'Horns, three', { clock: 10, down: 3 }, 'horns'),
-  L('4-3', 4, 'Six seconds', { clock: 6, down: 3 }, 'high14'),
+  L('4-3', 4, 'Spread, need three', { clock: 8, down: 3 }, 'out41'),
   L('4-4', 4, 'They switch, need three', { clock: 18, down: 3 }, 'out41', 'switch'),
   L('4-5', 4, 'Three on the 2-3', { clock: 14, down: 3 }, 'box', 'zone23'),
-  L('4-6', 4, 'Last one', { clock: 4, down: 3 }, 'horns')
+  L('4-6', 4, 'Last one', { clock: 7, down: 3 }, 'box')
 ]);
 
 export const levelById = id => LEVELS.find(l => l.id === id) || null;

@@ -206,9 +206,7 @@ export function startSpots(sc, play) {
   const st = { O: {}, X: [], ball: { holder: sc.handler, pos: null, flight: null } };
   for (const id of Object.keys(play.spots)) st.O[id] = { id, arch: sc.roster[id].arch, pos: { ...play.spots[id] }, vel: { x: 0, y: 0 } };
   const out = {};
-  for (const [xid, man] of Object.entries(sc.matchups)) {
-    const x = { id: xid, man, holdT: 0, underT: 0 };
-    out[xid] = targetFor(x, st, sc.tuning);
-  }
+  for (const [xid, man] of Object.entries(sc.matchups)) st.X.push({ id: xid, man, holdT: 0, underT: 0 });
+  for (const x of st.X) out[x.id] = targetFor(x, st, sc.tuning);
   return out;
 }
