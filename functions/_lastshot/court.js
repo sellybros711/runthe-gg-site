@@ -358,6 +358,57 @@ export function createCourt(cv) {
     }
   }
 
+  /* THE ANSWER CUTAWAY: their end of the floor, stylised, after an early make.
+     No sim, nothing decided here: their shooter at a spot for the shot they
+     need (a three or a two), one of ours closing out, and the ball up from
+     his hands to the rim, then played out like ours (through, or off).
+       o: { kind: 'two'|'three', seed, k: 0 to 1 of the flight, after: null or { t, made, seed } } */
+  function drawAnswer(o) {
+    const { w, h, ctx, dpr } = sizeCanvas(cv);
+    V = fitView(w, h, 12);
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#2a1712'; ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(floor(), V.ox, V.oy, COURT.W * V.s, COURT.H * V.s);
+    ctx.fillStyle = 'rgba(110,22,12,.30)'; ctx.fillRect(V.ox, V.oy, COURT.W * V.s, COURT.H * V.s);
+    const B = rig(), R = COURT.RIM;
+    const dk = Math.max(1, Math.round(V.s * dpr * 0.088 * 4) / 4), cell = dk / dpr, ftH = 8.6 * cell;
+    const size = Math.max(10, Math.round(V.s * 2.6));
+    const seed = o.seed >>> 0, ang = Math.PI * (0.3 + ((seed % 97) / 97) * 0.4);
+    const r = o.kind === 'three' ? COURT.R3 + 1.5 : 14;
+    const from = { x: R.x + Math.cos(ang) * r, y: R.y + Math.sin(ang) * r };
+    const close = { x: from.x + (R.x - from.x) * 0.16, y: from.y + (R.y - from.y) * 0.16 };
+    const face = Math.round(Math.atan2(R.y - from.y, R.x - from.x) * 180 / Math.PI + 360) % 360;
+    const shadow = ft => { const p = V.px(ft); ctx.fillStyle = 'rgba(30,18,10,.30)'; ctx.beginPath(); ctx.ellipse(p.x + 1.5, p.y + 0.5, Math.max(4, V.s * 0.95), Math.max(2, V.s * 0.42), 0, 0, Math.PI * 2); ctx.fill(); };
+    shadow(from); shadow(close);
+    const after = o.after || null;
+    rim(ctx, after ? after.t : 0, after);
+    const lift = !reduce && o.k < 0.35 && !after ? Math.sin(Math.PI * Math.min(1, o.k / 0.35)) * ftH : 0;
+    const body = (team, pose, f, ft, up) => {
+      const p = V.px(ft), img = B ? pick(team, pose, f) : null;
+      if (img) {
+        const dx = Math.round(p.x * dpr - 21.5 * dk), dy = Math.round((p.y - up) * dpr - 61.5 * dk);
+        ctx.save();
+        if (img.flip) ctx.setTransform(-1, 0, 0, 1, dx + 44 * dk, dy); else ctx.setTransform(1, 0, 0, 1, dx, dy);
+        ctx.drawImage(img.cv, 0, 0, 44 * dk, 64 * dk);
+        ctx.restore();
+      } else {
+        const t = team === 'home' ? token(HOME.c1, HOME.c2, '', size) : token(AWAY.c1, AWAY.c2, 'X', size);
+        ctx.drawImage(t, Math.round(p.x - size / 2), Math.round(p.y - size / 2 - up), size, size);
+      }
+    };
+    const items = [{ y: close.y, f: () => body('home', 'ready', (face + 180) % 360, close, 0) }, { y: from.y, f: () => body('away', 'contest', face, from, lift) }];
+    let ball;
+    if (after) ball = ballAt({ b: [R.x, R.y, 0] }, after);
+    else {
+      const k = Math.max(0, Math.min(1, o.k)), far = Math.hypot(R.x - from.x, R.y - from.y);
+      const rel = o.kind === 'three' ? 7.5 : 7, peak = 2.4 + far * 0.2;
+      ball = { x: from.x + (R.x - from.x) * k, y: from.y + (R.y - from.y) * k, z: rel * (1 - k) * (1 - k * 0.4) + 4 * peak * k * (1 - k) };
+    }
+    { const s = V.px(ball); ctx.fillStyle = 'rgba(30,18,10,.28)'; ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 0.5, Math.max(1.5, V.s * 0.32), Math.max(1, V.s * 0.16), 0, 0, Math.PI * 2); ctx.fill(); }
+    items.push({ y: ball.y, f: () => drawBall(ctx, B, ball, cell, ftH, dpr, (o.k || 0) * 12) });
+    items.sort((a, b) => a.y - b.y).forEach(it => it.f());
+  }
+
   function debug(ctx, fr) {
     ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
@@ -366,7 +417,7 @@ export function createCourt(cv) {
       ctx.beginPath(); ctx.moveTo(xp.x, xp.y); ctx.lineTo(op.x, op.y); ctx.stroke();
     }
   }
-  return { draw, view: () => V };
+  return { draw, drawAnswer, view: () => V };
 }
 
 /* Which traced frame a pose code (sim.js POSE) shows. */

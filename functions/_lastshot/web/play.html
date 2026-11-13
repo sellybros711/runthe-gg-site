@@ -25,7 +25,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .top .sub{display:flex;align-items:center;gap:7px;margin-top:3px;font-size:12px;font-weight:600;color:#fbe3cc;white-space:nowrap;overflow:hidden}
 .top .sub em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
 .tag{flex:none;font-size:9px;font-weight:700;letter-spacing:.12em;background:#1d2129;color:#fff;padding:3px 7px;border-radius:999px}
-.score{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 10px 6px;padding:6px 12px;border-radius:14px;background:#1d2129;color:#fff;font-family:'Outfit',sans-serif;font-variant-numeric:tabular-nums}
+.score{position:relative;display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 10px 6px;padding:6px 12px;border-radius:14px;background:#1d2129;color:#fff;font-family:'Outfit',sans-serif;font-variant-numeric:tabular-nums}
 .score .team{display:flex;flex-direction:column;align-items:center;min-width:56px}
 .score .team span{font-size:10px;letter-spacing:.12em;color:#b9bec8;font-weight:700}
 .score .team b{font-size:24px;line-height:1}
@@ -126,7 +126,40 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
 /* THE BOTTOM BANNER (/assets/rtg-ads.js), once the ad tag is on at launch: the app ends above it, so
    the court shrinks to fit and Run It is never under it. --sticky-ad-h is 0 until it fills. */
 body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
-@media (prefers-reduced-motion:reduce){.pop.on,.pop.final.on{animation:none;opacity:1;transform:translate(-50%,-50%)}}
+/* the feel (Phase 1): Go at, speed and sound, the readout, GAME WINNER, the answer cutaway */
+.gorow{display:flex;align-items:center;gap:8px;padding:2px 10px 0}
+.golab{flex:1;font-size:13px;font-weight:700;color:var(--dim)}
+.gostep{display:flex;align-items:center;gap:4px}
+.gostep .mini{min-width:40px;min-height:38px;font-size:18px;line-height:1}
+.gochip{font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:#fff;background:var(--marker);border-radius:999px;padding:7px 12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sbtn{position:absolute;top:50%;transform:translateY(-50%);min-width:40px;min-height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#e6e9ef;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;display:grid;place-items:center;padding:0 6px;touch-action:manipulation}
+.sbtn.l{left:8px}.sbtn.r{right:8px}
+.sbtn[aria-pressed="true"]#bSpeed{background:#ffd23f;color:#1d2129;border-color:#ffd23f}
+.sbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.sbtn .x{display:none}.sbtn.off .x{display:inline}.sbtn.off .w{display:none}.sbtn.off{color:#8a909c}
+.score .clock.them{color:#ff8a73;text-shadow:0 0 10px rgba(224,83,61,.45)}
+.team b.flip{animation:flip .55s ease-out}
+@keyframes flip{0%{transform:rotateX(90deg);color:#ffd23f}60%{transform:rotateX(-12deg)}100%{transform:none}}
+.pop.shot{top:9%;font-size:24px;background:rgba(29,33,41,.94);color:#fff}
+.stage::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 rgba(0,0,0,0);transition:box-shadow .25s}
+.stage.slow::after{box-shadow:inset 0 0 70px rgba(0,0,0,.6)}
+.bigword{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:'Russo One','Outfit',sans-serif;font-size:min(52px,11vw);line-height:1;color:#ffd23f;text-align:center;white-space:nowrap;pointer-events:none;text-shadow:0 3px 0 #8a5a00,0 0 26px rgba(255,210,63,.65);letter-spacing:.02em;z-index:3}
+.bigword.on{animation:slam .5s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes slam{0%{opacity:0;transform:translate(-50%,-50%) scale(2.4)}60%{opacity:1}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.cut{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:18px;gap:6px;touch-action:manipulation;cursor:pointer}
+.cuthead{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;color:#fff;background:#E0533D;padding:7px 16px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.cutv{font-family:'Russo One','Outfit',sans-serif;font-size:40px;opacity:0;margin-top:24%;text-align:center;line-height:1.05;padding:0 12px}
+.cutv.on{opacity:1;animation:slam2 .45s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes slam2{0%{opacity:0;transform:scale(2.2)}100%{opacity:1;transform:scale(1)}}
+.cutv.good{color:#ff8a73;text-shadow:0 3px 0 #6e1d10}.cutv.miss{color:#ffd23f;font-size:32px;text-shadow:0 3px 0 #8a5a00}
+.cutsub{font-weight:700;color:#fff;font-size:16px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.cutskip{position:absolute;bottom:10px;font-size:12px;font-weight:700;color:rgba(255,255,255,.7)}
+#bRun.pulse{animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,176,125,.55)}50%{box-shadow:0 0 0 9px rgba(34,176,125,0);transform:scale(1.03)}}
+.hcard.game.big{padding:26px 18px}.hcard.game.big b{font-size:44px;line-height:1}.hcard.game.big span{font-size:16px;margin-top:8px}
+.hcard.small{padding:12px 16px}.hcard.small b{font-size:17px}.hcard.small span{font-size:13px}
+@media (prefers-reduced-motion:reduce){.pop.on,.pop.final.on{animation:none;opacity:1;transform:translate(-50%,-50%)}
+  .team b.flip,.bigword.on,.cutv.on,#bRun.pulse{animation:none}.stage.slow::after{box-shadow:none}}
 </style>
 </head>
 <body>
@@ -136,25 +169,33 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
     <div class="ttl"><h1>Last Shot</h1><div class="sub"><span class="tag">TESTERS ONLY</span><em id="tagline">Draw it up. Win it.</em></div></div>
   </div>
   <div class="view home" id="vHome">
-    <button class="hcard game" id="hPlay"><b>Play the scenario</b><span>Down 1. 22 seconds. Your ball. Draw it up and run it.</span></button>
-    <button class="hcard" id="hBooks"><b>My Playbooks</b><span>Save your plays. Name them your way. Test them against every defense. Print them for the team.</span></button>
+    <button class="hcard game big" id="hPlay"><b>Play</b><span>Down 1. 22 seconds. Your ball. Draw it up and run it.</span></button>
+    <button class="hcard small" id="hBooks"><b>My Playbooks</b><span>Save your plays. Name them your way. Test them against every defense. Print them for the team.</span></button>
     <button class="btn alt" id="hHow">How it works</button>
   </div>
   <div class="view" id="vGame" hidden>
   <div class="editbar" id="editBar" hidden></div>
   <div class="score" aria-live="off">
+    <button class="sbtn l" id="bSpeed" aria-pressed="false" aria-label="Double speed">1x</button>
     <div class="team"><span>YOU</span><b id="sUs">87</b></div>
     <div class="clock" id="clock">22.0</div>
     <div class="team"><span>THEM</span><b id="sThem">88</b></div>
+    <button class="sbtn r" id="bMute" aria-pressed="false" aria-label="Sound on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path class="w" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M16 9l6 6M22 9l-6 6"/></svg></button>
   </div>
   <div class="stage" id="stage">
     <canvas class="surface" id="board" aria-label="Clipboard" tabindex="0"></canvas>
     <canvas class="surface" id="court" aria-label="The play" hidden></canvas>
     <div class="pop" id="pop" aria-live="polite"></div>
+    <div class="bigword" id="big" hidden></div>
+    <div class="cut" id="cut" hidden><div class="cuthead" id="cutHead"></div><div class="cutv" id="cutV" aria-live="polite"></div><div class="cutsub" id="cutSub"></div><div class="cutskip">Tap to skip</div></div>
     <div class="hint" id="hint"></div>
     <div class="sheet" id="sheet"><div class="card" id="card"></div></div>
   </div>
   <div class="frames" id="framesRow"><div class="frames" id="frames" style="padding:0"></div><button class="fr next" id="bNext">Next frame</button></div>
+  <div class="gorow" id="goRow">
+    <span class="golab" id="goLab"></span>
+    <div class="gostep"><button class="mini" id="goMinus" aria-label="Hold longer">-</button><span class="gochip" id="goChip"></span><button class="mini" id="goPlus" aria-label="Go sooner">+</button></div>
+  </div>
   <div class="tools" id="tools">
     <button class="tool" data-tool="move" aria-pressed="false">Move<small>drag a route</small></button>
     <button class="tool" data-tool="screen" aria-pressed="false">Screen<small>route + bar</small></button>
