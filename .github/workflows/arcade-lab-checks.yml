@@ -3,7 +3,8 @@ name: Arcade Lab checks
 # The Arcade Lab is testers only. These checks hold the tester gate on every
 # route, the pure sims' determinism, the server's replay against a forged
 # score, the gem ledger's one award per run, the content validators, and the
-# migrations.
+# migrations. The Daily Last Shot (an EXTERNAL game) rides the same API, so
+# a change to functions/_lastshot/ runs these too.
 
 on:
   pull_request:
@@ -15,6 +16,8 @@ on:
       - 'supabase/135_arcade_lab_content.sql'
       - 'supabase/136_arcade_lab_publish_days.sql'
       - 'supabase/137_arcade_lab_republish_drop.sql'
+      - 'supabase/169_last_shot_daily_flag.sql'
+      - 'functions/_lastshot/**'
       - 'functions/_stumpire/**'
       - 'supabase/test/arcade_lab_*.sql'
       - '.github/workflows/arcade-lab-checks.yml'
@@ -28,6 +31,8 @@ on:
       - 'supabase/135_arcade_lab_content.sql'
       - 'supabase/136_arcade_lab_publish_days.sql'
       - 'supabase/137_arcade_lab_republish_drop.sql'
+      - 'supabase/169_last_shot_daily_flag.sql'
+      - 'functions/_lastshot/**'
       - 'functions/_stumpire/**'
       - 'supabase/test/arcade_lab_*.sql'
       - '.github/workflows/arcade-lab-checks.yml'
@@ -78,4 +83,7 @@ jobs:
           psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/136_arcade_lab_publish_days.sql
           psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/137_arcade_lab_republish_drop.sql
           psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/137_arcade_lab_republish_drop.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/169_last_shot_daily_flag.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/169_last_shot_daily_flag.sql
+          test "$(psql -tA -d lab -c "select mode from arcade_lab_flags where flag = 'arcade_last_shot'")" = testers
           ! grep -v '^ ok ' out.txt | grep -q .
