@@ -131,7 +131,18 @@
       'https://runthe.gg/4th-and-what#daily';
   }
 
-  var CORE = { EPOCH: EPOCH, dayOf: dayOf, numberOf: numberOf, order: order, playFor: playFor, seedFor: seedFor,
+  /* the streak on this device (the launch plan, Phase 2: a streak for
+     everybody, not only the signed in): days in a row with a daily played,
+     counted back from today, or from yesterday when today is still to play */
+  function prevDay(d) { var t = Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) - 86400000, x = new Date(t); return x.toISOString().slice(0, 10); }
+  function streakOf(days, today) {
+    var has = {}; days.forEach(function (d) { has[d] = true; });
+    var d = has[today] ? today : prevDay(today), n = 0;
+    while (has[d]) { n++; d = prevDay(d); }
+    return n;
+  }
+
+  var CORE = { EPOCH: EPOCH, prevDay: prevDay, streakOf: streakOf, dayOf: dayOf, numberOf: numberOf, order: order, playFor: playFor, seedFor: seedFor,
     code: code, name: name, conf: conf, dateText: dateText, roundText: roundText, teamsText: teamsText, clockText: clockText,
     scoreText: scoreText, stakesText: stakesText, spotText: spotText, downText: downText, realText: realText, verdictText: verdictText, shareText: shareText };
   if (typeof module !== 'undefined' && module.exports) { module.exports = CORE; return; }
@@ -145,6 +156,11 @@
 
   function kept() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
   function keep(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+  function localStreak() {
+    var days = [];
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^faw_daily_\d{4}-\d{2}-\d{2}$/.test(k) && localStorage.getItem(k)) days.push(k.slice(10)); } } catch (e) {}
+    return streakOf(days, day);
+  }
 
   /* ---- the server: supabase/162. Every call answers null on any failure. ---- */
   var SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
@@ -198,7 +214,7 @@
     $('dDefCode').textContent = code(today.def, today.season); $('dDefScore').textContent = String(today.defScore);
     $('dStakes').textContent = stakesText(today) + ' No punt. No kick. Your call.';
     renderStrip();
-    $('dGoTxt').textContent = k ? 'Practice it' : 'Draw your call';
+    $('dGoTxt').textContent = k ? 'Practice it' : 'Make the call';
     $('dDone').hidden = !k;
     if (k) {
       $('dMine').textContent = (k.win ? 'You converted. ' : 'You were stopped. ') + (k.yards >= 0 ? 'Gained ' + k.yards + '.' : 'Lost ' + (-k.yards) + '.');
@@ -221,7 +237,8 @@
     var t = $('dStats'), r = $('rDayStats');
     var line = '';
     if (dayStats && dayStats.players) line = Math.round(dayStats.converted * 100 / dayStats.players) + '% converted today · ' + dayStats.players + ' played';
-    if (server && server.streak) line += (line ? ' · ' : '') + 'Streak ' + server.streak;
+    var sk = server && server.streak ? server.streak : localStreak();
+    if (sk) line += (line ? ' · ' : '') + 'Streak ' + sk;
     if (t) { t.textContent = line; t.hidden = !line; }
     if (r) { r.textContent = line; r.hidden = !line || !kept(); }
   }
@@ -252,7 +269,9 @@
       var play = k && k.drawn ? k.drawn : A.emptyPlay('gun3x1');
       A.setDraft({ play: A.copy(play), name: '', nameEdited: false, tag: A.tagOf(play), fav: false, notes: '', situations: [], ref: null });
     }
-    A.show('studio', { mode: 'game' });
+    /* the day's call (the launch plan, Phase 2): Call it with the day's look
+     and the day's hand, the same for everybody; Draw your own is a card */
+    A.show('call');
   }
   function leave() {
     if (!active) return;

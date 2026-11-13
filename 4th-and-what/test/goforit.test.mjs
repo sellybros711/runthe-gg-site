@@ -30,6 +30,10 @@ test('convert and go again from the spot; three stops end it; a touchdown starts
   assert.equal(G.overText(s), '2 4th downs converted. 65 yards, 1 touchdown.');
   assert.equal(G.tallyText(s), '2 converted · 65 yds · 1 TD');
   assert.equal(G.overText(G.newRun(1)), 'Not one converted. Shake it off.');
+  let p = G.after(G.newRun(1), { win: false, outcome: 'interception', yards: 0, seed: 1 }, 2);
+  assert.deepEqual([p.stops, G.stopsLeft(p), p.over], [2, 1, false], 'a pick costs two stops');
+  p = G.after(p, { win: false, outcome: 'interception', yards: 0, seed: 2 }, 3);
+  assert.ok(p.over && G.stopsLeft(p) === 0, 'and a second one ends it');
   assert.ok(G.better({ n: 3, yards: 10 }, { n: 2, yards: 90 }) && G.better({ n: 2, yards: 20 }, { n: 2, yards: 10 }) && !G.better({ n: 2, yards: 10 }, { n: 2, yards: 10 }));
   for (const t of [G.overText(s), G.tallyText(s), G.shareText(s)]) assert.ok(![...t].some(c => c.charCodeAt(0) === 0x2013 || c.charCodeAt(0) === 0x2014));
 });

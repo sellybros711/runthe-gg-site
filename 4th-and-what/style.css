@@ -820,3 +820,30 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
 @keyframes stampIn { from { transform: scale(2.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 #bSound .soff { display: none; } #bSound.off .son { display: none; } #bSound.off .soff { display: inline; } #bSound.off { color: #8fa2b8; }
 @media (prefers-reduced-motion: reduce) { .stamp, .measure { animation: none; } #cLive { transition: none; } }
+
+/* ---------- the card that hits (the launch plan, 1D) ---------- */
+.rescard { padding: 14px 14px 10px; border-color: #23405e; box-shadow: 0 -10px 40px rgba(0, 0, 0, .5); }
+.rescard h2 { font-size: clamp(46px, 12vw, 64px); text-transform: uppercase; margin: 2px 0 2px; letter-spacing: .01em; }
+.rescard.win h2 { color: #49e07a; text-shadow: 0 0 18px rgba(73, 224, 122, .45); }
+.rescard.td h2 { color: var(--gold); text-shadow: 0 0 22px rgba(245, 183, 42, .6); }
+.rescard.lose h2 { text-shadow: 0 0 14px rgba(239, 75, 63, .4); }
+.rescard .rline { font: italic 900 22px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .02em; }
+.rescard .rwhy { margin: 6px 0 4px; }
+.rescard .rread { margin: 0 0 10px; padding: 6px 10px; border-radius: 8px; background: rgba(25, 198, 167, .1); border: 1px solid rgba(25, 198, 167, .35); color: #8fe7ff; font-size: 13px; font-weight: 700; }
+.rescard .rplay #rAgain { grid-column: 1 / -1; min-height: 50px; font-size: 18px; font-weight: 900; }
+.rescard .rmore { grid-template-columns: repeat(3, 1fr); }
+.rescard .rmore .btn { min-height: 34px; font-size: 12px; background: transparent !important; border-color: #23405e; color: #cfd9e4 !important; }
+.rescard .rsnaps { order: 9; }
+.rescard .rplay { grid-template-columns: 1fr 1fr; }
+
+/* ---------- your coach record and the moments (profile.js) ---------- */
+.precord { max-width: 640px; margin: 0 auto 22px; padding: 12px 14px; border-radius: 14px; background: rgba(6, 16, 28, .75); border: 1px solid #1d3a55; text-align: center; }
+.precord p { margin: 0 0 4px; }
+.prhead { color: var(--gold); font: italic 900 18px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+.prhead span { color: #8fa2b8; font-size: 14px; margin-left: 6px; }
+.prline { color: #e9eff6; font-weight: 800; font-size: 14px; }
+.prsig { color: #8fe7ff; font-size: 13px; font-weight: 700; }
+.prmoments { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
+.moment { padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; color: #5d6f84; border: 1px dashed #2a4a66; }
+.moment.got { color: #141000; background: linear-gradient(#ffd84a, var(--gold)); border: 1px solid #ffe27a; }
+.rescard .rmoment { margin: -4px 0 10px; color: var(--gold); font: italic 900 18px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }

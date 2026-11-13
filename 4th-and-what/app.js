@@ -187,7 +187,7 @@
   /* how close it was, from the engine's spot and the line to gain */
   function marginText(r) {
     if (r.outcome === 'touchdown') return 'Six.';
-    if (r.spotY == null || r.marker >= 100 || (r.outcome !== 'down' && r.outcome !== 'oob')) return r.win ? '' : (r.outcome === 'sack' ? 'Sacked.' : r.outcome === 'incomplete' ? 'Incomplete.' : '');
+    if (r.spotY == null || r.marker >= 100 || (r.outcome !== 'down' && r.outcome !== 'oob')) return r.win ? '' : (r.outcome === 'sack' ? 'Sacked.' : r.outcome === 'incomplete' ? 'Incomplete.' : r.outcome === 'interception' ? 'Picked off.' : '');
     var d = r.spotY - r.marker, a = Math.abs(d);
     if (a < 1) return r.win ? 'By inches.' : 'Inches short.';
     var y = Math.round(a);
@@ -212,7 +212,7 @@
         meas.hidden = true;
         var td = r.outcome === 'touchdown';
         if (r.events.length) $('cap').textContent = r.events[r.events.length - 1].text;
-        $('stampBig').textContent = td ? 'Touchdown' : r.win ? 'First down' : 'Stopped';
+        $('stampBig').textContent = td ? 'Touchdown' : r.win ? 'First down' : r.outcome === 'interception' ? 'Picked' : 'Stopped';
         $('stampSub').textContent = marginText(r);
         stamp.className = 'stamp ' + (td ? 'td' : r.win ? 'win' : 'lose');
         stamp.hidden = false;

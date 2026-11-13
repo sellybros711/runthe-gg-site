@@ -37,14 +37,21 @@
   var ORDER = ['run', 'quick', 'shot'];
   var LABEL = { run: 'Run', quick: 'Quick', shot: 'Shot' };
 
-  /* deal(sc, seed): three cards, one of each kind, on three different sets
-     where the pool allows */
-  function deal(sc, seed) {
+  /* A new player's first hand (the launch plan, 1F): three plays that all
+     convert two thirds of the time or better at 4th and 1 (measured
+     2026-11-13: QB Sneak 75%, Stick 70%, Levels 65%; Toss is 30%, Curl Flat
+     34%). It is the hand, not the snap: the defense and the dice are the
+     seed's as always. */
+  var FIRST = { run: 'QB Sneak', quick: 'Stick', shot: 'Levels' };
+  /* deal(sc, seed, opt): three cards, one of each kind, on three different
+     sets where the pool allows; opt.first deals the first hand */
+  function deal(sc, seed, opt) {
+    var first = opt && opt.first;
     var r = RNG.mulberry32(((seed >>> 0) ^ 0x2545f491) >>> 0), P = TR.pool(), used = {}, hand = [];
     var dist = Math.min(+sc.distance || 5, +sc.ballOn || 40);
     ORDER.forEach(function (t) {
       /* no run from Empty (there is no back), and a sneak only at 4th and 1 or 2 */
-      var fit = P.filter(function (it) { return TYPE[it.concept] === t && !(t === 'run' && it.set === 'empty') && (it.concept !== 'QB Sneak' || dist <= 2); });
+      var fit = P.filter(function (it) { return TYPE[it.concept] === t && !(t === 'run' && it.set === 'empty') && (it.concept !== 'QB Sneak' || dist <= 2) && (!first || it.concept === FIRST[t]); });
       var fresh = fit.filter(function (it) { return !used[it.set]; });
       var from = fresh.length ? fresh : fit, it = from[Math.floor(r() * from.length)];
       used[it.set] = true;
@@ -60,7 +67,14 @@
   function readText(look) { return SHELL_TEXT[look.shell] + ' · ' + look.box + ' in the box'; }
   function hintText(look) { return SHELL_HINT[look.shell]; }
 
-  var CORE = { TYPE: TYPE, LABEL: LABEL, deal: deal, readText: readText, hintText: hintText };
+  /* after the snap, the read's answer: what they showed, and what it was */
+  var SHOWED = { two: 'two deep', one: 'one deep', zero: 'nobody deep' };
+  function revealText(res) {
+    if (!res.shell || !res.callName) return '';
+    return 'They showed ' + SHOWED[res.shell] + (res.disguised ? ' and rotated to ' + res.callName + '.' : '. It was ' + res.callName + '.');
+  }
+
+  var CORE = { TYPE: TYPE, LABEL: LABEL, FIRST: FIRST, deal: deal, readText: readText, hintText: hintText, revealText: revealText };
   if (isNode) { module.exports = CORE; return; }
 
   /* ================= the page ================= */
@@ -73,7 +87,8 @@
 
   function open() {
     var s = FL.pending();
-    if (s !== seed || !hand.length) { seed = s; hand = deal(A.SC, seed); pick = -1; }
+    var G = root.FAW_GO, first = !!(G && G.firstHand && G.firstHand());
+    if (s !== seed || !hand.length) { seed = s; hand = deal(A.SC, seed, { first: first }); pick = -1; }
     $('cSit').textContent = sitText();
     renderCards(); draw();
   }
@@ -111,9 +126,9 @@
     FL.snap(h.play, h.concept + ' · ' + h.setName);
   }
   $('cSnap').addEventListener('click', snapIt);
-  $('cBack').addEventListener('click', function () { A.show('play'); });
+  $('cBack').addEventListener('click', function () { A.show(root.FAW_DAILY && root.FAW_DAILY.active() ? 'daily' : 'play'); });
   A.on('call', open);
   window.addEventListener('resize', function () { if (!$('vCall').hidden && hand.length) draw(); });
 
-  root.FAW_CALLS = { deal: deal, readText: readText, hintText: hintText, hand: function () { return hand; }, seed: function () { return seed; }, choose: choose };
+  root.FAW_CALLS = { deal: deal, readText: readText, hintText: hintText, revealText: revealText, hand: function () { return hand; }, seed: function () { return seed; }, choose: choose };
 })(typeof window !== 'undefined' ? window : this);

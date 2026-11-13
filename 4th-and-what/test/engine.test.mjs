@@ -138,7 +138,7 @@ test('outcomes follow the spot: past the marker wins, short loses', () => {
   for (let s = 1; s <= 120; s++) for (const d of [1, 5, 15]) {
     const r = E.run(at(d), PLAYBOOK['slant flat'], s);
     if (r.outcome === 'down') assert.equal(r.win, r.spotY >= r.marker, 'seed ' + s);
-    if (['sack', 'throwaway', 'incomplete', 'fumble'].includes(r.outcome)) assert.equal(r.win, false);
+    if (['sack', 'throwaway', 'incomplete', 'interception', 'fumble'].includes(r.outcome)) assert.equal(r.win, false);
     if (r.outcome === 'touchdown') assert.equal(r.win, true);
   }
 });
@@ -152,4 +152,22 @@ test('a sensible play converts about as often as a real 4th down', () => {
     const avg = SENS[d].reduce((a, n) => a + rate(PLAYBOOK[n], d, 120), 0) / SENS[d].length * 100;
     assert.ok(Math.abs(avg - TARGET[d]) <= 13, '4th and ' + d + ': ' + avg.toFixed(0) + '% against ' + TARGET[d] + '%');
   }
+});
+
+test('interceptions: about 3% of throws, only into tight coverage, and they never change whether it was caught', () => {
+  const T2 = JSON.parse(JSON.stringify(C.TUNING)); T2.catch.int = 0; T2.catch.intPressure = 0;
+  let thr = 0, ints = 0;
+  for (const [n, p] of Object.entries(PLAYBOOK)) for (const d of [3, 7, 15]) for (let s = 1; s <= 60; s++) {
+    const sc = Object.assign({}, C.SCENARIO, { down: 4, distance: d, ballOn: 40 });
+    const r = E.run(sc, p, s), r0 = E.run(sc, p, s, { tuning: T2 });
+    if (r.throwInfo && !r.isRun) thr++;
+    if (r.outcome === 'interception') {
+      ints++;
+      assert.equal(r.win, false); assert.equal(r.title, 'INTERCEPTED');
+      assert.equal(r0.outcome, 'incomplete', 'a pick was a miss with the pick switched off: ' + n + ' ' + s);
+      assert.ok(r.throwInfo.sep < C.TUNING.catch.intSep, 'into tight coverage: ' + r.throwInfo.sep);
+      assert.ok(r.events.some(e => e.kind === 'int') && /^Picked off\./.test(r.reason));
+    } else assert.equal(r.outcome === 'touchdown' || r.win, r0.outcome === 'touchdown' || r0.win, 'everything else is the same snap: ' + n + ' ' + s);
+  }
+  assert.ok(ints / thr > 0.01 && ints / thr < 0.06, 'interceptions per throw: ' + (ints / thr).toFixed(3));
 });

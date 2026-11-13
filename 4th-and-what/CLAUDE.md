@@ -19,7 +19,7 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   `data/fourths.json` (built by `build/fourths.mjs` from nflverse play-by-play, CC-BY 4.0, credited
   on the page) on the Eastern day, the same for everybody. Every fact on its card is a field of
   that row; never type one by hand. Its intro is a big moment (the owner, 2026-11-06): the night
-  stadium, the scoreboard, the down, the stakes, the ball on a strip of field, a glowing gold button. The first snap is the day's, against the day's seed; every
+  stadium, the scoreboard, the down, the stakes, the ball on a strip of field, a glowing gold button. Make the call opens Call it (since 2026-11-13) with the day's look and the day's hand, the same for everybody; Draw your own is a card. The streak shows for everybody: the server's when signed in, else the device's days in a row (`streakOf`). The first snap is the day's, against the day's seed; every
   snap after it is practice and never posted. Save play stays on the card. The server is
   `supabase/162_fourth_and_what_daily.sql` (one row a player a day, the first post stands). Rebuild
   the data after a season and bump `fourths.json`'s `?v=` in `daily.js`. Never reshuffle the order
@@ -49,10 +49,16 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
 - **Go For It is the main mode** (the owner, 2026-11-13). `goforit.js`: a run of 4th downs at the NFL
   from the middle, each through Call it with the run's own seed. Convert and go again from the spot,
   the distance by `LADDER` (how many converted); a touchdown restarts from your own 25; a stop is a
-  new possession from your own 35. `STOPS` (3) stops end the run (the plan said one; measured, one
+  new possession from your own 35; an interception costs `PICK` (2) stops. `STOPS` (3) stops end the run (the plan said one; measured, one
   stop ended 58% of runs on the first snap). The run and its next seed are kept on the device, so a
   reload resumes the same down against the same look. The best run is kept on the device too.
-  Practice (any down, spot, level and hash) is the second button.
+  Practice (any down, spot, level and hash) is the second button. A player's very first Go For It snap
+  gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: all two thirds or better at 4th and 1); the hand,
+  never the snap.
+- **Your record and the moments** (the launch plan, Phase 2). `profile.js`, on the device (`faw_profile`):
+  snaps, conversions, the longest 4th down converted, the best run, the signature play, and eight
+  football moments, each earned once and read straight off the engine's result. No currencies, no pay
+  to win, nothing locked behind them.
 - **The feel** (the owner, 2026-11-13: sound on by default, with mute). `feel.js` makes every sound with
   Web Audio (nothing to download) and starts on the Snap it tap; `faw_sound` keeps the choice. The 3D
   picture zooms and slides to follow the ball (`play.js`, `ui.zoom`), never past an edge. A spot within
