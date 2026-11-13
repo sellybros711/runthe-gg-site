@@ -132,6 +132,7 @@
     var p = A.copy(given || A.draft.play);
     if (!ready(p)) { A.toast('sToast', 'Give it a read (Read, then tap a receiver) or make it a run first.'); $('sHint').textContent = 'Give it a read, or make it a run.'; return false; }
     var D = window.FAW_DAILY;
+    if (window.FAW_FEEL) window.FAW_FEEL.unlock();
     var seed = pending(); forced = null; pend = null;
     played = p; playedName = name || A.draft.name || A.nameFor(p);
     if (window.FAW_CLIP) window.FAW_CLIP.cancel();

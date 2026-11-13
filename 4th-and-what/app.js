@@ -184,14 +184,41 @@
 
   /* ---------- watch it in 3D ---------- */
   var live = null;
+  /* how close it was, from the engine's spot and the line to gain */
+  function marginText(r) {
+    if (r.outcome === 'touchdown') return 'Six.';
+    if (r.spotY == null || r.marker >= 100 || (r.outcome !== 'down' && r.outcome !== 'oob')) return r.win ? '' : (r.outcome === 'sack' ? 'Sacked.' : r.outcome === 'incomplete' ? 'Incomplete.' : '');
+    var d = r.spotY - r.marker, a = Math.abs(d);
+    if (a < 1) return r.win ? 'By inches.' : 'Inches short.';
+    var y = Math.round(a);
+    return r.win ? y + (y === 1 ? ' yard' : ' yards') + ' to spare.' : y + (y === 1 ? ' yard' : ' yards') + ' short.';
+  }
   function watch3d(res, done) {
     var w = $('watch'); w.hidden = false; $('cap').textContent = ''; $('bSkip').hidden = false; $('rCard').hidden = true;
     if (live) live.stop();
     window.FAW_LIVE.prepare(res.BX, res.Y0, res.level);
+    var FE = window.FAW_FEEL, stamp = $('stamp'), meas = $('measure');
+    stamp.hidden = true; meas.hidden = true; $('cLive').style.transform = '';
+    if (FE) FE.play('crowd');
     live = window.FAW_LIVE.show($('cLive'), res, {
+      zoom: true,
       caption: function (t) { $('cap').textContent = t; },
       pressure: function (p) { $('pressFill').style.width = Math.round(p * 100) + '%'; $('press').style.opacity = res.isRun ? '0' : '1'; },
-      done: function (r) { $('bSkip').hidden = true; if (done) done(r || res); }
+      snap: function () { if (FE) FE.play('snap'); },
+      progress: function (k) { if (FE) FE.crowdLevel(k); },
+      event: function (e) { if (FE) FE.event(e); },
+      measure: function () { meas.hidden = false; $('cap').textContent = 'Bring out the chains.'; if (FE) { FE.play('whistle'); setTimeout(function () { FE.play('chains'); }, 450); } },
+      final: function (r) {
+        meas.hidden = true;
+        var td = r.outcome === 'touchdown';
+        if (r.events.length) $('cap').textContent = r.events[r.events.length - 1].text;
+        $('stampBig').textContent = td ? 'Touchdown' : r.win ? 'First down' : 'Stopped';
+        $('stampSub').textContent = marginText(r);
+        stamp.className = 'stamp ' + (td ? 'td' : r.win ? 'win' : 'lose');
+        stamp.hidden = false;
+        if (FE) FE.result(r);
+      },
+      done: function (r) { $('bSkip').hidden = true; stamp.hidden = true; if (done) done(r || res); }
     });
   }
   $('bSkip').addEventListener('click', function () { live && live.skip(); });
@@ -204,7 +231,7 @@
     store: store, signedIn: signedIn, openStore: openStore, terms: terms, nameFor: nameFor, tagOf: tagOf, customOf: customOf,
     choices: choices, choiceOptions: choiceOptions, choice: choice,
     show: show, on: on, fire: fire, current: function () { return current; }, mode: function () { return mode; },
-    saveDialog: saveDialog, watch3d: watch3d
+    saveDialog: saveDialog, watch3d: watch3d, marginText: marginText
   };
   /* the views register themselves after this file; the first view is shown once they have */
   window.addEventListener('DOMContentLoaded', function () { fromHash(location.hash.slice(1) || 'home'); });

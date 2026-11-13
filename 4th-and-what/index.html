@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=23">
 </head>
 <body>
 <header class="topbar">
@@ -35,6 +35,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
   <div class="navr">
     <a class="home" href="/" aria-label="RunThe.GG home">RunThe.GG</a>
     <button class="icon" id="bGuide" type="button" aria-label="How it works">?</button>
+    <button class="icon" id="bSound" type="button" aria-label="Sound on" aria-pressed="true"><svg class="son" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z" fill="currentColor"/></svg><svg class="soff" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zm12.6.2L15.2 10.6 16.6 12l-1.4 1.4 1.4 1.4L18 13.4l1.4 1.4 1.4-1.4-1.4-1.4 1.4-1.4-1.4-1.4L18 10.6z" fill="currentColor"/></svg></button>
   </div>
 </header>
 
@@ -436,6 +437,8 @@ document.documentElement.setAttribute('data-theme', 'dark');
     <canvas id="cLive" aria-label="The play in the stadium"></canvas>
     <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
     <div class="cap" id="cap" aria-live="polite"></div>
+    <div class="measure" id="measure" hidden aria-hidden="true"><i></i><span>Measurement</span><i></i></div>
+    <div class="stamp" id="stamp" hidden><b id="stampBig"></b><span id="stampSub"></span></div>
     <button type="button" class="skip" id="bSkip">Skip</button>
     <button type="button" class="close" id="bClose3d" aria-label="Close">&#10005;</button>
     <div class="rescard" id="rCard" hidden>
@@ -511,13 +514,14 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="rig.js?v=1"></script>
 <script src="stage.js?v=2"></script>
 <script src="share.js?v=2"></script>
-<script src="play.js?v=2"></script>
-<script src="app.js?v=8"></script>
+<script src="feel.js?v=1"></script>
+<script src="play.js?v=3"></script>
+<script src="app.js?v=9"></script>
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=6"></script>
 <script src="game.js?v=4"></script>
 <script src="clip.js?v=1"></script>
-<script src="flow.js?v=9"></script>
+<script src="flow.js?v=10"></script>
 <script src="daily.js?v=6"></script>
 <script src="trivia.js?v=4"></script>
 <script src="calls.js?v=1"></script>
