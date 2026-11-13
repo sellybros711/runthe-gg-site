@@ -98,6 +98,7 @@
       case 'throw': case 'checkdown': play('throw'); break;
       case 'catch': play('catch'); buzz(25); break;
       case 'sack': case 'fumble': play('hit'); buzz([40, 30, 40]); break;
+      case 'int': play('catch'); play('whistle'); buzz([30, 30, 30, 30, 90]); break;
       case 'broken': play('hit'); break;
       case 'incomplete': case 'throwaway': play('whistle'); break;
       case 'td': play('whistle'); break;

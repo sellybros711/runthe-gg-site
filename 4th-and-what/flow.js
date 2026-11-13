@@ -173,7 +173,7 @@
     return list.map(function (e, i) { return { e: e, label: daily ? (i === 0 ? 'Daily' : 'Practice ' + i) : 'Snap ' + (i + 1) }; });
   }
   function chipText(x) {
-    var e = x.e, y = e.outcome === 'incomplete' || e.outcome === 'throwaway' ? 'no gain' : (e.yards > 0 ? '+' + e.yards : String(e.yards));
+    var e = x.e, y = e.outcome === 'incomplete' || e.outcome === 'throwaway' || e.outcome === 'interception' ? 'no gain' : (e.yards > 0 ? '+' + e.yards : String(e.yards));
     return x.label + ' · ' + (e.win ? 'First down' : 'Stopped') + ' ' + y;
   }
   function openSnap(e) {
@@ -207,7 +207,7 @@
     c.className = 'rescard ' + (r.win ? 'win' : 'lose');
     $('rDown').textContent = A.sitText().down + ' · ' + A.sitText().spot;
     $('rTitle').textContent = title(r);
-    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
     $('rLine').textContent = gained + ' · ' + r.callName;
     $('rWhy').textContent = r.reason;
     $('rToast').hidden = true;
@@ -240,7 +240,7 @@
     x.fillStyle = '#fff'; x.font = '800 44px Inter, sans-serif';
     x.fillText(playedName.slice(0, 34), 60, 1100);
     x.fillStyle = '#8fa2b8'; x.font = '600 36px Inter, sans-serif';
-    var gained = res.outcome === 'incomplete' || res.outcome === 'throwaway' ? 'No gain' : (res.yards >= 0 ? 'Gained ' + res.yards : 'Lost ' + (-res.yards));
+    var gained = res.outcome === 'incomplete' || res.outcome === 'throwaway' || res.outcome === 'interception' ? 'No gain' : (res.yards >= 0 ? 'Gained ' + res.yards : 'Lost ' + (-res.yards));
     x.fillText(gained + ' · vs ' + res.callName, 60, 1165);
     x.fillStyle = '#8fa2b8'; x.font = '700 30px Inter, sans-serif'; x.fillText('runthe.gg/4th-and-what', 60, 1260);
     card = c; return c;
@@ -285,7 +285,7 @@
   function clipFor(r) {
     $('rShare').textContent = 'Share';
     if (!CL || !CL.supported()) return;
-    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
     var D = window.FAW_DAILY, s = A.sitText();
     CL.start(r, { situation: (D && D.active() ? 'Daily #' + D.number() + ' · ' : '') + s.down + ' · ' + s.spot,
       name: A.draft.name || A.nameFor(played), title: r.title, line: gained + ' · vs ' + r.callName, win: r.win });

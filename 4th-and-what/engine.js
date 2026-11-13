@@ -770,11 +770,22 @@
              Otherwise it was the coverage, the pressure, the distance or the throw. */
           var u = (roll - pc) / Math.max(1e-6, 1 - pc);
           var dropShare = Math.min(1, Math.max(0, T.catch.drop - (r.arch.hands || 0) * T.catch.dropHands) / Math.max(1e-6, 1 - pc));
+          /* the pick: a tight throw with a defender at the ball, a share of the miss after the drop */
+          var picker = null, pb2 = T.catch.intRange || 0;
+          if (T.catch.int && sep < T.catch.intSep) defense.forEach(function (d) { var s3 = dist(d, I.to); if (s3 < pb2) { pb2 = s3; picker = d; } });
+          var pInt = picker ? (T.catch.int + T.catch.intPressure * I.pressure) * (I.dist > 15 ? T.catch.intLong : 1) : 0;
+          var intShare = Math.min(1 - dropShare, pInt / Math.max(1e-6, 1 - pc));
+          if (u >= dropShare && u < dropShare + intShare) {
+            picker.x = I.to.x; picker.y = I.to.y; ball.holder = picker.id;
+            say(t, 'int', 'Picked off.');
+            finish(t, 'interception', 'int', null);
+          } else {
           var why = u < dropShare ? 'drop' : sep < T.catch.brokenSep ? 'tight' : I.pressure > 0.85 ? 'pressure' : I.dist > 28 ? 'long' : 'off';
           var missText = { drop: 'Dropped.', tight: 'Broken up.', pressure: 'Off target under pressure.', long: 'Just out of reach.' }[why] ||
             (u - dropShare < (1 - dropShare) / 2 ? 'Overthrown.' : 'Thrown behind him.');
           say(t, 'incomplete', missText);
           finish(t, 'incomplete', why, null); ball.drop = { x: I.to.x, y: I.to.y };
+          }
         }
       }
 
@@ -1010,7 +1021,7 @@
     if (win && outcome !== 'touchdown') shown = Math.max(distance, shown);
     if (!win && outcome === 'down' && shown >= distance) shown = distance - 1;
     var down = S.down;
-    var title = outcome === 'touchdown' ? 'TOUCHDOWN' : outcome === 'safety' ? 'SAFETY' : win ? 'FIRST DOWN'
+    var title = outcome === 'touchdown' ? 'TOUCHDOWN' : outcome === 'safety' ? 'SAFETY' : outcome === 'interception' ? 'INTERCEPTED' : win ? 'FIRST DOWN'
       : down === 4 ? 'TURNOVER ON DOWNS' : outcome === 'fumble' ? 'FUMBLE' : 'SHORT OF THE STICKS';
     var reason = reasonOf();
     function reasonOf() {
@@ -1028,6 +1039,7 @@
       if (outcome === 'sack') return 'Sacked. The pocket held ' + (Math.round(Tp * 10) / 10) + ' seconds and there was no checkdown.';
       if (outcome === 'throwaway') return 'Threw it away. The pocket went and there was no checkdown.';
       if (outcome === 'fumble') return 'Fumbled at ' + spotName(spotY) + '. Ball game.';
+      if (outcome === 'interception') return 'Picked off. ' + (throwInfo && throwInfo.pressure > 0.85 ? 'He threw it with a man in his face, into tight coverage.' : 'The throw went into tight coverage.');
       if (outcome === 'incomplete') {
         if (cause === 'tight') return 'Incomplete. The throw went into tight coverage.';
         if (cause === 'long') return 'Incomplete. A ' + Math.round(throwInfo.dist) + ' yard throw, just out of reach.';

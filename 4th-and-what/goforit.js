@@ -11,7 +11,9 @@
  * all. With three stops and this ladder a random picker averages 2.3, a
  * reader of the shell 3.3 and a near perfect caller 5.4, over 5 to 8 snaps.
  * A stop is a turnover on downs: the next possession starts from your own 35,
- * and the ladder keeps climbing. The headline is how many you converted; the
+ * and the ladder keeps climbing. An interception costs PICK stops (2): on
+ * one 4th down a pick and an incompletion are the same turnover, so in a run
+ * it has to cost more, or throwing into coverage would be free. The headline is how many you converted; the
  * yards and the touchdowns are the rest of the story. Your best run is kept.
  *
  * Every snap is a real snap: Call it with the run's own seed (the look is the
@@ -31,7 +33,7 @@
 
   /* the distance by how many you have converted so far */
   var LADDER = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 10, 12, 15];
-  var START = 65, AFTER_TD = 75, STOPS = 3;
+  var START = 65, AFTER_TD = 75, STOPS = 3, PICK = 2;
 
   function distanceFor(n, ballOn) { return Math.max(1, Math.min(LADDER[Math.min(n, LADDER.length - 1)], ballOn)); }
   function newRun(seed) { return { n: 0, stops: 0, yards: 0, tds: 0, ballOn: START, distance: distanceFor(0, START), seed: seed >>> 0, log: [], over: false }; }
@@ -41,7 +43,7 @@
     var td = res.outcome === 'touchdown';
     s.log.push({ distance: s.distance, ballOn: s.ballOn, win: !!res.win, yards: res.yards, td: td, seed: res.seed, callKey: res.callKey });
     if (!res.win) {
-      s.stops = (s.stops || 0) + 1;
+      s.stops = (s.stops || 0) + (res.outcome === 'interception' ? PICK : 1);
       if (s.stops >= STOPS) { s.over = true; return s; }
       s.ballOn = START;
     } else {
@@ -57,14 +59,14 @@
   function better(a, b) { return !b || a.n > b.n || (a.n === b.n && a.yards > b.yards); }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
   function tallyText(s) { return s.n + ' converted · ' + s.yards + ' yds' + (s.tds ? ' · ' + plural(s.tds, 'TD', 'TDs') : ''); }
-  function stopsLeft(s) { return STOPS - (s.stops || 0); }
+  function stopsLeft(s) { return Math.max(0, STOPS - (s.stops || 0)); }
   function overText(s) {
     if (!s.n) return 'Not one converted. Shake it off.';
     return plural(s.n, '4th down', '4th downs') + ' converted. ' + s.yards + ' yards' + (s.tds ? ', ' + plural(s.tds, 'touchdown', 'touchdowns') : '') + '.';
   }
   function shareText(s) { return '4th and What · Go For It\n' + overText(s) + '\nhttps://runthe.gg/4th-and-what#play'; }
 
-  var CORE = { LADDER: LADDER, START: START, AFTER_TD: AFTER_TD, STOPS: STOPS, stopsLeft: stopsLeft, distanceFor: distanceFor, newRun: newRun, after: after, better: better, tallyText: tallyText, overText: overText, shareText: shareText };
+  var CORE = { LADDER: LADDER, START: START, AFTER_TD: AFTER_TD, STOPS: STOPS, PICK: PICK, stopsLeft: stopsLeft, distanceFor: distanceFor, newRun: newRun, after: after, better: better, tallyText: tallyText, overText: overText, shareText: shareText };
   if (isNode) { module.exports = CORE; return; }
 
   /* ================= the page ================= */
@@ -118,7 +120,7 @@
       $('rGoNext').textContent = overText(st) + (wasBest ? ' New best.' : '');
     } else {
       var left = stopsLeft(st);
-      $('rGoHead').textContent = res.outcome === 'touchdown' ? 'Touchdown. New drive.' : res.win ? 'Moving the chains' : 'Stopped. ' + plural(left, 'stop', 'stops') + ' left.';
+      $('rGoHead').textContent = res.outcome === 'touchdown' ? 'Touchdown. New drive.' : res.win ? 'Moving the chains' : (res.outcome === 'interception' ? 'Picked. That costs two. ' : 'Stopped. ') + plural(left, 'stop', 'stops') + ' left.';
       var s = A.sitText();
       $('rGoNext').textContent = 'Next: ' + s.down + ' · ' + s.spot;
     }

@@ -158,7 +158,7 @@ test('any spot: from the own 1 to the opponent 1, everybody stays on the field',
       assert.ok(p[1] >= -10.5 && p[1] <= 110.5, 'inside the end lines: ' + p[1] + ' from the ' + ballOn);
       assert.ok(p[0] >= -1 && p[0] <= E.FIELD_W + 1, 'inside the sidelines: ' + p[0]);
     }
-    assert.ok(['touchdown', 'down', 'sack', 'throwaway', 'incomplete', 'fumble', 'safety'].includes(r.outcome), r.outcome);
+    assert.ok(['touchdown', 'down', 'sack', 'throwaway', 'incomplete', 'interception', 'fumble', 'safety'].includes(r.outcome), r.outcome);
     if (r.outcome === 'touchdown') assert.ok(r.win);
     const copy = r.reason + r.events.map(e => e.text).join(' ') + r.situation;
     assert.ok(![...copy].some(c => c.charCodeAt(0) === 0x2013 || c.charCodeAt(0) === 0x2014), 'no dashes');

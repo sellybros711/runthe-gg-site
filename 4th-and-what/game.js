@@ -128,13 +128,13 @@
   /* ---------- the result ---------- */
   function result() {
     var r = res, big = $('gResBig');
-    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 0 : r.yards;
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 0 : r.yards;
     big.className = 'resultbig ' + (r.win ? 'win' : 'lose');
-    big.textContent = r.outcome === 'touchdown' ? 'Touchdown' : r.outcome === 'sack' ? 'Sack' : r.outcome === 'incomplete' ? 'Incomplete' : r.outcome === 'throwaway' ? 'Thrown away' : r.outcome === 'fumble' ? 'Fumble' : r.outcome === 'safety' ? 'Safety' : (gained >= 0 ? gained + ' yard gain' : (-gained) + ' yard loss');
+    big.textContent = r.outcome === 'touchdown' ? 'Touchdown' : r.outcome === 'sack' ? 'Sack' : r.outcome === 'incomplete' ? 'Incomplete' : r.outcome === 'throwaway' ? 'Thrown away' : r.outcome === 'fumble' ? 'Fumble' : r.outcome === 'interception' ? 'Intercepted' : r.outcome === 'safety' ? 'Safety' : (gained >= 0 ? gained + ' yard gain' : (-gained) + ' yard loss');
     var target = r.throwInfo && r.throwInfo.to ? (T.LABEL[r.throwInfo.to] || r.throwInfo.to) + (r.throwInfo.primary ? ' (1st read)' : '') : r.isRun ? 'Run' : '-';
     var verdict = r.title.charAt(0) + r.title.slice(1).toLowerCase();
     var rows = [['Result', verdict], ['Target', target],
-      ['Completion', r.isRun ? '-' : r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'sack' ? 'No' : r.throwInfo ? 'Yes' : '-'],
+      ['Completion', r.isRun ? '-' : r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'sack' || r.outcome === 'interception' ? 'No' : r.throwInfo ? 'Yes' : '-'],
       ['Yards', String(gained)], ['First down', r.win ? 'Yes' : 'No'], ['Defense', r.callName]];
     var dl = $('gStats'); dl.innerHTML = '';
     rows.forEach(function (x) { dl.appendChild(A.el('dt', { text: x[0] })); dl.appendChild(A.el('dd', { text: x[1], class: x[0] === 'First down' && r.win ? 'win' : null })); });

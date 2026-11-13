@@ -104,7 +104,14 @@
       /* why a miss fell (it never changes whether it fell): a drop is drop of
          all targets (the NFL drops about 3 to 4%), dropHands less per point of
          the receiver's hands; inside brokenSep yards it was broken up */
-      drop: 0.035, dropHands: 0.1, brokenSep: 1.2 },
+      drop: 0.035, dropHands: 0.1, brokenSep: 1.2,
+      /* THE INTERCEPTION (the owner, 2026-11-13: interceptions and a retune).
+         A throw into tight coverage (inside intSep yards of separation) with a
+         defender inside intRange yards of the ball is picked off int of the
+         time, intPressure more at full pressure, intLong times as often past
+         15 yards. Like a drop it is a share of the miss from the same roll, so
+         it never changes whether the ball was caught, and no dice move. */
+      int: 0.042, intPressure: 0.03, intLong: 1.6, intSep: 1.1, intRange: 2.2 },
 
     /* MAN COVERAGE stays cushion yards over the top of his man, and plays his
        side to side as it was lag seconds ago, carried forward lead of the way
