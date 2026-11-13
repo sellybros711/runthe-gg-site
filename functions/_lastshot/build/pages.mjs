@@ -16,7 +16,7 @@ const ROOT = path.join(HERE, '..');
 
 /* What the browser may load. Server files (gate, db, pages) are not here. */
 export const MODULE_FILES = ['scenario.js', 'rng.js', 'court-geo.js', 'motion.js', 'defense.js', 'shot.js', 'playbook.js', 'names.js', 'book.js', 'testit.js', 'diagram.js', 'export.js', 'book-ui.js',
-  'sim.js', 'levels.js', 'ladder-ui.js', 'view.js', 'board.js', 'court.js', 'share.js', 'sound.js', 'client.js', 'ads.js'];
+  'sim.js', 'levels.js', 'ladder-ui.js', 'daily.js', 'challenge.js', 'cards.js', 'daily-ui.js', 'beat-ui.js', 'view.js', 'board.js', 'court.js', 'share.js', 'sound.js', 'client.js', 'ads.js'];
 
 export function render() {
   const mods = {};

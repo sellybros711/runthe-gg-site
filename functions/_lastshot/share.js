@@ -26,3 +26,15 @@ export function shareText(play, res) {
   const head = 'Last Shot ' + (res.outcome === 'win' ? 'WINNER' : 'LOSE') + ' ' + res.us + '-' + res.them + (res.how === 'ot' ? ' OT' : '') + (res.shotAt != null ? ' · ' + res.shotAt.toFixed(1) : '');
   return head + '\n' + squaresOf(play, res).join('') + '\n' + SHARE_URL;
 }
+
+/* The Daily's share line: the number, the stars as squares, the score's own
+ * words, the arcade's url. Never the defense or the play, so it spoils nothing.
+ *
+ *   Last Shot #35
+ *   ⭐⭐⬛
+ *   Won · 2 stars · 64% look
+ *   https://runthe.gg/arcade/
+ */
+export function dailyShareText(dayNumber, squares, scoreText) {
+  return 'Last Shot #' + dayNumber + '\n' + (Array.isArray(squares) ? squares.join('') : '') + '\n' + scoreText + '\n' + SHARE_URL;
+}

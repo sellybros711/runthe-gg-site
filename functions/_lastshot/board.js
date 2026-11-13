@@ -94,7 +94,7 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     if (!drag || !V) return;
     const ft = clampFt(V.ft({ x: e.offsetX, y: e.offsetY }));
     if (drag.kind === 'spot') {
-      const p = clone(play()); p.spots[drag.who] = ft; setPlay(p); draw(); return;
+      const p = clone(play()); p.spots[drag.who] = r1(ft); setPlay(p); draw(); return;
     }
     const last = drag.raw[drag.raw.length - 1];
     if (dist(last, ft) >= 0.6) { drag.raw.push(ft); drag.pts = simplify(drag.raw, 1.3); draw(); }

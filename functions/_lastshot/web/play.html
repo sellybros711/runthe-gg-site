@@ -217,6 +217,56 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:inherit}
 .confetti i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:fall 1.9s ease-in both}
 @keyframes fall{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx,0),420px) rotate(540deg)}}
+/* the Daily (Phase 2): the home card, the day bar with Take your shot and its confirm, the card's board */
+.hcard.daily{background:linear-gradient(180deg,#22324d 0%,#1d2129 100%);color:#fff;border-color:#22324d;position:relative}
+.hcard.daily .dtop{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.hcard.daily b{font-size:20px;color:#fff}
+.hcard.daily .dcount{flex:none;display:inline;margin:0;font-size:12px;font-weight:700;color:#9fb0c8;font-variant-numeric:tabular-nums}
+.hcard.daily #hDailyTitle{color:#ffd23f;font-weight:800;font-size:16px}
+.hcard.daily .dsq{font-size:20px;letter-spacing:2px;margin-top:6px;color:#fff}
+.hcard.daily .dgo{display:inline-block;margin-top:10px;background:var(--green);color:#fff;font-weight:800;font-size:15px;border-radius:999px;padding:7px 18px}
+.hcard.daily.done .dgo{background:#fff;color:#1d2129}
+.daybar{display:flex;flex-direction:column;gap:5px;margin:0 10px 4px;padding:6px 10px;border-radius:12px;background:#1d2129;color:#fff}
+.daybar .lrow{display:flex;align-items:center;gap:8px;min-width:0}
+.daybar .lid{font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#1d2129;background:#ffd23f;border-radius:8px;padding:2px 7px}
+.daybar .ltitle{flex:1;min-width:0;font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dnote{flex:1;min-width:0;font-size:12px;font-weight:700;color:#cfd8e8;line-height:1.25}
+.drow{display:flex;align-items:center;gap:6px}
+.drow .btn{min-height:42px;font-size:15px}
+.drow b{flex:1.2;font-size:15px}
+#bShot{background:#ffd23f;color:#1d2129;font-family:'Outfit',sans-serif;font-weight:800;font-size:17px}
+#bShotYes{background:var(--green);color:#fff}
+#bShotNo,#bDayResult{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);flex:.8}
+#bDayResult{flex:none;padding:0 14px}
+.card.perfect .lvlname{padding-right:140px}
+#dayDoneText{flex:1;font-weight:700;font-size:14px;color:#ffd23f;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.derr{margin:0;font-size:13px;font-weight:700;color:#ff8a73}
+.practag{display:inline-block;margin:0 0 6px!important;font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--marker);background:#e6ebf3;border-radius:999px;padding:3px 10px}
+.dscore{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;margin:8px 0 2px!important}
+.dmeta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px;border-top:2px solid var(--ink);padding-top:8px}
+.drank{font-family:'Russo One','Outfit',sans-serif;font-weight:400;font-size:20px}
+.dgems{font-weight:800;font-size:14px;color:#8a5a00;background:#fff1c7;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.dboard{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column}
+.dboard li{display:flex;align-items:center;gap:10px;padding:6px 6px;border-bottom:1px solid var(--edge);font-size:15px}
+.dboard li.me{background:#fff1c7;border-radius:8px;font-weight:800}
+.dboard li.far{margin-top:6px;border-top:1px dashed var(--edge)}
+.dboard .drk{width:26px;text-align:right;font-family:'Outfit',sans-serif;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums}
+.dboard .dnm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dboard .dsc{color:#e0a400;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dcount{font-size:13px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
+/* Beat my play: the Challenge screen, the bar on the clipboard, the verdict card */
+.beatcard{background:#fff;border:1px solid var(--edge);border-radius:18px;padding:18px 16px;margin-top:8px;box-shadow:0 8px 20px -14px rgba(0,0,0,.35)}
+.beatkick{margin:0;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.beathead{margin:6px 0;font-family:'Russo One','Outfit',sans-serif;font-weight:400;font-size:24px;line-height:1.15}
+.beatsit{margin:4px 0;font-weight:800;color:var(--marker);font-variant-numeric:tabular-nums}
+.beatcard .lscout{display:inline-block;font-size:12px;font-weight:800;color:#fff;background:var(--red);border-radius:999px;padding:2px 9px}
+.beatbar .lid{background:var(--accent)}
+.beatbar .mini{flex:none;margin-left:auto}
+.beatbar .lsit{white-space:nowrap}.beatbar .lscout{font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card.beat .verdict{font-size:34px}
+.vs{margin:8px 0;display:flex;flex-direction:column;gap:2px}
+.vs p{margin:0!important;font-weight:800;font-size:16px}
+.vs .vsthem{color:var(--dim);font-weight:700}
 @media (prefers-reduced-motion:reduce){.pop.on,.pop.final.on{animation:none;opacity:1;transform:translate(-50%,-50%)}
   .team b.flip,.bigword.on,.cutv.on,#bRun.pulse,.star.got,.perfecttag{animation:none}.stage.slow::after{box-shadow:none}}
 </style>
@@ -228,6 +278,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
     <div class="ttl"><h1>Last Shot</h1><div class="sub"><span class="tag">TESTERS ONLY</span><em id="tagline">Draw it up. Win it.</em></div></div>
   </div>
   <div class="view home" id="vHome">
+    <button class="hcard daily" id="hDaily"><span class="dtop"><b id="hDailyName">Daily Last Shot</b><span class="dcount" id="hDailyCount"></span></span><span id="hDailyTitle">Loading today's shot.</span><span class="dsq" id="hDailySq" hidden></span><span class="dgo" id="hDailyGo" hidden>Play</span></button>
     <button class="hcard game big" id="hPlay"><b>Play</b><span>Down 1. 22 seconds. Your ball. Draw it up and run it.</span></button>
     <button class="hcard ladder" id="hLadder"><b>Ladder</b><span class="lstar" id="hLadderStars"></span><span id="hLadderSub"></span></button>
     <button class="hcard small" id="hBooks"><b>My Playbooks</b><span>Save your plays. Name them your way. Test them against every defense. Print them for the team.</span></button>
@@ -238,6 +289,17 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
   <div class="lvlbar" id="lvlBar" hidden>
     <div class="lrow"><span class="lid" id="lvlId"></span><span class="ltitle" id="lvlTitle"></span><span class="lstars" id="lvlStars"></span></div>
     <div class="lrow"><span class="lsit" id="lvlSit"></span><span class="lscout" id="lvlScout" hidden></span></div>
+  </div>
+  <div class="daybar" id="dayBar" hidden>
+    <div class="lrow"><span class="lid" id="dayNo"></span><span class="ltitle" id="dayTitle"></span></div>
+    <div class="drow" id="dayShot"><span class="dnote">Practice runs don't count.</span><button class="btn" id="bShot">Take your shot</button></div>
+    <div class="drow" id="dayConfirm" hidden><b>One shot. Ready?</b><button class="btn" id="bShotNo">Not yet</button><button class="btn" id="bShotYes">Shoot</button></div>
+    <div class="drow" id="dayDone" hidden><span id="dayDoneText"></span><button class="btn" id="bDayResult">Your result</button></div>
+    <p class="derr" id="dayErr" role="alert" hidden></p>
+  </div>
+  <div class="lvlbar beatbar" id="beatBar" hidden>
+    <div class="lrow"><span class="lid">Beat it</span><span class="ltitle" id="beatTheirs"></span></div>
+    <div class="lrow"><span class="lsit" id="beatSit"></span><span class="lscout" id="beatScout" hidden></span><button class="mini" id="bWatchBar">Watch theirs</button></div>
   </div>
   <div class="score" aria-live="off">
     <button class="sbtn l" id="bSpeed" aria-pressed="false" aria-label="Double speed">1x</button>
@@ -275,6 +337,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
   </div>
   <div class="view scroll" id="vBooks" hidden></div>
   <div class="view scroll lad" id="vLadder" hidden></div>
+  <div class="view scroll" id="vBeat" hidden></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
 <div class="fsheet" id="testSheet"><div class="card" id="testCard"></div></div>
@@ -283,6 +346,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
   <p>You are down 1 with 22.0 left. Your ball, at the top of the key.</p>
   <p>Draw the play in frames. Move, Screen, Pass and Shoot. Next frame starts where everyone ended.</p>
   <p>Run It plays what you drew. Score late to win. Score early and they get the ball back.</p>
+  <p>The Daily is one spot a day for everybody. Practice all you want. Then take your one scored shot.</p>
   <p>The Ladder is a run of late game spots. Win one to open the next. Stars grade the play: the win, an open look, a late shot.</p>
   <p>My Playbooks keeps your plays on your account. Test it runs a play against every defense.</p>
   <div class="row"><button class="btn alt" id="howClose">Close</button></div>

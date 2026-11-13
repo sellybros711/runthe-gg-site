@@ -19,6 +19,30 @@ gets a party. Down 2 and down 3 bring overtime (a coin flip), which gets its own
 Progress is `last_shot_ladder` in localStorage (best stars and a play per level, cleaned on read
 so garbage never breaks the page). No cloud sync yet.
 
+## The Daily Last Shot
+
+Home's first card: "Daily Last Shot #N", today's title ("Down 2. 14 seconds. Horns."), the clock
+to the next one (midnight Eastern). One situation a day for everybody (`daily.js`), on the Arcade
+Lab's daily service as the external game `last-shot` (flag `arcade_last_shot`):
+`/api/arcade/last-shot/today|start|run|leaderboard`. The clipboard has the day's spots, clock and
+score and no scout. Practice (the Run It button) is random seeds, unlimited, never posted. Take
+your shot asks "One shot. Ready?" inline, then the run is FILED FIRST and played after: the server
+runs the play itself, and only then does the court show it, so a run that does not file has shown
+nothing and the play stays with one line saying why. The card: the stars, the score text, "Today
+they played: X", "#3 of 41 today", the top ten with you, gems, Share (`Last Shot #N`, the
+squares, the score text, the arcade link: no spoiler) and Beat my play. A second visit shows the
+filed card; practice stays open. Local state is `last_shot_daily` (`daily-ui.js`). `#daily` opens
+it straight away (the Lab links there).
+
+## Beat my play
+
+Every result card but a playbook's has Beat my play: a link, `/last-shot#beat=<code>`
+(`challenge.js`), with the run's situation, seed, play and the level's scout scheme. Opening one
+shows "Their play: WON · 2 stars · 64% look", worked out from their play, never the link. Watch
+their play runs it on its seed; Draw yours opens their spot blank, and Run It always uses their seed
+and scheme. The card says You beat it or They still have it. A bad link says "That link didn't
+work." Leaving clears the hash (`beat-ui.js`).
+
 **Nobody but testers can see it.** The page and its browser modules are served by
 `functions/last-shot/[[path]].js` to a row in `stumpire_testers` (the one tester list), never as
 static files. Everybody else gets the site's 404 page, exactly as Stumpire answers them. It is in no
@@ -51,6 +75,9 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `court.js`, `view.js` | the live court, drawn with Run The Floor's rig (`/hoops/baller.js`, read only) |
 | `client.js`, `share.js`, `sound.js` | home, the page flow (the hold, the run, the answer cutaway), the result and the share line; the sounds |
 | `levels.js`, `ladder-ui.js` | the ladder's levels, sets and star rules; its storage, unlocks and screen |
+| `daily.js`, `daily-ui.js` | the Daily's situation, score and replay (server and page); the API calls, the home card, the result card and board |
+| `challenge.js`, `beat-ui.js` | Beat my play links (format, decode, result); the Challenge screen and the share |
+| `cards.js` | the result card pieces shared by the level, daily and challenge cards |
 | `book.js`, `book-ui.js` | playbooks: the model, the store (local first, cloud behind), the file; the screens |
 | `names.js` | the terminology: names from the set and the actions, in the coach's words |
 | `testit.js` | Test it: every defense, forced after the roll, the same every time |
@@ -63,12 +90,14 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 
 ```
 node functions/_lastshot/build/pages.mjs          after editing web/play.html or any browser module
-node functions/_lastshot/build/dev-server.mjs     local play at /last-shot (?as=nobody for the 404)
+node functions/_lastshot/build/dev-server.mjs     local play at /last-shot (?as=nobody for the 404), the Daily in memory
 node --test functions/_lastshot/test/*.test.mjs   the gate beside Stumpire's, the sim, the three test plays
 node functions/_lastshot/check-posture.mjs
 node functions/_lastshot/test/check-browser.mjs   a whole play on a phone in Chromium
 node functions/_lastshot/test/check-playbook.mjs  the storyboard and My Playbooks, phone and desktop, cloud in memory
 node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, down 2 and 3, overtime, garbage
+node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's real handler in memory (test/fake-arcade.mjs)
+node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
 ```
 
 The seed for any result is behind **Seed** on the result screen. The same seed and the same play
