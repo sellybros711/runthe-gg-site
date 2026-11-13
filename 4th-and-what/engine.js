@@ -133,6 +133,9 @@
 
   /* The weights by distance band, shaded by the down: early downs blitz less
      and rarely bring everybody. 4th down plays the bands as they stand. */
+  /* box is the count in the box, or a function of the coverage that lines
+     the defense up for it and counts: the coverage is the first roll and
+     the blitz the second, the order the dice have always fallen in. */
   function rollCall(T, distance, box, rnd, down) {
     var w0 = distance <= 3 ? T.calls.short : distance <= 7 ? T.calls.medium : T.calls.long;
     var dm = T.calls.byDown && T.calls.byDown[down], w = w0;
@@ -141,6 +144,7 @@
     for (i = 0; i < 4; i++) sum += w[keys[i]];
     var r = rnd() * sum, cov = keys[3];
     for (i = 0; i < 4; i++) { r -= w[keys[i]]; if (r < 0) { cov = keys[i]; break; } }
+    if (typeof box === 'function') box = box(cov);
     var pb = w.blitz + Math.max(0, box - 6) * T.boxBlitz;
     var blitz = cov === 'cover0' ? true : rnd() < pb;
     return { coverage: cov, man: cov === 'cover0' || cov === 'cover1', blitz: blitz, rushers: 4 + (cov === 'cover0' ? 2 : blitz ? 1 : 0) };
@@ -185,7 +189,44 @@
   /* Who lines up where, what the defense calls, and every man's plan at the
      snap. run() and plans() both start here, so a scout card shows exactly
      the setup the sim plays. The only dice it rolls are the call's. */
-  function setup(scenario, play, opt, rnd) {
+  /* ---------- the shell: what the defense shows before the snap ---------- */
+
+  /* The shell a coverage shows: two high, one high or zero. */
+  var SHELL = { cover0: 'zero', cover1: 'one', cover2: 'two', cover3: 'one' };
+  /* A disguise shows another: two high rotates to one, one high spins to two,
+     zero shows one high and the safety walks down late. */
+  var FAKE = { two: 'one', one: 'two', zero: 'one' };
+  /* The shell shown on this snap. The disguise roll has its own stream off
+     the seed, so it never moves the dice the play itself rolls. plans()
+     passes no seed and shows the true shell. */
+  function shownShell(T, coverage, seed) {
+    var real = SHELL[coverage], sh = T.shell;
+    if (!sh || seed == null) return real;
+    var r = RNG.mulberry32(((seed >>> 0) ^ 0x5bd1e995) >>> 0)();
+    return r < sh.disguise ? FAKE[real] : real;
+  }
+  /* Lines the safeties and corners up for a shell and a coverage, on the
+     formation's own alignment (FM.defense). The safety rolled down in one
+     high goes to the side with more eligible men. Short yardage keeps the
+     corners as tight as the formation put them. */
+  function alignShell(T, Dal, Oal, shell, coverage, distance) {
+    var sh = T.shell; if (!sh) return Dal;
+    var strong = 0;
+    FM.ELIGIBLE.forEach(function (id) { if (Oal[id] && Math.abs(Oal[id][0]) > 1.5) strong += Oal[id][0] > 0 ? 1 : -1; });
+    var sg = strong >= 0 ? 1 : -1;
+    var spots = sh[shell].s, saf = Dal.filter(function (d) { return d.role === 's'; }).sort(function (a, b) { return a.at[0] - b.at[0]; });
+    if (saf.length === 1) saf[0].at = [0, shell === 'zero' ? spots[1][1] : sh.one.s[0][1]];
+    else if (shell === 'one') {
+      /* the safety on the strong side rolls down; the other plays the middle */
+      var down = sg > 0 ? saf[1] : saf[0], up = down === saf[0] ? saf[1] : saf[0];
+      down.at = [spots[1][0] * sg, spots[1][1]]; up.at = [spots[0][0], spots[0][1]];
+    } else { saf[0].at = spots[0].slice(); saf[1].at = spots[1].slice(); }
+    var cy = sh.cbY[coverage];
+    Dal.forEach(function (d) { if (d.role === 'cb' && /^CB/.test(d.id) && Math.abs(d.at[0]) > 7) d.at = [d.at[0], distance <= 2 ? Math.min(d.at[1], cy) : cy]; });
+    return Dal;
+  }
+
+  function setup(scenario, play, opt, rnd, seed) {
     /* the level (High School, College, the NFL) sets the tuning and the player types */
     var LV = CFG.level ? CFG.level(scenario.level) : null;
     var T = opt.tuning || (LV ? LV.tuning : CFG.TUNING), A = LV ? LV.archetypes : CFG.ARCHETYPES;
@@ -195,8 +236,7 @@
     var setDef = FM.BY_ID[play.formation] || FM.SETS[0];
     /* the defense aligns to the formation before any motion */
     var Oal = FM.place(setDef.id, play.moved);
-    var Dal = FM.defense(setDef.id, play.moved, distance);
-    var box = FM.boxCount(Dal);
+    var Dal = FM.defense(setDef.id, play.moved, distance), box = 0, shell = null;
     var mo = motionOf(play);
     /* O is where everybody is at the snap: the motion man at the end of his motion */
     var O = FM.place(setDef.id, play.moved);
@@ -211,7 +251,14 @@
 
     /* The call is always rolled, so the dice after it fall the same way. A
        forced call (Test it, against one defense) then replaces what it says. */
-    var call = rollCall(T, distance, box, rnd, S.down);
+    var call = rollCall(T, distance, function (cov) {
+      /* the defense lines up to show its coverage (a forced call shows its own) */
+      var real = opt.call && CALLS[opt.call] ? CALLS[opt.call].coverage : cov;
+      shell = shownShell(T, real, seed);
+      alignShell(T, Dal, Oal, shell, real, distance);
+      box = FM.boxCount(Dal);
+      return box;
+    }, rnd, S.down);
     if (opt.call && CALLS[opt.call]) {
       var fc = CALLS[opt.call];
       call = { coverage: fc.coverage, man: fc.coverage === 'cover0' || fc.coverage === 'cover1', blitz: fc.blitz,
@@ -427,7 +474,7 @@
       coverers.forEach(function (d) { if (d.plan === 'stand') { d.plan = 'zone'; d.mark = landmark(0, under(6)); } });
     }
 
-    return { T: T, S: S, distance: distance, Y0: Y0, BX: BX, marker: marker, setDef: setDef, O: O, Oal: Oal, Dal: Dal, box: box,
+    return { T: T, S: S, distance: distance, Y0: Y0, BX: BX, marker: marker, setDef: setDef, O: O, Oal: Oal, Dal: Dal, box: box, shell: shell,
       isRun: isRun, routes: routes, blocks: blocks, targets: targets, abs: abs, call: call, E: E, byId: byId, QB: QB,
       offense: offense, defense: defense, ballCarrierId: ballCarrierId, stayIns: stayIns, rushers: rushers, receivers: receivers,
       track: track, motion: motion, pa: pa };
@@ -451,12 +498,24 @@
     return plansOf(ctx);
   }
 
+  /* look(scenario, play, seed): the defense as it lines up before this
+     snap, and the shell it shows. Exactly what run() starts from with the
+     same seed, and nothing it decides after: not the call, not the blitz.
+     The shell depends only on the seed and the situation, so it is the
+     same whichever play is called; the men line up over that play's set. */
+  function look(scenario, play, seed) {
+    var ctx = setup(scenario, play, {}, RNG.mulberry32(seed >>> 0), seed >>> 0);
+    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    return { shell: ctx.shell, box: ctx.box,
+      defense: ctx.defense.map(function (d) { return { id: d.id, role: d.role, at: [r2(d.ax != null ? d.ax - ctx.BX : d.x - ctx.BX), r2((d.ay != null ? d.ay : d.y) - ctx.Y0)] }; }) };
+  }
+
   /* ---------- the run ---------- */
 
   function run(scenario, play, seed, opt) {
     opt = opt || {};
     var rnd = RNG.mulberry32(seed >>> 0);
-    var ctx = setup(scenario, play, opt, rnd);
+    var ctx = setup(scenario, play, opt, rnd, seed);
     var T = ctx.T, dt = T.dt, S = ctx.S, distance = ctx.distance, Y0 = ctx.Y0, BX = ctx.BX, marker = ctx.marker;
     var setDef = ctx.setDef, box = ctx.box, isRun = ctx.isRun, routes = ctx.routes, targets = ctx.targets, call = ctx.call;
     var E = ctx.E, byId = ctx.byId, QB = ctx.QB, offense = ctx.offense, defense = ctx.defense;
@@ -1017,7 +1076,7 @@
     }
 
     return {
-      seed: seed >>> 0, distance: distance, callKey: callKey(call), down: downName(distance, Y0, down), downNum: down, ballOn: S.ballOn, goal: S.goal,
+      seed: seed >>> 0, distance: distance, callKey: callKey(call), shell: ctx.shell, disguised: ctx.shell !== SHELL[call.coverage], down: downName(distance, Y0, down), downNum: down, ballOn: S.ballOn, goal: S.goal,
       situation: situationName(down, distance, S.ballOn), next: next, Y0: Y0, BX: BX, marker: marker, box: box, level: scenario.level || 'nfl',
       formation: setDef.id, isRun: isRun, call: call, callName: callName(call), callLine: callLine(call),
       pocket: Math.round(Tp * 100) / 100, outcome: outcome, win: win, title: title,
@@ -1029,7 +1088,7 @@
     };
   }
 
-  var API = { run: run, plans: plans, situationName: situationName, situation: situation, rollCall: rollCall, CALLS: CALLS, CALL_KEYS: CALL_KEYS, callKey: callKey, spotName: spotName, downName: downName, routeName: routeName, callName: callName, chance: chance, FIELD_W: FIELD_W };
+  var API = { run: run, plans: plans, look: look, SHELL: SHELL, situationName: situationName, situation: situation, rollCall: rollCall, CALLS: CALLS, CALL_KEYS: CALL_KEYS, callKey: callKey, spotName: spotName, downName: downName, routeName: routeName, callName: callName, chance: chance, FIELD_W: FIELD_W };
   if (isNode) module.exports = API;
   else root.FAW_ENGINE = API;
 })(typeof window !== 'undefined' ? window : this);

@@ -183,6 +183,23 @@
     /* every defender past six in the box adds this to the blitz chance */
     boxBlitz: 0.08,
 
+    /* THE SHELL: the defense shows its coverage before the snap, the way a
+       real one does, so a coach can read it (the owner, 2026-11-13: play
+       cards and a pre-snap read). Two high safeties for cover 2, one high
+       with the other rolled down toward the strength for cover 1 and 3,
+       nobody deep for cover 0; corners press in man (cover 0 and 1), sit at
+       squat depth in cover 2 and bail off in cover 3. A disguise share of
+       snaps shows the wrong shell and rotates after the snap, which costs
+       the defense the steps it takes to get there. Positions are yards from
+       the ball (x across, y deep). */
+    shell: {
+      disguise: 0.25,
+      two:  { s: [[-9, 13], [9, 13]] },
+      one:  { s: [[0, 13.5], [4, 7.5]] },
+      zero: { s: [[-4.5, 6], [4.5, 6]] },
+      cbY: { cover0: 1.5, cover1: 2, cover2: 4.5, cover3: 7 }
+    },
+
     /* PRE-SNAP MOTION. The motion man jogs his path at jog yards a second
        and opens up over its last build yards, so at the snap he is moving at
        speed of his top speed along its last leg (a cut into his route costs

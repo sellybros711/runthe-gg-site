@@ -54,7 +54,10 @@ test('the defense aligns to the formation before the motion', () => {
   const pl = E.plans(at({ distance: 5 }), JET, 'cover3');
   const want = F.defense(JET.formation, JET.moved, 5);
   assert.deepEqual(pl.map(d => d.id), want.map(d => d.id));
-  pl.forEach((d, k) => { near(d.at[0], want[k].at[0], 0.01, d.id); near(d.at[1], want[k].at[1], 0.01, d.id); });
+  /* the front and the backers are the formation's; the safeties and the
+     corners then show the call's shell (cover 3: one high, corners off) */
+  pl.forEach((d, k) => { if (d.role === 'dl' || d.role === 'lb') { near(d.at[0], want[k].at[0], 0.01, d.id); near(d.at[1], want[k].at[1], 0.01, d.id); } });
+  assert.equal(pl.filter(d => d.role === 's' && d.at[1] > 10).length, 1, 'cover 3 shows one high');
   /* lining up at the motion's end instead would draw a different defense */
   const end = JET.motion.pts[JET.motion.pts.length - 1];
   const other = F.defense(JET.formation, { SLOT: end }, 5);
@@ -213,12 +216,14 @@ test('the defense answers motion: man travels with him, zone bumps, cover 3 spin
   assert.ok(z.every(d => d.plan !== 'man'));
   /* cover 3 spins on a full jet across the ball with two high safeties */
   const wide = Object.assign({}, PLAYBOOK.stick, { motion: { who: 'WR2', pts: [[4, -1.5], [-6, -1.5]] } });
-  const s3 = E.plans(sc, wide, 'cover3'), saf = s3.filter(d => d.role === 's');
+  /* cover 3 shows one high, so it spins only on a snap that disguises it as two high */
+  let seed = 1; while (E.run(sc, wide, seed, { call: 'cover3' }).shell !== 'two') seed++;
+  const s3 = E.run(sc, wide, seed, { call: 'cover3' }).plans, saf = s3.filter(d => d.role === 's');
   assert.equal(saf.length, 2);
   const down = saf.find(d => d.snap[1] < d.at[1] - 3);
   assert.ok(down, 'a safety rotates down: ' + JSON.stringify(saf.map(d => [d.at, d.snap])));
   assert.ok(down.snap[0] < 0, 'on the side the motion went');
   /* the same motion against cover 2 does not spin */
-  const s2 = E.plans(sc, wide, 'cover2').filter(d => d.role === 's');
+  const s2 = E.run(sc, wide, seed, { call: 'cover2' }).plans.filter(d => d.role === 's');
   assert.ok(s2.every(d => d.snap[1] === d.at[1]), 'no spin in cover 2');
 });

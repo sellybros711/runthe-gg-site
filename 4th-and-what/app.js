@@ -25,7 +25,7 @@
   'use strict';
   var C = window.FAW_CONFIG, E = window.FAW_ENGINE, B = window.FAW_BOOK, N = window.FAW_NAMES, R = window.FAW_ROUTES, F = window.FAW_FORMATIONS;
   var $ = function (id) { return document.getElementById(id); };
-  var VIEWS = ['home', 'daily', 'trivia', 'play', 'studio', 'replay', 'learn', 'books', 'test', 'print'];
+  var VIEWS = ['home', 'daily', 'trivia', 'play', 'call', 'studio', 'replay', 'learn', 'books', 'test', 'print'];
   /* the Studio has two modes: 'game' (Play's draw step: the field, the tools, Snap it) and 'build' */
   var mode = 'build';
   var hooks = {}, current = null;
@@ -123,7 +123,7 @@
     current = v;
     VIEWS.forEach(function (x) { var s = $('v' + x.charAt(0).toUpperCase() + x.slice(1)); if (s) s.hidden = x !== v; });
     /* Play's draw step and the breakdown belong to the Play tab */
-    var tabOf = (v === 'studio' && mode === 'game') || v === 'replay' ? 'play' : v;
+    var tabOf = (v === 'studio' && mode === 'game') || v === 'replay' || v === 'call' ? 'play' : v;
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { if (t.dataset.view === tabOf) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     var hash = v === 'studio' && mode === 'game' ? 'draw' : v;
     if (location.hash !== '#' + hash) history.replaceState(null, '', '#' + hash);
