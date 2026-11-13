@@ -1,8 +1,11 @@
 # Last Shot (testers only)
 
-One possession. You are the coach. It starts in a timeout with a blank clipboard: draw a play,
-Run It, and your five run exactly what you drew with 22.0 on the clock, down 1. Score in the last
-4.9 to win. Score earlier and they get the ball back.
+One possession. You are the coach. It starts in a timeout: draw a play, set when it goes (Go at,
+on the clipboard: the handler holds till then), Run It, and your five run exactly what you drew
+with 22.0 on the clock, down 1. Score in the last 4.9 to win. Score earlier and they get the ball
+back, and a short cutaway shows their shot. A first visit finds a starter play already drawn (a
+pin-down, Go at 6.0) with Run It pulsing; Clear gives a blank clipboard. Runs have a 2x toggle and
+synthesized sound (`sound.js`, mute remembered); dead time plays at 4x.
 
 **Nobody but testers can see it.** The page and its browser modules are served by
 `functions/last-shot/[[path]].js` to a row in `stumpire_testers` (the one tester list), never as
@@ -16,7 +19,7 @@ gate works for every tester game is `platform/platform-tester-gate.md`.
 
 ## My Playbooks
 
-Home has two parts: **Play the scenario** (the game) and **My Playbooks** (needs a Run The Games
+Home has two parts: **Play** (the game, first and biggest) and **My Playbooks** (needs a Run The Games
 account). A playbook play is drawn as a **storyboard**: Next frame opens a frame where everyone
 ended, earlier frames show faintly, Play frame runs just that frame. Frames are presentation only:
 the sim never reads them. Plays are named from the coach's terminology, tested against every
@@ -34,7 +37,7 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `motion.js`, `defense.js`, `shot.js` | how bodies move; man to man and the three screen schemes; shot quality |
 | `board.js` | the clipboard: Move, Screen, Pass, Shoot, Undo, Clear, Run It (pointer events) |
 | `court.js`, `view.js` | the live court, drawn with Run The Floor's rig (`/hoops/baller.js`, read only) |
-| `client.js`, `share.js` | home, the page flow, the result and the share line |
+| `client.js`, `share.js`, `sound.js` | home, the page flow (the hold, the run, the answer cutaway), the result and the share line; the sounds |
 | `book.js`, `book-ui.js` | playbooks: the model, the store (local first, cloud behind), the file; the screens |
 | `names.js` | the terminology: names from the set and the actions, in the coach's words |
 | `testit.js` | Test it: every defense, forced after the roll, the same every time |
