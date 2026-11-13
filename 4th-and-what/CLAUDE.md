@@ -19,7 +19,7 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   `data/fourths.json` (built by `build/fourths.mjs` from nflverse play-by-play, CC-BY 4.0, credited
   on the page) on the Eastern day, the same for everybody. Every fact on its card is a field of
   that row; never type one by hand. Its intro is a big moment (the owner, 2026-11-06): the night
-  stadium, the scoreboard, the down, the stakes, the ball on a strip of field, a glowing gold button. The first snap is the day's, against the day's seed; every
+  stadium, the scoreboard, the down, the stakes, the ball on a strip of field, a glowing gold button. Make the call opens Call it (since 2026-11-13) with the day's look and the day's hand, the same for everybody; Draw your own is a card. The streak shows for everybody: the server's when signed in, else the device's days in a row (`streakOf`). The first snap is the day's, against the day's seed; every
   snap after it is practice and never posted. Save play stays on the card. The server is
   `supabase/162_fourth_and_what_daily.sql` (one row a player a day, the first post stands). Rebuild
   the data after a season and bump `fourths.json`'s `?v=` in `daily.js`. Never reshuffle the order

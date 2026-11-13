@@ -89,3 +89,11 @@ test('the stakes line comes from the score and the clock', () => {
     assert.ok(!/undefined|NaN/.test(t) && ![...t].some(c => c.charCodeAt(0) === 0x2013 || c.charCodeAt(0) === 0x2014), 'day ' + n + ': ' + t);
   }
 });
+
+test('the streak on this device: days in a row, from today or from yesterday', () => {
+  assert.equal(D.prevDay('2026-03-01'), '2026-02-28'); assert.equal(D.prevDay('2026-01-01'), '2025-12-31');
+  assert.equal(D.streakOf(['2026-11-11', '2026-11-12', '2026-11-13'], '2026-11-13'), 3);
+  assert.equal(D.streakOf(['2026-11-11', '2026-11-12'], '2026-11-13'), 2, 'today still to play keeps yesterday\'s streak');
+  assert.equal(D.streakOf(['2026-11-10', '2026-11-12', '2026-11-13'], '2026-11-13'), 2, 'a missed day breaks it');
+  assert.equal(D.streakOf([], '2026-11-13'), 0);
+});

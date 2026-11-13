@@ -126,7 +126,7 @@
     FL.snap(h.play, h.concept + ' · ' + h.setName);
   }
   $('cSnap').addEventListener('click', snapIt);
-  $('cBack').addEventListener('click', function () { A.show('play'); });
+  $('cBack').addEventListener('click', function () { A.show(root.FAW_DAILY && root.FAW_DAILY.active() ? 'daily' : 'play'); });
   A.on('call', open);
   window.addEventListener('resize', function () { if (!$('vCall').hidden && hand.length) draw(); });
 
