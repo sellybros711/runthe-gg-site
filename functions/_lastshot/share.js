@@ -4,6 +4,7 @@
  * hand a non-tester the route.
  *
  *   Last Shot WINNER 89-88 · 2.1
+ *   (a tie that went to overtime: Last Shot WINNER 88-88 OT · 2.1)
  *   ⬜🟦🟨🟩
  *   https://runthe.gg/arcade/
  */
@@ -22,6 +23,6 @@ export function squaresOf(play, res) {
 }
 
 export function shareText(play, res) {
-  const head = 'Last Shot ' + (res.outcome === 'win' ? 'WINNER' : 'LOSE') + ' ' + res.us + '-' + res.them + (res.shotAt != null ? ' · ' + res.shotAt.toFixed(1) : '');
+  const head = 'Last Shot ' + (res.outcome === 'win' ? 'WINNER' : 'LOSE') + ' ' + res.us + '-' + res.them + (res.how === 'ot' ? ' OT' : '') + (res.shotAt != null ? ' · ' + res.shotAt.toFixed(1) : '');
   return head + '\n' + squaresOf(play, res).join('') + '\n' + SHARE_URL;
 }

@@ -1,8 +1,10 @@
 /* The page: home, then the clipboard, the live play and the result. It holds
  * no rules; the sim decides everything and this only shows it.
  *
- * TWO WAYS IN (home): Play the scenario (the game, down 1 with 22.0), and My
- * Playbooks (book-ui.js). A playbook play opens on this same clipboard in
+ * THREE WAYS IN (home): Play the scenario (the game, down 1 with 22.0), the
+ * Ladder (levels.js, ladder-ui.js: a level opens on this same clipboard in
+ * LEVEL mode, with its own scenario, its forced scheme, its own saved play and
+ * a result card with stars), and My Playbooks (book-ui.js). A playbook play opens on this same clipboard in
  * EDIT mode: its own situation (clock, who has the ball), its name and notes
  * above, edits saved as they happen, and every watched run counted against
  * the scheme the sim used.
@@ -17,7 +19,9 @@
  *     scenario would take a dated seed and a board like RTG_BOARD's. */
 import { SCENARIO as SC, isZone } from './scenario.js';
 import { simulate } from './sim.js';
-import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, GO_AT_MIN } from './playbook.js';
+import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, GO_AT_MIN, GO_AT_NEW } from './playbook.js';
+import { LEVELS, levelById, levelScenario, levelOpt, starsOf, STAR_RULES, LOOK } from './levels.js';
+import { loadLadder, saveLadder, renderLadder, isOpen, nextOf, starsIn, maxStars, clockLine, scoutLine, starText } from './ladder-ui.js';
 import { createBoard } from './board.js';
 import { mountBooks } from './book-ui.js';
 import { createCourt, between, warm } from './court.js';
@@ -38,10 +42,13 @@ let speed = lsGet(SPEED_KEY) === '2' ? 2 : 1, paused = false, ranOnce = false, l
 const sound = createSound();
 /* The AudioContext waits for a gesture: the first touch anywhere makes it. */
 document.addEventListener('pointerdown', () => sound.unlock(), { passive: true });
-/* 'game' (the scenario) or 'edit' (a playbook play: { book, entry }) */
-let mode = 'game', edit = null;
-/* The scenario this play runs in: the game's, or the play's own situation. */
-const SCX = () => (mode === 'edit' && edit ? scenarioFor(SC, edit.entry.situation) : SC);
+/* 'game' (the scenario), 'edit' (a playbook play: { book, entry }) or
+   'level' (a ladder level: lvl = { L, sc }) */
+let mode = 'game', edit = null, lvl = null;
+/* The player's ladder: best stars and a play per level (ladder-ui.js). */
+let ladder = loadLadder();
+/* The scenario this play runs in: the game's, the play's own situation, or the level's. */
+const SCX = () => (mode === 'edit' && edit ? scenarioFor(SC, edit.entry.situation) : mode === 'level' && lvl ? lvl.sc : SC);
 
 function loadPlay() {
   const raw = lsGet(KEY);
@@ -78,7 +85,9 @@ const ui = {
     if (f) frameStrip(p, f);
     if (!hintTimer || !$('hint').textContent) $('hint').textContent = defaultHint();
   },
-  scenario: () => SCX()
+  scenario: () => SCX(),
+  /* the defense the scout told you about: the clipboard sets it up that way */
+  scheme: () => (mode === 'level' && lvl ? lvl.L.scheme : null)
 };
 function defaultHint() {
   if (!board) return '';
@@ -90,6 +99,7 @@ function defaultHint() {
 function savePlay(p) {
   play = p;
   if (mode === 'edit' && edit) books.playChanged(edit, p);
+  else if (mode === 'level' && lvl) { ladder.plays[lvl.L.id] = p; saveLadder(ladder); }
   else lsSet(KEY, JSON.stringify(p));
 }
 const board = createBoard($('board'), SC, () => play, savePlay, ui);
@@ -239,6 +249,9 @@ const AFTER = 1.15;   // seconds of the ball playing out at the rim
    up, then it plays out with the word on it. */
 const CUT = { run: 1.1, fly: 0.85, out: 0.9 };
 
+/* How long OVERTIME stays up on its own before the verdict, in wall seconds. */
+const OT_BEAT = 1.1;
+
 /* The shot readout: the caption's own word, then the make chance. */
 const readout = e => (e.p != null ? e.text + ' · ' + Math.round(e.p * 100) + '%' : e.text);
 
@@ -246,12 +259,13 @@ function run(seed, opt) {
   const tap = performance.now();
   sound.unlock();
   const S = SCX();
-  const res = simulate(S, play, seed, opt || {});
+  /* a ladder level always plays its own scheme (the scout's, or the roll) */
+  const res = simulate(S, play, seed, mode === 'level' && lvl ? levelOpt(lvl.L) : (opt || {}));
   lastResult = res; ranOnce = true; lastTiming = null;
   if (mode === 'edit' && edit) books.countRun(edit, res);
   $('board').hidden = true; $('court').hidden = false;
   clipTools(false);
-  $('sheet').classList.remove('on'); $('hint').textContent = '';
+  $('sheet').classList.remove('on'); $('vGame').classList.remove('lres'); clearStars(); $('hint').textContent = '';
   banner(null); cutUi(null);
   const reduce = reduced();
   const F = res.frames, last = F[F.length - 1];
@@ -263,7 +277,8 @@ function run(seed, opt) {
   const actT = firstActionT(F);
   const answer = res.answer && res.answer.at != null && res.answer.startAt != null ? res.answer : null;
   live = { res, i: 0, g: go, shown: 0, us: S.us, them: S.them, rate: 1, phase: holdWall ? 'hold' : 'beat', w: 0, ph: 0,
-    after: null, spin: 0, cut: null, winner: false, tap };
+    after: null, spin: 0, cut: null, winner: false, made: false, tap };
+  const ot = res.how === 'ot';
   caps.q = []; caps.until = 0; $('pop').classList.remove('on', 'final', 'shot');
   setScore(S.us, S.them, start);
   let prev = performance.now();
@@ -272,6 +287,11 @@ function run(seed, opt) {
     live.phase = 'end'; live.w = 0;
     $('clock').classList.remove('them'); $('stage').classList.remove('slow');
     sound.buzzer();
+    /* OVERTIME gets its own beat: the word, then how it went (phase 'ot'). */
+    if (ot) { live.phase = 'ot'; cutUi(null); banner('OVERTIME'); buzz(30); return; }
+    endJuice();
+  }
+  function endJuice() {
     if (res.outcome === 'win') { if (!live.winner) { sound.crowd(); buzz([40, 50, 40, 50, 140]); } }
     else sound.groan();
   }
@@ -287,8 +307,8 @@ function run(seed, opt) {
   };
   function say() {
     live.cut.said = true;
-    cutVerdict(answer.scored);
-    if (answer.scored) { live.them = res.them; flip('sThem'); sound.swish(); }
+    cutVerdict(answer, res);
+    if (answer.scored || answer.tied) { live.them = res.them; flip('sThem'); sound.swish(); }
     else sound.rim();
   }
 
@@ -326,12 +346,12 @@ function run(seed, opt) {
         $('stage').classList.remove('slow');
         if (res.shot && !res.shot.made) sound.rim();
       }
-    } else if (live.phase === 'after' || (live.phase === 'end' && !live.cut)) {
+    } else if (live.phase === 'after' || ((live.phase === 'end' || live.phase === 'ot') && !live.cut)) {
       // the first beat at the rim at speed, then the rest is dead time
       if (live.after) live.after.t += dt * (live.after.t > 0.6 ? DEAD : 1);
       fr = last; clock = last.t;
     }
-    if (live.phase === 'cut' || (live.phase === 'end' && live.cut)) {
+    if (live.phase === 'cut' || ((live.phase === 'end' || live.phase === 'ot') && live.cut)) {
       const c = live.cut, A = answer, T1 = CUT.run, T2 = T1 + CUT.fly, T3 = T2 + CUT.out;
       if (live.phase === 'cut') c.w += dt;
       clock = c.w < T1 ? A.startAt - (A.startAt - A.at) * (c.w / T1) : A.at;
@@ -346,11 +366,15 @@ function run(seed, opt) {
       while (live.shown < res.events.length && (res.events[live.shown].t >= live.g || live.phase === 'after')) {
         const e = res.events[live.shown++];
         if (e.shot) { caption(Object.assign({}, e, { text: readout(e) })); buzz(15); continue; }
-        if (e.final && answer) continue;   // the cutaway says how it ended
+        /* after the make, the cutaway and the overtime beat say how it ended */
+        if (live.made && (answer || ot)) continue;
+        if (e.final && answer) continue;
         if (!e.quiet) caption(e);
         if (/Good$/.test(e.text)) {
+          live.made = true;
           live.us = S.us + res.shot.points; flip('sUs'); sound.swish();
           if (res.how === 'make' && res.outcome === 'win') { live.winner = true; banner('GAME WINNER'); sound.crowd(); buzz([40, 50, 40, 50, 140]); }
+          else if (ot && res.ot.after === 'end') { banner('TIED IT'); buzz(30); }
         }
         if (e.text === 'They answered') live.them = res.them;
       }
@@ -360,9 +384,18 @@ function run(seed, opt) {
     if (live.phase === 'after') {
       const played = live.after.t >= (shotEnds ? AFTER : 0.4);
       if (played && !caps.q.length) { if (answer) startCut(); else toEnd(); }
+    } else if (live.phase === 'ot') {
+      live.w += raw * (speed > 1 ? 1.5 : 1);
+      if (live.w >= OT_BEAT) {
+        const fin = res.events.find(e => e.final);
+        banner(res.outcome === 'win' ? 'WON IN OT' : null);
+        pop(fin ? fin.text : res.outcome === 'win' ? 'You win' : 'They win', true);
+        endJuice(); live.winner = res.outcome === 'win';
+        live.phase = 'end'; live.w = 0;
+      }
     } else if (live.phase === 'end') {
       live.w += raw;
-      const wait = (live.winner ? 1.3 : 0.5) / (speed > 1 ? 1.5 : 1);
+      const wait = (live.winner ? 1.3 : ot ? 1.1 : 0.5) / (speed > 1 ? 1.5 : 1);
       if (live.w >= wait) { lastTiming = performance.now() - live.tap; showResult(res); return; }
     }
     requestAnimationFrame(tick);
@@ -385,11 +418,12 @@ function cutUi(A) {
   $('cutHead').textContent = 'Their ball, ' + A.startAt.toFixed(1) + ' left';
   const v = $('cutV'); v.textContent = ''; v.className = 'cutv'; $('cutSub').textContent = '';
 }
-function cutVerdict(scored) {
-  const v = $('cutV');
-  v.className = 'cutv on ' + (scored ? 'good' : 'miss');
-  v.textContent = scored ? 'GOOD' : 'They missed. You win';
-  $('cutSub').textContent = scored ? 'They answered.' : '';
+function cutVerdict(A, res) {
+  const v = $('cutV'), good = A.scored || A.tied;
+  v.className = 'cutv on ' + (good ? 'good' : 'miss');
+  /* up 2, their two only ties it; tied, their miss only means overtime */
+  v.textContent = good ? 'GOOD' : res.how === 'ot' ? 'They missed' : 'They missed. You win';
+  $('cutSub').textContent = A.scored ? 'They answered.' : A.tied ? 'They tied it.' : res.how === 'ot' ? 'Still tied.' : '';
 }
 
 /* CAPTIONS, ONE AT A TIME. Each stays up long enough to read on a phone; a
@@ -417,13 +451,15 @@ function pop(text, final, shot) {
 function showResult(res) {
   banner(null); cutUi(null);
   setScore(res.us, res.them, res.shotAt != null ? res.shotAt : 0);
+  if (mode === 'level' && lvl) { showLevelResult(res); return; }
+  $('card').className = 'card';
   const win = res.outcome === 'win';
   const when = res.shotAt != null ? 'Shot went up with ' + res.shotAt.toFixed(1) + ' left.' : 'No shot.';
   const c = $('card');
   c.innerHTML = '';
   const add = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; c.appendChild(e); return e; };
   add('h2', 'verdict ' + (win ? 'win' : 'lose'), win ? 'WINNER' : 'LOSE');
-  add('div', 'finalscore', res.us + '-' + res.them);
+  add('div', 'finalscore', res.us + '-' + res.them + (res.how === 'ot' ? ' · OT' : ''));
   add('p', 'facts', when + (isZone(res.scheme) ? ' Their defense: ' : ' Their call on screens: ') + res.schemeName + '.');
   add('p', 'reason', res.reason);
   const row = add('div', 'row');
@@ -442,8 +478,97 @@ function showResult(res) {
   $('sheet').classList.add('on');
 }
 
+/* THE LEVEL RESULT: the stars one at a time, what each one asks and whether
+   this run did it, a new best, then Next level, Try again or the Ladder. */
+let starTimers = [];
+const pct = p => Math.round(p * 100) + '%';
+function showLevelResult(res) {
+  const L = lvl.L, n = starsOf(res), prev = ladder.best[L.id] || 0, better = n > prev;
+  if (better) { ladder.best[L.id] = n; saveLadder(ladder); }
+  levelBar(L);
+  const win = res.outcome === 'win', reduce = reduced();
+  const c = $('card');
+  c.className = 'card lvl';
+  c.innerHTML = '';
+  c.dataset.stars = String(n);
+  const add = (tag, cls, text, to) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; (to || c).appendChild(e); return e; };
+  add('p', 'lvlname', L.id + ' · ' + L.title);
+  const top = add('div', 'lvltop');
+  const v = add('div', null, null, top);
+  add('h2', 'verdict ' + (win ? 'win' : 'lose'), win ? 'WINNER' : 'LOSE', v);
+  add('div', 'finalscore', res.us + '-' + res.them + (res.how === 'ot' ? ' · OT' : ''), v);
+  const st = add('div', 'stars', null, top);
+  st.setAttribute('aria-label', n + ' of 3 stars');
+  for (let i = 0; i < 3; i++) {
+    const s = add('span', 'star' + (i < n ? ' got' : ''), '★', st);
+    if (i < n && !reduce) s.style.animationDelay = (0.25 + i * 0.4) + 's';
+  }
+  if (better && n > 0) add('p', 'newbest', prev ? 'New best. Up from ' + prev + '.' : 'New best.');
+  const shot = res.shot;
+  const detail = [
+    win ? '' : res.how === 'ot' ? 'Lost in overtime.' : '',
+    shot ? (shot.p >= LOOK ? 'Your look: ' + pct(shot.p) + '.' : 'Your look: ' + pct(shot.p) + '. Open is ' + pct(LOOK) + '.') : 'No shot.',
+    shot ? (shot.bailout ? 'It was a bail out.' : 'It went up with ' + res.shotAt.toFixed(1) + '.') : ''
+  ];
+  const ul = add('ul', 'checks');
+  STAR_RULES.forEach((r, i) => {
+    const li = add('li', i < n ? 'met' : 'not', null, ul);
+    add('span', 'mark', i < n ? '✓' : '✗', li);
+    const t = add('span', 'ct', null, li);
+    add('b', null, r, t);
+    if (detail[i]) add('small', null, detail[i], t);
+  });
+  add('p', 'reason', res.reason);
+  add('p', 'facts', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
+  const row = add('div', 'row');
+  const btn = (label, cls, fn, id, to) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; if (id) b.id = id; b.addEventListener('click', fn); (to || row).appendChild(b); return b; };
+  /* Next level once the next one is open; first when this run won it */
+  const next = nextOf(L.id), canNext = !!next && isOpen(ladder, next.id);
+  const goNext = () => btn('Next level', n >= 1 ? 'go' : 'alt', () => openLevel(next), 'bNextLvl');
+  if (canNext && n >= 1) goNext();
+  btn('Try again', canNext && n >= 1 ? 'alt' : 'go', () => run(freshSeed()), 'bReplay');
+  if (canNext && n < 1) goNext();
+  const row2 = add('div', 'row');
+  btn('Edit the play', 'alt', backToBoard, 'bBack', row2);
+  btn('Back to Ladder', 'alt', openLadder, 'bLadder', row2);
+  const dbg = btn(debugOn ? 'Hide seed' : 'Seed', '', () => { debugOn = !debugOn; pre.hidden = !debugOn; dbg.textContent = debugOn ? 'Hide seed' : 'Seed'; }, 'bSeed', row2);
+  dbg.className = 'link';
+  const pre = add('div', 'dbg'); pre.id = 'seedBox'; pre.hidden = !debugOn;
+  pre.textContent = 'level ' + L.id + '\nseed ' + res.seed + '\nscheme ' + res.scheme + '\nshot ' + JSON.stringify(res.shot) + '\nanswer ' + JSON.stringify(res.answer) + '\not ' + JSON.stringify(res.ot) + '\nplay ' + playKey(play);
+  $('vGame').classList.add('lres');
+  court.draw(res.frames[res.frames.length - 1]);
+  $('sheet').classList.add('on');
+  c.scrollTop = 0;
+  /* the stars land one at a time, a ding each; three of them is a party */
+  clearStars();
+  for (let i = 0; i < n; i++) starTimers.push(setTimeout(() => { sound.star(i + 1); buzz(12); }, reduce ? 0 : (250 + i * 400 + 200)));
+  if (n === 3) starTimers.push(setTimeout(() => party(c), reduce ? 0 : 1450));
+}
+function clearStars() { for (const t of starTimers) clearTimeout(t); starTimers = []; }
+/* Three stars: the card glows, a PERFECT tag, confetti and a fanfare. */
+function party(c) {
+  c.classList.add('perfect');
+  const tag = document.createElement('div'); tag.className = 'perfecttag'; tag.textContent = 'PERFECT';
+  c.appendChild(tag);
+  sound.fanfare(); buzz([30, 40, 30, 40, 30, 40, 160]);
+  if (reduced()) return;
+  const box = document.createElement('div'); box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+  const cols = ['#ffd23f', '#22B07D', '#E8742A', '#1f4e79', '#E0533D'];
+  for (let i = 0; i < 26; i++) {
+    const b = document.createElement('i');
+    b.style.left = (4 + (i * 37) % 92) + '%';
+    b.style.background = cols[i % cols.length];
+    b.style.animationDelay = ((i * 53) % 400) / 1000 + 's';
+    b.style.setProperty('--dx', ((i * 29) % 60 - 30) + 'px');
+    box.appendChild(b);
+  }
+  c.appendChild(box);
+  setTimeout(() => box.remove(), 2600);
+}
+
 function backToBoard() {
-  live = null;
+  live = null; clearStars();
+  $('vGame').classList.remove('lres');
   $('sheet').classList.remove('on');
   banner(null); cutUi(null); $('clock').classList.remove('them'); $('stage').classList.remove('slow');
   $('court').hidden = true; $('board').hidden = false;
@@ -455,10 +580,10 @@ function backToBoard() {
 
 /* ---------- the screens ---------- */
 let lastOpt = {};
-const VIEWS = ['vHome', 'vGame', 'vBooks'];
+const VIEWS = ['vHome', 'vGame', 'vBooks', 'vLadder'];
 function show(v) {
   for (const id of VIEWS) $(id).hidden = id !== v;
-  $('back').dataset.to = v === 'vHome' ? 'arcade' : v === 'vGame' && mode === 'edit' ? 'book' : v === 'vBooks' ? 'books' : 'home';
+  $('back').dataset.to = v === 'vHome' ? 'arcade' : v === 'vGame' && mode === 'edit' ? 'book' : v === 'vGame' && mode === 'level' ? 'ladder' : v === 'vBooks' ? 'books' : 'home';
   if (v === 'vGame') requestAnimationFrame(() => board.draw());
   window.scrollTo(0, 0);
 }
@@ -467,22 +592,60 @@ $('back').addEventListener('click', e => {
   if (to === 'arcade') return;
   e.preventDefault();
   if (live) backToBoard();
-  if (to === 'book' && edit) books.showBook(edit.book.id);
+  if (to === 'ladder') openLadder();
+  else if (to === 'book' && edit) books.showBook(edit.book.id);
   else if (to === 'books' && books.back()) return;
   else goHome();
 });
-function goHome() { mode = 'game'; edit = null; $('editBar').hidden = true; show('vHome'); }
+function goHome() { mode = 'game'; edit = null; lvl = null; bars(); homeSync(); show('vHome'); }
+/* The edit bar shows for a playbook play, the level bar for a level. */
+function bars() { $('editBar').hidden = mode !== 'edit'; $('lvlBar').hidden = mode !== 'level'; }
+
+/* Home's Ladder card: the stars so far. */
+function homeSync() {
+  $('hLadderStars').textContent = starsIn(ladder) + ' of ' + maxStars() + ' stars';
+  $('hLadderSub').textContent = LEVELS.length + ' late game spots. Win one to open the next.';
+}
+
+/* THE LADDER. Read again from storage each time, so another tab's stars show. */
+function openLadder() {
+  if (live) backToBoard();
+  clearStars();
+  mode = 'game'; edit = null; lvl = null; bars();
+  ladder = loadLadder();
+  renderLadder($('vLadder'), ladder, openLevel);
+  show('vLadder');
+}
+/* A level on the clipboard: its spots and clock, the scout, its saved play
+   (or a blank one on its set, Go at min(clock, 8.0)). */
+function openLevel(L) {
+  if (!L) return;
+  mode = 'level'; edit = null; lvl = { L, sc: levelScenario(L) };
+  const saved = ladder.plays[L.id];
+  play = saved ? JSON.parse(JSON.stringify(saved)) : { spots: JSON.parse(JSON.stringify(lvl.sc.spots)), steps: [], goAt: Math.min(lvl.sc.clock, GO_AT_NEW) };
+  lastOpt = levelOpt(L);
+  bars(); levelBar(L);
+  show('vGame'); backToBoard(); board.reset();
+}
+function levelBar(L) {
+  $('lvlId').textContent = L.id;
+  $('lvlTitle').textContent = L.title;
+  $('lvlStars').textContent = starText(ladder.best[L.id] || 0);
+  $('lvlSit').textContent = clockLine(L);
+  $('lvlScout').textContent = scoutLine(L);
+  $('lvlScout').hidden = !L.scheme;
+}
 
 /* Play the scenario: the game, as it always was. */
 function openGame() {
-  mode = 'game'; edit = null; $('editBar').hidden = true;
+  mode = 'game'; edit = null; lvl = null; bars();
   play = loadPlay(); lastOpt = {};
   show('vGame'); backToBoard(); board.reset();
 }
 
 /* A playbook play on the clipboard (book-ui.js calls this). */
 function openPlay(book, entry) {
-  mode = 'edit'; edit = { book, entry };
+  mode = 'edit'; edit = { book, entry }; lvl = null; $('lvlBar').hidden = true;
   play = JSON.parse(JSON.stringify(entry.play)); lastOpt = {};
   $('editBar').hidden = false;
   books.fillEditBar(edit);
@@ -498,6 +661,7 @@ const books = mountBooks({
 });
 $('hPlay').addEventListener('click', openGame);
 $('hBooks').addEventListener('click', () => books.open());
+$('hLadder').addEventListener('click', openLadder);
 $('hHow').addEventListener('click', () => $('howSheet').classList.add('on'));
 $('howClose').addEventListener('click', () => $('howSheet').classList.remove('on'));
 
@@ -508,15 +672,19 @@ async function doShare(text, btn) {
 }
 
 /* For the browser check: run a play with a fixed seed and read the result. */
-window.__lastShot = { run, get result() { return lastResult; }, get play() { return play; }, setPlay(p) { play = p; board.reset(); },
+window.__lastShot = { run, get result() { return lastResult; }, get play() { return play; }, setPlay(p) { if (mode === 'level') savePlay(p); else play = p; board.reset(); },
   /* the feel: tap to result in ms, the live phase, a pause for screenshots, the sound's state */
   get timing() { return lastTiming; }, get phase() { return live ? live.phase || 'preview' : null; }, set paused(v) { paused = !!v; }, get speed() { return speed; },
   get sound() { return { muted: sound.muted, state: sound.state }; }, starter: starterPlay,
   view: () => board.view(), get board() { return board; }, get mode() { return mode; }, get edit() { return edit; }, books,
-  simulate: (seed, opt) => { const r = simulate(SCX(), play, seed, opt || {}); return { outcome: r.outcome, reason: r.reason, shotAt: r.shotAt, scheme: r.scheme, how: r.how, answer: r.answer }; } };
+  simulate: (seed, opt) => { const r = simulate(SCX(), play, seed, mode === 'level' && lvl ? levelOpt(lvl.L) : opt || {});
+    return { outcome: r.outcome, reason: r.reason, shotAt: r.shotAt, scheme: r.scheme, how: r.how, answer: r.answer, ot: r.ot, us: r.us, them: r.them, down: r.down, stars: starsOf(r) }; },
+  /* the ladder, for check-ladder.mjs */
+  get level() { return lvl ? lvl.L.id : null; }, get ladder() { return ladder; }, openLadder, openLevel: id => openLevel(levelById(id)) };
 $('cut').addEventListener('pointerdown', () => { if (live && live.skip) live.skip(); });
 
 setScore(SC.us, SC.them, SC.clock);
+homeSync();
 show('vHome');
 board.reset();
 $('hint').textContent = defaultHint();

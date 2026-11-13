@@ -7,6 +7,18 @@ back, and a short cutaway shows their shot. A first visit finds a starter play a
 pin-down, Go at 6.0) with Run It pulsing; Clear gives a blank clipboard. Runs have a 2x toggle and
 synthesized sound (`sound.js`, mute remembered); dead time plays at 4x.
 
+## The Ladder
+
+Home's second card. 24 levels in four chapters (Down 1, Down 2, Zones, Down 3), each a situation
+with its own clock, score, starting set and sometimes a defense the scout already told you about
+("Scout: 2-3 zone", shown on the tile and above the clipboard, and the X's set up that way). A
+level opens once the one before it is won; 1-1 is always open. Three stars a level: win, win with
+an open look, and let it go late. The result card lands the stars one at a time with the rules
+as a checklist, says New best, and offers Next level, Try again and Back to Ladder. Three stars
+gets a party. Down 2 and down 3 bring overtime (a coin flip), which gets its own OVERTIME beat.
+Progress is `last_shot_ladder` in localStorage (best stars and a play per level, cleaned on read
+so garbage never breaks the page). No cloud sync yet.
+
 **Nobody but testers can see it.** The page and its browser modules are served by
 `functions/last-shot/[[path]].js` to a row in `stumpire_testers` (the one tester list), never as
 static files. Everybody else gets the site's 404 page, exactly as Stumpire answers them. It is in no
@@ -38,6 +50,7 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `board.js` | the clipboard: Move, Screen, Pass, Shoot, Undo, Clear, Run It (pointer events) |
 | `court.js`, `view.js` | the live court, drawn with Run The Floor's rig (`/hoops/baller.js`, read only) |
 | `client.js`, `share.js`, `sound.js` | home, the page flow (the hold, the run, the answer cutaway), the result and the share line; the sounds |
+| `levels.js`, `ladder-ui.js` | the ladder's levels, sets and star rules; its storage, unlocks and screen |
 | `book.js`, `book-ui.js` | playbooks: the model, the store (local first, cloud behind), the file; the screens |
 | `names.js` | the terminology: names from the set and the actions, in the coach's words |
 | `testit.js` | Test it: every defense, forced after the roll, the same every time |
@@ -55,6 +68,7 @@ node --test functions/_lastshot/test/*.test.mjs   the gate beside Stumpire's, th
 node functions/_lastshot/check-posture.mjs
 node functions/_lastshot/test/check-browser.mjs   a whole play on a phone in Chromium
 node functions/_lastshot/test/check-playbook.mjs  the storyboard and My Playbooks, phone and desktop, cloud in memory
+node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, down 2 and 3, overtime, garbage
 ```
 
 The seed for any result is behind **Seed** on the result screen. The same seed and the same play

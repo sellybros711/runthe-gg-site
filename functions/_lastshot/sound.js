@@ -10,6 +10,8 @@
  *   buzzer  the horn
  *   crowd   a swell on a win
  *   groan   a soft groan on a loss
+ *   star    a bright ding as a ladder star lands (n 1 to 3, higher each time)
+ *   fanfare three rising notes for three stars
  */
 const KEY = 'last_shot_mute';
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -99,6 +101,17 @@ export function createSound() {
       const t = ctx.currentTime;
       hiss('lowpass', 520, 1.4, t, 1.1, env(t, 0.32, 0.18, 0.9), 200);
       osc('sine', 190, 120, t, 1.0, env(t, 0.05, 0.2, 0.8));
+    },
+    star(n) {
+      if (!live()) return;
+      const t = ctx.currentTime, f = [880, 1109, 1319][Math.max(0, Math.min(2, (n || 1) - 1))];
+      osc('triangle', f, f, t, 0.35, env(t, 0.22, 0.005, 0.33));
+      osc('sine', f * 2, f * 2, t, 0.2, env(t, 0.06, 0.005, 0.18));
+    },
+    fanfare() {
+      if (!live()) return;
+      const t = ctx.currentTime;
+      [523, 659, 784, 1047].forEach((f, i) => osc('square', f, f, t + i * 0.11, i === 3 ? 0.5 : 0.12, env(t + i * 0.11, 0.07, 0.005, i === 3 ? 0.48 : 0.11)));
     }
   };
 
