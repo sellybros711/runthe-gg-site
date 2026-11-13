@@ -55,6 +55,10 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   Practice (any down, spot, level and hash) is the second button. A player's very first Go For It snap
   gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: all two thirds or better at 4th and 1); the hand,
   never the snap.
+- **Your record and the moments** (the launch plan, Phase 2). `profile.js`, on the device (`faw_profile`):
+  snaps, conversions, the longest 4th down converted, the best run, the signature play, and eight
+  football moments, each earned once and read straight off the engine's result. No currencies, no pay
+  to win, nothing locked behind them.
 - **The feel** (the owner, 2026-11-13: sound on by default, with mute). `feel.js` makes every sound with
   Web Audio (nothing to download) and starts on the Snap it tap; `faw_sound` keeps the choice. The 3D
   picture zooms and slides to follow the ball (`play.js`, `ui.zoom`), never past an edge. A spot within

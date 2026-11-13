@@ -279,6 +279,8 @@ async function run(name, viewport, scale) {
   ok(await page.evaluate(() => window.FAW_GO.run().n === 0 && window.FAW_GO.run().stops === 0), 'Go again starts a fresh run');
   await page.click('#cBack');
   ok(await page.evaluate((b) => !window.FAW_GO.active() && JSON.stringify(window.FAW_APP.SC) === b, scBefore), 'leaving the run puts practice back where it was');
+  const rec = await page.evaluate(() => ({ shown: !document.getElementById('pRecord').hidden, line: document.getElementById('prLine').textContent, n: document.querySelectorAll('#prMoments .moment').length, p: window.FAW_PROFILE.get() }));
+  ok(rec.shown && /^\d+ of \d+ converted \(\d+%\)/.test(rec.line) && rec.n === 8 && rec.p.snaps >= 3, 'your record is on Play after the snaps: ' + rec.line);
 
   /* ---------- the Studio ---------- */
   await tab('studio');

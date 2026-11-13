@@ -835,3 +835,15 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
 .rescard .rmore .btn { min-height: 34px; font-size: 12px; background: transparent !important; border-color: #23405e; color: #cfd9e4 !important; }
 .rescard .rsnaps { order: 9; }
 .rescard .rplay { grid-template-columns: 1fr 1fr; }
+
+/* ---------- your coach record and the moments (profile.js) ---------- */
+.precord { max-width: 640px; margin: 0 auto 22px; padding: 12px 14px; border-radius: 14px; background: rgba(6, 16, 28, .75); border: 1px solid #1d3a55; text-align: center; }
+.precord p { margin: 0 0 4px; }
+.prhead { color: var(--gold); font: italic 900 18px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+.prhead span { color: #8fa2b8; font-size: 14px; margin-left: 6px; }
+.prline { color: #e9eff6; font-weight: 800; font-size: 14px; }
+.prsig { color: #8fe7ff; font-size: 13px; font-weight: 700; }
+.prmoments { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
+.moment { padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; color: #5d6f84; border: 1px dashed #2a4a66; }
+.moment.got { color: #141000; background: linear-gradient(#ffd84a, var(--gold)); border: 1px solid #ffe27a; }
+.rescard .rmoment { margin: -4px 0 10px; color: var(--gold); font: italic 900 18px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }

@@ -139,6 +139,9 @@
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
     if (window.FAW_GO) window.FAW_GO.snapped(res);
+    /* the coach record and the moments (profile.js) */
+    var G = window.FAW_GO;
+    if (window.FAW_PROFILE) window.FAW_PROFILE.snapped(res, { name: playedName, run: G && G.active() && G.run() ? G.run().n : null });
     remember(res, p, D && D.active());
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
@@ -220,6 +223,7 @@
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
     if (window.FAW_GO) window.FAW_GO.card(r);
+    if (window.FAW_PROFILE) window.FAW_PROFILE.card();
     renderSnaps();
     clipFor(r);
     c.hidden = false;
