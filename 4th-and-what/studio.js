@@ -49,10 +49,15 @@
   }
   function draw() {
     if (!V) return;
-    var p = P(), plans = null;
-    if (view !== 'offense' && E.plans) { try { plans = E.plans(A.SC, p, call); } catch (e) { plans = null; } }
+    var p = P(), plans = null, look = null;
+    /* Play's draw screen shows the defense this snap will face, lined up
+       (FAW_ENGINE.look with the snap's own seed), never its call */
+    var game = document.body.classList.contains('gamemode') && window.FAW_FLOW;
+    if (game) { try { look = E.look(A.SC, p, window.FAW_FLOW.pending()); plans = look.defense; } catch (e) { look = null; } }
+    else if (view !== 'offense' && E.plans) { try { plans = E.plans(A.SC, p, call); } catch (e) { plans = null; } }
+    if (game && look && window.FAW_CALLS) { var gh = document.querySelector('.gamebar .hint'); if (gh) gh.textContent = window.FAW_CALLS.readText(look); }
     V.field().play(p, {
-      offense: view !== 'defense', defense: view !== 'offense', defenseStyle: 'letters', plans: plans, coverage: !!plans,
+      offense: game ? true : view !== 'defense', defense: game ? !!look : view !== 'offense', defenseStyle: 'letters', plans: plans, coverage: !!plans && !game,
       distance: A.SC.distance, depths: true, hot: drag && drag.who ? [drag.who] : armed ? ['QB'] : null
     });
     if (drag && drag.pts && drag.pts.length > 1) {

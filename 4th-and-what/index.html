@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
 <header class="topbar">
@@ -177,6 +177,20 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <button type="button" data-go="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h3v10zm6.5 0V4h3v16zM17 20v-7h3v7z"/></svg>Test vs Defense</button>
         <button type="button" data-go="trivia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3zm-1 4v1a2 2 0 0 0 2 2V7zm12 0v3a2 2 0 0 0 2-2V7z"/></svg>Improve your IQ</button>
       </nav>
+    </div>
+  </section>
+
+  <!-- CALL IT (calls.js, the owner 2026-11-13): the defense lines up and shows its look, you are
+       dealt three plays (a run, a quick pass, a shot) or draw your own, then Snap it -->
+  <section class="view call" id="vCall" hidden>
+    <div class="callwrap">
+      <div class="callhead">
+        <button type="button" class="chip" id="cBack" aria-label="Change the down and distance"><span id="cSit"></span></button>
+        <div class="cread"><b id="cRead"></b><span id="cHint"></span></div>
+      </div>
+      <div class="fieldwrap callfield"><canvas id="cField" aria-label="The defense, lined up"></canvas></div>
+      <div class="ccards" id="cCards" role="group" aria-label="Your play call"></div>
+      <button type="button" class="playnow csnap" id="cSnap" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span id="cSnapTxt">Pick a play</span></button>
     </div>
   </section>
 
@@ -467,10 +481,10 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/assets/cloudsave.js?v=3"></script>
-<script src="config.js?v=8"></script>
+<script src="config.js?v=9"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=8"></script>
+<script src="engine.js?v=9"></script>
 <script src="names.js?v=2"></script>
 <script src="routes.js?v=2"></script>
 <script src="book.js?v=3"></script>
@@ -482,14 +496,15 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="stage.js?v=2"></script>
 <script src="share.js?v=2"></script>
 <script src="play.js?v=2"></script>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 <script src="home.js?v=4"></script>
-<script src="studio.js?v=5"></script>
+<script src="studio.js?v=6"></script>
 <script src="game.js?v=4"></script>
 <script src="clip.js?v=1"></script>
-<script src="flow.js?v=7"></script>
+<script src="flow.js?v=8"></script>
 <script src="daily.js?v=6"></script>
 <script src="trivia.js?v=4"></script>
+<script src="calls.js?v=1"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=2"></script>

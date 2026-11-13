@@ -744,3 +744,41 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
   .dintro .dstakes { font-size: 15px; }
   .dstrip .ez { font-size: 10px; }
 }
+
+/* ---------- Call it (calls.js, the owner 2026-11-13) ----------
+   The night stadium again: the situation and the read on top, the defense
+   lined up on the field, four cards (a run, a quick pass, a shot, your own)
+   and the gold Snap it. Built to fit a phone without a scroll. */
+.view.call { color: #fff; }
+.callwrap { position: relative; max-width: 980px; margin: 0 auto; display: grid; gap: 10px; padding: 14px 12px 18px; border-radius: 18px;
+  background: radial-gradient(40% 50% at 0% 100%, rgba(25, 198, 167, .18), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(245, 183, 42, .16), transparent 70%),
+    radial-gradient(60% 30% at 50% 0%, rgba(120, 190, 255, .12), transparent 70%), linear-gradient(#071321, #050c16 70%, #06140f); }
+.callhead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.callhead .chip { font: italic 900 20px/1 'Barlow Condensed', sans-serif; padding: 8px 14px; color: #fff; background: rgba(6, 16, 28, .85); border: 1px solid #1d3a55; border-radius: 999px; }
+.cread { display: grid; gap: 2px; }
+.cread b { font: italic 900 22px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; color: var(--gold); letter-spacing: .03em; }
+.cread span { color: #cfd9e4; font-size: 14px; font-weight: 700; }
+.callfield { border: 2px solid #49e07a; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(73, 224, 122, .3), 0 0 22px rgba(73, 224, 122, .3); }
+.callfield canvas { display: block; width: 100%; }
+.ccards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.ccard { display: grid; justify-items: center; gap: 4px; padding: 8px 6px 10px; border-radius: 12px; cursor: pointer; color: #fff; text-align: center;
+  background: rgba(9, 22, 36, .9); border: 2px solid #1d3a55; transition: transform .12s, border-color .12s, box-shadow .12s; }
+.ccard canvas { width: 100% !important; height: auto !important; border-radius: 6px; }
+.ccard b { font: italic 900 18px/1.05 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+.ccard small { color: #8fa2b8; font-size: 11px; font-weight: 700; }
+.ccard .ctype { font: 900 11px/1 'Inter', sans-serif; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: #10243a; }
+.ccard.run .ctype { color: #36d399; } .ccard.quick .ctype { color: #8fe7ff; } .ccard.shot .ctype { color: var(--gold); } .ccard.own .ctype { color: #cfd9e4; }
+.ccard .cpen { display: grid; place-items: center; width: 100%; aspect-ratio: 132 / 84; border: 2px dashed #2a4a66; border-radius: 6px; font: 900 34px/1 Inter, sans-serif; color: #8fa2b8; font-style: normal; }
+.ccard[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 22px rgba(245, 183, 42, .55); transform: translateY(-3px); }
+.ccard:hover { border-color: var(--teal); }
+.csnap { margin: 4px auto 0; }
+.csnap:disabled { filter: grayscale(.7) brightness(.7); cursor: default; animation: none; }
+@media (max-width: 760px) {
+  .callwrap { padding: 10px 8px 14px; gap: 8px; }
+  .callhead .chip { font-size: 17px; padding: 6px 11px; }
+  .cread b { font-size: 18px; } .cread span { font-size: 12px; }
+  .ccards { gap: 5px; }
+  .ccard { padding: 6px 3px 8px; }
+  .ccard b { font-size: 14px; } .ccard small { font-size: 9px; } .ccard .ctype { font-size: 9px; padding: 2px 6px; }
+  .csnap { padding: 10px 30px; }
+}
