@@ -110,8 +110,13 @@ async function run(name, viewport, scale) {
   ok(await page.isVisible('#vDaily') && /^Daily #\d+/.test(await page.textContent('#dNum')) && (await page.textContent('#dDown')) === hd.down, 'a click on the banner opens the situation: ' + await page.textContent('#dNum'));
   await shot('d-intro');
   await page.click('#dGo');
+  /* the day's call (Phase 2): Call it with the day's look and the same hand for everybody */
+  const dcall = await page.evaluate(() => { const D = window.FAW_DAILY, K = window.FAW_CALLS, want = D.core.seedFor(D.day());
+    return { seed: K.seed(), want, hand: K.hand().map(h => h.concept + h.set + h.side).join(','), again: K.deal(window.FAW_APP.SC, want).map(h => h.concept + h.set + h.side).join(',') }; });
+  ok(await page.isVisible('#vCall') && dcall.seed === dcall.want && dcall.hand === dcall.again, 'Make the call: the day\'s look and the day\'s hand, the same for everybody');
+  await page.click('#cCards .ccard.own');
   const dsc = await page.evaluate(() => { const t = window.FAW_DAILY.today(), S = window.FAW_APP.SC; return { ok: S.down === 4 && S.ballOn === t.ballOn && S.distance === Math.min(t.togo, t.ballOn), empty: !window.FAW_STUDIO.play().routes.length }; });
-  ok(await page.isVisible('#sSnap') && dsc.ok && dsc.empty, 'Draw your call: the real down, distance and spot, on a clean board');
+  ok(await page.isVisible('#sSnap') && dsc.ok && dsc.empty, 'Draw your own: the real down, distance and spot, on a clean board');
   await page.click('.tool[data-tool="handoff"]');
   const drb = await page.evaluate(() => { const p = window.FAW_STUDIO.play(); return window.FAW_FORMATIONS.place(p.formation, p.moved).RB; });
   await dragYd(drb, [drb[0] + 1.5, drb[1] + 2.5], [drb[0] + 2.5, 0.5], [drb[0] + 2.5, 7]);
@@ -274,6 +279,8 @@ async function run(name, viewport, scale) {
   ok(await page.evaluate(() => window.FAW_GO.run().n === 0 && window.FAW_GO.run().stops === 0), 'Go again starts a fresh run');
   await page.click('#cBack');
   ok(await page.evaluate((b) => !window.FAW_GO.active() && JSON.stringify(window.FAW_APP.SC) === b, scBefore), 'leaving the run puts practice back where it was');
+  const rec = await page.evaluate(() => ({ shown: !document.getElementById('pRecord').hidden, line: document.getElementById('prLine').textContent, n: document.querySelectorAll('#prMoments .moment').length, p: window.FAW_PROFILE.get() }));
+  ok(rec.shown && /^\d+ of \d+ converted \(\d+%\)/.test(rec.line) && rec.n === 8 && rec.p.snaps >= 3, 'your record is on Play after the snaps: ' + rec.line);
 
   /* ---------- the Studio ---------- */
   await tab('studio');

@@ -57,3 +57,15 @@ test('the read is worth something: vs nobody deep, the quick game beats the run'
   assert.ok(run[1] > 40, 'enough zero looks: ' + run[1]);
   assert.ok(quick[0] / quick[1] > run[0] / run[1] + 0.1, 'quick ' + (quick[0] / quick[1]).toFixed(2) + ' against run ' + (run[0] / run[1]).toFixed(2));
 });
+
+test('a new player\'s first hand: three plays that convert well at 4th and 1', () => {
+  for (let s = 1; s <= 50; s++) {
+    const h = K.deal(at({ distance: 1, ballOn: 65 }), s, { first: true });
+    assert.deepEqual(h.map(c => c.concept), [K.FIRST.run, K.FIRST.quick, K.FIRST.shot]);
+  }
+  for (const c of Object.values(K.FIRST)) {
+    const its = TR.pool().filter(it => it.concept === c);
+    const rate = its.reduce((a, it) => { let w = 0; for (let s = 1; s <= 40; s++) w += E.run(at({ distance: 1, ballOn: 65 }), it.play, s * 977).win; return a + w / 40; }, 0) / its.length;
+    assert.ok(rate > 0.58, c + ' converts at 4th and 1: ' + rate.toFixed(2));
+  }
+});

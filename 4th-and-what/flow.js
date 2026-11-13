@@ -139,6 +139,9 @@
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
     if (window.FAW_GO) window.FAW_GO.snapped(res);
+    /* the coach record and the moments (profile.js) */
+    var G = window.FAW_GO;
+    if (window.FAW_PROFILE) window.FAW_PROFILE.snapped(res, { name: playedName, run: G && G.active() && G.run() ? G.run().n : null });
     remember(res, p, D && D.active());
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
@@ -173,7 +176,7 @@
     return list.map(function (e, i) { return { e: e, label: daily ? (i === 0 ? 'Daily' : 'Practice ' + i) : 'Snap ' + (i + 1) }; });
   }
   function chipText(x) {
-    var e = x.e, y = e.outcome === 'incomplete' || e.outcome === 'throwaway' ? 'no gain' : (e.yards > 0 ? '+' + e.yards : String(e.yards));
+    var e = x.e, y = e.outcome === 'incomplete' || e.outcome === 'throwaway' || e.outcome === 'interception' ? 'no gain' : (e.yards > 0 ? '+' + e.yards : String(e.yards));
     return x.label + ' · ' + (e.win ? 'First down' : 'Stopped') + ' ' + y;
   }
   function openSnap(e) {
@@ -204,15 +207,23 @@
   function title(r) { return r.title.charAt(0) + r.title.slice(1).toLowerCase(); }
   function showCard() {
     var r = res, c = $('rCard');
-    c.className = 'rescard ' + (r.win ? 'win' : 'lose');
+    /* THE CARD THAT HITS (the launch plan, 1D): one big word, the margin,
+       one line of why, and the read's answer; one big button; the rest small */
+    var td = r.outcome === 'touchdown';
+    c.className = 'rescard ' + (td ? 'win td' : r.win ? 'win' : 'lose');
     $('rDown').textContent = A.sitText().down + ' · ' + A.sitText().spot;
-    $('rTitle').textContent = title(r);
-    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
-    $('rLine').textContent = gained + ' · ' + r.callName;
-    $('rWhy').textContent = r.reason;
+    $('rTitle').textContent = td ? 'Touchdown' : r.win ? 'First down' : r.outcome === 'interception' ? 'Picked off' : 'Stopped';
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
+    var line = A.marginText(r) || gained + '.', why = r.reason;
+    /* the line already says it: no "Incomplete. Incomplete." */
+    if (why.indexOf(line) === 0) why = why.slice(line.length).trim();
+    $('rLine').textContent = line;
+    $('rWhy').textContent = why;
+    $('rRead').textContent = window.FAW_CALLS ? window.FAW_CALLS.revealText(r) : r.callName;
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
     if (window.FAW_GO) window.FAW_GO.card(r);
+    if (window.FAW_PROFILE) window.FAW_PROFILE.card();
     renderSnaps();
     clipFor(r);
     c.hidden = false;
@@ -240,7 +251,7 @@
     x.fillStyle = '#fff'; x.font = '800 44px Inter, sans-serif';
     x.fillText(playedName.slice(0, 34), 60, 1100);
     x.fillStyle = '#8fa2b8'; x.font = '600 36px Inter, sans-serif';
-    var gained = res.outcome === 'incomplete' || res.outcome === 'throwaway' ? 'No gain' : (res.yards >= 0 ? 'Gained ' + res.yards : 'Lost ' + (-res.yards));
+    var gained = res.outcome === 'incomplete' || res.outcome === 'throwaway' || res.outcome === 'interception' ? 'No gain' : (res.yards >= 0 ? 'Gained ' + res.yards : 'Lost ' + (-res.yards));
     x.fillText(gained + ' · vs ' + res.callName, 60, 1165);
     x.fillStyle = '#8fa2b8'; x.font = '700 30px Inter, sans-serif'; x.fillText('runthe.gg/4th-and-what', 60, 1260);
     card = c; return c;
@@ -285,7 +296,7 @@
   function clipFor(r) {
     $('rShare').textContent = 'Share';
     if (!CL || !CL.supported()) return;
-    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
     var D = window.FAW_DAILY, s = A.sitText();
     CL.start(r, { situation: (D && D.active() ? 'Daily #' + D.number() + ' · ' : '') + s.down + ' · ' + s.spot,
       name: A.draft.name || A.nameFor(played), title: r.title, line: gained + ' · vs ' + r.callName, win: r.win });

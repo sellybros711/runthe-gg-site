@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=23">
+<link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
 <header class="topbar">
@@ -91,7 +91,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <div class="turf"><div class="ynum" id="dNums"></div><span class="gain" id="dGain"></span><span class="toGo" id="dToGo"></span><span class="ball" id="dBall"></span></div>
         <span class="ez opp" id="dOppEz"></span>
       </div>
-      <button type="button" class="playnow" id="dGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span id="dGoTxt">Draw your call</span></button>
+      <button type="button" class="playnow" id="dGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span id="dGoTxt">Make the call</span></button>
       <p class="dstats" id="dStats" hidden></p>
       <div class="ddone" id="dDone" hidden>
         <p class="dmine" id="dMine"></p>
@@ -148,6 +148,13 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <button type="button" class="playnow" id="goStart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span>Go for it</span></button>
         <p class="gosub" id="goSub"></p>
         <p class="gobest" id="goBest" hidden></p>
+      </div>
+      <!-- your coach record and the moments (profile.js, the launch plan's Phase 2) -->
+      <div class="precord" id="pRecord" hidden>
+        <p class="prhead">Your record <span id="prCount"></span></p>
+        <p class="prline" id="prLine"></p>
+        <p class="prsig" id="prSig" hidden></p>
+        <div class="prmoments" id="prMoments"></div>
       </div>
       <p class="pracsep"><span>Or practice any down</span></p>
       <div class="pspot">
@@ -446,6 +453,8 @@ document.documentElement.setAttribute('data-theme', 'dark');
       <h2 id="rTitle"></h2>
       <p class="rline" id="rLine"></p>
       <p class="rwhy" id="rWhy"></p>
+      <p class="rread" id="rRead"></p>
+      <p class="rmoment" id="rMoment" hidden></p>
       <div class="rsnaps" id="rSnaps" hidden></div>
       <div class="rdaily" id="rDaily" hidden>
         <p class="rdhead" id="rDailyHead"></p>
@@ -465,7 +474,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <button type="button" class="btn" id="rEdit">Edit play</button>
         <button type="button" class="btn" id="rNew">New play</button>
       </div>
-      <div class="racts">
+      <div class="racts rmore">
         <button type="button" class="btn" id="rSave">Save play</button>
         <button type="button" class="btn" id="rCardBtn">Save card</button>
         <button type="button" class="btn" id="rShare">Share</button>
@@ -500,10 +509,10 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/assets/cloudsave.js?v=3"></script>
-<script src="config.js?v=9"></script>
+<script src="config.js?v=10"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=9"></script>
+<script src="engine.js?v=10"></script>
 <script src="names.js?v=2"></script>
 <script src="routes.js?v=2"></script>
 <script src="book.js?v=3"></script>
@@ -514,18 +523,19 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="rig.js?v=1"></script>
 <script src="stage.js?v=2"></script>
 <script src="share.js?v=2"></script>
-<script src="feel.js?v=1"></script>
-<script src="play.js?v=3"></script>
-<script src="app.js?v=9"></script>
+<script src="feel.js?v=2"></script>
+<script src="play.js?v=4"></script>
+<script src="app.js?v=10"></script>
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=6"></script>
-<script src="game.js?v=4"></script>
+<script src="game.js?v=5"></script>
 <script src="clip.js?v=1"></script>
-<script src="flow.js?v=10"></script>
-<script src="daily.js?v=6"></script>
+<script src="flow.js?v=14"></script>
+<script src="daily.js?v=7"></script>
 <script src="trivia.js?v=4"></script>
-<script src="calls.js?v=1"></script>
-<script src="goforit.js?v=1"></script>
+<script src="calls.js?v=4"></script>
+<script src="goforit.js?v=3"></script>
+<script src="profile.js?v=1"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=2"></script>

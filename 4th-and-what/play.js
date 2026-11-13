@@ -81,8 +81,8 @@
       canvas.style.transformOrigin = (Z.fx * 100).toFixed(2) + '% ' + (Z.fy * 100).toFixed(2) + '%';
       canvas.style.transform = 'translate(' + (tx * 100).toFixed(2) + '%, ' + (ty * 100).toFixed(2) + '%) scale(' + z.toFixed(3) + ')';
     }
-    var slows = res.events.filter(function (e) { return /throw|catch|incomplete|sack|td|spot|broken|fumble|checkdown/.test(e.kind); })
-      .map(function (e) { return { t: e.t, k: e.kind === 'throw' || e.kind === 'checkdown' ? T.slow.throw : e.kind === 'catch' || e.kind === 'incomplete' ? T.slow.catch : T.slow.tackle }; });
+    var slows = res.events.filter(function (e) { return /throw|catch|incomplete|int|sack|td|spot|broken|fumble|checkdown/.test(e.kind); })
+      .map(function (e) { return { t: e.t, k: e.kind === 'throw' || e.kind === 'checkdown' ? T.slow.throw : e.kind === 'catch' || e.kind === 'incomplete' || e.kind === 'int' ? T.slow.catch : T.slow.tackle }; });
     function rate(tt) { var k = 1; slows.forEach(function (s) { if (Math.abs(tt - s.t) < T.slow.window) k = Math.min(k, s.k); }); return k; }
 
     function frameAt(tt) {
