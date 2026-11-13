@@ -122,6 +122,14 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
 .toast.on{opacity:1}
 .fsheet{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(239,237,232,.75);backdrop-filter:blur(3px);z-index:15}
 .fsheet.on{display:flex}.fsheet .card{max-width:560px}
+.slist{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.sitem{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:1px solid var(--edge);background:#fff;border-radius:14px;padding:8px;color:var(--ink);font:inherit;touch-action:manipulation}
+.sitem.on{border-color:var(--marker);box-shadow:0 0 0 2px var(--marker)}
+.sitem b{display:block;font-size:16px}.sitem small{display:block;color:var(--dim);font-size:13px;margin-top:2px;line-height:1.35}
+.sask{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:10px;border-radius:14px;background:#fff6e0;border:1px solid #f1d58a}
+.sask b{flex:1 0 100%}.sask .btn{min-height:44px}
+.actions #bPlays{flex:.7}
+.btn.save{flex:1 0 100%;white-space:nowrap}.btn.save[data-state="saved"]{border-color:var(--green);color:var(--green)}
 @media (min-width:900px){.app{max-width:1100px}.view.wide{display:grid;grid-template-columns:minmax(380px,1fr) 1fr;gap:0}.xform{columns:2;column-gap:24px}}
 /* THE BOTTOM BANNER (/assets/rtg-ads.js), once the ad tag is on at launch: the app ends above it, so
    the court shrinks to fit and Run It is never under it. --sticky-ad-h is 0 until it fills. */
@@ -329,6 +337,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
     <button class="tool" data-tool="shoot" aria-pressed="false">Shoot<small>tap shooter</small></button>
   </div>
   <div class="actions" id="actions">
+    <button class="btn alt" id="bPlays" aria-label="Start from a play">Plays</button>
     <button class="btn alt" id="bUndo">Undo</button>
     <button class="btn alt" id="bClear">Clear</button>
     <button class="btn dark" id="bFrame" disabled aria-label="Play this frame">&#9654; Frame</button>
@@ -340,6 +349,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
   <div class="view scroll" id="vBeat" hidden></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<div class="fsheet" id="playsSheet"><div class="card" id="playsCard"></div></div>
 <div class="fsheet" id="testSheet"><div class="card" id="testCard"></div></div>
 <div class="fsheet" id="howSheet"><div class="card">
   <h2>How it works</h2>
