@@ -18,6 +18,7 @@ try { ({ chromium } = require('playwright')); }
 catch (_) { for (const p of ['/opt/node22/lib/node_modules/playwright', '/root/node-tools/node_modules/playwright']) { try { ({ chromium } = require(p)); break; } catch (e) {} } }
 if (!chromium) { console.error('playwright is not installed'); process.exit(2); }
 const EXE = process.env.CHROMIUM || ['/opt/pw-browsers/chromium'].find(f => fs.existsSync(f)) || undefined;
+import { starterPlay } from '../starters.js';
 import { startDev } from '../build/dev-server.mjs';
 import { encode, decode, resultOf, challengeScenario, challengeOpt, beats } from '../challenge.js';
 import { simulate } from '../sim.js';
@@ -87,6 +88,11 @@ async function run(name, viewport, mobile) {
   ok(await page.isVisible('#beatBar') && (await page.textContent('#beatScout')) === 'Scout: Go under on screens' && (await page.textContent('#clock')) === '12.0', 'the clipboard on their spot, with the scout');
   ok((await L(() => window.__lastShot.play.steps.length)) === 0 && JSON.stringify(await L(() => window.__lastShot.play.spots)) === JSON.stringify(SC.spots), 'a blank play on their set');
   ok((await page.textContent('#bRun')) === 'Run It' && /#beat=/.test(await L(() => location.hash)), 'Run It, and the link stays while in it');
+  // Plays on Draw yours: a starter takes the clipboard, the scout and the link stay
+  await page.click('#bPlays');
+  await page.click('[data-starter=floppy]');
+  ok(JSON.stringify(await L(() => window.__lastShot.play.spots)) === JSON.stringify(starterPlay('floppy').spots) && (await L(() => window.__lastShot.play.steps.length)) === starterPlay('floppy').steps.length, 'Plays puts Floppy on their spot');
+  ok((await page.textContent('#beatScout')) === 'Scout: Go under on screens' && (await L(() => window.__lastShot.chal.ch.seed)) === BASEC.seed && (await L(() => window.__lastShot.simulate(1).scheme)) !== null, 'the scout and the seed are untouched');
 
   // mine: the same seed and scheme, and the verdict by beats()
   for (const [label, p, file] of [['the same play', THEIRS, null], ['a worse one', WORSE, null], ['a better one', BETTER, '2-you-beat-it']]) {
@@ -98,6 +104,7 @@ async function run(name, viewport, mobile) {
     ok(r.seed === BASEC.seed && r.scheme === 'under', label + ': the same seed and scheme');
     ok((await page.textContent('#beatVerdict')) === (won ? 'You beat it' : 'They still have it'), label + ': ' + mine + ' against ' + T.score + ', ' + await page.textContent('#beatVerdict'));
     ok((await page.textContent('#beatThem')) === 'Them: ' + summaryOf(T.res), label + ': their line');
+    ok(['Save this play', 'Sign in to save'].includes(await page.textContent('#bSavePlay')), label + ': the you card has ' + await page.textContent('#bSavePlay'));
     if (file) { await page.waitForTimeout(900); await shot(file); }
     if (label !== 'a better one') { await page.click('#bReplay'); ok(await page.isVisible('#board') && (await L(() => window.__lastShot.play.steps.length)) === 4, 'Try again: back to the clipboard, the play kept'); }
   }

@@ -26,6 +26,7 @@ try { ({ chromium } = require('playwright')); }
 catch (_) { for (const p of ['/opt/node22/lib/node_modules/playwright', '/root/node-tools/node_modules/playwright']) { try { ({ chromium } = require(p)); break; } catch (e) {} } }
 if (!chromium) { console.error('playwright is not installed'); process.exit(2); }
 const EXE = process.env.CHROMIUM || ['/opt/pw-browsers/chromium'].find(f => fs.existsSync(f)) || undefined;
+import { starterPlay } from '../starters.js';
 import { startDev } from '../build/dev-server.mjs';
 import { fakeArcade } from './fake-arcade.mjs';
 import { dailyConfig, dailyScenario, replay, scoreText, squares, gems, cleanPlay } from '../daily.js';
@@ -118,6 +119,14 @@ async function run(name, viewport, mobile, uid) {
   ok((await page.textContent('#bRun')) === 'Practice' && await page.isDisabled('#bShot'), 'Run It is Practice, and Take your shot waits for a play');
   ok((await starts()) === 1, 'a fresh daily posts start once');
 
+  // Plays on the Daily: a starter takes the clipboard, the day stays the day
+  await page.click('#bPlays');
+  await page.click('[data-starter=spain]');
+  ok(JSON.stringify(await L(() => window.__lastShot.play.steps)) === JSON.stringify(starterPlay('spain').steps) && (await L(() => window.__lastShot.play.goAt)) === starterPlay('spain').goAt, 'Plays puts Spain on the daily clipboard');
+  ok((await L(() => window.__lastShot.mode)) === 'daily' && (await L(() => window.__lastShot.day.seed)) === SEED && (await page.textContent('#clock')) === CFG.clock.toFixed(1), 'the day, its seed and its clock are untouched');
+  ok(JSON.stringify(await L(() => JSON.parse(localStorage.getItem('last_shot_daily')).play.steps)) === JSON.stringify(starterPlay('spain').steps), 'the day keeps the starter as its play');
+  await page.click('#bUndo');
+  ok((await L(() => window.__lastShot.play.steps.length)) === 0, 'Undo puts the blank play back');
   await L(p => window.__lastShot.setPlay(p), refPlay());
   await L(() => window.__lastShot.board.draw());
   ok(!(await page.isDisabled('#bShot')) && !(await page.isDisabled('#bRun')), 'a legal play: Practice and Take your shot are ready');
@@ -131,6 +140,7 @@ async function run(name, viewport, mobile, uid) {
     seeds.push(await L(() => window.__lastShot.result.seed));
     ok((await page.textContent('.practag')) === 'Practice · not scored' && /Practice defense: /.test(await page.textContent('#card .facts')), 'practice ' + (i + 1) + ' is labelled, and its defense is the practice roll\'s');
     ok(await page.isHidden('#bShare') || (await page.locator('#bShare').count()) === 0, 'a practice card has no share line');
+    ok((await page.textContent('#bSavePlay')) === 'Save this play', 'a practice card has Save this play');
     await page.click('#bBack');
   }
   ok(seeds.every(s => s !== SEED) && seeds[0] !== seeds[1], 'practice runs on random seeds, never the day\'s');
@@ -201,6 +211,7 @@ async function run(name, viewport, mobile, uid) {
 
   // no Beat my play on the daily: its link would carry today's seed, and with it today's defense
   ok((await page.locator('#bBeat').count()) === 0, 'no Beat my play on the daily card (it would spoil the defense)');
+  ok((await page.textContent('#card.daily #bSavePlay')) === 'Save this play', 'the scored card has Save this play');
 
   // practice after: allowed, the scored button gone
   await page.click('#bDayPractice');

@@ -177,7 +177,7 @@ export function homeCard(st) {
 
 /* ---------- the daily result card ----------
  * o: { day, result, reduce, fresh, schemeName }
- * h: { share(btn), beat(btn) or null, practice(), home() }
+ * h: { share(btn), beat(btn) or null, save(row) or null (Save this play), practice(), home() }
  * Returns the stars it shows and the places the board and rank land. */
 export function dailyCard(c, o, h) {
   const { day, result } = o, d = result.detail || {};
@@ -202,6 +202,7 @@ export function dailyCard(c, o, h) {
   const row = add('div', 'row');
   btn('Share', 'go', h.share, 'bDayShare', row);
   if (h.beat) btn('Beat my play', 'alt', h.beat, 'bBeat', row);
+  if (h.save) h.save(row);
   const row2 = add('div', 'row');
   btn('Practice', 'alt', h.practice, 'bDayPractice', row2);
   btn('Home', 'alt', h.home, 'bDayHome', row2);

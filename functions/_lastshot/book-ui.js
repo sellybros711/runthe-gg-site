@@ -14,7 +14,8 @@
  * book.js keeps them; names.js names them; testit.js tests them.
  *
  *   mountBooks({ sc, show, openPlay, goHome, runAgainst, currentPlay, redraw })
- *     -> { open, back, showBook, playChanged, countRun, fillEditBar } */
+ *     -> { open, back, showBook, playChanged, countRun, fillEditBar,
+ *          signedState, saveRun, openSaved (Save this play on a result card) } */
 import * as B from './book.js';
 import * as N from './names.js';
 import { DEFENSES, DEFENSE_NAMES, RUNS, testKey } from './testit.js';
@@ -263,6 +264,46 @@ export function mountBooks(app) {
     saveSoon(ed.book);
   }
 
+  /* ---------- Save this play (a result card) ----------
+     Whether a save can happen: 'in' signed in, 'out' signed out (the card
+     offers sign in instead), 'wait' while the sign in has not said yet. */
+  function signedState() {
+    if (opened && store.ready()) return 'in';
+    const A = window.RTG_AUTH;
+    if (!A || !A.boot || !A.boot()) return 'out';
+    const s = A.state ? A.state() : null;
+    if (!s || !s.resolved) return 'wait';
+    return s.signedIn ? 'in' : 'out';
+  }
+  /* A run's play into My Playbooks: the first book, or a new "My plays".
+     Named from the coach's words, with its situation when it is not the
+     game's, and the run counted the way edit mode counts one. Resolves to
+     { book, entry }, or { out: true } signed out, or { full: true }. */
+  async function saveRun(run) {
+    if (!opened) {
+      const who = await whenAuth();
+      if (!(who && who.signedIn)) return { out: true };
+      await store.open(); opened = true;
+    }
+    if (!store.ready()) return { out: true };
+    let bk = store.books()[0];
+    if (!bk) bk = B.newBook('My plays');
+    if (bk.plays.length >= B.MAX_PLAYS) { toast('A playbook holds ' + B.MAX_PLAYS + ' plays. Start a second one.'); return { full: true }; }
+    const situation = cleanSituation(run.situation);
+    const e = B.newPlay(bk, clone(run.play), { situation });
+    e.name = suggestFor(bk, e).name;
+    if (run.scheme) B.countRun(e, situationKey(SC, situation), run.scheme, !!run.win);
+    bk.plays.push(e);
+    put(bk);
+    return { book: bk, entry: e };
+  }
+  /* Open a saved play: its book, then the play on the clipboard. */
+  function openSaved(id, playId) {
+    const bk = store.book(id), e = bk && bk.plays.find(p => p.id === playId);
+    if (!e) { if (bk) showBook(bk.id); else open(); return; }
+    app.openPlay(bk, e);
+  }
+
   /* ---------- Test it ---------- */
   async function testSheet(ed) {
     const e = ed.entry, S = scenarioFor(SC, e.situation), play = app.currentPlay();
@@ -462,7 +503,7 @@ export function mountBooks(app) {
   }
 
   return {
-    open, showBook, fillEditBar, playChanged, countRun, store,
+    open, showBook, fillEditBar, playChanged, countRun, store, signedState, saveRun, openSaved,
     /* the header arrow from a playbook screen: up one level, or false at the top */
     back() {
       if (screen === 'terms') { renderList(); return true; }

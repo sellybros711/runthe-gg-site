@@ -20,12 +20,18 @@
  * Who is signed in comes from the arcade's sign in (/arcade/auth.js,
  * window.RTG_AUTH), loaded by web/play.html as the Arcade Lab shell does.
  *
+ * PLAYS AND SAVE THIS PLAY: Plays on the clipboard puts a starter
+ * (starters.js) on it in any mode; every result card but a playbook's saves
+ * the run's play into My Playbooks (book-ui.js saveRun).
+ *
  * ACCOUNT PLUG POINTS still out of scope:
  *   TODO(results): save a free play or ladder possession through a gated API,
  *     the way the daily's run is filed (daily-ui.js). */
 import { SCENARIO as SC, isZone } from './scenario.js';
 import { simulate } from './sim.js';
-import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, GO_AT_MIN, GO_AT_NEW } from './playbook.js';
+import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js';
+import { STARTERS, starterById, starterPlay } from './starters.js';
+import { drawPlay } from './diagram.js';
 import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js';
 import { loadLadder, saveLadder, renderLadder, isOpen, nextOf, starsIn, maxStars, clockLine, scoutLine, starText, cleanPlay as cleanStored } from './ladder-ui.js';
 import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js';
@@ -73,22 +79,16 @@ const SCX = () => (mode === 'edit' && edit ? scenarioFor(SC, edit.entry.situatio
 function loadPlay() {
   const raw = lsGet(KEY);
   /* FIRST RUN: nothing saved yet, so the clipboard opens with a play already
-     on it (a pin-down for O2, holding till 6.0) and Run It pulses. No popup. */
-  if (raw == null) return starterPlay();
+     on it (the Pin-down starter: O5 pins for O2, holding till 6.0) and Run It
+     pulses. No popup. */
+  if (raw == null) return starterPlay('pin-down');
   try {
     const p = JSON.parse(raw);
     if (p && p.spots && Array.isArray(p.steps) && Object.keys(p.spots).length === 5) return p;
   } catch (e) {}
   return emptyPlay(SC);
 }
-function starterPlay() {
-  return { spots: JSON.parse(JSON.stringify(SC.spots)), goAt: 6, steps: [
-    { kind: 'screen', who: 'O5', pts: [{ x: 35, y: 10.5 }], beat: 1 },
-    { kind: 'move', who: 'O2', pts: [{ x: 33.5, y: 9 }, { x: 38, y: 14 }, { x: 43, y: 23 }], beat: 1 },
-    { kind: 'pass', from: 'O1', to: 'O2', beat: 1 },
-    { kind: 'shoot', who: 'O2', beat: 1 }] };
-}
-const STARTER = playKey(starterPlay());
+const STARTER = playKey(starterPlay('pin-down'));
 
 const ui = {
   hint(t) {
@@ -162,13 +162,127 @@ document.querySelectorAll('.tool').forEach(b => b.addEventListener('click', () =
   document.querySelectorAll('.tool').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.tool === t)));
   ui.hint({ move: 'Drag from a player to draw his route.', screen: 'Drag from a player. He sets a screen at the end.', pass: 'Tap the man with the ball, then a teammate.', shoot: 'Tap the man with the ball to shoot.' }[t] || '');
 }));
-$('bUndo').addEventListener('click', () => board.undo());
+$('bUndo').addEventListener('click', () => { if (!undoStarter()) board.undo(); });
 $('bClear').addEventListener('click', () => board.clear());
 /* Run It: a fresh seed, but a challenge always runs on its link's seed and
    scheme (the same roll they had), and the daily's button is Practice. */
 $('bRun').addEventListener('click', () => (mode === 'beat' && chal ? run(chal.ch.seed, challengeOpt(chal.ch)) : run(freshSeed())));
 $('bFrame').addEventListener('click', () => playFrame());
 $('bNext').addEventListener('click', () => { if (board.nextFrame()) ui.hint('Frame ' + board.beat + '. Everyone starts where the last frame ended.'); });
+
+/* ---------- Plays: start from a starter (starters.js) ----------
+   The Plays button opens a sheet of the four starters. One tap puts its
+   spots, steps and Go at on the clipboard, in any mode: a level's or the
+   day's spots give way to the starter's (you can drag spots anyway), and the
+   scout scheme and the day's seed are left alone. A clipboard with steps on
+   it asks first, inline. Undo right after puts the old play back. */
+let pendingStarter = null, starterStash = null;
+/* where the clipboard is, so an Undo never restores a play into another mode */
+const whereKey = () => mode + ':' + (mode === 'level' && lvl ? lvl.L.id : mode === 'daily' && day ? day.dateKey
+  : mode === 'beat' && chal ? chal.code : mode === 'edit' && edit ? edit.entry.id : '');
+function openPlays() {
+  if (live) return;
+  pendingStarter = null;
+  const card = $('playsCard'), add = adder(card);
+  card.innerHTML = '';
+  add('h2', '', 'Start from a play');
+  add('p', 'muted', 'Put one on the clipboard. Then make it yours.');
+  const list = add('div', 'slist'); list.id = 'playsList';
+  for (const s of STARTERS) {
+    const b = document.createElement('button');
+    b.className = 'sitem'; b.dataset.starter = s.id;
+    const cv = document.createElement('canvas'); cv.className = 'thumb'; cv.width = 132; cv.height = 124;
+    try { const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 132, 124); drawPlay(g, 0, 0, 132, 124, SC, s.play, { letters: 'numbers', stepNumbers: false, weight: 0.8 }); } catch (e) {}
+    const t = document.createElement('span');
+    add('b', '', s.name, t); add('small', '', s.note, t);
+    b.append(cv, t);
+    b.addEventListener('click', () => pickStarter(s.id));
+    list.appendChild(b);
+  }
+  const ask = add('div', 'sask'); ask.id = 'playsAsk'; ask.hidden = true;
+  add('b', '', 'Replace your play?', ask);
+  const yes = add('button', 'btn go', 'Replace', ask); yes.id = 'playsReplace';
+  const no = add('button', 'btn alt', 'Cancel', ask); no.id = 'playsCancel';
+  yes.addEventListener('click', () => { if (pendingStarter) loadStarter(pendingStarter); });
+  no.addEventListener('click', () => { pendingStarter = null; ask.hidden = true; markStarter(null); });
+  const row = add('div', 'row');
+  const close = add('button', 'btn alt', 'Close', row); close.id = 'playsClose';
+  close.addEventListener('click', closePlays);
+  $('playsSheet').classList.add('on');
+}
+function markStarter(id) { document.querySelectorAll('#playsList .sitem').forEach(b => b.classList.toggle('on', b.dataset.starter === id)); }
+function pickStarter(id) {
+  if (!play.steps.length) { loadStarter(id); return; }
+  pendingStarter = id; markStarter(id);
+  const ask = $('playsAsk'); ask.hidden = false;
+  ask.scrollIntoView({ block: 'nearest' });
+}
+function closePlays() { pendingStarter = null; $('playsSheet').classList.remove('on'); }
+function loadStarter(id) {
+  const s = starterById(id), p = starterPlay(id);
+  if (!s || !p) return;
+  starterStash = { prev: JSON.parse(JSON.stringify(play)), key: playKey(p), at: whereKey() };
+  closePlays();
+  if (live) backToBoard();
+  savePlay(p); board.reset();
+  ui.hint(s.name + ' is up. Undo brings yours back.');
+}
+/* Undo, straight after a starter went on (nothing changed since): the old
+   play comes back. Anything else is the board's own Undo. */
+function undoStarter() {
+  const u = starterStash;
+  if (!u || u.at !== whereKey() || playKey(play) !== u.key) return false;
+  starterStash = null;
+  savePlay(u.prev); board.reset();
+  ui.hint('Your play is back.');
+  return true;
+}
+$('bPlays').addEventListener('click', openPlays);
+
+/* ---------- Save this play (every result card but a playbook's) ----------
+   One tap puts the run's play in My Playbooks (book-ui.js saveRun): named
+   from the coach's words, with its situation when it is not the game's, and
+   this run counted. Then the button is Saved · Open, which opens the play.
+   Signed out it reads Sign in to save, and a tap goes to the Arcade's sign
+   in. A run is saved once: savedRuns remembers it by play, situation, seed
+   and scheme, so the same card built again still says Saved. */
+const savedRuns = new Map();
+/* the situation of a scenario, as a playbook play keeps it (null: the game's) */
+function sitOf(S) {
+  const sit = {};
+  if (S.clock !== SC.clock) sit.clock = S.clock;
+  if (S.handler !== SC.handler) sit.handler = S.handler;
+  if (S.them - S.us !== 1) sit.down = S.them - S.us;
+  return cleanSituation(sit);
+}
+function saveButton(row, r) {
+  const sit = sitOf(r.sc);
+  const key = playKey(r.play) + '|' + situationKey(SC, sit) + '|' + r.seed + '|' + r.scheme;
+  const b = document.createElement('button');
+  b.className = 'btn alt save'; b.id = 'bSavePlay';
+  const paint = () => {
+    if (savedRuns.has(key)) { b.textContent = 'Saved · Open'; b.dataset.state = 'saved'; return; }
+    const out = books.signedState() === 'out';
+    b.textContent = out ? 'Sign in to save' : 'Save this play';
+    b.dataset.state = out ? 'out' : 'save';
+  };
+  paint();
+  b.addEventListener('click', async () => {
+    const s = savedRuns.get(key);
+    if (s) { books.openSaved(s.bookId, s.playId); return; }
+    if (b.dataset.state === 'out') { location.assign('/arcade/'); return; }
+    if (b.disabled) return;
+    b.disabled = true; b.textContent = 'Saving...';
+    const res = await books.saveRun({ play: r.play, situation: sit, scheme: r.scheme, win: r.win });
+    b.disabled = false;
+    if (res && res.entry) savedRuns.set(key, { bookId: res.book.id, playId: res.entry.id, name: res.entry.name, situation: res.entry.situation });
+    paint();
+  });
+  row.appendChild(b);
+  return b;
+}
+/* what a fresh run on the card saves: the play it ran, where, and how it went */
+const runOf = res => ({ play: runPlay, sc: SCX(), scheme: res.scheme, win: res.outcome === 'win', seed: res.seed });
 
 /* ---------- the storyboard strip ---------- */
 function frameStrip(p, f) {
@@ -501,6 +615,7 @@ function showResult(res) {
   btn('Back to Clipboard', 'alt', backToBoard, 'bBack');
   if (mode === 'edit') btn('Back to playbook', 'alt', () => { backToBoard(); books.showBook(edit.book.id); }, 'bBackBook');
   const row2 = add('div', 'row');
+  if (mode !== 'edit') saveButton(row2, runOf(res));
   if (!practice) btn('Share', 'alt', b => doShare(shareText(runPlay, res), b), 'bShare', row2);
   const ch = beatOf(res);
   if (ch) btn('Beat my play', 'alt', b => shareChallenge(ch, b), 'bBeat', row2);
@@ -558,6 +673,7 @@ function showLevelResult(res) {
   btn('Try again', canNext && n >= 1 ? 'alt' : 'go', () => run(freshSeed()), 'bReplay');
   if (canNext && n < 1) goNext();
   const row2 = add('div', 'row');
+  saveButton(row2, runOf(res));
   btn('Edit the play', 'alt', backToBoard, 'bBack', row2);
   btn('Back to Ladder', 'alt', openLadder, 'bLadder', row2);
   const ch = beatOf(res);
@@ -812,12 +928,22 @@ function showDailyCard(result, res) {
   const parts = D.dailyCard($('card'), { day, result, reduce: reduced() }, {
     share: b => doShare(dailyShareText(day.dayNumber, result.squares, result.scoreText), b),
     beat: null,
+    save: savedDaily(result, res),
     practice: () => { backToBoard(); dayBarSync(); },
     home: goHome
   });
   if (res) cardUp(res, parts.n);
   else { cardUp(null, 0); }
   fillBoard(parts);
+}
+/* The scored run's play, to save: the one just run, or the one filed
+   (kept on this device; from another device there is none to save). */
+function savedDaily(result, res) {
+  const d = result.detail || {}, pl = res ? runPlay : dly && dly.local.scored;
+  if (!pl || !dly) return null;
+  const r = { play: JSON.parse(JSON.stringify(pl)), sc: dly.sc, scheme: res ? res.scheme : d.scheme || null,
+    win: res ? res.outcome === 'win' : d.outcome === 'win', seed: day.seed };
+  return row => saveButton(row, r);
 }
 async function fillBoard(parts) {
   const d = dly, key = day && day.dateKey;
@@ -916,6 +1042,7 @@ function showBeatResult(res) {
   const ch = beatOf(res);
   if (ch) btn('Beat my play', 'alt', b => shareChallenge(ch, b), 'bBeat', row);
   const row2 = add('div', 'row');
+  saveButton(row2, runOf(res));
   btn('Watch theirs', 'alt', watchTheirs, 'bWatchAgain', row2);
   btn('Home', 'alt', goHome, 'bCardHome', row2);
   cardUp(res, 0);
@@ -961,7 +1088,7 @@ async function doShare(text, btn) {
 window.__lastShot = { run, get result() { return lastResult; }, get play() { return play; }, setPlay(p) { if (mode === 'level' || mode === 'daily' || mode === 'beat') savePlay(p); else play = p; board.reset(); },
   /* the feel: tap to result in ms, the live phase, a pause for screenshots, the sound's state */
   get timing() { return lastTiming; }, get phase() { return live ? live.phase || 'preview' : null; }, set paused(v) { paused = !!v; }, get speed() { return speed; },
-  get sound() { return { muted: sound.muted, state: sound.state }; }, starter: starterPlay,
+  get sound() { return { muted: sound.muted, state: sound.state }; }, starter: () => starterPlay('pin-down'), openPlays, loadStarter, savedRuns: () => [...savedRuns.values()],
   view: () => board.view(), get board() { return board; }, get mode() { return mode; }, get edit() { return edit; }, books,
   simulate: (seed, opt) => { const r = simulate(SCX(), play, seed, mode === 'level' && lvl ? levelOpt(lvl.L) : opt || {});
     return { outcome: r.outcome, reason: r.reason, shotAt: r.shotAt, scheme: r.scheme, how: r.how, answer: r.answer, ot: r.ot, us: r.us, them: r.them, down: r.down, stars: starsOf(r) }; },

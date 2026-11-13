@@ -4,8 +4,23 @@ One possession. You are the coach. It starts in a timeout: draw a play, set when
 on the clipboard: the handler holds till then), Run It, and your five run exactly what you drew
 with 22.0 on the clock, down 1. Score in the last 4.9 to win. Score earlier and they get the ball
 back, and a short cutaway shows their shot. A first visit finds a starter play already drawn (a
-pin-down, Go at 6.0) with Run It pulsing; Clear gives a blank clipboard. Runs have a 2x toggle and
+pin-down, Go at 6.0, the Pin-down starter) with Run It pulsing; Clear gives a blank clipboard. Runs have a 2x toggle and
 synthesized sound (`sound.js`, mute remembered); dead time plays at 4x.
+
+## Start from a play, and Save this play
+
+**Plays** on the clipboard opens a sheet of four starters (`starters.js`: Pin-down, Floppy, Horns
+Twist, Spain pick and roll), each with its note and a small diagram. A tap puts its spots, steps
+and Go at on the clipboard, in free play, a level, the Daily (practice and the scored shot) and
+Draw yours. A clipboard with steps asks "Replace your play?" inline first. Undo right after puts the
+old play back. A starter's spots replace a level's or the day's set; the scout scheme and the
+day's seed are left alone.
+
+Every result card but a playbook's has **Save this play**: the run's play goes into the first
+playbook (or a new "My plays"), named from the coach's terminology, with its situation when it is
+not the game's (clock, down, handler), and the run counted in its stats as edit mode counts one.
+The button then reads "Saved · Open", which opens the play; a run saves once. Signed out it reads
+"Sign in to save", and a tap goes to the Arcade's sign in (no popup).
 
 ## The Ladder
 
@@ -74,6 +89,7 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `board.js` | the clipboard: Move, Screen, Pass, Shoot, Undo, Clear, Run It (pointer events) |
 | `court.js`, `view.js` | the live court, drawn with Run The Floor's rig (`/hoops/baller.js`, read only) |
 | `client.js`, `share.js`, `sound.js` | home, the page flow (the hold, the run, the answer cutaway), the result and the share line; the sounds |
+| `starters.js` | the four starter plays behind Plays (and the first run's play) |
 | `levels.js`, `ladder-ui.js` | the ladder's levels, sets and star rules; its storage, unlocks and screen |
 | `daily.js`, `daily-ui.js` | the Daily's situation, score and replay (server and page); the API calls, the home card, the result card and board |
 | `challenge.js`, `beat-ui.js` | Beat my play links (format, decode, result); the Challenge screen and the share |
@@ -98,6 +114,7 @@ node functions/_lastshot/test/check-playbook.mjs  the storyboard and My Playbook
 node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, down 2 and 3, overtime, garbage
 node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's real handler in memory (test/fake-arcade.mjs)
 node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
+node functions/_lastshot/test/check-starters.mjs  Plays (the starters, replace, undo, a level's scout) and Save this play
 ```
 
 The seed for any result is behind **Seed** on the result screen. The same seed and the same play
