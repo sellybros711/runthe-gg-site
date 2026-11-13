@@ -782,3 +782,21 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
   .ccard b { font-size: 14px; } .ccard small { font-size: 9px; } .ccard .ctype { font-size: 9px; padding: 2px 6px; }
   .csnap { padding: 10px 30px; }
 }
+
+/* ---------- Go For It (goforit.js, the owner 2026-11-13) ---------- */
+.gohero { display: grid; justify-items: center; gap: 6px; margin: 4px auto 18px; }
+.gohero .playnow { margin: 0; }
+.gosub { margin: 0; color: #e9eff6; font-weight: 800; }
+.gobest { margin: 0; color: var(--gold); font: italic 900 18px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+.pracsep { display: flex; align-items: center; gap: 12px; max-width: 1000px; margin: 0 auto 26px; color: #8fa2b8; font: italic 900 15px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+.pracsep::before, .pracsep::after { content: ''; flex: 1; height: 1px; background: #1d3a55; }
+#pGo { --rim: var(--teal); --fill: linear-gradient(#0f2d3a, #0a1e28); color: #8fe7ff; font-size: clamp(24px, 3vw, 34px); padding: 10px 50px; filter: drop-shadow(0 0 12px rgba(25, 198, 167, .4)); }
+#pGo svg { fill: #8fe7ff; }
+.crun { padding: 6px 12px; border-radius: 999px; background: rgba(245, 183, 42, .14); border: 1px solid rgba(245, 183, 42, .6); color: var(--gold); font: italic 900 16px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
+.rgo { display: grid; justify-items: center; gap: 4px; margin: 6px 0 10px; padding: 10px; border-radius: 12px; background: rgba(245, 183, 42, .08); border: 1px solid rgba(245, 183, 42, .4); }
+.rgo p { margin: 0; }
+.rgohead { color: var(--gold); font: italic 900 22px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+.rgotally { color: #fff; font: 900 18px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
+.rgonext { color: #cfd9e4; font-size: 14px; font-weight: 700; }
+.rgobtn { margin: 6px auto 0; font-size: 30px; padding: 8px 40px; min-width: 0; }
+.rescard.go .rplay { display: none; }

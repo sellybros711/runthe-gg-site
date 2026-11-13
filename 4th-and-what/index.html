@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="style.css?v=22">
 </head>
 <body>
 <header class="topbar">
@@ -142,6 +142,13 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <h1><span class="p4">4TH</span> <span class="pand">AND</span> <span class="pwhat">WHAT?</span></h1>
         <p class="kicker">You're going for it.</p>
       </div>
+      <!-- GO FOR IT (goforit.js, the owner 2026-11-13): the main mode, a run of 4th downs -->
+      <div class="gohero">
+        <button type="button" class="playnow" id="goStart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span>Go for it</span></button>
+        <p class="gosub" id="goSub"></p>
+        <p class="gobest" id="goBest" hidden></p>
+      </div>
+      <p class="pracsep"><span>Or practice any down</span></p>
       <div class="pspot">
         <p class="pspoth">Set starting field position</p>
         <p class="pspotk">&raquo; Choose your spot</p>
@@ -164,7 +171,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <span class="lsep" aria-hidden="true"></span>
         <div class="seg" id="pHash" role="group" aria-label="Ball on the"><button type="button" data-hash="left">Left hash</button><button type="button" data-hash="mid">Middle</button><button type="button" data-hash="right">Right hash</button></div>
       </div>
-      <button type="button" class="playnow" id="pGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Play now</button>
+      <button type="button" class="playnow" id="pGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Practice it</button>
       <p class="spotline"><span id="pSpot"></span> <button type="button" class="link" id="pMore">Change</button></p>
       <div class="pmore" id="pMoreBox" hidden>
         <label class="field"><span>Down</span><select id="pDown"></select></label>
@@ -186,6 +193,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
     <div class="callwrap">
       <div class="callhead">
         <button type="button" class="chip" id="cBack" aria-label="Change the down and distance"><span id="cSit"></span></button>
+        <span class="crun" id="cRun" hidden></span>
         <div class="cread"><b id="cRead"></b><span id="cHint"></span></div>
       </div>
       <div class="fieldwrap callfield"><canvas id="cField" aria-label="The defense, lined up"></canvas></div>
@@ -441,7 +449,15 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <p class="rdreal"><b>What really happened:</b> <span id="rReal"></span> <span id="rVerdict"></span></p>
         <p class="rdstats" id="rDayStats" hidden></p>
       </div>
-      <div class="racts">
+      <div class="rgo" id="rGo" hidden>
+        <p class="rgohead" id="rGoHead"></p>
+        <p class="rgotally" id="rGoTally"></p>
+        <p class="rgonext" id="rGoNext"></p>
+        <button type="button" class="playnow rgobtn" id="rGoOn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Next down</button>
+        <button type="button" class="playnow rgobtn" id="rGoAgain" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Go again</button>
+        <button type="button" class="btn" id="rGoShare" hidden>Share your run</button>
+      </div>
+      <div class="racts rplay">
         <button type="button" class="btn gold" id="rAgain">Run it back</button>
         <button type="button" class="btn" id="rEdit">Edit play</button>
         <button type="button" class="btn" id="rNew">New play</button>
@@ -501,10 +517,11 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="studio.js?v=6"></script>
 <script src="game.js?v=4"></script>
 <script src="clip.js?v=1"></script>
-<script src="flow.js?v=8"></script>
+<script src="flow.js?v=9"></script>
 <script src="daily.js?v=6"></script>
 <script src="trivia.js?v=4"></script>
 <script src="calls.js?v=1"></script>
+<script src="goforit.js?v=1"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=2"></script>

@@ -93,8 +93,8 @@
       "sha": "42acc78a2a9a5a7b"
     },
     "flow.js": {
-      "v": "8",
-      "sha": "27c7376a3f3797c4"
+      "v": "9",
+      "sha": "c12415357d231f57"
     },
     "daily.js": {
       "v": "6",
@@ -107,6 +107,10 @@
     "calls.js": {
       "v": "1",
       "sha": "25e02fa402bb7cd7"
+    },
+    "goforit.js": {
+      "v": "1",
+      "sha": "9074f0dad31433c5"
     },
     "library.js": {
       "v": "3",

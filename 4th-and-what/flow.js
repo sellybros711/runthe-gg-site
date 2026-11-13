@@ -120,6 +120,8 @@
   function pending() {
     var D = window.FAW_DAILY, ds = D && D.active() ? D.seed() : null;
     if (ds != null) return ds;
+    var G = window.FAW_GO, gs = G ? G.seed() : null;
+    if (gs != null) return gs;
     if (forced != null) return +forced >>> 0;
     if (pend == null) pend = RNG.freshSeed();
     return pend;
@@ -135,6 +137,7 @@
     if (window.FAW_CLIP) window.FAW_CLIP.cancel();
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
+    if (window.FAW_GO) window.FAW_GO.snapped(res);
     remember(res, p, D && D.active());
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
@@ -208,6 +211,7 @@
     $('rWhy').textContent = r.reason;
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
+    if (window.FAW_GO) window.FAW_GO.card(r);
     renderSnaps();
     clipFor(r);
     c.hidden = false;
