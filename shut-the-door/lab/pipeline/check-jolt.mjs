@@ -137,7 +137,7 @@ const CEILING = {
   'skate fielder dive': 60,
   'skate fielder field': 1118,
   'skate fielder leap_miss': 0,
-  'skate fielder pickup': 1766,
+  'skate fielder pickup': 1765,
   'skate fielder reach': 64,
   'skate fielder receive': 31,
   'skate fielder set': 48,

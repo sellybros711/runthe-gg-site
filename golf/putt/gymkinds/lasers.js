@@ -76,6 +76,7 @@ var GYMS = [
     say:['That splitter sends the beam two ways at once. The eyes don\'t care which half touches them.',
       'You can\'t turn it just anywhere. Check both sides of a spot before you turn it there.',
       'I hold the high score in here. My secret? I stop halfway and look before I go on.'],
+    hint:'Leave the splitter alone at the start. The mirrors beside its rail decide which rows are safe for it. Set them up and it has a safe way to climb.',
     rows:[
       '#########',
       '#.C.A.OA#',

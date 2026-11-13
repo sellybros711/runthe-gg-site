@@ -36,7 +36,7 @@
  * ui.js) through the stage, and aim.js colours the crosshair with it: one reticle around one ball.
  */
 import * as THREE from 'three';
-import { cellPoint } from './pitch.js?v=13';
+import { cellPoint } from './pitch.js?v=16';
 import { FT } from './units.js?v=1';
 
 export const OUT_S = 0.14, BLEND_S = 0.35, SETTLE_S = 8, STOP_S = 0.6, MIN_PX = 11, BALL_IN = 2.9;
@@ -91,7 +91,8 @@ export function spinOf(pitch, hand) {
   return { axis, rps: d.rps, grip: d.grip, src: 'family default' };
 }
 
-const reduced = () => { try { return !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
+let MQ = null;   // (one query list, kept: its matches is live; park.js reducedMotion says why)
+const reduced = () => { try { if (MQ === null) MQ = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : false; return !!(MQ && MQ.matches); } catch (e) { return false; } };
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
 const ease = (x) => { const k = Math.min(1, Math.max(0, x)); return k * k * (3 - 2 * k); };
 const X = new THREE.Vector3(1, 0, 0);

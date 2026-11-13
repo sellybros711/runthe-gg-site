@@ -11,16 +11,18 @@
  * label, or the contract's SHARE_URL. Nothing is invented to fill a space: a
  * missing value leaves its block out.
  *
- * Type is the game's own Barlow Condensed (fonts/, declared in style.css) and
- * the marks are brand/mark.svg and brand/wordmark-dark.svg. Drawing waits for
- * all three Barlow faces to load, so a share never goes out in a fallback font.
+ * Type is the game's two faces (the font round, 2026-11-02): Anton for the
+ * big words and numbers, Inter for the rest, both from index.html's Google
+ * Fonts link. The marks are brand/mark.svg and brand/wordmark-dark.svg (one line
+ * of Anton). Drawing waits for the three faces it uses, so a share never goes
+ * out in a fallback font.
  */
 (function () {
 'use strict';
 var C = window.STD_CONTRACT;
 
 var SIZES = { tall: { w: 1080, h: 1350 }, wide: { w: 1200, h: 630 } };
-var FAMILY = '"Barlow Condensed"';
+var HERO = 'Anton', BODY = 'Inter';
 var INK = '#0b0f17', INK_2 = '#1a2130', WHITE = '#f4f5f7', DIM = 'rgba(244, 245, 247, .66)', SIGNAL = '#ff4f1f', DATA = '#2b59ff';
 var BAND = { green: '#22a45d', yellow: '#f2b827', orange: '#f08424', red: '#e5383b' };
 var OUT_COLOR = { door_shut: '#ffffff', tie_held: '#f2b827', doors_open: '#f08424', walk_off: '#e5383b' };
@@ -33,9 +35,9 @@ function fonts() {
   var F = document.fonts;
   if (!F || !F.load) return (fontsP = Promise.resolve());
   fontsP = Promise.all([
-    F.load('600 40px ' + FAMILY),
-    F.load('italic 800 40px ' + FAMILY),
-    F.load('italic 900 40px ' + FAMILY),
+    F.load('400 40px ' + HERO),
+    F.load('600 40px ' + BODY),
+    F.load('700 40px ' + BODY),
   ]).then(function () { return F.ready; }).catch(function () {});
   return fontsP;
 }
@@ -62,7 +64,11 @@ function svgImage(src) {
 
 /* ---- drawing helpers ---- */
 
-function font(ctx, weight, px, italic) { ctx.font = (italic ? 'italic ' : '') + weight + ' ' + px + 'px ' + FAMILY; }
+/* the card's old heavy italics map onto the two faces: 900 (the big words and numbers) is Anton, 800
+   (the pills) Inter 700, an upright weight is Inter at that weight */
+function font(ctx, weight, px, italic) {
+  ctx.font = italic && weight >= 900 ? '400 ' + px + 'px ' + HERO : (italic ? 700 : weight) + ' ' + px + 'px ' + BODY;
+}
 function spacing(ctx, em, px) { if ('letterSpacing' in ctx) ctx.letterSpacing = (em * px).toFixed(1) + 'px'; }
 function rr(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -117,7 +123,10 @@ function seam(ctx, x, y, w, s) {
 function brand(ctx, marks, x, y, h) {
   if (marks.mark) ctx.drawImage(marks.mark.img, x, y, h, h);
   if (marks.word) {
-    var wh = h * .5, ww = wh * marks.word.w / marks.word.h;
+    /* the wordmark is one line of Anton, a little over six to one: half the mark's height, as in the
+       header (a stacked one, under four to one, would stand nearly as tall as the mark) */
+    var stacked = marks.word.w / marks.word.h < 4;
+    var wh = h * (stacked ? .92 : .5), ww = wh * marks.word.w / marks.word.h;
     ctx.drawImage(marks.word.img, x + h + h * .26, y + (h - wh) / 2, ww, wh);
   }
 }
@@ -132,11 +141,36 @@ function pill(ctx, text, right, y, px) {
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; spacing(ctx, 0, px);
 }
 
+/* a small label in capitals; returns the width it drew, measured in its own face and spacing */
 function label(ctx, text, x, y, px, color, width) {
   font(ctx, 600, px); spacing(ctx, .12, px);
   ctx.fillStyle = color || DIM;
-  ctx.fillText(width ? clip(ctx, String(text).toUpperCase(), width) : String(text).toUpperCase(), x, y);
+  var t = width ? clip(ctx, String(text).toUpperCase(), width) : String(text).toUpperCase();
+  ctx.fillText(t, x, y);
+  var w = ctx.measureText(t).width;
   spacing(ctx, 0, px);
+  return w;
+}
+/* how far the glyphs reach above and below the baseline, in the face that is set now. Placing
+   one line against another from these, never from a constant, keeps the card right whatever face
+   draws it (the card's offsets were tuned for Barlow Condensed and broke when Anton and Inter came
+   in, #871: the kicker under DOOR SHUT., PITCHED LIKE under the name). */
+function ink(ctx, text, px) {
+  var m = ctx.measureText(text);
+  var up = m.actualBoundingBoxAscent, down = m.actualBoundingBoxDescent;
+  return { up: up >= 0 ? up : px * .9, down: down >= 0 ? down : px * .22 };
+}
+/* the kicker ('final · <title>') set on top of the outcome: the outcome keeps its baseline and the
+   kicker stands a measured gap above the outcome's tallest glyph */
+function kicker(ctx, c, x, outBase, width, max, px, gap) {
+  var word = (C.OUTCOME_LABEL[c.outcome] || '').toUpperCase();
+  fit(ctx, word + '.', 900, max, width, true, 40);
+  var top = outBase - ink(ctx, word + '.', max).up;
+  font(ctx, 600, px); spacing(ctx, .12, px);
+  var t = clip(ctx, ['final', c.title].filter(Boolean).join(' · ').toUpperCase(), width);
+  var y = top - gap - ink(ctx, t, px).down;
+  spacing(ctx, 0, px);
+  label(ctx, t, x, y, px, DIM, width);
 }
 
 /* DOOR SHUT. in its colour, the full stop in signal, as large as the width allows */
@@ -159,7 +193,12 @@ function fact(ctx, x, y, w, h, big, sup, small, s) {
   var bx = x + 22 * s, by = y + 22 * s + px * .78;
   ctx.fillText(big, bx, by);
   if (sup) { var bw = ctx.measureText(big).width; font(ctx, 900, px * .46, true); ctx.fillText(sup, bx + bw + 3 * s, by - px * .42); }
-  label(ctx, small, bx, y + h - 20 * s, 21 * s, DIM);
+  /* the word under it in its tile's width: Inter at .12em runs wider than the condensed face this
+     was first set in, so it steps down to fit, then clips */
+  var lp = 21 * s, room = w - 44 * s, word = String(small).toUpperCase();
+  for (;;) { font(ctx, 600, lp); spacing(ctx, .12, lp); if (ctx.measureText(word).width <= room || lp <= 14 * s) break; lp -= .5 * s; }
+  spacing(ctx, 0, lp);
+  label(ctx, small, bx, y + h - 20 * s, lp, DIM, room);
 }
 
 function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; return ['th', 'st', 'nd', 'rd'][n % 10] || 'th'; }
@@ -239,7 +278,7 @@ function drawTall(ctx, c, marks) {
   brand(ctx, marks, P, 72, 84);
   if (c.label) pill(ctx, c.label, W - P, 88, 34);
   y = 274;
-  label(ctx, ['final', c.title].filter(Boolean).join(' · '), P, y, 30, DIM, iw);
+  kicker(ctx, c, P, y + 176, iw, 210, 30, 22);
   var op = outcome(ctx, c, P - 4, y + 176, iw, 210);
   y += 176 + 8 + Math.max(0, (210 - op) * .1);
   seam(ctx, P, y + 26, iw * .62, 1.9);
@@ -258,9 +297,9 @@ function drawTall(ctx, c, marks) {
     y += vh + 36;
   }
   if (c.pitchedLike && y < H - 190) {
-    label(ctx, 'pitched like', P, y + 20, 24, DIM);
+    var lw = label(ctx, 'pitched like', P, y + 20, 24, DIM) + 18;
     font(ctx, 900, 44, true); ctx.fillStyle = '#ffffff';
-    ctx.fillText(clip(ctx, String(c.pitchedLike).toUpperCase(), iw - 170), P + 160, y + 24);
+    ctx.fillText(clip(ctx, String(c.pitchedLike).toUpperCase(), iw - lw), P + lw, y + 24);
   }
   footer(ctx, W, H - 66, P, 1, marks);
 }
@@ -271,7 +310,7 @@ function drawWide(ctx, c, marks) {
   brand(ctx, marks, P, 46, 60);
   if (c.label) pill(ctx, c.label, W - P, 56, 26);
   y = 164;
-  label(ctx, ['final', c.title].filter(Boolean).join(' · '), P, y, 22, DIM, lw);
+  kicker(ctx, c, P, y + 118, lw, 150, 22, 16);
   outcome(ctx, c, P - 3, y + 118, lw, 150);
   seam(ctx, P, y + 150, lw * .62, 1.5);
   var fy = y + 182, fw = (lw - 16) / 2, fh = 120;
@@ -289,7 +328,7 @@ function drawWide(ctx, c, marks) {
 
 function render(c, size) {
   var dim = SIZES[size] || SIZES.tall;
-  return Promise.all([fonts(), svgImage('brand/mark.svg?v=1'), svgImage('brand/wordmark-dark.svg?v=1')]).then(function (got) {
+  return Promise.all([fonts(), svgImage('brand/mark.svg?v=2'), svgImage('brand/wordmark-dark.svg?v=3')]).then(function (got) {
     var marks = { mark: got[1], word: got[2] };
     var cv = document.createElement('canvas');
     cv.width = dim.w; cv.height = dim.h;

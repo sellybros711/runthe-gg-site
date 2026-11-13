@@ -30,8 +30,13 @@
  *             this repo has one (cfb/data/cfb_player_seasons.json, the college game's own
  *             data, keyed on the same ESPN id), and otherwise 80% of what the draftable
  *             men at his position are averaging (the NFL mode's rule, `PROJ_LEVEL`).
- *   plays     the share of his team's games he has played in. A man who has missed games
- *             is priced as a man who misses games.
+ *   plays     NO DISCOUNT FROM THREE GAMES ON (the owner, 2026-11-12: "a players ranking
+ *             should be based off of their projected score/past scores"). A man with three or
+ *             more games is priced on the games he played, and the MISSED chip tells the
+ *             reader. Under three he keeps the share of his team's games he played, because
+ *             the box score lists only men who touched the ball: without it a depth receiver
+ *             with one catch all season read as one game of one (Ivan Carreon, $3.2M to
+ *             $14.9M on the week 11 comparison; $6.3M with it). "yes add it", the owner.
  *   matchup   what the betting market expects his team to score this week, against what
  *             his team has averaged, to the power 0.6, held between 0.80 and 1.25.
  *
@@ -49,10 +54,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  scoreboardWeek, roster, gamesOf, implied, rosterOf, calendarOf, playLine, STAT_KEYS,
+  scoreboardWeek, roster, gamesOf, implied, rosterOf, calendarOf, playLine, STAT_KEYS, ROSTER_CAP,
 } from './espn.mjs';
 import { DATA, loadStore, saveStore, fillBefore, seasonToDate } from './season.mjs';
 import { sweepCap } from './cap.mjs';
+import { quarterbacks, backupQBs } from './roles.mjs';
 
 const say = (...a) => process.stderr.write(a.join(' ') + '\n');
 const round = (v, dp = 2) => Number(Number(v).toFixed(dp));
@@ -78,6 +84,8 @@ const NOTRE_DAME = '87';
 const isPower = (t) => POWER_CONF.has(t.conf) || t.id === NOTRE_DAME;
 
 export const SHRINK_K = 2;
+/* From this many games a man is priced on the games he played, with no discount for absence. */
+export const FULL_GAMES = 3;
 export const PROJ_LEVEL = 0.80;
 export const MATCHUP_EXP = 0.6;
 export const MATCHUP_LO = 0.80;
@@ -143,7 +151,8 @@ export function positionLevels(men) {
 export function projectMan(p, levels) {
   const prior = p.prior != null ? p.prior : PROJ_LEVEL * (levels.get(p.position) || 0);
   const rate = (p.games * p.half_ppg + SHRINK_K * prior) / (p.games + SHRINK_K);
-  const plays = p.played_of > 0 ? Math.min(1, Math.max(0, p.games / p.played_of)) : 1;
+  const plays = p.games >= FULL_GAMES || !(p.played_of > 0) ? 1
+    : Math.min(1, Math.max(0, p.games / p.played_of));
   let matchup = 1;
   if (p.implied != null && p.team_avg > 0) {
     matchup = Math.min(MATCHUP_HI, Math.max(MATCHUP_LO,
@@ -182,17 +191,36 @@ export function pricePool(men) {
  * @param rosters  Map teamId -> rosterOf()'s answer
  * @param todate   seasonToDate()'s answer
  * @param priors   priorsFrom()'s answer
+ * @param roles    quarterbacks()'s answer, or nothing (then every man is read off the roster)
  */
-export function buildMen(slate, rosters, todate, priors) {
+export function buildMen(slate, rosters, todate, priors, roles = null) {
   const men = [];
-  const dropped = { off: 0, noGames: 0, noPos: 0 };
+  const dropped = { off: 0, noGames: 0, noPos: 0, added: 0 };
   for (const g of slate) {
     const imp = implied(g);
     for (const [side, other, home] of [[g.home, g.away, true], [g.away, g.home, false]]) {
       const ros = rosters.get(side.id);
       if (!ros) continue;
       const team = todate.teams.get(side.id) || { games: 0, scored: 0, last: null };
-      for (const [id, r] of ros) {
+      /* A STARTER THE ROSTER LEFT OUT IS READ OFF THE BOX SCORES. ESPN's college roster
+         stops at 100 athletes, alphabetically (offense 47, defense 46, special teams 7 on
+         the probe's roster), and an FBS roster is bigger than that. So surnames late in the
+         alphabet never reached a board: Gunner Stockton, Conner Weigman and Isaac Wilson,
+         each his team's starter, were missing from every week, behind their own backups.
+         A man who led his team's passing is a quarterback by what he did, so he is added
+         here with what the store has on him. Only a starter, because for anybody else the
+         box score cannot tell a receiver from a tight end. A man the roster does list, at
+         another position or in the out group, is left as the roster says. */
+      const listed = new Map(ros);
+      const st = roles && roles.teams.get(side.id);
+      for (const id of (st ? st.starters : [])) {
+        if (listed.has(id) || !todate.men.has(id)) continue;
+        const s = todate.men.get(id);
+        if (s.team !== side.id) continue;
+        listed.set(id, { name: s.name, pos: 'QB', year: null, inj: null, off: null });
+        dropped.added++;
+      }
+      for (const [id, r] of listed) {
         const pos = POS_OF[r.pos];
         if (!pos) { dropped.noPos++; continue; }
         if (r.off) { dropped.off++; continue; }
@@ -206,7 +234,7 @@ export function buildMen(slate, rosters, todate, priors) {
           team: side.abbr, team_id: side.id,
           opp: other.abbr, opp_id: other.id, home,
           kick: g.kick, game_id: g.id,
-          games: s.games, played_of: team.games || s.games,
+          games: s.games, played_of: Math.max(team.games || 0, s.games),
           half_ppg: round(s.pts / s.games, 2),
           half_total: round(s.pts, 1),
           stat_line: playLine(s.stats),
@@ -224,6 +252,53 @@ export function buildMen(slate, rosters, todate, priors) {
     }
   }
   return { men, dropped };
+}
+
+/*
+ * ONLY STARTING QUARTERBACKS, AND A STARTER IS PRICED ON HIS STARTS (the owner, 2026-11-12).
+ *
+ * "Feels like there needs to be a little more rhyme and reason and thought into the
+ * rankings." Said of the NFL board, then "Do the same for college football fantasy." The
+ * week 11 college board had the same fault: Julian Sayin at $14.7M behind Luke Fahey ($4.9M),
+ * who had led Ohio State's passing the last two games; Aaron Philo at $8.9M behind Tramell
+ * Jones Jr. ($5M); 101 quarterbacks for 40 teams. Every price was a fair summary of what a
+ * man had done. What was missing was his role this week.
+ *
+ *   1. A QUARTERBACK WHO IS NOT HIS TEAM'S STARTER IS NOT ON THE BOARD (`roles.mjs` says
+ *      who starts, and what the box scores cannot see).
+ *   2. A STARTER IS PRICED ON HIS STARTS: the games he led his team's passing and the points
+ *      he scored in them, never discounted for games missed. Anybody else with three or more
+ *      games is not discounted either (projectMan). Relief snaps in a blowout are what
+ *      made a new starter cheap. Shrunk toward his prior exactly like every thin sample. The
+ *      card keeps what he has really done.
+ *   3. EVERY MAN IS ON HIS ROSTER TEAM already, because the board is read off the rosters.
+ *
+ * Mutates and answers the men kept.
+ */
+export function applyRoles(men, roles) {
+  if (!roles || !roles.ready) return men;
+  const backups = backupQBs(roles, men);
+  const kept = men.filter((m) => !backups.has(m.player_id));
+  for (const m of kept) {
+    if (m.position !== 'QB' || !roles.starter.has(m.player_id)) continue;
+    const s = roles.starts.get(m.player_id) || { n: 0, pts: 0 };
+    m.starts = s.n;
+    m.start_ppg = s.n ? round(s.pts / s.n, 2) : 0;
+  }
+  return kept;
+}
+
+/* The price reads a starter's STARTS and the card reads what he did, so pricing swaps the
+   fields in and they are swapped back before the row is written. */
+export function asPriced(m) {
+  if (!m.starts) return;
+  m.disp = { games: m.games, half_ppg: m.half_ppg, played_of: m.played_of };
+  m.games = m.starts; m.half_ppg = m.start_ppg; m.played_of = m.starts;
+}
+export function asShown(m) {
+  if (!m.disp) return;
+  Object.assign(m, m.disp);
+  delete m.disp;
 }
 
 /* ─── the build ───────────────────────────────────────────────────────────────────── */
@@ -275,23 +350,35 @@ export async function buildPool({ season, week, now = Date.now() }) {
       const j = await roster(t.id);
       if (!j) throw new Error(`the ${t.school} roster could not be read`);
       rosters.set(t.id, rosterOf(j));
+      if (rosters.get(t.id).size === ROSTER_CAP) {
+        say(`  ${t.school}: ESPN sent exactly ${ROSTER_CAP} athletes, its cap, `
+          + 'so the roster is cut off (late surnames missing)');
+      }
     }
   }
 
   const todate = seasonToDate(store, week, STAT_KEYS);
   const rows = JSON.parse(fs.readFileSync(path.join(DATA, '..', 'cfb_player_seasons.json'), 'utf8'));
   const priors = priorsFrom(rows, season);
-  const { men, dropped } = buildMen(slate, rosters, todate, priors);
+  const roles = quarterbacks(store, week);
+  if (!roles.ready) say(`roles: the store has no week ${week - 1}, so every quarterback stays`);
+  const built = buildMen(slate, rosters, todate, priors, roles);
+  const { dropped } = built;
+  const men = applyRoles(built.men, roles);
   say(`men: ${men.length} on the board; dropped ${dropped.off} out or suspended, `
-    + `${dropped.noGames} who have not played, ${dropped.noPos} at other positions`);
+    + `${dropped.noGames} who have not played, ${dropped.noPos} at other positions, `
+    + `${built.men.length - men.length} quarterbacks not starting; `
+    + `added ${dropped.added} starters the roster left out`);
   for (const pos of POSITIONS) {
     const n = men.filter((m) => m.position === pos).length;
     if (!n) throw new Error(`the board has no ${pos}`);
   }
 
+  for (const m of men) asPriced(m);
   const levels = positionLevels(men);
   for (const m of men) Object.assign(m, projectMan(m, levels));
   const priced = pricePool(men);
+  for (const m of men) { asShown(m); delete m.start_ppg; }
   men.sort((a, b) => b.price_musd - a.price_musd || b.proj - a.proj);
 
   const { cap, table } = sweepCap(men);

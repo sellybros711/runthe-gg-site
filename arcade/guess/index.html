@@ -454,14 +454,15 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=5"></script>
 <script src="/arcade/stars.js?v=5"></script>
-<script src="/arcade/awards.js?v=3"></script>
+<script src="/arcade/awards.js?v=4"></script>
 <script src="/arcade/supplement.js?v=6"></script>
 <script src="/arcade/cluebank.js?v=3"></script>
-<script src="/arcade/primary.js?v=63"></script>
+<script src="/arcade/primary.js?v=74"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=9"></script>
 <script src="/arcade/flags.js?v=8"></script>
-<script src="/arcade/rosters.js?v=9"></script>
+<script src="/arcade/namesake.js?v=1"></script>
+<script src="/arcade/rosters.js?v=11"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=4"></script>
 <script src="/arcade/result.js?v=2"></script>
@@ -625,8 +626,15 @@ window.GA_ID='G-L29P5MRWKE';
        is who can be in the room. rosters.js says who is on a club today. A
        sport too thin to deal from keeps the career pool. */
     if(CURRENT && ROSTERS){
-      var ON={}; ROSTERS.players.forEach(function(p){ if(p && p.n) ON[p.n+'|'+p.s]=1; });
-      var onNow=function(e){ return !!ON[e.name+'|'+e.sport]; };
+      /* On a roster today means a roster row that is THIS man, not one that
+         shares his name. Keyed on the name alone, a Dolphins cornerback
+         named Chris Johnson made the retired Titans running back a current
+         player, eligible to be the answer, and kept the cornerback from
+         being guessed at all. The rule is arcade/namesake.js, the same one
+         Alma Mater uses. */
+      var ON={}, RY=window.RTGNamesake ? RTGNamesake.rosterYear(ROSTERS) : 0;
+      ROSTERS.players.forEach(function(p){ if(p && p.n) (ON[p.n+'|'+p.s]=ON[p.n+'|'+p.s]||[]).push(p); });
+      var onNow=function(e){ return (ON[e.name+'|'+e.sport]||[]).some(function(p){ return !window.RTGNamesake || !RTGNamesake.isNamesake(e, p, RY); }); };
       var g2=GUESSABLE.filter(onNow), t2=TARGETS.filter(onNow);
       var thin=Object.keys(TARGET_SPORTS).some(function(sp){ return t2.filter(function(e){ return e.sport===sp; }).length<20; });
       /* Every rostered player can be GUESSED, not only the ones the corpus
@@ -669,7 +677,10 @@ window.GA_ID='G-L29P5MRWKE';
   pickTarget();
   /* Read-only view for scripts/check-current.mjs: who can be the answer and who can be guessed. */
   window.__rtgGuess = function(){ return { current:CURRENT, sport:SPORT, target:TARGET&&TARGET.name, decade:TARGET&&TARGET.decade, pool:POOL.length, rosterOnly:((POOL.filter(function(e){ return /^ros:/.test(e.id); })[0])||{}).name||null, guessable:(function(){ var c={}; GUESSABLE.forEach(function(e){ c[e.sport]=(c[e.sport]||0)+1; }); return c; })(), targets:TARGETS.map(function(e){ return e.sport+'|'+e.name; }) }; };
-  window.__rtgGuessHas = function(names){ return names.filter(function(n){ return GUESSABLE.some(function(e){ return e.name===n; }); }); };
+  // is the corpus career (not a roster-only row) of this name guessable, for scripts/check-current.mjs
+  window.__rtgGuessCareer = function(n, s){ return GUESSABLE.some(function(e){ return e.name===n && e.sport===s && !/^ros:/.test(e.id); }); };
+  // "Name|Sport", or a bare name for any sport
+  window.__rtgGuessHas = function(names){ return names.filter(function(n){ var q=String(n).split('|'); return GUESSABLE.some(function(e){ return e.name===q[0] && (!q[1] || e.sport===q[1]); }); }); };
   if(CURRENT){ try{ var eraEl=document.getElementById('eraLine'); if(eraEl) eraEl.textContent='from today\'s rosters'; }catch(e){} }
 
   // ---- comparison ----

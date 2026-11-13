@@ -2,10 +2,10 @@
  * Shared by the game (stage.js) and the lab (lab/scene.js).
  */
 import * as THREE from 'three';
-import { buildField } from './field.js?v=8';
-import { buildStands } from './stands.js?v=11';
+import { buildField } from './field.js?v=22';
+import { buildStands } from './stands.js?v=27';
 import { P, FT, smooth } from './units.js?v=1';
-import { crowdLight } from './crowd.js?v=1';
+import { crowdLight } from './crowd.js?v=3';
 
 export function makeRenderer(canvas, maxDpr = 2) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -124,8 +124,14 @@ export function fwdAt(rel) {
   return Math.max(3.2, Math.min(5.6, EYE.y - (y + 1.9)));
 }
 /** Is the delivery's head motion off (the player asked for less motion)? */
+// (one query list, kept: its matches is live. A new matchMedia each frame cost the pitch more JS
+// than its pose, measured at 4x CPU on 2026-11-03)
+let MQ = null;
 export function reducedMotion() {
-  try { return !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; }
+  try {
+    if (MQ === null) MQ = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : false;
+    return !!(MQ && MQ.matches);
+  } catch (e) { return false; }
 }
 
 /** The pitcher's eye: framed toward the hitter's side of the plate (a left handed hitter stands on

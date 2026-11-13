@@ -83,6 +83,42 @@
  * and grade. The pool was replayed under rules 8, so a rules 7 row's
  * percentile is not compared.
  *
+ * RULES 9 (2026-11-02). The ABS touch (contract.js absDist, engine.js 12): a
+ * challenge is answered by whether any part of the ball touched the zone, the
+ * ball's radius on the top and the bottom too. A new outing's calls carry r 9.
+ * A row with r 8 replays under rules 8 exactly: the self-test holds three rows
+ * made by main's engine before rules 9, each with a challenge on a ball that
+ * touched the zone off the bare edge (so it resolves the other way under 9), in
+ * fixtures/replays-rules8-pre-abs-touch.json. The pool was not replayed: it was
+ * built under rules 8, and only a catcher's challenge on a touching ball moves.
+ *
+ * RULES 10 (2026-11-03). The touch on the zone as drawn (contract.js touchDist,
+ * engine.js 13): the ball's edge against the grid's box, the plate plus a ball
+ * on the sides. A new outing's calls carry r 10. A row with r 9 replays under
+ * rules 9 exactly: the self-test holds three rows made by main's engine before
+ * rules 10, each with a pitcher's challenge on a ball touching the drawn box
+ * but not the bare zone (it stood under 9, it is overturned under 10), in
+ * fixtures/replays-rules9-pre-drawn-touch.json. The pool was not replayed.
+ *
+ * RULES 11 (2026-11-06). The reach (contract.js THE REACH, engine.js 14): a hit
+ * by pitch only when the ball's crossing reaches the batter's body; short of it
+ * the same slice of the same draw is a take called where it crossed. A new
+ * outing's calls carry r 11. A row with r 10 replays under rules 10 exactly:
+ * the self-test holds three rows made by main's engine before rules 11 (at
+ * 70e5d32e), each with a hit by pitch that crossed under 1.2 ft inside (short of
+ * the reach), in fixtures/replays-rules10-pre-hbp-reach.json. The pool was
+ * not replayed.
+ *
+ * RULES 12 (2026-11-07). The reach where he stands (contract.js hbpReachAt,
+ * engine.js 15): the drawn hitter measured at Statcast's average stance, moved by
+ * his own distance off the plate (the pack's stanceIn). A new outing's calls carry
+ * r 12. A row with r 11 replays under rules 11 exactly, on packs that now carry
+ * stanceIn: the self-test holds three rows made by main's engine before rules 12
+ * (at d60cd11c, on its packs), in fixtures/replays-rules11-pre-stance.json, each
+ * with a pitch the two reaches answer differently (two takes that reach the
+ * hitter under rules 12, one hit by pitch that does not). The pool was not
+ * replayed.
+ *
  * RULES 6 (2026-10-26). The runners read the ball (contract.js THE RUNNERS
  * READ THE BALL, engine.js 9). A new outing's calls carry r 6. A row with r 5
  * replays under rules 5 exactly (the self-test holds three, made by main's
@@ -462,6 +498,114 @@ function selfTest() {
         && o.score.them - p.pack.scenario.situation.score.them === row.runs && !o.halves.length;
       const H = (p.pack.scenario.halves || []).length;
       say(a.ok && same && o.rules === G.STEAL_RULES, `${row.scenario_id}: a rules 7 row from before rules 8 replays exactly on the first half (${row.pitches} pitches, ${row.outcome}, the pack has ${H} ${H === 1 ? 'half' : 'halves'})` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 9: rules 8 rows made before it (main's engine at df0bc51), each with a challenge on a ball
+     touching the zone off the bare edge, replay exactly as rules 8; as rules 9 they part */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules8-pre-abs-touch.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const touched = o.log.filter(x => x.abs && x.challenge && x.abs.d < 0 && K.absDist(x.actual.x, x.actual.zn, p.pack.kernelZoneFt) >= 0);
+      let parts = true;   // a call the rules 9 outing cannot take (a challenge with none live) parts it too
+      try {
+        const o9 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.TOUCH_RULES })), { mode: 'daily', model: p.model });
+        parts = JSON.stringify(o9.log.map(x => x.result)) !== JSON.stringify(row.result) || o9.calls.length !== row.calls.length || o9.status !== 'over';
+      } catch (e) { parts = true; }
+      say(a.ok && same && o.rules === G.FULL_RULES && touched.length > 0 && parts, `${row.scenario_id}: a rules 8 row from before the ABS touch replays exactly, ${touched.length} challenge on a ball touching the zone included (${row.pitches} pitches); as rules 9 it parts` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 10: rules 9 rows made before it (main's engine at fcc49b9), each with a pitcher's challenge
+     on a ball touching the drawn zone but not the bare one, replay exactly as rules 9; as rules 10 they part */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules9-pre-drawn-touch.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const touched = o.log.filter(x => x.challenge && x.challenge.by === 'pitcher' && !x.challenge.overturned && K.touchDist(x.actual.x, x.actual.zn, p.pack.kernelZoneFt) >= 0);
+      let parts = true;
+      try {
+        const o10 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.DRAWN_RULES })), { mode: 'daily', model: p.model });
+        parts = JSON.stringify(o10.log.map(x => x.result)) !== JSON.stringify(row.result) || JSON.stringify(o10.log.map(x => !!(x.challenge && x.challenge.overturned))) !== JSON.stringify(o.log.map(x => !!(x.challenge && x.challenge.overturned))) || o10.calls.length !== row.calls.length || o10.status !== 'over';
+      } catch (e) { parts = true; }
+      say(a.ok && same && o.rules === G.TOUCH_RULES && touched.length > 0 && parts, `${row.scenario_id}: a rules 9 row from before the drawn touch replays exactly, ${touched.length} challenge on a ball touching the drawn zone included (${row.pitches} pitches); as rules 10 it parts` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 11: rules 10 rows made before it (main's engine at 70e5d32e), each with a hit by pitch short
+     of the reach, replay exactly as rules 10, the hit by pitch and all; as rules 11 they part there */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules10-pre-hbp-reach.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const bats = (i) => p.pack.scenario.batters[p.model.who(o.before[i])].bats;
+      const short = o.log.filter((x, i) => x.result === 'hit_by_pitch' && K.insideFt(x.actual.x, bats(i)) < K.hbpReach(x.actual.zn));
+      let parts = true;
+      try {
+        const o11 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.HBP_RULES })), { mode: 'daily', model: p.model });
+        const i0 = o.log.indexOf(short[0]);
+        parts = !o11.log[i0] || o11.log[i0].result !== 'hit_by_pitch';
+      } catch (e) { parts = true; }
+      say(a.ok && same && o.rules === G.DRAWN_RULES && short.length > 0 && parts, `${row.scenario_id}: a rules 10 row from before the reach replays exactly, ${short.length} hit by pitch short of the batter included (${row.pitches} pitches); as rules 11 it parts` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 12: rules 11 rows made before it (main's engine at d60cd11c, on its packs, before stanceIn),
+     replay exactly as rules 11 on today's packs; as rules 12 they part where the row's parts says,
+     the pitch the two reaches answer differently, and nowhere before it */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules11-pre-stance.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const i0 = row.parts, x = o.log[i0], b = x && p.pack.scenario.batters[p.model.who(o.before[i0])];
+      const ins = x ? K.insideFt(x.actual.x, b.bats) : 0;
+      // the pitch at parts: between the two reaches, for a hitter whose stance the pack carries or not
+      const between = !!x && (ins >= K.hbpReach(x.actual.zn)) !== (ins >= K.hbpReachAt(x.actual.zn, b.stanceIn ?? null));
+      let parts = false;
+      try {
+        const o12 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.STANCE_RULES })), { mode: 'daily', model: p.model });
+        parts = o12.log.slice(0, i0).every((y, i) => y.result === o.log[i].result) && (!o12.log[i0] || o12.log[i0].result !== x.result);
+      } catch (e) { parts = false; }
+      say(a.ok && same && o.rules === G.HBP_RULES && between && parts, `${row.scenario_id}: a rules 11 row from before the stance replays exactly (${row.pitches} pitches); as rules 12 it parts at pitch ${i0 + 1}, ${x ? x.result : '?'} ${ins.toFixed(2)} ft inside for ${b ? b.name : '?'}` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* the height zones (2026-11-03): rules 10 rows on the four Retrosheet packs, made on main's packs at
+     e197bde1 (before szSrc), replay exactly on today's packs, and again on a pack whose hitters all
+     carry one zone with no szSrc (the league mean, as before #849): the drawn zone never reaches the
+     engine or the grade, which play zn and the pack's kernelZoneFt */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules10-pre-height-src.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const flat = JSON.parse(JSON.stringify(p.pack));
+      for (const b of flat.scenario.batters) { b.szTop = 3.45; b.szBot = 1.61; delete b.szSrc; }
+      const keys = (pk, m) => { const o = E.replay(pk, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: m });
+        return JSON.stringify([o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell]), o.log.map(x => x.result), o.grades.map(g => g.lost)]); };
+      const want = JSON.stringify([row.actual, row.result, row.lost]);
+      const est = p.pack.scenario.batters.every(b => b.szSrc === 'height');
+      say(a.ok && est && keys(p.pack, p.model) === want && keys(flat, new G.Model(flat)) === want, `${row.scenario_id}: a rules 10 row from before the zone's source mark replays exactly, on height zones and on one league zone alike (${row.pitches} pitches)` + (a.ok ? '' : ': ' + a.why));
     }
   }
   // Survivor: a run played through the engine replays; a doctored score, a situation out of its

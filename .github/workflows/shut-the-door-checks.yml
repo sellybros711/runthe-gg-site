@@ -20,12 +20,17 @@ name: Shut The Door checks
 #              157_shut_the_door_effort.sql (the effort's e) twice and its test; then
 #              159_shut_the_door_boards.sql (the board end to end) twice and its test; then
 #              160_shut_the_door_vote_survivor.sql (the vote, Survivor, the archive, Pro) twice and its test; then
-#              161_shut_the_door_full_close.sql (rules 8's two new spots) twice and its test
+#              161_shut_the_door_full_close.sql (rules 8's two new spots) twice and its test; then
+#              163_shut_the_door_vote_nov5.sql (the vote from 2026-11-05) twice and its test; then
+#              164_shut_the_door_vote_anytime.sql (the vote without playing today) twice and its test; then
+#              165_shut_the_door_ump_voices.sql (the voice of the ump) twice and its test, over a storage stub; then
+#              162_shut_the_door_plates.sql (the boards 166 builds on), then
+#              166_shut_the_door_board_stats.sql (the stat line on the boards) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
 #   node shut-the-door/test/engine.mjs && node shut-the-door/test/packs.mjs && node shut-the-door/test/api.mjs
-#   node shut-the-door/test/modes.mjs && node shut-the-door/test/survivor.mjs
+#   node shut-the-door/test/modes.mjs && node shut-the-door/test/survivor.mjs && node shut-the-door/test/versus.mjs
 #   node shut-the-door/check-replays.mjs --self-test
 #   node shut-the-door/check-rules.mjs
 #
@@ -71,19 +76,31 @@ jobs:
         run: node shut-the-door/test/survivor.mjs
       - name: The lesson
         run: node shut-the-door/test/lesson.mjs
+      - name: Every scenario names both real clubs (never "us" or "them")
+        run: node shut-the-door/test/clubs.mjs
+      - name: A pitch's clip link round-trips and plays the pitch the outing threw
+        run: node shut-the-door/test/clip.mjs
       - name: The release meter on the page keeps the same e and q
         run: node shut-the-door/test/meter.mjs
+      - name: The voice of the ump on the page matches 165 (script, consent, types, limits, the call map)
+        run: node shut-the-door/test/voices.mjs
+      - name: The at bats and the box line after the outing are the engine's (postgame.js), and 166's check agrees
+        run: node shut-the-door/test/postgame.mjs
+      - name: The result names the real closer in every scheduled pack (names.js versus)
+        run: node shut-the-door/test/versus.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
         run: node shut-the-door/check-rules.mjs
       - name: Every pitch moves like the real pitch (break side, size, crossing point, preview against flight)
         run: node shut-the-door/lab/pipeline/check-pitches.mjs
+      - name: The break arrows and the guide point each pitch its way, for either hand and either hitter
+        run: node shut-the-door/test/breaks.mjs
       - name: No em or en dashes
         run: node scripts/check-dashes.mjs shut-the-door
       - name: The copy rules, on the files that hold player copy
         run: |
-          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js; do
+          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js shut-the-door/voices.js shut-the-door/postgame.js; do
             node scripts/check-copy.mjs "$f"
           done
 
@@ -142,3 +159,30 @@ jobs:
           $P -f supabase/161_shut_the_door_full_close.sql
           $P -f supabase/161_shut_the_door_full_close.sql
           $P -f supabase/test/shut_the_door_full_close_test.sql
+      - name: 163 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/163_shut_the_door_vote_nov5.sql
+          $P -f supabase/163_shut_the_door_vote_nov5.sql
+          $P -f supabase/test/shut_the_door_vote_nov5_test.sql
+      - name: 164 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/164_shut_the_door_vote_anytime.sql
+          $P -f supabase/164_shut_the_door_vote_anytime.sql
+          $P -f supabase/test/shut_the_door_vote_anytime_test.sql
+      - name: 165 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/test/storage_base.sql
+          $P -f supabase/165_shut_the_door_ump_voices.sql
+          $P -f supabase/165_shut_the_door_ump_voices.sql
+          $P -f supabase/test/shut_the_door_ump_voices_test.sql
+      - name: 166 applied twice (over 162's boards), then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -c "alter table public.profiles add column if not exists avatar_initials text"
+          $P -f supabase/162_shut_the_door_plates.sql
+          $P -f supabase/166_shut_the_door_board_stats.sql
+          $P -f supabase/166_shut_the_door_board_stats.sql
+          $P -f supabase/test/shut_the_door_board_stats_test.sql

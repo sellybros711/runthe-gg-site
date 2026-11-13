@@ -8,17 +8,24 @@ name: Shut The Door lab checks
 # its ceilings were measured on, so it is held to them as they are, with nothing scaled: those
 # ceilings sit at the counts main measured, and a sample's count wanders round its share by chance,
 # so a scaled ceiling on a small sample would fail main about half the time per ceiling.
-# check-jolt's held set is split in four shards and combined, which gives the same plays and the same
-# verdict as one run (--combine). A check whose limits are per case with no ceiling (catch) runs a
-# sample: any case over its limit in the sample is over it in the whole run, so a sample cannot fail
+# check-jolt's held set is split in six shards and combined, and camera and frame (every case) in
+# three each, which gives the same plays and the same verdict as one run (--combine). The combined job
+# (named for the check) is the guard that the shards add up: it fails unless every shard is there, ran
+# this commit with the same flags, and every case of the whole run is in exactly one of them
+# (checkpoint.mjs readShards; check-jolt's own --combine for jolt). No shard job runs much past 15
+# minutes. A check whose limits are per case with no ceiling (catch) runs a sample: any case over its limit in the sample is over it in the whole run, so a sample cannot fail
 # what the whole run passes, and with no ceiling there is no rate to scale.
 #
-#   jolt     the held 8,297 (every 20th case), as four shards then --combine
-#   camera   every case (168,754), the set its ceilings were measured on      check-camera.mjs --stride 1
-#   frame    every case                                                        check-frame.mjs
+#   jolt     the held 8,297 (every 20th case), as six shards then --combine
+#   camera   every case (168,754), the set its ceilings were measured on      check-camera.mjs --stride 1, three shards
+#   frame    every case                                                        check-frame.mjs, three shards
 #   catch    about 6,000 cases of 168,754                                      check-catch.mjs --sample 6000
 #   inplay   every case (it is pure: a minute and a half)                      check-inplay.mjs
 #   pitch    every pack, pitch, side and crossing, phone and desktop            check-pitch-path.mjs
+#   foul     every seeded foul on every pack and every shape's grid (pure)      check-foul.mjs
+#   gait     every case: each run's start and stop as drawn (pure)              check-gait.mjs
+#   idle     the life at the set runs, is capped and hushed, and the pitch is exact  check-idle.mjs
+#   walkin   the next hitter walks up: in, his stance exactly, feet still, skips, pitch exact  check-walkin.mjs
 #
 # Runs locally, unchanged (add --resume to pick up a killed run; lab/pipeline/checkpoint.mjs). No
 # secrets, no deploy.
@@ -28,6 +35,8 @@ on:
     paths:
       - 'shut-the-door/**'
       - '.github/workflows/shut-the-door-lab.yml'
+      - 'scripts/install-playwright.sh'
+      - '.github/actions/playwright/**'
   workflow_dispatch: {}
 
 concurrency:
@@ -38,28 +47,47 @@ jobs:
   lab:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    # (each job about 15 minutes at most on a slow runner; a stalled install is cut at 14 by its step)
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: jolt-0
-            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 0/4 --rows-out jolt-rows.json
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 0/6 --rows-out shard-rows.json
             browser: true
           - name: jolt-1
-            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 1/4 --rows-out jolt-rows.json
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 1/6 --rows-out shard-rows.json
             browser: true
           - name: jolt-2
-            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 2/4 --rows-out jolt-rows.json
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 2/6 --rows-out shard-rows.json
             browser: true
           - name: jolt-3
-            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 3/4 --rows-out jolt-rows.json
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 3/6 --rows-out shard-rows.json
             browser: true
-          - name: camera
-            run: node shut-the-door/lab/pipeline/check-camera.mjs --stride 1
+          - name: jolt-4
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 4/6 --rows-out shard-rows.json
             browser: true
-          - name: frame
-            run: node shut-the-door/lab/pipeline/check-frame.mjs
+          - name: jolt-5
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 5/6 --rows-out shard-rows.json
+            browser: true
+          - name: camera-0
+            run: node shut-the-door/lab/pipeline/check-camera.mjs --stride 1 --shard 0/3 --rows-out shard-rows.json
+            browser: true
+          - name: camera-1
+            run: node shut-the-door/lab/pipeline/check-camera.mjs --stride 1 --shard 1/3 --rows-out shard-rows.json
+            browser: true
+          - name: camera-2
+            run: node shut-the-door/lab/pipeline/check-camera.mjs --stride 1 --shard 2/3 --rows-out shard-rows.json
+            browser: true
+          - name: frame-0
+            run: node shut-the-door/lab/pipeline/check-frame.mjs --shard 0/3 --rows-out shard-rows.json
+            browser: true
+          - name: frame-1
+            run: node shut-the-door/lab/pipeline/check-frame.mjs --shard 1/3 --rows-out shard-rows.json
+            browser: true
+          - name: frame-2
+            run: node shut-the-door/lab/pipeline/check-frame.mjs --shard 2/3 --rows-out shard-rows.json
             browser: true
           - name: catch
             run: node shut-the-door/lab/pipeline/check-catch.mjs --sample 6000
@@ -70,6 +98,18 @@ jobs:
           - name: pitch-path
             run: node shut-the-door/lab/pipeline/check-pitch-path.mjs
             browser: true
+          - name: foul
+            run: node shut-the-door/lab/pipeline/check-foul.mjs
+            browser: false
+          - name: gait
+            run: node shut-the-door/lab/pipeline/check-gait.mjs
+            browser: false
+          - name: idle
+            run: node shut-the-door/lab/pipeline/check-idle.mjs
+            browser: true
+          - name: walkin
+            run: node shut-the-door/lab/pipeline/check-walkin.mjs
+            browser: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -77,9 +117,8 @@ jobs:
           node-version: '20'
       - name: Install Playwright
         if: matrix.browser
-        run: |
-          npm install --no-save playwright@1.49.1
-          npx playwright install --with-deps chromium
+        timeout-minutes: 14
+        uses: ./.github/actions/playwright
       - name: check-${{ matrix.name }}
         run: |
           set -o pipefail
@@ -93,14 +132,15 @@ jobs:
           tail -n 1 "$f" | sed 's/^/::notice title=check-${{ matrix.name }}::/'
           { echo "### check-${{ matrix.name }}"; echo '```'; tail -n 60 "$f"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: The shard's plays, for the combined verdict
-        if: startsWith(matrix.name, 'jolt-')
+        if: always() && (startsWith(matrix.name, 'jolt-') || startsWith(matrix.name, 'camera-') || startsWith(matrix.name, 'frame-'))
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: jolt-rows.json
+          path: shard-rows.json
+          if-no-files-found: ignore
           retention-days: 3
 
-  # the four jolt shards as one run, held to CEILING as it is
+  # the six jolt shards as one run, held to CEILING as it is
   jolt:
     needs: lab
     if: always()
@@ -119,12 +159,70 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p shards
-          for f in jolt/*/jolt-rows.json; do cp "$f" "shards/$(basename "$(dirname "$f")").json"; done
+          for f in jolt/*/shard-rows.json; do [ -f "$f" ] && cp "$f" "shards/$(basename "$(dirname "$f")").json"; done
           node shut-the-door/lab/pipeline/check-jolt.mjs --combine shards 2>&1 | tee check-jolt.txt
       - name: Failures as annotations
         if: always()
         run: |
           [ -f check-jolt.txt ] || exit 0
-          grep -E 'FAIL' check-jolt.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-jolt::/' || true
+          grep -E 'FAIL|Error' check-jolt.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-jolt::/' || true
           tail -n 1 check-jolt.txt | sed 's/^/::notice title=check-jolt::/'
           { echo '### check-jolt (combined)'; echo '```'; tail -n 45 check-jolt.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  # the three camera shards as one run of every case, held to CEILING as it is
+  camera:
+    needs: lab
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: camera-*
+          path: camera
+      - name: Every case, combined
+        run: |
+          set -o pipefail
+          mkdir -p shards
+          for f in camera/*/shard-rows.json; do [ -f "$f" ] && cp "$f" "shards/$(basename "$(dirname "$f")").json"; done
+          node shut-the-door/lab/pipeline/check-camera.mjs --stride 1 --combine shards 2>&1 | tee check-camera.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          [ -f check-camera.txt ] || exit 0
+          grep -E 'FAIL|Error' check-camera.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-camera::/' || true
+          tail -n 1 check-camera.txt | sed 's/^/::notice title=check-camera::/'
+          { echo '### check-camera (combined)'; echo '```'; tail -n 45 check-camera.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  # the three frame shards as one run of every case, held to CEILING and FLOOR as they are
+  frame:
+    needs: lab
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frame-*
+          path: frame
+      - name: Every case, combined
+        run: |
+          set -o pipefail
+          mkdir -p shards
+          for f in frame/*/shard-rows.json; do [ -f "$f" ] && cp "$f" "shards/$(basename "$(dirname "$f")").json"; done
+          node shut-the-door/lab/pipeline/check-frame.mjs --combine shards 2>&1 | tee check-frame.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          [ -f check-frame.txt ] || exit 0
+          grep -E 'FAIL|Error' check-frame.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-frame::/' || true
+          tail -n 1 check-frame.txt | sed 's/^/::notice title=check-frame::/'
+          { echo '### check-frame (combined)'; echo '```'; tail -n 45 check-frame.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

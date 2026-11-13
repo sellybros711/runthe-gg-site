@@ -37,7 +37,7 @@ function shareText(r, number) {
   if (r.pitchedLike && r.pitchedLike.name) lines.push('pitched like ' + r.pitchedLike.name);
   var sq = (r.strip || []).map(function (b) { return C.SQUARE[b]; });
   for (var i = 0; i < sq.length; i += C.SQUARES_PER_LINE) lines.push(sq.slice(i, i + C.SQUARES_PER_LINE).join(''));
-  lines.push(C.SHARE_URL);
+  lines.push(C.SHARE_LINK);
   return lines.join('\n');
 }
 if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true };
@@ -54,6 +54,18 @@ if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true
    ?mockAuth=1 makes one of the rows yours. */
 var BOARD_NAMES = ['paintsblack', 'highcheese', 'backdoorslider', 'ninthinning', 'lockdownlefty', 'gasmonkey', 'splitfinger', 'bullpencart',
   'framejob', 'chinmusic', 'upstairs', 'sweeperking', 'knucklepuck', 'tunnelvision', 'fullcount', 'corners', 'runnersonsecond', 'pitchclock'];
+/* the plates (supabase/162): a few club keys on the board's rows, and the mock account's unlocks.
+   ?mockPlates=none unlocks nothing */
+var MOCK_PLATES = ['dodgers', null, 'yankees', 'giants', null, 'redsox', 'brewers'];
+var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'giants'], initials: null };
+/* the stat line (supabase/166), FICTIONAL and valid by postgame.js: a box line of the row's own
+   pitches. Every ninth row has none, as a row posted before 166 */
+function mockStats(rk, pitches, outcome) {
+  if (rk % 9 === 4) return null;
+  var s = Math.round(pitches * (0.58 + (rk % 5) * 0.03)), pa = 5 + rk % 2;
+  var k = rk % 3, bb = rk % 4 === 0 ? 1 : 0, h = outcome === 'door_shut' ? rk % 2 : 1 + rk % 2;
+  return { v: 1, p: pitches, s: s, b: pitches - s, k: k, bb: bb, h: h, r: { door_shut: 0, tie_held: 1 }[outcome] != null ? { door_shut: 0, tie_held: 1 }[outcome] : 2, hbp: 0, pa: pa, fps: Math.min(pa, 2 + rk % 3) };
+}
 function mockBoard(day, limit) {
   var mode = (/[?&]mockBoard=([^&]*)/.exec(location.search) || [])[1] || 'full';
   if (mode === 'fail') return Promise.resolve(null);
@@ -74,6 +86,8 @@ function mockBoard(day, limit) {
       rank: rk, username: rk === mine ? 'mockplayer' : BOARD_NAMES[rk % BOARD_NAMES.length] + (rk > BOARD_NAMES.length ? rk : ''),
       outcome: outcome, pitches: pitches, score: score, percentile: Math.round((1 - f) * 100), pitched_like: null,
       strip: strip, mine: rk === mine, players: players,
+      plate: rk === mine ? mockPlates.plate : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
+      stats: mockStats(rk === mine ? 1 : rk, pitches, outcome),
     });
   }
   return Promise.resolve(rows);
@@ -84,6 +98,7 @@ var AUTH_MODE = (/[?&]mockAuth=([^&]*)/.exec(location.search) || [])[1] || '';
 var mockIn = AUTH_MODE === '1';
 var authListeners = [];
 function mockSignedIn() { return mockIn; }
+var mockClips = [];
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
   var authState = function () { return mockIn ? { ready: true, waiting: false, signedIn: true, name: 'mockplayer', email: 'mock@example.com', userId: 'mock-user' } : { ready: AUTH_MODE === 'late', waiting: false, signedIn: false }; };
@@ -101,6 +116,37 @@ if (!window.STD_AUTH || FORCE) {
     signIn: AUTH_MODE === 'late' ? lateIn : none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
     board: mockBoard,
+    /* the voice of the ump (supabase/165), FICTIONAL: clips live in this page only. ?mockOwner=1
+       makes the signed-in mock account the owner, so the review sheet can be walked */
+    umpApproved: function () { return Promise.resolve(mockClips.filter(function (c) { return c.status === 'approved'; }).map(function (c) { return { id: c.id, line: c.line, path: c.path, credit: c.credit }; })); },
+    umpMine: function () { return Promise.resolve(mockIn ? mockClips.filter(function (c) { return c.status === 'pending'; }).map(function (c) { return { id: c.id, line_id: c.line }; }) : null); },
+    umpSubmit: function (c) {
+      if (!mockIn) return Promise.resolve({ error: 'Sign in first.' });
+      if (!c || c.consent !== (window.STD_VOICES && window.STD_VOICES.CONSENT)) return Promise.resolve({ error: 'tick the consent box first' });
+      var id = 'mock-clip-' + (mockClips.length + 1);
+      mockClips.push({ id: id, line: c.line, status: 'pending', path: 'mock-user/' + id, credit: c.credit || null, username: 'mockplayer', ms: c.ms, url: URL.createObjectURL(c.blob), createdAt: new Date().toISOString() });
+      return Promise.resolve({ data: { id: id } });
+    },
+    umpUrls: function (paths) { var m = {}; mockClips.forEach(function (c) { if (paths.indexOf(c.path) >= 0) m[c.path] = c.url; }); return Promise.resolve(m); },
+    umpOwner: function () { return Promise.resolve(mockIn && /[?&]mockOwner=1/.test(location.search)); },
+    umpQueue: function (st) {
+      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      return Promise.resolve({ data: mockClips.filter(function (c) { return c.status === (st || 'pending'); }).map(function (c) { return JSON.parse(JSON.stringify(c)); }) });
+    },
+    umpReview: function (id, st) {
+      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      var c = mockClips.filter(function (x) { return x.id === id; })[0];
+      if (!c) return Promise.resolve({ error: 'no such clip' });
+      c.status = st;
+      return Promise.resolve({ data: { id: id, status: st } });
+    },
+    plates: function () { return Promise.resolve(mockIn ? JSON.parse(JSON.stringify(mockPlates)) : null); },
+    setPlate: function (k) {
+      if (!mockIn) return Promise.resolve({ error: 'sign in first' });
+      if (k && mockPlates.unlocked.indexOf(k) < 0) return Promise.resolve({ error: 'that plate is locked' });
+      mockPlates.plate = k || null;
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(mockPlates)) });
+    },
     /* shutdoor_my_stats()'s shape (153, and tieHeld from 155), plus the
        bands and recent rows the device history also carries */
     myStats: function () {
@@ -712,12 +758,11 @@ function voteShape(day) {
     if (day === today) return Object.assign(none, { candidates: [{ id: fx.id, title: fx.title, pitcher: fx.pitcher.name, year: fx.pitcher.year, situation: fx.situation }, cards[1]],
       winner: fx.id, votes: { a: 63, b: 48 }, why: 'voting is closed' });
     var mine = MY_VOTE || (VOTE_MODE === 'voted' ? ids[1] : null);
-    var done = !!(DAILY && DAILY.result);
     return Object.assign(none, {
       open: true, candidates: cards, myVote: mine,
       votes: mine ? { a: 41 + (mine === ids[0] ? 1 : 0), b: 56 + (mine === ids[1] ? 1 : 0) } : null,
-      canVote: !mine && signedIn() && done,
-      why: mine ? 'you voted' : !signedIn() ? 'sign in to vote' : !done ? 'finish today\'s daily to vote' : null,
+      canVote: !mine && signedIn(),
+      why: mine ? 'you voted' : !signedIn() ? 'sign in to vote' : null,
     });
   });
 }
@@ -784,6 +829,12 @@ function survivorFinished(o, res) {
   return { run: o.surv.run, index: o.surv.index, saves: sum.saves, over: sum.over, posted: signedIn() };
 }
 function survivorClaim() { return Promise.resolve(signedIn() ? { posted: false } : null); }
+/* a run's line: its spots' fictional box lines added up (postgame.js sum) */
+function mockRun(spots, rk) {
+  var PG = window.STD_POSTGAME, list = [];
+  for (var i = 0; i < spots; i++) list.push(mockStats(1 + ((rk + i) % 8), 10 + ((rk + i * 3) % 9), i < spots - 1 ? 'door_shut' : 'walk_off'));
+  return PG ? PG.sum(list.filter(Boolean)) : null;
+}
 /* the Survivor board, FICTIONAL: made up handles, run 0 of each */
 function survivorBoard(day, limit) {
   var mode = QS.get('mockSurvBoard') || 'full';
@@ -793,16 +844,56 @@ function survivorBoard(day, limit) {
   var players = 96, lim = Math.max(1, Math.min(100, limit || 50)), rows = [];
   var at = mine ? Math.max(1, 31 - mine.saves * 6) : 0;
   for (var rk = 1, k = 0; rk <= players; rk++) {
-    if (rk === at) { rows.push({ rank: rk, username: 'mockplayer', saves: mine.saves, points: mine.points, over: mine.over, mine: true, players: players }); continue; }
+    if (rk === at) { rows.push({ rank: rk, username: 'mockplayer', saves: mine.saves, points: mine.points, over: mine.over, mine: true, players: players, plate: mockPlates.plate, initials: null, stats: mockRun(r.entries.length || 1, 1) }); continue; }
     if (rk > lim) continue;
     k++;
     var saves = Math.max(0, 9 - Math.floor(rk / 6)), pts = saves * 410 + 380 - (rk % 6) * 37;
-    rows.push({ rank: rk, username: BOARD_NAMES[k % BOARD_NAMES.length] + (k > BOARD_NAMES.length ? k : ''), saves: saves, points: pts, over: rk % 7 !== 3, mine: false, players: players });
+    rows.push({ rank: rk, username: BOARD_NAMES[k % BOARD_NAMES.length] + (k > BOARD_NAMES.length ? k : ''), saves: saves, points: pts, over: rk % 7 !== 3, mine: false, players: players, plate: MOCK_PLATES[rk % MOCK_PLATES.length], initials: null, stats: rk % 9 === 4 ? null : mockRun(saves + 1, rk) });
   }
   return Promise.resolve(rows);
 }
 
-window.STD_API = { API_VERSION: 1, MOCK: true, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
+/* clips (clip.js) over the fixture: the same link, the mock's own replay of it on a fresh outing,
+   never stored. The fixture's calls carry no r, so the link says rules 1. */
+function clipSpec(outingId, n, from) {
+  var o = OUTINGS[outingId], L = window.STD_CLIP;
+  if (!o || !L || !(n >= 1 && n <= o.calls.length)) return null;
+  if (from != null && !(from >= 1 && from <= n)) return null;
+  var mode = { daily: 'd', archive: 'a', practice: 'p' }[o.st.mode] || 'p';
+  var spec = { mode: mode, day: o.day || C.easternDay(), rules: 1, pack: o.scn.id, seed: o.st.seed, calls: o.calls.slice(0, n).map(function (c) { return clone(c); }) };
+  if (from != null) spec.from = from;
+  return { spec: spec, link: L.encode(spec) };
+}
+function clip(spec) {
+  return load().then(function (j) {
+    var scn = j.scenario;
+    if (!spec || spec.pack !== scn.id || !spec.calls || !spec.calls.length) throw new Error('no such scenario: ' + (spec && spec.pack));
+    var sd = spec.mode === 'd' || spec.mode === 'a' ? hashSeed(C.DAILY_SEED_PREFIX + spec.day) : (spec.seed >>> 0);
+    var o = { scn: scn, day: spec.day, calls: [], rng: mulberry32(sd), absRng: mulberry32(hashSeed('abs|' + sd)), st: freshState(scn, 'practice', sd, 'clip') };
+    var play = function (c0) {
+      if (o.st.status !== 'live') throw new Error('the outing ended before the clip');
+      var c = clone(c0), ch = c.ch === 1; delete c.ch; delete c.pa; delete c.r;
+      o.calls.push(c);
+      var r = apply(scn, o.st, c, o.rng, o.absRng);
+      return { pr: clone(r.pitchResult), ch: ch };
+    };
+    var sc = clone(scn); delete sc.reveal; sc.day = spec.day; sc.number = C.dayNumberOf(spec.day);
+    /* an at bat (spec.from): each of its pitches the same way, in order, as clip.js replay */
+    var at = spec.from != null ? spec.from - 1 : spec.calls.length - 1, pitches = [];
+    spec.calls.slice(0, at).forEach(function (c) { var x = play(c); if (x.ch && absLive(o)) challengePitch(o); });
+    spec.calls.slice(at).forEach(function (c) {
+      var before = snapshot(o), x = play(c), fin = x.pr;
+      if (x.ch && absLive(o)) fin = clone(challengePitch(o));
+      pitches.push({ before: before, pr: x.pr, final: fin, after: snapshot(o) });
+    });
+    var last = pitches[pitches.length - 1];
+    var out = { scn: sc, spec: spec, before: pitches[0].before, pr: last.pr, final: last.final, after: last.after };
+    if (spec.from != null) { out.from = spec.from; out.pitches = pitches; }
+    return out;
+  });
+}
+
+window.STD_API = { API_VERSION: 1, MOCK: true, clipSpec: clipSpec, clip: clip, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
   pending: pending, claim: claim, entitlements: entitlements, vote: vote, castVote: castVote,
   survivorState: survivorState, survivorStart: survivorStart, survivorClaim: survivorClaim, survivorBoard: survivorBoard };
 })();

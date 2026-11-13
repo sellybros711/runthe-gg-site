@@ -5,13 +5,20 @@
  *
  * The rows are shutdoor_board(day, limit)'s (supabase/153_shut_the_door.sql),
  * read through STD_AUTH.board(): {rank, username, outcome, pitches, score,
- * percentile, pitched_like, strip, mine, players}. The top rows, and the
- * caller's own row wherever it is. Every number on this screen is one of
- * those fields: the rank, the total, the pitches and the score. Nothing is
- * worked out here.
+ * percentile, pitched_like, strip, mine, players, plate, initials, stats}. The
+ * top rows, and the caller's own row wherever it is. Every number on this
+ * screen is one of those fields: the rank, the total, the pitches, the score
+ * and the stat line (stats, supabase/166: the outing's box line, read off the
+ * engine's log by the page that played it). Nothing is worked out here.
+ *
+ * NO SPOILERS. The stat line under each name shows once you have played today
+ * (ctx.played()). Before that the rows show as they always have, and the home's
+ * top 3 (peek) never shows a line at all.
  *
  * Signed out the board still reads (the call is public), with one quiet line
  * and a sign in button under it. No modal, no sheet that opens by itself.
+ *
+ * peek() fills the home's today's top 3 (#h-top) from the same call.
  *
  * The mock (mock-api.js) serves a fictional board on ?mockBoard=:
  *   (any) a full board   empty  no rows   fail  the call answers null
@@ -80,31 +87,50 @@ function renderYou(rows, st) {
   if (!played) $('bd-play').addEventListener('click', function () { if (ctx.onPlay) ctx.onPlay(); });
 }
 
-function rowHTML(r) {
+/* the row's plate (plate.js): the club key and initials the server answers, the neutral plate without */
+function plateOf(r) {
+  var PL = window.STD_PLATE;
+  return PL ? PL.svg(r.plate || null, PL.initials(r.username === 'Closer' ? '' : r.username, r.initials), { cls: 'bp' }) : '';
+}
+/* the stat line under a name (postgame.js line): "18 P · 12 S · 2 K · 1 H · 0 R", or nothing for a
+   row posted before 166 */
+function statLine(st, on) {
+  var PG = window.STD_POSTGAME, t = on && PG && st ? PG.line(st) : '';
+  return t ? '<small class="bst">' + esc(t) + '</small>' : '';
+}
+/* the name; extra is the row's tags (you, live). The line goes on its own row under it (lineHTML),
+   the row's full width, so a phone never cuts it */
+function nameHTML(r, extra) {
+  return '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (extra || '') + '</span>';
+}
+function lineHTML(r, on) { return statLine(r.stats, on); }
+function rowHTML(r, on) {
   return '<li class="' + (r.mine ? 'mine' : '') + (r.rank <= 3 ? ' top' : '') + '">' +
     '<span class="rk">' + esc(r.rank) + '</span>' +
-    '<span class="nm">' + esc(r.username) + (r.mine ? '<em>you</em>' : '') + '</span>' +
+    nameHTML(r, r.mine ? '<em>you</em>' : '') +
     chip(r.outcome) +
     '<span class="n">' + esc(r.pitches) + '</span>' +
-    '<span class="n sc">' + esc(r.score) + '</span></li>';
+    '<span class="n sc">' + esc(r.score) + '</span>' + lineHTML(r, on) + '</li>';
 }
 
 function renderList(rows) {
   var el = $('bd-list');
   if (!rows.length) {
-    el.innerHTML = '<div class="bd-empty"><img src="brand/mark.svg?v=1" alt="" width="56" height="56">' +
+    el.innerHTML = '<div class="bd-empty"><img src="brand/mark.svg?v=2" alt="" width="56" height="56">' +
       '<b>nobody\'s on it yet</b><p>no outings posted today. be the first.</p></div>';
     return;
   }
   /* the top rows, then a gap and your own row when it sits below them */
-  var html = '', prev = 0;
+  var html = '', prev = 0, on = !!ctx.played();
   rows.forEach(function (r) {
     if (prev && r.rank > prev + 1) html += '<li class="gap" aria-hidden="true"><span>···</span></li>';
-    html += rowHTML(r);
+    html += rowHTML(r, on);
     prev = r.rank;
   });
   var n = rows[0].players;
+  var held = !on && rows.some(function (r) { return r.stats; });
   el.innerHTML = '<div class="bd-lh"><b>top closers</b><span class="bd-n">' + esc(n) + ' ' + (n === 1 ? 'closer' : 'closers') + ' today</span></div>' +
+    (held ? '<p class="bd-hold">Stat lines show once you\'ve played today.</p>' : '') +
     '<div class="bd-cols-h" aria-hidden="true"><span>#</span><span>closer</span><span>result</span><span>p</span><span>score</span></div>' +
     '<ol class="bd-rows">' + html + '</ol>';
 }
@@ -112,7 +138,7 @@ function renderList(rows) {
 function renderState(kind) {
   var el = $('bd-list');
   if (kind === 'loading') {
-    el.innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
+    el.innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=2" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
     $('bd-you').innerHTML = '';
     return;
   }
@@ -124,16 +150,17 @@ function renderState(kind) {
 
 /* ask for the rows. supabase-js arrives deferred, so while auth.js says it is
    still waiting, wait with it rather than call a failure */
-function fetchRows(my) {
+function fetchRows(my, limit, live) {
   var A = window.STD_AUTH;
   var t0 = Date.now();
+  live = live || function () { return my === seq; };
   return new Promise(function (res) {
     (function go() {
-      if (my !== seq) return res(undefined);
+      if (!live()) return res(undefined);
       var st = authState();
       if (st.waiting && Date.now() - t0 < GIVE_UP_MS) { setTimeout(go, WAIT_MS); return; }
       if (!A || !A.board) return res(null);
-      Promise.resolve().then(function () { return A.board(ctx.day, LIMIT); }).then(res, function () { res(null); });
+      Promise.resolve().then(function () { return A.board(ctx.day, limit || LIMIT); }).then(res, function () { res(null); });
     })();
   });
 }
@@ -152,6 +179,35 @@ function load() {
   });
 }
 
+/* TODAY'S TOP 3 on the home's daily tab (the owner, 2026-11-03): the same rows as the board, ranked by
+   the same score, cut to the top three. The board is public and never hidden before you play, so
+   neither is this. It is read only while the daily tab shows; a failed or empty read is one quiet
+   line, never an error. The box keeps one height in every state, so nothing under it moves. */
+var PEEK = 3, pseq = 0, peeked = null;
+function peekLine(t) { return '<p class="hb-say">' + t + '</p>'; }
+function peek() {
+  var el = $('h-top-body');
+  if (!el) return;
+  if (peeked && peeked.day === ctx.day && Date.now() - peeked.at < 30000) return;
+  var my = ++pseq;
+  if (!peeked) el.innerHTML = peekLine('loading the leaderboard.');
+  fetchRows(my, PEEK, function () { return my === pseq; }).then(function (rows) {
+    if (my !== pseq || rows === undefined) return;
+    var n = $('h-top-n');
+    if (!Array.isArray(rows)) { peeked = null; n.textContent = ''; el.innerHTML = peekLine('the leaderboard shows here once it can load.'); return; }
+    peeked = { day: ctx.day, at: Date.now() };
+    rows = rows.filter(function (r) { return r.rank <= PEEK; }).sort(function (a, b) { return a.rank - b.rank; });
+    if (!rows.length) { n.textContent = ''; el.innerHTML = peekLine('nobody\'s on it yet. be the first.'); return; }
+    var c = rows[0].players;
+    n.textContent = c + ' ' + (c === 1 ? 'closer' : 'closers') + ' today';
+    el.innerHTML = '<div class="bd-cols-h hb-cols" aria-hidden="true"><span>#</span><span>closer</span><span>score</span></div>' +
+      '<ol class="bd-rows hb-rows">' + rows.map(function (r) {
+        return '<li class="top' + (r.mine ? ' mine' : '') + '"><span class="rk">' + esc(r.rank) + '</span>' +
+          '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + '</span><span class="n sc">' + esc(r.score) + '</span></li>';
+      }).join('') + '</ol>' + (rows.length < PEEK ? peekLine('only ' + rows.length + ' on it so far.') : '');
+  });
+}
+
 function wire() {
   $('bd-back').addEventListener('click', function () { seq++; if (ctx.onBack) ctx.onBack(); });
 }
@@ -160,7 +216,10 @@ var api = {
   API_VERSION: 1,
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   load: load,
+  peek: peek,
   chip: chip,
+  nameHTML: nameHTML,
+  lineHTML: lineHTML,
 };
 window.STD_BOARD = api;
 })();

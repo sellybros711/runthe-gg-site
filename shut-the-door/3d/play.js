@@ -12,8 +12,11 @@
  *         hit_by_pitch|hbp_fall|dirt     (default swinging_strike; take=1 is called_strike; hbp_fall is
  *         a pitch on the shoulder, the fall)
  *   &type=FF &cell=12 &mx=0.1 &mz=-0.1   override the pitch, the aimed cell, the miss (feet)
+ *   &foul=back|pop|pulled|sliced         a foul's shape (foul.js), else picked as the game picks it
  */
-import { cellPoint } from './pitch.js?v=13';
+import { cellPoint } from './pitch.js?v=16';
+import { foulLaunch } from './foul.js?v=2';
+import { stanceOff } from './stance.js?v=1';
 
 export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'hbp_fall', 'dirt'];
 
@@ -27,11 +30,13 @@ export function motion(play, batter) {
     if (r === 'swinging_strike') { m.ball = 'glove'; m.miss = true; }
     else if (r === 'foul_tip') { m.ball = 'tip'; }
     else if (r === 'foul') {
-      // a foul with a low launch angle is pulled foul down the line, a steep or unmeasured one goes
-      // back into the screen
-      const back = play.foul === 'back' || ip == null || ip.la == null || ip.la > 40;
-      m.ball = back ? 'back' : 'pulled';
-      m.contactShift = back ? 0.004 : -0.045;            // a pulled foul is met early
+      // the engine says only foul: its shape (straight back, popped up behind, pulled or sliced foul)
+      // is foul.js's pick from the drawn pitch's id and the pitch's number, tilted by where it crossed,
+      // never a draw. m.ball is 'back' behind the plate, 'pulled' out past either line (m.foul.shape
+      // says which way); a pulled foul is met early
+      m.foul = foulLaunch({ id: play.drawnId, n: play.n, x: play.actual.x, bats: batter.bats, shape: play.foul });
+      m.ball = m.foul.shape === 'back' || m.foul.shape === 'pop' ? 'back' : 'pulled';
+      m.contactShift = m.foul.shift;
       m.ump = 'foul';
     } else if (r === 'in_play' && ip) {
       m.ball = 'play';
@@ -60,12 +65,31 @@ export function motion(play, batter) {
 /** FNV-1a of an id (a drawn pitch's game_pk:at_bat:pitch), for picks that must replay the same. */
 function hashId(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
 
+/* A hit by pitch reaches him (rules 11 and 12, contract.js THE REACH). The engine's hit by pitch
+   crosses at least far enough inside to touch the nearest drawn hitter; BODY_FAR is, for each tenth of
+   the hitter's zone height from BODY_LO tenths, the furthest any drawn hitter's body front sits from
+   the plate's centre (catcher's view feet), measured by shut-the-door/pipeline/hbp_reach.mjs on the
+   272 hitters of the 30 packs, 2026-11-06, each where people.js stands him and taken back to the
+   league's stance (feet 2.82 ft off the plate's centre). A hitter with his own stance (stanceIn)
+   stands as much nearer or further (stance.js), and so does his body. The scene's
+   ball crosses at least that far inside, so it meets whoever is batting. Only the drawn flight
+   moves: the engine's crossing is the result. */
+const BODY_LO = -11;
+const BODY_FAR = [2.91, 2.86, 2.76, 2.45, 2.5, 2.51, 2.53, 2.47, 2.43, 2.38, 2.33, 2.27, 2.17, 2.23, 2.3, 2.35,
+  2.44, 2.54, 2.57, 2.57, 2.56, 2.48, 2.45, 2.15, 1.59, 1.56, 1.61, 1.59, 1.57, 1.5, 1.54, 1.64];
+export function hbpCrossX(x, zn, bats, off = 0) {
+  const s = bats === 'L' ? 1 : -1;
+  const far = BODY_FAR[Math.max(0, Math.min(BODY_FAR.length - 1, Math.floor(zn * 10) - BODY_LO))] + off;
+  return s * x >= far ? x : s * far;
+}
+
 /** From the engine's PitchResult (the game, phase C). actual.zn is normalised to this batter. */
 export function fromResult(r, batter) {
   const z = batter.szBot + r.actual.zn * (batter.szTop - batter.szBot);
+  const x = r.result === 'hit_by_pitch' ? hbpCrossX(r.actual.x, r.actual.zn, batter.bats, stanceOff(batter)) : r.actual.x;
   // the movement of the pitch he threw: his effort slice of his own pitches (pr.stuff), else his average
   const st = r.stuff || {};
-  return { call: r.call, actual: { x: r.actual.x, z }, velo: r.velo, pfxX: st.pfxX ?? null, pfxZ: st.pfxZ ?? null, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null, drawnId: r.drawn ? r.drawn.id : null,
+  return { call: r.call, actual: { x, z }, velo: r.velo, pfxX: st.pfxX ?? null, pfxZ: st.pfxZ ?? null, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null, drawnId: r.drawn ? r.drawn.id : null, n: r.n ?? null,
     dirt: z < 0.35, check: r.batter === 'take' && r.result === 'ball' && Math.abs(r.actual.x) < 1.2 && r.countBefore && r.countBefore.s === 2 };
 }
 
@@ -106,12 +130,16 @@ export function labPlay(facts, batter, q) {
   return {
     kind, sample: 'a lab sample: the aim and the miss are not an engine draw; the outcome is the pack\'s real pitch ' + (real ? real.id : '(none)'),
     call: { type: pitch.type, cell }, actual: { x: aim.x + miss.x, z: aim.z + miss.z }, velo: pitch.velo,
-    batter: bat, result, inPlay, foul: kind === 'foul_back' ? 'back' : null, check: kind === 'check', dirt: kind === 'dirt',
+    batter: bat, result, inPlay, check: kind === 'check', dirt: kind === 'dirt',
+    // a foul's shape: foul_back is straight back, &foul=back|pop|pulled|sliced forces one, else foul.js
+    // picks it from the real pitch's id as the game does from the drawn one
+    foul: kind === 'foul_back' ? 'back' : q.get('foul') || null, drawnId: real ? real.id : null, n: 1,
   };
 }
 
-/** The play by play line under the scoreboard: short sentences, numbers from the play itself. */
-export function describe(play) {
+/** The play by play line under the scoreboard: short sentences, numbers from the play itself (m,
+    the scene's reading from motion(), says which way a foul went). */
+export function describe(play, m) {
   const ip = play.inPlay;
   const mph = (v) => `${Math.round(v)} mph`;
   switch (play.result) {
@@ -119,7 +147,10 @@ export function describe(play) {
     case 'called_strike': return 'Called strike.';
     case 'swinging_strike': return 'Swinging strike.';
     case 'foul_tip': return 'Foul tip. Held on.';
-    case 'foul': return play.foul === 'back' || !ip || ip.la == null || ip.la > 40 ? 'Fouled back.' : 'Foul ball, pulled.';
+    case 'foul': {
+      const sh = m && m.foul ? m.foul.shape : 'back';
+      return sh === 'pulled' ? 'Foul ball, pulled.' : sh === 'sliced' ? 'Foul ball, the other way.' : 'Fouled back.';
+    }
     case 'hit_by_pitch': return 'Hit by pitch.';
     case 'in_play': {
       if (ip && ip.text) return ip.text;

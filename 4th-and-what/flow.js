@@ -30,7 +30,7 @@
     var s = A.sitText();
     $('pSpot').textContent = A.ordinal(A.SC.down) + ' down · Ball on ' + (A.SC.ballOn <= 50 ? 'the opponent\'s ' + A.SC.ballOn : 'your ' + (100 - A.SC.ballOn));
     $('sSit').textContent = s.down + ' · ' + s.spot + (A.SC.level && A.SC.level !== 'nfl' ? ' · ' + A.levelShort(A.SC.level) : '');
-    renderLevel();
+    renderLevel(); renderStrip();
     $('pDown').value = String(A.SC.down); $('pSide').value = A.SC.ballOn <= 50 ? 'opp' : 'own'; $('pYard').value = String(A.SC.ballOn <= 50 ? A.SC.ballOn : 100 - A.SC.ballOn);
     renderDists();
   }
@@ -41,15 +41,62 @@
   }
   Array.prototype.forEach.call(document.querySelectorAll('#pLevel button'), function (b) { b.addEventListener('click', function () { A.setLevel(b.dataset.level); spotLine(); }); });
   Array.prototype.forEach.call(document.querySelectorAll('#pHash button'), function (b) { b.addEventListener('click', function () { A.setHash(b.dataset.hash); spotLine(); }); });
+  /* A tile picks the distance; Play now goes (the owner's mockup, 2026-11-06) */
   function renderDists() {
     var box = $('pDists'); box.innerHTML = '';
     C.DISTANCES.forEach(function (d) {
-      var goal = d >= A.SC.ballOn;
-      box.appendChild(el('button', { type: 'button', class: 'dist', 'data-d': String(d), on: { click: function () { pick(Math.min(d, A.SC.ballOn)); } } },
+      var goal = d >= A.SC.ballOn, cur = Math.min(d, A.SC.ballOn) === A.SC.distance;
+      box.appendChild(el('button', { type: 'button', class: 'dist', 'data-d': String(d), 'aria-pressed': String(cur), on: { click: function () { choose(Math.min(d, A.SC.ballOn)); } } },
         [el('small', { text: A.ordinal(A.SC.down) + ' and' }), el('b', { text: goal ? 'Goal' : String(d) })]));
     });
   }
-  function pick(d) { A.SC.distance = d; spotLine(); A.show('studio', { mode: 'game' }); }
+  function choose(d) { A.SC.distance = d; spotLine(); }
+  function pick(d) { if (d != null) A.SC.distance = d; spotLine(); A.show('studio', { mode: 'game' }); }
+  $('pGo').addEventListener('click', function () { pick(); });
+
+  /* THE STRIP: the whole field, your end zone on the left and theirs on the
+     right, the ball where it is and the line to gain in front of it. Tap or
+     drag it to spot the ball. Every number on it is the situation's. */
+  function spotWord(ballOn) { return ballOn === 50 ? 'Midfield' : ballOn < 50 ? 'Opp ' + ballOn : 'Own ' + (100 - ballOn); }
+  (function nums() {
+    var box = $('pNums'); if (!box) return;
+    for (var x = 10; x <= 90; x += 10) box.appendChild(el('span', { style: 'left:' + x + '%', text: String(x <= 50 ? x : 100 - x) }));
+  })();
+  function renderStrip() {
+    var bx = 100 - A.SC.ballOn, gx = Math.min(100, bx + A.SC.distance), goal = A.SC.distance >= A.SC.ballOn;
+    /* the ball's tag reads to its left and the line's to its right, kept inside the strip */
+    $('pBall').style.left = bx + '%'; $('pBallTag').style.left = Math.max(14, bx) + '%';
+    $('pGain').style.left = gx + '%'; $('pGainTag').style.left = Math.min(86, gx) + '%';
+    $('pToGo').style.left = bx + '%'; $('pToGo').style.width = (gx - bx) + '%';
+    $('pToGo').textContent = goal ? 'Goal' : A.SC.distance + ' yds';
+    $('pBallTxt').textContent = '(' + spotWord(A.SC.ballOn) + ')';
+    $('pGainTxt').textContent = goal ? '(Goal line)' : '(' + spotWord(A.SC.ballOn - A.SC.distance) + ')';
+    $('pGainTag').querySelector('b').textContent = goal ? 'Score' : '1st down';
+    /* a short distance puts the two tags on top of each other: push them
+       apart by the overlap, half each way, so neither hides the other */
+    var W = $('pTurf').offsetWidth, bt = $('pBallTag'), gt = $('pGainTag');
+    var over = Math.max(14, bx) / 100 * W + 12 - (Math.min(86, gx) / 100 * W - 12) + 4;
+    bt.style.marginLeft = over > 0 && W ? -over / 2 + 'px' : '';
+    gt.style.marginLeft = over > 0 && W ? over / 2 + 'px' : '';
+    $('pStrip').setAttribute('aria-valuenow', String(A.SC.ballOn)); $('pStrip').setAttribute('aria-valuetext', 'Ball on ' + spotWord(A.SC.ballOn));
+  }
+  /* the push apart needs the strip's width, which is 0 while Play is hidden */
+  if (window.ResizeObserver && $('pTurf')) new ResizeObserver(function () { renderStrip(); }).observe($('pTurf'));
+  function spotAt(clientX) {
+    var r = $('pTurf').getBoundingClientRect(), f = (clientX - r.left) / r.width;
+    var on = Math.round(100 - Math.max(0.01, Math.min(0.99, f)) * 100);
+    if (on === A.SC.ballOn) return;
+    A.SC.ballOn = on; A.SC.distance = Math.min(A.SC.distance, A.SC.ballOn); spotLine();
+  }
+  var sliding = false;
+  $('pStrip').addEventListener('pointerdown', function (ev) { sliding = true; this.setPointerCapture && this.setPointerCapture(ev.pointerId); spotAt(ev.clientX); });
+  $('pStrip').addEventListener('pointermove', function (ev) { if (sliding) spotAt(ev.clientX); });
+  $('pStrip').addEventListener('pointerup', function () { sliding = false; });
+  $('pStrip').addEventListener('pointercancel', function () { sliding = false; });
+  $('pStrip').addEventListener('keydown', function (ev) {
+    var k = ev.key === 'ArrowRight' ? -1 : ev.key === 'ArrowLeft' ? 1 : 0; if (!k) return;
+    ev.preventDefault(); A.SC.ballOn = Math.max(1, Math.min(99, A.SC.ballOn + k)); A.SC.distance = Math.min(A.SC.distance, A.SC.ballOn); spotLine();
+  });
   $('pMore').addEventListener('click', function () { $('pMoreBox').hidden = !$('pMoreBox').hidden; });
   ['pDown', 'pSide', 'pYard'].forEach(function (id) {
     $(id).addEventListener('change', function () {
@@ -71,6 +118,7 @@
     var D = window.FAW_DAILY, ds = D ? D.seed() : null;
     var seed = ds != null ? ds : forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
     played = p;
+    if (window.FAW_CLIP) window.FAW_CLIP.cancel();
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
     remember(res, p, D && D.active());
@@ -147,6 +195,7 @@
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
     renderSnaps();
+    clipFor(r);
     c.hidden = false;
     card = null;
     $('dbgTxt').textContent = 'seed ' + r.seed + ' · replay this exact snap: ?seed=' + r.seed;
@@ -204,10 +253,39 @@
       setTimeout(function () { URL.revokeObjectURL(u); }, 1000);
     });
   });
+  /* THE CLIP (the owner, 2026-11-06: "when u share a play with someone, it
+     should share the video of the play"). It is recorded behind the card as
+     soon as the card shows (clip.js), so Share can hand the phone the file in
+     the moment of the tap. Still recording: the button says so, then asks
+     for one more tap. A browser that cannot record shares the line alone. */
+  var CL = window.FAW_CLIP;
+  function shareLine() { var D = window.FAW_DAILY; return D && D.active() ? D.share(res) : SH.text(res); }
+  function clipName() { return (A.draft.name || A.nameFor(played) || '4th-and-what').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(); }
+  function clipFor(r) {
+    $('rShare').textContent = 'Share';
+    if (!CL || !CL.supported()) return;
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
+    var D = window.FAW_DAILY, s = A.sitText();
+    CL.start(r, { situation: (D && D.active() ? 'Daily #' + D.number() + ' · ' : '') + s.down + ' · ' + s.spot,
+      name: A.draft.name || A.nameFor(played), title: r.title, line: gained + ' · vs ' + r.callName, win: r.win });
+  }
   $('rShare').addEventListener('click', function () {
     if (!res) return;
-    var D = window.FAW_DAILY;
-    SH.send(D && D.active() ? D.share(res) : SH.text(res)).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
+    if (CL && CL.supported()) {
+      var c = CL.ready();
+      if (c) {
+        SH.sendVideo(c, shareLine(), clipName()).then(function (how) { A.toast('rToast', how === 'shared' ? 'Shared.' : how === 'saved' ? 'Video saved. The line is copied too.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
+        return;
+      }
+      $('rShare').textContent = 'Making video…'; $('rShare').disabled = true;
+      CL.whenReady().then(function (made) {
+        $('rShare').disabled = false;
+        $('rShare').textContent = made ? 'Send video' : 'Share';
+        if (!made) SH.send(shareLine()).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : ''); });
+      });
+      return;
+    }
+    SH.send(shareLine()).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
   });
   $('rBreak').addEventListener('click', function () { close3d(); A.show('replay'); window.FAW_GAME.load(res, played); });
   $('bClose3d').addEventListener('click', function () { $('rCard').hidden = true; });

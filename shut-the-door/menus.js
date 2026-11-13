@@ -22,17 +22,28 @@ function openSheet(id, after) {
   var el = $(id);
   if (!el) return;
   lastFocus = document.activeElement;
+  /* on a desk the header's menu drops from its button (style.css): its right edge, measured */
+  if (id === 'sheet-menu') { var mb = $('b-menu'), mr = mb && mb.getBoundingClientRect(); if (mr && mr.width) el.style.setProperty('--menu-r', Math.max(8, Math.round(document.documentElement.clientWidth - mr.right)) + 'px'); }
   el.hidden = false;
   el.setAttribute('aria-hidden', 'false');
   requestAnimationFrame(function () { el.classList.add('on'); });
   open = id;
   onClose = after || null;
   var f = el.querySelector('[data-autofocus]') || el.querySelector('.sh-x');
-  if (f) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 30);
+  /* the first field takes the focus a moment after the sheet opens, unless the reader is already in
+     the sheet: a late timer (a busy phone, or the check's clock) moved the focus out of the password
+     between a tap and its typing, so the password went on the end of the email and the sign in said
+     "fill in every field" (the browser check's sign-in, 2026-11-06) */
+  if (f) setTimeout(function () {
+    if (open !== id || el.contains(document.activeElement)) return;
+    try { f.focus({ preventScroll: true }); } catch (e) {}
+  }, 30);
+  if (api.onChange) api.onChange();
 }
 function closeSheet(silent) {
   if (!open) return;
   var el = $(open);
+  [].forEach.call(el.querySelectorAll('video'), function (v) { try { v.pause(); } catch (e) {} });
   el.classList.remove('on');
   el.hidden = true;
   el.setAttribute('aria-hidden', 'true');
@@ -40,6 +51,7 @@ function closeSheet(silent) {
   var cb = onClose; onClose = null;
   if (!silent && cb) cb();
   if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) {}
+  if (api.onChange) api.onChange();
 }
 
 function wire() {
@@ -56,7 +68,33 @@ function wire() {
 
 /* ---- how to play -------------------------------------------------------- */
 
+/* THE CLIPS (the owner, 2026-11-02: "show each control with a looped animation"). Each control is a
+   short muted loop recorded from the real game (test/record-how.mjs), in the reader's theme, with one
+   line under it. The markup is written only when the sheet opens, so nothing downloads on boot; the
+   poster shows first and a clip streams when it scrolls into view (watchClips). With reduced motion a
+   clip waits for a tap. */
+var HOW_V = 1;
+function clip(k, line) {
+  var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  var still = false; try { still = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  var b = 'how/' + k + '-' + t, q = '?v=' + HOW_V;
+  return '<figure class="hw-clip"><video muted playsinline loop ' + (still ? 'controls ' : 'data-auto ') + 'preload="' + (still ? 'none' : 'metadata') + '" poster="' + b + '.webp' + q + '" aria-hidden="true">' +
+    '<source src="' + b + '.webm' + q + '" type="video/webm"><source src="' + b + '.mp4' + q + '" type="video/mp4"></video>' +
+    '<figcaption>' + esc(line) + '</figcaption></figure>';
+}
+/* a clip plays only while it is on screen, so a phone runs one or two at a time, never eight; each
+   streams when it first comes into view. Without IntersectionObserver they all play. */
+var clipSeen = null;
+function watchClips() {
+  var vs = [].slice.call(document.querySelectorAll('#how-body video[data-auto]'));
+  var go = function (v, on) { try { if (on) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); } catch (e) {} };
+  if (clipSeen) clipSeen.disconnect();
+  if (!('IntersectionObserver' in window)) { vs.forEach(function (v) { go(v, true); }); return; }
+  clipSeen = new IntersectionObserver(function (es) { es.forEach(function (e) { go(e.target, e.isIntersecting); }); }, { threshold: 0.4 });
+  vs.forEach(function (v) { clipSeen.observe(v); });
+}
 function renderHow(ctx) {
+  setTimeout(watchClips, 0);
   /* The bands are relative to the moment (CONTRACT.md section 7), so the
      words say what each colour means rather than printing a cutoff. */
   var MEANS = { green: 'the best call, or close to it.', yellow: 'gave a little away.',
@@ -69,16 +107,27 @@ function renderHow(ctx) {
     var b = document.querySelector('#how-body [data-open-101]');
     if (b) b.addEventListener('click', function () { api.show('101'); });
   }, 0);
+  var power = !!(window.STD_METER && window.STD_METER.EFFORT);
+  var dis = C.STEAL && C.STEAL.DISENGAGE, abs = C.ABS && C.ABS.PER_SIDE;
   $('how-body').innerHTML =
     '<button type="button" class="btn ghost p101-go" data-open-101>pitching 101: the ideas behind the grade</button>' +
     '<h3>you are the closer</h3>' +
     '<p>one real save spot a day. the real batters, in order. his real pitches. the same spot for everybody.</p>' +
-    '<h3>two taps and a release</h3>' +
-    '<p>pick a pitch from his arsenal. pick a spot on the grid. hit throw.</p>' +
-    '<p>a needle sweeps the meter. tap when it hits the mark. that is the release.</p>' +
+    '<h3>how to pitch</h3>' +
+    clip('aim', 'pick a pitch. tap or drag on the zone to aim. then hit throw.') +
+    (power ? clip('power', 'tap to stop the power. max is faster. the release gets tighter.') : '') +
+    clip('release', 'the ring closes on your aim. tap when it lands on the circle.') +
+    clip('reaim', 'want a new spot? hit re-aim.') +
     '<p>a clean release misses less than his usual. a bad one misses more. the grade never sees it. it grades the call.</p>' +
     '<p>timing is hard for some. turn the meter off in settings. every pitch then goes with his usual command.</p>' +
-    '<p>the grid is what you see from the mound. the middle nine are the zone. the ring around it is for chasing. inside and away are the batter\'s.</p>' +
+    '<p>the zone is what you see from the mound. inside and away are the batter\'s.</p>' +
+    '<h3>scout him</h3>' +
+    clip('scout', 'tap scout. damage shows where he hits it hard. swings shows where he chases.') +
+    '<h3>challenges</h3>' +
+    clip('challenge', 'a called ball you think was a strike? hit challenge right away.' + (abs ? ' you get ' + abs + '. win it and you keep it.' : '')) +
+    '<h3>runners on</h3>' +
+    clip('quick', 'quick delivery is a slide step. it beats the steal. it costs a little speed.') +
+    clip('pickoff', 'pickoff throws over to the bag.' + (dis ? ' you get ' + dis + ' per batter. after that a miss is a balk.' : '')) +
     '<h3>where it goes</h3>' +
     '<p>the ball misses by his command and your release. then a real pitch from that spot plays out: take, swing, foul or in play.</p>' +
     '<h3>the grade</h3>' +
@@ -92,12 +141,10 @@ function renderHow(ctx) {
     '<li><b>' + esc(C.OUTCOME_LABEL.doors_open) + '</b> the go-ahead run scores</li>' +
     '<li><b>' + esc(C.OUTCOME_LABEL.walk_off) + '</b> the winning run scores in their last at-bat</li></ul>' +
     '<p>a tie does not end it. keep pitching. only a door shut keeps your streak.</p>' +
-    '<h3>scouting</h3>' +
-    '<p>tap the batter\'s name. the grid turns into his map: where he does damage, and where he swings.</p>' +
     '<h3>one a day</h3>' +
     '<p>the daily counts once. run it back to practice. practice is never scored.</p>' +
     '<p>practice is the place to learn the meter. after each release it shows how much the miss grew or shrank.</p>' +
-    (ctx && ctx.proxy ? '<p class="quiet">older spots have no pitch tracking. their pitches come from modern pitch data.</p>' : '');
+    (ctx && ctx.proxy ? '<p class="quiet">older spots have no pitch tracking. their pitches come from modern pitch data. each hitter\'s strike zone is estimated from his height.</p>' : '');
 }
 
 /* ---- pitching 101 -----------------------------------------------------------
@@ -223,19 +270,86 @@ function renderPast(scn) {
      today every player sees the locked tiles below. No price and no buy button here. */
   if (ctx.ent && ctx.ent.archive && ctx.archiveDays && ctx.onArchive) {
     var days = ctx.archiveDays(ctx.today);
-    $('past-body').innerHTML = days.length
+    $('past-body').innerHTML = (days.length
       ? '<p>pick a day. it plays on that day\'s spot and luck. it never goes on the leaderboard.</p><div class="arc-list">' +
         days.map(function (d) { return '<button type="button" data-day="' + esc(d.day) + '"><b>#' + esc(d.number) + '</b><span>' + esc(shortDay(d.day)) + '</span></button>'; }).join('') + '</div>'
-      : '<p>nothing before #' + esc(n) + ' yet.</p>';
-    $('past-body').querySelectorAll('[data-day]').forEach(function (b) {
+      : '<p>nothing before #' + esc(n) + ' yet.</p>') + calendar(days, true);
+    $('past-body').querySelectorAll('.arc-list [data-day]').forEach(function (b) {
       b.addEventListener('click', function () { ctx.onArchive(b.getAttribute('data-day')); });
     });
+    wireCal(days, true);
     return;
   }
   for (var i = n - 1; i >= Math.max(1, n - 12); i--) tiles += '<div class="past-t"><b>#' + i + '</b><span class="lock" aria-hidden="true"></span></div>';
+  var past = ctx.archiveDays ? ctx.archiveDays(ctx.today) : null;
   $('past-body').innerHTML =
     '<p>past dailies open later. today\'s is #' + esc(n) + '.</p>' +
-    (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>');
+    (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>') +
+    (past ? calendar(past, false) : '');
+  if (past) wireCal(past, false);
+}
+
+/* THE ARCHIVE AS A CALENDAR, on a desk only (the owner, 2026-11-10: "a calendar with dates instead of
+   game numbers"). The phone keeps the tiles or the list above; style.css shows .arc-cal from 980 px and
+   hides those there. The days come from the archive's own list (modes-ui.js archiveDays: the contract's
+   EPOCH and dayNumberOf, the map from a day to its daily), so a day is marked here exactly when the
+   archive has it. Which days open is the archive's rule, not the calendar's: locked for everyone, a
+   button for Pro. Today is ringed, the days before #1 and after today are blank. One month at a time,
+   with arrows only when the dailies span more than one. */
+var calMonth = null;
+var WEEK = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+function ymd(y, m, d) { return y + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d; }
+function calendar(days, play) {
+  var today = ctx.today;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today || '')) return '';
+  var num = {};
+  days.forEach(function (d) { num[d.day] = d.number; });
+  var lo = (days.length ? days[days.length - 1].day : today).slice(0, 7), hi = today.slice(0, 7);
+  if (!calMonth || calMonth < lo || calMonth > hi) calMonth = hi;
+  var y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7);
+  var lead = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), len = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  var name = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  var cells = '';
+  for (var i = 0; i < lead; i++) cells += '<span class="ac-d pad" aria-hidden="true"></span>';
+  for (var d = 1; d <= len; d++) {
+    var day = ymd(y, m, d), when = longDay(day);
+    if (day === today) cells += '<span class="ac-d now" aria-current="date" aria-label="' + esc(when + ', today') + '"><b>' + d + '</b><small>today</small></span>';
+    else if (num[day] == null) cells += '<span class="ac-d off"><b>' + d + '</b></span>';
+    else if (play) cells += '<button type="button" class="ac-d open" data-day="' + esc(day) + '" title="#' + esc(num[day]) + '" aria-label="' + esc(when + ', daily #' + num[day]) + '"><b>' + d + '</b></button>';
+    else cells += '<span class="ac-d shut" title="#' + esc(num[day]) + '" aria-label="' + esc(when + ', daily #' + num[day] + ', locked') + '"><b>' + d + '</b><span class="lock" aria-hidden="true"></span></span>';
+  }
+  for (var t = (lead + len) % 7; t && t < 7; t++) cells += '<span class="ac-d pad" aria-hidden="true"></span>';
+  var arrows = lo < hi;
+  return '<div class="arc-cal" id="arc-cal">' +
+    '<div class="ac-top">' +
+      (arrows ? '<button type="button" class="ac-mv" data-mv="-1" aria-label="previous month"' + (calMonth <= lo ? ' disabled' : '') + '><i aria-hidden="true"></i></button>' : '') +
+      '<b class="ac-m" aria-live="polite">' + esc(name) + '</b>' +
+      (arrows ? '<button type="button" class="ac-mv nx" data-mv="1" aria-label="next month"' + (calMonth >= hi ? ' disabled' : '') + '><i aria-hidden="true"></i></button>' : '') +
+    '</div>' +
+    '<div class="ac-wk" aria-hidden="true">' + WEEK.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>' +
+    '<div class="ac-grid">' + cells + '</div></div>';
+}
+function wireCal(days, play) {
+  var el = $('arc-cal');
+  if (!el) return;
+  el.querySelectorAll('[data-mv]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7) + +b.getAttribute('data-mv');
+      if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
+      calMonth = y + '-' + (m < 10 ? '0' : '') + m;
+      el.outerHTML = calendar(days, play);
+      wireCal(days, play);
+      /* focus stays on the arrow, or moves to the other one when this end is reached */
+      var nb = $('arc-cal').querySelector('[data-mv="' + b.getAttribute('data-mv') + '"]:not(:disabled)') || $('arc-cal').querySelector('[data-mv]:not(:disabled)');
+      if (nb) nb.focus();
+    });
+  });
+  if (play) el.querySelectorAll('[data-day]').forEach(function (b) {
+    b.addEventListener('click', function () { ctx.onArchive(b.getAttribute('data-day')); });
+  });
+}
+function longDay(day) {
+  return new Date(Date.parse(day + 'T12:00:00Z')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
 }
 
 function shortDay(day) {
@@ -252,7 +366,7 @@ function renderSettings(prefs, onChange) {
       '<input type="checkbox" class="sw" id="' + id + '"' + (on ? ' checked' : '') + '></label>';
   }
   $('set-body').innerHTML =
-    row('set-sound', 'sound', 'the glove, the bat, the call', !!prefs.sound) +
+    row('set-sound', 'sound', 'The ump\'s calls and the buzz. More sounds are on the way.', !!prefs.sound) +
     row('set-quick', 'quick pitches', 'shorter animation', !!prefs.quick) +
     row('set-meter', 'release meter', 'time each release. off throws his usual command', prefs.meter !== false) +
     row('set-dark', 'dark mode', 'shared with every runthe.gg game', theme === 'dark');
@@ -260,6 +374,8 @@ function renderSettings(prefs, onChange) {
   $('set-quick').addEventListener('change', function (e) { onChange('quick', e.target.checked); });
   $('set-meter').addEventListener('change', function (e) { onChange('meter', e.target.checked); });
   $('set-dark').addEventListener('change', function (e) { onChange('theme', e.target.checked ? 'dark' : 'light'); });
+  /* the voice of the ump (voices.js): record a call, and the owner's review */
+  if (window.STD_VOICES) window.STD_VOICES.settingsRows($('set-body'));
 }
 
 /* ---- sign in ------------------------------------------------------------------ */
@@ -274,7 +390,9 @@ function renderAuth() {
   if (st.signedIn) {
     body.innerHTML = '<p>signed in as <b>' + esc(st.name || st.email || 'you') + '</b>.</p>' +
       '<p class="quiet">your daily result, streak and stats are kept on your account.</p>' +
+      platePicker(st) +
       '<button class="btn ghost" id="au-out" type="button">sign out</button>';
+    wirePicker(st);
     $('au-out').addEventListener('click', function () {
       Promise.resolve(A.signOut && A.signOut()).then(function () { renderAuth(); });
     });
@@ -293,6 +411,7 @@ function renderAuth() {
     '</form>' +
     '<button class="btn ghost" id="au-google" type="button">continue with google</button>' +
     '<p class="quiet">one account covers every runthe.gg game. it keeps your streak across devices.</p>' +
+    '<p class="quiet">shut the door as a club\'s closer to unlock its plate. sign in to wear it on the board.</p>' +
     (st.ready === false && !st.waiting ? '<p class="quiet">accounts are not available right now. you can still play.</p>' : '');
   $('au-tin').addEventListener('click', function () { authMode = 'in'; renderAuth(); });
   $('au-tup').addEventListener('click', function () { authMode = 'up'; renderAuth(); });
@@ -315,6 +434,40 @@ function renderAuth() {
   });
 }
 
+/* THE PLATE PICKER (the owner, 2026-11-03): the neutral plate, then every club a save can unlock.
+   A locked one says how to get it. A pick goes to the account, which checks the unlock. */
+function platePicker(st) {
+  var PL = window.STD_PLATE;
+  if (!PL) return '';
+  var ini = PL.initials(st.name, st.initials), have = PL.unlocked(), cur = PL.current();
+  var tile = function (k) {
+    var open = !k || have.indexOf(k) >= 0, nm = k ? PL.nameOf(k) : 'plain';
+    return '<button type="button" class="plk' + (open ? '' : ' locked') + '" data-plate="' + esc(k || '') + '" aria-pressed="' + (k === cur || (!k && !cur)) + '"' +
+      (open ? '' : ' aria-disabled="true"') + ' aria-label="' + esc(open ? nm + ' plate' : 'shut the door as the ' + nm + ' closer to unlock') + '">' +
+      PL.svg(k, ini, { locked: !open }) + '<span>' + esc(nm) + '</span>' +
+      (open ? '' : '<small>shut the door as the ' + esc(nm) + ' closer to unlock</small>') + '</button>';
+  };
+  return '<div class="plk-h"><b>your plate</b><span>' + esc(have.length) + ' of ' + esc(PL.earnable().length) + ' clubs</span></div>' +
+    '<div class="plk-grid" id="pk-grid">' + [null].concat(PL.earnable()).map(tile).join('') + '</div>' +
+    '<p class="au-err" id="pk-err" role="alert"></p>';
+}
+function wirePicker(st) {
+  var A = window.STD_AUTH, PL = window.STD_PLATE, g = $('pk-grid');
+  if (!g || !PL) return;
+  g.addEventListener('click', function (e) {
+    var b = e.target.closest('.plk');
+    if (!b || b.classList.contains('locked')) return;
+    var k = b.getAttribute('data-plate') || null;
+    PL.chooseLocal(k);
+    Promise.resolve(A.setPlate ? A.setPlate(k) : null).then(function (r) {
+      if (r && r.error) { $('pk-err').textContent = String(r.error).toLowerCase(); return; }
+      if (r && r.data) PL.setServer(r.data);
+      renderAuth();
+      if (ctx.onPlate) ctx.onPlate();
+    });
+  });
+}
+
 /* the menu's three tiles: the streak, the best, the last percentile */
 function renderMenuTiles() {
   var h = ctx.hist(), st = streakOf(h, ctx.today), days = Object.keys(h).sort();
@@ -324,7 +477,7 @@ function renderMenuTiles() {
     tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
 }
 
-var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null };
+var ctx = { onPlate: null, hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   open: openSheet,
@@ -334,11 +487,13 @@ var api = {
   streakOf: streakOf,
   PRINCIPLE: PRINCIPLE,
   renderAuth: renderAuth,
+  /* the past dailies live on the home's archive tab (ui.js setTab) */
+  renderPast: function () { renderPast(ctx.scn); },
   show: function (which) {
     if (which === 'how') { renderHow({ proxy: ctx.scn && ctx.scn.resolution === 'proxy' }); openSheet('sheet-how'); }
     else if (which === 'stats') showStats();
     else if (which === '101') { render101(); openSheet('sheet-101'); }
-    else if (which === 'past') { renderPast(ctx.scn); openSheet('sheet-past'); }
+    else if (which === 'past') { if (ctx.onPast) ctx.onPast(); }
     else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
     else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }
     else if (which === 'menu') { renderMenuTiles(); openSheet('sheet-menu'); }

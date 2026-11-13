@@ -61,6 +61,7 @@ var GYMS = [
     say:['My daughter built the pinwheel floor for the science fair. Won a ribbon. I still can\'t do it.',
       'Keep an eye on which way a pinwheel points. It never hits the same tiles twice in a row.',
       'A pinwheel takes four taps to come back around. Sometimes three is what you want.'],
+    hint:'The order you tap in never matters here. Only how many times you tap each one. A switch wants one tap or none. Work out what one, two and three taps of a pinwheel each flip.',
     rows:[
       '#########',
       '#C......#',

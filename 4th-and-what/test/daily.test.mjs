@@ -79,3 +79,13 @@ test('the share line has no spoiler and says how it compares', () => {
   assert.ok(/Daily #7/.test(t) && /same as the real thing/.test(t) && /runthe\.gg/.test(t));
   assert.ok(/they made it/.test(D.shareText(p, 7, { win: false, yards: 1 })));
 });
+
+test('the stakes line comes from the score and the clock', () => {
+  assert.equal(D.stakesText({ offScore: 21, defScore: 24, qtr: 4, clock: '01:09' }), 'Down 3. 1:09 to play.');
+  assert.equal(D.stakesText({ offScore: 17, defScore: 17, qtr: 5, clock: '04:30' }), 'Tied. Overtime. 4:30 left.');
+  assert.equal(D.stakesText({ offScore: 10, defScore: 7, qtr: 3, clock: '02:00' }), 'Up 3. Q3, 2:00 left.');
+  for (let n = 1; n <= 400; n++) {
+    const t = D.stakesText(D.playFor(P, n));
+    assert.ok(!/undefined|NaN/.test(t) && ![...t].some(c => c.charCodeAt(0) === 0x2013 || c.charCodeAt(0) === 0x2014), 'day ' + n + ': ' + t);
+  }
+});

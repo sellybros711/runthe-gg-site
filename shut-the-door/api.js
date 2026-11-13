@@ -52,14 +52,28 @@
   const SH = () => (NODE ? require('./share.js') : window.STD_SHARE);
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
   const M = NODE ? require('./modes.js') : window.STD_MODES;
+  const CL = () => (NODE ? require('./clip.js') : window.STD_CLIP);
+  const PG = () => (NODE ? require('./postgame.js') : window.STD_POSTGAME);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 17;
+  const SCHEDULE_V = 22;
   /* Rules 8 (the closer's outing to the end of the game, engine.js 11) starts with a whole day's
      daily, never partway through one: a daily of a day before this is played as rules 7 (the
      first half alone), so everybody on one day's board plays one game. Set it to the day after
      the deploy if the deploy lands on a day whose pack has more than one half. */
   const FULL_CLOSE_FROM = '2026-11-01';
+  /* Rules 9 (the ABS touch: a ball touching the zone is a strike on a challenge, engine.js 12) starts
+     the same way: a daily of a day before this is played as rules 8. */
+  const ABS_TOUCH_FROM = '2026-11-03';
+  /* Rules 10 (the touch measured on the zone as drawn, engine.js 13) starts the same way: a daily of a
+     day before this is played as rules 9, so today's board stays one game. */
+  const DRAWN_TOUCH_FROM = '2026-11-04';
+  /* Rules 11 (the reach: a hit by pitch only when the ball reaches the batter, engine.js 14) starts
+     the same way: a daily of a day before this is played as rules 10. */
+  const HBP_REACH_FROM = '2026-11-06';
+  /* Rules 12 (the reach where he stands, engine.js 15) starts the same way: a daily of a day before
+     this is played as rules 11. */
+  const STANCE_FROM = '2026-11-07';
   const STORE_V = 1;
   const PICKS_KEY = 'std_picks_v1';         // vote days the server has locked: {day: pack}
   const SURVIVOR_KEY = 'std_survivor_v1';   // today's run on this device
@@ -201,7 +215,7 @@
     const saved = readSaved();
     const resume = saved && saved.day === cur.day && saved.scenarioId === scenarioId && Array.isArray(saved.calls) ? saved : null;
     // an outing begun before rules 2 shipped (its calls carry no r) finishes under the rules it began with
-    const rules = resume && resume.calls.length ? E.rulesOf(resume.calls) : cur.day < FULL_CLOSE_FROM ? G.STEAL_RULES : undefined;
+    const rules = resume && resume.calls.length ? E.rulesOf(resume.calls) : cur.day < FULL_CLOSE_FROM ? G.STEAL_RULES : cur.day < ABS_TOUCH_FROM ? G.FULL_RULES : cur.day < DRAWN_TOUCH_FROM ? G.TOUCH_RULES : cur.day < HBP_REACH_FROM ? G.DRAWN_RULES : cur.day < STANCE_FROM ? G.HBP_RULES : undefined;
     const o = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id, rules });
     const rec = { o, day: cur.day, number: cur.number, result: null, submitted: false };
     if (resume) {
@@ -303,12 +317,32 @@
       rec.result = res;
       save(rec);
     }
+    withStats(rec);
     if (o.mode === 'archive') return finishArchive(rec);
     if (o.mode === 'daily' && !rec.submitted) {
       if (!rec.posting) rec.posting = post(rec).finally(() => { rec.posting = null; });
       await rec.posting;
     }
+    // never waited on: the result shows at once, and a failure only leaves the board's line off
+    if (o.mode === 'daily' && rec.submitted && !rec.statsPosted && !rec.statsPosting) {
+      rec.statsPosting = postStats(rec).catch(() => {}).finally(() => { rec.statsPosting = null; });
+    }
     return clone(rec.result);
+  }
+
+  /* THE BOX LINE (postgame.js, supabase/166): the outing's counts off the engine's own log and
+     result. A result kept before 166 gets them on its next read. */
+  function withStats(rec) {
+    if (rec.result && !rec.result.stats) rec.result.stats = PG().summary(rec.o.log, rec.result);
+    return rec.result && rec.result.stats;
+  }
+  /* The kept outing's box line on the board, once. Only the outing the server keeps: a post that
+     lost the race (another device's outing counts) sends none. The server keeps the first. */
+  async function postStats(rec) {
+    const s = withStats(rec);
+    if (!s || !signedInUser() || (rec.result.account && rec.result.account.taken === false)) return;
+    const r = await ask('submitStats', { day: rec.day, stats: s });
+    if (r && !r.error) rec.statsPosted = true;
   }
 
   /* One post of a finished daily, signed in. The server keeps the first post for (user, day). */
@@ -408,7 +442,7 @@
     const d = day || M.addDays(C.easternDay(), 1);
     return voteShape(sch, d, await ask('vote', d));
   }
-  /* Cast this player's one vote for tomorrow. Signed in, after finishing today's daily. Answers
+  /* Cast this player's one vote for tomorrow. Signed in, played today or not (164). Answers
      the vote as vote() does, with error set (the server's words) when it was refused. */
   async function castVote(scenarioId) {
     const sch = await loadSchedule();
@@ -562,11 +596,12 @@
       rec.result = res;
       const run = readRun() || { day: rec.day, run: rec.survivor.run, entries: [], live: null, posted: 0 };
       if (run.run === rec.survivor.run && run.entries.length === rec.survivor.index) {
-        run.entries.push({ scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, outcome: res.outcome, pitches: res.pitches, score: res.score });
+        run.entries.push({ scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, outcome: res.outcome, pitches: res.pitches, score: res.score, stats: withStats(rec) });
         run.live = null;
         writeRun(run);
       }
     }
+    withStats(rec);
     const run = readRun();
     const posted = await postRun(run);
     const sum = run ? runSummary(run) : { saves: 0, over: true };
@@ -582,6 +617,8 @@
       const i = run.posted || 0, e = run.entries[i];
       const r = await ask('survivorPost', { day: run.day, run: run.run, index: i, scenarioId: e.scenarioId, calls: e.calls, outcome: e.outcome, pitches: e.pitches, score: e.score });
       if (!r || r.error || !r.data) return false;
+      // the box line beside it (166): a refusal or an old page's entry without one leaves no line
+      if (e.stats) await ask('survivorStats', { day: run.day, run: run.run, index: i, stats: e.stats });
       run.posted = i + 1;
       writeRun(run);
     }
@@ -610,8 +647,40 @@
     return Array.isArray(r) ? r : null;
   }
 
+  /* ---------------- clips (clip.js): one pitch again, from the calls, never stored ---------------- */
+
+  /* The clip of pitch n (1 based) of an outing this page holds: { spec, link } (the link's value,
+     clip.js encode), or null when there is no such pitch. With from, the at bat of pitches from to n
+     (postgame.js atBats: an at bat's from + 1 and its to); clip() refuses a span that is not one. */
+  function clipSpec(outingId, n, from) {
+    const rec = outings[outingId], L = CL();
+    if (!rec || !L || !(n >= 1 && n <= rec.o.calls.length)) return null;
+    if (from != null && !(Number.isInteger(from) && from >= 1 && from <= n)) return null;
+    const spec = L.specOf(rec.o, rec.day || C.easternDay(), n, from);
+    return { spec, link: L.encode(spec) };
+  }
+
+  /* A clip played again: its scenario (no reveal, as getScenario), the state before the pitch, the
+     pitch as the field saw it (pr) and as it stands (final); an at bat's also has each of its
+     pitches the same way (pitches, clip.js replay). Its own outing in memory: nothing is
+     stored, resumed or posted, and today's daily is never touched. A pack the schedule does not list
+     or calls the engine refuses throw. */
+  async function clip(spec) {
+    const L = CL();
+    if (!L || !spec || !Array.isArray(spec.calls) || !spec.calls.length) throw new Error('not a clip');
+    const sch = await loadSchedule();
+    if (!sch.packs[spec.pack]) throw new Error('no such scenario: ' + spec.pack);
+    const p = await loadPack(spec.pack);
+    const r = L.replay(E, p.pack, p.model, spec);
+    const sc = clone(p.pack.scenario);
+    delete sc.reveal;
+    sc.day = spec.day;
+    sc.number = C.dayNumberOf(spec.day);
+    return Object.assign({ scn: sc, spec }, r);
+  }
+
   const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, pending, claim,
-    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, configure };
+    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, configure, clipSpec, clip };
   // a sign-in posts the day's finished daily by itself (the board and the result read it after)
   try {
     const A = AUTH();

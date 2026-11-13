@@ -62,6 +62,7 @@ var GYMS = [
     say:['I ring that bell every winter. Some years it freezes the pond. Some years it does the opposite.',
       'That bell swaps both lanes at once. And those arrows only let you through one way.',
       'Hang in there. Open water stops you just like a rock does. Sometimes that\'s the whole point.'],
+    hint:'The bell stops you like a rock does. Slide into it and you stop right beside it. Sometimes you ring it just to stop in that spot.',
     rows:[
       '###########',
       '#===oCo===#',

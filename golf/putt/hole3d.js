@@ -209,7 +209,7 @@ function* steps(C, opt){
   var B = { solid:solid, vox:vox, tube:tube, blob:blob, gz:gz, ART:ART, clearAt:clearAt, T:T, light:function(x, y, z, col){ LIGHTS.push([x, y, z, col || '#ffb84a']); } };
 
   // ---- the hole's own pieces
-  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, kickball:1, gumball:1, dinoegg:1, moon:1, clover:0, star:0 };
+  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, kickball:1, gumball:1, dinoegg:1, moon:1, cyceye:1, clover:0, star:0 };
   var LIFT = { bat:1.4, ghost:0.5 };
   function base(x, y){ return CARP + F.h(x, y) * K + TZ(x, y); }
     function prop(cx, cy, s, kind, zb){
@@ -223,8 +223,10 @@ function* steps(C, opt){
   }
   if (LD && LD.build) LD.build(B);
   (C.bumpers || []).forEach(function(u){ prop(u.x, u.y, u.r * 1.05, u.skin, base(u.x, u.y) - 0.1); });
-  (C.blocks || []).forEach(function(rc){ var fn = SK[rc.skin] || SK.stone, h = 1.5, zb = CARP;
+  function inTri3(P, x, y){ var sg = 0; for (var i = 0; i < 3; i++){ var a = P[i], b = P[(i + 1) % 3], c = (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]); sg += c > 0 ? 1 : c < 0 ? -1 : 0; } return Math.abs(sg) === 3; }
+  (C.blocks || []).forEach(function(rc){ var fn = SK[rc.skin] || SK.stone, h = rc.tri ? 1.9 : rc.low ? 0.7 : 1.5, zb = CARP;   // a jelly hedge (Jellara) stands low
     solid(rc.x0, rc.y0, zb, rc.x1, rc.y1, zb + h, function(x, y, z){ var u = ((x - rc.x0) / (rc.x1 - rc.x0)) * 2 - 1, v = 1 - 2 * (z - zb) / h;
+      if (rc.tri && !inTri3(rc.tri, x, y)) return null;   // a prism (Crystara): only the voxels inside its triangle
       if (rc.rot){ var q = rc.rot, dx = x - q.cx, dy = y - q.cy, a = dx * q.c + dy * q.s; if (Math.abs(a) > q.hl || Math.abs(-dx * q.s + dy * q.c) > q.hw) return null; u = a / q.hl; }   // a bank board: only the voxels inside the turned board
       return fn(u * 0.7, v * 0.9) || fn(0, 0.4) || T.wallLo; }); });
   // a ramp: a wedge rising to its lip, striped like a kicker
@@ -266,6 +268,8 @@ function* steps(C, opt){
   if (!(SC && SC.noGround)){ ctx.fillStyle = (LD && LD.bg) || T.bg; ctx.fillRect(0, 0, W, Hh); }
   var rampOf = function(c, x, y){
     var n = h3(c.ti || x, c.tj || y, 3), m = c.m;
+    // Oz's carpet is the yellow brick road: bricks a foot and a half by three quarters, laid in courses, the mortar T.brick
+    if (m === 'carpet' && T.brick){ var bi = c.ti || x, bj = c.tj || y, row = Math.floor(bj / 3); if (((bj % 3) + 3) % 3 === 0 || (((bi + (row & 1) * 3) % 6) + 6) % 6 === 0) return R(T.brick); return R(h3(Math.floor((bi + (row & 1) * 3) / 6), row, 5) < 0.3 ? T.carpet2 : T.carpet); }
     if (m === 'carpet') return R(n < 0.16 ? T.carpet2 : T.carpet);
     if (m === 'skirt') return R(T.wallLo);
     if (m === 'ground') return R(h3((c.ti || x) >> 1, (c.tj || y) >> 1, 9) < 0.14 ? T.bg2 : T.bg);

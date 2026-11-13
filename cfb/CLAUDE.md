@@ -27,6 +27,7 @@ node cfb/build/test/commish/test_longterm.mjs    a term, the ladder, both tiers 
 node cfb/build/test/commish/probe_longrun.mjs    30 runs of 50 seasons (--bold, --years 80 --runs 40)
 node cfb/build/test/commish/test_standings.mjs   the standings screen, four states
 node cfb/build/test/test_fantasy.mjs             the College Fantasy Challenge (--quick: no browser)
+node cfb/build/test/test_fanpromo.mjs            the results screen's Fantasy card: open week, no lineup in
 ```
 
 The SQL suites (`supabase/test/commish_clock_test.sql`, `tenure_test.sql`, `cfb_fantasy_test.sql`)
@@ -58,3 +59,27 @@ run against a scratch Postgres; the order of files each needs is in the matching
 
 - ESPN is the only source. The week locks at the first slate kickoff. There is no results file:
   points live only in `cfb_fantasy_results`.
+- **The results screen offers it only while entries are open.** From the week opening to its
+  lock, to somebody with no lineup in (this browser's record, and signed in,
+  `PS_CFB_AUTH.fantasyMyEntry`, which reads `cfb_fantasy_my_entry`). An inline card, never a sheet.
+  `fantasyPromoPaint()` holds the rule, and every `show('s-over')` calls it.
+- **`fantasyMyEntry` is in `auth.js` and needs `auth.js`'s version moved with it.** Three pages load
+  `/cfb/auth.js`, so the `?v=` moves on all of them in one commit.
+- **The week opens Monday, and the watchdog makes sure.** `cfb-fantasy-pool.yml` builds it at 11am
+  Eastern. `cfb-fantasy-watchdog.yml` asks from Monday noon to Thursday whether the week is open,
+  dispatches a catch up if not, and opens an issue from Tuesday. Never before Monday noon: on
+  Sunday the next week already reads as next.
+- **A scheduled or catch up build never rebuilds a live week**, because a price never moves once
+  somebody has drafted. The guard reads the pointer from `origin/main`, not the checkout: a
+  dispatched run checks out the commit main was on when it was queued.
+- **Only starting quarterbacks are on the board, read off the box scores** (`roles.mjs`, the
+  owner's call, 2026-11-12). There is no college depth chart: the starter led his team's passing
+  in its latest game, and the season's regular starter stays unless he has played behind the
+  new man (absent is not benched). The Monday build prices a starter on his starts. A man with
+  three or more games is not discounted for games missed (the MISSED chip says it); under
+  three he keeps the per team game discount, because the box lists only who touched the ball. Mid-week a backup is
+  `{ st: 'off', roster: 'QB2' }` in the injury file, and no price moves.
+- **Rosters are read with `limit=300`.** Plain, ESPN stops at 100 names alphabetically. A
+  starter a short roster leaves out is still added from the store.
+- **`next-week.mjs` is the week, and an unreadable scoreboard fails it.** ESPN answers null rather
+  than throwing, which `nextWeek` alone reads as the season over, or as a later week.

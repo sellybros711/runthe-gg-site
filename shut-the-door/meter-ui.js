@@ -81,7 +81,10 @@ function countTap() { try { localStorage.setItem(TAPS_KEY, String(Math.min(999, 
 
 function effortOn() { return MT.EFFORT === true; }
 function reduced() { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
-function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+/* the phone's buzz rides with the sound switch (sound.js) */
+function buzz(p) { if (window.STD_SFX) return window.STD_SFX.buzz(p); try { const ua = navigator.userActivation; if (navigator.vibrate && (!ua || ua.hasBeenActive)) navigator.vibrate(p); } catch (e) {} }
+/* the release box's word: the stop's own word, short ("perfect", "sharp", "on time", "early", "late"), never q */
+function relWord(w) { return String(w).replace(/ release$/, '').replace(/^a bit /, ''); }
 function zoneOf(e) { return e >= MT.PERFECT_E ? 'perfect' : e < 1 / 3 ? 'soft' : e < 2 / 3 ? 'normal' : 'max'; }
 function pct(x) { return (Math.max(0, Math.min(1, x)) * 100).toFixed(3) + '%'; }
 function ty(x, f) { x.style.transform = 'translate3d(0,' + (f * 100).toFixed(3) + '%,0)'; }
@@ -261,7 +264,7 @@ function create(el) {
     col.hidden = true;                        // power is in the panel now; the pitch gets the field
     var extra = live.opts.practice && C.spreadOf ? ' · miss ' + C.spreadOf(qq, live.opts.repeat).toFixed(2) + 'x' : '';
     word.textContent = w + extra;
-    vRel.textContent = 'q ' + qq.toFixed(2);
+    vRel.textContent = relWord(w);
     countTap();
     if (pf.release) sRel.classList.add('perfect');
     if (qq >= MT.BEST_Q && live.opts.onSnap) live.opts.onSnap(qq);

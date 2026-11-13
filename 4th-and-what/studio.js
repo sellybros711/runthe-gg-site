@@ -97,6 +97,9 @@
     $('sTag').value = A.draft.tag || 'pass';
     $('sFav').setAttribute('aria-pressed', String(!!A.draft.fav));
     $('sSave').textContent = A.draft.ref && entry() ? 'Saved' : 'Save Play';
+    /* the deck's level and hash: the same as Play's */
+    Array.prototype.forEach.call(document.querySelectorAll('#sLevel button'), function (x) { x.setAttribute('aria-pressed', String(x.dataset.level === (A.SC.level || 'nfl'))); });
+    Array.prototype.forEach.call(document.querySelectorAll('#sHash button'), function (x) { x.setAttribute('aria-pressed', String(x.dataset.hash === (A.SC.hash || 'mid'))); });
     $('sMotion').checked = !!P().motion; $('sMotionRow').hidden = !P().motion;
     $('sPA').checked = !!P().playAction; $('sPA').disabled = isRun();
     $('sShowD').checked = view !== 'offense';
@@ -111,6 +114,9 @@
   });
   $('sTag').addEventListener('change', function () { A.draft.tag = this.value; A.saveDraft(); var e = entry(); if (e) { e.tag = this.value; saveSoon(); } });
   $('sFav').addEventListener('click', function () { A.draft.fav = !A.draft.fav; renderBar(); A.saveDraft(); var e = entry(); if (e) { e.fav = A.draft.fav; saveSoon(); } });
+  $('sSaveB').addEventListener('click', function () { $('sSave').click(); });
+  Array.prototype.forEach.call(document.querySelectorAll('#sLevel button'), function (x) { x.addEventListener('click', function () { A.setLevel(x.dataset.level); renderBar(); draw(); }); });
+  Array.prototype.forEach.call(document.querySelectorAll('#sHash button'), function (x) { x.addEventListener('click', function () { A.setHash(x.dataset.hash); renderBar(); draw(); }); });
   $('sSave').addEventListener('click', function () {
     var e = entry();
     if (e) { e.play = A.copy(P()); var b = book(); A.store.put(b); A.toast('sToast', 'Saved to ' + b.name + '.'); return; }
@@ -125,25 +131,34 @@
   Array.prototype.forEach.call(document.querySelectorAll('[data-lib]'), function (b) {
     b.addEventListener('click', function () { libTab = b.dataset.lib; Array.prototype.forEach.call(document.querySelectorAll('[data-lib]'), function (x) { x.classList.toggle('on', x === b); }); renderLib(); });
   });
+  /* the search box narrows the list: a formation or a concept whose name has every word typed */
+  function matches(text) {
+    var q = ($('sLibQ').value || '').toLowerCase().trim();
+    return !q || q.split(/\s+/).every(function (w) { return text.toLowerCase().indexOf(w) >= 0; });
+  }
+  $('sLibQ').addEventListener('input', function () { renderLib(); });
   function renderLib() {
     var box = $('sLib'); box.innerHTML = '';
+    $('sLibQ').placeholder = libTab === 'formations' ? 'Search formations' : 'Search concepts';
     if (libTab === 'formations') {
       F.SETS.forEach(function (s) {
+        if (!matches((N.FORMATION_WORD[s.id] || '') + ' ' + s.name)) return;
         var on = !P().customFormation && P().formation === s.id;
         box.appendChild(el('button', { type: 'button', class: 'libitem', 'aria-pressed': String(on), 'data-form': s.id, on: { click: function () { save(); A.draft.play = A.emptyPlay(s.id); changed(); renderLib(); } } },
           [T.thumb(A.emptyPlay(s.id), 92, 46, { reads: false }), el('span', {}, [el('b', { text: (N.FORMATION_WORD[s.id] || s.name) }), el('small', { text: s.name })])]));
       });
       var b = book();
       if (b && b.formations) b.formations.forEach(function (f) {
+        if (!matches(f.name)) return;
         var p = A.emptyPlay(f.base); p.moved = f.moved || {};
         box.appendChild(el('button', { type: 'button', class: 'libitem', 'aria-pressed': String(P().customFormation === f.id), on: { click: function () { save(); var np = A.emptyPlay(f.base); np.moved = A.copy(f.moved || {}); np.customFormation = f.id; A.draft.play = np; changed(); renderLib(); } } },
           [T.thumb(p, 92, 46, { reads: false }), el('span', {}, [el('b', { text: f.name }), el('small', { text: 'Saved formation' })])]));
       });
-      box.appendChild(el('button', { type: 'button', class: 'btn mini', text: 'Save this formation', on: { click: saveFormation } }));
+      box.appendChild(el('button', { type: 'button', class: 'btn mini addform', text: '+ Create formation', on: { click: saveFormation } }));
     } else {
       ['pass', 'run'].forEach(function (kind) {
         box.appendChild(el('p', { class: 'libgroup', text: kind === 'pass' ? 'Pass concepts' : 'Run concepts' }));
-        R.CONCEPTS.filter(function (c) { return c.kind === kind; }).forEach(function (c) {
+        R.CONCEPTS.filter(function (c) { return c.kind === kind && matches(c.name); }).forEach(function (c) {
           var p = R.apply({ formation: P().formation, moved: P().moved, customFormation: P().customFormation }, c.name);
           box.appendChild(el('button', { type: 'button', class: 'libitem', 'data-concept': c.name, on: { click: function () { save(); var np = R.apply(P(), c.name); if (P().motion) np.motion = A.copy(P().motion); A.draft.play = np; changed(); } } },
             [T.thumb(p, 92, 46, { reads: false }), el('span', {}, [el('b', { text: c.name }), el('small', { text: kind === 'pass' ? 'On this formation' : 'Run' })])]));

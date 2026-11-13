@@ -7,14 +7,16 @@
  */
 import * as THREE from 'three';
 import * as M from './materials.js?v=8';
-import { battingClub, clubNamed } from './clubs.js?v=2';
+import { battingClub, clubNamed } from './clubs.js?v=3';
 import { capFor, frontFor } from './uniforms.js?v=2';
 import * as G from './gear3d.js?v=4';
 import * as HG from './headgear.js?v=5';
 import { measureHead, wear, wornShade } from './headgear.js?v=5';
-import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
+import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld, aimBone } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import { assetUrl } from './load.js?v=8';
+import { assetUrl } from './load.js?v=12';
+import { STANCE_X } from './inplay-plan.js?v=33';
+import { stanceOff } from './stance.js?v=1';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -483,7 +485,32 @@ function blockCrouch(p, k) {
   p.crouch = c0; p.feet = f0;
 }
 
-/** Keep a joint's twist (about its own length, from the bind pose) inside maxDeg; its swing stays. */
+/* The ball and socket of the shoulder from the bind pose (arms 45 degrees down and out): 120 of swing
+   and 70 of roll, as deform-probe.js LIMITS judges it. */
+const SHOULDER = { swing: 120, twist: 70 };
+
+/** Keep the shoulder's ball and socket inside its range, after the collar bone has taken its share
+    (motion.js clavicles). The elbow stays where the range leaves it, the forearm reaches on to the
+    wrist and the hand keeps its facing, so the mitt is where it was unless the wrist is out of reach.
+    The catcher's glove arm: a target high and inside a lefty is across his chest, past where the
+    shoulder goes from the deep set (site PR #837); the solve crossed the arm to 149 degrees and rolled
+    it 40 more in two frames. An arm inside its range is untouched. */
+function shoulderRange(p, s) {
+  const B = p.bones, ua = B[`upperarm_${s}`], la = B[`lowerarm_${s}`], hand = B[`hand_${s}`];
+  const wrist = wpos(hand), handQ = wquat(hand);
+  // (each limit says whether it turned the joint: comparing quaternions read a bone a hair off unit
+  // length as 0.08 degrees moved, and redid an arm the range never touched)
+  const swung = limitSwing(p, `upperarm_${s}`, SHOULDER.swing);
+  const rolled = limitTwist(p, `upperarm_${s}`, SHOULDER.twist);
+  if (!swung && !rolled) return;
+  aimBone(la, hand, wrist.sub(wpos(la)));
+  // (the hand's facing in the world, through its own parent: a forearm twist bone may stand between)
+  hand.quaternion.copy(wquat(hand.parent).invert().multiply(handQ));
+  hand.updateMatrixWorld(true);
+}
+
+/** Keep a joint's twist (about its own length, from the bind pose) inside maxDeg; its swing stays.
+    True when it turned the joint back. */
 function limitTwist(p, name, maxDeg) {
   const bone = p.bones[name];
   if (!p.bindQ) p.bindQ = new Map(p.bind.map(([b, , q]) => [b, q]));
@@ -497,16 +524,18 @@ function limitTwist(p, name, maxDeg) {
   const sw = rel.clone().multiply(tw.clone().invert());
   const ang = 2 * Math.acos(Math.min(1, tw.w));
   const lim = THREE.MathUtils.degToRad(maxDeg);
-  if (ang <= lim) return;
+  if (ang <= lim) return false;
   tw = new THREE.Quaternion().slerp(tw, lim / ang);
   bone.quaternion.copy(q0).multiply(sw).multiply(tw);
   bone.updateMatrixWorld(true);
+  return true;
 }
 
 /** Turn the head (and a little of the neck) toward a world point, never more than a neck can:
     each joint adds at most its share of 30 degrees on top of the capture. */
 /** Keep a joint inside its range: its swing from the bind pose (about anything but its own length)
-    is scaled back to max degrees. The same limits check-deform.mjs judges. */
+    is scaled back to max degrees. The same limits check-deform.mjs judges. True when it turned the
+    joint back. */
 function limitSwing(p, name, maxDeg) {
   const bone = p.bones[name];
   if (!p.bindQ) p.bindQ = new Map(p.bind.map(([b, , q]) => [b, q]));
@@ -519,10 +548,11 @@ function limitSwing(p, name, maxDeg) {
   const sw = rel.clone().multiply(tw.clone().invert());
   const ang = 2 * Math.acos(Math.min(1, Math.abs(sw.w)));
   const lim = THREE.MathUtils.degToRad(maxDeg);
-  if (ang <= lim) return;
+  if (ang <= lim) return false;
   const swc = new THREE.Quaternion().slerp(sw.w < 0 ? new THREE.Quaternion(-sw.x, -sw.y, -sw.z, -sw.w) : sw, lim / ang);
   bone.quaternion.copy(q0).multiply(swc).multiply(tw);
   bone.updateMatrixWorld(true);
+  return true;
 }
 
 function lookAt(p, pt, w, neck = 36, head = 27) {
@@ -706,8 +736,15 @@ export class People {
     pose(b, { [b.clip]: [0, 1] });
     const f0 = wpos(b.bones[`foot_${front}`]), back0 = wpos(b.bones[`foot_${lefty ? 'l' : 'r'}`]);
     const mid = wpos(b.bones[`foot_${front}`]).add(wpos(b.bones[`foot_${lefty ? 'l' : 'r'}`])).multiplyScalar(0.5);
-    // the feet straddle a point 2.9 ft off the plate's centre on his side, level with the plate
-    const want = P(lefty ? 2.95 : -2.95, 0.55, 0);
+    // the feet straddle a point 2.82 ft off the plate's centre on his side, level with the plate. That
+    // puts the midpoint of his hips 28 in off the plate's inside edge (36.5 in from its centre) a second
+    // before the release, where Statcast's batting stance measures the average big league hitter (MLB
+    // glossary, Batting Stance: distance off plate, the hips' midpoint from the inside edge, one second
+    // before release; the league average 28 in). At 2.95 ft his hips stood 29.6 in off it. A hitter
+    // Statcast has a stance for (the pack's stanceIn, pipeline/stance.mjs) stands as much nearer or
+    // further as his own distance off the plate is from 28 in (stance.js)
+    const sx = STANCE_X + stanceOff(this.facts.batter);
+    const want = P(lefty ? sx : -sx, 0.55, 0);
     b.root.position.x += want.x - mid.x; b.root.position.z += want.z - mid.z;
     b.root.updateMatrixWorld(true);
     ground(b);
@@ -1120,8 +1157,10 @@ export class People {
     // the way the ball leaves (catcher's view feet to the scene, as pitch.js setAfter launches it)
     let out = null;
     if (kind === 'play' || kind === 'foul') {
-      const la = THREE.MathUtils.degToRad(kind === 'play' ? ip?.la ?? 10 : m.ball === 'back' ? 62 : ip?.la ?? 8);
-      const sp = THREE.MathUtils.degToRad(kind === 'play' ? ip?.spray ?? 0 : m.ball === 'back' ? 180 + (lefty ? -12 : 12) : (lefty ? 1 : -1) * 54);
+      // (a foul leaves the way foul.js launches it: m.foul, from play.js motion)
+      const fl = m.foul || { la: 30, spray: 180 };
+      const la = THREE.MathUtils.degToRad(kind === 'play' ? ip?.la ?? 10 : fl.la);
+      const sp = THREE.MathUtils.degToRad(kind === 'play' ? ip?.spray ?? 0 : fl.spray);
       out = P(Math.cos(la) * Math.sin(sp), Math.cos(la) * Math.cos(sp), Math.sin(la)).normalize();
     }
     // over the top of a low or breaking pitch, under a high one
@@ -1602,8 +1641,9 @@ export class People {
         crouch(c, 1 - (c.clips.rise ? 0.8 : 0.5) * k, c.clips.rise ? 0 : 1);
         this.catcherArms(c, t);
       }
-      lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
+      lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tBall - pt.tRel))), 0.4);
       clavicles(c);
+      shoulderRange(c, 'l');
       deltoids(c);
     }
     if (u) {
@@ -1631,7 +1671,7 @@ export class People {
     const pt = this.pitch;
     // a ball met by the bat or the batter never reaches him: the reach stops at contact and eases off
     const missed = pt.after && t > pt.tRel + pt.after.t0 ? smooth(clamp01((t - pt.tRel - pt.after.t0) / 0.35)) : 0;
-    const catchT = pt.after ? Math.min(pt.tCatch, pt.tRel + pt.after.t0 + 0.05) : pt.tCatch;
+    const catchT = pt.after ? Math.min(pt.tCatch, pt.tRel + pt.after.t0 + 0.05) : pt.tBall;
     const ball = pt.catchPoint.clone().lerp(pt.aimGlove, missed);   // where the ball meets the glove
     // the target he sets: the aimed point, carried back to his glove plane
     const aim = pt.aimGlove;
@@ -1704,8 +1744,8 @@ export class People {
   wireBall() {
     const pt = this.pitch, m = this.m, b = this.batter;
     if (!pt || !b) return;
-    if (m.batter === 'swing' && ['play', 'back', 'pulled'].includes(m.ball)) {
-      pt.setAfter(m.ball, pt.f.T + (b.meetBall ?? m.contactShift), { inPlay: this.play && this.play.inPlay, lefty: b.lefty });
+    if (m.batter === 'swing' && ['play', 'back', 'pulled', 'tip'].includes(m.ball)) {
+      pt.setAfter(m.ball, pt.f.T + (b.meetBall ?? m.contactShift), { inPlay: this.play && this.play.inPlay, lefty: b.lefty, foul: m.foul });
     } else if (m.ball === 'hbp') {
       // where his hip is, in the catcher's view feet the flight uses
       pose(b, { [b.clip]: [Math.max(0, b.tContact - 0.2), 1] });

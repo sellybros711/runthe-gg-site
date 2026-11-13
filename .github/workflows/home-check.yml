@@ -1,0 +1,40 @@
+name: Home page check
+
+# The home page lists its games in a dozen hand-written places (meta, share text, JSON-LD, FAQ,
+# footer, cards, filter chips). scripts/newsletter/games.json is the list of live games. This holds
+# index.html to it, and fails if the page names or links a game that has not launched.
+# Runnable locally with the exact same command:
+#   node scripts/check-home-games.mjs
+#
+# It runs when the home page, the live-games list or the check itself changes. No secrets, no network,
+# no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/newsletter/games.json'
+      - 'scripts/check-home-games.mjs'
+      - '.github/workflows/home-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'scripts/newsletter/games.json'
+      - 'scripts/check-home-games.mjs'
+      - '.github/workflows/home-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: home-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-home-games.mjs

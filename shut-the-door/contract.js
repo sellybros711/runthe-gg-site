@@ -190,6 +190,84 @@ function zoneDist(x, zn, zoneFt) {
   const ox = Math.min(0, dx), oz = Math.min(0, dz);
   return -Math.sqrt(ox * ox + oz * oz);
 }
+/* THE ABS TOUCH (rules 9, 2026-11-02, the owner's call: "if the ball is touching the strike zone,
+   it should be overturned to a strike"). MLB's ABS rule: any part of the ball touching the zone is a
+   strike. absDist is the signed distance, in inches, from the ball's edge to the batter's bare zone
+   (the plate, 17 inches, and his height, zn 0..1): positive while any part of the ball touches it.
+   That is the bare zone grown by BALL_IN on every side, round at the corners (the ball's centre
+   within BALL_IN of the bare zone). On the sides it is zoneDist's own edge; on the top and the
+   bottom it reaches BALL_IN further; at a corner it is round, where zoneDist's is square. Only the
+   ABS's answer reads it. The umpire's call (calledStrikeP on zoneDist) is the 2024 data's own
+   geometry and does not move. BALL_IN is a baseball's radius (2.9 inches across). */
+const BALL_IN = 1.45;
+function absDist(x, zn, zoneFt) {
+  const dx = (GRID.ZONE_HALF_FT * 12 - BALL_IN) - Math.abs(x) * 12;
+  const dz = Math.min(zn, 1 - zn) * zoneFt * 12;
+  if (dx >= 0 && dz >= 0) return Math.min(dx, dz) + BALL_IN;
+  const ox = Math.min(0, dx), oz = Math.min(0, dz);
+  return BALL_IN - Math.sqrt(ox * ox + oz * oz);
+}
+/* THE DRAWN TOUCH (rules 10, 2026-11-03, the owner's call: a ball touching the zone as drawn is a
+   strike on a challenge). The grid draws the zone with GRID.ZONE_HALF_FT sides (the plate plus a
+   ball) and the batter's height (zn 0..1), and draws the ball at its size (BALL_IN a side). Rules 9
+   measured the touch from the bare plate, so on the sides a ball overlapping the drawn box by up to
+   a ball's width was an ABS ball, and at a corner a dot sitting on the drawn corner was one too.
+   touchDist is the signed distance, in inches, from the ball's edge to the drawn zone: zoneDist
+   plus BALL_IN, round at the corners. It is >= 0 exactly when the drawn ball touches the drawn box.
+   Only the ABS's answer reads it; the umpire's call stays on zoneDist. */
+function touchDist(x, zn, zoneFt) {
+  return zoneDist(x, zn, zoneFt) + BALL_IN;
+}
+/* THE REACH (rules 11, 2026-11-06, the owner's call after QA: a hit by pitch on a fastball just off
+   the black, the ball passing in front of the hitter). The outcome row is the cell's, and the inside
+   column runs out forever, so its real hit by pitch rate (the pitches that hit real hitters, far
+   inside) was played on balls an inch off the plate. From rules 11 a pitch is a hit by pitch only
+   when its crossing reaches the batter's body: insideFt (the ball's centre, feet from the plate's
+   centre toward his side) at least hbpReach(zn).
+   HBP.REACH: MEASURED on the hitter the 3D draws (pipeline/hbp_reach.mjs, 2026-11-05: every hitter
+   of the 30 packs, 272, posed in his take where people.js stands him, his feet straddling 2.95 ft
+   off the plate's centre): for each tenth of his zone's height (zn, from LO tenths), the nearest
+   any hitter's body comes to the plate's centre in that band or the band either side, less a ball's
+   radius (BALL_IN). In his zone's height his front hip and thigh, 2.14 ft (so 2.02 ft); his hands
+   above the zone, 1.48 ft; the helmet's bill at head height, 1.10 ft; his legs below, 2.01 ft.
+   Past the table's ends the end band's number holds. A ball short of it cannot touch him.
+   THE REACH, RULES 12 (2026-11-07, the owner's call: a hit by pitch rate nearer the real one). The
+   reach is where he stands: hbpReachAt(zn, stanceIn) is REACH12 at his height plus how much further
+   off the plate he stands than the league's average hitter, STANCE_IN (inches, his hips' midpoint
+   from the plate's inside edge a second before the release, Statcast's batting stance). stanceIn is
+   his own (the pack's batter record, Baseball Savant's batting stance, pipeline/stance.mjs); a hitter
+   Statcast has none for (null) stands at STANCE_IN, the reach REACH12 itself.
+   REACH12: MEASURED on the hitter the 3D draws as rules 11's was (pipeline/hbp_reach.mjs, 2026-11-06,
+   the 272 hitters of the 30 packs, each where people.js stands him: his feet 2.82 ft off the plate's
+   centre, Statcast's 28 in, moved by his own stance), every vertex of his skinned body, his arms and
+   his batting gloves included (the bat left out), less his stance's offset, so the table is his body
+   against where he stands. The nearest point is a leg through his zone's height (front thigh, 2.01
+   ft, so 1.89 ft), the trunk at zn 0.8, an arm from zn 0.9 to 1.2 (1.32 to 1.0 ft) and the head and
+   helmet above (0.84 ft). His hands sit higher and further back than his upper arm: never the nearest. */
+const HBP = Object.freeze({
+  LO: -11,
+  REACH: Object.freeze([1.89, 1.88, 1.88, 1.88, 1.91, 1.98, 2.29, 2.22, 2.16, 2.04, 2.02, 2.02, 2.02, 2.02, 2.04, 2.08,
+    2.14, 2.17, 2.13, 1.45, 1.35, 1.26, 1.18, 1.13, 1.06, 0.98, 0.97, 0.97, 0.97, 1, 1.01, 1.05]),
+  STANCE_IN: 28,
+  REACH12: Object.freeze([1.76, 1.75, 1.75, 1.75, 1.78, 1.85, 2.16, 2.09, 2.03, 1.91, 1.89, 1.89, 1.89, 1.89, 1.91, 1.95,
+    2.01, 2.04, 2, 1.32, 1.22, 1.13, 1.05, 1, 0.93, 0.85, 0.84, 0.84, 0.84, 0.87, 0.88, 0.92]),
+});
+function hbpReach(zn) {
+  const i = Math.max(0, Math.min(HBP.REACH.length - 1, Math.floor(zn * 10) - HBP.LO));
+  return HBP.REACH[i];
+}
+/* Rules 12: the reach for a hitter who stands stanceIn inches off the plate (null: the league's
+   average hitter, STANCE_IN). Never nearer than the inside column's edge (GRID.ZONE_HALF_FT, the zone
+   as drawn): a hit by pitch is the inside column's, as under rules 11, whose reach was past that edge
+   at every height. It binds only head high and above the zone for a hitter who crowds the plate (his
+   stance under about 24 in). */
+function hbpReachAt(zn, stanceIn) {
+  const i = Math.max(0, Math.min(HBP.REACH12.length - 1, Math.floor(zn * 10) - HBP.LO));
+  return Math.max(GRID.ZONE_HALF_FT, HBP.REACH12[i] + (stanceIn == null ? 0 : (stanceIn - HBP.STANCE_IN) / 12));
+}
+/* How far inside the ball's centre crossed, feet: toward the batter's side positive (catcher's view:
+   a right handed batter stands at -x). */
+function insideFt(x, bats) { return bats === 'L' ? x : -x; }
 function calledStrikeP(d) {
   const D = UMPIRE.D, P = UMPIRE.P;
   if (d <= D[0]) return P[0];
@@ -202,7 +280,9 @@ function calledStrikeP(d) {
 /* ABS CHALLENGES (rules 4, MLB's 2026 rules). Each side has PER_SIDE a game
    (here, the outing); a challenge that wins is kept. Only a called ball or
    strike, only right away (before the next pitch). The ABS zone decides: the
-   ball's actual location against the zone above (zoneDist >= 0 is a strike).
+   ball's actual location against the zone above (zoneDist >= 0 is a strike; from
+   rules 9, absDist >= 0: the ball touching the bare zone; from rules 10, touchDist >= 0:
+   the ball touching the zone as drawn).
    The pitcher's side challenges a called ball with the player's button. The
    batter challenges a called strike by BATTER, a MODEL fitted to sourced
    rates: MLB's 2025 spring training ABS test (288 games: batters challenged
@@ -443,14 +523,20 @@ const OUTING_KEY = 'std_outing_v1';
 
 const SHARE_TITLE = 'Shut The Door';
 const SHARE_URL = 'runthe.gg/shut-the-door';
+/* The share text's link line. SHARE_URL stays short for the card image (card.js
+   draws it). The text gets the full https:// form with the trailing slash, as
+   arcade/share.js does: messages apps only make "https://runthe.gg/..." a
+   tappable link, and the slash is the canonical page, so the preview unfurls
+   with no redirect hop. */
+const SHARE_LINK = 'https://' + SHARE_URL + '/';
 
 const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
-  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
+  UMPIRE, zoneDist, BALL_IN, absDist, touchDist, HBP, hbpReach, hbpReachAt, insideFt, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
-  SHARE_TITLE, SHARE_URL,
+  SHARE_TITLE, SHARE_URL, SHARE_LINK,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

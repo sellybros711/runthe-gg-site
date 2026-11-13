@@ -19,6 +19,11 @@
  *                  match the board, or this throws: a transposed digit rules out the wrong
  *                  man in silence.
  *
+ * AND A QUARTERBACK WHO IS NOT HIS TEAM'S STARTER IS OFF (the owner, 2026-11-12), coded
+ * `{ st: 'off', roster: 'QB2' }` the way the NFL file codes him. Read off the season store by
+ * `roles.mjs`, which says what the box scores can and cannot see. Mid-week this is
+ * availability, never a price: the board he was priced on does not move.
+ *
  * AND THE ENTRANT CAN ALWAYS SWAP HIM THEMSELVES, which is the owner's answer to the gap:
  * any man in a lineup can be swapped until his game kicks off (128's `cfb_fantasy_swap`).
  * This file is what makes the page able to SAY why somebody might want to.
@@ -29,7 +34,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { roster, rosterOf } from './espn.mjs';
-import { DATA } from './season.mjs';
+import { DATA, loadStore } from './season.mjs';
+import { quarterbacks, backupQBs } from './roles.mjs';
 
 const say = (...a) => process.stderr.write(a.join(' ') + '\n');
 
@@ -60,13 +66,17 @@ export function desig(status) {
   return null;
 }
 
-/** The report, off the pool and a fresh read of every slate team's roster. */
-export function buildReport(pool, rosters, rulings) {
+/** The report, off the pool and a fresh read of every slate team's roster. `backups` is
+    `backupQBs()`'s answer, or nothing. */
+export function buildReport(pool, rosters, rulings, backups = null) {
   const men = {};
   for (const m of pool.pool) {
     const r = rosters.get(m.team_id) && rosters.get(m.team_id).get(m.player_id);
     if (r && r.off) {
       men[m.player_id] = { st: r.off, d: r.inj && r.inj.detail || null };
+    } else if (backups && backups.has(m.player_id)) {
+      /* Healthy and on the roster, and still not playing quarterback this week. */
+      men[m.player_id] = { st: 'off', roster: 'QB2' };
     } else if (r && r.inj && desig(r.inj.status)) {
       men[m.player_id] = { st: desig(r.inj.status), d: r.inj.detail || null };
     } else if (m.missed_last) {
@@ -88,7 +98,8 @@ if (process.argv[1] && process.argv[1].endsWith('injuries.mjs')) {
     /* A roster that cannot be read keeps last time's answer rather than clearing it. */
     if (j) rosters.set(tid, rosterOf(j));
   }
-  const report = buildReport(pool, rosters, readRulings(pool.season, pool.week, pool));
+  const backups = backupQBs(quarterbacks(loadStore(pool.season), pool.week), pool.pool);
+  const report = buildReport(pool, rosters, readRulings(pool.season, pool.week, pool), backups);
   const out = path.join(DATA, `injuries_${pool.season}_w${pool.week}.json`);
   const prev = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, 'utf8')) : null;
   if (prev && rosters.size < new Set(pool.pool.map((m) => m.team_id)).size) {

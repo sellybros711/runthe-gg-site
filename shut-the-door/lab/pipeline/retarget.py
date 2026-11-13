@@ -128,13 +128,13 @@ def apply_bvh(arm, path, clip, a, b, mirror=False, hands='relaxed', speed=1.0):
     return apply_src(arm, import_bvh(path), CMU, path, clip, a, b, mirror, hands, speed)
 
 
-def apply_fbx(arm, path, clip, a, b, mirror=False, hands='relaxed', speed=2.0, fingers=False):
+def apply_fbx(arm, path, clip, a, b, mirror=False, hands='relaxed', speed=2.0, fingers=False, inplace=False):
     """A Mixamo clip (keyed at 60 fps): frames a..b, every second frame by default (our clips run
     at 30 fps)."""
-    return apply_src(arm, import_fbx(path), MIXAMO, path, clip, a, b, mirror, hands, speed)
+    return apply_src(arm, import_fbx(path), MIXAMO, path, clip, a, b, mirror, hands, speed, inplace)
 
 
-def apply_src(arm, src, spec, path, clip, a, b, mirror=False, hands='relaxed', speed=1.0):
+def apply_src(arm, src, spec, path, clip, a, b, mirror=False, hands='relaxed', speed=1.0, inplace=False):
     scene = bpy.context.scene
     MAPS, BLENDS = spec['map'], spec['blend']
     face_minus_y(src, spec['thighs'])
@@ -234,6 +234,11 @@ def apply_src(arm, src, spec, path, clip, a, b, mirror=False, hands='relaxed', s
                 pos = base.translation.copy()
                 if t == 'pelvis':
                     pos = mir_vec(src_world(get(spec['hip'])).translation * k)
+                    if inplace:
+                        # in place: the pelvis keeps its height and sway but not its travel along the ground
+                        # (the scene moves the body on the plan's track)
+                        if i == 0: pos0 = pos.copy()
+                        pos.x, pos.y = pos0.x, pos0.y
                 M = Matrix.Translation(pos) @ q.to_4x4()
                 if p is None:
                     B = L.inverted() @ M

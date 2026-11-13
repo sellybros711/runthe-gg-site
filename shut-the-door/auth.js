@@ -87,12 +87,13 @@
     email: session && session.user && session.user.email,
     userId: session && session.user && session.user.id,
     name: profile && profile.username,
+    initials: profile && profile.avatar_initials,
   });
 
   async function loadProfile() {
     if (!session) { profile = null; return; }
     try {
-      const { data } = await sb.from('profiles').select('username').eq('id', session.user.id).maybeSingle();
+      const { data } = await sb.from('profiles').select('username, avatar_initials').eq('id', session.user.id).maybeSingle();
       profile = data || null;
     } catch (e) { profile = null; }
   }
@@ -250,6 +251,11 @@
     p_day: row.day, p_run: row.run, p_index: row.index, p_scenario: row.scenarioId, p_calls: row.calls,
     p_outcome: row.outcome, p_pitches: row.pitches, p_score: row.score,
   });
+  /* The box line beside a kept outing (supabase/166_shut_the_door_board_stats.sql): the daily's,
+     and one finished Survivor situation's. The server keeps the first and checks it against the
+     row's own pitches. {data} or {error}. */
+  const submitStats = (row) => act('shutdoor_post_stats', { p_day: row.day, p_stats: row.stats });
+  const survivorStats = (row) => act('shutdoor_survivor_stats', { p_day: row.day, p_run: row.run, p_index: row.index, p_stats: row.stats });
   async function survivorBoard(day, limit) {
     const r = await rpc('shutdoor_survivor_board', { p_day: day, p_limit: limit || 50 });
     return Array.isArray(r) ? r : null;
@@ -260,11 +266,65 @@
     p_pitches: row.pitches, p_score: row.score, p_percentile: row.percentile,
   });
 
+  /* The plate (supabase/162_shut_the_door_plates.sql): {plate, unlocked, initials}, the unlocks read
+     from the caller's stored saves. setPlate('') goes back to the neutral plate. */
+  const plates = () => rpc('shutdoor_my_plates', {}, true);
+  const setPlate = (key) => act('shutdoor_set_plate', { p_plate: key || '' });
+
+  /* ---------------- the voice of the ump (supabase/165_shut_the_door_ump_voices.sql) ---------------- */
+
+  const UMP_BUCKET = 'shutdoor-ump-voices';
+  /* every approved clip [{id, line, path, credit}], signed out too. null on failure. */
+  async function umpApproved() {
+    const r = await rpc('shutdoor_ump_approved', {});
+    return Array.isArray(r) ? r : null;
+  }
+  /* the caller's own clips still waiting for review (RLS shows nothing else) */
+  async function umpMine() {
+    if (!sb || !session) return null;
+    try {
+      const r = await sb.from('shutdoor_ump_clips').select('id, line_id, created_at').eq('status', 'pending');
+      return r && !r.error && Array.isArray(r.data) ? r.data : null;
+    } catch (e) { return null; }
+  }
+  /* the row first (the server sets its path and checks the consent), then the file at that path.
+     {data: {id}} or {error}. A row whose file never lands is dropped by the server after 15 minutes. */
+  async function umpSubmit(c) {
+    if (!sb) return { error: 'Accounts are not available right now.' };
+    if (!session) return { error: 'Sign in first.' };
+    try {
+      const ins = await sb.from('shutdoor_ump_clips').insert({
+        user_id: session.user.id, line_id: c.line, consent_text: c.consent, consent_version: c.consentVersion,
+        credit: c.credit || null, mime: c.mime, bytes: c.bytes, duration_ms: c.ms, storage_path: 'pending',
+      }).select('id, storage_path').single();
+      if (ins.error || !ins.data) return { error: (ins.error && ins.error.message) || 'That did not send.' };
+      const up = await sb.storage.from(UMP_BUCKET).upload(ins.data.storage_path, c.blob, { contentType: c.mime, upsert: false });
+      if (up.error) return { error: up.error.message || 'The file did not upload.' };
+      return { data: { id: ins.data.id } };
+    } catch (e) { return { error: (e && e.message) || 'That did not send.' }; }
+  }
+  /* {path: signed url} for the paths the caller may read (approved, or the owner). null on failure. */
+  async function umpUrls(paths, secs) {
+    if (!sb || !paths || !paths.length) return null;
+    try {
+      const r = await sb.storage.from(UMP_BUCKET).createSignedUrls(paths, secs || 3600);
+      if (!r || r.error || !Array.isArray(r.data)) return null;
+      const out = {};
+      r.data.forEach((x) => { if (x && x.signedUrl && !x.error) out[x.path] = x.signedUrl; });
+      return out;
+    } catch (e) { return null; }
+  }
+  const umpOwner = async () => (await rpc('shutdoor_ump_owner', {}, true)) === true;
+  const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 100 });
+  const umpReview = (id, status) => act('shutdoor_ump_review', { p_id: id, p_status: status });
+
   window.STD_AUTH = {
     API_VERSION: 1,
+    umpApproved, umpMine, umpSubmit, umpUrls, umpOwner, umpQueue, umpReview,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,
-    vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, archiveSubmit,
+    vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, submitStats, survivorStats, archiveSubmit,
+    plates, setPlate,
   };
 })();

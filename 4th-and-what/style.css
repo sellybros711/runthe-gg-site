@@ -6,9 +6,6 @@
   --teal: #19c6a7; --gold: #f5b72a; --gold2: #d99a10; --red: #ef4b3f; --blue: #3d8bff; --green: #36d399;
   --field: #2a6534;
 }
-:root[data-theme="light"] {
-  --bg: #eef2f6; --panel: #ffffff; --panel2: #f3f6fa; --edge: #d6dee8; --ink: #122033; --dim: #5d6f84;
-}
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
 body { overscroll-behavior: none; min-height: 100dvh; }
@@ -20,7 +17,6 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 
 /* ---------- the top bar ---------- */
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; padding: max(8px, env(safe-area-inset-top)) 16px 0; background: linear-gradient(#0b1828, #0a1420); border-bottom: 1px solid var(--edge); min-height: 58px; }
-:root[data-theme="light"] .topbar { background: #0f1c2b; }
 .logo { display: flex; align-items: baseline; text-decoration: none; font: italic 900 30px/1 'Barlow Condensed', 'Inter', sans-serif; letter-spacing: .01em; padding-bottom: 8px; white-space: nowrap; }
 .logo .l4 { color: var(--gold); }
 .logo .lamp { color: var(--teal); margin: 0 2px; }
@@ -380,34 +376,31 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 #hDaily.live { cursor: pointer; }
 #hDaily.live:hover .btn.gold, #hDaily.live:focus-visible .btn.gold { filter: brightness(1.08); }
 #hDaily:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
-.bannergo { position: absolute; z-index: 2; left: 0; right: 0; top: 52%; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
-.bannergo .btn { flex: none; width: auto; max-width: 80%; align-self: center; padding: 12px 40px; box-shadow: 0 3px 0 var(--gold2), 0 8px 24px rgba(0, 0, 0, .45); }
-.bannergo .dnum { padding: 5px 12px; border-radius: 999px; background: rgba(6, 14, 24, .75); color: #fff; font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+/* the daily's card, bottom right of the banner (the owner, 2026-11-06) */
+.bannergo { position: absolute; z-index: 2; right: 14px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; max-width: min(340px, 62%);
+  padding: 12px 14px; border-radius: 14px; background: rgba(6, 14, 24, .82); border: 1px solid rgba(245, 183, 42, .45); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); text-align: right; pointer-events: none; }
+.bannergo .btn { flex: none; width: auto; margin-top: 6px; padding: 10px 28px; box-shadow: 0 3px 0 var(--gold2); }
+.bannergo .dnum { color: var(--gold); font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.bannergo .hdsit { color: #fff; font: italic 900 30px/1 'Barlow Condensed', 'Inter', sans-serif; text-transform: uppercase; }
+.bannergo .hdmeta { color: #cfd9e4; font-size: 13px; font-weight: 700; }
 .btn.big { min-height: 52px; font-size: 17px; padding: 12px 22px; justify-self: start; }
 .view.daily { grid-template-columns: minmax(0, 1fr); }
-.dintro { max-width: 640px; margin: 0 auto; text-align: center; display: grid; gap: 6px; justify-items: center; padding: 18px 0 30px; }
-.dintro .kicker { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
-.dintro .dteams { margin: 0; font: italic 900 34px/1.05 'Barlow Condensed', sans-serif; }
-.dintro .dround { margin: 0; color: var(--dim); font-weight: 700; }
-.dintro .dbug { display: inline-flex; gap: 14px; background: var(--panel2); border: 1px solid var(--edge); border-radius: 10px; padding: 8px 14px; font-weight: 800; margin: 6px 0; }
-.dintro h1 { margin: 6px 0 0; font: italic 900 72px/1 'Barlow Condensed', sans-serif; color: var(--gold); }
-.dintro .dspot { margin: 0 0 10px; font-size: 20px; font-weight: 800; }
-.dintro .btn.big { justify-self: center; }
-.dintro .dstats { margin: 4px 0 0; color: var(--teal); font-weight: 800; }
-.ddone { margin-top: 12px; background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 14px 16px; text-align: left; width: 100%; box-sizing: border-box; }
+.ddone { margin-top: 12px; background: rgba(9, 22, 36, .85); border: 1px solid rgba(25, 198, 167, .4); border-radius: 14px; padding: 14px 16px; text-align: left; width: 100%; box-sizing: border-box; }
 .ddone h3 { margin: 10px 0 4px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
 .ddone p { margin: 0; line-height: 1.45; }
 .dmine { font-weight: 800; }
 .dverdict { font-weight: 800; margin-top: 4px !important; }
-.dintro .src { margin-top: 14px; font-size: 12px; color: var(--dim); }
 .rescard .rdaily { margin: 6px 0 8px; padding: 8px 10px; border-radius: 10px; background: rgba(245, 183, 42, .1); text-align: left; font-size: 13px; line-height: 1.4; }
 .rescard .rdaily p { margin: 0; }
 .rescard .rdhead { font-weight: 800; color: var(--gold); margin-bottom: 4px !important; }
 .rescard .rdstats { color: var(--teal); font-weight: 800; margin-top: 4px !important; }
 @media (max-width: 700px) {
-  .bannergo { top: 46%; gap: 6px; }
-  .bannergo .dnum { font-size: 11px; }
-  .dintro h1 { font-size: 58px; }
+  .bannergo { right: 8px; bottom: 8px; padding: 8px 10px; max-width: 70%; gap: 2px; }
+  .bannergo .dnum { font-size: 10px; }
+  .bannergo .hdsit { font-size: 22px; }
+  .bannergo .hdmeta { font-size: 11px; }
+  .bannergo .btn { padding: 7px 18px; font-size: 14px; min-height: 0; }
+  .banner.live .heroname { display: none; }
 }
 
 /* ---------- every snap you ran (flow.js) ---------- */
@@ -466,3 +459,288 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 .levelrow { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 4px 0 10px; }
 .levelrow .seg button { padding: 7px 12px; font-weight: 800; font-size: 13px; }
 .levelrow .seg button[aria-pressed="true"] { background: var(--teal); color: #04241e; border-radius: 8px; }
+
+/* ---------- Play's first screen, after the owner's mockup (2026-11-06) ----------
+   A night stadium: lights up top, teal on our side and gold on theirs, the
+   logo in an angled frame, the spot on a strip of field, turf tiles, Play now. */
+.pick.arena { position: relative; overflow: hidden; color: #fff; border: 1px solid #14304a; border-radius: 18px; padding: 26px 16px 0;
+  background:
+    radial-gradient(40% 60% at 0% 75%, rgba(25, 198, 167, .28), transparent 70%),
+    radial-gradient(40% 60% at 100% 75%, rgba(245, 183, 42, .26), transparent 70%),
+    radial-gradient(60% 40% at 50% 0%, rgba(120, 190, 255, .16), transparent 70%),
+    linear-gradient(#071321, #050c16 60%, #06140f); }
+.arena::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 34%; pointer-events: none; z-index: 0;
+  background: linear-gradient(transparent, rgba(16, 64, 34, .55)), repeating-linear-gradient(90deg, transparent 0 12%, rgba(255, 255, 255, .04) 12% 12.4%); }
+.arena > * { position: relative; z-index: 1; }
+.arena .lights { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.arena .lights i { position: absolute; top: 18px; width: 150px; height: 62px; border-radius: 12px; opacity: .85;
+  background: radial-gradient(circle, #e8f4ff 38%, transparent 42%) 0 0 / 15px 15px; filter: drop-shadow(0 0 14px rgba(170, 215, 255, .9)); }
+.arena .lights i:first-child { left: 4%; transform: rotate(-8deg); }
+.arena .lights i:last-child { right: 4%; transform: rotate(8deg); }
+.arena .xo { position: absolute; top: 40%; width: 110px; fill: none; stroke-width: 4; stroke-linecap: round; opacity: .7; z-index: 0; }
+.arena .xo.left { left: 2%; stroke: var(--teal); filter: drop-shadow(0 0 6px rgba(25, 198, 167, .8)); }
+.arena .xo.right { right: 2%; stroke: var(--gold); filter: drop-shadow(0 0 6px rgba(245, 183, 42, .8)); }
+
+.plogo { display: inline-flex; flex-direction: column; align-items: center; margin: 6px auto 16px; }
+.plogo h1 { margin: 0; padding: 10px 46px 12px; white-space: nowrap; font: italic 900 clamp(40px, 7.4vw, 92px)/1 'Barlow Condensed', 'Inter', sans-serif;
+  background: linear-gradient(#0b1a2b, #060f1b) padding-box, linear-gradient(90deg, var(--teal), #8fe7ff 45%, var(--gold)) border-box;
+  border: 3px solid transparent; border-radius: 14px; clip-path: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%);
+  filter: drop-shadow(0 0 18px rgba(25, 198, 167, .35)); }
+.plogo .p4 { background: linear-gradient(#fff, #9fb2c8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.plogo .pand { font-size: .55em; color: #fff; vertical-align: .18em; }
+.plogo .pwhat { background: linear-gradient(#ffe27a, var(--gold) 55%, #c98a08); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.plogo .kicker { margin: -6px 0 0; padding: 6px 28px; color: var(--gold); font: italic 900 clamp(15px, 2vw, 22px)/1 'Barlow Condensed', sans-serif; letter-spacing: .06em;
+  text-transform: uppercase; background: #08121d; border: 2px solid rgba(245, 183, 42, .7); clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%); }
+
+.pspot { max-width: 1000px; margin: 0 auto; padding: 14px 18px 10px; border: 1px solid rgba(25, 198, 167, .35); border-radius: 16px; background: rgba(6, 16, 28, .65); }
+.pspoth { margin: -28px auto 6px; width: max-content; padding: 4px 26px; background: #07111c; border: 2px solid rgba(245, 183, 42, .8); color: var(--gold);
+  font: italic 900 18px/1.2 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .05em; clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%); }
+.pspotk { margin: 0 0 36px; text-align: left; color: #8fe7ff; font: italic 900 18px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+.strip { display: grid; grid-template-columns: 64px minmax(0, 1fr) 64px; height: 84px; cursor: pointer; touch-action: none; user-select: none; outline: none; }
+.strip:focus-visible { box-shadow: 0 0 0 3px var(--gold); border-radius: 10px; }
+.strip .ez { display: grid; place-items: center; font: italic 900 15px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; text-align: center; }
+.strip .ez.own { color: #8fe7ff; background: rgba(25, 198, 167, .12); border: 2px solid var(--teal); clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 100%, 0 0); border-radius: 8px 0 0 8px; box-shadow: inset 0 0 18px rgba(25, 198, 167, .35); }
+.strip .ez.opp { color: #ffe27a; background: rgba(245, 183, 42, .12); border: 2px solid var(--gold); clip-path: polygon(0 0, 70% 0, 100% 100%, 0 100%); border-radius: 0 8px 8px 0; box-shadow: inset 0 0 18px rgba(245, 183, 42, .35); }
+.strip .turf { position: relative; border-top: 2px solid rgba(255, 255, 255, .6); border-bottom: 2px solid rgba(255, 255, 255, .6);
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .55) 0 2px, transparent 2px 10%), repeating-linear-gradient(90deg, rgba(255, 255, 255, .22) 0 1px, transparent 1px 2%),
+    linear-gradient(#2e7a3c, #1f5c2b); }
+.strip .ynum span { position: absolute; bottom: 6px; transform: translateX(-50%); font: 900 22px/1 'Barlow Condensed', sans-serif; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+.strip .ball { position: absolute; top: 22px; width: 20px; height: 30px; margin-left: -10px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #b86a3a, #6d3416);
+  box-shadow: 0 0 0 4px rgba(25, 198, 167, .5), 0 0 18px var(--teal); transition: left .12s; }
+.strip .ball::after { content: ''; position: absolute; left: 50%; top: 7px; bottom: 7px; width: 2px; margin-left: -1px; background: #fff; opacity: .85; }
+.strip .gain { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px; background: var(--gold); box-shadow: 0 0 12px var(--gold); transition: left .12s; }
+.strip .tag { position: absolute; top: -40px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; padding: 3px 9px; border-radius: 7px; background: #07111c;
+  font: 900 12px/1.15 'Barlow Condensed', sans-serif; text-transform: uppercase; white-space: nowrap; transition: left .12s; }
+.strip .tag small { font-size: 10px; font-weight: 800; }
+.strip .ballTag { border: 2px solid var(--teal); color: #fff; transform: translateX(calc(-100% + 12px)); }
+.strip .gainTag { border: 2px solid var(--gold); color: #fff; transform: translateX(-12px); }
+.strip .toGo { position: absolute; top: 2px; z-index: 2; display: flex; justify-content: center; font: italic 900 15px/1 'Barlow Condensed', sans-serif; color: #fff; border-bottom: 2px solid #fff; padding-bottom: 2px;
+  text-transform: uppercase; transition: left .12s, width .12s; white-space: nowrap; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+
+.arena .dists { grid-template-columns: repeat(3, minmax(0, 250px)); gap: 16px; margin: 20px auto 0; max-width: 820px; }
+.arena .dist { border: 2px solid var(--teal); border-radius: 12px; padding: 12px 8px 10px; box-shadow: 0 0 14px rgba(25, 198, 167, .35), inset 0 0 0 2px rgba(0, 0, 0, .25);
+  background: repeating-linear-gradient(90deg, transparent 0 18%, rgba(255, 255, 255, .06) 18% 19%), linear-gradient(#2f7a3d, #1d5428); clip-path: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0 50%); }
+.arena .dist small { color: #fff; font: 900 20px/1 'Barlow Condensed', sans-serif; letter-spacing: .04em; }
+.arena .dist b { font-size: 64px; color: #ffd34a; text-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+.arena .dist[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 22px rgba(245, 183, 42, .8), inset 0 0 0 2px rgba(255, 220, 120, .4); }
+.arena .levelrow { margin: 18px auto 0; padding: 6px; width: max-content; max-width: 100%; border-radius: 14px; background: rgba(6, 16, 28, .8); border: 1px solid #1d3a55; align-items: center; }
+.arena .levelrow .seg { background: transparent; border: 0; }
+.arena .levelrow .seg button { color: #e9eff6; padding: 8px 14px; font-size: 14px; }
+.arena .lsep { width: 1px; height: 26px; background: #2a4a66; }
+.playnow { display: inline-flex; align-items: center; justify-content: center; gap: 14px; margin: 22px auto 0; padding: 12px 70px; min-width: min(460px, 92%);
+  font: italic 900 clamp(32px, 4vw, 48px)/1 'Barlow Condensed', sans-serif; text-transform: uppercase; color: #141000; border: 3px solid #ffe27a;
+  background: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c); clip-path: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%);
+  filter: drop-shadow(0 0 22px rgba(245, 183, 42, .65)); cursor: pointer; }
+.playnow svg { width: .8em; height: .8em; fill: #141000; }
+.playnow:active { transform: translateY(2px); }
+.arena .spotline { margin: 14px 0 0; color: #9fb2c8; }
+.arena .pmore .field span { color: #9fb2c8; }
+.pfeat { display: grid; grid-template-columns: repeat(4, 1fr); margin: 22px -16px 0; padding: 14px 10px; border-top: 1px solid rgba(25, 198, 167, .35); background: rgba(4, 10, 18, .7); }
+.pfeat button { display: flex; align-items: center; justify-content: center; gap: 10px; background: none; border: 0; border-left: 1px solid #1d3a55; color: #fff; cursor: pointer;
+  font: italic 900 17px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; padding: 6px; }
+.pfeat button:first-child { border-left: 0; }
+.pfeat svg { width: 26px; height: 26px; fill: var(--gold); flex: none; }
+.pfeat button:nth-child(2) svg, .pfeat button:nth-child(3) svg { fill: var(--teal); }
+.pfeat button:hover { color: var(--gold); }
+@media (max-width: 760px) {
+  .pick.arena { padding: 20px 10px 0; }
+  .arena .xo, .arena .lights i:last-child { display: none; }
+  .arena .lights i:first-child { left: 50%; margin-left: -75px; transform: none; opacity: .35; }
+  .plogo h1 { padding: 8px 24px 10px; }
+  .pspot { padding: 12px 8px 8px; }
+  .pspotk { margin-bottom: 34px; font-size: 15px; }
+  .strip { grid-template-columns: 34px minmax(0, 1fr) 34px; height: 70px; }
+  .strip .ez { font-size: 10px; }
+  .strip .ynum span { font-size: 14px; }
+  .strip .ynum span:nth-child(even) { display: none; }
+  .strip .tag { font-size: 10px; padding: 2px 6px; }
+  .strip .toGo { font-size: 11px; top: 1px; }
+  .arena .dists { gap: 10px; }
+  .arena .dist small { font-size: 13px; }
+  .arena .dist b { font-size: 46px; }
+  .arena .levelrow { flex-direction: column; width: 100%; }
+  .arena .lsep { display: none; }
+  .arena .levelrow .seg button { padding: 7px 9px; font-size: 13px; }
+  .playnow { padding: 10px 30px; }
+  .pfeat { grid-template-columns: 1fr 1fr; gap: 6px 0; margin: 18px -10px 0; }
+  .pfeat button { font-size: 14px; border-left: 0; }
+}
+
+/* ---------- the Studio, after the owner's mockup (2026-11-06) ----------
+   The night stadium of Play's first screen, the setup in a command deck,
+   glass panels, a field that glows and one dock for tools and actions. The
+   Studio is a stadium at night. */
+.view.studio { --panel: #0b1a2b; --panel2: #10243a; --edge: #1f3d5a; --ink: #e9eff6; --dim: #8fa2b8; color: var(--ink);
+  padding: 34px 14px 14px; border-radius: 18px; border: 1px solid #14304a;
+  background: radial-gradient(40% 50% at 0% 100%, rgba(25, 198, 167, .18), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(245, 183, 42, .16), transparent 70%),
+    radial-gradient(60% 30% at 50% 0%, rgba(120, 190, 255, .12), transparent 70%), linear-gradient(#071321, #050c16 70%, #06140f); }
+.view.studio .panel { background: rgba(9, 22, 36, .85); border: 1px solid rgba(25, 198, 167, .4); box-shadow: inset 0 0 22px rgba(25, 198, 167, .08); }
+.view.studio .seg { background: rgba(4, 12, 22, .8); border-color: #1d3a55; }
+.view.studio .panel > .seg button.on { color: var(--teal); }
+.deck { position: relative; align-items: center; gap: 14px; padding: 22px 20px 16px; border: 2px solid transparent; border-radius: 16px;
+  background: linear-gradient(#0b1a2b, #08131f) padding-box, linear-gradient(90deg, var(--teal), #8fe7ff 30%, var(--gold) 70%, var(--teal)) border-box;
+  box-shadow: 0 0 24px rgba(25, 198, 167, .25); }
+.deck .decklabel { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); padding: 5px 40px; white-space: nowrap; background: #08121d;
+  border: 2px solid var(--gold); color: #fff; font: italic 900 17px/1 'Barlow Condensed', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); box-shadow: 0 0 14px rgba(245, 183, 42, .4); }
+.deck .decklabel i { color: var(--gold); margin: 0 10px; letter-spacing: -2px; }
+.deck .field > span { display: flex; align-items: center; gap: 6px; color: #fff; font: 900 16px/1 'Barlow Condensed', sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.deck .field > span svg { width: 18px; height: 18px; fill: var(--gold); color: var(--gold); }
+.deck input, .deck select { background: #0a1828; border: 2px solid rgba(25, 198, 167, .55); color: #fff; font-weight: 700; box-shadow: inset 0 0 10px rgba(25, 198, 167, .15); }
+.deck #sName { font: italic 900 22px/1 'Barlow Condensed', sans-serif; letter-spacing: .02em; }
+.deck .star { background: #0a1828; border: 2px solid rgba(25, 198, 167, .55); color: #dfe8f1; margin-bottom: 0; }
+.deck .star[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); }
+.deck .btn.gold { margin-bottom: 0; font: italic 900 20px/1 'Barlow Condensed', sans-serif; padding: 10px 20px; }
+.deck .decklevel { display: grid; gap: 6px; margin-left: auto; padding-left: 14px; border-left: 2px solid rgba(245, 183, 42, .6); }
+.deck .decklevel .seg button { padding: 6px 12px; color: #e9eff6; font-weight: 800; }
+.deck .decklevel .seg button[aria-pressed="true"] { background: var(--teal); color: #04241e; border-radius: 8px; }
+.view.studio .suggest { color: var(--dim); }
+.view.studio .lib .libsearch { display: flex; align-items: center; gap: 8px; margin: 10px 0; padding: 0 10px; border: 1px solid #2a4a66; border-radius: 9px; background: #07111c; }
+.view.studio .lib .libsearch svg { width: 18px; height: 18px; fill: var(--dim); flex: none; }
+.view.studio .lib .libsearch input { flex: 1; min-width: 0; border: 0; background: none; color: #fff; padding: 9px 0; font-size: 14px; outline: none; }
+.view.studio .libitem { background: rgba(16, 36, 58, .8); border-color: #1d3a55; color: #fff; }
+.view.studio .libitem b { font: 900 17px/1.1 'Barlow Condensed', sans-serif; }
+.view.studio .libitem[aria-pressed="true"] { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal), 0 0 14px rgba(25, 198, 167, .4); }
+.view.studio .addform { width: 100%; min-height: 40px; font: 900 16px/1 'Barlow Condensed', sans-serif; letter-spacing: .03em; color: #fff; background: rgba(16, 36, 58, .9); border-color: #2a4a66; }
+.view.studio .fieldwrap { border: 2px solid #49e07a; border-radius: 14px; box-shadow: 0 0 0 1px rgba(73, 224, 122, .3), 0 0 26px rgba(73, 224, 122, .35); }
+.view.studio .hint { color: var(--dim); }
+.dock { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dock .viewrow { order: -1; color: var(--dim); }
+.dock .viewrow .seg button.on { background: var(--teal); color: #04241e; border-radius: 7px; }
+.view.studio .toolbar { justify-content: center; margin-bottom: 6px; padding: 6px; border-radius: 12px; background: rgba(6, 16, 28, .85); border: 1px solid #1d3a55; gap: 4px; }
+.view.studio .tool { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 56px; padding: 6px 8px; background: rgba(16, 36, 58, .9); border-color: #1d3a55; color: #e9eff6; font-size: 12px; }
+.view.studio .tool svg { width: 22px; height: 22px; fill: currentColor; }
+.view.studio .tool[aria-pressed="true"] { background: var(--teal); color: #04241e; border-color: var(--teal); box-shadow: 0 0 14px rgba(25, 198, 167, .6); }
+.dockacts { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+.dockbtn { gap: 8px; background: rgba(10, 24, 40, .95); border: 2px solid #2a4a66; color: #fff; font: italic 900 17px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .02em;
+  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%); padding: 10px 22px; }
+.dockbtn svg { width: 20px; height: 20px; fill: #fff; }
+.runplay { display: inline-flex; align-items: center; gap: 10px; padding: 10px 34px; border: 3px solid #ffe27a; cursor: pointer; color: #141000;
+  font: italic 900 30px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; background: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c);
+  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%); filter: drop-shadow(0 0 16px rgba(245, 183, 42, .6)); }
+.runplay svg { width: 24px; height: 24px; fill: #141000; }
+.view.studio .prow .pchip { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .85); color: #fff;
+  font: 900 13px/1 'Inter', sans-serif; box-shadow: 0 0 10px rgba(255, 255, 255, .15); }
+.view.studio .prow { border-bottom-color: #1d3a55; }
+.view.studio .side h3 { color: var(--dim); font: 900 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.view.studio .switch { color: #fff; font: 900 17px/1 'Barlow Condensed', sans-serif; }
+/* Play's draw step is the same studio: the dock's actions are the Studio's, Snap it is Play's */
+body.gamemode .dockacts { display: none !important; }
+body.gamemode .view.studio { padding-top: 14px; }
+@media (max-width: 1180px) {
+  .deck .decklevel { margin-left: 0; padding-left: 0; border-left: 0; grid-auto-flow: column; }
+}
+@media (max-width: 760px) {
+  .view.studio { padding: 26px 8px 10px; }
+  .deck { padding: 18px 12px 12px; }
+  .deck .decklabel { font-size: 13px; padding: 4px 16px; }
+  .deck .decklabel i { display: none; }
+  .deck .decklevel { grid-auto-flow: row; width: 100%; }
+  .view.studio .tool { min-width: 46px; padding: 5px 6px; font-size: 11px; }
+  .view.studio .tool svg { width: 18px; height: 18px; }
+  .dockacts { width: 100%; margin-left: 0; }
+  .runplay { flex: 1; justify-content: center; font-size: 24px; }
+  .dockbtn { flex: 1; justify-content: center; padding: 8px 10px; font-size: 14px; }
+}
+
+/* ---------- Frames that never cut what is in them (the owner, 2026-11-06) ----------
+   The angled frames used to be clip-path on the element itself, which also cut
+   the text (half the ? of WHAT?) and the border on every slanted edge. Now the
+   element is a plain box and two layers behind it draw the shape: ::before is
+   the rim (the border box), ::after the fill (the padding box), both clipped to
+   --shape. The text sits on top and is never clipped. Glows are drop-shadows on
+   the element, so they follow the shape. */
+.plogo h1, .plogo .kicker, .pspoth, .arena .dist, .playnow, .deck .decklabel, .dockbtn, .runplay, .strip .ez.own, .strip .ez.opp {
+  --bw: 2px; isolation: isolate; clip-path: none; background: none; border: var(--bw) solid transparent; border-radius: 0; box-shadow: none; }
+.plogo h1, .plogo .kicker, .pspoth, .arena .dist, .playnow, .dockbtn, .runplay, .strip .ez.own, .strip .ez.opp { position: relative; }
+.plogo h1::before, .plogo .kicker::before, .pspoth::before, .arena .dist::before, .playnow::before, .deck .decklabel::before, .dockbtn::before, .runplay::before, .strip .ez.own::before, .strip .ez.opp::before,
+.plogo h1::after, .plogo .kicker::after, .pspoth::after, .arena .dist::after, .playnow::after, .deck .decklabel::after, .dockbtn::after, .runplay::after, .strip .ez.own::after, .strip .ez.opp::after {
+  content: ''; position: absolute; pointer-events: none; clip-path: var(--shape); }
+.plogo h1::before, .plogo .kicker::before, .pspoth::before, .arena .dist::before, .playnow::before, .deck .decklabel::before, .dockbtn::before, .runplay::before, .strip .ez.own::before, .strip .ez.opp::before {
+  inset: calc(-1 * var(--bw)); z-index: -2; background: var(--rim); }
+.plogo h1::after, .plogo .kicker::after, .pspoth::after, .arena .dist::after, .playnow::after, .deck .decklabel::after, .dockbtn::after, .runplay::after, .strip .ez.own::after, .strip .ez.opp::after {
+  inset: 0; z-index: -1; background: var(--fill); }
+.plogo h1 { --bw: 3px; --shape: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%); padding-right: 60px; padding-left: 52px;
+  --rim: linear-gradient(90deg, var(--teal), #8fe7ff 45%, var(--gold)); --fill: linear-gradient(#0b1a2b, #060f1b); }
+.plogo .kicker { --shape: polygon(4% 0, 100% 0, 96% 100%, 0 100%); --rim: rgba(245, 183, 42, .8); --fill: #08121d; }
+.pspoth { --shape: polygon(5% 0, 95% 0, 100% 100%, 0 100%); --rim: rgba(245, 183, 42, .85); --fill: #07111c; }
+.arena .dist { --shape: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0 50%); --rim: var(--teal);
+  --fill: repeating-linear-gradient(90deg, transparent 0 18%, rgba(255, 255, 255, .06) 18% 19%), linear-gradient(#2f7a3d, #1d5428);
+  filter: drop-shadow(0 0 8px rgba(25, 198, 167, .45)); }
+.arena .dist[aria-pressed="true"] { --rim: var(--gold); border-color: transparent; box-shadow: none; filter: drop-shadow(0 0 14px rgba(245, 183, 42, .85)); }
+.arena .dist:active { box-shadow: none; }
+.playnow { --bw: 3px; --shape: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%); --rim: #ffe27a; --fill: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c); }
+.deck .decklabel { --shape: polygon(6% 0, 94% 0, 100% 100%, 0 100%); --rim: var(--gold); --fill: #08121d; filter: drop-shadow(0 0 10px rgba(245, 183, 42, .45)); }
+.dockbtn { --shape: polygon(6% 0, 100% 0, 94% 100%, 0 100%); --rim: #2a4a66; --fill: #0b1929; }
+.dockbtn:hover { --rim: var(--teal); }
+.runplay { --bw: 3px; --shape: polygon(6% 0, 100% 0, 94% 100%, 0 100%); --rim: #ffe27a; --fill: linear-gradient(#ffd84a, var(--gold) 60%, #d79c0c); }
+.strip .ez.own { --shape: polygon(30% 0, 100% 0, 100% 100%, 0 100%, 0 30%); --rim: var(--teal);
+  --fill: radial-gradient(farthest-side, color-mix(in srgb, var(--teal) 8%, #07121e), color-mix(in srgb, var(--teal) 28%, #07121e)); }
+.strip .ez.opp { --shape: polygon(0 0, 70% 0, 100% 100%, 0 100%); --rim: var(--gold);
+  --fill: radial-gradient(farthest-side, color-mix(in srgb, var(--gold) 8%, #07121e), color-mix(in srgb, var(--gold) 28%, #07121e)); }
+@media (max-width: 760px) {
+  .plogo h1 { padding-left: 28px; padding-right: 36px; }
+}
+
+/* ---------- No light frame around the stadium (the owner, 2026-11-06) ----------
+   The game is always dark (the owner, 2026-11-06). While Play's first screen
+   or the Studio is on screen the page behind it is the stadium's own dark, and the
+   stadium has no outline, so it reaches the edges instead of sitting in a frame. */
+html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPlay:not([hidden])) body, html:has(#vStudio:not([hidden])) body { background: #050c16; }
+.pick.arena, .view.studio { border-color: transparent; }
+
+/* ---------- the daily's intro, a big moment (the owner, 2026-11-06) ----------
+   "this page should be more exciting to get you hyped to play". The night
+   stadium of Play, the game's scoreboard, the down huge and alive, the ball on
+   a strip of field with the line to gain, then the same gold button as Play now.
+   Everything on it is a field of the day's row. */
+.dintro { position: relative; overflow: hidden; width: 100%; max-width: 980px; margin: 0 auto; text-align: center; display: grid; gap: 8px; justify-items: center;
+  padding: 34px 18px 26px; border-radius: 18px; color: #fff;
+  background:
+    radial-gradient(40% 60% at 0% 80%, rgba(25, 198, 167, .26), transparent 70%),
+    radial-gradient(40% 60% at 100% 80%, rgba(245, 183, 42, .24), transparent 70%),
+    radial-gradient(60% 40% at 50% 0%, rgba(120, 190, 255, .18), transparent 70%),
+    linear-gradient(#071321, #050c16 60%, #06140f); }
+.dintro .dtag { --shape: polygon(5% 0, 95% 0, 100% 100%, 0 100%); --rim: rgba(245, 183, 42, .85); --fill: #07111c; --bw: 2px;
+  position: relative; isolation: isolate; border: 2px solid transparent; margin: 0; padding: 5px 30px; color: var(--gold);
+  font: italic 900 16px/1.2 'Barlow Condensed', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.dintro .dtag::before, .dintro .dtag::after { content: ''; position: absolute; pointer-events: none; clip-path: var(--shape); }
+.dintro .dtag::before { inset: -2px; z-index: -2; background: var(--rim); }
+.dintro .dtag::after { inset: 0; z-index: -1; background: var(--fill); }
+.dintro .dteams { margin: 6px 0 0; font: italic 900 clamp(36px, 6vw, 60px)/1 'Barlow Condensed', 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .01em; text-shadow: 0 3px 0 rgba(0, 0, 0, .4); }
+.dintro .dround { margin: 0; color: #9fb2c8; font-weight: 700; }
+.dboard { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; margin: 10px 0 2px; min-width: min(460px, 100%); border-radius: 14px; overflow: hidden;
+  background: #04090f; border: 2px solid #1d3a55; box-shadow: 0 0 0 4px rgba(4, 9, 15, .6), 0 10px 30px rgba(0, 0, 0, .5); }
+.dboard .dside { position: relative; display: grid; justify-items: center; gap: 2px; padding: 10px 14px 12px; }
+.dboard .dside b { font: 900 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .1em; color: #cfd9e4; }
+.dboard .dside span { font: 900 54px/1 'Barlow Condensed', sans-serif; color: #fff; text-shadow: 0 0 14px rgba(255, 255, 255, .25); }
+.dboard .dside.off { border-bottom: 4px solid var(--teal); }
+.dboard .dside.def { border-bottom: 4px solid var(--gold); }
+.dboard .dside i { position: absolute; top: 8px; left: 10px; font: italic 900 11px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; color: var(--teal); letter-spacing: .08em; }
+.dboard .dmid { display: grid; place-items: center; padding: 0 16px; border-left: 2px solid #1d3a55; border-right: 2px solid #1d3a55; background: #070d14; }
+.dboard .dclock { font: 900 30px/1 'Barlow Condensed', sans-serif; color: #ff5a4a; letter-spacing: .06em; text-shadow: 0 0 12px rgba(255, 90, 74, .7); white-space: nowrap; }
+.dintro h1 { margin: 10px 0 0; font: italic 900 clamp(76px, 13vw, 132px)/.9 'Barlow Condensed', 'Inter', sans-serif; text-transform: uppercase;
+  background: linear-gradient(#ffe27a, var(--gold) 55%, #c98a08); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 22px rgba(245, 183, 42, .45)); animation: dbeat 2.4s ease-in-out infinite; }
+@keyframes dbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+.dintro .dspot { margin: 0; font: italic 900 26px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; color: #8fe7ff; letter-spacing: .03em; }
+.dintro .dstakes { margin: 4px 0 8px; font-size: 17px; font-weight: 800; color: #e9eff6; }
+.dstrip { width: 100%; max-width: 860px; margin: 6px 0 4px; cursor: default; touch-action: auto; pointer-events: none; }
+.dstrip .ez { font-size: 14px; }
+.dintro .playnow { margin-top: 14px; animation: dglow 1.8s ease-in-out infinite; }
+@keyframes dglow { 0%, 100% { filter: drop-shadow(0 0 14px rgba(245, 183, 42, .45)); } 50% { filter: drop-shadow(0 0 30px rgba(245, 183, 42, .9)); } }
+.dintro .dstats { margin: 4px 0 0; padding: 6px 14px; border-radius: 999px; background: rgba(25, 198, 167, .14); border: 1px solid rgba(25, 198, 167, .5); color: #8fe7ff; font-weight: 800; }
+.dintro .ddone { max-width: 640px; }
+.dintro .link { color: #8fe7ff; }
+.dintro .src { margin-top: 10px; font-size: 12px; color: #8fa2b8; }
+@media (prefers-reduced-motion: reduce) { .dintro h1, .dintro .playnow { animation: none; } }
+@media (max-width: 760px) {
+  .dintro { padding: 26px 10px 20px; }
+  .dboard { min-width: 0; width: 100%; }
+  .dboard .dside span { font-size: 42px; }
+  .dboard .dclock { font-size: 22px; }
+  .dboard .dmid { padding: 0 8px; }
+  .dintro .dspot { font-size: 20px; }
+  .dintro .dstakes { font-size: 15px; }
+  .dstrip .ez { font-size: 10px; }
+}

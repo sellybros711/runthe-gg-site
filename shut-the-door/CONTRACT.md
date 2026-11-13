@@ -700,6 +700,127 @@ the result's bonus, with no floor (the README has why and the measurements). Bef
 **The daily's rollout.** A daily is never switched partway through a day: `api.js FULL_CLOSE_FROM`.
 Outings stored before rules 8 replay as they were played.
 
+## 5k. Rules 9: a ball touching the zone is an ABS strike (2026-11-02)
+
+Rules 8 and everything before it, plus one thing. A new outing's calls carry `r: 9`; a call with
+`r: 8` or before replays under its own rules, exactly (`fixtures/replays-rules8-pre-abs-touch.json`).
+
+**The ABS touch** (the owner: "if the ball is touching the strike zone, it should be overturned to a
+strike"; MLB's ABS rule: any part of the ball touching the zone is a strike). A challenge, the
+batter's or the pitcher's side's, is answered by `contract.js absDist(x, zn, zoneFt) >= 0`: the
+ball's centre within a ball's radius (`BALL_IN`, 1.45 inches) of the batter's bare zone (the plate's
+17 inches, his height zn 0..1). Before, the sides held a ball's radius (`GRID.ZONE_HALF_FT`) but the
+top and the bottom were the bare zone, so a ball touching the top or the bottom was an ABS ball.
+Now the radius counts on all four sides, round at the corners (a ball's centre just past the old
+square corner is off it).
+
+Only the ABS's answer moves: `pitchResult.abs.strike` and the challenge's `abs` and `overturned`.
+The umpire's call (`calledStrikeP(zoneDist(...))`, the 2024 data's own geometry), the grade, the
+batter's chance to challenge (`challengeP` on `zoneDist`) and every draw are rules 8's.
+`pitchResult.abs.d` stays the inches from the edge the quick replay draws (the plate plus a ball
+wide, his bare height). So on the top or the bottom a touching ball can read `strike` beside a
+`d` that is off, by up to 1.45 inches.
+
+**The daily's rollout.** `api.js ABS_TOUCH_FROM` (2026-11-03): a daily of a day before it plays
+rules 8. Survivor, practice and the archive start new outings under rules 9 and resume under the
+rules their calls carry.
+
+## 5l. Rules 10: the touch is measured on the zone as drawn (2026-11-03)
+
+Rules 9 and everything before it, plus one thing. A new outing's calls carry `r: 10`; a call with
+`r: 9` or before replays under its own rules, exactly (`fixtures/replays-rules9-pre-drawn-touch.json`).
+
+**Why.** The owner, 2026-11-03: "I challenged pitch 8 which was a ball and it stood as a ball. That
+is a strike." Rules 9 measured the touch from the bare plate. The grid draws the zone with sides at
+`GRID.ZONE_HALF_FT` (the plate plus a ball), so on the sides a ball had to sit a whole ball's width
+inside the drawn box's edge to touch, and a dot on the drawn corner (0.24 inches past the side, 0.22
+over the top) stood as a ball (`absDist` -0.25).
+
+**The drawn touch.** A challenge is answered by `contract.js touchDist(x, zn, zoneFt) >= 0`, which is
+`zoneDist + BALL_IN`: the ball's edge against the drawn box, round at the corners. A ball the grid
+shows touching the box is a strike; one clear of it is a ball. The aim grid draws the at bat's dots a
+ball's size (`style.css .aim .pd.cur`, 2.9 inches over a 6.64 inch column). The umpire's call, the
+grade, the batter's chance to challenge and every draw are rules 9's. `pitchResult.abs.t` (rules 9 on)
+is the ball's edge to the zone the ABS read, the inches the quick replay prints.
+
+**The daily's rollout.** `api.js DRAWN_TOUCH_FROM` (2026-11-04): a daily of a day before it plays
+rules 9. Survivor, practice and the archive start new outings under rules 10.
+
+## 5m. Rules 11: a hit by pitch reaches the batter (2026-11-06)
+
+Rules 10 and everything before it, plus one thing. A new outing's calls carry `r: 11`; a call with
+`r: 10` or before replays under its own rules, exactly (`fixtures/replays-rules10-pre-hbp-reach.json`).
+
+**Why.** QA, 2026-11-05: a hit by pitch on a 92 mph cutter graded green that looked in the zone. The
+outcome is drawn from the row of the cell the pitch crossed, and the edge cells run out forever, so
+the inside column (column 0 for a right handed hitter, 4 for a lefty) is everything past 0.83 ft
+inside, carrying the cell's real hit by pitch rate (the real ones crossed far inside). The engine
+played that rate on balls just off the black: over 1,500 simulated dailies the median hit by pitch
+crossed 1.11 ft from the plate's centre, 63% under 1.2 ft. The drawn hitter's body is 2 ft and more
+away at those heights, so the ball passed in front of him. (The 2,020 real hit by pitches of 2024,
+Baseball Savant: median 1.92 ft inside, 5% under 1.2 ft.)
+
+**The reach.** A pitch is a hit by pitch only when `contract.js insideFt(x, bats) >= hbpReach(zn)`:
+the ball's centre at least the reach inside, at its height. `HBP.REACH` is measured on the hitter the
+3D draws (`pipeline/hbp_reach.mjs`: 272 hitters of the 30 packs in their take, where `people.js`
+stands them, feet straddling 2.95 ft off the plate's centre): for each tenth of his zone's height, the
+nearest any hitter's body comes in that band or the next, less a ball's radius (`BALL_IN`). In his
+zone's height that is 2.02 ft (his front hip and thigh at 2.14 ft); above the zone his hands bring it
+to 1.36 ft (zn 0.9) and the helmet's bill to 0.97 ft (head high); below it his legs, 1.88 ft.
+
+**Short of the reach.** Where the drawn row says hit by pitch and the ball crossed short of the reach,
+the pitch is a take there, called where it crossed (THE CALL, `calledStrikeP(zoneDist)`): the same
+library draw, read inside the hit by pitch's slice, so the four draws never move. Off the plate by an
+inch it may be a strike; a few inches off it is a ball. No other key moves.
+
+**The grade** prices the same thing one pitch ahead (`grade.js keyMixCtx`, `Model.hbpMass`): per
+actual cell, the share of the miss that reaches him keeps the hit by pitch, the rest goes to the
+take by the umpire's chance over where it crossed. The hold table is untouched (as rules 5), `BANDS`
+are unchanged.
+
+**The scene.** A real hit by pitch is drawn reaching him: `3d/play.js fromResult` moves the drawn
+crossing of a `hit_by_pitch` out to `BODY_FAR` (the furthest drawn hitter's body front at that
+height, the same measurement), so the ball meets whoever is batting. The result's crossing is the
+engine's.
+
+**The daily's rollout.** `api.js HBP_REACH_FROM` (2026-11-06): a daily of a day before it plays
+rules 10. Survivor, practice and the archive start new outings under rules 11.
+
+## 5n. Rules 12: the reach where he stands (2026-11-07)
+
+Rules 11 and everything before it, plus one thing. A new outing's calls carry `r: 12`; a call with
+`r: 11` or before replays under its own rules, exactly (`fixtures/replays-rules11-pre-stance.json`).
+
+**Why.** The owner, 2026-11-06: a hit by pitch rate nearer the real one. Rules 11's reach was measured
+with the drawn hitter's feet 2.95 ft off the plate's centre. #947 stood him at 2.82 ft (Statcast's
+league average stance), and every hitter stood the same.
+
+**The stance.** Each pack hitter carries `stanceIn`, `stanceYear` and `stanceSrc` where Statcast has
+him (`pipeline/stance.mjs`): Baseball Savant's batting stance, his distance off the plate (the hips'
+midpoint from the inside edge, inches, one second before release), from the side he bats, his own
+season (`stanceSrc: 'season'`) or else his nearest season within two (`'near'`, a labelled proxy).
+Savant has it from 2023: 70 of the 272 pack hitters at their own season, 16 near, 186 with none.
+A hitter with none stands where the league's average hitter does (28 in). Nothing is filled in.
+
+**The reach.** A pitch is a hit by pitch only when `insideFt(x, bats) >= hbpReachAt(zn, stanceIn)`:
+`HBP.REACH12` at his height plus `(stanceIn - HBP.STANCE_IN) / 12` ft, never nearer the plate than
+the inside column's edge (`GRID.ZONE_HALF_FT`). `REACH12` is measured as rules 11's was
+(`pipeline/hbp_reach.mjs`): every vertex of the drawn hitter's body, his arms and batting gloves
+included (the bat left out), each hitter where `people.js` stands him and taken back by his stance's
+offset. In his zone's height his front thigh, 1.89 ft; at zn 0.8 his trunk, 1.32 ft; from 0.9 to 1.2
+his upper arm, 1.22 to 1.0 ft; head high the helmet, 0.84 ft. His hands sit higher and further back
+than his upper arm and are never the nearest point. Everything else is rules 11's: short of the
+reach, the hit by pitch's slice of the same draw is a take called where it crossed.
+
+**The grade** prices the same reach one pitch ahead (`Model.hbpMass` with his stance, the height
+strips cut where the reach's band changes). `BANDS` are unchanged.
+
+**The scene.** `people.js` stands him `stance.js stanceOff` nearer or further, and `play.js` moves a
+real hit by pitch out to `BODY_FAR` plus the same offset.
+
+**The daily's rollout.** `api.js STANCE_FROM` (2026-11-07): a daily of a day before it plays rules 11.
+Survivor, practice and the archive start new outings under rules 12.
+
 ## 6. Pitch result
 
 ```js
@@ -959,11 +1080,12 @@ Shut The Door #12
 door shut · better than 71% of closers
 pitched like Josh Hader
 🟩🟩🟨🟩🟧🟩
-runthe.gg/shut-the-door
+https://runthe.gg/shut-the-door/
 ```
 
-Squares: green 🟩, yellow 🟨, orange 🟧, red 🟥, ten to a line. The URL line is one constant in
-`share.js`.
+Squares: green 🟩, yellow 🟨, orange 🟧, red 🟥, ten to a line. The URL line is `SHARE_LINK` in
+`contract.js`: the full https:// form, so messages apps make it a tappable link. The card
+image draws the short `SHARE_URL` it is built from.
 
 ## 12. Storage (own tables, migration `153_shut_the_door.sql` or the next free number)
 
@@ -1096,7 +1218,7 @@ Rules:
 
 ## 16. The vote for tomorrow's daily (the owner's call, 2026-10-30)
 
-From `modes.js VOTE.EPOCH` (2026-11-16) each day's daily is one of two candidates, chosen the day
+From `modes.js VOTE.EPOCH` (2026-11-05, moved up from 2026-11-16 on the owner's call, 2026-11-03) each day's daily is one of two candidates, chosen the day
 before by a vote. Before it, the day is the schedule's own (`data/schedule.json`), so no day already
 played moves. The rule, and the server's copy of it, are in `modes.js` and
 `supabase/160_shut_the_door_vote_survivor.sql`; `test/modes.mjs` holds the two to the same answers.
@@ -1106,8 +1228,9 @@ played moves. The rule, and the server's copy of it, are in `modes.js` and
   is A. A played pack was offered, so nothing played in the last 13 days comes back. At least 4 of the
   30 are eligible each day, so the pairs vary. A pure function of the day: every device and the
   server agree without asking.
-- **Who votes**: signed in, once, after finishing today's daily (`shutdoor_outings` has today's row).
-  Not a device id: a device id is a string any script can mint, so it is no limit. Guests see the
+- **Who votes**: signed in, once, for tomorrow only, played today or not (164, 2026-11-04: from the
+  home without playing; 160 asked for today's daily first). Each candidate's card carries a `setup`
+  (data/setups.json): the moment in a sentence or two, never how it ended. Not a device id: a device id is a string any script can mint, so it is no limit. Guests see the
   candidates and the result.
 - **The lock**: voting for D closes when D begins (Eastern). The first read of D locks it, the same for
   every reader: more votes wins, no votes or a tie is A. A daily post from the epoch on must be for the
@@ -1120,7 +1243,7 @@ played moves. The rule, and the server's copy of it, are in `modes.js` and
  *  @returns {Promise<{day, open, candidates: Card[2], myVote: string|null, votes: {a, b}|null,
  *                     winner: string|null, canVote: boolean, why: string|null, offline: boolean}>}
  *  votes show once you voted or the day is locked. why is the server's reason when canVote is false:
- *  'sign in to vote', "finish today's daily to vote", 'you voted', 'voting is closed'. */
+ *  'sign in to vote', 'you voted', 'voting is closed'. */
 vote(day)
 
 /** Cast this player's one vote for tomorrow. The same shape, with error set when refused. */

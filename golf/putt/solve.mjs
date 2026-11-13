@@ -27,7 +27,7 @@ const require = createRequire(import.meta.url);
 const P = require(process.env.PUTT_SRC || './putt.js');   // PUTT_SRC tries a copy of the holes without touching the real file
 const M = P.M;
 
-export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length > 0; }
+export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length + (C.devils || []).length + (C.eyes || []).length + (C.lethes || []).filter(l => l.spin).length + (C.bolts || []).length + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length + (C.tides || []).length + (C.bells || []).length > 0; }
 /* walking distance to the cup over the course, round walls and blocks, back through tunnels and pipes
    and back over a ramp's jump, so a ball short of a gap does not rank behind one that went in the water */
 // with avoid, the secret zones are walls: a search told to find the obvious line must not rank a ball
@@ -38,7 +38,11 @@ export function geodesic(C, avoid){
   const pass = new Uint8Array(nx * ny), D = new Float64Array(nx * ny).fill(1e9);   // 64 bit: a heap entry read back against a 32 bit copy of itself looks stale, and the search stops spreading
   const solid = (x, y) => C.blocks.some(r => P.inBlock(r, x, y, 0.1)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1);
   // a ferry's whole crossing is passable: somewhere along it the deck is under the ball
-  const deck = (x, y) => C.bridges.some(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1) || (C.ferries || []).some(f => x >= Math.min(f.x0, f.x0 + f.dx) && x <= Math.max(f.x1, f.x1 + f.dx) && y >= Math.min(f.y0, f.y0 + f.dy) && y <= Math.max(f.y1, f.y1 + f.dy));
+  // and so is a beanstalk's: somewhere in its clock its leaves are under the ball, all the way to its tip
+  const vineOn = (x, y) => (C.stalks || []).some(q => { if (q.k !== 'b') return false; const rx = x - q.x, ry = y - q.y, al = rx * q.ux + ry * q.uy; return al >= -0.3 && al <= q.L && Math.abs(rx * q.uy - ry * q.ux) <= q.bw; });
+  // and so is a river the rafts drift down: somewhere in its clock a raft is under the ball, from bank to bank
+  const raftOn = (x, y) => (C.drifts || []).some(d => { const nr = P.driftNear(d, x, y); return Math.abs(nr[1]) <= d.w / 2 + 0.3 && nr[0] > d.L / 2 && nr[0] < d.len - d.L / 2; });
+  const deck = (x, y) => vineOn(x, y) || raftOn(x, y) || C.bridges.some(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1) || (C.ferries || []).some(f => x >= Math.min(f.x0, f.x0 + f.dx) && x <= Math.max(f.x1, f.x1 + f.dx) && y >= Math.min(f.y0, f.y0 + f.dy) && y <= Math.max(f.y1, f.y1 + f.dy));
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++){ const x = b[0] + i * res, y = b[1] + j * res, m = C.mats.at(x, y);
     pass[j * nx + i] = ((m !== M.OUT && m !== M.WATER) || deck(x, y)) && !solid(x, y) && !inZ(x, y) ? 1 : 0; }
   const idx = (x, y) => { const i = Math.round((x - b[0]) / res), j = Math.round((y - b[1]) / res); return (i < 0 || j < 0 || i >= nx || j >= ny) ? -1 : j * nx + i; };
@@ -51,6 +55,18 @@ export function geodesic(C, avoid){
   C.ramps.forEach(R => { if (inZ(R.x, R.y)) return; const e = near(R.x - R.dx * 0.6, R.y - R.dy * 0.6); if (e < 0) return;
     for (let k = 1.5; k <= 9; k += 0.5) for (const s of [-0.5, 0, 0.5]){ const a = near(R.x + R.dx * k - R.dy * s * R.w, R.y + R.dy * k + R.dx * s * R.w); if (a >= 0) back.push([a, e, k * 0.6]); } });
   C.loops.forEach(L => { const a = near(L.x + L.dx * 0.8, L.y + L.dy * 0.8), e = near(L.x - L.dx * 0.8, L.y - L.dy * 0.8); if (a >= 0 && e >= 0) back.push([a, e, 1.6]); });
+  // a jelly pad (Jellara) throws the ball any way it is going, up to HOP_MAX: every landing it can reach leads back to the pad
+  (C.hops || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y); if (e < 0) return;
+    for (let a = 0; a < 360; a += 10) for (let k = 2; k <= P.HOP_MAX; k += 1){ const x = q.x + Math.cos(a * Math.PI / 180) * k, y = q.y + Math.sin(a * Math.PI / 180) * k, o = idx(x, y);
+      if (o >= 0 && pass[o]) back.push([o, e, k * 0.6]); } });
+  // a cyclone (Oz) carries the ball from its funnel to its landing spot, whatever the pace: the landing leads back to the funnel
+  (C.cyclones || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y), a = near(q.tx, q.ty); if (e >= 0 && a >= 0) back.push([a, e, 2]); });
+  // Zeus' bolt (Olympus) throws a ball in its ring a set way: where it lands leads back to the ring
+  (C.bolts || []).forEach(q => { if (inZ(q.x, q.y)) return; const e = near(q.x, q.y), a = near(q.x + q.ux * q.L, q.y + q.uy * q.L); if (e >= 0 && a >= 0) back.push([a, e, 2]); });
+  // a high wire (the Big Top) carries a ball lined up with it from one platform to the other, either way: each end leads back to the other
+  (C.wires || []).forEach(q => { const a = near(q.a[0] - q.ux * 0.8, q.a[1] - q.uy * 0.8), e = near(q.b[0] + q.ux * 0.8, q.b[1] + q.uy * 0.8); if (a >= 0 && e >= 0){ back.push([a, e, q.len]); back.push([e, a, q.len]); } });
+  // a foreshore (London) is walked like the carpet it is at low water: its tide is the clock's business (timed), never the map's
+  (C.tides || []).forEach(q => { for (let y = q.y0 + res / 2; y < q.y1; y += res) for (let x = q.x0 + res / 2; x < q.x1; x += res){ const o = idx(x, y); if (o >= 0 && !solid(x, y) && !inZ(x, y) && C.matFn(x, y) !== M.OUT && C.matFn(x, y) !== M.WATER) pass[o] = 1; } });
   const outOf = new Map(); back.forEach(([a, e, w]) => { if (!outOf.has(a)) outOf.set(a, []); outOf.get(a).push([e, w]); });
   const start = near(C.cup[0], C.cup[1]); if (start < 0) return () => 1e9;
   // a Dijkstra over the grid with the jumps as extra edges (a binary heap keeps it quick)
@@ -90,6 +106,9 @@ export function solve(C, cap, stats, avoid){
   // strike moments on a moving hole: a step that is not a fraction of any common period, so a windmill
   // turning once a second is not met at the same two phases over and over
   // the line is kept at full precision: on a moving hole a rounded strike time or aim is a different putt
+  /* a cyclone (Oz) sets down every putt that reaches it in one place, so the first few ways there are often wild banks into
+     it that a person's error puts wet, and the safe way in, found later in the fan, would never be kept: such a hole keeps more */
+  const keepWays = (C.cyclones || []).length ? 60 : 4;
   const geo = geodesic(C, avoid), T0 = timed(C) ? [0, 0.35, 0.7, 1.05, 1.4, 1.75, 2.1] : [0];
   let frontier = [{ x:C.tee[0], y:C.tee[1], t:0, line:[] }], total = 0;
   for (let s = 1; s <= cap; s++){
@@ -107,7 +126,7 @@ export function solve(C, cap, stats, avoid){
           if (r.water || r.out) continue;
           // a few ways of reaching each place are kept, so the safe one is still there when the first was not
           const key = Math.round(r.rest[0] * 3) + ',' + Math.round(r.rest[1] * 3) + ',' + (timed(C) ? Math.round(r.t) : 0);
-          let g = byKey.get(key); if (!g){ g = []; byKey.set(key, g); } if (g.length >= 4) continue;
+          let g = byKey.get(key); if (!g){ g = []; byKey.set(key, g); } if (g.length >= keepWays) continue;
           g.push({ x:r.rest[0], y:r.rest[1], t:t0 + r.t + 2, d:geo(r.rest[0], r.rest[1]), line:f.line.concat([[ang, ft, t0]]), from:f, shot:[ang, ft, t0] });
         }
       }

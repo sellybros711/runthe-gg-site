@@ -18,14 +18,14 @@
  * for the pitcher's view falls out of the camera, never out of the data.
  */
 import * as THREE from 'three';
-import { preload } from '../3d/load.js?v=8';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=9';
-import { People } from '../3d/people.js?v=43';
-import { Pitch } from '../3d/pitch.js?v=13';
-import { labPlay, motion, describe } from '../3d/play.js?v=13';
+import { preload } from '../3d/load.js?v=12';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=26';
+import { People } from '../3d/people.js?v=59';
+import { Pitch } from '../3d/pitch.js?v=16';
+import { labPlay, motion, describe } from '../3d/play.js?v=24';
 import { FT, P, smooth } from '../3d/units.js?v=1';
-import { InPlay } from '../3d/inplay.js?v=43';
-import { crowdClock } from '../3d/crowd.js?v=1';
+import { InPlay } from '../3d/inplay.js?v=70';
+import { crowdClock } from '../3d/crowd.js?v=3';
 
 const Q = new URLSearchParams(location.search);
 const MODE = Q.get('take') === '1' ? 'take' : 'swing';   // kept for the checks' URLs (take=1)
@@ -63,7 +63,7 @@ async function main() {
   const pitch = new Pitch({ scene, facts, play, batter: facts.batter, m, overlays: Q.get('overlays') !== '0' });
   const people = new People({ scene, facts, mode: m.batter === 'swing' ? 'swing' : 'take', pitch, play, m });
   document.getElementById('note').textContent = '';
-  lab.pbp = describe(play);
+  lab.pbp = describe(play, m);
   people.setup(gltfs);
   people.wireBall();
   mark('people');

@@ -26,7 +26,8 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 var TOTAL_MS = 5200, PA_MIN = 420, PA_MAX = 900, END_MS = 1100, QUICK = 1.5;
 
 function ordinal(n) { var t = n % 100; return n + (t >= 11 && t <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'); }
-function lastName(n) { var p = String(n || '').trim().split(/\s+/); return p.length > 1 ? p.slice(1).join(' ') : p[0] || ''; }
+/* the short name, suffix and all (names.js, the one helper) */
+function lastName(n) { return window.STD_NAMES.shortName(n); }
 /* the club's nickname for the head: clubs.js when it has the club, else the last word of the name */
 function nick(team) {
   var c = window.STD_CLUB_NAMED ? window.STD_CLUB_NAMED(team) : null;

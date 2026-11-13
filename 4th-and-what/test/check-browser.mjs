@@ -99,8 +99,12 @@ async function run(name, viewport, scale) {
   await page.waitForSelector('#hdBox:not([hidden])', { timeout: 10000 });
   const hd = await page.evaluate(() => { const t = window.FAW_DAILY.today(), b = document.getElementById('hDaily').textContent;
     return { num: document.getElementById('hdNum').textContent, go: document.getElementById('hdGo').textContent, down: window.FAW_DAILY.core.downText(t),
-      spoils: b.indexOf(window.FAW_DAILY.core.teamsText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.downText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.spotText(t)) >= 0 }; });
-  ok(/Daily #\d+/.test(hd.num) && hd.go === 'Play today' && !hd.spoils, 'the banner is the way in, and says nothing of the situation: ' + hd.num);
+      sit: document.getElementById('hdSit').textContent, meta: document.getElementById('hdMeta').textContent,
+      want: window.FAW_DAILY.core.downText(t) + ' at ' + window.FAW_DAILY.core.spotText(t), teams: window.FAW_DAILY.core.teamsText(t),
+      spoils: b.indexOf(window.FAW_DAILY.core.realText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.verdictText(t)) >= 0,
+      corner: (() => { const r = document.getElementById('hdBox').getBoundingClientRect(), o = document.getElementById('hDaily').getBoundingClientRect(); return r.right > o.right - 30 && r.bottom > o.bottom - 30 && r.left > o.left + o.width / 4; })() }; });
+  ok(/Daily #\d+/.test(hd.num) && hd.go === 'Play today' && hd.sit === hd.want && hd.meta.indexOf(hd.teams) === 0 && !hd.spoils && hd.corner,
+    'the banner\'s corner card says the situation, not what happened: ' + hd.num + ' · ' + hd.sit + ' · ' + hd.meta);
   await shot('d-home');
   await page.click('#hDaily');
   ok(await page.isVisible('#vDaily') && /^Daily #\d+/.test(await page.textContent('#dNum')) && (await page.textContent('#dDown')) === hd.down, 'a click on the banner opens the situation: ' + await page.textContent('#dNum'));
@@ -169,7 +173,15 @@ async function run(name, viewport, scale) {
   await page.click('#pLevel button[data-level="nfl"]'); await page.click('#pHash button[data-hash="mid"]');
   ok(await page.evaluate(() => window.FAW_APP.SC.level === 'nfl' && window.FAW_APP.SC.ballX === 80 / 3), 'and back to the NFL in the middle');
   await shot('0-pick');
+  /* the strip (the owner's mockup, 2026-11-06): a tap spots the ball; the tags and the yards to go follow */
+  const turf = await (await page.$('#pTurf')).boundingBox();
+  await page.mouse.click(turf.x + turf.width * 0.25, turf.y + turf.height / 2);
+  const st = await page.evaluate(() => ({ on: window.FAW_APP.SC.ballOn, ball: document.getElementById('pBallTxt').textContent, gain: document.getElementById('pGainTxt').textContent, togo: document.getElementById('pToGo').textContent }));
+  ok(st.on === 75 && st.ball === '(Own 25)' && /yds$/.test(st.togo), 'a tap on the field strip spots the ball: ' + st.ball + ' ' + st.gain + ' ' + st.togo);
+  await page.evaluate(() => { window.FAW_APP.SC.ballOn = 40; window.FAW_FLOW.refresh(); });
   await page.click('#pDists .dist[data-d="5"]');
+  ok(await page.isVisible('#vPlay') && (await page.getAttribute('#pDists .dist[data-d="5"]', 'aria-pressed')) === 'true' && (await page.textContent('#pToGo')) === '5 yds', 'a tile picks the distance and stays on the screen');
+  await page.click('#pGo');
   ok(await page.isVisible('#vStudio') && await page.isVisible('#sSnap') && !(await page.isVisible('.studiobar')) && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'draw it: the field, the tools and Snap it');
   ok((await page.textContent('#sSit')) === '4th & 5 · Opp 40', 'the situation is on the draw screen');
   await shot('0-draw');
@@ -182,6 +194,11 @@ async function run(name, viewport, scale) {
   await shot('0-card');
   const [cardDl] = await Promise.all([page.waitForEvent('download'), page.click('#rCardBtn')]);
   ok(/-card\.png$/.test(cardDl.suggestedFilename()), 'Save card downloads the card: ' + cardDl.suggestedFilename());
+  /* the clip (the owner, 2026-11-06): a video of the snap, recorded behind the card, is what Share sends */
+  const clip = await page.evaluate(async () => { const c = await window.FAW_CLIP.whenReady(); return c ? { size: c.blob.size, type: c.type } : null; });
+  ok(clip && clip.size > 20000 && /^video\//.test(clip.type), 'the snap is recorded as a video: ' + (clip ? clip.type + ', ' + Math.round(clip.size / 1024) + ' KB' : 'none'));
+  const [clipDl] = await Promise.all([page.waitForEvent('download'), page.click('#rShare')]);
+  ok(/\.(webm|mp4)$/.test(clipDl.suggestedFilename()), 'Share sends the video (saved where the browser cannot share a file): ' + clipDl.suggestedFilename());
   await page.click('#rAgain');
   await page.waitForTimeout(400); await page.click('#bSkip');
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });

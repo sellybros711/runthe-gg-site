@@ -38,14 +38,18 @@ const rows = [...sql.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m => [
 check('the server\'s situations are the schedule\'s rotation, in order',
   JSON.stringify(rows.map(r => r[0])) === JSON.stringify(sched.rotation) && rows.every((r, i) => r[1] === i),
   `${rows.length} rows against ${sched.rotation.length}`);
-const ep = (sql.match(/shutdoor_vote_epoch\(\) returns date\s+language sql immutable as \$\$ select date '(\d{4}-\d\d-\d\d)'/) || [])[1];
-check('the server\'s vote epoch is modes.js\'s', ep === M.VOTE.EPOCH, `${ep} against ${M.VOTE.EPOCH}`);
+// the first day: 163 moved it (2026-11-16 in 160, 2026-11-05 from 163), the live database's last word
+const ep = (readFileSync(join(ROOT, 'supabase', '163_shut_the_door_vote_nov5.sql'), 'utf8')
+  .match(/shutdoor_vote_epoch\(\) returns date\s+language sql immutable as \$\$ select date '(\d{4}-\d\d-\d\d)'/) || [])[1];
+check('the server\'s vote epoch (163) is modes.js\'s', ep === M.VOTE.EPOCH, `${ep} against ${M.VOTE.EPOCH}`);
 check('the server\'s fixed rotation length is the rotation\'s', sql.includes(`% ${sched.rotation.length}) + ${sched.rotation.length}) % ${sched.rotation.length}`));
 check('the vote begins after daily #1', M.VOTE.EPOCH > C.EPOCH);
+// 163's shutdoor_fixed_pack walks ord 0 to 9 before daily #1: the preview rotation must be the rotation's first ten
+check('the preview rotation is the rotation\'s first ten (163)', JSON.stringify(sched.previewRotation) === JSON.stringify(sched.rotation.slice(0, 10)));
 
 /* the server's own test expects modes.js's candidates */
-// the latest list's own test: 161's (rules 8), since its candidates are drawn from the new list
-const test = readFileSync(join(ROOT, 'supabase', 'test', 'shut_the_door_full_close_test.sql'), 'utf8');
+// the latest test: 163's, drawn from the rules 8 list (161) and the first day 163 set
+const test = readFileSync(join(ROOT, 'supabase', 'test', 'shut_the_door_vote_nov5_test.sql'), 'utf8');
 const expect = [...test.matchAll(/\('(\d{4}-\d\d-\d\d)', '(std-[a-z0-9-]+)', '(std-[a-z0-9-]+)'\)/g)].map(m => m.slice(1));
 check('the server test checks 60 days', expect.length === 60);
 check('and they are modes.js\'s candidates, day by day', expect.every(([d, a, b]) => {
@@ -107,6 +111,36 @@ check('the default is candidate A', M.defaultPack(sched, M.VOTE.EPOCH) === M.can
   const other = M.survivorAt(sched, M.addDays(day, 1), 0, 0);
   check('the next day\'s run is a new one', other.seed !== run0[0].seed);
   check('only a door shut goes on', M.SURVIVOR.CONTINUES === 'door_shut');
+}
+
+// ---- the plates: plate.js PACK_CLUBS, the server's shutdoor_pack_clubs and the packs agree -----------
+{
+  console.log('\nthe plates (plate.js, supabase/162)');
+  const fs = await import('fs');
+  const win = { STD_CLUBS: [], localStorage: null };
+  new Function('window', 'localStorage', readFileSync(join(HERE, '..', 'plate.js'), 'utf8'))(win, null);
+  const PC = win.STD_PLATE.PACK_CLUBS;
+  const { CLUBS, clubNamed } = await import(join(HERE, '..', '3d', 'clubs.js'));
+  const key = (c) => c ? c.nick.toLowerCase().replace(/[^a-z]/g, '') : null;
+  const want = {};
+  for (const f of fs.readdirSync(join(HERE, '..', 'data', 'packs'))) {
+    const p = JSON.parse(readFileSync(join(HERE, '..', 'data', 'packs', f), 'utf8'));
+    const id = f.replace(/\.json$/, '');
+    let team = null;
+    const walk = (o) => { if (team || !o || typeof o !== 'object') return; if (o.pitcher && o.id === id) { team = o.pitcher.team; return; } Object.values(o).forEach(walk); };
+    walk(p);
+    const k = key(clubNamed(team));
+    if (k) want[id] = k;
+  }
+  check('plate.js keys every pack with a team by its closer\'s club', JSON.stringify(Object.keys(PC).sort().map((id) => id + ':' + PC[id])) === JSON.stringify(Object.keys(want).sort().map((id) => id + ':' + want[id])));
+  // the list is 162's rows plus the two proxy spots 167 added
+  const sql = ['162_shut_the_door_plates.sql', '167_shut_the_door_pack_clubs_proxy.sql']
+    .map((f) => readFileSync(join(HERE, '..', '..', 'supabase', f), 'utf8')).join('\n');
+  const rows = {};
+  for (const m of sql.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)'\)/g)) rows[m[1]] = m[2];
+  const sorted = (o) => JSON.stringify(Object.keys(o).sort().map((id) => id + ':' + o[id]));
+  check('the server\'s shutdoor_pack_clubs is the same list', sorted(rows) === sorted(PC));
+  check('every key is a club in clubs.js', Object.values(PC).every((k) => CLUBS.some((c) => key(c) === k)));
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');

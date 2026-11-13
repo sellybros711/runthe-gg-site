@@ -110,7 +110,8 @@ function basesWords(b) {
 function outsWords(o) { return o === 0 ? 'no outs' : o === 1 ? 'one out' : 'two outs'; }
 function pitchOf(type) { var a = S.scn.pitcher.arsenal; for (var i = 0; i < a.length; i++) if (a[i].type === type) return a[i]; return null; }
 function batterAt(i) { var bs = S.scn.batters; return bs[((i % bs.length) + bs.length) % bs.length]; }
-function lastName(n) { var p = String(n).split(' '); return p[p.length - 1]; }
+/* the short name, suffix and all ("Witt Jr.", never "Jr." or "Witt"): names.js, the one helper */
+function lastName(n) { return window.STD_NAMES.shortName(n); }
 function fmtDay(day) {
   var d = new Date(Date.parse(day + 'T12:00:00Z'));
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).toLowerCase().replace(',', '');
@@ -139,17 +140,62 @@ function show(id) {
   if (window.STD_ADS) STD_ADS.screen(id);
   homeFold();
   if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
+  if (SFX) SFX.bed(id === 's-mound' && S.outing ? leverage(S.outing) : 0);
+  backSync();
+}
+
+/* BACK CLOSES WHAT IS OPEN (the QA audit, 2026-11-02: back left the page from the board, a sheet or
+   the menu on the mound). While a sheet or any screen but the home is up, the page keeps one history
+   entry of its own, so back closes the sheet, or goes home from the screen. Back on the home with
+   nothing open leaves, as before. One entry, never a stack: a close by a tap drops it (history.back,
+   whose own popstate is skipped), and a back that leaves something still open puts it back. The mound
+   goes home the way the header's lockup does (a fresh home, where the outing resumes); a play in
+   flight finishes first, so back then does nothing. */
+var BACK_SKIP = false;
+function openNow() { return (MN && MN.isOpen()) || (document.body.dataset.screen || 's-home') !== 's-home'; }
+function backSync() {
+  var mine = !!(history.state && history.state.std);
+  if (openNow()) { if (!mine) try { history.pushState({ std: 1 }, ''); } catch (e) {} return; }
+  if (!mine) return;
+  setTimeout(function () {
+    if (openNow() || !(history.state && history.state.std)) return;
+    BACK_SKIP = true;
+    try { history.back(); } catch (e) { BACK_SKIP = false; }
+  }, 0);
+}
+function backPressed() {
+  if (BACK_SKIP) { BACK_SKIP = false; backSync(); return; }
+  if (MN && MN.isOpen()) { MN.close(); return; }
+  var id = document.body.dataset.screen || 's-home';
+  if (id === 's-home') return;
+  if (id === 's-clip' && window.STD_CLIP_UI) { window.STD_CLIP_UI.close(); backSync(); return; }
+  if (id === 's-mound' || id === 's-half' || id === 's-next') {
+    if (S.busy) { backSync(); return; }
+    moundHome();
+    return;
+  }
+  renderHomeState(); show('s-home'); drawHero();
+}
+window.addEventListener('popstate', backPressed);
+/* the mound goes home: a fresh home where the outing resumes, as back does. The home button and the
+   menu's home wait for a play in flight to finish (the stage's own end), then go; nothing is lost,
+   the outing is kept after every pitch */
+function moundHome() { location.replace(location.pathname + location.search); }
+function homeWhenSettled() {
+  if (MN && MN.isOpen()) MN.close(true);
+  var b = $('m-home'); if (b) b.classList.add('wait');
+  (function go() { if (S.busy) { setTimeout(go, 120); return; } moundHome(); })();
 }
 
 /* THE BOTTOM BANNER ON THE HOME (ads.js, style.css). At the top of the page no control may sit behind
    the banner, where a tap meant for it would land on the ad. When the home is too tall for the space
-   above the banner, the first row of the menu that would sit behind it (today's card once the daily
-   is done, Survivor or the links) moves below the fold instead, so the player scrolls to it. Take the
+   above the banner, the first row that would sit behind it (today's top 3, or the links) moves below the fold instead, so the player scrolls to it. Take the
    mound never moves. Measured with offsetTop, so the menu's entrance animation does not move the line. */
 function homeFold() {
   var menu = $('h-menu');
   if (!menu) return;
-  var rows = [].slice.call(menu.children).filter(function (k) { return k.id !== 'h-go'; });
+  /* today's top 3 (its full leaderboard button) is the first row that can fold, then the links */
+  var rows = [$('h-top')].concat([].slice.call(menu.children)).filter(function (k) { return k && k.id !== 'h-go'; });
   rows.forEach(function (k) { k.style.marginTop = ''; });
   var b = document.body;
   if (!b.classList.contains('rtg-sticky-on') || b.dataset.screen !== 's-home') return;
@@ -187,43 +233,96 @@ function dailyBack() {
   S.result = S.dailyResult;
 }
 
-/* ---- sound: four noises made on the spot, nothing to download ---------------- */
+/* ---- sound (sound.js): the glove, the bat, the umpire and the crowd, made on the spot -------
+   sound(name, ms) is the one hook the stage and the 2D drawing call. pitchSounds(pr) is the same hook
+   for one pitch: it knows the result, so the glove pops big on a called strike and the bat cracks
+   clean on hard contact. The umpire and the crowd go with the reveal (moment), never before it.
+   Nothing here is a grade and nothing pops up. */
 
-var AC = null;
-function audio() {
-  if (!prefs.sound) return null;
-  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; }
-  return AC;
-}
-function noise(ac, dur) {
-  var n = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
-  for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
-  var s = ac.createBufferSource(); s.buffer = buf; return s;
-}
+var SFX = window.STD_SFX || null;
+if (SFX) SFX.setOn(prefs.sound !== false);
+function audio() { return SFX; }
 function sound(name, delay) {
-  var ac = audio(); if (!ac) return;
-  try {
-    var t0 = ac.currentTime + (delay ? delay / 1000 : 0);
-    var g = ac.createGain(), f = ac.createBiquadFilter(), src;
-    g.connect(ac.destination);
+  if (!SFX) return;
+  if (name === 'whoosh') SFX.pitch(0, delay, !!prefs.quick);
+  else if (name === 'pop') SFX.pop(1, delay);
+  else if (name === 'crack') SFX.crack('dull', delay);
+  else if (name === 'thud') SFX.thud(delay);
+  else if (name === 'snap') SFX.snap(delay);
+}
+var STRIKE_RES = { called_strike: 1, swinging_strike: 1, foul_tip: 1 };
+function pitchSounds(pr) {
+  return function (name, delay) {
+    if (!SFX) return;
+    var r = pr.result;
+    if (name === 'whoosh') return SFX.pitch(pr.velo, delay, !!prefs.quick);
     if (name === 'pop') {
-      src = noise(ac, 0.07); f.type = 'lowpass'; f.frequency.value = 1100; g.gain.setValueAtTime(0.5, t0);
-      var o = ac.createOscillator(), og = ac.createGain(); o.frequency.setValueAtTime(140, t0); o.frequency.exponentialRampToValueAtTime(60, t0 + 0.08);
-      og.gain.setValueAtTime(0.35, t0); og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1); o.connect(og); og.connect(ac.destination); o.start(t0); o.stop(t0 + 0.12);
-    } else if (name === 'crack') {
-      src = noise(ac, 0.05); f.type = 'highpass'; f.frequency.value = 1400; g.gain.setValueAtTime(0.6, t0);
-    } else if (name === 'snap') {
-      /* the best release: a short bright click, quieter than the glove */
-      src = noise(ac, 0.035); f.type = 'highpass'; f.frequency.value = 2600; g.gain.setValueAtTime(0.32, t0);
-      var so = ac.createOscillator(), sg = ac.createGain(); so.type = 'triangle'; so.frequency.setValueAtTime(1500, t0); so.frequency.exponentialRampToValueAtTime(900, t0 + 0.06);
-      sg.gain.setValueAtTime(0.12, t0); sg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08); so.connect(sg); sg.connect(ac.destination); so.start(t0); so.stop(t0 + 0.1);
-    } else if (name === 'thud') {
-      src = noise(ac, 0.09); f.type = 'lowpass'; f.frequency.value = 400; g.gain.setValueAtTime(0.5, t0);
-    } else {
-      src = noise(ac, 0.22); f.type = 'bandpass'; f.frequency.setValueAtTime(500, t0); f.frequency.exponentialRampToValueAtTime(1800, t0 + 0.2); g.gain.setValueAtTime(0.07, t0);
+      if (r === 'swinging_strike' || r === 'foul_tip') SFX.miss(delay);
+      return SFX.pop(r === 'called_strike' ? 2 : r === 'ball' ? 0 : 1, (delay || 0) + (r === 'swinging_strike' ? 40 : 0));
     }
-    src.connect(f); f.connect(g); src.start(t0);
-  } catch (e) {}
+    if (name === 'crack') {
+      if (r === 'foul') return SFX.crack('foul', delay);
+      return SFX.crack(pr.inPlay && pr.inPlay.ev >= 95 ? 'clean' : 'dull', delay);
+    }
+    sound(name, delay);
+  };
+}
+/* the leverage the crowd hears: two strikes, two outs, the tying run aboard or up, a tie */
+function leverage(st) {
+  if (!st || !st.score || !st.count) return 0.3;
+  var lead = st.score.us - st.score.them, on = (st.bases & 1 ? 1 : 0) + (st.bases & 2 ? 1 : 0) + (st.bases & 4 ? 1 : 0);
+  var l = 0.25 + (st.count.s === 2 ? 0.2 : 0) + (st.outs === 2 ? 0.2 : 0);
+  if (lead <= 0) l += 0.35; else if (on >= lead) l += 0.3; else if (on + 1 >= lead) l += 0.15;
+  return Math.min(1, l);
+}
+/* the moment the tag goes up: the umpire's call, the crowd, and on strike three the shake and the flash */
+var HIT_RES = { single: 1, double: 1, triple: 1, home_run: 1, error: 1 };
+function moment(pr, st) {
+  if (!SFX) return;
+  var r = pr.result;
+  if (pr.paOver && STRIKE_RES[r]) {
+    SFX.ump('k'); SFX.roar(1); SFX.buzz([24, 40, 70]);
+    kCue();
+  } else if (r === 'called_strike') SFX.ump('strike');
+  else if (r === 'ball') SFX.ump(pr.paOver ? 'ball4' : 'ball');
+  else if (r === 'swinging_strike') SFX.roar(0.3);
+  else if (r === 'foul') SFX.ump('foul');
+  else if (r === 'in_play' && pr.inPlay) {
+    if (HIT_RES[pr.inPlay.result] || pr.runs) { SFX.groan(pr.inPlay.result === 'home_run' || pr.runs ? 1.5 : 1); SFX.buzz(30); }
+    else { SFX.ump('out'); SFX.roar(pr.halfOver ? 1.1 : 0.55); }
+  }
+  SFX.bed(leverage(st));
+}
+function kCue() {
+  if (reducedMotion()) return;
+  var sc = $('m-scene'), z = S.grid && S.grid.el;
+  [sc, z].forEach(function (el, i) {
+    if (!el) return;
+    var c = i ? 'k-flash' : 'k-shake';
+    el.classList.remove(c); void el.offsetWidth; el.classList.add(c);
+    setTimeout(function () { el.classList.remove(c); }, 900);
+  });
+}
+/* the save on the result: confetti in the brand's colours and the club's, gone in three seconds */
+function confetti() {
+  if (reducedMotion()) return;
+  var box = document.createElement('div'), tc = S.scn && S.scn.pitcher.teamColors, cols = ['#ff4f1f', '#2b59ff', '#ffffff', tc && tc[0] || '#ff4f1f'];
+  box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+  var h = '';
+  for (var i = 0; i < 44; i++) {
+    h += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;background:' + cols[i % 4] + ';animation-delay:' + (Math.random() * 0.5).toFixed(2) +
+      's;animation-duration:' + (1.8 + Math.random() * 1.2).toFixed(2) + 's;--dx:' + Math.round(Math.random() * 120 - 60) + 'px;--r:' + Math.round(Math.random() * 720 - 360) + 'deg"></i>';
+  }
+  box.innerHTML = h;
+  document.body.appendChild(box);
+  setTimeout(function () { box.remove(); }, 3400);
+}
+function soundSwitch(v) {
+  prefs.sound = !!v; savePrefs();
+  if (SFX) SFX.setOn(prefs.sound);
+  var b = $('m-sound');
+  if (b) { b.classList.toggle('off', !prefs.sound); b.setAttribute('aria-pressed', prefs.sound ? 'true' : 'false'); b.setAttribute('aria-label', prefs.sound ? 'Sound on' : 'Sound off'); }
+  if (prefs.sound) { if (SFX) SFX.tap(); if (document.body.dataset.screen === 's-mound' && S.outing) SFX.bed(leverage(S.outing)); }
 }
 
 /* ---- theme ---------------------------------------------------------------------- */
@@ -357,10 +456,136 @@ function renderHome() {
   $('m-proxy').hidden = s.resolution !== 'proxy';
   if (MU) MU.pickLine($('h-pick'), s);
   renderStreak();
-  $('h-load').hidden = true;
-  $('h-main').hidden = false;
-  startHomeBg();
+  bootClubs(s);
+  /* the 3D mound starts now, behind the loading screen; the home shows when the first screen has
+     everything it needs (bootLoader) */
   drawHero();
+  BOOT.spot = true;
+  BOOT.ready.then(function () {
+    $('h-load').hidden = true;
+    $('h-err').hidden = true;   // a spot that came after the loading screen gave up on it
+    $('h-main').hidden = false;
+    startHomeBg();
+  });
+}
+
+/* ---- THE LOADING SCREEN (the owner, 2026-11-02) ------------------------------------------------
+   #boot covers the page from the first paint and .app is inert under it, so nothing is tappable or
+   focusable until the first screen has what it needs: today's spot (the pack), the fonts, the stadium
+   photo behind the home, and the 3D mound (STD_STAGE.current.loaded; a browser without WebGL keeps the
+   old drawing and skips it). The bar is real: each step fills its own share when it lands, the 3D's by
+   the stage's own marks (STD_STAGE.marks: created, assets, lit, people, compiled, then his arm's throw).
+   Inside a step the bar
+   eases toward the step's end and never reaches it until the step does.
+   It never flashes: unseen for its first 300 ms (style.css), and once seen it stays up at least until
+   BOOT_MIN_MS, so it never blinks in and out.
+   It never hangs: a mound that has not warmed in BOOT_CAP_MS lets the home show anyway, saying so
+   for a moment ("the ballpark is still loading"); take the mound then shows the mound's own warming
+   word (.scene.warming) until it is ready. A spot that has not come in BOOT_SPOT_MS puts up the home's
+   error and its try again. A failed spot does that at once (boot). The inline guard in index.html
+   covers a script that never ran. */
+var BOOT_CAP_MS = window.STD_BOOT_TEST_CAP || 30000, BOOT_SPOT_MS = BOOT_CAP_MS * 1.5, BOOT_MIN_MS = 900, BOOT_SAY_MS = 1400;
+var BOOT_STEPS = [
+  { k: 'spot', w: 14, say: 'today\'s spot' },
+  { k: 'fonts', w: 4, say: 'today\'s spot' },
+  { k: 'photo', w: 6, say: 'the ballpark' },
+  { k: 'created', w: 6, say: 'the ballpark' },
+  { k: 'assets', w: 34, say: 'the ballpark' },
+  { k: 'lit', w: 6, say: 'the lights' },
+  { k: 'people', w: 12, say: 'the players' },
+  { k: 'compiled', w: 18, say: 'warming up' },
+];
+var BOOT = { spot: false, fonts: false, photo: false, t0: Date.now(), shown: 0, done: false, capped: false };
+BOOT.ready = new Promise(function (res) { BOOT.release = res; });
+window.STD_BOOT_RUNS = true;
+function bootHas(k) {
+  if (k === 'spot' || k === 'fonts' || k === 'photo') return BOOT[k];
+  if (!use3d()) return true;
+  var st = window.STD_STAGE, m = st && st.marks;
+  /* warmed, and his arm's throw is in (3d/firstperson.js fetches it beside the scene, and until it
+     lands the first pitch flies without his arm or the first person lens) */
+  if (k === 'compiled') { var cu = st && st.current, fp = cu && cu.fp; return !!(cu && cu.loaded) && (!fp || !fp.ok || !!fp.throw); }
+  return !!(m && m[k] != null) || !!(st && st.current && st.current.loaded);
+}
+function bootClubs(s) {
+  try {
+    var c = clubsOf(s), bug = $('boot-bug');
+    $('boot-occ').textContent = occasionOf(s.title) || ' ';
+    [['boot-us', c.us], ['boot-them', c.them]].forEach(function (r) {
+      var row = $(r[0]); if (!row || !r[1]) return;
+      row.querySelector('b').textContent = r[1].name || '';
+      if (r[1].pri) row.style.setProperty('--club', r[1].pri);
+    });
+    if (bug) bug.classList.add('on');
+  } catch (e) {}
+}
+/* the screen steps aside: the page under it wakes, and the promise lets the home show */
+function bootEnd(now) {
+  if (BOOT.done) return;
+  BOOT.done = true;
+  var el = $('boot');
+  var go = function () {
+    if (el) { el.classList.add('boot-off'); el.setAttribute('aria-hidden', 'true'); }
+    var app = $('app'); if (app) app.removeAttribute('inert');
+    BOOT.release();
+  };
+  /* seen (past its 300 ms) but only just: hold it to BOOT_MIN_MS so it never blinks */
+  var age = Date.now() - BOOT.t0;
+  if (now || age < 300 || age >= BOOT_MIN_MS) go(); else setTimeout(go, BOOT_MIN_MS - age);
+}
+function bootLoader() {
+  var el = $('boot');
+  if (!el) { BOOT.release(); var app = $('app'); if (app) app.removeAttribute('inert'); return; }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { BOOT.fonts = true; }); else BOOT.fonts = true;
+  var img = document.querySelector('#h-bg .t-bgi[src]');
+  var photo = function () { BOOT.photo = true; };
+  if (!img || img.complete) photo(); else { img.addEventListener('load', photo, { once: true }); img.addEventListener('error', photo, { once: true }); }
+  /* the club table is a module that may land after the spot: fill the scorebug's names again then */
+  window.addEventListener('std-clubs', function () { if (S.scn && !BOOT.done) bootClubs(S.scn); });
+  var fill = $('boot-fill'), pct = $('boot-pct'), say = $('boot-step');
+  var stepAt = 0, stepT = Date.now();
+  (function tick() {
+    if (BOOT.done) return;
+    var done = 0, cur = null;
+    for (var i = 0; i < BOOT_STEPS.length; i++) {
+      var s = BOOT_STEPS[i];
+      if (bootHas(s.k)) { done += s.w; continue; }
+      if (!cur) cur = s;
+    }
+    /* inside the step under way: ease toward its end over a few seconds, never reaching it */
+    if (cur) {
+      if (cur.k !== stepAt) { stepAt = cur.k; stepT = Date.now(); }
+      done += cur.w * 0.9 * (1 - Math.exp(-(Date.now() - stepT) / 4000));
+    }
+    var p = Math.max(BOOT.shown, Math.min(100, done));
+    BOOT.shown = p;
+    fill.style.transform = 'scaleX(' + (p / 100).toFixed(3) + ')';
+    pct.textContent = Math.floor(p) + '%';
+    el.setAttribute('aria-valuenow', String(Math.floor(p)));
+    if (cur && say.textContent !== cur.say) say.textContent = cur.say;
+    var age = Date.now() - BOOT.t0;
+    if (!cur) {
+      fill.style.transform = 'scaleX(1)'; pct.textContent = '100%'; el.setAttribute('aria-valuenow', '100');
+      return bootEnd();
+    }
+    /* the timeout: the spot is in and the 3D is not. In, with a word, and the mound finishes warming */
+    if (BOOT.spot && BOOT.fonts && age > BOOT_CAP_MS) {
+      BOOT.capped = true;
+      $('boot-say').textContent = 'the ballpark is still loading. it finishes on the mound.';
+      setTimeout(function () { bootEnd(true); }, BOOT_SAY_MS);
+      return;
+    }
+    /* the spot never came: the home's error and its try again */
+    if (!BOOT.spot && age > BOOT_SPOT_MS) { bootFail(); return; }
+    setTimeout(tick, 100);
+  })();
+}
+function bootFail() {
+  bootEnd(true);
+  $('h-load').hidden = true;
+  var er = $('h-err');
+  er.hidden = false;
+  er.innerHTML = '<p>today\'s spot did not load.</p><button class="btn ghost" type="button" onclick="location.reload()">try again</button>';
 }
 
 /* The arsenal as a break chart, seen from the pitcher's side: induced vertical
@@ -398,6 +623,11 @@ function renderStreak() {
   var st = streakNow();
   var line = '<b>' + st.cur + '</b> ' + (st.cur === 1 ? 'door' : 'doors') + ' shut in a row' + (st.best > st.cur ? ' · best ' + st.best : '');
   $('h-streak').innerHTML = line;
+  /* the streak pulses when it is new to this page: the first look with one going, or one more */
+  if (st.cur > 0 && st.cur !== S.streakSeen) {
+    S.streakSeen = st.cur;
+    var hs = $('h-streak'); hs.classList.remove('pulse'); void hs.offsetWidth; hs.classList.add('pulse');
+  }
   var acct = S.mode === 'daily' && S.dailyResult && S.dailyResult.account;
   if (acct && acct.rank != null) line += ' · #' + acct.rank + ' of ' + acct.players + ' today';
   $('r-streak').innerHTML = S.mode === 'daily' ? line : '';
@@ -432,7 +662,16 @@ function renderHomeState() {
     take.textContent = d && d.pitchNo > 0 ? 'back to the mound · pitch ' + (d.pitchNo + 1) : 'take the mound';
   }
   renderStreak();
-  if (MU) MU.homeRow($('h-surv'));
+  homeVote();
+  if (MU) MU.homeRow($('h-surv')).then(placePill);
+  placePill();
+}
+
+/* The vote for tomorrow on the home (164): played today or not, signed in. The result's block, drawn
+   quiet so the result menu's row stays the result's. A block the player reads when they choose;
+   nothing opens. Hidden before the vote's first day, as on the result. */
+function homeVote() {
+  if (MU) MU.voteBlock($('h-vote'), { quiet: true }); else $('h-vote').hidden = true;
 }
 
 /* the home's stadium: the stills, one after another, slowly. CSS does the pan and the fade (transform
@@ -468,8 +707,14 @@ function buildMound() {
   if (S.grid) return;
   if (!S.scene) S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas'));
   $('m-scene').classList.toggle('s3d', !!S.scene.is3d);
-  /* the 3D module lands after this: put the aim on its zone then */
-  if (S.scene.arrived) S.scene.arrived.then(function (st) { return st.ready; }).then(function () { if (document.body.dataset.screen === 's-mound') relayout(); });
+  /* the 3D module lands after this: put the aim on its zone then. If it is still on its way (the
+     loading screen stopped waiting at BOOT_CAP_MS), the mound says it is warming up and the zone is
+     not there until it is ready: never a bare zone over a black field */
+  if (S.scene.arrived) {
+    var sc = $('m-scene'), warm = function () { sc.classList.remove('warming'); };
+    if (!(S.scene.real && S.scene.real.loaded)) sc.classList.add('warming');
+    S.scene.arrived.then(function (st) { return st.ready; }).then(function () { warm(); if (document.body.dataset.screen === 's-mound') relayout(); }, warm);
+  }
   /* AIM ON THE FIELD (the owner, 2026-10-22): the crosshair on the stage's own zone (aim.js), with
      the heat, the pitch dots and the preview's line in the same box. S.grid keeps its old name: it
      is the aim, the only grid on the mound. A drag or a mouse over it moves the break preview. */
@@ -694,14 +939,28 @@ function enterMound() {
   clearTimeout(S.endWinT); S.endWin = null; S.absBusy = false;
   if (S.mini) S.mini.reset();
   show('s-mound');
+  setPitcher();
   setBatter(true);
   renderHud(S.outing);
-  if (S.outing.pitchNo === 0) pbp('', batterAt(S.outing.batterIndex).name + ' leads off.');
+  if (S.outing.pitchNo === 0) { pbp('', batterAt(S.outing.batterIndex).name + ' leads off.'); if (SFX) SFX.ump('play'); }
+  /* the voice of the ump: a few approved clips, fetched a beat after the mound is up (voices.js) */
+  if (window.STD_VOICES) window.STD_VOICES.preload();
   else pbp(isTied(S.outing) ? 'tied' : '', 'pitch ' + (S.outing.pitchNo + 1) + '. ' + batterAt(S.outing.batterIndex).name + ' up.');
   updateThrow();
   if (DEBUG) { $('m-dbg').hidden = false; $('m-dbg').textContent = 'seed ' + S.outing.seed + ' · ' + S.outing.mode; }
 }
 
+/* WHO YOU PITCH AS (the owner, 2026-11-02): the closer and his club over the at bat row, every mode.
+   The full name; it shortens (names.js) only when the line has no room for it. */
+function setPitcher() {
+  var p = S.scn.pitcher || {}, c = window.STD_CLUB_NAMED ? window.STD_CLUB_NAMED(p.team) : null;
+  var club = c ? c.nick : String(p.team || '').trim();   // the club's whole name until clubs.js is in
+  var nm = $('m-pname');
+  nm.textContent = p.name || '';
+  $('m-pteam').textContent = club;
+  $('m-pit').setAttribute('aria-label', 'pitching: ' + (p.name || '') + (club ? ', ' + club : ''));
+  if (p.name && nm.scrollWidth > nm.clientWidth + 1) nm.textContent = lastName(p.name);
+}
 function setBatter(first) {
   var b = batterAt(S.outing.batterIndex);
   /* every at bat starts with the drawer shut (the owner, 2026-10-27), before the stage frames the
@@ -989,6 +1248,17 @@ function breakGlyph(a, color, big) {
     '<path d="M' + f(ex) + ' ' + f(ey) + 'L' + f(hx - uy * 2.6) + ' ' + f(hy + ux * 2.6) + 'L' + f(hx + uy * 2.6) + ' ' + f(hy - ux * 2.6) + 'Z" fill="' + color + '"/></svg>';
 }
 
+/* THE BREAK ARROWS (the owner, 2026-11-03): one, two or three yellow chevrons from the reticle, the way
+   the picked pitch moves as the hitter sees it. breaks.js holds the frame and its measurements (a
+   fastball against the average four-seam, any other pitch against his own fastball, both ways, with
+   gravity) and test/breaks.mjs pins it per pitch type and hand. Sideways goes on screen through
+   screenCol() (aim.js SCREEN_U), so a righty's slider points to his glove side. Nothing here is a
+   number on screen. */
+function breakArrows(a) {
+  var p = S.scn.pitcher;
+  return window.STD_BREAK.arrows(a, p.arsenal, p.throws, window.STD_AIM.SCREEN_U);
+}
+
 /* A long press on a pitch button opens its guide (and does not pick it). Returns a test for the
    click that follows a long press, so that click is not a pick. */
 function holdToLearn(b, type) {
@@ -1013,6 +1283,7 @@ function drawPreview() {
   /* at rides on the spec, so the stage ends the ghost on the exact point */
   var spec = live ? (cell == null ? { type: S.type, cell: 12 } : { type: S.type, cell: cell, at: at || [0, 0] }) : null;
   if (S.scene.setPreview) S.scene.setPreview(spec);
+  if (S.grid.setBreak) S.grid.setBreak(live ? breakArrows(S.scn.pitcher.arsenal.filter(function (a) { return a.type === S.type; })[0]) : null);
   var svg = gridLine();
   /* the 3D stage draws its own animated indicator; this 2D line is only for the no WebGL drawing */
   if (S.scene.is3d) { svg.style.display = 'none'; return; }
@@ -1050,7 +1321,7 @@ function gridLine() {
 function pitchSay(a, bats) {
   if (a.pfxX == null || a.pfxZ == null) return '';
   var x = a.pfxX, z = a.pfxZ, ax = Math.abs(x), shape = a.shape || C.SHAPE_OF[a.type];
-  var toward = bats === 'L' ? x > 0 : x < 0;
+  var toward = window.STD_BREAK.side(x, bats) === 'in';
   var dir = (toward ? 'in on ' : 'away from ') + (bats === 'L' ? 'a lefty' : 'a righty');
   var side = function (verb, min) { return ax >= min ? ' ' + verb + ' ' + dir + '.' : ''; };
   switch (shape) {
@@ -1088,7 +1359,7 @@ function renderGuide() {
   /* no speed: it is revealed after the throw (the owner, 2026-10-23) */
   var nums = '';
   if (a.pfxX != null && a.pfxZ != null) {
-    var toward = lefty ? a.pfxX > 0 : a.pfxX < 0, hx = Math.round(Math.abs(a.pfxX));
+    var toward = window.STD_BREAK.side(a.pfxX, b.bats) === 'in', hx = Math.round(Math.abs(a.pfxX));
     nums += '<span><b>' + esc(Math.round(Math.abs(a.pfxZ))) + '"</b>' + (a.pfxZ >= 0 ? 'up' : 'down') + '</span>' +
       '<span><b>' + esc(hx) + '"</b>' + (hx === 0 ? 'sideways' : toward ? 'in' : 'away') + '</span>';
   }
@@ -1227,7 +1498,6 @@ function throwIt() {
   var run = S.meter.run({
     quick: !!S.slide,
     command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type), pitch: ap,
-    onStage: stepLine,
     verb: S.outing.shutItLive ? 'shut it' : 'release',
     label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
     /* the step line under the meter says what to do; the meter's own corner keeps its word for after the tap */
@@ -1236,9 +1506,10 @@ function throwIt() {
     /* the zone is a stop too while the meter runs (the owner, 2026-10-30): its taps go to the meter,
        never to the aim. RE-AIM on the panel (or Escape) cancels it to aim again */
     zone: S.grid.el,
-    onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
+    onSnap: function () { sound('snap'); if (SFX) SFX.buzz(12); },
+    onStage: function (st) { stepLine(st); if (SFX) SFX.tick(); },
     /* a perfect release: the snap again, and with a perfect power a second one like a mitt's pop */
-    onPerfect: function (level) { sound('snap', 60); if (level === 2) sound('pop', 140); },
+    onPerfect: function (level) { if (SFX) SFX.chime(level); },
   });
   stepLine();
   absButton();
@@ -1364,10 +1635,14 @@ function fire(call) {
       var t = playText(pr, batter, res.state);
       pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
       renderHud(pr.halfOver ? halfEndState(res.state, pr.halfOver) : res.state);
+      moment(pr, res.state);
       var sl = stealText(pr.steal);
-      if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); }
+      if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); if (SFX) SFX.ump(pr.steal.result === 'out' ? 'out' : 'safe'); }
     });
-    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: sound, field: hudRunners } };
+    /* the minimap follows the 3D play (its runners and the ball), only reading it; with no 3D it is as it was */
+    var mmLive = !!(S.mini && S.scene.is3d && !reducedMotion()), inPlay = pr.result === 'in_play';
+    var field = mmLive ? function (l) { hudRunners(l); if (l) S.mini.live(l, inPlay); } : hudRunners;
+    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: pitchSounds(pr), field: field } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       rv.now();
       S.lastMarker = S.scene.toScreen(pr.actual);
@@ -1377,6 +1652,7 @@ function fire(call) {
       meterDone();
       hudRunners(null);
       if (S.mini) S.mini.show(pr);
+      if (mmLive) S.mini.settle((pr.halfOver ? halfEndState(res.state, pr.halfOver) : res.state).bases);
       return byBatter ? absReplay(pr, batter).then(function () {
         var t = playText(pr, batter, res.state);
         pbp(t.tag, t.rest + absNote(pr));
@@ -1485,22 +1761,32 @@ function pickoffIt() {
   S.grid.setDisabled(true);
   updateThrow();
   var basesBefore = st.bases | 0;
+  /* The broadcast of the throw is not his view of the plate, so the zone steps aside, as it does for
+     a pitch (the owner, 2026-11-02: the zone sat over the infield through the pickoff). It goes on the
+     tap, as he steps off, and at once (po-off: no fade), since the broadcast cuts to the throw; every path
+     below brings it back */
+  var real0 = S.scene && S.scene.real;
+  if (real0 && typeof real0.pickoff === 'function') $('m-scene').classList.add('flying', 'po-off');
   API.pickoff(st.outingId).then(function (res) {
     var ev = res.pickoff;
     /* the throw on the field, when the stage plays one (stage.js pickoff, the camera agent's #744);
        without it the line and the scorebug say what happened */
     var real = S.scene && S.scene.real;
-    var thrown = real && typeof real.pickoff === 'function'
+    var plays = real && typeof real.pickoff === 'function';
+    var thrown = plays
       ? Promise.resolve(real.pickoff({ po: ev, bases: basesBefore, hooks: { sound: sound, field: hudRunners } })).catch(function (e) { if (window.console) console.warn(e); })
       : Promise.resolve();
     return thrown.then(function () { return res; });
   }).then(function (res) {
     var ev = res.pickoff;
+    $('m-scene').classList.remove('flying', 'po-off');
     hudRunners(null);
     S.outing = res.state;
+    if (S.mini && S.scene.is3d && !reducedMotion()) S.mini.settle(ev.halfOver ? 0 : res.state.bases);
     var t = pickoffText(ev, res.state);
     pbp(t.tag, t.rest);
     if (ev.out) baseOut(ev.base);
+    if (SFX) SFX.ump(ev.out ? 'out' : 'safe');
     if (ev.halfOver && S.outing.status === 'live') {
       renderHud(halfEndState(S.outing, ev.halfOver));
       return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { return halfBreak(ev.halfOver); }).then(function () { settle(); nextHalf(ev.halfOver); });
@@ -1512,6 +1798,7 @@ function pickoffIt() {
     updateThrow();
   }).catch(function (e) {
     S.busy = false;
+    $('m-scene').classList.remove('flying', 'po-off');
     S.grid.setDisabled(false);
     updateThrow();
     toast('that throw did not go. try again.');
@@ -1601,6 +1888,8 @@ function absSvg(pr, batter, color) {
     '<line class="ar-edge" x1="' + f(ex) + '" y1="' + f(ey) + '" x2="' + f(x) + '" y2="' + f(y) + '"/>' +
     '<circle class="ar-ball" cx="' + f(x) + '" cy="' + f(y) + '" r="' + R + '" fill="' + color + '"/></svg>';
 }
+/* the words under the replay: the ball's edge to the zone the ABS read (pr.abs.t, rules 9 on), so a
+   strike reads "in" and a ball "off"; before rules 9, the centre's distance (pr.abs.d) */
 function inchWords(d) {
   var a = Math.abs(d);
   if (a < 0.05) return 'on the edge';
@@ -1617,13 +1906,15 @@ function absReplay(pr, batter) {
   box.className = 'absr ' + (ch.overturned ? 'over' : 'stands') + (prefs.quick ? ' quick' : '');
   box.innerHTML = '<div class="ar-zone">' + absSvg(pr, batter, ap ? colorOf(ap) : '#f4f5f7') + '</div>' +
     '<div class="ar-txt"><span class="ar-k"><b>abs</b> ' + esc(who) + '</span>' +
-    '<span class="ar-d"><b>' + (pr.abs.strike ? 'strike' : 'ball') + '</b> ' + esc(inchWords(pr.abs.d)) + '</span>' +
+    '<span class="ar-d"><b>' + (pr.abs.strike ? 'strike' : 'ball') + '</b> ' + esc(inchWords(pr.abs.t != null ? pr.abs.t : pr.abs.d)) + '</span>' +
     '<span class="ar-v">' + (ch.overturned ? 'overturned' : 'call stands') + '</span></div>';
   box.hidden = false;
   $('m-dock').classList.add('replaying');
   void box.offsetWidth;
   box.classList.add('show');
   sound('pop');
+  /* the umpire: a ball the challenge turned into a strike, else time for the review */
+  if (SFX) SFX.ump(ch.overturned && pr.abs.strike ? 'overturn' : 'time');
   return new Promise(function (res) {
     var done = false, t = 0;
     var end = function () {
@@ -1743,17 +2034,70 @@ function nextHalf(ho) {
 
 function finish() {
   return API.finishOuting(S.outing.outingId).then(function (r) {
+    /* a save as a club's closer unlocks its plate (plate.js). Practice is not kept, so it unlocks nothing */
+    var won = r.outcome === 'door_shut' && S.mode !== 'practice' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : null;
+    if (won) paintProfile();
     if (S.mode === 'survivor') return survivorNext(r);
     S.result = r;
+    S.unlocked = won;
     if (S.mode === 'daily') {
       S.dailyResult = r;
       S.daily = S.outing;
       record(S.day, S.scn.number, r);
     }
     renderResult();
+    unlockNote();
     show('s-result');
     renderHomeState();
+    if (SFX) {
+      SFX.bed(0); SFX.sting(r.outcome);
+      if (r.outcome === 'door_shut') { SFX.cheer(); SFX.buzz([30, 60, 30, 60, 90]); }
+      else if (r.outcome === 'walk_off' || r.outcome === 'doors_open') SFX.groan(1);
+    }
+    if (r.outcome === 'door_shut') confetti();
   });
+}
+
+/* The unlock, on the result after a save that earned a new club's plate. A line, never a popup. */
+function unlockNote() {
+  var el = $('r-unlock'), k = S.unlocked, PL = window.STD_PLATE;
+  if (!el) return;
+  el.hidden = !k || !PL;
+  if (!k || !PL) { el.innerHTML = ''; return; }
+  var st = authNow();
+  el.innerHTML = PL.svg(k, PL.initials(st.name, st.initials), { cls: 'ru-p' }) +
+    '<span><b>' + esc(PL.nameOf(k)) + ' plate unlocked</b><button type="button" class="ru-go" id="r-unlock-go">wear it</button></span>';
+  $('r-unlock-go').addEventListener('click', function () { MN.show('auth'); });
+}
+function authNow() { try { return (window.STD_AUTH && window.STD_AUTH.state()) || {}; } catch (e) { return {}; } }
+/* THE HEADER'S ACCOUNT BUTTON (the owner, 2026-11-03): signed out, a sign in pill. Signed in, your
+   plate with your initials. */
+function paintProfile() {
+  var b = $('b-profile'), st = authNow(), PL = window.STD_PLATE;
+  if (!b) return;
+  b.classList.toggle('in', !!st.signedIn);
+  b.classList.toggle('pill', !st.signedIn);
+  b.setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
+  b.title = st.signedIn ? 'Account' : 'Sign in';
+  b.innerHTML = st.signedIn && PL ? PL.svg(PL.current(), PL.initials(st.name, st.initials), { cls: 'hp' }) : '<span>sign in</span>';
+}
+/* signed in: the account's plates, and a guest's chosen plate carried over when the account has it */
+function syncPlates() {
+  var A = window.STD_AUTH, PL = window.STD_PLATE, st = authNow();
+  if (!PL) return;
+  if (!st.signedIn || !A || !A.plates) { PL.setServer(null); paintProfile(); return; }
+  Promise.resolve(A.plates()).then(function (r) {
+    if (!r) return;
+    PL.setServer(r);
+    var mine = PL.local().plate;
+    if (!r.plate && mine && (r.unlocked || []).indexOf(mine) >= 0 && A.setPlate) {
+      return Promise.resolve(A.setPlate(mine)).then(function (w) { if (w && w.data) PL.setServer(w.data); });
+    }
+  }).then(function () {
+    paintProfile();
+    if (MN.current() === 'sheet-auth') MN.renderAuth();
+    if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
+  }, function () {});
 }
 
 /* The daily's result carries the save (signed out) and the vote for tomorrow. Neither on practice or
@@ -1771,7 +2115,7 @@ function voteRow(v) {
   var b = $('r-vote-go'), on = !!(v && v.open && v.candidates && v.candidates.length === 2) && S.mode === 'daily';
   var was = !b.hidden;
   b.hidden = !on;
-  if (on) b.querySelector('span').textContent = v.myVote ? 'your vote is in' : v.canVote ? 'pick the next spot' : 'see the two spots';
+  if (on) b.querySelector('span').textContent = v.myVote ? 'Your vote is in' : v.canVote ? 'Pick the next spot' : 'See the two spots';
   if (was && !on && b.classList.contains('sel')) navSelect($('r-coach'));
 }
 function jumpToVote() {
@@ -1811,9 +2155,11 @@ function playSurvivor(go) {
 function survivorNext(r) {
   var sv = r.survivor || {};
   if (sv.over) {
-    show('s-surv');
-    if (MU) MU.showSurvivor();
+    /* the run is over: back to the home's Survivor tab, with its board */
     renderHomeState();
+    show('s-home');
+    setTab('surv', 'snap', true);
+    drawHero();
     return;
   }
   /* the next spot loads while the saves show */
@@ -1828,16 +2174,110 @@ function survivorNext(r) {
     }).then(function () { playSurvivor(go); });
   }).catch(function (e) {
     toast('the next spot didn\'t load. try again.');
-    show('s-surv');
-    if (MU) MU.showSurvivor();
+    renderHomeState();
+    show('s-home');
+    setTab('surv', 'snap', true);
     if (window.console) console.warn(e);
   });
 }
-function openSurvivor() {
-  if (!MU) return;
-  if (MN.isOpen()) MN.close(true);
-  show('s-surv');
-  MU.showSurvivor();
+/* ---- THE MODES SWITCHER on the home (the owner, 2026-11-02): daily, survivor and archive. A tab swaps
+   the panel under it, and nothing opens by itself. The pick is kept on the device (TAB_KEY) and the
+   page starts on daily when there is none. The move: the pill slides to the tab; the panels cross-slide
+   in the direction of travel with a short fade (transform and opacity only), while the panels' box
+   eases from one height to the other so the page below never jumps. A second tap mid-move lands the
+   first move at once, then starts the next, so the wrong panel never shows. */
+var TAB_KEY = 'std_home_tab_v1', TABS = ['daily', 'surv', 'arc'], TAB_MS = 290, tab = 'daily', tabMove = null;
+function tabBtn(t) { return document.querySelector('#h-modes [data-tab="' + t + '"]'); }
+function placePill() {
+  var live = TABS.filter(function (t) { var b = tabBtn(t); return b && !b.hidden; });
+  var bar = $('h-modes');
+  bar.style.setProperty('--n', live.length);
+  bar.style.setProperty('--i', Math.max(0, live.indexOf(tab)));
+}
+function fillTab(t) {
+  if (t === 'daily' && window.STD_BOARD && window.STD_BOARD.peek) window.STD_BOARD.peek();
+  if (t === 'surv' && MU) MU.showSurvivor();
+  if (t === 'arc' && MN.renderPast) MN.renderPast();
+}
+function landTab() { if (tabMove) { clearTimeout(tabMove.t); tabMove.land(); } }
+/* how: 'snap' with no move; keep: remember the pick on this device */
+function setTab(t, how, keep) {
+  var b = tabBtn(t);
+  if (!b || b.hidden) t = 'daily';
+  landTab();
+  var from = tab, A = $('hp-' + from), B = $('hp-' + t);
+  if (SFX && how !== 'snap' && from !== t) SFX.tab();
+  tab = t;
+  TABS.forEach(function (x) {
+    var e = tabBtn(x); if (!e) return;
+    var on = x === t;
+    e.classList.toggle('on', on); e.setAttribute('aria-selected', on ? 'true' : 'false'); e.tabIndex = on ? 0 : -1;
+  });
+  placePill();
+  if (keep) { try { localStorage.setItem(TAB_KEY, t); } catch (e) {} }
+  fillTab(t);
+  if (from === t) return;
+  var panes = $('h-panes');
+  var seen = document.body.dataset.screen === 's-home' && !$('h-main').hidden;
+  if (how === 'snap' || !seen) {
+    A.hidden = true; A.classList.remove('on'); B.hidden = false; B.classList.add('on');
+    return;
+  }
+  var still = false;
+  try { still = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  var dir = TABS.indexOf(t) > TABS.indexOf(from) ? 1 : -1, dx = still ? 0 : 26;
+  /* the start: B laid over A, off to the side of travel and clear; the box held at A's height */
+  var h0 = panes.offsetHeight;
+  B.hidden = false; B.classList.add('on', 'go');
+  B.style.transform = 'translate3d(' + (dir * dx) + '%,0,0)'; B.style.opacity = '0';
+  var h1 = B.offsetHeight;
+  panes.style.height = h0 + 'px';
+  panes.classList.add('anim');
+  A.classList.add('mv'); B.classList.add('mv');
+  void panes.offsetHeight;
+  /* the end state; the transitions carry it */
+  panes.style.height = h1 + 'px';
+  A.style.transform = 'translate3d(' + (-dir * dx) + '%,0,0)'; A.style.opacity = '0';
+  B.style.transform = ''; B.style.opacity = '';
+  tabMove = {
+    land: function () {
+      tabMove = null;
+      A.hidden = true; A.classList.remove('on', 'mv'); A.style.transform = ''; A.style.opacity = '';
+      B.classList.remove('go', 'mv');
+      panes.classList.remove('anim'); panes.style.height = '';
+    },
+  };
+  tabMove.t = setTimeout(tabMove.land, TAB_MS);
+}
+function restoreTab() {
+  var t = 'daily';
+  try { t = localStorage.getItem(TAB_KEY) || 'daily'; } catch (e) {}
+  setTab(TABS.indexOf(t) < 0 ? 'daily' : t, 'snap');
+}
+function wireTabs() {
+  TABS.forEach(function (t) { var b = tabBtn(t); if (b) b.addEventListener('click', function () { setTab(t, null, true); }); });
+  /* the arrows walk the tabs, as a tablist does */
+  $('h-modes').addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var live = TABS.filter(function (x) { var b = tabBtn(x); return b && !b.hidden; });
+    var i = live.indexOf(tab) + (e.key === 'ArrowRight' ? 1 : -1);
+    if (i < 0 || i >= live.length) return;
+    e.preventDefault(); setTab(live[i], null, true); tabBtn(live[i]).focus();
+  });
+  /* a sideways swipe on the panels moves one tab; an upright drag stays a scroll (touch-action: pan-y) */
+  var sw = null;
+  $('h-panes').addEventListener('touchstart', function (e) {
+    sw = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, at: Date.now() } : null;
+  }, { passive: true });
+  $('h-panes').addEventListener('touchend', function (e) {
+    if (!sw || !e.changedTouches.length) return;
+    var dx = e.changedTouches[0].clientX - sw.x, dy = e.changedTouches[0].clientY - sw.y, quick = Date.now() - sw.at < 700;
+    sw = null;
+    if (!quick || Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    var live = TABS.filter(function (x) { var b = tabBtn(x); return b && !b.hidden; });
+    var i = live.indexOf(tab) + (dx < 0 ? 1 : -1);
+    if (i >= 0 && i < live.length) setTab(live[i], null, true);
+  }, { passive: true });
 }
 
 /* ---- the archive (Pro, CONTRACT.md 17): a past daily on its own spot and seed. Only reachable
@@ -1880,8 +2320,9 @@ function renderResult() {
   $('r-kr').innerHTML = runs != null ? '<b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') : '';
   $('r-npitch').textContent = r.pitches + (r.pitches === 1 ? ' pitch' : ' pitches');
   $('r-strip').innerHTML = stripHTML(r.strip, true);
-  var WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
-  $('r-legend').innerHTML = C.BANDS.map(function (b) { return '<span><i class="sq ' + b.band + '"></i>' + WORD[b.band] + '</span>'; }).join('');
+  /* the box line and the grade mix (postgame.js): the engine's counts, after the outing only */
+  $('r-box').innerHTML = PG && st ? boxHTML(PG.box(st.log, r)) : '';
+  $('r-mix').innerHTML = mixHTML(r.strip);
   $('r-pct').innerHTML = p + '<sup>' + ordSuffix(p) + '</sup>';
   $('r-kpct').setAttribute('aria-label', p + ordSuffix(p) + ' of closers');
   $('r-pctline').innerHTML = 'better than <b>' + esc(p) + '%</b> of the closer pool in this spot.';
@@ -1891,7 +2332,7 @@ function renderResult() {
   $('r-why').textContent = r.pitchedLike ? r.pitchedLike.reason : '';
   var rv = r.reveal || {};
   $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
-  $('r-real').innerHTML = '<div class="vs-t"><small>' + VS_LABEL + '</small>' +
+  $('r-real').innerHTML = '<div class="vs-t"><small>' + esc(vsLabel()) + '</small>' +
     '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal)) + '</b>' +
     vsWhy(r, rv, runs) + '</div>';
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
@@ -1982,15 +2423,15 @@ function padTick(t) {
 }
 
 /* ---- you against the real game ---------------------------------------------------------------
-   You pitch as him, so the comparison is with what really happened (the owner, 2026-10-26: "you
-   beat Yamamoto sounds weird when you're also playing as him"). The verdict is the engine's
-   (vsReal: the outcome, then runs, then pitches when his count is known). The line under it says
-   which of the three decided it, in the result's own numbers. */
-var VS_LABEL = 'you vs the real game';
+   The verdict is the engine's (vsReal: the outcome, then runs, then pitches when his count is
+   known). The words name the real closer by his short name (the owner, 2026-11-10: "You vs Uehara",
+   "Uehara did better"), from the pack through names.js versus(); with no name on the pack they are
+   the real game's, as before. The line under it says which of the three decided it, in the result's
+   own numbers. The home's pill stays short and nameless (VS_SHORT). */
 var VS_SHORT = { beat: 'rewrote history', matched: 'matched history', lost: 'history did better' };
-function vsHead(v) {
-  return v === 'beat' ? 'you rewrote history' : v === 'matched' ? 'you matched history' : v === 'lost' ? 'history did better' : '-';
-}
+function vsCopy() { return window.STD_NAMES.versus(S.scn && S.scn.pitcher && S.scn.pitcher.name); }
+function vsLabel() { return vsCopy().label; }
+function vsHead(v) { var c = vsCopy(); return c[v] || '-'; }
 /* the real game's column: the year when the pack has it */
 function realCol() { var y = S.scn && S.scn.pitcher && S.scn.pitcher.year; return y ? String(y) : 'real game'; }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
@@ -2018,47 +2459,161 @@ function vsText(r, rv, runs) {
   return p ? 'your result: ' + p.mine + '. real result: ' + p.real + '.' : null;
 }
 
-/* Your plate appearances from the outing's log: one per batter, in order, each with its pitches.
-   The word is the play by play's tag on the pitch that ended it; each pitch keeps its own tag. */
-function myPAs(log, strip) {
-  var out = [], start = 0, bi = 0, runs = 0;
-  (log || []).forEach(function (pr, i) {
-    runs += pr.runs || 0;
-    if (!pr.paOver && i < log.length - 1) return;
-    var b = batterAt(bi);
-    var calls = log.slice(start, i + 1).map(function (q, j) {
-      return { n: start + j + 1, type: q.call && q.call.type, velo: q.velo, count: q.countBefore, tag: playText(q, b).tag, band: strip && strip[start + j] };
-    });
-    out.push({ batter: b.name, bats: b.bats, word: playText(pr, b).tag, pitches: i - start + 1, runs: runs, calls: calls });
-    start = i + 1; runs = 0;
-    if (pr.paOver) bi++;
-  });
-  return out;
-}
+/* ---- after the outing: the box line, the grade mix, the at bats (postgame.js) ------------------
+   The owner (2026-11-05): "You should be able to see the K-Zone for each at bat when you're done."
+   Every number here is the engine's: the box line and the at bats are read off the outing's log
+   (postgame.js), the bands are the strip's. Nothing here shows before the outing is over. */
+var PG = window.STD_POSTGAME;
+/* a pitch can be clipped when the clip module and the API's clip calls are on the page */
+function CLIPS() { return !!(window.STD_CLIP_UI && API.clipSpec && API.clip); }
 /* a pitch type's chip takes ink text on a light colour */
 function lightColor(hex) {
   var m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return false;
   var v = parseInt(m[1], 16), r = v >> 16 & 255, g = v >> 8 & 255, b = v & 255;
   return (0.299 * r + 0.587 * g + 0.114 * b) > 150;
 }
-/* the card is narrow: the two long strike tags get their short form (the title keeps the long one) */
-var CARD_TAG = { 'swinging strike': 'swinging', 'called strike': 'called' };
 var BAND_WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
-function pitchCard(c) {
-  var col = TYPE_COLORS[c.type] || '#64748b', nm = typeName(c.type);
-  var v = c.velo != null && isFinite(c.velo) ? Math.round(c.velo) : null;
-  var cnt = c.count ? c.count.b + '-' + c.count.s : '';
-  var meta = [v, cnt].filter(function (x) { return x != null && x !== ''; }).join(' · ');
-  var title = 'pitch ' + c.n + ': ' + nm + (v != null ? ', ' + v + ' mph' : '') + (cnt ? ', ' + cnt : '') + ', ' + c.tag + (c.band ? ', ' + BAND_WORD[c.band] : '');
-  return '<span class="pc" title="' + esc(title) + '"><b class="n">' + c.n + '</b>' +
-    '<span class="ty' + (lightColor(col) ? ' lt' : '') + '" style="--tc:' + col + '">' + esc(c.type) + '</span>' +
-    '<span class="m">' + esc(meta) + '</span><span class="m">' + esc(CARD_TAG[c.tag] || c.tag) + '</span><i class="bd ' + esc(c.band || '') + '"></i></span>';
+function cap(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
+function typeCol(t) { return TYPE_COLORS[t] || '#64748b'; }
+
+/* the box line: ten tiles, each the engine's count */
+function boxHTML(b) {
+  var pc = function (v) { return v == null ? '-' : v + '%'; };
+  var tiles = [['Pitches', b.p], ['Strikes', b.s], ['Balls', b.b], ['Strike %', pc(b.strikePct)], ['First-pitch strike', pc(b.fpsPct)],
+    ['K', b.k], ['BB', b.bb], ['H', b.h], ['R', b.r], ['HBP', b.hbp]];
+  return '<dl class="bx">' + tiles.map(function (t) { return '<div><dt>' + esc(t[0]) + '</dt><dd>' + esc(t[1]) + '</dd></div>'; }).join('') + '</dl>';
+}
+/* the grade mix: the strip's bands counted, one bar and four counts */
+function mixHTML(strip) {
+  var n = (strip || []).length, cnt = {};
+  (strip || []).forEach(function (b) { cnt[b] = (cnt[b] || 0) + 1; });
+  if (!n) return '';
+  var bar = C.BANDS.map(function (b) { var c = cnt[b.band] || 0; return c ? '<i class="' + b.band + '" style="flex:' + c + '"></i>' : ''; }).join('');
+  var keys = C.BANDS.map(function (b) {
+    return '<span class="' + ((cnt[b.band] || 0) ? '' : 'z') + '"><i class="sq ' + b.band + '"></i>' + cap(BAND_WORD[b.band]) + ' <b>' + (cnt[b.band] || 0) + '</b></span>';
+  }).join('');
+  return '<p class="mx-h"><b>Your calls, graded</b><span>' + plural(n, 'pitch', 'pitches') + '</span></p>' +
+    '<div class="mx-bar" role="img" aria-label="' + esc(C.BANDS.map(function (b) { return (cnt[b.band] || 0) + ' ' + BAND_WORD[b.band]; }).join(', ')) + '">' + bar + '</div>' +
+    '<div class="mx-k">' + keys + '</div>';
 }
 
-/* Two columns, you and the real game. The outcome, runs and pitches, then one row per batter faced
-   in the real order, with your pitches between his name and the two results. A batter one side
-   never faced is a quiet dash. Only an unambiguous edge is marked: the better outcome, fewer runs,
-   fewer pitches. A plate appearance is never judged. */
+/* ---- the K-Zone: one per at bat ------------------------------------------------------------
+   The box is the aim grid's 5x5 (the zone its middle three), PITCHER'S VIEW: postgame.js point()
+   mirrors the catcher's view data the way aim.js and screenCol() do. Each pitch sits where it
+   crossed (the engine's actual, after the release's miss), numbered in order, filled in its type's
+   colour, its shape the result's. A pitch past the box sits on its edge. */
+var KZ = 100;
+function markSVG(kind, x, y, r, col, n) {
+  var lt = lightColor(col), ink = lt ? '#0b0f17' : '#ffffff', sh = '';
+  if (kind === 'ball') sh = '<circle class="m-ball" cx="' + x + '" cy="' + y + '" r="' + (r - 1) + '" style="stroke:' + col + '"/>';
+  else if (kind === 'hbp') sh = '<rect class="m-hbp" x="' + (x - r + 1) + '" y="' + (y - r + 1) + '" width="' + (2 * r - 2) + '" height="' + (2 * r - 2) + '" rx="2" style="stroke:' + col + '"/>';
+  else if (kind === 'inplay') sh = '<path class="m-ip" d="M' + x + ' ' + (y - r - 1.5) + 'L' + (x + r + 1.5) + ' ' + y + 'L' + x + ' ' + (y + r + 1.5) + 'L' + (x - r - 1.5) + ' ' + y + 'Z" style="fill:' + col + '"/>';
+  else {
+    sh = '<circle class="m-fill" cx="' + x + '" cy="' + y + '" r="' + r + '" style="fill:' + col + '"/>';
+    if (kind === 'swing') sh += '<circle class="m-ring" cx="' + x + '" cy="' + y + '" r="' + (r + 2.4) + '"/>';
+    if (kind === 'foul') sh += '<circle class="m-ring dash" cx="' + x + '" cy="' + y + '" r="' + (r + 2.4) + '"/>';
+  }
+  var hollow = kind === 'ball' || kind === 'hbp';
+  return sh + (n != null ? '<text x="' + x + '" y="' + (y + 0.4) + '" style="fill:' + (hollow ? 'currentColor' : ink) + '">' + n + '</text>' : '');
+}
+function kzoneSVG(ab) {
+  var g = '';
+  for (var i = 1; i < 5; i++) {
+    var t = i * 20, inner = i === 2 || i === 3;
+    g += '<line class="' + (inner ? 'kz-in' : 'kz-out') + '" x1="' + (inner ? 20 : 0) + '" y1="' + t + '" x2="' + (inner ? 80 : KZ) + '" y2="' + t + '"/>' +
+      '<line class="' + (inner ? 'kz-in' : 'kz-out') + '" x1="' + t + '" y1="' + (inner ? 20 : 0) + '" x2="' + t + '" y2="' + (inner ? 80 : KZ) + '"/>';
+  }
+  var dots = ab.pitches.map(function (p) {
+    if (!p.at) return '';
+    var x = Math.max(5, Math.min(95, p.at[0] * KZ)).toFixed(1), y = Math.max(5, Math.min(95, p.at[1] * KZ)).toFixed(1);
+    return '<g class="kd ' + p.kind + '" data-pick="' + p.n + '">' + markSVG(p.kind, +x, +y, 5.6, typeCol(p.type), p.k) + '</g>';
+  }).join('');
+  /* inside and away, by the side he bats from: a right-handed hitter stands on the right of the pitcher's view */
+  var L = ab.bats === 'L', left = L ? 'Inside' : 'Away', right = L ? 'Away' : 'Inside';
+  return '<div class="kz"><svg viewBox="-2 -2 104 104" role="img" aria-label="' + esc('The zone for ' + (ab.name || 'this at bat') + ', from the mound') + '">' +
+    '<rect class="kz-bg" x="0" y="0" width="100" height="100" rx="6"/><rect class="kz-zone" x="20" y="20" width="60" height="60" rx="1.5"/>' + g + dots + '</svg>' +
+    (ab.bats === 'L' || ab.bats === 'R' ? '<p class="kz-side"><span>' + left + '</span><span>' + right + '</span></p>' : '') + '</div>';
+}
+/* the legend, once over the at bats */
+function kzLegend() {
+  var it = [['called', 'Called strike'], ['swing', 'Swinging strike'], ['foul', 'Foul'], ['ball', 'Ball'], ['inplay', 'In play'], ['hbp', 'Hit by pitch']];
+  return '<div class="kz-key">' + it.map(function (k) {
+    return '<span><svg viewBox="0 0 20 20" aria-hidden="true">' + markSVG(k[0], 10, 10, 5.6, 'var(--dim)', null) + '</svg>' + k[1] + '</span>';
+  }).join('') + '<span class="kz-note">Filled in the pitch\'s colour. From the mound.</span></div>';
+}
+/* the row is narrow on a phone: the short word (its label and the detail keep the long one) */
+var ROW_WORD = { called: 'Called', swing: 'Swinging', hbp: 'HBP' };
+/* one pitch's row: the detail is the row (tap it to light it on the zone), the Clip its own button */
+function pitchRow(p, clip, sel) {
+  var col = typeCol(p.type), v = p.velo != null && isFinite(p.velo) ? Math.round(p.velo) : null;
+  var cnt = p.count ? p.count.b + '-' + p.count.s : '';
+  var title = 'Pitch ' + p.n + ': ' + typeName(p.type) + (v != null ? ', ' + v + ' mph' : '') + (cnt ? ', ' + cnt : '') + ', ' + p.word.toLowerCase() + (p.band ? ', ' + BAND_WORD[p.band] : '');
+  return '<div class="pc' + (sel ? ' on' : '') + '" data-n="' + p.n + '">' +
+    '<button class="pc-pick" type="button" data-pick="' + p.n + '" aria-pressed="' + (sel ? 'true' : 'false') + '" aria-label="' + esc(title) + '">' +
+    '<b class="n">' + p.k + '</b><span class="ty' + (lightColor(col) ? ' lt' : '') + '" style="--tc:' + col + '">' + esc(p.type) + '</span>' +
+    '<span class="m">' + esc([v != null ? v : null, cnt].filter(function (x) { return x != null && x !== ''; }).join(' · ')) + '</span>' +
+    '<span class="w">' + esc(ROW_WORD[p.kind] || p.word) + '</span><i class="bd ' + esc(p.band || '') + '" aria-hidden="true"></i></button>' +
+    (clip ? '<button class="pc-clip" type="button" data-clip="' + p.n + '" aria-label="' + esc('Clip ' + title) + '"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip</button>' : '') +
+    '</div>';
+}
+/* the at bat's own Clip, under its pitches: every pitch of it in order, one video (clip-ui.js) */
+function abClipBtn(ab) {
+  return '<button class="ab-clip" type="button" data-abclip="' + (ab.from + 1) + '" data-abto="' + ab.to + '" aria-label="' + esc('Clip the at bat: ' + (ab.name || 'this hitter') + ', ' + plural(ab.pitches.length, 'pitch', 'pitches')) + '">' +
+    '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 1.5v7l6-3.5z"/></svg>Clip at bat<small>' + esc(plural(ab.pitches.length, 'pitch', 'pitches')) + '</small></button>';
+}
+/* the picked pitch, beside the zone */
+function pitchDetail(ab, p) {
+  if (!p) return '';
+  var v = p.velo != null && isFinite(p.velo) ? Math.round(p.velo) + ' mph' : '';
+  var where = p.cell != null && M && M.cellWords ? cap(M.cellWords(p.cell, ab.bats)) : '';
+  return '<p class="dt-n">Pitch ' + p.k + ' of ' + ab.pitches.length + (p.count ? ' · ' + p.count.b + '-' + p.count.s : '') + '</p>' +
+    '<p class="dt-t"><i style="background:' + typeCol(p.type) + '"></i>' + esc(cap(typeName(p.type))) + (v ? ' <span>' + esc(v) + '</span>' : '') + '</p>' +
+    '<p class="dt-r">' + esc(p.word) + (p.challenged ? ' <em>Challenged</em>' : '') + '</p>' +
+    (where ? '<p class="dt-w">' + esc(where) + '</p>' : '') +
+    (p.band ? '<p class="dt-b ' + esc(p.band) + '"><i class="sq ' + esc(p.band) + '"></i>' + esc(cap(BAND_WORD[p.band])) + '</p>' : '');
+}
+/* the at bats as the result shows them, kept so a tap can redraw one card */
+var AB = { list: [], pick: {} };
+function abCard(ab, real, i, col, bat) {
+  var clip = CLIPS(), last = ab ? ab.pitches[ab.pitches.length - 1] : null;
+  var pick = ab ? (AB.pick[i] != null ? AB.pick[i] : last && last.n) : null;
+  var cur = ab ? ab.pitches.filter(function (p) { return p.n === pick; })[0] : null;
+  var name = ab ? ab.name : real.batter;
+  var endCls = ab ? ({ K: 'k', BB: 'bb', HBP: 'bb', '1B': 'hit', '2B': 'hit', '3B': 'hit', HR: 'hit', E: 'hit' }[ab.code] || 'out') : 'none';
+  var head = '<header class="ab-h"><span class="ab-i">AB ' + (i + 1) + '</span><b class="nm">' + esc(name) + '</b>' +
+    (ab && ab.bats ? '<small>Bats ' + esc(ab.bats) + '</small>' : '') +
+    (ab ? '<span class="ab-end ' + endCls + '" title="' + esc(ab.word) + '">' + esc(ab.code || '-') + '</span>' : '') + '</header>';
+  var vs = '<div class="ab-vs"><span class="v you"><i>You</i>' + (ab ? esc(ab.word) + '<small>' + plural(ab.pitches.length, 'pitch', 'pitches') + '</small>' : '<b class="none">-</b><small>You never faced him</small>') + '</span>' +
+    '<span class="v real"><i>' + esc(col) + '</i>' + (real ? esc(cap(real.result)) + (real.pitches != null ? '<small>' + plural(real.pitches, 'pitch', 'pitches') + '</small>' : '') : '<b class="none">-</b>') + '</span></div>';
+  if (!ab) return '<article class="cmp-bat ab never"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head + vs + '</article>';
+  return '<article class="cmp-bat ab" data-ab="' + i + '"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' + head +
+    '<div class="ab-body">' + kzoneSVG(ab).replace('data-pick="' + pick + '"', 'data-pick="' + pick + '" data-on="1"') +
+    '<div class="ab-dt" aria-live="polite">' + pitchDetail(ab, cur) + '</div></div>' +
+    '<div class="ab-list">' + ab.pitches.map(function (p) { return pitchRow(p, clip, p.n === pick); }).join('') + '</div>' + (clip ? abClipBtn(ab) : '') + vs + '</article>';
+}
+/* a tap on a pitch (its row or its mark): light it and show its detail. Nothing else moves */
+function pickPitch(card, n) {
+  var i = +card.getAttribute('data-ab'), ab = AB.list[i];
+  if (!ab) return;
+  var p = ab.pitches.filter(function (x) { return x.n === n; })[0];
+  if (!p) return;
+  AB.pick[i] = n;
+  card.querySelector('.ab-dt').innerHTML = pitchDetail(ab, p);
+  card.querySelectorAll('.pc').forEach(function (r) {
+    var on = +r.getAttribute('data-n') === n;
+    r.classList.toggle('on', on);
+    r.querySelector('.pc-pick').setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  card.querySelectorAll('.kd').forEach(function (g) {
+    var on = +g.getAttribute('data-pick') === n;
+    if (on) { g.setAttribute('data-on', '1'); g.parentNode.appendChild(g); } else g.removeAttribute('data-on');
+  });
+}
+
+/* You and the real game: the outcome, runs and pitches side by side, then one card per batter
+   faced in the real order: his K-Zone, your pitches, and the two results. A batter one side never
+   faced is a quiet dash. Only an unambiguous edge is marked: the better outcome, fewer runs, fewer
+   pitches. A plate appearance is never judged. */
 function compareCard(r, rv, runs, st) {
   var none = '<span class="v none">-</span>';
   var cell = function (html, win, cls) { return '<span class="v' + (cls ? ' ' + cls : '') + (win ? ' win' : '') + '">' + html + '</span>'; };
@@ -2067,30 +2622,24 @@ function compareCard(r, rv, runs, st) {
   var hp = typeof rv.pitches === 'number' ? rv.pitches : null;
   var col = realCol();
   var rows =
-    row('result', cell('<b class="o ' + esc(r.outcome) + '">' + esc((C.OUTCOME_LABEL[r.outcome] || '').toLowerCase()) + '</b>', mineO > hisO),
-      rv.outcome ? cell('<b class="o ' + esc(rv.outcome) + '">' + esc((C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase()) + '</b>', hisO > mineO) : none) +
-    row('runs', runs == null ? none : cell('<b>' + esc(runs) + '</b>', rv.runs != null && runs < rv.runs),
+    row('Result', cell('<b class="o ' + esc(r.outcome) + '">' + esc(C.OUTCOME_LABEL[r.outcome] || '') + '</b>', mineO > hisO),
+      rv.outcome ? cell('<b class="o ' + esc(rv.outcome) + '">' + esc(C.OUTCOME_LABEL[rv.outcome] || '') + '</b>', hisO > mineO) : none) +
+    row('Runs', runs == null ? none : cell('<b>' + esc(runs) + '</b>', rv.runs != null && runs < rv.runs),
       rv.runs == null ? none : cell('<b>' + esc(rv.runs) + '</b>', runs != null && rv.runs < runs)) +
-    row('pitches', cell('<b>' + esc(r.pitches) + '</b>', hp != null && r.pitches < hp),
-      hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(rv.pitchesNote || 'not on record'), false, 'note'));
-  var mine = myPAs(st && st.log, r.strip), real = rv.plateAppearances || [];
-  var n = Math.max(mine.length, real.length), bats = '';
+    row('Pitches', cell('<b>' + esc(r.pitches) + '</b>', hp != null && r.pitches < hp),
+      hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(rv.pitchesNote || 'Not on record'), false, 'note'));
+  var log = st && st.log;
+  AB.list = PG ? PG.atBats(log, S.scn, r.strip) : [];
+  AB.pick = {};
+  var real = rv.plateAppearances || [];
+  var n = Math.max(AB.list.length, real.length), bats = '';
   var bat = (clubsOf(S.scn).them || {}).pri || '';
-  for (var i = 0; i < n; i++) {
-    var a = mine[i], b = real[i], name = a ? a.batter : b.batter;
-    var side = function (pa, word, cls, lbl) {
-      if (!pa) return '<span class="v none ' + cls + '"><i>' + lbl + '</i>-</span>';
-      return '<span class="v ' + cls + '"><i>' + lbl + '</i>' + esc(word) + (pa.pitches != null ? '<small>' + plural(pa.pitches, 'pitch', 'pitches') + '</small>' : '') + '</span>';
-    };
-    var bats1 = a ? a.bats : null;
-    bats += '<div class="cmp-bat"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' +
-      '<span class="ab-who"><span class="i">AB ' + (i + 1) + '</span><b class="nm">' + esc(name) + '</b>' + (bats1 ? '<small>bats ' + esc(bats1) + '</small>' : a ? '' : '<small>you never faced him</small>') + '</span>' +
-      (a ? '<span class="ab-trk">' + a.calls.map(pitchCard).join('') + '</span>' : '<span class="ab-trk empty"></span>') +
-      side(a, a && a.word, 'you', 'you') + side(b, b && b.result, 'real', col) + '</div>';
-  }
-  return '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">you</span><span class="who him">' + esc(col) + '</span></div>' +
-    rows + bats +
-    (rv.summary ? '<p class="cmp-sum"><b>what happened</b> ' + esc(rv.summary) + '.</p>' : '');
+  for (var i = 0; i < n; i++) bats += abCard(AB.list[i], real[i], i, col, bat);
+  return '<div class="cmp-top"><p class="cmp-t">' + esc(cap(vsLabel())) + '</p>' +
+    '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">You</span><span class="who him">' + esc(col) + '</span></div>' +
+    rows + '</div>' +
+    (rv.summary ? '<p class="cmp-sum"><b>What happened</b> ' + esc(rv.summary) + '.</p>' : '') +
+    '<p class="ab-t">At bat by at bat</p>' + kzLegend() + '<div class="ab-grid">' + bats + '</div>';
 }
 
 /* Your score on the real distribution of the closer pool's outings in this
@@ -2146,8 +2695,8 @@ function openCoach() {
    navigator.share run straight off a tap. Where files cannot be shared, the image is saved instead,
    and the text is always one tap away. */
 function shareText(r) { return r.share || (window.STD_SHARE && window.STD_SHARE.text(r, S.scn.number)) || ''; }
-function copyText(text) {
-  function copied() { toast('copied. paste it anywhere.'); }
+function copyText(text, msg) {
+  function copied() { toast(msg || 'copied. paste it anywhere.'); }
   function fallback() {
     try {
       var ta = document.createElement('textarea');
@@ -2171,7 +2720,7 @@ function cardOf(r) {
   return {
     outcome: r.outcome, strip: r.strip || [], pitches: r.pitches, percentile: r.percentile,
     label: s.preview ? 'preview' : '#' + s.number, title: s.title,
-    vsReal: r.vsReal || null, vsLabel: VS_LABEL,
+    vsReal: r.vsReal || null, vsLabel: vsLabel(),
     vsHead: r.vsReal ? vsHead(r.vsReal) : null, vsWhy: r.vsReal && rv.outcome ? vsText(r, rv, runsOf(r, st)) : null,
     pitchedLike: r.pitchedLike && r.pitchedLike.name || null,
   };
@@ -2285,20 +2834,54 @@ function takeMound() {
   });
 }
 
+/* ---- clips (clip-ui.js): a pitch played again, as a video or a link ------------------------- */
+function initClips() {
+  var CU = window.STD_CLIP_UI;
+  if (!CU) return;
+  CU.init({
+    api: function () { return API; },
+    scene: function () { if (!S.scene) S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas')); return S.scene; },
+    show: show, toast: toast, copy: copyText, playText: playText, lastName: lastName, pitchSounds: pitchSounds,
+    typeColor: function (t) { return TYPE_COLORS[t] || '#64748b'; },
+    play2d: function (sc, opts) { return AN.play(sc, opts); },
+    home: function () { renderHomeState(); show('s-home'); drawHero(); },
+    playDaily: function () { dailyBack(); renderHomeState(); show('s-home'); takeMound(); },
+  });
+  /* a pitch in an at bat: a tap on its row or its mark shows its detail; the Clip on each of your
+     pitches plays it again, and the at bat's Clip plays all of its pitches. All behind a tap only */
+  $('r-reveal').addEventListener('click', function (e) {
+    var pk = e.target.closest && e.target.closest('[data-pick]');
+    if (pk) { var card = pk.closest('.ab[data-ab]'); if (card) pickPitch(card, +pk.getAttribute('data-pick')); return; }
+    var b = e.target.closest && e.target.closest('[data-clip], [data-abclip]');
+    if (!b) return;
+    var st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
+    if (!st || !st.outingId) return;
+    audio();
+    /* an at bat's Clip: its pitches from its first to its last, in order */
+    if (b.hasAttribute('data-abclip')) CU.fromOuting(st.outingId, +b.getAttribute('data-abto'), +b.getAttribute('data-abclip'));
+    else CU.fromOuting(st.outingId, +b.getAttribute('data-clip'));
+  });
+}
+
 /* ---- boot --------------------------------------------------------------------------------- */
 
 function boot() {
+  bootLoader();
   try { if (window.STD_AUTH && window.STD_AUTH.boot) window.STD_AUTH.boot(); } catch (e) {}
+  paintProfile();
+  syncPlates();
+  /* clubs.js lands as a module, after this: the plates take its colours then */
+  window.addEventListener('std-clubs', function () { paintProfile(); unlockNote(); });
   try {
     if (window.STD_AUTH && window.STD_AUTH.onChange) window.STD_AUTH.onChange(function () {
-      var st = window.STD_AUTH.state() || {};
-      $('b-profile').classList.toggle('in', !!st.signedIn);
-      $('b-profile').setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
+      paintProfile();
+      syncPlates();
       if (MN.current() === 'sheet-auth') MN.renderAuth();
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
       if (document.body.dataset.screen === 's-result' && S.result) renderModes();
-      if (document.body.dataset.screen === 's-surv' && MU) MU.showSurvivor();
-      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
+      if (document.body.dataset.screen === 's-home' && tab === 'surv' && MU) MU.showSurvivor();
+      if (document.body.dataset.screen === 's-home') homeVote();
+      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
     });
   } catch (e) {}
   /* a daily played signed out, posted on the sign-in (api.js claim): say where it landed */
@@ -2319,7 +2902,7 @@ function boot() {
     onSurvivor: startSurvivor,
     onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
   });
-  $('h-surv').addEventListener('click', openSurvivor);
+  wireTabs();
   window.STD_BOARD.init({
     day: S.day, before: postIfOwed,
     played: function () { return !!S.dailyResult; },
@@ -2329,30 +2912,46 @@ function boot() {
     pending: function () { return API.pending ? API.pending() : null; },
     saveLabel: MU ? MU.SAVE_LABEL : null,
   });
+  MN.onChange = backSync;
   MN.init({
+    onPlate: function () { paintProfile(); if (document.body.dataset.screen === 's-board') window.STD_BOARD.load(); },
     hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
+    onPast: function () { if (MN.isOpen()) MN.close(true); if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); } setTab('arc', null, true); },
     archiveDays: MU ? MU.archiveDays : null,
     onPref: function (k, v) {
       if (k === 'theme') { setTheme(v); return; }
       prefs[k] = v; savePrefs();
-      if (k === 'sound' && v) sound('pop');
+      if (k === 'sound') soundSwitch(v);
       if (k === 'meter') speedLabels();
     },
   });
+  /* the mound's speaker: the same switch as settings, kept in std_ui_v1.sound */
+  $('m-sound').addEventListener('click', function () { soundSwitch(!prefs.sound); });
+  soundSwitch(prefs.sound !== false);
+  /* a soft tap under the buttons; the throw, the meter and the tabs have their own */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button');
+    if (!b || !SFX || b.id === 'm-throw' || b.id === 'm-sound' || b.closest('.relm') || b.closest('#m-aim') || b.getAttribute('role') === 'tab' || TABS.some(function (t) { return tabBtn(t) === b; })) return;
+    SFX.tap();
+  }, true);
   $('b-theme').addEventListener('click', function () {
     setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
   $('b-take').addEventListener('click', takeMound);
+  $('m-home').addEventListener('click', homeWhenSettled);
+  $('menu-home').addEventListener('click', homeWhenSettled);
   $('r-again').addEventListener('click', practice);
   $('r-home').addEventListener('click', function () { renderHomeState(); show('s-home'); drawHero(); });
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
   initResultNav();
+  initClips();
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
+  window.addEventListener('std-clubs', function () { if (S.scn && document.body.dataset.screen === 's-mound') setPitcher(); });
 
-  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
+  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
     S.dailyScn = scn;
@@ -2367,15 +2966,17 @@ function boot() {
     });
   }).then(function () {
     renderHomeState();
+    restoreTab();
+    /* a clip link (?clip=): its viewer over the home, once the page is in. It plays only on a tap */
+    var cq = Q.get('clip');
+    if (cq && window.STD_CLIP_UI) BOOT.ready.then(function () { window.STD_CLIP_UI.fromLink(cq); });
   }).catch(function (e) {
-    $('h-load').hidden = true;
-    var er = $('h-err');
-    er.hidden = false;
-    er.innerHTML = '<p>today\'s spot did not load.</p><button class="btn ghost" type="button" onclick="location.reload()">try again</button>';
+    /* nothing to wait for: the error and its try again go up at once */
+    bootFail();
     if (window.console) console.warn(e);
   });
 }
 
-window.STD_UI = { state: S, cellWords: M.cellWords };
+window.STD_UI = { state: S, cellWords: M.cellWords, lastName: lastName };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

@@ -11,7 +11,7 @@
  * It is a builder and nothing else. It reads no song, no score and no rule, and
  * scripts/setlist/check_data.mjs holds that line for this file as it does for stage.js.
  */
-import PXHD from './pxhd.js?v=2';
+import PXHD from './pxhd.js?v=3';
 import { ROLES, SIGNATURE, OUTFITS, RESET } from './outfits.js?v=1';
 
 // ── the camera ─────────────────────────────────────────────────────────────

@@ -52,6 +52,7 @@ import {
   DATA_DIR, quantileSorted, round,
 } from './lib.mjs';
 import { BASE_PRICE, MAX_PRICE, PRICE_K, BASELINE_RANK } from './01-players.mjs';
+import { backupQBs, ROSTER_OK } from './injuries.mjs';
 /* The cap the board is drawn and priced for, off the same file the page drafts against, so
    a week carries the cap it was built with rather than the one a later deploy happens to
    say. `publish-week.mjs` then sends the WEEK's cap to the server, never this import. */
@@ -125,6 +126,7 @@ export function seasonToDate(rows, week) {
  * 58 characters against the 40 the row was sized for, and it was cut off at 360. A QB's
  * stray catch or a receiver's trick play pass is trivia, and the line is a summary. */
 export function statLine(p) {
+  if (p.qb1 && !p.games) return 'New starter. No games yet.';
   const n = (v) => Math.round(v).toLocaleString('en-US');
   const parts = {
     pass: p.pass_yds ? `${n(p.pass_yds)} pass yds, ${Math.round(p.pass_td)} TD` : null,
@@ -695,7 +697,9 @@ export function pricePool(men, levels = null, w = PRICE_PROJ_W) {
       throw new Error('pricePool: a blend weight is set, so positionLevels() must be passed. '
         + 'Without them every man prices as though he had played every game.');
     }
-    const blind = men.filter((p) => !p.played_of);
+    /* A starting quarterback with no starts yet reads `played_of` 0 on purpose: nothing done,
+       full availability, so he prices at the position's level (see applyRoles). */
+    const blind = men.filter((p) => !p.played_of && !p.qb1);
     if (blind.length) {
       throw new Error(`pricePool: ${blind.length} of ${men.length} men have no played_of, `
         + `so their availability would read as perfect (first: ${blind[0].name}).`);
@@ -755,6 +759,101 @@ export function pricePool(men, levels = null, w = PRICE_PROJ_W) {
  * @param week    the week being drafted FOR. Only weeks before it are read.
  * @param minGames how many games a man must already have played to be draftable.
  */
+/*
+ * WHO IS ON WHICH CLUB, AND WHICH QUARTERBACK STARTS (the owner, 2026-11-12).
+ *
+ * "Feels like there needs to be a little more rhyme and reason and thought into the
+ * rankings." The week 10 board had Jameis Winston at $11.9M, twice J.J. McCarthy, who had
+ * taken the Giants job; Marcus Mariota behind a healthy Jayden Daniels; Kirk Cousins under
+ * the Raiders, the club he last played for, when he starts for Minnesota. Every price was a
+ * correct summary of what each man had done, and the board still read as nonsense, because
+ * what a man has done is half the question and his ROLE this week is the other half.
+ *
+ * THREE THINGS, all read before anybody is priced:
+ *   1. THE CLUB IS THE ROSTER'S. `latest_team` in players.csv for a man on an active roster,
+ *      so the opponent and kickoff on his row are his real ones. The stats file's team is
+ *      where he last played, which is right until somebody moves.
+ *   2. ONLY STARTING QUARTERBACKS ARE ON THE BOARD. `backupQBs` (the same rule the injury
+ *      file applies mid-week) reads each club's latest depth chart.
+ *   3. A STARTING QUARTERBACK IS PRICED ON HIS STARTS. A start is a game with 15 or more
+ *      pass attempts. Relief appearances are what made McCarthy cheap: four games, most of
+ *      them mop-up, averaged in as though each was a start. His starts alone, shrunk toward
+ *      the position's level exactly the way every thin sample already is, and with his
+ *      availability read as full, because the chart says he is the starter and that is the
+ *      better answer than how often he got on the field behind somebody else. A starter
+ *      with NO starts yet (Kyle McCord in week 10) prices at the position's level, so a
+ *      new starter is never cheaper than a backup could have been.
+ *   The card keeps what he has really done: games played, and of how many.
+ */
+export const START_ATTEMPTS = 15;
+export function applyRoles(todate, rows, week, players, depth, now = Date.now()) {
+  const roster = new Map();
+  for (const r of players) if (r.gsis_id) roster.set(r.gsis_id, r);
+  for (const p of todate) {
+    const r = roster.get(p.player_id);
+    const st = r && r.status ? String(r.status).trim().toUpperCase() : '';
+    if (r && r.latest_team && ROSTER_OK.has(st)) p.team = r.latest_team;
+  }
+  /* The starters, at each club's own latest chart. A man the chart names who has not played
+     yet is added, from the roster file, with nothing done. */
+  const latest = new Map();
+  for (const r of depth) {
+    if (r.pos_abb !== 'QB' || !r.team || !r.dt) continue;
+    if (!latest.has(r.team) || r.dt > latest.get(r.team)) latest.set(r.team, r.dt);
+  }
+  const top = new Map();
+  for (const r of depth) {
+    if (r.pos_abb !== 'QB' || r.dt !== latest.get(r.team) || !r.gsis_id) continue;
+    if (Date.parse(r.dt) < now - 8 * 86400000) continue;
+    const k = Number(r.pos_rank);
+    if (!top.has(r.team) || k < top.get(r.team).k) top.set(r.team, { id: r.gsis_id, k });
+  }
+  const byId = new Map(todate.map((p) => [p.player_id, p]));
+  for (const [team, t] of top) {
+    if (byId.has(t.id)) continue;
+    const r = roster.get(t.id);
+    const st = r && r.status ? String(r.status).trim().toUpperCase() : '';
+    if (!r || !ROSTER_OK.has(st)) continue;
+    const p = { player_id: t.id, name: r.display_name || r.football_name || t.id, position: 'QB',
+      team, games: 0, half: 0, half_ppg: 0, pass_yds: 0, pass_td: 0, rush_yds: 0, rush_td: 0,
+      rec: 0, rec_yds: 0, rec_td: 0 };
+    todate.push(p); byId.set(t.id, p);
+  }
+  const backups = backupQBs(depth, todate, now);
+  const kept = todate.filter((p) => !backups.has(p.player_id));
+  /* Each starter's starts, off the same weekly rows the season to date came from. */
+  const starters = new Set([...top.values()].map((t) => t.id));
+  const starts = new Map();
+  for (const r of rows) {
+    if (String(r.season_type) !== 'REG') continue;
+    const w = num(r.week);
+    if (!(w >= 1 && w < week) || !starters.has(r.player_id)) continue;
+    if (num(r.attempts) < START_ATTEMPTS) continue;
+    const s = starts.get(r.player_id) || { n: 0, half: 0 };
+    s.n += 1; s.half += halfPPR(r); starts.set(r.player_id, s);
+  }
+  for (const p of kept) {
+    if (p.position !== 'QB' || !starters.has(p.player_id)) continue;
+    const s = starts.get(p.player_id) || { n: 0, half: 0 };
+    p.qb1 = true;
+    p.starts = s.n;
+    p.start_ppg = s.n ? s.half / s.n : 0;
+  }
+  return kept;
+}
+
+/* The price reads the STARTS for a starting quarterback, and the card reads what he did. So
+   pricing swaps the fields in, and they are swapped back before the row is written. */
+function asPriced(p) {
+  if (!p.qb1) return;
+  p.disp = { games: p.games, half_ppg: p.half_ppg, played_of: p.played_of };
+  p.games = p.starts; p.half_ppg = p.start_ppg; p.played_of = p.starts;
+}
+function asShown(p) {
+  if (!p.disp) return;
+  Object.assign(p, p.disp); delete p.disp;
+}
+
 export async function buildWeeklyPool({ season, week, minGames = 1 }) {
   const text = await nflverseCSV('stats_player', `stats_player_week_${season}.csv`);
   const rows = parseCSVObjects(text);
@@ -788,12 +887,18 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
   const kicks = [...sched.values()].map((g) => g.kick).filter(Boolean).sort();
   if (!kicks.length) throw new Error(`week ${week} of ${season} has no kickoff times`);
 
-  const todate = seasonToDate(rows, week);
+  const fresh6h = { maxAgeMs: 6 * 3600000 };
+  const rosterRows = parseCSVObjects(await nflverseCSV('players', 'players.csv', fresh6h));
+  const dcText = await nflverseCSV('depth_charts', `depth_charts_${season}.csv`, fresh6h);
+  const dcLines = dcText.split('\n');
+  const depth = parseCSVObjects([dcLines[0], ...dcLines.slice(1).filter((l) => l.includes(',QB,'))]
+    .join('\n'));
+  const todate = applyRoles(seasonToDate(rows, week), rows, week, rosterRows, depth);
   /* THE BOARD IS PRICED AGAINST ITSELF. A man whose club is idle is not on it, so he is not
      in the pricing either, and that is not tidiness: the anchors above are the cheapest and
      the dearest man ON THE BOARD, so a leader sitting out a bye would otherwise set a
      ceiling nobody draftable could reach and the whole week would have no $48M man in it. */
-  const played = todate.filter((p) => p.games >= minGames);
+  const played = todate.filter((p) => p.games >= minGames || p.qb1);
   const eligible = played.filter((p) => playing.has(p.team));
   if (!eligible.length) throw new Error(`nobody is draftable in week ${week} of ${season}`);
 
@@ -802,13 +907,16 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
      nobody could have played in and counting it as a miss would mark half the league unfit
      every October. */
   const clubGames = clubGamesToDate(games, season, week);
-  for (const p of eligible) p.played_of = clubGames.get(p.team) || p.games;
+  /* Never fewer than he has played: a man who moved clubs can have played more games than
+     his new club (Kirk Cousins read "9 of 8" in week 10). */
+  for (const p of eligible) p.played_of = Math.max(clubGames.get(p.team) || 0, p.games);
+  for (const p of eligible) asPriced(p);
 
   /*
    * WHAT THE CLUBS HAVE SAID ABOUT SUNDAY, read off the SAME FILE the page reads.
    *
    * `injuries.mjs` writes `injuries_<season>_w<week>.json` and `fantasy-injuries.yml`
-   * refreshes it twice a day. Reading it here rather than fetching the CSV again is the
+   * refreshes it hourly through the day. Reading it here rather than fetching the CSV again is the
    * whole point: the price, the red chip on the board and the sheet a reader opens are then
    * one answer about one hamstring, and a build that priced off a report the page does not
    * have would be a board disagreeing with itself.
@@ -868,6 +976,9 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
      order to be remembered, and the two of them together are the fix. */
   const anchors = pricePool(eligible, levels);
 
+  /* The projection is the price's, so it is read with the priced fields, then the card's
+     fields go back. */
+  for (const p of eligible) { p.proj_now = projectedPoints(p, levels, p.fit); asShown(p); }
   const pool = eligible.map((p) => ({
     player_id: p.player_id,
     name: p.name,
@@ -886,7 +997,7 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
        mode shows. One decimal, because it is points and a player will add six of them up.
        IT READS THE SAME `fit` THE PRICE DID, or the card would print a projection the price
        was not set against, which is the disagreement this whole pass exists to end. */
-    proj: round(projectedPoints(p, levels, p.fit), 1),
+    proj: round(p.proj_now, 1),
     half_total: round(p.half, 1),
     price_musd: p.price_musd,
     stat_line: statLine(p),

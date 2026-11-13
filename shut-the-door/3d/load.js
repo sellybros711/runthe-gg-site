@@ -19,7 +19,7 @@ export const ASSETS = {
   'bio.json': '3ce6273c86',
   'catcher.glb': '81c9aafc01',
   'env_256.hdr': 'b069d60e9b',
-  'fielder.glb': 'd58d54f7c5',
+  'fielder.glb': '260d3bd862',
   'fparm.glb': '8dd8eef3e7',
   'hero.webp': 'a8b96e3af7',
   'packs/index.json': 'e160e4ec92',
@@ -49,7 +49,8 @@ export const ASSETS = {
   'tex/pad_normal.webp': '65ee1616a5',
   'tex/skin_dark.webp': 'd047351cdc',
   'umpire.glb': 'b1e5e370b6',
-  'uniform.json': '79df4a0dd5'
+  'uniform.json': '79df4a0dd5',
+  'walkup.glb': '84c65c5b21'
 };
 /* stamp:end */
 

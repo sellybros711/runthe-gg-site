@@ -77,7 +77,10 @@ await page.route('**/*', (route) => {
   return route.abort();
 });
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded && window.STD_STAGE.current.fp && window.STD_STAGE.current.fp.ok, null, { timeout: 400000 });
+/* loaded, the first person pass on, and his arm's throw in: the throw is fetched beside the scene
+   (3d/firstperson.js) and the lens needs it, so without the last term the first pack raced its download
+   (site PR #867's CI: 72 of 72 "no first person lens" on the first pack at 390x844, green elsewhere) */
+await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded && window.STD_STAGE.current.fp && window.STD_STAGE.current.fp.ok && !!window.STD_STAGE.current.fp.throw, null, { timeout: 400000 });
 await page.evaluate(() => { const st = window.STD_STAGE.current; st.renderer.render = () => {}; document.body.appendChild(st.canvas); });
 
 const packs = fs.readdirSync(path.join(GAME, 'data/packs')).filter((f) => f.endsWith('.json')).sort()
