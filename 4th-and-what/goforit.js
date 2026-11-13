@@ -72,7 +72,7 @@
   /* ================= the page ================= */
   var A = root.FAW_APP, E = root.FAW_ENGINE, RNG = root.FAW_RNG;
   var $ = function (id) { return document.getElementById(id); };
-  var KEY = 'faw_go_run', BEST = 'faw_go_best';
+  var KEY = 'faw_go_run', BEST = 'faw_go_best', SEEN = 'faw_go_seen';
   var st = null, active = false, stash = null, wasBest = false;
 
   function load(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
@@ -89,7 +89,9 @@
     apply(); renderPlay();
     A.show('call');
   }
-  function start() { st = newRun(RNG.freshSeed()); save(KEY, st); wasBest = false; enter(); }
+  /* a player's very first snap in Go For It gets the first hand (calls.js FIRST) */
+  function start() { st = newRun(RNG.freshSeed()); st.first = !load(SEEN); save(KEY, st); wasBest = false; enter(); }
+  function firstHand() { return active && st && st.first && !st.log.length; }
   function leave() {
     if (!active) return;
     active = false; document.body.classList.remove('gofor');
@@ -102,6 +104,7 @@
   function snapped(res) {
     if (!active || !st || st.over) return;
     st = after(st, res, RNG.freshSeed());
+    save(SEEN, 1);
     if (st.over) {
       var b = load(BEST); wasBest = better(st, b) && st.n > 0;
       if (wasBest) save(BEST, { n: st.n, yards: st.yards, tds: st.tds, at: new Date().toISOString().slice(0, 10) });
@@ -152,5 +155,5 @@
      back up on the same down, against the same look */
   window.addEventListener('DOMContentLoaded', function () { if (location.hash === '#call' && st && !st.over) enter(); });
 
-  root.FAW_GO = { active: function () { return active; }, run: function () { return st; }, seed: seed, snapped: snapped, card: card, start: start, enter: enter, leave: leave, core: CORE };
+  root.FAW_GO = { firstHand: firstHand, active: function () { return active; }, run: function () { return st; }, seed: seed, snapped: snapped, card: card, start: start, enter: enter, leave: leave, core: CORE };
 })(typeof window !== 'undefined' ? window : this);

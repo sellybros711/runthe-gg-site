@@ -52,7 +52,9 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   new possession from your own 35; an interception costs `PICK` (2) stops. `STOPS` (3) stops end the run (the plan said one; measured, one
   stop ended 58% of runs on the first snap). The run and its next seed are kept on the device, so a
   reload resumes the same down against the same look. The best run is kept on the device too.
-  Practice (any down, spot, level and hash) is the second button.
+  Practice (any down, spot, level and hash) is the second button. A player's very first Go For It snap
+  gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: all two thirds or better at 4th and 1); the hand,
+  never the snap.
 - **The feel** (the owner, 2026-11-13: sound on by default, with mute). `feel.js` makes every sound with
   Web Audio (nothing to download) and starts on the Snap it tap; `faw_sound` keeps the choice. The 3D
   picture zooms and slides to follow the ball (`play.js`, `ui.zoom`), never past an edge. A spot within
