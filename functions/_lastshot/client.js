@@ -24,6 +24,11 @@
  * (starters.js) on it in any mode; every result card but a playbook's saves
  * the run's play into My Playbooks (book-ui.js saveRun).
  *
+ * TESTER-ROUND ANALYTICS (analytics.js): open at boot, run when the sim runs
+ * the player's own play (never their play in a challenge), result when its
+ * card opens, and the moments in between (a level, the daily, Plays, Save,
+ * Share, a #beat= link). Inert under a browser driver unless a check asks.
+ *
  * ACCOUNT PLUG POINTS still out of scope:
  *   TODO(results): save a free play or ladder possession through a gated API,
  *     the way the daily's run is filed (daily-ui.js). */
@@ -45,6 +50,7 @@ import { createCourt, between, warm } from './court.js';
 import { shareText, dailyShareText } from './share.js';
 import { freshSeed } from './rng.js';
 import { createSound } from './sound.js';
+import { track, trackOpen, flushNow } from './analytics.js';
 
 const $ = id => document.getElementById(id);
 const KEY = 'last_shot_play_v1', SPEED_KEY = 'last_shot_speed';
@@ -166,7 +172,11 @@ $('bUndo').addEventListener('click', () => { if (!undoStarter()) board.undo(); }
 $('bClear').addEventListener('click', () => board.clear());
 /* Run It: a fresh seed, but a challenge always runs on its link's seed and
    scheme (the same roll they had), and the daily's button is Practice. */
-$('bRun').addEventListener('click', () => (mode === 'beat' && chal ? run(chal.ch.seed, challengeOpt(chal.ch)) : run(freshSeed())));
+$('bRun').addEventListener('click', () => {
+  /* my own run, even after a watch of theirs was left before its card */
+  if (mode === 'beat' && chal) { chal.watching = false; run(chal.ch.seed, challengeOpt(chal.ch)); }
+  else run(freshSeed());
+});
 $('bFrame').addEventListener('click', () => playFrame());
 $('bNext').addEventListener('click', () => { if (board.nextFrame()) ui.hint('Frame ' + board.beat + '. Everyone starts where the last frame ended.'); });
 
@@ -225,6 +235,7 @@ function loadStarter(id) {
   closePlays();
   if (live) backToBoard();
   savePlay(p); board.reset();
+  track('plays_load', { starter: id });
   ui.hint(s.name + ' is up. Undo brings yours back.');
 }
 /* Undo, straight after a starter went on (nothing changed since): the old
@@ -275,14 +286,39 @@ function saveButton(row, r) {
     b.disabled = true; b.textContent = 'Saving...';
     const res = await books.saveRun({ play: r.play, situation: sit, scheme: r.scheme, win: r.win });
     b.disabled = false;
-    if (res && res.entry) savedRuns.set(key, { bookId: res.book.id, playId: res.entry.id, name: res.entry.name, situation: res.entry.situation });
+    if (res && res.entry) { savedRuns.set(key, { bookId: res.book.id, playId: res.entry.id, name: res.entry.name, situation: res.entry.situation }); track('save', { mode: r.amode || cardMode }); }
     paint();
   });
   row.appendChild(b);
   return b;
 }
 /* what a fresh run on the card saves: the play it ran, where, and how it went */
-const runOf = res => ({ play: runPlay, sc: SCX(), scheme: res.scheme, win: res.outcome === 'win', seed: res.seed });
+const runOf = res => ({ play: runPlay, sc: SCX(), scheme: res.scheme, win: res.outcome === 'win', seed: res.seed, amode: cardMode });
+
+/* ---------- what the tester round counts (analytics.js) ----------
+   Which kind of run this is: the free play, a level, a daily practice, the
+   daily's scored shot, a Beat my play run or a playbook play. Their play in
+   a challenge (watching) is not a run: null. */
+let runCount = 0, counted = null, cardMode = null;
+function runKind() {
+  if (mode === 'beat') return chal && chal.watching ? null : 'beat';
+  if (mode === 'daily') return dly && dly.scoring ? 'daily' : 'practice';
+  return mode === 'game' ? 'free' : mode;
+}
+function countRunStart(res) {
+  const k = runKind();
+  counted = k ? { res, mode: k, level: k === 'level' && lvl ? lvl.L.id : undefined } : null;
+  if (k) track('run', { mode: k, level: counted.level, n: ++runCount });
+}
+function countResult(res) {
+  const c = counted;
+  counted = null;
+  if (!c || c.res !== res) return;
+  cardMode = c.mode;
+  const look = res.shot && Number.isFinite(res.shot.p) ? Math.round(res.shot.p * 100) / 100 : null;
+  track('result', { mode: c.mode, outcome: res.outcome === 'win' ? 'win' : 'lose', how: res.how,
+    stars: c.mode === 'level' || c.mode === 'daily' ? starsOf(res) : undefined, level: c.level, look });
+}
 
 /* ---------- the storyboard strip ---------- */
 function frameStrip(p, f) {
@@ -404,6 +440,7 @@ function run(seed, opt, pl) {
   const res = simulate(S, pl || play, seed, mode === 'level' && lvl ? levelOpt(lvl.L) : (opt || {}));
   runPlay = JSON.parse(JSON.stringify(pl || play));
   lastResult = res; ranOnce = true; lastTiming = null;
+  countRunStart(res);
   if (mode === 'edit' && edit) books.countRun(edit, res);
   $('board').hidden = true; $('court').hidden = false;
   clipTools(false);
@@ -593,6 +630,7 @@ function pop(text, final, shot) {
 function showResult(res) {
   banner(null); cutUi(null);
   setScore(res.us, res.them, res.shotAt != null ? res.shotAt : 0);
+  countResult(res);
   if (mode === 'level' && lvl) { showLevelResult(res); return; }
   if (mode === 'daily' && dly && dly.scoring) { const sc = dly.scoring; dly.scoring = null; showDailyCard(sc.result, res); return; }
   if (mode === 'beat' && chal) { showBeatResult(res); return; }
@@ -616,7 +654,7 @@ function showResult(res) {
   if (mode === 'edit') btn('Back to playbook', 'alt', () => { backToBoard(); books.showBook(edit.book.id); }, 'bBackBook');
   const row2 = add('div', 'row');
   if (mode !== 'edit') saveButton(row2, runOf(res));
-  if (!practice) btn('Share', 'alt', b => doShare(shareText(runPlay, res), b), 'bShare', row2);
+  if (!practice) btn('Share', 'alt', b => doShare(shareText(runPlay, res), b, 'result'), 'bShare', row2);
   const ch = beatOf(res);
   if (ch) btn('Beat my play', 'alt', b => shareChallenge(ch, b), 'bBeat', row2);
   const dbg = btn(debugOn ? 'Hide seed' : 'Seed', '', () => { debugOn = !debugOn; pre.hidden = !debugOn; dbg.textContent = debugOn ? 'Hide seed' : 'Seed'; }, 'bSeed', row2);
@@ -794,6 +832,7 @@ function openLevel(L) {
   const saved = ladder.plays[L.id];
   play = saved ? JSON.parse(JSON.stringify(saved)) : { spots: JSON.parse(JSON.stringify(lvl.sc.spots)), steps: [], goAt: Math.min(lvl.sc.clock, GO_AT_NEW) };
   lastOpt = levelOpt(L);
+  track('level_open', { level: L.id });
   bars(); levelBar(L);
   show('vGame'); backToBoard(); board.reset();
 }
@@ -841,6 +880,7 @@ function openDaily() {
   dly = { sc, local, openedAt: Date.now(), scoring: null, busy: false, confirm: false, err: '' };
   play = local.play ? JSON.parse(JSON.stringify(local.play)) : { spots: JSON.parse(JSON.stringify(sc.spots)), steps: [], goAt: Math.min(sc.clock, GO_AT_NEW) };
   lastOpt = {};
+  track('daily_open', { played: !!day.played });
   bars(); dayBarSync();
   show('vGame'); backToBoard(); board.reset();
   if (day.played) { showFiled(); return; }
@@ -893,6 +933,7 @@ async function takeShot() {
     day.played = r.data.result;
     if (typeof r.data.gems === 'number') day.gems = r.data.gems;
     d.local.scored = cp; d.local.play = play; D.saveDay(d.local);
+    track('daily_filed', { score });
     d.confirm = false; dayBarSync();
     d.scoring = { result: r.data.result };
     run(seed, {}, cp);
@@ -926,7 +967,7 @@ function showDailyCard(result, res) {
      watching it would show a friend today's defense before their one
      scored shot (2026-11-13). Share says how it went, never how. */
   const parts = D.dailyCard($('card'), { day, result, reduce: reduced() }, {
-    share: b => doShare(dailyShareText(day.dayNumber, result.squares, result.scoreText), b),
+    share: b => doShare(dailyShareText(day.dayNumber, result.squares, result.scoreText), b, 'daily'),
     beat: null,
     save: savedDaily(result, res),
     practice: () => { backToBoard(); dayBarSync(); },
@@ -942,7 +983,7 @@ function savedDaily(result, res) {
   const d = result.detail || {}, pl = res ? runPlay : dly && dly.local.scored;
   if (!pl || !dly) return null;
   const r = { play: JSON.parse(JSON.stringify(pl)), sc: dly.sc, scheme: res ? res.scheme : d.scheme || null,
-    win: res ? res.outcome === 'win' : d.outcome === 'win', seed: day.seed };
+    win: res ? res.outcome === 'win' : d.outcome === 'win', seed: day.seed, amode: 'daily' };
   return row => saveButton(row, r);
 }
 async function fillBoard(parts) {
@@ -1078,7 +1119,8 @@ $('hLadder').addEventListener('click', openLadder);
 $('hHow').addEventListener('click', () => $('howSheet').classList.add('on'));
 $('howClose').addEventListener('click', () => $('howSheet').classList.remove('on'));
 
-async function doShare(text, btn) {
+async function doShare(text, btn, kind) {
+  track('share', { kind });
   try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; } catch (e) { btn.textContent = 'Copy failed'; }
   setTimeout(() => { btn.textContent = 'Share'; }, 1600);
@@ -1097,11 +1139,16 @@ window.__lastShot = { run, get result() { return lastResult; }, get play() { ret
   /* the Daily and Beat my play, for check-daily.mjs and check-beat.mjs */
   get day() { return day; }, get dayState() { return dayState; }, get daily() { return dly ? { busy: dly.busy, err: dly.err, confirm: dly.confirm, board: dly.board || null } : null; },
   openDaily, loadToday, get chal() { return chal ? { ch: chal.ch, theirScore: chal.theirs.score, mine: chal.mine } : null; }, get beatUrl() { return lastBeatUrl; },
-  runPlay: () => runPlay };
+  runPlay: () => runPlay,
+  /* the tester round's queue, sent now (check-analytics.mjs) */
+  flushEvents: flushNow };
 $('cut').addEventListener('pointerdown', () => { if (live && live.skip) live.skip(); });
 
 setScore(SC.us, SC.them, SC.clock);
 homeSync();
+/* the first event of the page load: where it came in, and whether this
+   browser ever opened Last Shot before */
+{ const h = readHash(location.hash); trackOpen(h && h.kind === 'beat' ? 'beat' : h && h.kind === 'daily' ? 'daily' : 'home'); }
 /* A link in (#beat= a challenge, #daily the Daily), else home. */
 function fromHash() {
   const h = readHash(location.hash);

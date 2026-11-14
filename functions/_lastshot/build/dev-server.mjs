@@ -4,7 +4,8 @@
  * Everybody is the tester 'dev'; add ?as=nobody to see the 404 a non-tester
  * gets. pages.js is rebuilt on every page load, so edits show on reload.
  * /api/arcade/* is the Arcade Lab's real handler on an in-memory database
- * (test/fake-arcade.mjs), so the Daily plays locally, as the signed in 'dev'. */
+ * (test/fake-arcade.mjs), so the Daily plays locally, as the signed in 'dev'.
+ * POST /last-shot/e answers 204 and keeps each body in events. */
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,10 +22,22 @@ export function startDev(port = 8790) {
   const db = memoryDb({ dev: 'tester', boss: 'admin' });
   let who = 'dev';
   const arcade = fakeArcade({ uidOf: () => who });
+  const events = [];
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     const as = url.searchParams.get('as');
     if (as) who = as === 'nobody' ? null : as === 'boss' ? 'boss' : 'dev';
+    /* The tester round's events (analytics.js): a tester gets 204 and the
+       body is kept in events for the checks, anybody else the 404. The real
+       endpoint is functions/last-shot/[[path]].js. */
+    if (url.pathname === '/last-shot/e' && req.method === 'POST') {
+      const chunks = []; for await (const c of req) chunks.push(c);
+      const role = who ? await db.role(who) : null;
+      if (role !== 'tester' && role !== 'admin') { res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(path.join(REPO, '404.html'))); }
+      let body = null; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch (e) {}
+      events.push({ who, type: req.headers['content-type'] || '', body });
+      res.writeHead(204, { 'Cache-Control': 'no-store' }); return res.end();
+    }
     if (url.pathname === '/last-shot' || url.pathname.startsWith('/last-shot/')) {
       fs.writeFileSync(path.join(HERE, '../pages.js'), render());
       const { pageGate } = await import(pathToFileURL(path.join(HERE, '../gate.js')).href + '?t=' + Date.now());
@@ -44,7 +57,7 @@ export function startDev(port = 8790) {
     }
     res.writeHead(404); res.end('not found');
   });
-  return new Promise(r => server.listen(port, () => r({ server, arcade, setWho: w => { who = w; } })));
+  return new Promise(r => server.listen(port, () => r({ server, arcade, events, setWho: w => { who = w; } })));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
