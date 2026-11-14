@@ -332,5 +332,5 @@
   if (root.RTG_AUTH && root.RTG_AUTH.onChange) root.RTG_AUTH.onChange(function (s) { if (s && s.resolved && today) refreshStats(); });
 
   root.FAW_DAILY = { active: function () { return active; }, today: function () { return today; }, day: function () { return day; }, number: function () { return number; },
-    seed: seed, snapped: snapped, card: card, share: share, enter: enter, leave: leave, kept: kept, core: CORE };
+    seed: seed, snapped: snapped, card: card, share: share, enter: enter, leave: leave, kept: kept, rpc: rpc, signedIn: function () { return !!token(); }, core: CORE };
 })(typeof window !== 'undefined' ? window : this);

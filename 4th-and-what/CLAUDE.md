@@ -52,7 +52,9 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   new possession from your own 35; an interception costs `PICK` (2) stops. `STOPS` (3) stops end the run (the plan said one; measured, one
   stop ended 58% of runs on the first snap). The run and its next seed are kept on the device, so a
   reload resumes the same down against the same look. The best run is kept on the device too.
-  Practice (any down, spot, level and hash) is the second button. A player's very first Go For It snap
+  **Today's run** (Phase 2): snap k of the day's run is seeded from the Eastern day and k (`dailySeed`), the
+  same for everybody; the first run of the day that ends is posted (`supabase/169`, the first post
+  stands) and the board shows on the card. Practice (any down, spot, level and hash) is the second button. A player's very first Go For It snap
   gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: all two thirds or better at 4th and 1); the hand,
   never the snap.
 - **Your record and the moments** (the launch plan, Phase 2). `profile.js`, on the device (`faw_profile`):
