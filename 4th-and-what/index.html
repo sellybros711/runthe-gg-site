@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=29">
+<link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
 <header class="topbar">
@@ -229,6 +229,11 @@ document.documentElement.setAttribute('data-theme', 'dark');
       </div>
       <div class="fieldwrap callfield"><canvas id="cField" aria-label="The defense, lined up"></canvas></div>
       <div class="ccards" id="cCards" role="group" aria-label="Your play call"></div>
+      <div class="cminebox" id="cMine" hidden>
+        <p class="cminehead">Your playbook <button type="button" class="link" id="cMineClose">Close</button></p>
+        <div class="cminelist" id="cMineList"></div>
+        <button type="button" class="btn" id="cMineNew">Draw a new one</button>
+      </div>
       <button type="button" class="playnow csnap" id="cSnap" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span id="cSnapTxt">Pick a play</span></button>
     </div>
   </section>
@@ -557,7 +562,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="flow.js?v=14"></script>
 <script src="daily.js?v=8"></script>
 <script src="trivia.js?v=4"></script>
-<script src="calls.js?v=4"></script>
+<script src="calls.js?v=5"></script>
 <script src="goforit.js?v=4"></script>
 <script src="profile.js?v=1"></script>
 <script src="library.js?v=3"></script>

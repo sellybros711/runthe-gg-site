@@ -875,3 +875,10 @@ body.coachmode .subtabs { display: flex; }
 .ctile span { color: #cfd9e4; font-size: 13px; }
 .ctile:hover { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal); }
 @media (max-width: 760px) { .subtabs { padding: 0 8px; } }
+/* your playbook as cards (Phase 3B) */
+.cminebox { padding: 10px; border-radius: 12px; background: rgba(6, 16, 28, .95); border: 1px solid var(--gold); }
+.cminehead { display: flex; justify-content: space-between; margin: 0 0 8px; color: var(--gold); font: italic 900 18px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+.cminelist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; max-height: 220px; overflow-y: auto; margin-bottom: 8px; }
+.cmine { display: grid; gap: 2px; text-align: left; padding: 8px 10px; border-radius: 9px; background: #10243a; border: 1px solid #23405e; color: #fff; cursor: pointer; }
+.cmine b { font: 900 15px/1.1 'Barlow Condensed', sans-serif; } .cmine small { color: #8fa2b8; font-size: 11px; }
+.cmine:hover { border-color: var(--teal); }

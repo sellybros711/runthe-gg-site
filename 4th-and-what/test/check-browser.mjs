@@ -483,6 +483,20 @@ async function run(name, viewport, scale) {
   await page.waitForTimeout(400);
   bs = await books();
   ok(bs.length === 2, 'and imports back as a second copy');
+  /* your playbook as cards (Phase 3): the Yours card opens your plays; a snap counts in its stats */
+  await page.click('.tabs .tab[data-view="play"]'); await page.click('#pGo');
+  ok(/Your playbook/.test(await page.textContent('#cCards .ccard.own')), 'signed in with plays, the Yours card is your playbook');
+  await page.click('#cCards .ccard.own');
+  const nMine = await page.$$eval('#cMineList .cmine', b => b.length);
+  ok(await page.isVisible('#cMine') && nMine >= 2, 'it opens your plays: ' + nMine);
+  const statsBefore = await page.evaluate(() => JSON.stringify(window.FAW_APP.choices().filter(c => c.entry)[0].entry.stats || {}));
+  await page.click('#cMineList .cmine:first-child');
+  ok(!(await page.isVisible('#cMine')) && (await page.getAttribute('#cCards .ccard.own', 'aria-pressed')) === 'true' && !(await page.isDisabled('#cSnap')), 'a play from it is the pick');
+  await page.click('#cSnap'); await page.waitForTimeout(300); if (await page.isVisible('#bSkip')) await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  const statsAfter = await page.evaluate(() => JSON.stringify(window.FAW_APP.choices().filter(c => c.entry)[0].entry.stats || {}));
+  ok(statsAfter !== statsBefore, 'the snap counts in that play\'s stats');
+  await page.evaluate(() => { document.getElementById('watch').hidden = true; document.getElementById('rCard').hidden = true; });
 
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await ctx.close();
