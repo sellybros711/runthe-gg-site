@@ -2146,7 +2146,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613160742,2019-12-21,2019,Wall Street Theater,Norwalk,CT,2,14,Honeybee,490,false,,452,0,1,0,,false,false,,>,true,,FTP.,,,Easy
 1613160742,2019-12-21,2019,Wall Street Theater,Norwalk,CT,2,15,Slow Ready,422,false,,630,2,19,0,49,false,false,,",",false,,,,,Space
 1613160742,2019-12-21,2019,Wall Street Theater,Norwalk,CT,2,16,Creatures,420,false,,717,2,54,0,63,false,false,,>,true,jam,,,,Groove
-1613160742,2019-12-21,2019,Wall Street Theater,Norwalk,CT,2,17,Tomorrow Never Knows,573,true,The Beatles,422,0,1,0,40,false,false,,>,true,jam|encore,The Beatles. FTP.,,,Space
+1613160742,2019-12-21,2019,Wall Street Theater,Norwalk,CT,2,17,Tomorrow Never Knows,573,true,The Beatles,422,0,1,0,40,false,false,,>,true,closer|jam|encore,The Beatles. FTP.,,,Space
 1613160742,2019-12-21,2019,Wall Street Theater,Norwalk,CT,2,18,Your Ocean,590,false,,419,181,4,50,,false,false,,>,true,,,,,Easy
 1613160742,2019-12-21,2019,Wall Street Theater,Norwalk,CT,2,19,Wysteria Lane,405,false,Vasudo,246,0,54,0,73,false,false,,>,true,opener|jam|peak,,,,Groove
 1613160742,2019-12-21,2019,Wall Street Theater,Norwalk,CT,2,20,Jam,802,false,,687,39,9,20,44,false,false,,,false,opener|jam,Peter read the winners of the raffle from the canned food drive.,,,Space
@@ -2361,7 +2361,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613099309,2020-03-27,2020,T's House,Somewhere,CT,1,2,Echo of a Rose,463,false,Vasudo,1139,3,34,0,65,false,false,,>,true,jam,,,,Groove
 1613099309,2020-03-27,2020,T's House,Somewhere,CT,1,3,Arrow,438,false,,978,2,4,0,62,false,false,,>,true,opener|closer|jam,,,,Rocker
 1613099309,2020-03-27,2020,T's House,Somewhere,CT,1,4,White Lights,586,false,,381,17,28,10,41,false,false,,>,true,closer|encore,,,,Anthem
-1613099309,2020-03-27,2020,T's House,Somewhere,CT,1,5,Tomorrow Never Knows,573,true,The Beatles,561,29,2,20,40,false,false,,>,true,jam|encore,The Beatles.,,,Space
+1613099309,2020-03-27,2020,T's House,Somewhere,CT,1,5,Tomorrow Never Knows,573,true,The Beatles,561,29,2,20,40,false,false,,>,true,closer|jam|encore,The Beatles.,,,Space
 1613099309,2020-03-27,2020,T's House,Somewhere,CT,1,6,Doobie Song,461,false,,418,32,7,20,,false,false,,",",false,closer|encore,,,,Groove
 1613099309,2020-03-27,2020,T's House,Somewhere,CT,1,7,Time to Flee,404,false,,587,2,58,0,56,false,false,,,false,,,,,Groove
 1599321210,2020-06-19,2020,Goose Community Rec Center,Redding,CT,1,1,Jam,802,false,,188,30,10,20,44,false,false,,>,true,opener|jam,Free Space jam.,This show was the first night of the Bingo Tour. The whole setlist was chosen based on random draws of bingo balls with different songs or gimmicks on them. This was Jeff's first show with the band.,,Space
@@ -3022,7 +3022,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,8,The Old Man's Boat,710,false,,1156,6,2,0,40,true,false,Typical groove fest that settles down before incredible interplay between Rick and Peter. Driving bass and pulsating drumming and percussion pick jam back up. Peter then starts sirens and comes in hot before letting Ben close out with some very cool soloing.,>,true,,,,,Groove
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,9,You and Whose Army,613,true,Radiohead,190,32,2,20,,false,false,,",",false,ballad,Radiohead.,,,Ballad
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,10,Arrow,438,false,,801,2,18,0,62,false,false,,->,true,opener|closer|jam,Unfinished.,,,Rocker
-1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,11,Tomorrow Never Knows,573,true,The Beatles,466,50,3,35,40,false,false,,>,true,jam|encore,The Beatles.,,,Space
+1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,11,Tomorrow Never Knows,573,true,The Beatles,466,50,3,35,40,false,false,,>,true,closer|jam|encore,The Beatles.,,,Space
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,12,Doobie Song,461,false,,433,21,12,20,,false,false,,,false,closer|encore,,,,Groove
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,E,13,Madhuvan,512,false,,1019,3,107,0,75,false,false,,,false,opener|closer|jam,,,,Rocker
 1643256041,2021-11-09,2021,Republic,New Orleans,LA,1,1,Butter Rum,415,false,Vasudo,451,5,70,0,49,false,false,,",",false,,,,,Groove
@@ -3240,7 +3240,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,1,Doc Brown,459,false,Great Blue,476,7,32,0,,false,false,,",",false,,,,,Groove
 1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,2,Rockdale,714,false,Vasudo,714,4,6,0,59,false,false,,",",false,opener|closer|jam,,,,Groove
 1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,3,Yeti,416,false,Great Blue,761,4,61,0,50,true,false,"Gets into a super psychedelic zone and sandwiches in an amazing ""Tomorrow Never Knows"" with smooth segues on either side.",->,true,opener,,,,Groove
-1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,4,Tomorrow Never Knows,573,true,The Beatles,518,15,4,10,40,false,false,,->,true,jam|encore,The Beatles.,,,Space
+1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,4,Tomorrow Never Knows,573,true,The Beatles,518,15,4,10,40,false,false,,->,true,closer|jam|encore,The Beatles.,,,Space
 1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,5,Yeti,416,false,Great Blue,94,0,62,0,50,false,false,,",",false,opener,,,,Groove
 1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,6,The Old Man's Boat,710,false,,775,3,6,0,40,false,false,,>,true,,,,,Groove
 1643946135,2022-01-29,2022,The Regency Ballroom,San Francisco,CA,1,7,Dragonfly,694,false,,648,9,4,10,36,false,false,,,false,closer,,,,Groove
@@ -3596,7 +3596,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1654952260,2022-06-06,2022,Champlain Valley Exposition,Essex Junction,VT,2,8,Travelers,574,false,,546,11,16,10,41,false,false,,",",false,,,,,Easy
 1654952260,2022-06-06,2022,Champlain Valley Exposition,Essex Junction,VT,2,9,Tumble,418,false,Vasudo,946,6,70,0,71,false,false,,",",false,closer|jam|peak,,,,Groove
 1654952260,2022-06-06,2022,Champlain Valley Exposition,Essex Junction,VT,2,10,Yeti,416,false,Great Blue,700,4,70,0,50,false,false,,,false,opener,,,,Groove
-1654952260,2022-06-06,2022,Champlain Valley Exposition,Essex Junction,VT,E,11,Tomorrow Never Knows,573,true,The Beatles,421,28,5,20,40,false,false,,->,true,jam|encore,The Beatles.,,,Space
+1654952260,2022-06-06,2022,Champlain Valley Exposition,Essex Junction,VT,E,11,Tomorrow Never Knows,573,true,The Beatles,421,28,5,20,40,false,false,,->,true,closer|jam|encore,The Beatles.,,,Space
 1654952260,2022-06-06,2022,Champlain Valley Exposition,Essex Junction,VT,E,12,Yeti,416,false,Great Blue,203,0,71,0,50,false,false,,,false,opener,,,,Groove
 1654952499,2022-06-08,2022,Artpark,Lewiston,NY,1,1,The Whales,425,false,,554,14,17,10,,false,false,,",",false,opener,,,,Rocker
 1654952499,2022-06-08,2022,Artpark,Lewiston,NY,1,2,Bob Don,429,false,,380,6,24,0,38,false,false,,",",false,ballad,,,,Ballad
@@ -3713,7 +3713,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,16,Dripfield,738,false,,1137,1,9,0,62,false,false,,->,true,closer|jam|peak,Unfinished. With Trey Anastasio on guitar.,,,Space
 1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,17,Loose Ends,762,false,Vasudo,137,38,8,20,,false,false,,",",false,,With Trey Anastasio on guitar.,,,Easy
 1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,3,18,The Empress Of Organos,604,false,Vasudo,1094,1,25,0,58,true,false,"Rick and Trey once again shine with their immediate guitar chemistry, harmonizing lick after lick and closing out the historic sit-in set with a boom.",,false,closer|jam,With Trey Anastasio on guitar.,,,Groove
-1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,E,19,Tomorrow Never Knows,573,true,The Beatles,436,8,6,10,40,false,false,,,false,jam|encore,"The Beatles. With Trey Anastasio on guitar and vocals, Father John Misty on drums and vocals, and Jeff on guitar.",,,Space
+1658553400,2022-06-25,2022,Radio City Music Hall,New York,NY,E,19,Tomorrow Never Knows,573,true,The Beatles,436,8,6,10,40,false,false,,,false,closer|jam|encore,"The Beatles. With Trey Anastasio on guitar and vocals, Father John Misty on drums and vocals, and Jeff on guitar.",,,Space
 1667314241,2022-06-25,2022,Studio 1515,New York,NY,1,1,Hungersite,740,false,,256,0,8,0,62,false,false,,",",false,opener|jam|peak,,Goose was the musical guest on CBS Saturday Mornings.,,Anthem
 1667314241,2022-06-25,2022,Studio 1515,New York,NY,1,2,Slow Ready,422,false,,,2,48,0,49,false,false,,",",false,,,,,Space
 1667314241,2022-06-25,2022,Studio 1515,New York,NY,1,3,Borne,725,false,,,1,11,0,57,false,false,,,false,jam|peak,,,,Easy
@@ -4035,7 +4035,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1661655592,2022-10-14,2022,The Criterion,Oklahoma City,OK,2,11,Hot Tea,408,false,Vasudo,965,2,104,0,58,false,false,,,false,closer,,,,Groove
 1661655592,2022-10-14,2022,The Criterion,Oklahoma City,OK,E,12,Nights In White Satin,524,true,The Moody Blues,419,34,7,20,,false,false,,",",false,ballad,The Moody Blues.,,,Ballad
 1661655592,2022-10-14,2022,The Criterion,Oklahoma City,OK,E,13,Slow Ready,422,false,,314,2,54,0,49,false,false,,>,true,,,,,Space
-1661655592,2022-10-14,2022,The Criterion,Oklahoma City,OK,E,14,Tomorrow Never Knows,573,true,The Beatles,448,27,7,20,40,false,false,,->,true,jam|encore,The Beatles.,,,Space
+1661655592,2022-10-14,2022,The Criterion,Oklahoma City,OK,E,14,Tomorrow Never Knows,573,true,The Beatles,448,27,7,20,40,false,false,,->,true,closer|jam|encore,The Beatles.,,,Space
 1661655592,2022-10-14,2022,The Criterion,Oklahoma City,OK,E,15,Slow Ready,422,false,,225,0,55,0,49,false,false,,,false,,,,,Space
 1661655645,2022-10-15,2022,South Side Ballroom,Dallas,TX,1,1,Everything Must Go,805,false,,642,4,3,0,54,false,false,,",",false,jam|peak,,,,Groove
 1661655645,2022-10-15,2022,South Side Ballroom,Dallas,TX,1,2,The Whales,425,false,,498,7,21,0,,false,false,,",",false,opener,,,,Rocker
@@ -4206,7 +4206,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1672769241,2023-01-15,2023,Moon Palace,Riviera Maya,,1,5,Silver Rising,736,false,,574,0,20,0,36,false,false,,",",false,ballad,,,,Ballad
 1672769241,2023-01-15,2023,Moon Palace,Riviera Maya,,1,6,Pancakes,723,false,Great Blue,803,4,22,0,62,false,false,,",",false,opener|closer|jam,,,,Groove
 1672769241,2023-01-15,2023,Moon Palace,Riviera Maya,,1,7,Peggy-O,531,true,Grateful Dead,474,74,13,35,,false,false,,",",false,ballad,Grateful Dead. Bob Weir and Rick acoustic duet.,,,Ballad
-1672769241,2023-01-15,2023,Moon Palace,Riviera Maya,,1,8,Tomorrow Never Knows,573,true,The Beatles,740,17,8,10,40,true,false,"Bob Weir's sit-in sees ""TMK"" get taken for a much more spacey ride than we are used to with Goose. Very interesting listen.",",",false,jam|encore,The Beatles. With Bob Weir on guitar and vocals.,,,Space
+1672769241,2023-01-15,2023,Moon Palace,Riviera Maya,,1,8,Tomorrow Never Knows,573,true,The Beatles,740,17,8,10,40,true,false,"Bob Weir's sit-in sees ""TMK"" get taken for a much more spacey ride than we are used to with Goose. Very interesting listen.",",",false,closer|jam|encore,The Beatles. With Bob Weir on guitar and vocals.,,,Space
 1672769241,2023-01-15,2023,Moon Palace,Riviera Maya,,1,9,Hard To Handle,485,true,Otis Redding,394,339,8,50,,false,false,,,false,closer,Otis Redding. With Bob Weir on guitar and vocals.,,,Groove
 1672769241,2023-01-15,2023,Moon Palace,Riviera Maya,,2,10,Animal,764,false,,789,0,16,0,47,false,false,,",",false,opener|closer,,,,Groove
 1672769241,2023-01-15,2023,Moon Palace,Riviera Maya,,2,11,Don't Do It,460,true,The Band,497,10,27,10,,false,false,,",",false,closer|encore,The Band.,,,Groove
@@ -4429,7 +4429,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1670440441,2023-04-14,2023,The Salt Shed,Chicago,IL,2,11,Seekers on the Ridge pt I,609,false,,399,7,28,0,36,false,false,,>,true,,,,,Easy
 1670440441,2023-04-14,2023,The Salt Shed,Chicago,IL,2,12,Seekers on the Ridge pt II,610,false,,302,7,28,0,,false,false,,",",false,,,,,Easy
 1670440441,2023-04-14,2023,The Salt Shed,Chicago,IL,2,13,Madhuvan,512,false,,725,2,135,0,75,false,false,,,false,opener|closer|jam,Unfinished.,,,Rocker
-1670440441,2023-04-14,2023,The Salt Shed,Chicago,IL,E,14,Tomorrow Never Knows,573,true,The Beatles,712,16,9,10,40,false,false,,,false,jam|encore,The Beatles.,,,Space
+1670440441,2023-04-14,2023,The Salt Shed,Chicago,IL,E,14,Tomorrow Never Knows,573,true,The Beatles,712,16,9,10,40,false,false,,,false,closer|jam|encore,The Beatles.,,,Space
 1670440457,2023-04-15,2023,The Salt Shed,Chicago,IL,1,1,California Magic,735,false,,522,2,19,0,,false,false,,",",false,,,,,Easy
 1670440457,2023-04-15,2023,The Salt Shed,Chicago,IL,1,2,Echo of a Rose,463,false,Vasudo,988,2,72,0,65,true,false,"Typical ""Echo"" jam follows a more concise version of its counterpart from Philly, slowly and deliberately building momentum until a boiling and fiery peak is reached. Cools and -> to an incredible ""Inside Out.""",->,true,jam,Fast version.,,,Groove
 1670440457,2023-04-15,2023,The Salt Shed,Chicago,IL,1,3,Inside Out,499,true,Spoon,952,35,11,20,43,true,true,"Taking this Spoon cover for a ride, band goes through a gradual, triumphant climb then settling down into a patient groove that transitions to ""Silver Rising.""",>,true,jam,Spoon.,,,Space
@@ -5054,7 +5054,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1689710478,2023-11-04,2023,Luxor,Cologne,,1,4,Rockdale,714,false,Vasudo,752,2,45,0,59,false,false,,",",false,opener|closer|jam,,,,Groove
 1689710478,2023-11-04,2023,Luxor,Cologne,,1,5,Echo of a Rose,463,false,Vasudo,839,3,86,0,65,true,false,"Trevor and Peter find a really catchy repeating downward progression theme that the band builds around. Excellent gradual collective cool down that allows band to side into ""Borne.""",",",false,jam,Fast version. Unfinished.,,,Groove
 1689710478,2023-11-04,2023,Luxor,Cologne,,1,6,Borne,725,false,,736,3,29,0,57,false,false,,->,true,jam|peak,,,,Easy
-1689710478,2023-11-04,2023,Luxor,Cologne,,1,7,Tomorrow Never Knows,573,true,The Beatles,429,52,10,35,40,false,false,,,false,jam|encore,The Beatles.,,,Space
+1689710478,2023-11-04,2023,Luxor,Cologne,,1,7,Tomorrow Never Knows,573,true,The Beatles,429,52,10,35,40,false,false,,,false,closer|jam|encore,The Beatles.,,,Space
 1689710478,2023-11-04,2023,Luxor,Cologne,,2,8,Into the Myst,402,false,,477,6,57,0,57,false,false,,>,true,jam,Unfinished.,,,Space
 1689710478,2023-11-04,2023,Luxor,Cologne,,2,9,Mas Que Nada,513,true,Sergio Mendes,682,50,18,35,38,true,false,Surprise jam out of this cover gets dark and nasty with layered Leslie marimba and organ from Peter while Spuds absolutely punishes his kit. Can't tell if it's the band or crowd screaming here either!,",",false,,Sergio Mendes.,,,Groove
 1689710478,2023-11-04,2023,Luxor,Cologne,,2,10,Hot Tea,408,false,Vasudo,1114,4,126,0,58,false,false,,",",false,closer,,,,Groove
@@ -5313,7 +5313,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,2,7,Thatch,809,false,,957,3,31,0,69,true,false,"Circular patterns of tension and darkness develop as Cotter's fluidity shines. Builds layers and layers of unease as Peter hits sirens and Rick gets dissonant. Amazing stuff that can be likened to a mid-90s ""Stash.""",",",false,opener|closer|jam|peak,,,,Rocker
 1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,2,8,Creatures,420,false,,852,4,117,0,63,false,false,,>,true,jam,,,,Groove
 1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,2,9,Red Bird,536,false,,1397,3,38,0,59,true,false,"Roaring down the open road, radio blaring “...and the road goes on forever I’ve got one more silver...”, feeling mellow mischievous, the sea pans into view. Now barreling along the cliffs the Rider abruptly plunges into the sea, radio cut dead in the depths replaced by embryonic deep whooshing saline heartbeat. Feeling a needful pull toward the surface a triumphant new driving rhythm crackles the airwaves while screaming ablaze toward shouts emanating from vermin in their wooden coffin soon-to-be a pyre.",->,true,jam,,,,Anthem
-1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,2,10,Tomorrow Never Knows,573,true,The Beatles,937,21,11,20,40,true,false,"Blasts out of an excellent ""Red Bird"" into a blistering hot jam.",,false,jam|encore,The Beatles. With Welcome to Delta teases from Peter.,,Welcome to Delta,Space
+1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,2,10,Tomorrow Never Knows,573,true,The Beatles,937,21,11,20,40,true,false,"Blasts out of an excellent ""Red Bird"" into a blistering hot jam.",,false,closer|jam|encore,The Beatles. With Welcome to Delta teases from Peter.,,Welcome to Delta,Space
 1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,E,11,Don't Do It,460,true,The Band,484,37,32,20,,false,false,,,false,closer|encore,The Band.,,,Groove
 1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,1,Hot Love & The Lazy Poet,645,false,Vasudo,357,2,3,0,38,false,false,,>,true,opener,,,,Groove
 1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,2,The Whales,425,false,,501,14,35,10,,false,false,,>,true,opener,,,,Rocker
@@ -5774,7 +5774,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1712075391,2024-09-22,2024,Edgefield Concerts on the Lawn,Troutdale,OR,1,5,Lead Up,822,false,,334,4,25,0,,false,false,,",",false,,,,,Easy
 1712075391,2024-09-22,2024,Edgefield Concerts on the Lawn,Troutdale,OR,1,6,Animal,764,false,,783,5,49,0,47,false,false,,,false,opener|closer,,,,Groove
 1712075391,2024-09-22,2024,Edgefield Concerts on the Lawn,Troutdale,OR,2,7,Creatures,420,false,,1350,5,122,0,63,true,false,Some heavier riffing in the latter half of the jam makes this version stand out from the 2024 pack.,->,true,jam,,,,Groove
-1712075391,2024-09-22,2024,Edgefield Concerts on the Lawn,Troutdale,OR,2,8,Tomorrow Never Knows,573,true,The Beatles,365,34,12,20,40,false,false,,>,true,jam|encore,The Beatles.,,,Space
+1712075391,2024-09-22,2024,Edgefield Concerts on the Lawn,Troutdale,OR,2,8,Tomorrow Never Knows,573,true,The Beatles,365,34,12,20,40,false,false,,>,true,closer|jam|encore,The Beatles.,,,Space
 1712075391,2024-09-22,2024,Edgefield Concerts on the Lawn,Troutdale,OR,2,9,Arrow,438,false,,1446,4,71,0,62,true,false,"Equal parts vibesy vibes, angular reverse delay, Big T fulcrum lines, cyclonic tribal toms, digital sauce, and staccato guitar attack, all culminating in a plucked-from-thin-air melody for Rick's closing solo, permuted several times before dissolving into the composed ending. Sultrily stirred.",",",false,opener|closer|jam,,,,Rocker
 1712075391,2024-09-22,2024,Edgefield Concerts on the Lawn,Troutdale,OR,2,10,A Western Sun,435,false,,423,7,64,0,51,false,false,,",",false,ballad,,,,Ballad
 1712075391,2024-09-22,2024,Edgefield Concerts on the Lawn,Troutdale,OR,2,11,The Empress Of Organos,604,false,Vasudo,748,4,69,0,58,false,false,,,false,closer|jam,,,,Groove
@@ -6454,7 +6454,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,1,7,Seekers on the Ridge pt II,610,false,,309,2,51,0,,false,false,,",",false,,,,,Easy
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,1,8,Hungersite,740,false,,1512,3,66,0,62,true,false,"Typical blistering ""Hungersite"" peaking in the first half gives way to the summer's first of two big post-peak motifs - this gritty build very reminiscent of ""Factory Fiction.""",,false,opener|jam|peak,,,,Anthem
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,2,9,Wysteria Lane,405,false,Vasudo,888,4,109,0,73,false,false,,->,true,opener|jam|peak,,,,Groove
-1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,2,10,Tomorrow Never Knows,573,true,The Beatles,678,49,13,20,40,false,false,,>,true,jam|encore,The Beatles.,,,Space
+1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,2,10,Tomorrow Never Knows,573,true,The Beatles,678,49,13,20,40,false,false,,>,true,closer|jam|encore,The Beatles.,,,Space
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,2,11,Slow Ready,422,false,,933,6,90,0,49,false,false,,>,true,,,,,Space
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,2,12,Dripfield,738,false,,1518,5,58,0,62,true,true,"Rick dives headlong into thick digital sauce as Cotter engages a particularly punishing beat. New veins of wild energy are revealed with each passing minute as the band massively peaks this standout ""Drip.""",,false,closer|jam|peak,,,,Space
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,E,13,The Way It Is,570,true,Bruce Hornsby,509,19,40,10,41,false,false,,,false,,Bruce Hornsby.,,,Easy
@@ -6794,7 +6794,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,1,6,Slow Ready,422,false,,611,0,95,0,49,false,false,,,false,,Jam only. Finished version from 9/23/25.,,,Space
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,2,7,Arrow,438,false,,1060,4,86,0,62,false,false,,>,true,opener|closer|jam,Unfinished.,,,Rocker
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,2,8,Rosewood Heart,412,false,,1032,16,65,10,60,false,false,,->,true,jam|peak,,,,Easy
-1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,2,9,Tomorrow Never Knows,573,true,The Beatles,775,27,14,20,40,false,false,,>,true,jam|encore,The Beatles.,,,Space
+1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,2,9,Tomorrow Never Knows,573,true,The Beatles,775,27,14,20,40,false,false,,>,true,closer|jam|encore,The Beatles.,,,Space
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,2,10,Dripfield,738,false,,1290,13,63,10,62,false,false,,>,true,closer|jam|peak,Unfinished.,,,Space
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,2,11,State Of The Art (A.E.I.O.U.),558,true,Jim James,446,26,12,20,,false,false,,,false,closer,Jim James. With Jim James on guitar and vocals.,,,Rocker
 1745888334,2025-09-24,2025,Louisville Palace Theatre,Louisville,KY,E,12,Don't Do It,460,true,The Band,475,5,40,0,,false,false,,,false,closer|encore,The Band. with Jim James on guitar and vocals.,,,Groove
@@ -7118,7 +7118,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1762797184,2026-04-23,2026,Bayou Music Center,Houston,TX,1,7,Jive Lee,502,false,,913,19,87,10,57,true,false,"Extremely similar themes to the ""Rum"" right before - crazed, off-kilter soloing from Rick toward the end.",,false,closer|jam,,,,Groove
 1762797184,2026-04-23,2026,Bayou Music Center,Houston,TX,2,8,Hungersite,740,false,,1013,4,83,0,62,true,false,"Chunky and thick rock 'n roll. The band slows out of the usual fast-paced jam into a churning space with aggressive Trevor and washes of clav from Peter. Builds through an awesome Zeppelin-esque peak before fading > to ""Red Bird.""",>,true,opener|jam|peak,,,,Anthem
 1762797184,2026-04-23,2026,Bayou Music Center,Houston,TX,2,9,Red Bird,536,false,,937,5,60,0,59,true,false,Emptiness. Vastness. Signal. Emptiness. Affirmation. Vastness. Response. Uncertainty. Abbreviated. Vastness… signal.,->,true,jam,,,,Anthem
-1762797184,2026-04-23,2026,Bayou Music Center,Houston,TX,2,10,Tomorrow Never Knows,573,true,The Beatles,1127,23,15,20,40,true,false,Soaring Goontz develops out of the Beatles cover - a different kind of psychedelia than this song usually evokes.,",",false,jam|encore,The Beatles.,,,Space
+1762797184,2026-04-23,2026,Bayou Music Center,Houston,TX,2,10,Tomorrow Never Knows,573,true,The Beatles,1127,23,15,20,40,true,false,Soaring Goontz develops out of the Beatles cover - a different kind of psychedelia than this song usually evokes.,",",false,closer|jam|encore,The Beatles.,,,Space
 1762797184,2026-04-23,2026,Bayou Music Center,Houston,TX,2,11,Arrow,438,false,,1069,3,94,0,62,false,false,,>,true,opener|closer|jam,Unfinished.,,,Rocker
 1762797184,2026-04-23,2026,Bayou Music Center,Houston,TX,2,12,Travelers,574,false,,615,28,30,20,41,false,false,,>,true,,,,,Easy
 1762797184,2026-04-23,2026,Bayou Music Center,Houston,TX,2,13,Thatch,809,false,,859,4,64,0,69,false,false,,,false,opener|closer|jam|peak,,,,Rocker
@@ -7583,7 +7583,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1769450547,2026-08-19,2026,WAMU Theater,Seattle,WA,2,8,Creatures,420,false,,1282,3,148,0,63,false,false,,->,true,jam,Unfinished.,,,Groove
 1769450547,2026-08-19,2026,WAMU Theater,Seattle,WA,2,9,Rockdale,714,false,Vasudo,812,3,88,0,59,false,false,,",",false,opener|closer|jam,,,,Groove
 1769450547,2026-08-19,2026,WAMU Theater,Seattle,WA,2,10,Slow Ready,422,false,,610,4,106,0,49,false,false,,->,true,,,,,Space
-1769450547,2026-08-19,2026,WAMU Theater,Seattle,WA,2,11,Tomorrow Never Knows,573,true,The Beatles,1040,37,16,20,40,false,false,,->,true,jam|encore,The Beatles.,,,Space
+1769450547,2026-08-19,2026,WAMU Theater,Seattle,WA,2,11,Tomorrow Never Knows,573,true,The Beatles,1040,37,16,20,40,false,false,,->,true,closer|jam|encore,The Beatles.,,,Space
 1769450547,2026-08-19,2026,WAMU Theater,Seattle,WA,2,12,Slow Ready,422,false,,264,0,107,0,49,false,false,,",",false,,,,,Space
 1769450547,2026-08-19,2026,WAMU Theater,Seattle,WA,2,13,Thatch,809,false,,667,4,71,0,69,false,false,,,false,opener|closer|jam|peak,,,,Rocker
 1769450547,2026-08-19,2026,WAMU Theater,Seattle,WA,E,14,POP,1020,false,,290,2,5,0,,false,false,,,false,encore,,,,Easy
@@ -7847,3 +7847,18 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1780327774,2026-11-11,2026,The Truth,Nashville,TN,2,12,726,432,false,,,16,43,10,38,false,false,,>,true,ballad|encore,,,,Ballad
 1780327774,2026-11-11,2026,The Truth,Nashville,TN,2,13,Big Modern!,945,false,,,0,47,0,56,false,false,,,false,opener|closer|jam|peak,,,,Groove
 1780327774,2026-11-11,2026,The Truth,Nashville,TN,E,14,How It Ends,933,false,Vasudo,,32,13,20,,false,false,,,false,encore,,,,Easy
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,1,1,Same Old Shenanigans,541,false,,,6,72,0,45,false,false,,",",false,closer,,,,Easy
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,1,2,Bloodbuzz Ohio,766,true,The National,,20,15,20,,false,false,,",",false,,The National.,,,Easy
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,1,3,Interlude II,409,false,,,2,17,0,,false,false,,->,true,,,,,Groove
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,1,4,Jive I,411,false,,,12,137,10,,false,false,,",",false,,,,,Groove
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,1,5,Capsized,1030,true,Andrew Bird,,25,2,20,,false,false,,",",false,,Andrew Bird.,,,Easy
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,1,6,Into the Myst,402,false,,,5,92,0,57,false,false,,",",false,jam,Unfinished.,,,Space
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,1,7,Turned Clouds,400,false,,,12,124,10,,false,false,,",",false,,,,,Groove
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,1,8,Jeff Engborg,737,false,Great Blue,,12,15,10,36,false,false,,,false,closer,,,,Groove
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,2,9,Good Times // End Times,1022,false,,,2,9,0,,false,false,,",",false,opener,,,,Groove
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,2,10,Red Bird,536,false,,,6,68,0,59,false,false,,>,true,jam,,,,Anthem
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,2,11,Echo of a Rose,463,false,Vasudo,,3,134,0,65,false,false,,>,true,jam,Fast version. Unfinished.,,,Groove
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,2,12,So Ready,421,false,,,11,162,10,38,false,false,,->,true,closer,,,,Groove
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,2,13,Tomorrow Never Knows,573,true,The Beatles,,20,17,20,40,false,false,,,false,closer|jam|encore,The Beatles.,,,Space
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,E,14,All I Need,414,false,,,2,163,0,72,false,false,,->,true,jam|peak,"Slow, melodic version.",,,Groove
+1780327775,2026-11-13,2026,Mohegan Sun Arena,Uncasville,CT,E,15,So Ready,421,false,,,0,163,0,38,false,false,,,false,closer,,,,Groove
