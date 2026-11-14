@@ -113,13 +113,14 @@
     A.show('call');
   }
   /* a player's very first snap in Go For It gets the first hand (calls.js FIRST) */
-  function start() { st = newRun(RNG.freshSeed()); st.first = !load(SEEN); save(KEY, st); wasBest = false; enter(); }
+  function begun(daily) { if (root.FAW_EVENTS) root.FAW_EVENTS.track('run_start', { daily: !!daily }); }
+  function start() { st = newRun(RNG.freshSeed()); st.first = !load(SEEN); save(KEY, st); wasBest = false; begun(false); enter(); }
   function firstHand() { return active && st && st.first && !st.daily && !st.log.length; }
   /* today's run: the day's seeds, once; played already, it is an ordinary run */
   function startDaily() {
     var d = today();
     if (load(dayKey(d))) { start(); return; }
-    st = newRun(dailySeed(d, 0)); st.daily = d; save(KEY, st); wasBest = false; posted = null; enter();
+    st = newRun(dailySeed(d, 0)); st.daily = d; save(KEY, st); wasBest = false; posted = null; begun(true); enter();
   }
   function leave() {
     if (!active) return;
@@ -138,6 +139,7 @@
       var b = load(BEST); wasBest = better(st, b) && st.n > 0;
       if (wasBest) save(BEST, { n: st.n, yards: st.yards, tds: st.tds, at: new Date().toISOString().slice(0, 10) });
       save(KEY, null);
+      if (root.FAW_EVENTS) root.FAW_EVENTS.track('run_end', { daily: !!st.daily, converted: st.n, yards: st.yards });
       if (st.daily && !load(dayKey(st.daily))) post(st);
     } else { save(KEY, st); apply(); }
   }
@@ -211,6 +213,7 @@
   $('rGoAgain').addEventListener('click', function () { close3d(); start(); });
   $('rGoShare').addEventListener('click', function () {
     var t = shareText(st, posted && posted.rank);
+    if (root.FAW_EVENTS) root.FAW_EVENTS.track('share', { kind: 'run' });
     if (navigator.share) navigator.share({ text: t }).catch(function () {});
     else if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { A.toast('rToast', 'Copied. Paste it anywhere.'); });
   });

@@ -128,7 +128,8 @@
   }
   /* snap(play, name): a card's play, or the draft drawn in the Studio */
   var playedName = '';
-  function snap(given, name) {
+  /* snap(play, name, card): card is the kind picked in Call it, for the launch events */
+  function snap(given, name, card) {
     var p = A.copy(given || A.draft.play);
     if (!ready(p)) { A.toast('sToast', 'Give it a read (Read, then tap a receiver) or make it a run first.'); $('sHint').textContent = 'Give it a read, or make it a run.'; return false; }
     var D = window.FAW_DAILY;
@@ -143,6 +144,8 @@
     var G = window.FAW_GO;
     if (window.FAW_PROFILE) window.FAW_PROFILE.snapped(res, { name: playedName, run: G && G.active() && G.run() ? G.run().n : null });
     remember(res, p, D && D.active());
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('snap', { mode: G && G.active() ? (G.run() && G.run().daily ? 'today' : 'go') : D && D.active() ? 'daily' : 'practice',
+      card: card || 'own', win: !!res.win, outcome: res.outcome, shell: res.shell, distance: res.distance });
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
     if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(b); } });
@@ -274,10 +277,12 @@
       A.draft.ref = { book: bk.id, id: e.id }; A.draft.name = e.name; A.draft.nameEdited = e.nameEdited; A.saveDraft();
       B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(bk);
       A.toast('rToast', 'Saved to ' + bk.name + '.');
+      if (window.FAW_EVENTS) window.FAW_EVENTS.track('save', { kind: 'play' });
     } });
   });
   $('rCardBtn').addEventListener('click', function () {
     var c = makeCard();
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('save', { kind: 'card' });
     c.toBlob(function (blob) {
       if (!blob) return;
       var u = URL.createObjectURL(blob), a = document.createElement('a');
@@ -303,6 +308,7 @@
   }
   $('rShare').addEventListener('click', function () {
     if (!res) return;
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('share', { kind: CL && CL.supported() ? 'video' : 'line' });
     if (CL && CL.supported()) {
       var c = CL.ready();
       if (c) {

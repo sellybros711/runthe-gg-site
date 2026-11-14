@@ -12,6 +12,7 @@ name: 4th and What checks
 #   node --test 4th-and-what/test/levels.test.mjs     High School, College and the NFL: hashes, play, stats
 #   supabase/162 twice, then supabase/test/fourth_and_what_daily_test.sql   the daily's server
 #   supabase/169 twice, then supabase/test/fourth_and_what_go_daily_test.sql   the daily run's board
+#   supabase/170 and 171 twice, then both their checks                       the launch events
 #
 # The posture job runs on EVERY pull request, with no path filter: a link
 # added anywhere on the site is what would launch the game, and a filter on
@@ -56,10 +57,10 @@ jobs:
           base="${{ github.event.pull_request.base.sha || github.event.before }}"
           if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           git fetch --no-tags --depth=1 origin "$base" 2>/dev/null || true
-          if git diff --name-only "$base" HEAD | grep -qE '^(4th-and-what/|supabase/162_fourth_and_what_daily\.sql|supabase/test/fourth_and_what_daily_test\.sql|supabase/169_fourth_and_what_go_daily\.sql|supabase/test/fourth_and_what_go_daily_test\.sql|setlist/pxhd\.js|arcade/auth(-ui)?\.js|assets/cloudsave\.js|\.github/workflows/4th-and-what-checks\.yml)'; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+          if git diff --name-only "$base" HEAD | grep -qE '^(4th-and-what/|supabase/162_fourth_and_what_daily\.sql|supabase/test/fourth_and_what_daily_test\.sql|supabase/169_fourth_and_what_go_daily\.sql|supabase/test/fourth_and_what_go_daily_test\.sql|supabase/17[01]_[a-z_]+\.sql|supabase/test/(game_events|fourth_and_what_events)[a-z_]*\.sql|functions/_faw/|functions/api/faw/|setlist/pxhd\.js|arcade/auth(-ui)?\.js|assets/cloudsave\.js|\.github/workflows/4th-and-what-checks\.yml)'; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
       - name: The sim (the four plays, determinism, the conversion rates)
         if: steps.changed.outputs.run == 'true'
-        run: node --test 4th-and-what/test/engine.test.mjs 4th-and-what/test/playbook.test.mjs 4th-and-what/test/print.test.mjs 4th-and-what/test/daily.test.mjs 4th-and-what/test/trivia.test.mjs 4th-and-what/test/levels.test.mjs
+        run: node --test 4th-and-what/test/engine.test.mjs 4th-and-what/test/playbook.test.mjs 4th-and-what/test/print.test.mjs 4th-and-what/test/daily.test.mjs 4th-and-what/test/trivia.test.mjs 4th-and-what/test/levels.test.mjs 4th-and-what/test/motion.test.mjs 4th-and-what/test/calls.test.mjs 4th-and-what/test/goforit.test.mjs 4th-and-what/test/profile.test.mjs functions/_faw/test/events.test.mjs
       - name: Install Chromium
         if: steps.changed.outputs.run == 'true'
         run: |
@@ -99,3 +100,17 @@ jobs:
           $P -f supabase/169_fourth_and_what_go_daily.sql
           $P -f supabase/test/fourth_and_what_go_daily_test.sql 2>&1 | tee out2.txt
           grep -q 'fourth_and_what_go_daily_test: all ok' out2.txt
+      - name: The launch events on the shared game_events (170, then 171 twice; 170's own checks still pass)
+        run: |
+          createdb ev
+          psql -q -d ev -c 'create role authenticated' -c 'create role anon' -c 'create role service_role' 2>/dev/null || true
+          psql -q -d ev -f supabase/test/game_events_base.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/170_game_events.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/171_fourth_and_what_events.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/171_fourth_and_what_events.sql
+          psql -q -d ev -f supabase/test/game_events_test.sql 2>&1 | tee ev1.txt
+          test "$(grep -c '^ ok ' ev1.txt)" -ge 11
+          ! grep -v '^ ok ' ev1.txt | grep -q .
+          psql -q -d ev -f supabase/test/fourth_and_what_events_test.sql 2>&1 | tee ev2.txt
+          test "$(grep -c '^ ok ' ev2.txt)" -ge 13
+          ! grep -v '^ ok ' ev2.txt | grep -q .
