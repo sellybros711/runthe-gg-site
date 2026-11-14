@@ -19,18 +19,15 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=28">
+<link rel="stylesheet" href="style.css?v=29">
 </head>
 <body>
 <header class="topbar">
   <a class="logo" href="#home" aria-label="4th and What home"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></a>
   <nav class="tabs" id="tabs" aria-label="Sections">
     <button type="button" class="tab" data-view="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg><span>Play</span></button>
-    <button type="button" class="tab" data-view="studio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16zM14 6l3 3"/></svg><span>Studio</span></button>
-    <button type="button" class="tab" data-view="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-4 9 4-9 4zM7 10v5c3 2 7 2 10 0v-5"/></svg><span>Learn</span></button>
-    <button type="button" class="tab" data-view="books"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg><span>Playbooks</span></button>
-    <button type="button" class="tab" data-view="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Test vs Defense</span></button>
-    <button type="button" class="tab" data-view="print"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg><span>Print</span></button>
+    <button type="button" class="tab" data-view="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM5 9h14M9 2v4M15 2v4"/></svg><span>Daily</span></button>
+    <button type="button" class="tab" data-view="coach"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H4zM8 20h8M12 16v4M8 9l3 3 5-5"/></svg><span>Coach</span></button>
   </nav>
   <div class="navr">
     <a class="home" href="/" aria-label="RunThe.GG home">RunThe.GG</a>
@@ -38,6 +35,15 @@ document.documentElement.setAttribute('data-theme', 'dark');
     <button class="icon" id="bSound" type="button" aria-label="Sound on" aria-pressed="true"><svg class="son" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z" fill="currentColor"/></svg><svg class="soff" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zm12.6.2L15.2 10.6 16.6 12l-1.4 1.4 1.4 1.4L18 13.4l1.4 1.4 1.4-1.4-1.4-1.4 1.4-1.4-1.4-1.4L18 10.6z" fill="currentColor"/></svg></button>
   </div>
 </header>
+<!-- COACH (the launch plan, Phase 3): the tools behind one entry. The row shows inside them -->
+<nav class="subtabs" aria-label="Coach tools">
+    <button type="button" class="tab" data-view="studio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16zM14 6l3 3"/></svg><span>Studio</span></button>
+    <button type="button" class="tab" data-view="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-4 9 4-9 4zM7 10v5c3 2 7 2 10 0v-5"/></svg><span>Learn</span></button>
+    <button type="button" class="tab" data-view="books"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg><span>Playbooks</span></button>
+    <button type="button" class="tab" data-view="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Test vs Defense</span></button>
+    <button type="button" class="tab" data-view="print"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg><span>Print</span></button>
+</nav>
+
 
 <main class="views">
 
@@ -194,6 +200,21 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <button type="button" data-go="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h3v10zm6.5 0V4h3v16zM17 20v-7h3v7z"/></svg>Test vs Defense</button>
         <button type="button" data-go="trivia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3zm-1 4v1a2 2 0 0 0 2 2V7zm12 0v3a2 2 0 0 0 2-2V7z"/></svg>Improve your IQ</button>
       </nav>
+    </div>
+  </section>
+
+  <!-- the Coach hub (the launch plan, Phase 3): the tool for the coaches who want it -->
+  <section class="view coach" id="vCoach" hidden>
+    <div class="coachhub">
+      <h1>Coach</h1>
+      <p class="coachsub">Draw your plays. Build your playbook. Test it against every defense. Print it.</p>
+      <div class="coachtiles">
+        <button type="button" class="ctile" data-go="studio"><b>Studio</b><span>Draw a play, name it, save it.</span></button>
+        <button type="button" class="ctile" data-go="books"><b>Playbooks</b><span>Your plays, your terms, your stats.</span></button>
+        <button type="button" class="ctile" data-go="test"><b>Test vs Defense</b><span>Snap a play against every call.</span></button>
+        <button type="button" class="ctile" data-go="learn"><b>Learn</b><span>The concepts, step by step.</span></button>
+        <button type="button" class="ctile" data-go="print"><b>Print</b><span>Wristbands, call sheets, cards.</span></button>
+      </div>
     </div>
   </section>
 
@@ -528,7 +549,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="share.js?v=2"></script>
 <script src="feel.js?v=2"></script>
 <script src="play.js?v=4"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=6"></script>
 <script src="game.js?v=5"></script>
