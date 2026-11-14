@@ -80,15 +80,20 @@
   /* ================= the page ================= */
   var A = root.FAW_APP, E = root.FAW_ENGINE, T = root.FAW_TURF, FL = root.FAW_FLOW;
   var $ = function (id) { return document.getElementById(id); }, el = A.el;
-  var seed = null, hand = [], pick = -1, V = null;
+  var seed = null, hand = [], pick = -1, V = null, mine = null;
+  /* YOUR PLAYBOOK AS CARDS (the launch plan, Phase 3): signed in with saved
+     plays, the Yours card opens them; a pick is snapped like a dealt card and
+     counts in that play's stats, the way Run it in Playbooks does */
+  function myPlays() { return A.signedIn && A.signedIn() ? A.choices().filter(function (c) { return c.book && c.entry; }) : []; }
 
   function sitText() { var s = A.sitText(); return s.down + ' · ' + s.spot + (A.SC.level && A.SC.level !== 'nfl' ? ' · ' + A.levelShort(A.SC.level) : ''); }
-  function current() { return pick >= 0 ? hand[pick].play : hand[0].play; }
+  function current() { return pick === 'mine' && mine ? mine.play : pick >= 0 ? hand[pick].play : hand[0].play; }
 
   function open() {
     var s = FL.pending();
     var G = root.FAW_GO, first = !!(G && G.firstHand && G.firstHand());
-    if (s !== seed || !hand.length) { seed = s; hand = deal(A.SC, seed, { first: first }); pick = -1; }
+    if (s !== seed || !hand.length) { seed = s; hand = deal(A.SC, seed, { first: first }); pick = -1; mine = null; }
+    $('cMine').hidden = true;
     $('cSit').textContent = sitText();
     renderCards(); draw();
   }
@@ -100,7 +105,8 @@
     var lk = E.look(sc, p, seed);
     $('cRead').textContent = readText(lk);
     $('cHint').textContent = hintText(lk);
-    V.field().play(p, { offense: pick >= 0, defense: true, plans: lk.defense, coverage: false, distance: sc.distance, depths: pick >= 0 });
+    var shown = pick === 'mine' || pick >= 0;
+    V.field().play(p, { offense: shown, defense: true, plans: lk.defense, coverage: false, distance: sc.distance, depths: shown });
   }
   function renderCards() {
     var box = $('cCards'); box.textContent = '';
@@ -112,15 +118,34 @@
         el('small', { text: h.setName })
       ]));
     });
-    box.appendChild(el('button', { type: 'button', class: 'ccard own', on: { click: drawOwn } }, [
-      el('span', { class: 'ctype', text: 'Yours' }), el('i', { class: 'cpen', text: '+' }), el('b', { text: 'Draw your own' }), el('small', { text: 'The full playbook' })
-    ]));
-    $('cSnap').disabled = pick < 0;
-    $('cSnapTxt').textContent = pick < 0 ? 'Pick a play' : 'Snap it';
+    var mp = myPlays();
+    box.appendChild(el('button', { type: 'button', class: 'ccard own', 'aria-pressed': String(pick === 'mine'), on: { click: mp.length ? openMine : drawOwn } },
+      pick === 'mine' && mine ? [el('span', { class: 'ctype', text: 'Yours' }), T.thumb(mine.play, 132, 84, { distance: A.SC.distance, reads: false }), el('b', { text: mine.label }), el('small', { text: mine.group })]
+        : [el('span', { class: 'ctype', text: 'Yours' }), el('i', { class: 'cpen', text: '+' }), el('b', { text: mp.length ? 'Your playbook' : 'Draw your own' }), el('small', { text: mp.length ? mp.length + (mp.length === 1 ? ' play' : ' plays') + ' or a new one' : 'The full playbook' })]));
+    var ready = pick === 'mine' ? !!mine : pick >= 0;
+    $('cSnap').disabled = !ready;
+    $('cSnapTxt').textContent = ready ? 'Snap it' : 'Pick a play';
   }
-  function choose(i) { pick = i; renderCards(); draw(); }
+  function choose(i) { pick = i; $('cMine').hidden = true; renderCards(); draw(); }
+  function openMine() {
+    var box = $('cMineList'); box.textContent = '';
+    myPlays().forEach(function (c) {
+      box.appendChild(el('button', { type: 'button', class: 'cmine', on: { click: function () { mine = c; choose('mine'); } } }, [el('b', { text: c.label }), el('small', { text: c.group })]));
+    });
+    $('cMine').hidden = false;
+  }
+  $('cMineNew').addEventListener('click', function () { $('cMine').hidden = true; drawOwn(); });
+  $('cMineClose').addEventListener('click', function () { $('cMine').hidden = true; });
   function drawOwn() { A.show('studio', { mode: 'game' }); }
   function snapIt() {
+    if (pick === 'mine' && mine) {
+      var m = mine;
+      if (FL.snap(m.play, m.label)) {
+        var r = FL.last(), B = root.FAW_BOOK;
+        if (r && B && m.entry && m.book) { B.countSnap(m.entry, r.distance, r.callKey, r.win, r.level); A.store.put(m.book); }
+      }
+      return;
+    }
     if (pick < 0) return;
     var h = hand[pick];
     FL.snap(h.play, h.concept + ' · ' + h.setName);
@@ -130,5 +155,5 @@
   A.on('call', open);
   window.addEventListener('resize', function () { if (!$('vCall').hidden && hand.length) draw(); });
 
-  root.FAW_CALLS = { deal: deal, readText: readText, hintText: hintText, revealText: revealText, hand: function () { return hand; }, seed: function () { return seed; }, choose: choose };
+  root.FAW_CALLS = { openMine: openMine, deal: deal, readText: readText, hintText: hintText, revealText: revealText, hand: function () { return hand; }, seed: function () { return seed; }, choose: choose };
 })(typeof window !== 'undefined' ? window : this);

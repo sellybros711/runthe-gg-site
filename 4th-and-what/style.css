@@ -859,3 +859,26 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
 .rgbnote { color: #9fb2c8; }
 .rgbrow.mine { color: #8fe7ff; font-weight: 800; }
 .rescard.go .rsnaps { display: none !important; }
+
+/* ---------- Coach (the launch plan, Phase 3) ----------
+   The top bar is Play, Daily and Coach. The coach's tools sit behind Coach:
+   a hub of tiles, and inside a tool a slim row to the others. */
+.subtabs { display: none; gap: 4px; padding: 0 16px; background: #0a1420; border-bottom: 1px solid var(--edge); overflow-x: auto; scrollbar-width: none; }
+body.coachmode .subtabs { display: flex; }
+.subtabs .tab { padding: 9px 12px; font-size: 13px; white-space: nowrap; }
+.coachhub { max-width: 980px; margin: 0 auto; padding: 22px 12px; text-align: center; }
+.coachhub h1 { margin: 0; font: italic 900 clamp(44px, 9vw, 72px)/1 'Barlow Condensed', sans-serif; text-transform: uppercase; color: #fff; }
+.coachsub { margin: 6px 0 18px; color: #9fb2c8; font-weight: 700; }
+.coachtiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.ctile { display: grid; gap: 4px; text-align: left; padding: 16px; border-radius: 14px; cursor: pointer; color: #fff; background: rgba(9, 22, 36, .9); border: 1px solid #1d3a55; }
+.ctile b { font: italic 900 24px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; color: var(--gold); }
+.ctile span { color: #cfd9e4; font-size: 13px; }
+.ctile:hover { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal); }
+@media (max-width: 760px) { .subtabs { padding: 0 8px; } }
+/* your playbook as cards (Phase 3B) */
+.cminebox { padding: 10px; border-radius: 12px; background: rgba(6, 16, 28, .95); border: 1px solid var(--gold); }
+.cminehead { display: flex; justify-content: space-between; margin: 0 0 8px; color: var(--gold); font: italic 900 18px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+.cminelist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; max-height: 220px; overflow-y: auto; margin-bottom: 8px; }
+.cmine { display: grid; gap: 2px; text-align: left; padding: 8px 10px; border-radius: 9px; background: #10243a; border: 1px solid #23405e; color: #fff; cursor: pointer; }
+.cmine b { font: 900 15px/1.1 'Barlow Condensed', sans-serif; } .cmine small { color: #8fa2b8; font-size: 11px; }
+.cmine:hover { border-color: var(--teal); }
