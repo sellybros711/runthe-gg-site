@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { cleanBatch } from '../../functions/_faw/events.js';
 const require = createRequire(import.meta.url);
 let chromium;
 try { ({ chromium } = require('playwright')); }
@@ -62,6 +63,7 @@ async function run(name, viewport, scale) {
     window.FAW_DAILY_API = { signedIn: () => true,
       submit: r => { window.__posts.push(r); return Promise.resolve({ taken: true, streak: 3, best: 5, players: 10, convertedAll: 4 }); },
       day: () => Promise.resolve({ players: 9, converted: 4 }), mine: () => Promise.resolve(null) };
+    window.__fawEvents = true;
     window.__goPosts = [];
     window.FAW_GO_API = { signedIn: () => true,
       submit: (d, p) => { window.__goPosts.push({ d, p }); return Promise.resolve({ taken: true, rank: 2, players: 7, converted: p.converted, yards: p.yards, tds: p.tds }); },
@@ -498,6 +500,13 @@ async function run(name, viewport, scale) {
   ok(statsAfter !== statsBefore, 'the snap counts in that play\'s stats');
   await page.evaluate(() => { document.getElementById('watch').hidden = true; document.getElementById('rCard').hidden = true; });
 
+  /* the launch events (events.js, functions/_faw/events.js): what the page sends survives the collector untouched */
+  const sent = await page.evaluate(() => { window.FAW_EVENTS.flush(); return window.__fawSent; });
+  const evs = sent.flatMap(b => b.ev), names = new Set(evs.map(e => e.n));
+  const kept = sent.map(b => cleanBatch(b));
+  ok(sent.length > 0 && kept.every(k => k) && kept.reduce((a, k) => a + k.rows.length, 0) === evs.length && kept.every((k, i) => k.rows.every((r, j) => JSON.stringify(r.props) === JSON.stringify(sent[i].ev[j].p))),
+    'every launch event the page sends is one the collector keeps, props and all: ' + [...names].join(', '));
+  ok(['open', 'snap', 'run_start', 'run_end', 'coach_open'].every(n => names.has(n)) && evs.some(e => e.n === 'snap' && ['run', 'quick', 'shot'].includes(e.p.card)), 'opens, snaps (with the card), runs and the coach are all counted');
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await ctx.close();
 }

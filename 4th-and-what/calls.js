@@ -140,7 +140,7 @@
   function snapIt() {
     if (pick === 'mine' && mine) {
       var m = mine;
-      if (FL.snap(m.play, m.label)) {
+      if (FL.snap(m.play, m.label, 'mine')) {
         var r = FL.last(), B = root.FAW_BOOK;
         if (r && B && m.entry && m.book) { B.countSnap(m.entry, r.distance, r.callKey, r.win, r.level); A.store.put(m.book); }
       }
@@ -148,7 +148,7 @@
     }
     if (pick < 0) return;
     var h = hand[pick];
-    FL.snap(h.play, h.concept + ' · ' + h.setName);
+    FL.snap(h.play, h.concept + ' · ' + h.setName, h.type);
   }
   $('cSnap').addEventListener('click', snapIt);
   $('cBack').addEventListener('click', function () { A.show(root.FAW_DAILY && root.FAW_DAILY.active() ? 'daily' : 'play'); });
