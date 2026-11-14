@@ -69,7 +69,8 @@ test('GET /last-shot/report: admins only, the targets marked met or not', async 
   assert.match(out.body, /14\.2 s/); assert.match(out.body, /65%/); assert.match(out.body, /30%/);
   assert.match(out.body, /Goal: 6 or more · not yet/);
   assert.match(out.body, /noindex/);
-  assert.ok(!/[–—]/.test(out.body), 'no dashes');
+  const DASH = new RegExp('[' + String.fromCharCode(0x2013, 0x2014) + ']');
+  assert.ok(!DASH.test(out.body), 'no dashes');
   await roundGate({ method: 'GET', sub: 'report', uid: 'a', query: { since: '2026-11-03', until: '2026-11-10', admins: '1' }, nowMs: NOW }, db);
   assert.deepEqual(asked, { game: 'last-shot', since: '2026-11-03T00:00:00-05:00', until: '2026-11-10T00:00:00-05:00', ex: false });
   await roundGate({ method: 'GET', sub: 'report', uid: 'a', query: { since: "'; drop", until: 'x' }, nowMs: NOW }, db);
