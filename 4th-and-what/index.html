@@ -19,7 +19,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=26">
+<link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
 <header class="topbar">
@@ -148,6 +148,8 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <button type="button" class="playnow" id="goStart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span>Go for it</span></button>
         <p class="gosub" id="goSub"></p>
         <p class="gobest" id="goBest" hidden></p>
+        <button type="button" class="godaily" id="goDaily"><span>Today's run</span></button>
+        <p class="gosub godailysub" id="goDailySub"></p>
       </div>
       <!-- your coach record and the moments (profile.js, the launch plan's Phase 2) -->
       <div class="precord" id="pRecord" hidden>
@@ -467,6 +469,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <p class="rgonext" id="rGoNext"></p>
         <button type="button" class="playnow rgobtn" id="rGoOn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Next down</button>
         <button type="button" class="playnow rgobtn" id="rGoAgain" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Go again</button>
+        <div class="rgoboard" id="rGoBoard" hidden></div>
         <button type="button" class="btn" id="rGoShare" hidden>Share your run</button>
       </div>
       <div class="racts rplay">
@@ -531,10 +534,10 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="game.js?v=5"></script>
 <script src="clip.js?v=1"></script>
 <script src="flow.js?v=14"></script>
-<script src="daily.js?v=7"></script>
+<script src="daily.js?v=8"></script>
 <script src="trivia.js?v=4"></script>
 <script src="calls.js?v=4"></script>
-<script src="goforit.js?v=3"></script>
+<script src="goforit.js?v=4"></script>
 <script src="profile.js?v=1"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
