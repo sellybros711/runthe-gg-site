@@ -42,3 +42,31 @@ jobs:
       # wrangler (see stumpire-checks.yml). Building with wrangler 3 catches it.
       - name: Pages Functions build like Cloudflare's
         run: npx --yes wrangler@3.20.0 pages functions build --outdir "$RUNNER_TEMP/fn"
+
+  # The tester round's events and report (supabase/170), applied twice (it
+  # must be idempotent), then checked against players whose numbers are known.
+  round-sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: The migration twice, then the report's checks
+        run: |
+          createdb ev
+          psql -q -d ev -c 'create role authenticated' -c 'create role anon' -c 'create role service_role'
+          psql -q -d ev -f supabase/test/game_events_base.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/170_game_events.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/170_game_events.sql
+          psql -q -d ev -f supabase/test/game_events_test.sql 2>&1 | tee out.txt
+          test "$(grep -c '^ ok ' out.txt)" -ge 11
+          ! grep -v '^ ok ' out.txt | grep -q .

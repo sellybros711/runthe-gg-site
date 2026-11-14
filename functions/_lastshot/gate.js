@@ -25,3 +25,29 @@ export async function pageGate(sub, uid, db) {
   try { role = await db.role(uid); } catch (e) { return null; }
   return ROLES.includes(role) ? out : null;
 }
+
+/* THE TESTER ROUND (Phase 4). Two routes beside the page, behind the same
+ * list, refused with the same 404:
+ *   POST /last-shot/e        a tester's events (events.js)        -> 204
+ *   GET  /last-shot/report   the round report, admins only (report.js)
+ * Anything else falls through to pageGate. */
+import { postEvents, GAME } from './events.js';
+import { renderReport, rangeOf } from './report.js';
+
+export async function roundGate({ method, sub, uid, query, body, nowMs }, db) {
+  const s = String(sub || '').replace(/\/+$/, '');
+  if (s !== 'e' && s !== 'report') return undefined;
+  if (!uid) return null;
+  let role = null;
+  try { role = await db.role(uid); } catch (e) { return null; }
+  if (s === 'e') {
+    if (method !== 'POST' || !ROLES.includes(role)) return null;
+    const r = await postEvents(uid, body, db);
+    return { status: r.status, type: 'text/plain; charset=utf-8', body: '' };
+  }
+  if (method !== 'GET' || role !== 'admin') return null;
+  const range = rangeOf(query || {}, nowMs);
+  let r = null;
+  try { r = await db.report(GAME, range.sinceAt, range.untilAt, !range.admins); } catch (e) { r = null; }
+  return { status: 200, type: 'text/html; charset=utf-8', body: renderReport(r, range) };
+}

@@ -115,6 +115,7 @@ node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, pl
 node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's real handler in memory (test/fake-arcade.mjs)
 node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
 node functions/_lastshot/test/check-starters.mjs  Plays (the starters, replace, undo, a level's scout) and Save this play
+node functions/_lastshot/test/check-analytics.mjs the tester round's events: every name, the beacon on hide, inert under automation
 ```
 
 The seed for any result is behind **Seed** on the result screen. The same seed and the same play

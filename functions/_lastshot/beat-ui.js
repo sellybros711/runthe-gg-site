@@ -12,6 +12,7 @@
 import { encode, decode, resultOf, challengeScenario, MAX_LINK } from './challenge.js';
 import { SCHEME_NAMES, isZone } from './scenario.js';
 import { adder, summaryOf } from './cards.js';
+import { track } from './analytics.js';
 
 const SET_NAMES = { box: 'Box', horns: 'Horns', high14: '1-4 high', out41: 'Spread' };
 export const BEAT_TEXT = 'I drew this one. Beat it.';
@@ -28,8 +29,14 @@ export function clearHash() {
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
 }
 
-/* The challenge and what their play did, or null for a bad link. */
+/* The challenge and what their play did, or null for a bad link. Counted
+   as beat_open either way (analytics.js). */
 export function openChallenge(code) {
+  const c = readChallenge(code);
+  track('beat_open', { ok: !!c });
+  return c;
+}
+function readChallenge(code) {
   try {
     const ch = decode(code);
     if (!ch) return null;
@@ -56,6 +63,7 @@ export const scoutOf = ch => (ch.scheme ? 'Scout: ' + SCHEME_NAMES[ch.scheme] + 
 export async function shareBeat(url, btn) {
   const label = btn.textContent;
   const back = () => setTimeout(() => { btn.textContent = label; }, 1600);
+  track('share', { kind: 'beat' });
   try { if (navigator.share) { await navigator.share({ text: BEAT_TEXT, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(BEAT_TEXT + '\n' + url); btn.textContent = 'Link copied'; } catch (e) { btn.textContent = 'Copy failed'; }
   back();
