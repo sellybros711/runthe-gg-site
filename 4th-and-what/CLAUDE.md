@@ -69,7 +69,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   named events (open, snap, run_start, run_end, share, save, daily_open, coach_open) to
   `/api/faw/e` (`functions/api/faw/e.js`, under /api so the game's folder keeps no Function), which keeps only `functions/_faw/events.js`'s
   whitelist and writes the shared `game_events` (supabase/170) through 171's capped `faw_events_add`.
-  A row carries a device id, never anything personal. It only sends from runthe.gg (never a preview, a
+  A row carries a device id, never anything personal. Each event also goes to the site's GA4 as `faw_<name>` (2026-11-16, from runthe.gg only; the
+  tag and the consent defaults are the site's block in `index.html`, the same as every game's). It only sends from runthe.gg (never a preview, a
   dev server or a check). `faw_round_report` (171) gives the launch targets. A new event or prop goes in
   the whitelist in the same commit, or the collector drops it. The game's rows keep 120 days: every batch trims up to 200 older
   ones (`supabase/172`), so no cron job is needed.
