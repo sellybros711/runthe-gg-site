@@ -13,6 +13,14 @@ create or replace function public.shutdoor_today() returns date
 language sql stable as $$ select coalesce(nullif(current_setting('test.today', true), '')::date,
                                           (now() at time zone 'America/New_York')::date) $$;
 
+-- the workflow applied 161 on the wall clock, after 160's test put the real clock back. 161 keeps
+-- a vote day already begun, so what it cleared of 160's test's days hung on when CI ran (from the
+-- epoch, 2026-11-16 Eastern, it kept that day's old draw). Apply it again on a pinned day, the day
+-- before the epoch, when no vote day has begun: every stored day is then one it must clear
+select set_config('test.today', (shutdoor_vote_epoch() - 1)::text, false);
+\i supabase/161_shut_the_door_full_close.sql
+reset test.today;
+
 -- 1. the list: thirty, the two new ids at the old ones' places, no old id left
 select pg_temp.claim((select count(*) from shutdoor_packs) = 30, 'thirty situations');
 select pg_temp.claim((select id from shutdoor_packs where ord = 18) = 'std-2008-alcs7-price'
