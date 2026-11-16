@@ -137,7 +137,10 @@ if (!window.STD_AUTH || FORCE) {
       if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
       var c = mockClips.filter(function (x) { return x.id === id; })[0];
       if (!c) return Promise.resolve({ error: 'no such clip' });
+      /* as 172: a rejected call loses its file, and with it any way back */
+      if (!c.path && st !== 'rejected') return Promise.resolve({ error: 'that call\'s audio was deleted' });
       c.status = st;
+      if (st === 'rejected') c.path = null;
       return Promise.resolve({ data: { id: id, status: st } });
     },
     plates: function () { return Promise.resolve(mockIn ? JSON.parse(JSON.stringify(mockPlates)) : null); },

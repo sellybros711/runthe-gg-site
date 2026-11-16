@@ -3303,8 +3303,8 @@
       "sha": "3507b40bb34fd819"
     },
     "voices.js": {
-      "v": "1",
-      "sha": "27db450876d5eda0"
+      "v": "2",
+      "sha": "2b2dd654a473cef3"
     },
     "postgame.js": {
       "v": "1",
@@ -3315,8 +3315,8 @@
       "sha": "602880a846c4c91e"
     },
     "mock-api.js": {
-      "v": "21",
-      "sha": "44cbca629e07b05a"
+      "v": "22",
+      "sha": "b99cad4a831846ed"
     },
     "coach.js": {
       "v": "2",
