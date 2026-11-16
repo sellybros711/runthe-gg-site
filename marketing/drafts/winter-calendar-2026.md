@@ -54,15 +54,16 @@ the three API link posts a week.
 ### P1: Perfect Season Fantasy, Tuesday 11-24 (X, link, spends 1 of 3)
 
 ```
-Thanksgiving week. The Fantasy Challenge is open, and it locks at Wednesday's kickoff, Packers at Rams.
+Week 12 of the Fantasy Challenge is open. It locks Wednesday at 8pm ET, because the Thanksgiving Eve game, Packers at Rams, kicks off then.
 
-Build the lineup before then.
+Build your lineup before then.
 
 https://runthe.gg/football/fantasy/?utm_source=x&utm_medium=social&utm_campaign=ps-fantasy-w12
 ```
 
-Check: the real lock time and the page's URL on the day. The Advisor reads the lock as Wednesday
-8pm Eastern. The window is about 36 hours, so post it first thing Tuesday.
+Check: the page's URL and the lock time on the day. **The owner chose to keep the lock at the first
+kickoff, Wednesday 11-25 at 8pm ET** (relayed by the Perfect Season Agent). The window is about 36
+hours, so post first thing Tuesday and say the lock plainly.
 
 ### P2: Perfect Season, Thursday 11-26 (X, plain text, no link)
 
@@ -135,8 +136,8 @@ Three NFL games on Christmas. The Fantasy Challenge is open.
 Build the lineup.
 ```
 
-Check: the Advisor says the live board sleeps on Christmas unless the Perfect Season Agent's fix
-ships. **Do not post this if the live board is not awake.** Ask that agent before 12-23.
+Check: the live board fix for Thanksgiving week and Christmas is in site PR 1010, waiting on the
+owner's merge. **P7 posts only once PR 1010 is merged.** Confirm on 12-23.
 
 ### P8: Shut The Door, Hall of Fame day (held)
 
