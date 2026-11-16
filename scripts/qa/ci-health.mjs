@@ -43,6 +43,21 @@ const DAY = 864e5;
 
 // ── reading the repository ─────────────────────────────────────────────────────
 
+// The workflows to watch: every one with a schedule, and every one .github/ci-owners.json marks
+// "clock": true. A clock workflow is started by the Cloudflare clock Worker (workers/clock/) through
+// workflow_dispatch, because GitHub's cron runs hours late or not at all. It may have no schedule
+// of its own (clock-heartbeat.yml), so it is listed here by its owners entry.
+export function watchedWorkflows(dir = WF_DIR, owners = {}) {
+  const out = scheduledWorkflows(dir);
+  const seen = new Set(out.map(w => w.file));
+  for (const w of out) if (owners[w.file]?.clock) w.clock = true;
+  for (const [f, o] of Object.entries(owners)) {
+    if (!o?.clock || seen.has(f) || !fs.existsSync(path.join(dir, f))) continue;
+    out.push({ file: f, crons: [], clock: true });
+  }
+  return out.sort((a, b) => a.file.localeCompare(b.file));
+}
+
 export function scheduledWorkflows(dir = WF_DIR) {
   const out = [];
   for (const f of fs.readdirSync(dir).sort()) {
@@ -105,15 +120,26 @@ export function classify(runs) {
   return res;
 }
 
-export function stopped(runs, crons, seasonal, now = Date.now()) {
+// maxGapHours, from the owners entry, overrides what the crons allow: the clock heartbeat runs
+// hourly and is stopped after about three hours without a run.
+export function stopped(runs, crons, seasonal, now = Date.now(), maxGapHours = null) {
   if (seasonal) return null;
-  const gap = allowedGapDays(crons);
+  const gap = maxGapHours ? maxGapHours / 24 : allowedGapDays(crons);
   if (gap == null) return null;
   const newest = runs[0]?.created_at ? Date.parse(runs[0].created_at) : null;
   if (newest == null) return { days: null, gap };
   const days = (now - newest) / DAY;
-  return days > gap ? { days: Math.floor(days), gap } : null;
+  return days > gap ? { days, gap } : null;
 }
+
+// A clock workflow's runs are its scheduled ones and the ones dispatched on main, newest first.
+export function mergeRuns(...lists) {
+  const byId = new Map();
+  for (const l of lists) for (const r of l || []) byId.set(r.id, r);
+  return [...byId.values()].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+}
+
+const span = d => (d < 2 ? `${Math.round(d * 24)} hours` : `${Math.floor(d)} days`);
 
 // A failure that happened before the job's own work began: the runner, or a stock action.
 export function infraFailure(job) {
@@ -175,14 +201,19 @@ function client() {
 
 async function inspect(gh, wf, owners, rerun) {
   const own = owners[wf.file] || {};
-  const item = { file: wf.file, owner: own.owner || null, seasonal: !!own.seasonal };
+  const item = { file: wf.file, owner: own.owner || null, seasonal: !!own.seasonal, clock: !!wf.clock };
   const meta = await gh.json(`/actions/workflows/${wf.file}`);
   item.name = meta.name;
   item.disabled = meta.state && meta.state !== 'active' ? meta.state : null;
-  const { workflow_runs: runs = [] } = await gh.json(`/actions/workflows/${wf.file}/runs?event=schedule&per_page=100`);
+  const { workflow_runs: sched = [] } = await gh.json(`/actions/workflows/${wf.file}/runs?event=schedule&per_page=100`);
+  let runs = sched;
+  if (wf.clock) {
+    const { workflow_runs: disp = [] } = await gh.json(`/actions/workflows/${wf.file}/runs?event=workflow_dispatch&branch=main&per_page=100`);
+    runs = mergeRuns(sched, disp);
+  }
   item.fetched = runs.length;
   Object.assign(item, classify(runs));
-  item.stopped = stopped(runs, wf.crons, item.seasonal);
+  item.stopped = stopped(runs, wf.crons, item.seasonal, Date.now(), own.maxGapHours || null);
   if (item.state === 'red') {
     const run = item.run;
     item.runUrl = run.html_url;
@@ -247,7 +278,7 @@ export function report(items, unowned, repo) {
   }
   if (stop.length) {
     out.push('', '## Stopped firing', '');
-    for (const i of stop) out.push(`- \`${i.file}\` (${i.owner || 'no owner'}): ${i.stopped.days == null ? 'no scheduled run on record' : `no scheduled run for ${i.stopped.days} days`}, and its schedule allows ${i.stopped.gap}.`);
+    for (const i of stop) out.push(`- \`${i.file}\` (${i.owner || 'no owner'}): ${i.stopped.days == null ? 'no run on record' : `no run for ${span(i.stopped.days)}`}, and it is allowed ${span(i.stopped.gap)}.${i.clock ? ' It is started by the clock Worker, so the Worker may be down.' : ''}`);
   }
   if (off.length) {
     out.push('', '## Disabled', '');
@@ -299,7 +330,23 @@ function selfTest() {
 
   const now = Date.parse('2026-11-16T12:00:00Z');
   eq(stopped([R('success', '2026-11-15T09:00:00Z')], ['17 9 * * *'], false, now), null, 'daily, ran yesterday');
-  eq(stopped([R('success', '2026-11-10T09:00:00Z')], ['17 9 * * *'], false, now), { days: 6, gap: 2 }, 'daily, six days silent');
+  eq(stopped([R('success', '2026-11-10T12:00:00Z')], ['17 9 * * *'], false, now), { days: 6, gap: 2 }, 'daily, six days silent');
+  eq(stopped([R('success', '2026-11-16T10:00:00Z')], [], false, now, 3), null, 'heartbeat, two hours ago');
+  eq(stopped([R('success', '2026-11-16T08:00:00Z')], [], false, now, 3), { days: 4 / 24, gap: 3 / 24 }, 'heartbeat, four hours silent');
+  eq(stopped([], [], false, now), null, 'no cron and no gap set: nothing to judge');
+  eq(span(4 / 24), '4 hours', 'hours read as hours');
+  eq(span(6.4), '6 days', 'days read as days');
+  eq(mergeRuns([{ id: 1, created_at: '2026-11-15' }], [{ id: 2, created_at: '2026-11-16' }, { id: 1, created_at: '2026-11-15' }]).map(r => r.id), [2, 1], 'dispatched and scheduled, newest first, once each');
+  {
+    const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || '/tmp', 'cih-'));
+    fs.writeFileSync(path.join(dir, 'a.yml'), "on:\n  schedule:\n    - cron: '0 9 * * *'\n");
+    fs.writeFileSync(path.join(dir, 'beat.yml'), 'on:\n  workflow_dispatch:\n');
+    fs.writeFileSync(path.join(dir, 'pr.yml'), 'on:\n  pull_request:\n');
+    const w = watchedWorkflows(dir, { 'a.yml': { owner: 'x', clock: true }, 'beat.yml': { owner: 'x', clock: true }, 'gone.yml': { owner: 'x', clock: true } });
+    eq(w.map(x => [x.file, !!x.clock]), [['a.yml', true], ['beat.yml', true]], 'a clock workflow with no schedule is watched; a missing file is not');
+    eq(ownerProblems(w, { 'a.yml': { owner: 'x' }, 'beat.yml': { owner: 'x' }, 'gone.yml': { owner: 'x' } }), { missing: [], extra: ['gone.yml'] }, 'a clock entry not on this branch only warns');
+    fs.rmSync(dir, { recursive: true });
+  }
   eq(stopped([R('success', '2026-11-01T09:00:00Z')], ['17 9 * * *'], true, now), null, 'seasonal exempt');
   eq(stopped([], ['17 9 * * *'], false, now), { days: null, gap: 2 }, 'never ran');
 
@@ -347,16 +394,16 @@ async function main() {
   const opt = f => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : null; };
   if (flag('--self-test')) return selfTest();
 
-  const scheduled = scheduledWorkflows();
   const owners = readOwners();
+  const scheduled = watchedWorkflows(WF_DIR, owners);
   const unowned = ownerProblems(scheduled, owners);
   if (flag('--check-owners')) {
     for (const f of unowned.missing) console.error(`::error::${f} runs on a schedule and has no owner in .github/ci-owners.json`);
     // A leftover entry only warns: a schedule can be removed in one PR and the map tidied in
     // another, and neither should go red waiting on the other.
-    for (const f of unowned.extra) console.error(`::warning::${f} is in .github/ci-owners.json but has no schedule (remove the entry)`);
+    for (const f of unowned.extra) console.error(`::warning::${f} is in .github/ci-owners.json but has no schedule and is not a clock workflow on this branch (remove the entry, or it lands later)`);
     if (unowned.missing.length) process.exit(1);
-    console.log(`ci owners ok: ${scheduled.length} scheduled workflows, each with an owner`);
+    console.log(`ci owners ok: ${scheduled.length} watched workflows (${scheduled.filter(w => w.clock).length} on the clock), each with an owner`);
     return;
   }
 

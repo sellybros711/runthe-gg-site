@@ -1,5 +1,5 @@
 {
-  "_about": "Every scheduled workflow and the agent that owns it. ci-health.yml reads this to say who a failure belongs to, and a scheduled workflow missing from it fails ci-health (and the PR check), so a new schedule cannot go unwatched. seasonal: true means the schedule only fires in a season, so a long gap is not a stop. See scripts/qa/ci-health.mjs.",
+  "_about": "Every scheduled workflow and the agent that owns it. ci-health.yml reads this to say who a failure belongs to, and a scheduled workflow missing from it fails ci-health (and the PR check), so a new schedule cannot go unwatched. seasonal: true means the schedule only fires in a season, so a long gap is not a stop. clock: true means the Cloudflare clock Worker (workers/clock/) starts it by workflow_dispatch, so its dispatched runs on main count too; maxGapHours sets how long it may go without any run (the heartbeat: 3). See scripts/qa/ci-health.mjs.",
   "workflows": {
     "arcade-stats.yml":          { "owner": "Rosters Agent" },
     "arcade-usage.yml":          { "owner": "Advisor Agent" },
@@ -9,11 +9,12 @@
     "cfb-fantasy-pool.yml":      { "owner": "College Football Agent", "seasonal": true },
     "cfb-fantasy-watchdog.yml":  { "owner": "College Football Agent", "seasonal": true },
     "ci-health.yml":             { "owner": "QA Agent" },
+    "clock-heartbeat.yml":       { "owner": "Perfect Season Agent", "clock": true, "maxGapHours": 3 },
     "fantasy-injuries.yml":      { "owner": "Perfect Season Agent", "seasonal": true },
-    "fantasy-live.yml":          { "owner": "Perfect Season Agent", "seasonal": true },
+    "fantasy-live.yml":          { "owner": "Perfect Season Agent", "seasonal": true, "clock": true },
     "fantasy-pipeline.yml":      { "owner": "Perfect Season Agent" },
-    "fantasy-pool.yml":          { "owner": "Perfect Season Agent", "seasonal": true },
-    "fantasy-watchdog.yml":      { "owner": "Perfect Season Agent", "seasonal": true },
+    "fantasy-pool.yml":          { "owner": "Perfect Season Agent", "seasonal": true, "clock": true },
+    "fantasy-watchdog.yml":      { "owner": "Perfect Season Agent", "seasonal": true, "clock": true },
     "former.yml":                { "owner": "Rosters Agent" },
     "golf-rosters.yml":          { "owner": "Rosters Agent" },
     "hoops-data.yml":            { "owner": "Rosters Agent" },
