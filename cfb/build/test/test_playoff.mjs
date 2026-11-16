@@ -147,5 +147,21 @@ console.log('\n4. the slate grows, and a man\'s kick never moves after his first
   ok('a bye team\'s kick is his quarterfinal', /\('p2', '2027-01-01T21:00Z'::timestamptz\)/.test(sql));
 }
 
+console.log('\n5. the live job watches each Playoff game, not the five weeks between them');
+{
+  const { plan, PLAYOFF_WATCH_H } = await import('../fantasy/live.mjs');
+  const H = 3600e3, t0 = Date.parse('2026-12-19T01:00Z');
+  const pool = { kind: 'playoff', expect_games: 11, games: [
+    { kick: '2026-12-19T01:00Z' }, { kick: '2026-12-19T17:00Z' },
+    { kick: '2027-01-01T21:00Z' } ] };
+  ok('during a first round game: watching', plan(pool, t0 + 2 * H).watch);
+  ok('settling after it: still watching', plan(pool, t0 + (PLAYOFF_WATCH_H - 1) * H + 16 * H).watch);
+  ok('the days between rounds: asleep', !plan(pool, t0 + 5 * 24 * H).watch, plan(pool, t0 + 5 * 24 * H).why);
+  ok('  and not called done, with rounds still to come', !plan(pool, Date.parse('2027-01-03T12:00Z')).done);
+  ok('three hours before a kickoff: soon', plan(pool, Date.parse('2027-01-01T19:00Z')).soon);
+  ok('a regular week is unchanged: watched from its first kickoff to 30 hours after its last',
+    plan({ games: pool.games }, t0 + 5 * 24 * H).watch);
+}
+
 console.log(fails ? `\n${fails} FAILED, ${passes} ok` : `\nall ${passes} ok`);
 process.exit(fails ? 1 : 0);

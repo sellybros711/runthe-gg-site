@@ -35,6 +35,8 @@ import { resultsSQL, kickoffsSQL } from './publish.mjs';
 const say = (...a) => process.stderr.write(a.join(' ') + '\n');
 const H = 3600e3;
 export const FINAL_AFTER_H = 4.5;
+/* A Playoff game is watched this long after its kickoff: a long game, then its box settling. */
+export const PLAYOFF_WATCH_H = 8;
 
 const ET = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -51,6 +53,20 @@ export function plan(pool, now) {
   const kicks = pool.games.map((g) => Date.parse(g.kick)).filter(Number.isFinite).sort((a, b) => a - b);
   if (!kicks.length) return { watch: false, why: 'no kickoffs' };
   const first = kicks[0], last = kicks[kicks.length - 1];
+  /* THE PLAYOFF IS WATCHED GAME BY GAME. Its first kickoff and its last are five weeks apart,
+     and "between the first and the last" would keep the loop awake, and dispatching itself, for
+     all of them. So each game is watched from just before it until its box score has settled,
+     and the weeks between are asleep. A round not yet on the board is a game still to come. */
+  if (pool.kind === 'playoff') {
+    if (kicks.some((k) => now >= k - 10 * 60e3 && now <= k + PLAYOFF_WATCH_H * H)) {
+      return { watch: true, why: 'a Playoff game on or settling' };
+    }
+    const next = kicks.find((k) => k > now);
+    const whole = !pool.expect_games || pool.games.length >= pool.expect_games;
+    if (next == null && whole && now > last + 30 * H) return { watch: false, done: true, why: 'long over' };
+    return { watch: false, soon: next != null && next - now < 3 * H,
+      why: next != null ? 'between Playoff games' : 'waiting for the next round to be set' };
+  }
   if (now < first - 10 * 60e3) {
     return { watch: false, soon: first - now < 3 * H, why: 'before the first kickoff' };
   }

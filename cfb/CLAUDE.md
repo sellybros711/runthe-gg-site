@@ -28,6 +28,8 @@ node cfb/build/test/commish/probe_longrun.mjs    30 runs of 50 seasons (--bold, 
 node cfb/build/test/commish/test_standings.mjs   the standings screen, four states
 node cfb/build/test/test_fantasy.mjs             the College Fantasy Challenge (--quick: no browser)
 node cfb/build/test/test_fanpromo.mjs            the results screen's Fantasy card: open week, no lineup in
+node cfb/build/test/test_playoff.mjs             the Playoff Fantasy's builders (no network)
+node cfb/build/fantasy/playoff.mjs [--season Y]  a dry Playoff board (--write, --refresh, --check)
 ```
 
 The SQL suites (`supabase/test/commish_clock_test.sql`, `tenure_test.sql`, `cfb_fantasy_test.sql`)
@@ -83,3 +85,20 @@ run against a scratch Postgres; the order of files each needs is in the matching
   starter a short roster leaves out is still added from the store.
 - **`next-week.mjs` is the week, and an unreadable scoreboard fails it.** ESPN answers null rather
   than throwing, which `nextWeek` alone reads as the season over, or as a later week.
+
+**The Playoff Fantasy** (the owner's call, 2026-11-16)
+
+- **One lineup, ridden through the bracket.** Six men from the twelve Playoff teams; a man scores
+  in every game his team plays. It is week `PLAYOFF_WEEK` (100) to the server: one more week row,
+  so no SQL. The page reads any week from 100 as "the Playoff", never "Week 100".
+- **A swap closes at a man's FIRST Playoff game.** His `kick` is that game, and `kickoffsSQL` keeps
+  a team's earliest game so a later round never reopens him. Nothing is ever banked.
+- **Priced per game times expected games**: the first game off its line, later rounds an even
+  chance, a bye team's quarterfinal at `BYE_P`.
+- **The slate grows.** The injury job runs `playoff.mjs --refresh`, which adds each round as ESPN
+  sets it and never touches a price. Final only once all `EXPECTED_GAMES` are on the board and over.
+- **The live job watches each Playoff game, not the five weeks between** (`plan()`), and its cron
+  covers every day of December and January.
+- **The pointer carries `prev`, `kind`, `ends_at` and `next`.** The previous week is `prev`, never
+  week minus one. The door reads its phase off them: week, waiting, playoff open, playoff live, off.
+- **The shared lock day sheet is not set up for the Playoff**: it would say "Week 100".
