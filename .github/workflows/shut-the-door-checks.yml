@@ -90,6 +90,8 @@ jobs:
         run: node shut-the-door/test/postgame.mjs
       - name: The result names the real closer in every scheduled pack (names.js versus)
         run: node shut-the-door/test/versus.mjs
+      - name: The game events go out once each, at their moment, with only their fields
+        run: node shut-the-door/test/events.mjs
       - name: The ump purge deletes only files no row names, through the Storage API, and fails on one it kept
         run: node shut-the-door/ump-purge.mjs --self-test
       - name: Stored results replay
