@@ -33,10 +33,14 @@
  *            contradiction, and a shared club in a shared decade. Joined with
  *            no list, so the nightly roster refresh can never reintroduce a
  *            suffix duplicate.
+ *            Also a nickname or short form (Mike and Michael) when the college
+ *            AND the position match as well.
  *   'ask'    the names are related in a way that is ALSO true of brothers and
- *            strangers (a nickname, a prefix, initials, one letter apart, the
- *            same career under a new surname). Somebody has to decide, once,
- *            in the json: `same` or `apart`. Until then the check fails.
+ *            strangers (initials, one letter apart, the same career under a new
+ *            surname, a nickname with a college missing). Somebody has to
+ *            decide, once, in the json: `same` or `apart`. Until then the pair
+ *            stays two records and the check lists it as a decision, but the
+ *            rebuild goes ahead: one undecided pair never holds the corpus.
  *   'apart'  something proves two men: two different suffixes (Ken Griffey
  *            Sr. and Jr.), a pitcher and a hitter, a quarterback and a tight
  *            end, Miami and Southern Miss.
@@ -207,6 +211,15 @@ export function contradiction(A, B) {
   return null;
 }
 
+/* Positive evidence of one position, not merely no contradiction: both
+   positions known and in one family. Basketball positions never contradict,
+   so there the shared club and decade carry it. */
+export function samePosition(A, B) {
+  if (A.sport === 'NBA' || A.sport === 'WNBA') return true;
+  const fa = family(A.sport, A.pos), fb = family(B.sport, B.pos);
+  return !!(fa && fb && fa === fb);
+}
+
 export const shareClub = (A, B) => A.t.some((t) => B.t.includes(t));
 export const shareDecade = (A, B) => A.dec.some((d) => B.dec.includes(d));
 
@@ -219,6 +232,15 @@ export function classify(A, B) {
   if (!shareDecade(A, B) || !shareClub(A, B)) return null;
   if (contradiction(A, B)) return 'apart';
   if (rel === 'name') return 'auto';
+  // A nickname or a short form (Mike and Michael, Scott and Scotty) with the
+  // same college on both records AND the same position, on top of the shared
+  // club in a shared decade: one man. This used to be 'ask', and two such pairs
+  // each held the daily rebuild red for two weeks (Scott / Scotty Miller from
+  // 2026-10-12, Mike / Michael Jordan from 2026-11-02) while stale actives piled
+  // up on the live game. Run against every call already made by hand it agrees
+  // with all eight it decides and contradicts no `apart` entry. Brothers share a
+  // surname, sometimes a club, rarely a college, a position and a nickname too.
+  if ((rel === 'nickname' || rel === 'prefix') && sameCollege(A.col, B.col) && samePosition(A, B)) return 'auto';
   // Initials and one-letter spellings are common between strangers, so they
   // need the college as well before anybody is asked.
   if ((rel === 'initials' || rel === 'spelling') && !sameCollege(A.col, B.col)) return null;

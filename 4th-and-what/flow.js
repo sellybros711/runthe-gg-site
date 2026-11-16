@@ -137,13 +137,17 @@
     var seed = pending(); forced = null; pend = null;
     played = p; playedName = name || A.draft.name || A.nameFor(p);
     if (window.FAW_CLIP) window.FAW_CLIP.cancel();
+    /* the situation as it was snapped: Go For It moves A.SC on to the next down
+       as soon as it hears the result, so the card's header and the kept snap
+       (a replay re-runs it) read this, never A.SC after the run */
+    var at = A.copy(A.SC);
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
     if (window.FAW_GO) window.FAW_GO.snapped(res);
     /* the coach record and the moments (profile.js) */
     var G = window.FAW_GO;
     if (window.FAW_PROFILE) window.FAW_PROFILE.snapped(res, { name: playedName, run: G && G.active() && G.run() ? G.run().n : null });
-    remember(res, p, D && D.active());
+    remember(res, p, D && D.active(), at);
     if (window.FAW_EVENTS) window.FAW_EVENTS.track('snap', { mode: G && G.active() ? (G.run() && G.run().daily ? 'today' : 'go') : D && D.active() ? 'daily' : 'practice',
       card: card || 'own', win: !!res.win, outcome: res.outcome, shell: res.shell, distance: res.distance });
     /* a playbook play counts the snap against whatever the defense called */
@@ -161,8 +165,8 @@
      daily's list starts with the day's snap (kept by daily.js, so it is there
      after a reload); the rest are practice. Free play keeps its own list. */
   var LOG_MAX = 12, log = [], shown = null;
-  function remember(r, p, daily) {
-    var e = { sc: A.copy(A.SC), play: A.copy(p), seed: r.seed, win: r.win, yards: r.yards, outcome: r.outcome, daily: !!daily };
+  function remember(r, p, daily, at) {
+    var e = { sc: at || A.copy(A.SC), play: A.copy(p), seed: r.seed, win: r.win, yards: r.yards, outcome: r.outcome, daily: !!daily };
     log.push(e); if (log.length > LOG_MAX) log.shift();
     shown = e;
   }
@@ -214,7 +218,8 @@
        one line of why, and the read's answer; one big button; the rest small */
     var td = r.outcome === 'touchdown';
     c.className = 'rescard ' + (td ? 'win td' : r.win ? 'win' : 'lose');
-    $('rDown').textContent = A.sitText().down + ' · ' + A.sitText().spot;
+    var sit = A.sitText(shown && shown.seed === r.seed ? shown.sc : null);
+    $('rDown').textContent = sit.down + ' · ' + sit.spot;
     $('rTitle').textContent = td ? 'Touchdown' : r.win ? 'First down' : r.outcome === 'interception' ? 'Picked off' : 'Stopped';
     var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
     var line = A.marginText(r) || gained + '.', why = r.reason;
