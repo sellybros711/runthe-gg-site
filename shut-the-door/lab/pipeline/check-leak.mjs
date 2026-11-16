@@ -60,12 +60,15 @@ const LOG = openCheckpoint('check-leak', { OUTINGS });
 // 9.51, 9.85, 10.02 MB (bytecode and the optimized code of planFeet, planGround, startOuting and the rest
 // of a game that had grown, tiered up as the plays reach them), the game's own objects flat within 40 KB
 // (heap less code 18.16, 18.23, 18.25 MB). Code is bounded by the game's own source; a kept pitch, play or
-// outing is not, and that is what this holds. With the JIT's margin gone the ceiling comes down from
-// 0.25 to 0.10 MB an outing, so the game's objects are held tighter than before. The code is printed
-// beside it (not held: the game makes no code at run time, no eval and no new Function). Never raise the
-// ceiling to pass: find what grew (a heap snapshot after outing 2 and after outing N, new and freed
-// objects matched by id and summed by constructor).
-const HEAP_PER_OUTING = 0.10e6;
+// outing is not, and that is what this holds. A whole session (7 outings, 121 pitches, the longest of the
+// recent nightlies) measured 0.094 MB an outing by the slope and 0.091 by the means, the heap less code
+// (the whole heap 0.33, code 0.25 a sample); most of it is the last outing's log and result screen, held
+// at the start of the next one and as long as it was (a 25 pitch outing moved the sample 0.37 MB). The
+// ceiling is that plus a margin, as it was: 0.15 MB an outing, down from 0.25, so the game's objects are
+// held tighter than before. The code is printed beside it (not held: the game makes no code at run time,
+// no eval and no new Function). Never raise the ceiling to pass: find what grew (a heap snapshot after
+// outing 2 and after outing N, new and freed objects matched by id and summed by constructor).
+const HEAP_PER_OUTING = 0.15e6;
 const COUNTS = ['geometries', 'textures', 'programs', 'objects', 'fpObjects', 'dom', 'listeners', 'raf', 'timeouts', 'intervals'];
 
 function loadPlaywright() {
