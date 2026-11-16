@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=87">
+<link rel="stylesheet" href="style.css?v=88">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -356,8 +356,9 @@ setTimeout(function () {
     <button class="nv" id="r-home" type="button"><b>home</b><i class="chev" aria-hidden="true"></i></button>
   </nav>
   <!-- the way to Run The Diamond (the owner, 2026-11-16): a quiet link under the menu, never opened by
-       itself, not on a player's first result (ui.js renderResult, as the Diamond's own promo) -->
-  <a class="r-promo" id="r-promo" href="/baseball/" hidden><span class="rp-t"><b>Build the whole team</b><span>Draft twelve legends. Play 162 and October.</span></span><i class="chev" aria-hidden="true"></i></a>
+       itself, not on a player's first result (ui.js renderResult, as the Diamond's own promo). Its app
+       icon is Run The Diamond's own (its manifest's 192, the home page's card), referenced, not copied -->
+  <a class="r-promo" id="r-promo" href="/baseball/" hidden><img class="rp-ic" src="/baseball/icon-192.png?v=3" alt="" width="36" height="36" loading="lazy"><span class="rp-t"><b>Build the whole team</b><span>Draft twelve legends. Play 162 and October.</span></span><i class="chev" aria-hidden="true"></i></a>
   <div class="r-foot">
     <p class="streak" id="r-streak"></p>
     <p class="r-tmr" id="r-tomorrow"></p>

@@ -1454,13 +1454,17 @@ async function run(w, h, theme) {
   await page.click('#d-see');
   await page.waitForSelector('#s-result.on', { timeout: 10000 });
   await page.waitForSelector('#r-promo:not([hidden])', { timeout: 5000 });
+  await page.waitForFunction(() => { const i = document.querySelector('#r-promo img.rp-ic'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 10000 }).catch(() => {});
   const promo = await page.evaluate(() => {
     const a = document.getElementById('r-promo'), b = a.getBoundingClientRect(), nav = document.getElementById('r-nav').getBoundingClientRect();
     const like = document.querySelector('.r-like').getBoundingClientRect();
     a.addEventListener('click', (e) => e.preventDefault());
-    return { text: a.textContent, href: a.getAttribute('href'), h: b.height, below: b.top >= nav.bottom - 1, likeOn: like.top >= 0 && like.bottom <= innerHeight, inside: b.left >= 0 && b.right <= innerWidth };
+    const ic = a.querySelector('img.rp-ic'), icb = ic ? ic.getBoundingClientRect() : null;
+    return { icon: ic ? { src: ic.getAttribute('src'), loaded: ic.complete && ic.naturalWidth === 192, left: icb.left < a.querySelector('.rp-t').getBoundingClientRect().left, w: Math.round(icb.width), fits: icb.top >= b.top && icb.bottom <= b.bottom } : null,
+      text: a.textContent, href: a.getAttribute('href'), h: b.height, below: b.top >= nav.bottom - 1, likeOn: like.top >= 0 && like.bottom <= innerHeight, inside: b.left >= 0 && b.right <= innerWidth };
   });
   ok(promo.text === 'Build the whole teamDraft twelve legends. Play 162 and October.' && promo.href === '/baseball/', '7 a later result shows the Run The Diamond card, a link to /baseball/');
+  ok(promo.icon && promo.icon.src === '/baseball/icon-192.png?v=3' && promo.icon.left && promo.icon.fits && promo.icon.w === 36, '7 the card carries Run The Diamond\'s own app icon on its left, inside the row (' + JSON.stringify(promo.icon) + ')');
   ok(promo.below && promo.h >= 38 && promo.inside && promo.likeOn, '7 the card sits under the menu, ' + Math.round(promo.h) + ' px, and "pitched like" is still on screen');
   await page.click('#r-promo');
   const evPromo = await page.waitForFunction(() => (window.dataLayer || []).some((a) => a && a[0] === 'event' && a[1] === 'promo_click'), null, { timeout: 5000 })
