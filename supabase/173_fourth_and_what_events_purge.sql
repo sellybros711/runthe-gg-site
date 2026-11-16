@@ -1,4 +1,4 @@
--- 172: 4th and What's launch events keep 120 days, and trim themselves.
+-- 173: 4th and What's launch events keep 120 days, and trim themselves.
 --
 -- The owner, 2026-11-16 (the Advisor's review, approved through the hub): a
 -- purge job for old game_events rows. 170 only suggested one in a comment.

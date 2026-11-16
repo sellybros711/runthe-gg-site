@@ -4,7 +4,7 @@
 --   psql -d ev -f supabase/test/game_events_base.sql
 --   psql -d ev -f supabase/170_game_events.sql
 --   psql -d ev -f supabase/171_fourth_and_what_events.sql   (twice: it is idempotent)
---   psql -d ev -f supabase/172_fourth_and_what_events_purge.sql (twice)
+--   psql -d ev -f supabase/173_fourth_and_what_events_purge.sql (twice)
 --   psql -d ev -f supabase/test/game_events_test.sql          (170's checks still pass)
 --   psql -d ev -f supabase/test/fourth_and_what_events_test.sql
 -- Three new devices on 2026-11-02 (Eastern) and a veteran:
@@ -60,7 +60,7 @@ select ' ok a row with neither an account nor a device is refused';
 select case when has_function_privilege('authenticated', 'public.faw_events_add(text, jsonb)', 'execute') or has_function_privilege('anon', 'public.faw_round_report(timestamptz, timestamptz)', 'execute')
   then ' FAIL a browser role can run 171''s functions' else ' ok only the service role runs 171''s functions' end;
 
--- 172: the trim. 250 rows of this game past 120 days, one of Last Shot's, and a fresh one.
+-- 173: the trim. 250 rows of this game past 120 days, one of Last Shot's, and a fresh one.
 insert into game_events (game, device_id, session_id, name, client_ms, created_at, props)
   select '4th-and-what', 'dev-oooo1', 'sess-oooo1', 'snap', g, now() - interval '200 days' - g * interval '1 minute', '{}' from generate_series(1, 250) g;
 insert into game_events (game, user_id, session_id, name, client_ms, created_at, props)

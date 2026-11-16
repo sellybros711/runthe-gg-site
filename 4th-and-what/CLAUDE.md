@@ -73,7 +73,7 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   tag and the consent defaults are the site's block in `index.html`, the same as every game's). It only sends from runthe.gg (never a preview, a
   dev server or a check). `faw_round_report` (171) gives the launch targets. A new event or prop goes in
   the whitelist in the same commit, or the collector drops it. The game's rows keep 120 days: every batch trims up to 200 older
-  ones (`supabase/172`), so no cron job is needed.
+  ones (`supabase/173`), so no cron job is needed.
 - **The feel** (the owner, 2026-11-13: sound on by default, with mute). `feel.js` makes every sound with
   Web Audio (nothing to download) and starts on the Snap it tap; `faw_sound` keeps the choice. The 3D
   picture zooms and slides to follow the ball (`play.js`, `ui.zoom`), never past an edge. A spot within
