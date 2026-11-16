@@ -175,6 +175,8 @@
     c.classList.toggle('go', active);
     box.hidden = !active;
     if (!active || !st) return;
+    /* a run's end sends any playbook stats its snaps kept (book.js putStats) */
+    if (st.over && A.store && A.store.flush) A.store.flush();
     $('rGoTally').textContent = tallyText(st);
     if (st.over) {
       $('rGoHead').textContent = 'Run over';

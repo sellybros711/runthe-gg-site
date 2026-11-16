@@ -54,7 +54,7 @@ async function run(name, viewport, scale) {
     const mem = {}; window.__mem = mem;
     window.RTG_SAVE = { API_VERSION: 1, idle: () => true, signedIn: () => true,
       all: g => Promise.resolve(Object.keys(mem).filter(k => k.startsWith(g + '/')).map(k => ({ slot: k.split('/')[1], progress: mem[k].progress, payload: JSON.parse(JSON.stringify(mem[k].payload)) }))),
-      queue: (g, sl, fn) => { const m = fn(); const k = g + '/' + sl; if (!m) return Promise.resolve(null); if (m.drop) { delete mem[k]; return Promise.resolve(null); }
+      queue: (g, sl, fn) => { (window.__q = window.__q || []).push(sl); const m = fn(); const k = g + '/' + sl; if (!m) return Promise.resolve(null); if (m.drop) { delete mem[k]; return Promise.resolve(null); }
         if (mem[k] && mem[k].progress > m.progress) return Promise.resolve({ ok: false, payload: mem[k].payload, progress: mem[k].progress });
         mem[k] = { progress: m.progress, payload: JSON.parse(JSON.stringify(m.payload)) }; return Promise.resolve({ ok: true }); },
       drop: (g, sl) => { delete mem[g + '/' + sl]; return Promise.resolve(null); } };
@@ -500,10 +500,17 @@ async function run(name, viewport, scale) {
   const statsBefore = await page.evaluate(() => JSON.stringify(window.FAW_APP.choices().filter(c => c.entry)[0].entry.stats || {}));
   await page.click('#cMineList .cmine:first-child');
   ok(!(await page.isVisible('#cMine')) && (await page.getAttribute('#cCards .ccard.own', 'aria-pressed')) === 'true' && !(await page.isDisabled('#cSnap')), 'a play from it is the pick');
+  const q0 = await page.evaluate(() => (window.__q || []).length);
   await page.click('#cSnap'); await page.waitForTimeout(300); if (await page.isVisible('#bSkip')) await page.click('#bSkip');
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
   const statsAfter = await page.evaluate(() => JSON.stringify(window.FAW_APP.choices().filter(c => c.entry)[0].entry.stats || {}));
   ok(statsAfter !== statsBefore, 'the snap counts in that play\'s stats');
+  /* a snap's stats are not an edit (2026-11-16): nothing goes to the cloud on the snap,
+     and a flush (a minute on, the page hidden, a run's end) sends the one book row, never the index */
+  const qs = await page.evaluate((n) => { const at = window.__q.slice(n); window.FAW_APP.store.flush(); return { snap: at, flush: window.__q.slice(n + at.length) }; }, q0);
+  const snapped = await page.evaluate(() => 'b-' + window.FAW_APP.choices().filter(c => c.entry)[0].book.id);
+  ok(qs.snap.length === 0 && qs.flush.length >= 1 && qs.flush.every(sl => /^b-/.test(sl)) && new Set(qs.flush).size === qs.flush.length && qs.flush.includes(snapped),
+    'a snap writes nothing at once; its flush is one row per book that changed, never the index: ' + JSON.stringify(qs));
   await page.evaluate(() => { document.getElementById('watch').hidden = true; document.getElementById('rCard').hidden = true; });
 
   /* the launch events (events.js, functions/_faw/events.js): what the page sends survives the collector untouched */

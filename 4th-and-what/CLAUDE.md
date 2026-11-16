@@ -71,7 +71,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   whitelist and writes the shared `game_events` (supabase/170) through 171's capped `faw_events_add`.
   A row carries a device id, never anything personal. It only sends from runthe.gg (never a preview, a
   dev server or a check). `faw_round_report` (171) gives the launch targets. A new event or prop goes in
-  the whitelist in the same commit, or the collector drops it.
+  the whitelist in the same commit, or the collector drops it. The game's rows keep 120 days: every batch trims up to 200 older
+  ones (`supabase/172`), so no cron job is needed.
 - **The feel** (the owner, 2026-11-13: sound on by default, with mute). `feel.js` makes every sound with
   Web Audio (nothing to download) and starts on the Snap it tap; `faw_sound` keeps the choice. The 3D
   picture zooms and slides to follow the ball (`play.js`, `ui.zoom`), never past an edge. A spot within
@@ -98,7 +99,9 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   within a band of real 4th down conversion.
 - **Playbooks need a Run The Games account** (the owner's call, 2026-10-30). They live in the
   shared cloud saves (`ps_saves`, game `fourth_and_what`: slot `index` and one `b-<id>` a book),
-  with a local copy for speed. No new table. `assets/cloudsave.js` signs in through the arcade's
+  with a local copy for speed. No new table. A snap's stats are not an edit (2026-11-16): a snap of a saved play
+  goes through `store.putStats` (on the device now, the book row at most once a minute, on page hide
+  and at a run's end, never the index row); only a real edit uses `store.put`. `assets/cloudsave.js` signs in through the arcade's
   `RTG_AUTH`; it is shared by five games, so a change to it bumps its `?v=` on every page.
 - **A name typed by hand is never changed.** Rules rename only plays whose name was never edited
   (`nameEdited`). Concepts beat single route words; the most exact route rule wins.
