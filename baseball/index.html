@@ -3180,7 +3180,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="crest.js?v=2"></script>
 <script src="board.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=3"></script>
+<script src="auth.js?v=4"></script>
 <!-- The release newsletter checkbox under the account in the trophy sheet. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
 <script>
@@ -3641,9 +3641,9 @@ function renderParks(target){
 
    The browser keeps a COPY of both, and it is only ever a copy: it is what paints
    the first frame before the server answers, and it is how a season played on a
-   train reaches the server once the train is out of the tunnel. On every sign-in
-   the device sends every season it holds for the account and gets back every
-   season the account has, from every device. The server only ever adds.
+   train reaches the server once the train is out of the tunnel. Once a visit the
+   device sends the seasons the server has not yet kept and gets back the ones it has
+   not seen, from every device (careerSync below). The server only ever adds.
 
    EVERY FAILURE KEEPS WHAT IS THERE. A null from the server is "could not ask",
    never "you have nothing", so a dropped connection can never paint an empty
@@ -3665,13 +3665,71 @@ function hasProfileApi(){return typeof A.myProfile==='function'&&typeof A.career
 
 /* Fold the server's career into this device's history. Guest seasons and other
    accounts' seasons on this browser are left exactly where they are; the account's
-   own are replaced by the server's, which is the union of every device. */
+   own are replaced by the server's, which is the union of every device. Every row
+   it adopts is marked `sv`, "the server keeps this one". */
 function adoptCareer(uid,serverRows){
   const keep=loadHistory().filter(r=>r.u!==uid);
   const mine=new Map();
-  serverRows.forEach(r=>{if(r&&r.ts)mine.set(r.ts,r);});
+  serverRows.forEach(r=>{if(r&&r.ts)mine.set(r.ts,Object.assign({},r,{sv:1}));});
   saveHistory(keep.concat([...mine.values()]).sort((a,b)=>(a.ts||0)-(b.ts||0)));
   parkMemo=null;
+}
+/* THE CAREER IS SENT ONLY WHEN SOMETHING IS NEW (supabase/172_rtd_career_sync.sql,
+   the Advisor's review of 2026-11-16). It used to send every season the device held,
+   up to 1,000 of them, on every auth event (the hourly token refresh too) and after
+   every season, and the server rewrote the whole row each time: the shape of the
+   2026-11-12 Disk IO outage. Now:
+   - a season the server has been seen to keep is marked `sv` on this device, and
+     only unmarked ones are sent (usually none, or the one just finished);
+   - `since` is the newest marked ts, so the server sends back only seasons this
+     device has not seen, usually none;
+   - it runs once a visit per account, plus once for each finished season;
+   - the server writes only when a season is new.
+   `n` is how many seasons the server keeps. Fewer marked here means another device
+   filed one late under an older ts, and the whole career is read again, at most once
+   a day. A database without 172 answers { missing: true }, and the old full merge
+   runs instead, still only once a visit. */
+const CAREER_FULL_KEY='rtd_career_full_v1';
+const careerSent=new Set();
+function bareRow(r){const o=Object.assign({},r);delete o.sv;return o;}
+async function careerSync(uid){
+  const mine=loadHistory().filter(r=>r.u===uid);
+  const pending=mine.filter(r=>!r.sv);
+  const since=mine.reduce((m,r)=>r.sv&&r.ts>m?r.ts:m,0);
+  let res={missing:true};
+  if(typeof A.careerSync==='function'){res=null;try{res=await A.careerSync(pending.map(bareRow),since);}catch(_){}}
+  if(acctId()!==uid)return false;
+  if(!res||res.missing){
+    if(res&&res.missing){
+      let merged=null;
+      try{merged=await A.careerMerge(mine.map(bareRow));}catch(_){}
+      if(acctId()!==uid||!Array.isArray(merged))return false;
+      adoptCareer(uid,merged);return true;
+    }
+    return false;
+  }
+  const sent=new Set(pending.map(r=>r.ts));
+  const add=new Map();res.rows.forEach(r=>{if(r&&r.ts)add.set(r.ts,r);});
+  const all=loadHistory();
+  const out=all.map(r=>{
+    if(r.u!==uid)return r;
+    if(add.has(r.ts)){const x=Object.assign({},add.get(r.ts),{sv:1});add.delete(r.ts);return x;}
+    return sent.has(r.ts)?Object.assign({},r,{sv:1}):r;
+  });
+  add.forEach(r=>out.push(Object.assign({},r,{sv:1})));
+  saveHistory(out.sort((a,b)=>(a.ts||0)-(b.ts||0)));
+  parkMemo=null;
+  const held=out.filter(r=>r.u===uid&&r.sv).length;
+  if(res.n>held){
+    let stamp={};try{stamp=JSON.parse(localStorage.getItem(CAREER_FULL_KEY))||{};}catch(_){}
+    const day=new Date().toISOString().slice(0,10);
+    if(stamp[uid]!==day){
+      stamp[uid]=day;try{localStorage.setItem(CAREER_FULL_KEY,JSON.stringify(stamp));}catch(_){}
+      let full=null;try{full=await A.careerSync([],0);}catch(_){}
+      if(acctId()===uid&&full&&Array.isArray(full.rows))adoptCareer(uid,full.rows);
+    }
+  }
+  return true;
 }
 let syncAsk=0;
 async function profileSync(){
@@ -3679,10 +3737,13 @@ async function profileSync(){
   if(!uid){PROF=null;PROF_FOR=null;paintAvatar();refreshParkedFields();pfRepaint();return;}
   paintAvatar();
   if(!hasProfileApi())return;
-  let merged=null,row=null;
-  try{merged=await A.careerMerge(loadHistory().filter(r=>r.u===uid));}catch(_){}
+  /* ONCE A VISIT. auth.js fires on every auth event, the hourly token refresh
+     included, and none of those changes the career or the choices. */
+  if(careerSent.has(uid)&&PROF_FOR===uid&&PROF)return;
+  let ok=false,row=null;
+  try{ok=await careerSync(uid);}catch(_){}
   if(ask!==syncAsk||acctId()!==uid)return;
-  if(Array.isArray(merged))adoptCareer(uid,merged);
+  if(ok)careerSent.add(uid);
   try{row=await A.myProfile();}catch(_){}
   if(ask!==syncAsk||acctId()!==uid)return;
   if(row){
@@ -3698,12 +3759,13 @@ async function profileSync(){
   paintAvatar();refreshParkedFields();pfRepaint();
   if($('sheet-trophy').classList.contains('on'))renderTrophy();
 }
-/* A finished season goes to the server the moment it is filed. If it cannot, it
-   stays on the device and the next sign-in sends it with everything else. */
+/* A finished season goes to the server the moment it is filed, with any season
+   still waiting from an earlier failure. If it cannot, it stays unmarked on the
+   device and the next sync sends it. */
 function careerPush(row){
   if(!row||!row.u||!hasProfileApi())return;
-  A.careerMerge([row]).then(m=>{
-    if(Array.isArray(m)&&acctId()===row.u){adoptCareer(row.u,m);pushEarned();paintAvatar();}
+  careerSync(row.u).then(ok=>{
+    if(ok&&acctId()===row.u){pushEarned();paintAvatar();}
   }).catch(()=>{});
 }
 /* Save some of the choices. The copy moves at once so the screen answers the tap,
