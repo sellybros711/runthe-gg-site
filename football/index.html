@@ -8859,7 +8859,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
-<script src="/assets/cloudsave.js?v=3"></script>
+<script src="/assets/cloudsave.js?v=4"></script>
 <!-- THE REWARDED VIDEO PLAYER (Ads Agent, 2026-10-28). Loaded here so the free re-spin can ask it
      whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
      the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
@@ -13731,8 +13731,18 @@ function tradeSave(){
   /* AND ON TO THE ACCOUNT, as the third slot of this page's shelf. A trade season is one
      sitting rather than forty, so there is less to lose than a dynasty and exactly the same
      number of ways to lose it: this was the last run on the site that a cleared cache still
-     took. See FB_SLOTS and supabase/103_cloud_saves.sql. */
-  dynCloudPush('trade');
+     took. See FB_SLOTS and supabase/103_cloud_saves.sql.
+     ONLY AT REST, LIKE THE DYNASTY (2026-11-16, after the Disk IO outage). This ran after every
+     advanceWeek, about twenty full row writes a season. The account copy now moves where a
+     player can act or leave: before the season, at each trade window (weeks 3, 6 and 9) and
+     after the regular season. The copy in this browser still moves every week, so a reload
+     here loses nothing; another device resumes from the last window. */
+  if(tradeAtRest()) dynCloudPush('trade');
+}
+function tradeAtRest(){
+  if(!run||!run.tradeMachine) return false;
+  if(run.phase!==R.PHASES.SEASON||!run.season||run.season.week===0) return true;
+  return R.isTradeWindow(run);
 }
 function tradeClear(){
   try{ localStorage.removeItem(TRADE_SAVE_KEY); }catch(_){}
