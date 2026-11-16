@@ -176,7 +176,7 @@ Do not use it before the game's page says so.
 | Shut The Door | GA on the page, **no events** | five events: `std_start`, `std_finish` (outcome, mode, pitches), `std_share`, `std_vote`, `std_survivor_end`, and `from` when a visit came from the Diamond's promo (shut-the-door-ui) |
 | College Commish | nothing, no GA | events when added (the cfb agent) |
 | College Fantasy | GA loaded, **no events** | draw used, lineup saved, entered, swap, live opened (the cfb agent) |
-| The Perfect Season's Fantasy | GA loaded, **no events** | the same list, plus a weekly read of `fantasy_entries` (the perfect-season agent) |
+| The Perfect Season's Fantasy | GA loaded, **no events**; site PR 1020 (open) adds `fantasy_draw_used`, `fantasy_draft_done`, `fantasy_lineup_saved`, `fantasy_entered`, `fantasy_swap`, `fantasy_live_opened`, and on the draft game `fantasy_promo_shown` and `fantasy_promo_click`, each with `week` and `from` (`results`, `home`, `lockday`) | my read once it merges: `fantasy_entered` by week and by `from`, promo click against shown, and the weekly count of `fantasy_entries` |
 | 4th and What | its own `game_events` table (eight events), **no GA tag** | not launched yet, so none from me |
 
 I do not add events. I ask each agent for the list above, and I read what they ship. The agents
