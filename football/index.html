@@ -12546,7 +12546,7 @@ function fantasyWeekEnsure(){
    because the college game asks it too. `show` is this door's own question, so a reader
    who is not shown the mode is never sold it. */
 if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'nfl', nowUrl:'/football/data/fantasy_now.json',
-  href:'/football/fantasy/', entryPrefix:'ps_fantasy_', auth:()=>authState, show:()=>fantasyShow() });
+  href:'/football/fantasy/?from=lockday', entryPrefix:'ps_fantasy_', auth:()=>authState, show:()=>fantasyShow() });
 
 /* THE SAME PADLOCK THE modes sheet DRAWS, written out again rather than shared, because
    MC_LOCK is a const inside the sheet's own painter and hoisting it to module scope to
@@ -12631,8 +12631,10 @@ function fantasyPromoPaint(){
            (120_fantasy_pro_pass.sql), so a change there is a change here too. */
         '<div class="fpm-prize"><span class="fpm-pro">PRO</span><b>Top score this week wins 30 days of Pro.</b></div>'+
         '<div class="fpm-lock">Entries lock '+fpromoLock(lock)+'.</div>'+
-        '<a class="fpm-go" id="b-fanpromo" href="/football/fantasy/">'+(guest?'Sign in and draft':'Draft my lineup')+'</a>'+
+        '<a class="fpm-go" id="b-fanpromo" href="/football/fantasy/?from=results">'+(guest?'Sign in and draft':'Draft my lineup')+'</a>'+
         '<button class="fpm-later" type="button" id="b-fanpromo-x">Not this week</button>';
+      ga('fantasy_promo_shown',{week:n.week});
+      $('b-fanpromo').addEventListener('click',()=>ga('fantasy_promo_click',{week:n.week}));
       $('b-fanpromo-x').onclick=()=>{
         try{ localStorage.setItem(FPROMO_SKIP,k); }catch(_){}
         el.hidden=true;
@@ -12655,7 +12657,7 @@ function ensureFantasyButton(){
   if(!el){
     el=document.createElement('a');
     el.id='b-fantasy';
-    el.href='/football/fantasy/';
+    el.href='/football/fantasy/?from=home';
   }
   /* REBUILT ON EVERY CALL, not only on the one that made the node, which is the Dynasty
      door's rule and matters here for the same reason: this runs on every auth change, and

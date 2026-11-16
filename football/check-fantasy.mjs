@@ -4038,7 +4038,7 @@ for (const [label, who, want] of [
   ok(label, got.there === want, JSON.stringify(got));
   if (want) {
     /* AN ANCHOR, because it goes to another page and middle click has to work. */
-    ok('  it is a link and it points at the mode', got.tag === 'A' && got.href === '/football/fantasy/',
+    ok('  it is a link and it points at the mode', got.tag === 'A' && got.href === '/football/fantasy/?from=home',
       got.tag + ' ' + got.href);
     ok('  it is visible', got.shown);
     /* null means this reader is not shown the store at all, which is a fine answer and not
@@ -4225,7 +4225,7 @@ console.log('\nTHE LOCK DAY REMINDER COMES UP ONCE, ON THE DAY THE WEEK LOCKS');
       ok('  it says what first place wins', /wins 30 days of Pro/.test(got.text));
       ok('  the countdown is the real time to the lock',
         got.segs.length === 3 && Number(got.segs[0]) === 2 && Number(got.segs[1]) >= 58, got.segs.join(':'));
-      ok('  the way in is the mode', got.href === '/football/fantasy/', got.href);
+      ok('  the way in is the mode', got.href === '/football/fantasy/?from=lockday', got.href);
       ok('  and the whole card fits a phone', got.fits && got.goShown);
       const s1 = await page.evaluate(() => document.querySelector('#fpromo .fp-seg:nth-child(3) b').textContent);
       await page.waitForTimeout(2100);
