@@ -40,8 +40,10 @@
   /* A new player's first hand (the launch plan, 1F): three plays that all
      convert two thirds of the time or better at 4th and 1 (measured
      2026-11-13: QB Sneak 75%, Stick 70%, Levels 65%; Toss is 30%, Curl Flat
-     34%). It is the hand, not the snap: the defense and the dice are the
-     seed's as always. */
+     34%. Re-measured 2026-11-16 after the box retune, 100 snaps of each
+     entry from the opponent's 35: QB Sneak 77%, Stick 68%, Levels 62%; the
+     passes did not move). It is the hand, not the snap: the defense and the
+     dice are the seed's as always. */
   var FIRST = { run: 'QB Sneak', quick: 'Stick', shot: 'Levels' };
   /* deal(sc, seed, opt): three cards, one of each kind, on three different
      sets where the pool allows; opt.first deals the first hand */
@@ -63,9 +65,33 @@
   /* the read, in the game's voice: what the shell is and how many are in the
      box (both from the engine), and what it usually means */
   var SHELL_TEXT = { two: 'Two deep', one: 'One deep', zero: 'Nobody deep' };
-  var SHELL_HINT = { two: 'Light box. The run is there.', one: 'Safety in the box. Beat him outside.', zero: "They're bringing everybody. Get it out fast." };
   function readText(look) { return SHELL_TEXT[look.shell] + ' · ' + look.box + ' in the box'; }
-  function hintText(look) { return SHELL_HINT[look.shell]; }
+  /* COUNT THE BOX (the owner, 2026-11-16: "make the read decide"). The
+     engine blocks a run by count: more men in the box than blockers leaves
+     a free hitter (engine.js, run blocking). So the hint reads the box and
+     the distance, and each one names the card that converts best on the
+     looks it is shown for, measured over dealt hands (test/calls.test.mjs
+     holds every one of them to it). The look is the run card's (hand[0]):
+     the box the defense shows that formation. LOADED is the count that
+     loads it.
+     card is the card the hint calls; null when it calls none. */
+  var LOADED = 8;
+  var HINT = {
+    zero: { text: 'Nobody deep. Get it out fast.', card: 'quick' },
+    light: { text: "They're light against your run. Run it.", card: 'run' },
+    yard: { text: "They're loaded against your run. It's one yard. Lean on them.", card: 'run' },
+    loaded: { text: "They're loaded against your run. Throw it.", card: 'quick' },
+    live: { text: "They're light against your run. The run is live.", card: null },
+    long: { text: 'Long way to go. Take a shot.', card: 'shot' }
+  };
+  function hintKey(look, sc) {
+    var d = Math.min(+(sc && sc.distance) || 5, +(sc && sc.ballOn) || 40);
+    if (d >= 6) return 'long';
+    if (look.shell === 'zero') return 'zero';
+    if (look.box < LOADED) return d <= 2 ? 'light' : 'live';
+    return d <= 1 ? 'yard' : 'loaded';
+  }
+  function hintText(look, sc) { return HINT[hintKey(look, sc)].text; }
 
   /* after the snap, the read's answer: what they showed, and what it was */
   var SHOWED = { two: 'two deep', one: 'one deep', zero: 'nobody deep' };
@@ -74,7 +100,7 @@
     return 'They showed ' + SHOWED[res.shell] + (res.disguised ? ' and rotated to ' + res.callName + '.' : '. It was ' + res.callName + '.');
   }
 
-  var CORE = { TYPE: TYPE, LABEL: LABEL, FIRST: FIRST, deal: deal, readText: readText, hintText: hintText, revealText: revealText };
+  var CORE = { TYPE: TYPE, LABEL: LABEL, FIRST: FIRST, HINT: HINT, deal: deal, readText: readText, hintKey: hintKey, hintText: hintText, revealText: revealText };
   if (isNode) { module.exports = CORE; return; }
 
   /* ================= the page ================= */
@@ -104,7 +130,9 @@
     V.layout();
     var lk = E.look(sc, p, seed);
     $('cRead').textContent = readText(lk);
-    $('cHint').textContent = hintText(lk);
+    /* the hint counts the box against the run card, whichever card is up:
+       the shell is the same for every card, the box is the run's */
+    $('cHint').textContent = hintText(p === hand[0].play ? lk : E.look(sc, hand[0].play, seed), sc);
     var shown = pick === 'mine' || pick >= 0;
     V.field().play(p, { offense: shown, defense: true, plans: lk.defense, coverage: false, distance: sc.distance, depths: shown });
   }

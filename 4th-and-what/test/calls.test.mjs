@@ -58,6 +58,31 @@ test('the read is worth something: vs nobody deep, the quick game beats the run'
   assert.ok(quick[0] / quick[1] > run[0] / run[1] + 0.1, 'quick ' + (quick[0] / quick[1]).toFixed(2) + ' against run ' + (run[0] / run[1]).toFixed(2));
 });
 
+test('count the box: every hint names the card that converts best on the looks it is shown for', () => {
+  /* the owner, 2026-11-16: "make the read decide". Dealt hands at each
+     distance, from midfield, grouped by the hint the read gives (off the run
+     card's look, as the page does); the card a hint calls must convert at
+     least as often as each other card there, give or take a little noise */
+  const tally = {};
+  for (const [d, n] of [[1, 700], [2, 700], [4, 400], [7, 300]]) {
+    const sc = at({ distance: d, ballOn: 50 });
+    for (let i = 0; i < n; i++) {
+      const s = (i * 2654435761 + d * 97) >>> 0, h = K.deal(sc, s), key = K.hintKey(E.look(sc, h[0].play, s), sc);
+      const row = tally[key] = tally[key] || { n: 0, run: 0, quick: 0, shot: 0 };
+      row.n++;
+      h.forEach(c => { row[c.type] += E.run(sc, c.play, s).win; });
+    }
+  }
+  for (const k of ['light', 'yard', 'loaded', 'zero', 'long']) assert.ok(tally[k] && tally[k].n >= 60, 'enough ' + k + ' looks: ' + (tally[k] && tally[k].n));
+  for (const [k, row] of Object.entries(tally)) {
+    const card = K.HINT[k].card, rate = t => row[t] / row.n;
+    if (!card) continue;
+    for (const t of ['run', 'quick', 'shot']) assert.ok(rate(card) >= rate(t) - 0.03, k + ': ' + card + ' ' + rate(card).toFixed(2) + ' against ' + t + ' ' + rate(t).toFixed(2));
+  }
+  /* and the box decides at 4th and 2: a light box runs, a loaded one throws */
+  assert.ok(tally.light.run / tally.light.n > tally.loaded.run / tally.loaded.n + 0.15, 'the run against a light box beats the run against a loaded one');
+});
+
 test('a new player\'s first hand: three plays that convert well at 4th and 1', () => {
   for (let s = 1; s <= 50; s++) {
     const h = K.deal(at({ distance: 1, ballOn: 65 }), s, { first: true });

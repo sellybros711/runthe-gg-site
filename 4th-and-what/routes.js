@@ -151,18 +151,42 @@
       p.handoff = { to: 'QB', path: [[0, 1.5], [0, 4]] };
       return p;
     }
-    var a = O[rb];
+    var a = O[rb], lead = null;
     if (c.run === 'inside') p.handoff = { to: rb, path: [[o * 0.5, a[1] + 1.8], [o * 2, 0.5], [o * 2.5, 6]] };
     else if (c.run === 'outside') p.handoff = { to: rb, path: [[o * 3, a[1] + 1.2], [o * 7, -0.5], [o * 9, 5]] };
     else if (c.run === 'toss') p.handoff = { to: rb, path: [[o * 6, a[1] + 1], [o * 11, -1], [o * 13, 5]] };
     else {
-      /* power: a lead block from the other back or the tight end, inside the end man */
+      /* power: the other back kicks out the end man; with no other back, the
+         inline end blocks down on the man inside him */
       p.handoff = { to: rb, path: [[o * 1, a[1] + 1.8], [o * 3.5, 0.5], [o * 4, 6]] };
-      var lead = S.backs.filter(function (b) { return b !== 'QB' && b !== rb; })[0] || (FM.isBackfield(O.TE) ? 'TE' : null);
-      if (!lead && Math.abs(O.TE[0]) < 9) lead = 'TE';
-      if (lead) p.blocks.push({ who: lead, to: [O[lead][0] + o * 2.5, Math.min(O[lead][1] + 3, 1.5)] });
+      lead = S.backs.filter(function (b) { return b !== 'QB' && b !== rb; })[0] || (FM.isBackfield(O.TE) ? 'TE' : null);
+      if (lead) p.blocks.push({ who: lead, to: [o * 5, 0.5] });
+      else if (Math.abs(O.TE[0]) < 7.5) { lead = 'TE'; p.blocks.push({ who: 'TE', to: [O.TE[0] - o * 1.5, O.TE[1] + 2.4] }); }
     }
+    runBlocks(p, c, O, rb, lead, o);
     return p;
+  }
+
+  /* THE REST OF THE BLOCKING (the owner, 2026-11-16: "make the read decide").
+     Every man who is not carrying it has a block drawn, the way a run is
+     coached, so the box count is what decides: a man in the box nobody can
+     reach is a free hitter. These are ordinary drawn blocks the coach can
+     move. The play side is the way the run goes (o).
+       a back        on a zone, slices across to the backside end (split zone);
+                     on a toss, leads to the edge
+       inline end    play side, reaches the man over him; backside, cuts off
+                     the man inside him
+       a split man   stalks the man over him */
+  function runBlocks(p, c, O, rb, lead, o) {
+    var wide = c.run === 'toss' || c.run === 'outside';
+    FM.ELIGIBLE.forEach(function (id) {
+      if (id === rb || id === lead) return;
+      var x = O[id][0], y = O[id][1], s = x < -0.3 ? -1 : x > 0.3 ? 1 : o, ax = Math.abs(x), play = s === o, to;
+      if (FM.isBackfield(O[id])) to = wide ? [o * 4.5, 0] : [-o * 3.5, -0.5];
+      else if (ax < 7.5) to = play ? [x + o * 0.8, y + 2.6] : [x + o * 1.6, y + 2.2];
+      else to = [x - s * 0.8, y + 3.4];
+      p.blocks.push({ who: id, to: P(to[0], to[1]) });
+    });
   }
 
   var API = { LIST: LIST, BY: BY, make: make, sides: sides, CONCEPTS: CONCEPTS, apply: apply };

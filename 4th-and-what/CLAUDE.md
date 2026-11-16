@@ -82,6 +82,11 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   QB tap first. The ball changes hands where the QB meets him (the mesh), or is pitched when the
   path takes him away. The carrier runs the path to its end, then the open field. Runs have their
   own tackle numbers (`runBroken`, `drive`) so they gain like real runs.
+- **Count the box** (the owner, 2026-11-16: "make the read decide"). A run is blocked by count
+  (`engine.js`, run blocking): the line and the drawn blocks take the box, and men over the count
+  are free hitters. Every man in a run concept has a drawn block (`routes.js` `runBlocks`, not the
+  sneak). Call it's hint reads the run card's box and the distance (`calls.js` `HINT`), and
+  `test/calls.test.mjs` holds each hint to the card it names: a retune that breaks one rewrites it.
 - **Reads are ordered, up to three** (`play.targets`). The QB goes through them in order; the last
   one is the checkdown when the pocket goes.
 - **Every number in copy comes from the engine** (the distance, the yards, the spot, the pocket
