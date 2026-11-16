@@ -1,0 +1,23 @@
+name: CI owners
+# Every scheduled workflow has an owner in .github/ci-owners.json, checked on the pull request that
+# adds or renames one, so ci-health.yml always knows whose a failure is. Also runs ci-health's
+# self-test, which needs no network.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - '.github/ci-owners.json'
+      - 'scripts/qa/ci-health.mjs'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/qa/ci-health.mjs --check-owners
+      - run: node scripts/qa/ci-health.mjs --self-test
