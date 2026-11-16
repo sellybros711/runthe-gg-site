@@ -842,6 +842,11 @@ async function playOuting(page, o) {
 }
 
 /* The end: everything at once, the coach still closed. */
+/* the game events on the page's dataLayer, as [name, params] (events.js) */
+function gameEvents(page) {
+  const NAMES = ['outing_start', 'pitch', 'outing_end', 'daily_done', 'share'];
+  return page.evaluate((names) => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && names.includes(a[1])).map((a) => [a[1], Object.assign({}, a[2])]), NAMES);
+}
 async function revealCheck(page, label, pitches) {
   const rv = await page.evaluate(() => {
     const vis = (id) => { const el = document.getElementById(id); const b = el && el.getBoundingClientRect(); return !!(b && b.width > 0 && b.height > 0); };
@@ -1368,6 +1373,26 @@ async function run(w, h, theme) {
   at('6 the result');
   await revealCheck(page, '6', play.pitches);
   await shot('result', true);
+  /* the game events (events.js): through the page's own gtag (its script is offline here, so they stay
+     on window.dataLayer, where the page puts them), each once, at its moment, with its fields */
+  const evs = await gameEvents(page);
+  const evDay = await page.evaluate(() => window.STD_UI.state.scn.number);
+  const evNames = evs.map((e) => e[0]);
+  const evOne = (n) => evs.filter((e) => e[0] === n).map((e) => e[1]);
+  const evPitches = evOne('pitch');
+  ok(evNames.join() === ['outing_start'].concat(evPitches.map(() => 'pitch'), ['outing_end', 'daily_done']).join(),
+    '6 the events, in order: outing_start, a pitch each, outing_end, daily_done (' + evNames.join() + ')');
+  ok(evOne('outing_start').length === 1 && JSON.stringify(evOne('outing_start')[0]) === JSON.stringify({ game_name: 'Shut The Door', mode: 'daily', day: evDay, resumed: false }),
+    '6 outing_start once: ' + JSON.stringify(evOne('outing_start')));
+  ok(evPitches.length === play.pitches && evPitches.every((p, i) => p.pitch_no === i + 1 && p.mode === 'daily' && p.day === evDay && typeof p.result === 'string' && Object.keys(p).sort().join() === 'day,game_name,mode,pitch_no,result'),
+    '6 a pitch event for each of the ' + play.pitches + ' pitches, numbered, with the engine\'s result (' + evPitches.map((p) => p.result).join(' ') + ')');
+  const evEnd = evOne('outing_end'), evDd = evOne('daily_done');
+  const evRes = await page.evaluate(() => { const r = window.STD_UI.state.result; return { outcome: r.outcome, pitches: r.pitches, band: Math.max(0, Math.min(90, Math.floor(r.percentile / 10) * 10)) }; });
+  ok(evEnd.length === 1 && JSON.stringify(evEnd[0]) === JSON.stringify({ game_name: 'Shut The Door', mode: 'daily', day: evDay, result: evRes.outcome, pitches: evRes.pitches, score_band: evRes.band }),
+    '6 outing_end once, the result\'s own outcome, pitches and band: ' + JSON.stringify(evEnd));
+  ok(evDd.length === 1 && JSON.stringify(evDd[0]) === JSON.stringify({ game_name: 'Shut The Door', day: evDay, result: evRes.outcome, pitches: evRes.pitches, score_band: evRes.band }),
+    '6 daily_done once: ' + JSON.stringify(evDd));
+  ok(evOne('share').length === 0, '6 no share event before a share');
   /* Share (PR #652): the button opens the share sheet, which draws the result card (card.js) and
      offers the image and the text. The sheet opens from the button, the card draws, and "copy the
      text" copies the share text. Before #652 the button copied at once, and this step waited for that
@@ -1396,6 +1421,10 @@ async function run(w, h, theme) {
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
   ok(toastSeen && /^copied/.test(said) && /Shut The Door #\d+/.test(clip) && /^https:\/\/runthe\.gg\/shut-the-door\/$/m.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
     '6 copy the text copies the share text, its link the tappable https:// form (toast "' + (said || 'none in 10 s') + '", ' + clip.split('\n').length + ' lines)');
+  const evShare = await page.waitForFunction(() => (window.dataLayer || []).some((a) => a && a[0] === 'event' && a[1] === 'share'), null, { timeout: 5000 })
+    .then(() => gameEvents(page), () => gameEvents(page)).then((l) => l.filter((e) => e[0] === 'share').map((e) => e[1]));
+  ok(evShare.length === 1 && JSON.stringify(evShare[0]) === JSON.stringify({ game_name: 'Shut The Door', mode: 'daily', day: evDay, method: 'text' }),
+    '6 the copy sends one share event, method text: ' + JSON.stringify(evShare));
   await page.click('#sheet-share .sh-x');
   await page.waitForSelector('#sheet-share', { state: 'hidden', timeout: 3000 });
   await shot('shared');
@@ -1410,6 +1439,9 @@ async function run(w, h, theme) {
   await page.waitForSelector('#s-mound.on');
   const practice = await page.evaluate(() => window.STD_UI.state.outing.mode);
   ok(practice === 'practice', '7 run it back starts a practice outing');
+  const evAgain = await page.waitForFunction(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && a[1] === 'outing_start').length >= 2, null, { timeout: 5000 })
+    .then(() => gameEvents(page), () => gameEvents(page)).then((l) => l.filter((e) => e[0] === 'outing_start').map((e) => e[1]));
+  ok(evAgain.length === 2 && evAgain[1].mode === 'practice' && evAgain[1].day === evDay && evAgain[1].resumed === false, '7 run it back sends its own outing_start, mode practice: ' + JSON.stringify(evAgain[1] || null));
   await shot('practice');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#h-done:not([hidden])', { timeout: 20000 });

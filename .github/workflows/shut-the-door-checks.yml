@@ -88,6 +88,8 @@ jobs:
         run: node shut-the-door/test/postgame.mjs
       - name: The result names the real closer in every scheduled pack (names.js versus)
         run: node shut-the-door/test/versus.mjs
+      - name: The game events go out once each, at their moment, with only their fields
+        run: node shut-the-door/test/events.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
