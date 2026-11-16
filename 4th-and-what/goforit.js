@@ -175,6 +175,8 @@
     c.classList.toggle('go', active);
     box.hidden = !active;
     if (!active || !st) return;
+    /* a run's end sends any playbook stats its snaps kept (book.js putStats) */
+    if (st.over && A.store && A.store.flush) A.store.flush();
     $('rGoTally').textContent = tallyText(st);
     if (st.over) {
       $('rGoHead').textContent = 'Run over';
@@ -193,7 +195,9 @@
   function renderPlay() {
     var b = load(BEST), live = st && !st.over;
     $('goStart').querySelector('span').textContent = live && !st.daily ? 'Resume run' : 'Go for it';
-    $('goSub').textContent = live ? 'On a run: ' + tallyText(st) + '.' : "Convert 4th down after 4th down. Three stops and you're done.";
+    $('goSub').textContent = live ? 'On a run: ' + tallyText(st) + '.' : 'Convert 4th down after 4th down. ' + stopsWord() + " stops and you're done.";
+    /* Home's Go For It card (the owner, 2026-11-16: Home leads with it) */
+    if ($('hGoT')) { $('hGoT').textContent = live && !st.daily ? 'Resume run' : 'Go For It'; $('hGoSub').textContent = live && !st.daily ? 'On a run: ' + tallyText(st) + '.' : 'Convert 4th down after 4th down. How far can you go?'; }
     $('goBest').textContent = b ? 'Best: ' + tallyText(b) : '';
     $('goBest').hidden = !b;
     var dk = load(dayKey(today()));
@@ -201,9 +205,14 @@
     $('goDailySub').textContent = dk ? dk.n + ' converted · ' + dk.yards + ' yds' + (dk.rank ? ' · number ' + dk.rank + ' on the board' : '') + '. Back tomorrow.' : 'Same downs for everybody. One shot at the board.';
     var chip = $('cRun'); if (chip) { chip.hidden = !active || !st; if (active && st) chip.textContent = tallyText(st) + ' · ' + '\u25CF'.repeat(stopsLeft(st)) + '\u25CB'.repeat(STOPS - stopsLeft(st)); }
   }
+  /* the stops in words, from STOPS (the numbers rule: never typed) */
+  function stopsWord() { return ['No', 'One', 'Two', 'Three', 'Four', 'Five'][STOPS] || String(STOPS); }
   function close3d() { $('watch').hidden = true; $('rCard').hidden = true; }
 
-  $('goStart').addEventListener('click', function () { if (st && !st.over && !st.daily) enter(); else start(); });
+  function go() { if (st && !st.over && !st.daily) enter(); else start(); }
+  $('goStart').addEventListener('click', go);
+  if ($('hGo')) $('hGo').addEventListener('click', go);
+  A.on('home', renderPlay);
   $('goDaily').addEventListener('click', function () {
     if (st && !st.over && st.daily) { enter(); return; }
     if (load(dayKey(today()))) return;

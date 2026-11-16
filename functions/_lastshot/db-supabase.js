@@ -2,15 +2,27 @@
  * role: is this user on the tester list, store the tester round's events,
  * and read its report. stumpire_testers is revoked
  * from browser roles (supabase/133_stumpire.sql), so only a Function asks. */
+/* The tester list, remembered for ROLE_MS per worker isolate (2026-11-16): a
+   page load asks for the page and some 30 modules, and each asked the
+   database. A removed tester keeps access for at most ROLE_MS. */
+export const ROLE_MS = 60000;
+const roles = new Map();
+export function forgetRoles() { roles.clear(); }
+
 export function supabaseDb(env) {
   const base = env.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/';
   const h = { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE };
   return {
     async role(uid) {
+      const hit = roles.get(uid), now = Date.now();
+      if (hit && now - hit.at < ROLE_MS) return hit.role;
       const r = await fetch(base + 'stumpire_testers?user_id=eq.' + encodeURIComponent(uid) + '&select=role', { headers: h });
       if (!r.ok) throw new Error('db ' + r.status);
       const rows = await r.json();
-      return (rows[0] && rows[0].role) || null;
+      const role = (rows[0] && rows[0].role) || null;
+      if (roles.size > 2000) roles.clear();
+      roles.set(uid, { role, at: now });
+      return role;
     },
     /* The tester round's events (supabase/170). Fire and forget. */
     async insertEvents(rows) {

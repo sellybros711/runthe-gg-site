@@ -28,6 +28,27 @@
 <meta name="twitter:description" content="Go for it on 4th down. Read the defense. Call the play. Watch it run.">
 <meta name="twitter:image" content="https://runthe.gg/4th-and-what/og.png?v=1">
 <meta name="theme-color" content="#0b1522" id="themeMeta">
+<!-- CONSENT MODE DEFAULTS, before any analytics tag, so nothing is stored until Google's certified
+     CMP answers: the same block the rest of runthe.gg runs. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- GA4 (the Advisor's review, approved by the owner 2026-11-16): the same property as the rest of
+     runthe.gg, gated by the consent defaults above. events.js forwards the game's own events to it.
+     Analytics only: the posture check still refuses an ad tag before launch. -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+  window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
+  gtag('js',new Date());gtag('set',{game_name:'4th and What'}); gtag('config',id);
+  var s=document.createElement('script');s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 <script>
 /* ALWAYS DARK (the owner, 2026-11-06: "make the whole game dark"). The game is a
    night stadium, so it ignores the suite's shared light or dark choice and
@@ -37,7 +58,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=32">
 </head>
 <body>
 <header class="topbar">
@@ -81,6 +102,9 @@ document.documentElement.setAttribute('data-theme', 'dark');
       <p class="heroname" id="hName"></p>
     </div>
     <div class="modes">
+      <!-- GO FOR IT LEADS (the Advisor's review, approved by the owner 2026-11-16): the main mode
+           since 2026-11-13, so Home names it first. Starts a run, or resumes one (goforit.js) -->
+      <button type="button" class="mode go" id="hGo"><b id="hGoT">Go For It</b><span id="hGoSub">Convert 4th down after 4th down. How far can you go?</span></button>
       <button type="button" class="mode play" data-go="play"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></button>
       <button type="button" class="mode book" data-go="books"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></button>
       <button type="button" class="mode trivia" data-go="trivia"><b>Daily Defense</b><span>One play a day. Pick the defense that stops it.</span></button>
@@ -555,34 +579,34 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
-<script src="/assets/cloudsave.js?v=3"></script>
+<script src="/assets/cloudsave.js?v=4"></script>
 <script src="config.js?v=13"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
 <script src="engine.js?v=14"></script>
 <script src="names.js?v=4"></script>
 <script src="routes.js?v=4"></script>
-<script src="book.js?v=3"></script>
+<script src="book.js?v=4"></script>
 <script src="cards.js?v=1"></script>
 <script src="diagram.js?v=2"></script>
 <script src="export.js?v=2"></script>
 <script src="turf.js?v=4"></script>
 <script src="rig.js?v=1"></script>
 <script src="stage.js?v=2"></script>
-<script src="events.js?v=1"></script>
+<script src="events.js?v=2"></script>
 <script src="share.js?v=2"></script>
 <script src="feel.js?v=2"></script>
 <script src="play.js?v=4"></script>
 <script src="app.js?v=12"></script>
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=6"></script>
-<script src="game.js?v=5"></script>
+<script src="game.js?v=6"></script>
 <script src="clip.js?v=1"></script>
-<script src="flow.js?v=17"></script>
+<script src="flow.js?v=18"></script>
 <script src="daily.js?v=8"></script>
 <script src="trivia.js?v=4"></script>
-<script src="calls.js?v=10"></script>
-<script src="goforit.js?v=5"></script>
+<script src="calls.js?v=11"></script>
+<script src="goforit.js?v=7"></script>
 <script src="profile.js?v=1"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>

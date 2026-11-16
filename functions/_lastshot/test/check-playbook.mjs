@@ -97,6 +97,7 @@ async function run(name, viewport, mobile) {
   await page.click('#hBooks');
   await page.waitForSelector('#pbSignIn');
   ok(await page.isVisible('#pbSignIn'), 'signed out, My Playbooks offers sign in and keeps nothing');
+  { const sb = await page.locator('#pbSignIn').boundingBox(); ok(sb.height < 80, 'the sign in button is a button, not a full height block (' + Math.round(sb.height) + ' px)'); }
   ok(!(await page.isVisible('#pbNew')), 'and no playbook can be started');
 
   /* ---------- signed in ---------- */
@@ -135,6 +136,9 @@ async function run(name, viewport, mobile) {
   await page.click('#testClose');
 
   // a run against one scheme counts under that scheme
+  const slotRev = () => L(() => { const e = window.__lastShot.edit; const m = window.__mem['last_shot/b-' + e.book.id]; return m ? m.progress : null; });
+  await page.waitForTimeout(600);   // an edit's own save (350 ms debounce) lands first
+  const revBefore = await slotRev();
   await page.click('#pbMore summary');
   await page.selectOption('#pbAgainst', 'over');
   await page.click('#pbRunAgainst');
@@ -143,8 +147,11 @@ async function run(name, viewport, mobile) {
   ok(ran === 'over', 'Run against Fight over runs against Fight over');
   const counted = await L(() => { const e = window.__lastShot.edit.entry; const k = Object.keys(e.stats)[0]; return e.stats[k].byScheme; });
   ok(counted && counted.over && counted.over.n === 1, 'the run counts under Fight over');
+  ok((await slotRev()) === revBefore, 'and the run alone writes nothing to the cloud');
   await page.click('#bBackBook');
   await page.waitForSelector('.prow');
+  await page.waitForFunction(r => { const m = Object.entries(window.__mem).find(([k]) => k.startsWith('last_shot/b-')); return m && m[1].progress > r; }, revBefore, { timeout: 5000 });
+  ok(true, 'back at the book, the counted run is written once');
   ok(/Switch \d+%/.test(await page.textContent('.prow small')), 'the playbook shows how the play tested');
 
   // a typed name never changes; a rule renames the rest

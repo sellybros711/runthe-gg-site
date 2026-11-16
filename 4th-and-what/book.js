@@ -205,8 +205,18 @@
   function readLocal(uid) { try { return JSON.parse(root.localStorage.getItem(lsKey(uid)) || 'null'); } catch (e) { return null; } }
   function writeLocal(uid, data) { try { root.localStorage.setItem(lsKey(uid), JSON.stringify(data)); } catch (e) {} }
 
+  /* A SNAP'S STATS ARE NOT AN EDIT (the Advisor's review, approved by the owner
+     2026-11-16). Every snap of a saved play counts in its stats; through put()
+     that sent the whole book row and the index row to ps_saves on every snap,
+     the shape of the 2026-11-12 outage. putStats() keeps the count on the
+     device at once and sends the book at most once a STATS_MS, and when the
+     page is hidden or closed. The index lists names, play counts and dates,
+     which a snap never changes, so it is not sent. A send that never landed
+     goes up on the next open: a book this device holds newer than the cloud
+     is pushed. */
+  var STATS_MS = 60000;
   function createStore(onRemote) {
-    var uid = null, data = null;
+    var uid = null, data = null, dirty = {}, statsT = null;
     function blank() { return { index: { rev: 1, books: [], terms: null }, books: {} }; }
     function save() { if (uid) writeLocal(uid, data); }
     function cloud() { return root.RTG_SAVE || null; }
@@ -222,6 +232,15 @@
       S.queue(GAME, 'b-' + id, function () { var b = data.books[id]; return b ? { payload: b, progress: b.rev } : null; }).then(function (r) {
         if (r && r.ok === false && r.payload) { data.books[id] = r.payload; save(); onRemote && onRemote('book', id); }
       });
+    }
+    function flushStats() {
+      clearTimeout(statsT); statsT = null;
+      var ids = Object.keys(dirty); dirty = {};
+      if (data) ids.forEach(function (id) { if (data.books[id]) pushBook(id); });
+    }
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flushStats(); });
+      if (root.addEventListener) root.addEventListener('pagehide', flushStats);
     }
     function touchIndex() {
       data.index.rev++;
@@ -245,8 +264,12 @@
             if (r.slot === INDEX) { if ((r.progress || 0) >= (data.index.rev || 0)) data.index = r.payload; }
             else if (r.slot.indexOf('b-') === 0) { var id = r.slot.slice(2), mine = data.books[id]; if (!mine || (r.progress || 0) >= (mine.rev || 0)) data.books[id] = r.payload; }
           });
-          /* a book only this browser has (saved while offline) goes up now */
-          Object.keys(data.books).forEach(function (id) { if (!rows.some(function (r) { return r.slot === 'b-' + id; })) pushBook(id); });
+          /* a book only this browser has (saved while offline), or one it holds
+             newer than the cloud (stats whose send never landed), goes up now */
+          Object.keys(data.books).forEach(function (id) {
+            var row = null; rows.forEach(function (r) { if (r && r.slot === 'b-' + id) row = r; });
+            if (!row || (data.books[id].rev || 0) > (row.progress || 0)) pushBook(id);
+          });
           var listed = data.index.books.map(function (b) { return b.id; });
           Object.keys(data.books).forEach(function (id) { if (listed.indexOf(id) < 0) listed = null; });
           if (!listed) touchIndex();
@@ -263,9 +286,19 @@
       put: function (book) {
         if (!data) return null;
         book.rev = (book.rev || 0) + 1; book.updated = now();
-        data.books[book.id] = book; save(); pushBook(book.id); touchIndex();
+        data.books[book.id] = book; save(); delete dirty[book.id]; pushBook(book.id); touchIndex();
         return book;
       },
+      /* A snap's stats: on the device now, to the cloud soon (above). */
+      putStats: function (book) {
+        if (!data) return null;
+        book.rev = (book.rev || 0) + 1;
+        data.books[book.id] = book; save();
+        dirty[book.id] = true;
+        if (!statsT) statsT = setTimeout(flushStats, STATS_MS);
+        return book;
+      },
+      flush: flushStats,
       remove: function (id) {
         if (!data || !data.books[id]) return;
         delete data.books[id]; save();
