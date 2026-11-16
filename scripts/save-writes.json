@@ -2,9 +2,8 @@
   "_about": "Every database function that rewrites a jsonb column, and what kind of write it is. scripts/check-saves.mjs reads this. event: one write per thing the player did, so an unchanged rewrite cannot repeat. save: called again and again, so it must skip an unchanged write (is distinct from). An unguarded save stays here with status open and an owner until it is fixed. The rule: knowledge base, platform/platform-database-saves.md.",
 
   "ps_save_put": {
-    "kind": "save", "status": "open",
-    "owner": "College Football Agent with the Perfect Season Agent",
-    "note": "The shared cloud save (assets/cloudsave.js). College Commish, NFL Dynasty, the Trade Machine, Full Team and the two coaching games' playbooks all write through it. An equal payload rewrites the row and is sent back whole."
+    "kind": "save",
+    "note": "The shared cloud save (assets/cloudsave.js): College Commish, NFL Dynasty, the Trade Machine, Full Team and the two coaching games' playbooks. Since 174 it returns before the write when the payload and progress are unchanged, and answers without the payload (site PR 1030)."
   },
   "rtd_career_merge": {
     "kind": "save", "status": "open",
