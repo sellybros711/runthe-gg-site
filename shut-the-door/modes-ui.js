@@ -154,20 +154,13 @@ function drawVote(el, v, busy, opts) {
   if (s) s.addEventListener('click', function () { if (ctx.signIn) ctx.signIn(); });
 }
 
-/* The home's one line on how today was picked, once the vote is on: "picked by your votes · 63-48",
-   or, when the server could not say, that this is the first pick. Never the reveal. */
+/* The home's one line on how today was picked: only when the server could not say, that this is the
+   first pick. A day the vote picked says nothing on the home (the owner, 2026-11-16: the "picked by
+   your votes" line came off the daily card). Never the reveal. */
 function pickLine(el, scn) {
   if (!el) return;
   el.hidden = true;
-  if (!scn || !scn.pick) return;
-  if (scn.pick === 'default') { el.hidden = false; el.textContent = 'The vote didn\'t load. First pick plays.'; return; }
-  if (!has('vote')) return;
-  Promise.resolve().then(function () { return API().vote(scn.day); }).then(function (v) {
-    if (!v || v.winner !== scn.id) return;
-    el.hidden = false;
-    var w = v.votes ? (v.candidates[0] && v.candidates[0].id === v.winner ? [v.votes.a, v.votes.b] : [v.votes.b, v.votes.a]) : null;
-    el.textContent = 'Picked by your votes' + (w ? ' · ' + w[0] + '-' + w[1] : '');
-  }, function () {});
+  if (scn && scn.pick === 'default') { el.hidden = false; el.textContent = 'The vote didn\'t load. First pick plays.'; }
 }
 
 /* ---- 3. Survivor ---------------------------------------------------------------------------- */

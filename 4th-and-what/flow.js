@@ -225,6 +225,8 @@
     var line = A.marginText(r) || gained + '.', why = r.reason;
     /* the line already says it: no "Incomplete. Incomplete." */
     if (why.indexOf(line) === 0) why = why.slice(line.length).trim();
+    /* nor at the end: a touchdown read "Six. Nobody laid a hand on him. Six." */
+    if (why.length > line.length && why.slice(-line.length) === line) why = why.slice(0, -line.length).trim();
     $('rLine').textContent = line;
     $('rWhy').textContent = why;
     $('rRead').textContent = window.FAW_CALLS ? window.FAW_CALLS.revealText(r) : r.callName;

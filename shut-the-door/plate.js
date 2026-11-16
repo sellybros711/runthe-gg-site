@@ -16,6 +16,9 @@
   'use strict';
   var LS = 'std_plates_v1';
   var NEUTRAL = { pri: '#1d2536', sec: '#ff4f1f' };
+  /* the optical middle of the plate, in viewBox units: the zone frame's centre (218) and the shield's
+     area centroid (221) agree to within 3, so the letters' caps centre between them */
+  var PLATE_MID = 220;
 
   function clubs() { return window.STD_CLUBS || []; }
   function keyOfClub(c) { return c ? String(c.nick).toLowerCase().replace(/[^a-z]/g, '') : null; }
@@ -65,7 +68,12 @@
     var zone = L ? '<rect x="156" y="118" width="200" height="200" rx="20" fill="none" stroke="' + ink + '" stroke-opacity=".22" stroke-width="18"/>' :
       '<rect x="156" y="118" width="200" height="200" rx="20" fill="none" stroke="#ffffff" stroke-width="26"/>' +
       '<path d="M285 130L348 118Q357 118 357 127V309Q357 318 348 318L285 306Z" fill="' + sec + '"/>';
-    var text = L ? '<text x="256" y="' + (L.length > 1 ? 266 : 270) + '" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="' + (L.length > 1 ? 176 : 200) + '" letter-spacing="-6" fill="' + ink + '">' + L + '</text>' : '';
+    /* The letters' caps are centred on PLATE_MID, on the alphabetic baseline: y is the mid plus half
+       Inter's cap height (0.727 em). Never dominant-baseline: Safari and Chromium place "middle"
+       differently, and it sat the letters low on a phone (the owner, 2026-11-16). x sits 3 left of
+       the axis because the last letter's -6 spacing pulls the anchor's middle right by half of it. */
+    var fs = L.length > 1 ? 176 : 200;
+    var text = L ? '<text x="253" y="' + Math.round(PLATE_MID + fs * 0.727 / 2) + '" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="' + fs + '" letter-spacing="-6" fill="' + ink + '">' + L + '</text>' : '';
     return '<svg class="' + cls + '" viewBox="40 40 432 440" aria-hidden="true" focusable="false">' +
       '<path d="M70 64H442V283.52L256 456L70 283.52Z" fill="' + pri + '" stroke="' + sec + '" stroke-width="30" stroke-linejoin="round"/>' +
       zone + text + '</svg>';

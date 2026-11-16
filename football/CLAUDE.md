@@ -39,6 +39,7 @@ node football/check-freespin.mjs      the free re-spin: when it shows, what a wa
 node football/check-banner.mjs        the closeable bottom banner covers no button at first view
 node football/check-fanpromo.mjs      the results screen's Fantasy card: open week, no lineup in, never during the games
 node football/check-fantasy.mjs       the Fantasy Challenge (--quick: the engine, no browser)
+node workers/clock/check-clock.mjs    the clock Worker that starts the Tuesday build, the watchdog and the live scorer on time
 psql ... -f supabase/test/launch_preflight.sql    the live modes' migrations are applied
 ```
 
@@ -107,6 +108,10 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
 - **The entry is the server's, and it fails CLOSED.** `football/fantasy/entries.js` is the only thing
   that talks to `109_fantasy_challenge.sql`.
 - A published week's cap is that week's. The constant is only the next week's.
+- **The clock starts the clock-critical jobs, not GitHub's cron** (the owner's approval,
+  2026-11-16). `workers/clock` (a Cloudflare Worker, deployed by `clock-deploy.yml`) dispatches
+  the Tuesday build, the watchdog and the live scorer at their Eastern times and kickoffs. Each
+  job keeps its GitHub cron as a second net and must stay safe to start twice.
 - **The week opens Tuesday, and three things make sure of it** (the owner's rule, 2026-10-22):
   `fantasy-pool.yml` (Tuesday 8am Eastern, the owner's call 2026-10-27; it waits for last week's
   stats until noon, then a settle pass at 11am and catch-ups Wednesday and Thursday morning),
