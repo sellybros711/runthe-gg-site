@@ -4,7 +4,7 @@
   "ps_save_put": {
     "kind": "save", "status": "open",
     "owner": "College Football Agent with the Perfect Season Agent",
-    "note": "The shared cloud save (assets/cloudsave.js). College Commish, NFL Dynasty, the Trade Machine, Full Team and the 4th and What and Last Shot playbooks all write through it. An equal payload rewrites the row and is sent back whole."
+    "note": "The shared cloud save (assets/cloudsave.js). College Commish, NFL Dynasty, the Trade Machine, Full Team and the two coaching games' playbooks all write through it. An equal payload rewrites the row and is sent back whole."
   },
   "rtd_career_merge": {
     "kind": "save", "status": "open",
