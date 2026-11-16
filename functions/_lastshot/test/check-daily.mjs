@@ -94,7 +94,8 @@ async function run(name, viewport, mobile, uid) {
 
   const posts0 = fake.posts.length;
   await page.goto(BASE + '/last-shot');
-  await L(() => { try { localStorage.clear(); } catch (e) {} });
+  // a returning browser (it has run a play): the Daily leads home. A new one leads with Play (check-starters).
+  await L(() => { try { localStorage.clear(); } catch (e) {} localStorage.setItem('last_shot_ran', '1'); });
   await boot();
 
   // home: the Daily card on top, today's number and title, the countdown
@@ -118,6 +119,7 @@ async function run(name, viewport, mobile, uid) {
   ok(JSON.stringify(await L(() => window.__lastShot.play.spots)) === JSON.stringify(SC.spots) && (await L(() => window.__lastShot.play.steps.length)) === 0, 'a blank play on the day\'s set');
   ok((await page.textContent('#bRun')) === 'Practice' && await page.isDisabled('#bShot'), 'Run It is Practice, and Take your shot waits for a play');
   ok((await starts()) === 1, 'a fresh daily posts start once');
+  ok(await L(() => document.getElementById('bPlays').classList.contains('pulse')) && (await page.textContent('#hint')) === 'Tap Plays to start from one. Or draw your own.', 'a blank Daily board: Plays pulses and the hint points at it');
 
   // Plays on the Daily: a starter takes the clipboard, the day stays the day
   await page.click('#bPlays');

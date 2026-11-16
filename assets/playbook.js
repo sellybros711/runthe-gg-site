@@ -2,7 +2,7 @@
  * playbook.js : the playbook plumbing two coaching games share.
  *
  *   window.RTG_PLAYBOOK in a page, module.exports in node. Load it as
- *   /assets/playbook.js?v=1 (a plain script, so classic pages and ES module pages can both use it).
+ *   /assets/playbook.js?v=2 (a plain script, so classic pages and ES module pages can both use it).
  *
  * WHY IT IS SHARED. Two coaching games (one football, one basketball) each built a playbook: books
  * kept on the account, a playbook file a coach can hand to another, and pages printed for the team.
@@ -11,7 +11,8 @@
  * for one copy (2026-11-02). What stays in each game: how a play is drawn, the editor, Test it (it runs
  * each game's own sim), every word a coach reads, the layouts, and the terminology's vocabulary.
  *
- *   STORE   createStore({ game, prefix, maxBytes, onRemote })   a local copy first, the account behind it
+ *   STORE   createStore({ game, prefix, maxBytes, onRemote, laterMs })   a local copy first, the account
+ *           behind it; put() for an edit, putLater() + flush() for stats (one cloud write, not one a run)
  *   MODEL   newId, LIMITS, newBook, newPlay, statsOf, countRun, totals
  *   FILE    exportFile, importFile (fresh ids, game hooks), downloadText
  *   PRINT   PAPER, GRID, withDefaults, pick, page, footer, print, download, ready
@@ -150,6 +151,24 @@
   function createStore(cfg) {
     var GAME = cfg.game, PREFIX = cfg.prefix, MAX = cfg.maxBytes || 524288, onRemote = cfg.onRemote;
     var uid = null, data = null;
+    /* LATER (2026-11-16). A run of a saved play changes only its stats, and
+       put() wrote the whole book (up to maxBytes) and the index row to the
+       cloud for every run: two whole row writes a run. putLater() keeps the
+       local copy current at once and writes each changed book to the cloud
+       once, on flush(): when the page is hidden or closed, when the caller
+       says (leaving the play), or LATER_MS after the first change at most.
+       Stats are not in the index row, so it is left alone. */
+    var LATER_MS = cfg.laterMs || 60000, dirty = {}, laterTimer = null;
+    function flushLater() {
+      if (laterTimer) { root.clearTimeout(laterTimer); laterTimer = null; }
+      var ids = Object.keys(dirty); dirty = {};
+      ids.forEach(function (id) { if (data && data.books[id]) pushBook(id); });
+      return ids.length;
+    }
+    if (root.addEventListener && root.document) {
+      root.addEventListener('pagehide', flushLater);
+      root.document.addEventListener('visibilitychange', function () { if (root.document.visibilityState === 'hidden') flushLater(); });
+    }
     function lsKey() { return PREFIX + uid; }
     function readLocal() { try { return JSON.parse(root.localStorage.getItem(lsKey()) || 'null'); } catch (e) { return null; } }
     function save() { if (uid) { try { root.localStorage.setItem(lsKey(), JSON.stringify(data)); } catch (e) {} } }
@@ -184,7 +203,13 @@
           rows.forEach(function (r) {
             if (!r || !r.payload) return;
             if (r.slot === INDEX) { if ((r.progress || 0) >= (data.index.rev || 0)) data.index = r.payload; }
-            else if (r.slot.indexOf('b-') === 0) { var id = r.slot.slice(2), mine = data.books[id]; if (!mine || (r.progress || 0) >= (mine.rev || 0)) data.books[id] = r.payload; }
+            else if (r.slot.indexOf('b-') === 0) {
+              var id = r.slot.slice(2), mine = data.books[id];
+              if (!mine || (r.progress || 0) >= (mine.rev || 0)) data.books[id] = r.payload;
+              /* ours is newer: a putLater flush lost to a closed tab goes up now
+                 (the 4th and What Agent's catch, 2026-11-16) */
+              else pushBook(id);
+            }
           });
           /* a book only this browser has (saved while offline) goes up now */
           Object.keys(data.books).forEach(function (id) { if (!rows.some(function (r) { return r.slot === 'b-' + id; })) pushBook(id); });
@@ -205,9 +230,22 @@
         if (!data) return null;
         if (bytesOf(book) > MAX) return null;
         book.rev = (book.rev || 0) + 1; book.updated = now();
+        delete dirty[book.id];
         data.books[book.id] = book; save(); pushBook(book.id); touchIndex();
         return book;
       },
+      /* A stats only change: saved here now, written to the cloud on flush. */
+      putLater: function (book) {
+        if (!data) return null;
+        if (bytesOf(book) > MAX) return null;
+        book.rev = (book.rev || 0) + 1;
+        data.books[book.id] = book; save();
+        dirty[book.id] = 1;
+        if (!laterTimer) laterTimer = root.setTimeout(flushLater, LATER_MS);
+        return book;
+      },
+      /* Write every book putLater changed. Returns how many. */
+      flush: flushLater,
       remove: function (id) {
         if (!data || !data.books[id]) return;
         delete data.books[id]; save();
