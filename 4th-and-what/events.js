@@ -8,7 +8,10 @@
  * Batched to POST /api/faw/e (functions/api/faw/e.js), which keeps
  * only known names and props. A row carries a device id (a random id kept in
  * this browser's storage, 'faw_device'), a session id per page load and the
- * time since the page opened. Nothing personal, no cookie, nothing third party.
+ * time since the page opened. Nothing personal and no cookie in these rows.
+ * Each event also goes to the site's Google Analytics (gtag, loaded in
+ * index.html behind the consent defaults, approved 2026-11-16) as faw_<name>,
+ * so the site's own reports count the game; GA's cookies follow its consent.
  * 'faw_opened' says whether this browser opened the game before, so a player
  * who played before the events began is never counted as new.
  *
@@ -39,7 +42,9 @@
   try { localStorage.setItem('faw_opened', '1'); } catch (e) {}
 
   function now() { return Math.max(0, Math.round(((root.performance && performance.now) ? performance.now() : 0) - t0)); }
+  function ga(n, p) { try { if (LIVE && typeof root.gtag === 'function') root.gtag('event', 'faw_' + n, p || {}); } catch (e) {} }
   function track(n, p) {
+    ga(n, p);
     if (!LIVE && !WATCH) return;
     try {
       queue.push({ n: n, t: now(), p: p || {} });
