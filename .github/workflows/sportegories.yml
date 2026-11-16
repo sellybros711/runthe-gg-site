@@ -5,6 +5,7 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: write
+  issues: write
 
 # arcade/sportegories-data.js is DERIVED from rosters.js, former.js, awards.js
 # and the stats files. Those each refresh on their own schedule, and until this
@@ -34,9 +35,13 @@ jobs:
       # happened. Checking after the commit is checking too late: fail here and
       # yesterday's working corpus stays on the site.
       - name: The rebuilt corpus must still answer correctly
-        run: node scripts/check-sportegories.mjs
+        shell: bash
+        env:
+          DECISIONS_OUT: /tmp/decisions.json
+        run: node scripts/check-sportegories.mjs | tee /tmp/check.txt
       - name: Every category still checks every league it names
-        run: node scripts/check-sportegories-leagues.mjs
+        shell: bash
+        run: node scripts/check-sportegories-leagues.mjs | tee -a /tmp/check.txt
       # A data file that changed and kept its ?v= hands a returning visitor the
       # old data against the new page. Only when it actually moved: a bump with
       # no change is a re-download for everybody who already has the file.
@@ -56,3 +61,64 @@ jobs:
               git pull --rebase origin main || exit 1
             done
           }
+      # FAIL LOUDLY. A gate that holds yesterday's corpus is right, but on its own it
+      # is silent: from 2026-10-12 and again from 2026-11-02 this job failed every day
+      # for two weeks on one undecided name pair, while stale actives piled up on the
+      # live game, and nobody heard. Now a failed run opens (or updates) one issue,
+      # with the failing lines and the fix, and GitHub notifies the owner. The next
+      # green run closes it.
+      - name: Alert on failure, all clear on success
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="Sportegories rebuild failing"
+          NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "The rebuild passes again: $RUN_URL" && gh issue close "$NUM"; fi
+            exit 0
+          fi
+          {
+            echo "The daily Sportegories rebuild failed, so the live game keeps the last good corpus and its active flags go stale every day this stays open."
+            echo
+            echo "Latest run: $RUN_URL"
+            echo
+            echo '```'
+            if [ -s /tmp/check.txt ]; then grep -E 'FAIL|problem' /tmp/check.txt | head -40; else echo "(no check output: the job failed before the checks ran)"; fi
+            echo '```'
+            echo
+            echo "The Rosters Agent checks this every day, diagnoses it and opens the fix. An undecided name pair no longer fails the rebuild (it is listed in its own issue instead), so a failure here is something new."
+          } > /tmp/body.md
+          if [ -n "$NUM" ]; then
+            gh issue edit "$NUM" --body-file /tmp/body.md
+            gh issue comment "$NUM" --body "Still failing: $RUN_URL"
+          else
+            gh issue create --title "$TITLE" --body-file /tmp/body.md
+          fi
+      # A PERSON IS ASKED ONLY WHAT THE RULE CANNOT DECIDE. An undecided name pair no
+      # longer fails the rebuild: it stays two records and the rest ships. Each one is
+      # listed here, with the evidence and the exact line to add, in one issue that
+      # closes itself once the list is empty.
+      - name: Name pairs for a person to decide
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="Sportegories: name pairs to decide"
+          NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+          N=$( [ -s /tmp/decisions.json ] && jq length /tmp/decisions.json || echo 0 )
+          if [ "$N" = "0" ]; then
+            [ -s /tmp/decisions.json ] && [ -n "$NUM" ] && gh issue comment "$NUM" --body "Nothing left to decide: $RUN_URL" && gh issue close "$NUM"
+            exit 0
+          fi
+          {
+            echo "The rebuild went ahead. These related names are still two records each, because the rule cannot tell one man from two. Decide each one: add its line to \`same\` (one man) or \`apart\` (two men) in \`scripts/sportegories-people.json\`."
+            echo
+            jq -r '.[] | "- **\(.sport) \(.a) / \(.b)**\n  - \(.evidence[0])\n  - \(.evidence[1])\n  - line: `\(.line)`"' /tmp/decisions.json
+            echo
+            echo "Latest run: $RUN_URL"
+          } > /tmp/decide.md
+          if [ -n "$NUM" ]; then gh issue edit "$NUM" --body-file /tmp/decide.md; else gh issue create --title "$TITLE" --body-file /tmp/decide.md; fi
