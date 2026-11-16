@@ -257,7 +257,7 @@ function loadQueue() {
   a.umpQueue(Q.tab).then(function (r) {
     if (!r || r.error) { Q.rows = []; Q.msg = r && r.error ? sentence(r.error) : 'Could not load the calls.'; return renderQueue(); }
     Q.rows = Array.isArray(r.data) ? r.data : [];
-    var paths = Q.rows.map(function (x) { return x.path; });
+    var paths = Q.rows.map(function (x) { return x.path; }).filter(Boolean);
     if (!paths.length || !a.umpUrls) return renderQueue();
     renderQueue();
     a.umpUrls(paths, 3600).then(function (m) { Q.urls = m || {}; renderQueue(); });
@@ -279,9 +279,10 @@ function renderQueue() {
       var url = Q.urls[x.path];
       return '<li class="vr-row" data-id="' + esc(x.id) + '"><div class="vr-h"><b>' + esc(ln ? ln.text : x.line) + '</b><small>' +
         esc([who, when(x.createdAt), x.ms ? (x.ms / 1000).toFixed(1) + ' s' : ''].filter(Boolean).join(' · ')) + '</small></div>' +
-        (url ? '<audio controls preload="none" src="' + esc(url) + '"></audio>' : '<p class="quiet">Loading the clip.</p>') +
+        /* a rejected call has no file (175 deletes it), so it can only stay rejected */
+        (!x.path ? '<p class="quiet">Audio deleted.</p>' : url ? '<audio controls preload="none" src="' + esc(url) + '"></audio>' : '<p class="quiet">Loading the clip.</p>') +
         '<div class="vr-act">' +
-          (x.status !== 'approved' ? '<button class="btn go" type="button" data-vr="approved">Approve</button>' : '') +
+          (x.status !== 'approved' && x.path ? '<button class="btn go" type="button" data-vr="approved">Approve</button>' : '') +
           (x.status !== 'rejected' ? '<button class="btn ghost" type="button" data-vr="rejected">Reject</button>' : '') +
         '</div></li>';
     }).join('') + '</ul>';
