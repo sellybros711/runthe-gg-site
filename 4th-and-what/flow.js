@@ -152,7 +152,7 @@
       card: card || 'own', win: !!res.win, outcome: res.outcome, shell: res.shell, distance: res.distance });
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
-    if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(b); } });
+    if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.putStats(b); } });
     A.watch3d(res, showCard);
     return true;
   }
@@ -282,7 +282,7 @@
     if (b) { A.toast('rToast', 'It is already in ' + b.name + '. This snap counted in its stats.'); return; }
     A.saveDialog(A.copy(played), { distance: A.SC.distance, tag: A.draft.tag, done: function (bk, e) {
       A.draft.ref = { book: bk.id, id: e.id }; A.draft.name = e.name; A.draft.nameEdited = e.nameEdited; A.saveDraft();
-      B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(bk);
+      B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.putStats(bk);
       A.toast('rToast', 'Saved to ' + bk.name + '.');
       if (window.FAW_EVENTS) window.FAW_EVENTS.track('save', { kind: 'play' });
     } });

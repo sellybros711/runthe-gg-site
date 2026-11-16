@@ -57,7 +57,7 @@ const head = (m) => console.log('\n' + m + '\n' + '-'.repeat(m.length));
 /* ── the stand-in server ─────────────────────────────────────────────── */
 const UID = 'user-1';
 let SRV;
-function resetServer() { SRV = { profile: null, career: [], down: false, calls: [] }; }
+function resetServer() { SRV = { profile: null, career: [], down: false, calls: [], writes: 0, sent: [], since: [] }; }
 const PICKS = ['B', 'C'];
 function serverOp(op, arg) {
   SRV.calls.push(op);
@@ -73,6 +73,18 @@ function serverOp(op, arg) {
     for (const r of arg || []) if (r && r.ts && !held.has(r.ts)) held.set(r.ts, { ...r, u: UID });
     SRV.career = [...held.values()].sort((a, b) => a.ts - b.ts).slice(-1000);
     return SRV.career.map((r) => ({ ...r }));
+  }
+  /* 172's rtd_career_sync: keep the new seasons, write only when one is new, and
+     answer only the seasons past since, the newest ts and how many are kept. */
+  if (op === 'careerSync') {
+    const [rows, since] = arg || [];
+    SRV.sent.push((rows || []).length); SRV.since.push(since || 0);
+    const held = new Map(SRV.career.map((r) => [r.ts, r]));
+    let added = 0;
+    for (const r of rows || []) if (r && r.ts && !held.has(r.ts)) { held.set(r.ts, { ...r, u: UID }); added++; }
+    if (added) { SRV.career = [...held.values()].sort((a, b) => a.ts - b.ts).slice(-1000); SRV.writes++; }
+    return { rows: SRV.career.filter((r) => r.ts > (since || 0)).map((r) => ({ ...r })),
+      top: SRV.career.reduce((m, r) => Math.max(m, r.ts), 0), n: SRV.career.length };
   }
   if (op === 'profilesOf') {
     const out = {};
@@ -104,6 +116,7 @@ window.RTD_AUTH = (function () {
     premiumProducts: async () => [], modeState: async () => null, modeSpend: async () => ({ ok: true }),
     myProfile: () => srv('myProfile'), saveProfile: (f) => srv('saveProfile', f),
     careerMerge: (rows) => srv('careerMerge', rows), profilesOf: (ids) => srv('profilesOf', ids),
+    careerSync: cfg.noSync ? undefined : (rows, since) => srv('careerSync', [rows, since]),
   };
 })();`;
 
@@ -169,7 +182,7 @@ try {
     await openPf(page);
     claim(await page.evaluate(() => !!document.querySelector('#pf-in .acct input[type=email]')),
       'and the profile is the sign-in form');
-    claim(!SRV.calls.includes('careerMerge'), 'a guest sends nothing to the server');
+    claim(!SRV.calls.includes('careerMerge') && !SRV.calls.includes('careerSync'), 'a guest sends nothing to the server');
     const g = await page.evaluate(() => {
       const b = [...document.querySelectorAll('#pf-in button')].find((x) => /Google/.test(x.textContent));
       if (!b) return null;
@@ -206,6 +219,42 @@ try {
     claim(h.length === 6, 'and nothing on this device was dropped doing it', 'device has ' + h.length);
     claim(SRV.profile && SRV.profile.tier && SRV.profile.ring, 'the rank and ring the cabinet earned are pushed',
       JSON.stringify(SRV.profile));
+
+    head('2b. THE CAREER IS SENT ONLY WHEN SOMETHING IS NEW (supabase/172)');
+    claim(SRV.writes === 1, 'four new seasons are one write', 'writes ' + SRV.writes);
+    claim(h.filter((r) => r.u === UID).every((r) => r.sv === 1) && h.filter((r) => r.u !== UID).every((r) => !r.sv),
+      'the four are marked as kept, the guest\'s and the other account\'s are not');
+    claim(!SRV.career.some((r) => 'sv' in r), 'the mark never reaches the server');
+    const syncs = () => SRV.calls.filter((c) => c === 'careerSync').length;
+    let n0 = syncs();
+    await page.evaluate(() => window.RTD_AUTH.setName('slugger'));
+    await settle(page);
+    claim(syncs() === n0, 'an auth event (the hourly token refresh) sends nothing', 'syncs ' + n0 + ' then ' + syncs());
+    await page.reload(); await page.waitForSelector('#s-intro.on'); await settle(page);
+    claim(syncs() === n0 + 1 && SRV.sent[SRV.sent.length - 1] === 0, 'a new visit sends no seasons',
+      'syncs ' + syncs() + ', sent ' + SRV.sent.join());
+    claim(SRV.since[SRV.since.length - 1] === Math.max(...mine.map((r) => r.ts)), 'and asks only for seasons past the newest it holds',
+      'since ' + SRV.since[SRV.since.length - 1]);
+    claim(SRV.writes === 1, 'and writes nothing', 'writes ' + SRV.writes);
+    const unsent = row({ wins: 92 });
+    await page.evaluate((r) => {
+      const h = JSON.parse(localStorage.getItem('rtd_history') || '[]'); h.push(r);
+      localStorage.setItem('rtd_history', JSON.stringify(h));
+    }, unsent);
+    await page.reload(); await page.waitForSelector('#s-intro.on'); await settle(page);
+    claim(SRV.sent[SRV.sent.length - 1] === 1 && SRV.writes === 2, 'a season never sent goes up alone, in one write',
+      'sent ' + SRV.sent.join() + ', writes ' + SRV.writes);
+    claim((await hist(page)).find((r) => r.ts === unsent.ts).sv === 1, 'and is marked as kept');
+    /* a season another device filed late, under an older ts than this one holds */
+    SRV.career.push({ ...row({ wins: 61 }), ts: mine[0].ts - 5000, u: UID });
+    SRV.career.sort((a, b) => a.ts - b.ts);
+    await page.reload(); await page.waitForSelector('#s-intro.on'); await settle(page);
+    claim((await hist(page)).some((r) => r.ts === mine[0].ts - 5000), 'a season filed late on another device still arrives');
+    const fulls = SRV.since.filter((x) => x === 0).length;
+    await page.reload(); await page.waitForSelector('#s-intro.on'); await settle(page);
+    claim(SRV.since.filter((x) => x === 0).length === fulls, 'and the whole career is not read again after that');
+    /* back to the four seasons section 3 reads */
+    SRV.career = SRV.career.filter((r) => mine.some((m) => m.ts === r.ts));
     await ctx.close();
 
     head('3. A SECOND DEVICE GETS THEM BACK');
@@ -250,6 +299,20 @@ try {
     await settle(again.page);
     claim(SRV.career.length === 2, 'the next time the server answers, both reach it');
     await again.ctx.close();
+  }
+
+  head('4b. A DATABASE WITHOUT 172 STILL KEEPS THE CAREER');
+  {
+    resetServer();
+    const mine = [row({ wins: 93 }), row({ wins: 94 })];
+    const { ctx, page } = await open({ signedIn: true, noSync: true }, { history: mine });
+    await settle(page);
+    claim(SRV.career.length === 2 && SRV.calls.includes('careerMerge'), 'the old merge files them', 'server has ' + SRV.career.length);
+    const n0 = SRV.calls.filter((c) => c === 'careerMerge').length;
+    await page.evaluate(() => window.RTD_AUTH.setName('slugger'));
+    await settle(page);
+    claim(SRV.calls.filter((c) => c === 'careerMerge').length === n0, 'and still only once a visit');
+    await ctx.close();
   }
 
   head('5. CUSTOMIZE SAVES ONLY WHAT IS EARNED');

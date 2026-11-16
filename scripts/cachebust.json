@@ -9,8 +9,8 @@
       "sha": "1891cdfef9c19253"
     },
     "/assets/cloudsave.js": {
-      "v": "3",
-      "sha": "7c8b2c13e2f5ecd5"
+      "v": "4",
+      "sha": "9f0e387d6587c96d"
     },
     "config.js": {
       "v": "13",
@@ -37,8 +37,8 @@
       "sha": "f2f5fa91d9995073"
     },
     "book.js": {
-      "v": "3",
-      "sha": "a4e9a3168dfac69c"
+      "v": "4",
+      "sha": "e54cd639d097a96d"
     },
     "cards.js": {
       "v": "1",
@@ -65,8 +65,8 @@
       "sha": "ff5a4357d74041fd"
     },
     "events.js": {
-      "v": "1",
-      "sha": "0f2b0faed4635164"
+      "v": "2",
+      "sha": "cb3f34e5b7fdbe51"
     },
     "share.js": {
       "v": "2",
@@ -93,32 +93,32 @@
       "sha": "31ec6c9d08987dd2"
     },
     "game.js": {
-      "v": "5",
-      "sha": "564bd8ca34319416"
+      "v": "6",
+      "sha": "fefdb546b27fe98a"
     },
     "clip.js": {
       "v": "1",
       "sha": "42acc78a2a9a5a7b"
     },
     "flow.js": {
-      "v": "17",
-      "sha": "51601fd55191bd36"
+      "v": "18",
+      "sha": "c5e8527b6d7fa6d3"
     },
     "daily.js": {
-      "v": "8",
-      "sha": "bb0339055d2d36e9"
+      "v": "9",
+      "sha": "03e71d0fbcb5cc50"
     },
     "trivia.js": {
       "v": "4",
       "sha": "b218a340a3641fdb"
     },
     "calls.js": {
-      "v": "10",
-      "sha": "b9f44cbd508a9450"
+      "v": "11",
+      "sha": "e4231098f54ded78"
     },
     "goforit.js": {
-      "v": "5",
-      "sha": "00c5680b9938b977"
+      "v": "7",
+      "sha": "5583cbf3462e9d73"
     },
     "profile.js": {
       "v": "1",
@@ -2381,8 +2381,8 @@
       "sha": "017ef6c5a7c7bc06"
     },
     "auth.js": {
-      "v": "3",
-      "sha": "8f6ad68ee7ff9a76"
+      "v": "4",
+      "sha": "e3d28da7797bdd12"
     },
     "/assets/newsletter.js": {
       "v": "2",
@@ -2515,8 +2515,8 @@
       "sha": "0379db2899acd50e"
     },
     "/assets/cloudsave.js": {
-      "v": "3",
-      "sha": "7c8b2c13e2f5ecd5"
+      "v": "4",
+      "sha": "9f0e387d6587c96d"
     },
     "/cfb/data/cfb_fbs.json": {
       "v": "1",
@@ -2599,8 +2599,8 @@
       "sha": "733a0836581de9eb"
     },
     "/assets/cloudsave.js": {
-      "v": "3",
-      "sha": "7c8b2c13e2f5ecd5"
+      "v": "4",
+      "sha": "9f0e387d6587c96d"
     },
     "/assets/fantasy-promo.js": {
       "v": "1",
@@ -2699,8 +2699,8 @@
       "sha": "733a0836581de9eb"
     },
     "/assets/cloudsave.js": {
-      "v": "3",
-      "sha": "7c8b2c13e2f5ecd5"
+      "v": "4",
+      "sha": "9f0e387d6587c96d"
     },
     "/assets/rewarded.js": {
       "v": "1",
@@ -2763,12 +2763,12 @@
       "sha": "c71a149f3b8da69e"
     },
     "/assets/cloudsave.js": {
-      "v": "3",
-      "sha": "7c8b2c13e2f5ecd5"
+      "v": "4",
+      "sha": "9f0e387d6587c96d"
     },
     "/assets/playbook.js": {
-      "v": "1",
-      "sha": "77ccc1ef68c895e3"
+      "v": "2",
+      "sha": "68c3ca6a3a844005"
     }
   },
   "functions/_stumpire/web/admin.html": {
@@ -3061,8 +3061,8 @@
       "sha": "201b9525c2dff333"
     },
     "/assets/cloudsave.js": {
-      "v": "3",
-      "sha": "7c8b2c13e2f5ecd5"
+      "v": "4",
+      "sha": "9f0e387d6587c96d"
     },
     "/assets/newsletter.js": {
       "v": "2",
@@ -3303,8 +3303,8 @@
       "sha": "3507b40bb34fd819"
     },
     "voices.js": {
-      "v": "1",
-      "sha": "27db450876d5eda0"
+      "v": "2",
+      "sha": "7933cd2854d59001"
     },
     "postgame.js": {
       "v": "1",
@@ -3315,8 +3315,8 @@
       "sha": "602880a846c4c91e"
     },
     "mock-api.js": {
-      "v": "21",
-      "sha": "44cbca629e07b05a"
+      "v": "22",
+      "sha": "db15640b331f50f1"
     },
     "coach.js": {
       "v": "2",
@@ -3351,7 +3351,7 @@
       "sha": "6fa2357bdcc11304"
     },
     "ui.js": {
-      "v": "83",
+      "v": "84",
       "sha": "3091b53759847079"
     },
     "3d/boot.js": {

@@ -164,6 +164,16 @@
    * the run being thrown away.
    */
   var busy = {}, pending = {}, waiters = {};
+  /*
+   * NOTHING CHANGED, NOTHING SENT (2026-11-16, after the Disk IO outage of 11-12). Every game
+   * calls queue() after every mutation, and many of those leave the run exactly as it was: a
+   * dynasty draft re-saves the same bytes on every spin, and the shelf's seen list is pushed
+   * whether or not anything new was seen. Each was a full row rewrite in the database. So the
+   * last payload that went up for a slot, and what the server said, are kept here, and a build
+   * that matches it settles with that answer and sends nothing. A drop forgets it, and so
+   * does a page load, so the first save of a visit always goes.
+   */
+  var lastSent = {}, lastRow = {};
 
   function queue(game, slot, build) {
     var key = game + '/' + slot;
@@ -181,10 +191,18 @@
     var made = null;
     try { made = build(); } catch (e) { made = null; }
     if (!made || (!made.payload && !made.drop)) { settle(key, null); return; }
+    var sig = null;
+    if (!made.drop) {
+      try { sig = JSON.stringify([made.payload, Math.max(0, Math.floor(Number(made.progress) || 0))]); }
+      catch (e) { sig = null; }
+      if (sig !== null && lastSent[key] === sig) { settle(key, lastRow[key]); pump(game, slot, key); return; }
+    }
     busy[key] = true;
     var sent = made.drop ? drop(game, slot) : put(game, slot, made.payload, made.progress);
     sent.then(function (r) {
       busy[key] = false;
+      if (made.drop) { delete lastSent[key]; delete lastRow[key]; }
+      else if (r && r.ok && sig !== null) { lastSent[key] = sig; lastRow[key] = r; }
       settle(key, made.drop ? null : r);
       pump(game, slot, key);
     }, function () {

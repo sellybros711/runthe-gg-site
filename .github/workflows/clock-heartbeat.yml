@@ -1,0 +1,25 @@
+name: Clock heartbeat
+
+# THE CLOCK'S PULSE. workers/clock dispatches this every hour, with source: clock, and it does
+# nothing else. The jobs the clock starts still have their GitHub crons as a second net, so a
+# dead clock would otherwise look green. ci-health reads this workflow's dispatched runs on
+# main: more than about three hours without one means the Worker has stopped (QA's rule,
+# 2026-11-16).
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Who started it: blank for a person, clock for workers/clock.'
+        required: false
+        default: ''
+
+permissions: {}
+
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Beat
+        run: echo "clock heartbeat, source='${{ inputs.source }}', $(date -u +%FT%TZ)"

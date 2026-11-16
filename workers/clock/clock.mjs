@@ -33,10 +33,17 @@ export function eastern(ms) {
 const at = (ny, m) => ny.m >= m && ny.m < m + TICK_MIN;
 
 /*
+ * EVERY DISPATCH SAYS `source: clock`, so ci-health can tell the clock's runs from a person
+ * pressing Run workflow (QA's rule, 2026-11-16), and every workflow here declares that input.
+ *
  * THE JOBS ON THE WALL CLOCK. One list, so the College Football agent can add its own here.
  * `when` is asked of the New York clock; it must be true in exactly one tick per run wanted.
  */
 export const WALL_JOBS = [
+  /* THE HEARTBEAT, hourly at twenty past, so ci-health can tell a stopped clock from a quiet
+     one: every job here also has a GitHub cron behind it, which would keep a dead clock green. */
+  { workflow: 'clock-heartbeat.yml', inputs: {}, why: 'the heartbeat',
+    when: (ny) => at(ny, 20) },
   /* The week opens Tuesday 8am Eastern (the owner's call, 2026-10-27). Five past, so nflverse's
      overnight refresh has the Monday night game in. catchup: never rebuilds a live week. */
   { workflow: 'fantasy-pool.yml', inputs: { catchup: 'true' }, why: 'the Tuesday build',
@@ -78,11 +85,11 @@ export function due(nowMs, games) {
   const ny = eastern(nowMs);
   const out = [];
   for (const j of WALL_JOBS) {
-    if (j.when(ny)) out.push({ workflow: j.workflow, inputs: j.inputs, why: j.why });
+    if (j.when(ny)) out.push({ workflow: j.workflow, inputs: { ...j.inputs, source: 'clock' }, why: j.why });
   }
   const kicks = liveDue(nowMs, games);
   if (kicks.length) {
-    out.push({ workflow: 'fantasy-live.yml', inputs: {}, why: 'kickoff ' + kicks.join(', ') });
+    out.push({ workflow: 'fantasy-live.yml', inputs: { source: 'clock' }, why: 'kickoff ' + kicks.join(', ') });
   }
   return out;
 }
