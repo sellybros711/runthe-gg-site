@@ -1,0 +1,39 @@
+name: Sportegories watchdog
+# Checks that the daily Sportegories rebuild (sportegories.yml) really happened.
+# The rebuild stamps today's date into arcade/sportegories-data.js every time it
+# commits, so a date more than two days old means it has not committed since:
+# its cron was skipped, or it failed and nobody looked. Twice it sat red for two
+# weeks (from 2026-10-12 and from 2026-11-02) before anyone noticed. This runs
+# six hours after the rebuild. On a stale date it dispatches the rebuild once and
+# opens (or updates) the issue "Sportegories rebuild failing", which notifies the
+# owner. On a healthy day it ends green in seconds. The pattern is the College
+# Fantasy watchdog's (cfb-fantasy-watchdog.yml).
+on:
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: write
+  issues: write
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Is the corpus current?
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          UPDATED=$(grep -o '"updated":"[0-9-]*"' arcade/sportegories-data.js | head -1 | cut -d'"' -f4)
+          AGE=$(( ( $(date -u +%s) - $(date -u -d "$UPDATED" +%s) ) / 86400 ))
+          echo "corpus dated $UPDATED, $AGE days old" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$AGE" -le 2 ]; then exit 0; fi
+          LAST=$(gh run list --workflow sportegories.yml --limit 1 --json conclusion,url --jq '.[0] | "\(.conclusion) \(.url)"')
+          TITLE="Sportegories rebuild failing"
+          BODY="The Sportegories corpus is dated $UPDATED, $AGE days old: the daily rebuild has not committed since. Last rebuild run: $LAST. The watchdog dispatched one more run. The live game keeps the old corpus, so its active flags go stale every day this stays open. The Rosters Agent checks this daily and opens the fix."
+          NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+          if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "$BODY"; else gh issue create --title "$TITLE" --body "$BODY"; fi
+          gh workflow run sportegories.yml
+          echo "::error::the Sportegories corpus is $AGE days old"
+          exit 1
