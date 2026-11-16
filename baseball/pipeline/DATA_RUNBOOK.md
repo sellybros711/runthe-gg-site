@@ -133,6 +133,23 @@ The build does not stop there; `pool_shape.py` does, two stages later, on the
 staleness clause. A refusal at the right stage would be better and is not what
 this is.
 
+## Adding a season
+
+The pool runs to the last completed season, from one rule in `seasons.py`: from November 1 (the
+World Series is always over by then) it is this year, before that last year. `POOL_LAST_SEASON` in
+the environment pins it. There is no year to edit in the scripts.
+
+- **Right after the World Series.** Dispatch `baseball-data.yml` with `commit`. bWAR is current the
+  next morning, so the new season is priced. Lahman's tables land the following January, so until
+  then a batter in the new season carries his latest Lahman position, provisionally, and a rookie
+  Lahman has never seen carries none (`build_positions.py` prints how many of each).
+- **In January, when Lahman publishes.** Dispatch it again. The real positions replace every
+  provisional one, because the provisional step only fills a season Lahman does not have.
+- **The page moves with the data, in the same pull request.** `check-numbers` holds the
+  "1901-2025" copy to the newest season in the pool and runs inside the workflow before it
+  commits, and `engine.js` ends its 2020s and its division tables at the last season. So the copy,
+  the engine's season ends and the data land together.
+
 ## 1. Install deps
 ```bash
 pip install pandas numpy pybaseball pyreadr

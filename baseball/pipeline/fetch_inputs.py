@@ -30,13 +30,14 @@ def _bref(f):
 save("war_daily_bat.txt",   _bref("war_daily_bat.txt"))
 save("war_daily_pitch.txt", _bref("war_daily_pitch.txt"))
 
+from seasons import last_completed_season
 print("2/3  fWAR (FanGraphs leaderboards, 1901-present, everyone)")
 def _fg_bat():
     from pybaseball import batting_stats
-    batting_stats(1901, 2025, qual=0).to_csv(os.path.join(DATA,"fg_bat.csv"), index=False)
+    batting_stats(1901, last_completed_season(), qual=0).to_csv(os.path.join(DATA,"fg_bat.csv"), index=False)
 def _fg_pitch():
     from pybaseball import pitching_stats
-    pitching_stats(1901, 2025, qual=0).to_csv(os.path.join(DATA,"fg_pitch.csv"), index=False)
+    pitching_stats(1901, last_completed_season(), qual=0).to_csv(os.path.join(DATA,"fg_pitch.csv"), index=False)
 save("fg_bat.csv",   _fg_bat)
 save("fg_pitch.csv", _fg_pitch)
 
