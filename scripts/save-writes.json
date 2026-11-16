@@ -5,11 +5,8 @@
     "kind": "save",
     "note": "The shared cloud save (assets/cloudsave.js): College Commish, NFL Dynasty, the Trade Machine, Full Team and the two coaching games' playbooks. Since 174 it returns before the write when the payload and progress are unchanged, and answers without the payload (site PR 1030)."
   },
-  "rtd_career_merge": {
-    "kind": "save", "status": "open",
-    "owner": "Run The Diamond Agent",
-    "note": "Every signed-in page open and hourly refresh sends the whole career, and the merge rewrites rtd_career.rows even when nothing was added."
-  },
+  "rtd_career_merge": { "kind": "save", "note": "Kept for cached pages. Since 172 it rewrites rtd_career.rows only when a season is new." },
+  "rtd_career_sync": { "kind": "save", "note": "Run The Diamond's career (172). The page sends only seasons the server has not kept, once a visit; the row is written only when one is new." },
 
   "cfb_fantasy_grant_pass": { "kind": "event", "note": "once, when a College Fantasy pass is bought" },
   "fantasy_grant_pass": { "kind": "event", "note": "once, when a Fantasy pass is bought" },
