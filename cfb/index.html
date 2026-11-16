@@ -3210,6 +3210,12 @@ window.GA_ID='G-L29P5MRWKE';
   @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
   @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* A 320PX PHONE (QA, 2026-11-16): the column is the screen less the wrap's padding (292px at 320),
+     so a 320x50 hung 14px past the screen and the page scrolled sideways. Below 348px the zone takes
+     the screen's own width, so the 320x50 fits a 320px phone. On a narrower screen no slim banner
+     fits, so the unit is not shown and never asked for (an ad is never clipped). */
+  @media (max-width:347px){ [data-ad-zone="menu"],[data-ad-zone="results"]{width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)} }
+  @container (max-width:319px){ [data-ad-zone="menu"] ins.adsbygoogle,[data-ad-zone="results"] ins.adsbygoogle{display:none} }
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{display:block}
     .rtp-ad-rail{display:none !important}
