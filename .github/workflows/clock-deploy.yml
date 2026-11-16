@@ -1,0 +1,89 @@
+name: Deploy the clock
+
+# Puts workers/clock on Cloudflare and sets its one secret. See workers/clock/README.md.
+#
+# THE CLOCK IS WHAT STARTS THE CLOCK CRITICAL JOBS ON TIME (the owner's approval, 2026-11-16).
+# GitHub's own cron ran the Tuesday 8am Fantasy build 6 to 8 hours late three weeks running.
+# The Worker ticks every five minutes on Cloudflare's cron and starts what is due with
+# workflow_dispatch. This workflow only deploys it: it runs when somebody presses the button.
+#
+# THE DEPLOY IS OFF BY DEFAULT ON THE BUTTON, matching fantasy-deploy.yml. Unticked it runs the
+# clock's check and builds the Worker, and uploads nothing.
+#
+# Needs three repository secrets (Settings, Secrets and variables, Actions):
+#   CLOUDFLARE_API_TOKEN   an API token with "Workers Scripts: Edit"
+#   CLOUDFLARE_ACCOUNT_ID  the account the Worker belongs to
+#   CLOCK_GH_TOKEN         a fine-grained GitHub token for this repository only, with
+#                          "Actions: Read and write" and nothing else. It is copied into the
+#                          Worker as GH_TOKEN and never printed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Actually deploy? Unchecked = check and build, upload nothing.'
+        type: boolean
+        default: false
+
+concurrency:
+  group: clock-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: The clock decides what it should
+        run: node workers/clock/check-clock.mjs
+
+      - name: Every secret this needs is present
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_CLOCK: ${{ secrets.CLOCK_GH_TOKEN }}
+        run: |
+          missing=""
+          [ -z "${CF_TOKEN:-}" ]   && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "${CF_ACCOUNT:-}" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -z "${GH_CLOCK:-}" ]   && missing="$missing CLOCK_GH_TOKEN"
+          if [ -n "$missing" ]; then
+            echo "::error::missing secrets:$missing"
+            echo "Add them under Settings, Secrets and variables, Actions."
+            exit 1
+          fi
+          echo "All three present."
+
+      - name: Install wrangler
+        run: npm install --no-audit --no-fund --no-save wrangler@4
+
+      - name: Build check
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config workers/clock/wrangler.toml --dry-run --outdir "$RUNNER_TEMP/clock"
+
+      - name: Stop here unless deploy was ticked
+        if: ${{ !inputs.deploy }}
+        run: |
+          echo "BUILD PASSED. Nothing was deployed."
+          echo "Re-run with 'deploy' ticked to put it live."
+
+      - name: Deploy
+        if: ${{ inputs.deploy }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config workers/clock/wrangler.toml
+
+      # From stdin, so the token never appears in the log or on a command line.
+      - name: Set the Worker's GitHub token
+        if: ${{ inputs.deploy }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_CLOCK: ${{ secrets.CLOCK_GH_TOKEN }}
+        run: printf '%s' "$GH_CLOCK" | npx wrangler secret put GH_TOKEN --config workers/clock/wrangler.toml
