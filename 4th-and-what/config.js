@@ -143,16 +143,29 @@
     /* After the throw, a defender in front of the receiver and within breakRange yards of the catch plays the spot after breakOnBall seconds, at breakSpeed of his top speed. Anybody behind keeps playing his coverage. */
     breakOnBall: 0.25, breakRange: 9, breakSpeed: 0.65,
 
-    /* RUN BLOCKING: each block holds its man for a window, base seconds plus
-       or minus jitter, scaled by the blocker's power. A held defender moves
-       at heldSpeed of his speed. The wide jitter is the NFL's stuffs: a block
-       that loses fast puts about 19% of carries at no gain or worse. */
-    runBlock: { base: 1.8, jitter: 1.2, heldSpeed: 0.25, leadBonus: 0.3 },
+    /* RUN BLOCKING, BY COUNT (the owner, 2026-11-16: "make the read decide").
+       Every block holds its man for a window: base seconds plus or minus
+       jitter, scaled by the blocker's power (a lineman 0.7 + power / 2, a
+       man with a drawn block hold[0] + power * hold[1], so a wideout's stalk
+       is a short one). A held defender moves at heldSpeed of his speed. A man
+       with a block drawn has the defender nearest the spot it was drawn to,
+       within claim yards, and the line counts the rest of the box: down
+       linemen first; a lineman on a backer (the climb) holds climb as long,
+       and a backer lined up off the ball (past 3.5 yards: a base down, not
+       short yardage) is harder to find: per yard past that the climb holds
+       deep less and whiffs whiff of the time (lostAt seconds). A block on a
+       down lineman loses at once lose of the time (penetration, the NFL's
+       stuffs). Box men over the count are free: the backside end first, then
+       the backers nearest where the run hits the line, who fill as soon as
+       they read it. THE CARRY SPREAD, measured 2026-11-16 (third pass) over
+       the dealt run cards, all looks, at 1st and 10 from your 25 and 4th and
+       4, 7 and 10, 1000 hands each: 16% no gain or worse, 65% 3+, 35% 5+, 7%
+       10+, 2% 20+, 4.5 a carry (the NFL: about 19, 52, 35, 11, 3 and 4.4).
+       3+ runs high: the same blocks win the first yards at 4th and 1 and 2,
+       where the run card converts 65% and 55%. */
+    runBlock: { base: 3.2, jitter: 1.2, heldSpeed: 0.25, leadBonus: 0.3, claim: 3, hold: [0.2, 1.2], climb: 0.43, deep: 0.15, whiff: 0.26, lose: 0.11, lostAt: 0.35 },
     /* when the defense sees it is a run */
-    /* (2026-11-01, the NFL run spread) a deep safety triggers late on a run,
-       so a back through the second level can break one: that is the NFL's
-       10 yard carries, about 11% of them */
-    readRun: { dl: 0.0, lb: 0.62, db: 1.1 },
+    readRun: { dl: 0.0, lb: 0.62, db: 1.0 },
     /* THE MESH: the QB steps toward the man drawn to get it at qb yards a
        second. The ball changes hands once they are within reach, no sooner
        than min seconds; at pitchAt seconds he pitches it instead, the ball in
@@ -165,14 +178,23 @@
        A defender still engaged in a block stops him only with the pile
        chance, falling half as far. Fumbles are runs only. */
     tackle: { reach: 1.3, broken: 0.06, crowd: 0.05, momentum: 0.16, fall: 1.2, missed: 0.7, fumble: 0.008, pile: 0.12,
-      /* A RUN, moving downhill, breaks more of them (runBroken more) and
-         drives the pile up to drive yards more after contact. Tuned 2026-11-01
-         to the NFL's spread of carries: about 19% for no gain or worse, 52%
-         3+, 35% 5+, 11% 10+, 3% 20+; measured 18, 54, 36, 11 and 2. */
-      runBroken: 0.19, drive: 1.2 },
+      /* A RUN, moving downhill, breaks more of them (runBroken more) within
+         runNear yards past the line, and drives the pile up to drive yards
+         more after contact. In the open field it is the plain chance (since
+         2026-11-16: a run breaking every third tackle downfield went the
+         distance too often). The spread it makes is under RUN BLOCKING. */
+      runBroken: 0.21, runNear: 3, drive: 1.1 },
 
     /* how hard a ball carrier in the open steers away from the nearest tacklers */
     avoid: 0.8,
+    /* PURSUIT (2026-11-16): a pursuer takes an angle to where he can meet the
+       ball carrier, at most cap seconds ahead of him (engine.js pursue). A
+       stern chase, where the meeting point is more than chase times as far
+       as the man himself, stays a chase: aiming that far ahead of a man who
+       can still cut overran him. On runs and after the catch alike: it took
+       the dealt runs from 5.0 to 4.5 yards a carry and moved the pass rates
+       a point or less. */
+    pursuit: { cap: 2.2, chase: 1.5 },
 
     /* DEFENDERS: speed in yards a second by role. */
     speed: { dl: 6.6, lb: 8.0, cb: 9.1, s: 8.7 },
@@ -252,11 +274,11 @@
     college: { name: 'College', hash: 6.67, offense: 0.95, defense: 0.94, arm: 24, accuracy: -0.12, patch: {
       man: { lagDB: 0.28, cushion: 1.35 }, zone: { react: 0.36 }, breakSpeed: 0.6, breakOnBall: 0.28,
       pocket: { base: 2.25, jitter: 0.55 }, catch: { drop: 0.05 },
-      tackle: { broken: 0.08, runBroken: 0.21 }, readRun: { lb: 0.66, db: 1.15 } } },
+      tackle: { broken: 0.08, runBroken: 0.23 }, readRun: { lb: 0.66, db: 1.05 } } },
     hs: { name: 'High School', hash: 8.89, offense: 0.86, defense: 0.84, arm: 21, accuracy: -0.35, patch: {
       man: { lagDB: 0.34, lagLB: 0.55, cushion: 1.7 }, zone: { react: 0.45, deepLag: 0.45 }, breakSpeed: 0.5, breakOnBall: 0.32,
       pocket: { base: 2.45, jitter: 0.7, free: 0.22 }, catch: { drop: 0.07 },
-      tackle: { broken: 0.12, runBroken: 0.24, fumble: 0.015 }, readRun: { lb: 0.72, db: 1.25 } } }
+      tackle: { broken: 0.12, runBroken: 0.26, fumble: 0.015 }, readRun: { lb: 0.72, db: 1.15 } } }
   };
   var LEVEL_KEYS = ['hs', 'college', 'nfl'];
   function merge(a, b) {

@@ -20,12 +20,13 @@
  *   gpu      renderer.info: geometries, textures, programs; and the main pass's calls and triangles
  *   scene    objects in the scene and in the first person's scene
  *   page     DOM nodes (but the result screen's, rebuilt each outing as long as its pitches), live listeners (on a node still in the page, or window/document), pending
- *            animation frames, pending timeouts, live intervals, the JS heap after a forced GC
+ *            animation frames, pending timeouts, live intervals, the JS heap after a forced GC, and
+ *            the part of it that is V8's compiled code (from a heap snapshot), so the heap less code
  *   frame    the JS time of each animation frame over the last outing (median and 95th)
  * The first pitch of every outing is a perfect power and a perfect release (the combo meter's stitches
  * and the ball's sparkle are made and freed once an outing); the run fails if none came off.
  * A count is held to the first measured outing's value (the first outing warms the caches): any later
- * outing above it fails. The heap is held to HEAP_PER_OUTING a outing from outing 2 on, two ways: the
+ * outing above it fails. The heap less code is held to HEAP_PER_OUTING a outing from outing 2 on, two ways: the
  * least squares slope over every sample, and the late mean over the early mean across the outings
  * between them.
  */
@@ -52,9 +53,22 @@ const LOG = openCheckpoint('check-leak', { OUTINGS });
 // gets laggy over a session). The grade's caches keyed by the tired spread and the aim point kept every
 // pitch, and api.js kept every practice outing; with both bounded a session measured about 0.08 MB an
 // outing (outings 2 to 4 at 23.61, 23.70, 23.76 MB: the JIT's code and the check's own evaluates, not
-// the game). The ceiling is that plus a margin for the JIT on a busy machine. Never raise it to pass:
-// find what grew (a heap snapshot after outing 2 and after outing N, diffed by retainer).
-const HEAP_PER_OUTING = 0.25e6;
+// the game). The ceiling was that plus a margin for the JIT on a busy machine.
+// WHAT IS HELD NOW (2026-11-16): the heap LESS V8's compiled code (the 'code' nodes of a heap snapshot
+// taken at the same moment, after the same GC). From 2026-11-02 the nightly read 0.26 to 0.57 MB an
+// outing, and snapshots at outings 2 and 4 and the end of a session showed what grew: compiled code
+// 9.51, 9.85, 10.02 MB (bytecode and the optimized code of planFeet, planGround, startOuting and the rest
+// of a game that had grown, tiered up as the plays reach them), the game's own objects flat within 40 KB
+// (heap less code 18.16, 18.23, 18.25 MB). Code is bounded by the game's own source; a kept pitch, play or
+// outing is not, and that is what this holds. A whole session (7 outings, 121 pitches, the longest of the
+// recent nightlies) measured 0.094 MB an outing by the slope and 0.091 by the means, the heap less code
+// (the whole heap 0.33, code 0.25 a sample); most of it is the last outing's log and result screen, held
+// at the start of the next one and as long as it was (a 25 pitch outing moved the sample 0.37 MB). The
+// ceiling is that plus a margin, as it was: 0.15 MB an outing, down from 0.25, so the game's objects are
+// held tighter than before. The code is printed beside it (not held: the game makes no code at run time,
+// no eval and no new Function). Never raise the ceiling to pass: find what grew (a heap snapshot after
+// outing 2 and after outing N, new and freed objects matched by id and summed by constructor).
+const HEAP_PER_OUTING = 0.15e6;
 const COUNTS = ['geometries', 'textures', 'programs', 'objects', 'fpObjects', 'dom', 'listeners', 'raf', 'timeouts', 'intervals'];
 
 function loadPlaywright() {
@@ -138,6 +152,10 @@ await page.route('**/*', (route) => {
   if (u.hostname === '127.0.0.1') return route.continue();
   if (/fonts\./.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
   if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+  // the ad and analytics tags (the launch, 2026-11-02) answered with an empty script, as check-browser
+  // does: aborting them logs "Failed to load resource: net::ERR_FAILED", which is this check's own
+  // block and not the game's error. Every other host is still aborted, and any console error still fails.
+  if (/(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
   return route.abort();
 });
 const cdp = await ctx.newCDPSession(page);
@@ -155,10 +173,28 @@ await page.evaluate(() => {
   };
 });
 
+/* The bytes of V8's compiled code (bytecode, baseline and optimized code, their metadata): the 'code'
+   nodes of a heap snapshot, summed. The snapshot is taken after the sample's own GC, so it is the heap
+   the sample read. */
+async function codeBytes() {
+  const chunks = [];
+  const on = (m) => chunks.push(m.chunk);
+  cdp.on('HeapProfiler.addHeapSnapshotChunk', on);
+  try { await cdp.send('HeapProfiler.takeHeapSnapshot', { reportProgress: false }); } finally { cdp.off('HeapProfiler.addHeapSnapshotChunk', on); }
+  const j = JSON.parse(chunks.join(''));
+  const nf = j.snapshot.meta.node_fields, N = nf.length, iT = nf.indexOf('type'), iS = nf.indexOf('self_size');
+  const code = j.snapshot.meta.node_types[iT].indexOf('code');
+  let b = 0;
+  for (let i = 0; i < j.nodes.length; i += N) if (j.nodes[i + iT] === code) b += j.nodes[i + iS];
+  return b;
+}
+
 async function sample(label) {
   await cdp.send('HeapProfiler.collectGarbage');
   await cdp.send('HeapProfiler.collectGarbage');
-  const heap = (await cdp.send('Runtime.getHeapUsage')).usedSize;
+  const heapAll = (await cdp.send('Runtime.getHeapUsage')).usedSize;
+  const code = await codeBytes();
+  const heap = heapAll - code;
   const s = await page.evaluate(() => {
     const L = window.__leak, st = window.STD_STAGE.current, r = st.renderer;
     let objects = 0, fpObjects = 0;
@@ -179,7 +215,7 @@ async function sample(label) {
     L.frames.length = 0; L.pass.ms.length = 0; L.cuts.length = 0;
     return out;
   });
-  return { label, heap, ...s };
+  return { label, heap, heapAll, code, ...s };
 }
 
 /* One pitch the way a player throws it. Returns false when the outing is over. */
@@ -306,7 +342,7 @@ for (let o = 0; o < OUTINGS; o++) {
   LOG.put(o, { pitches: pitchNo, inPlays, challenges, chips, ...r });
   console.log(`outing ${o + 1} (pitch ${pitchNo}, ${inPlays} in play, ${challenges} challenges, ${chips} chips, ${Math.round((Date.now() - t0) / 1000)} s): ` +
     `geo ${r.geometries} tex ${r.textures} prog ${r.programs} calls ${r.calls} tris ${r.triangles} obj ${r.objects}/${r.fpObjects} dom ${r.dom} ls ${r.listeners} raf ${r.raf} to ${r.timeouts} iv ${r.intervals} ` +
-    `heap ${(r.heap / 1e6).toFixed(2)} MB frame ${r.frameMed}/${r.frame95} ms draw ${r.drawMed} ms (${r.frames} frames) cut frame ${r.cutMed}/${r.cutMax} ms (${r.cuts})`);
+    `heap ${(r.heap / 1e6).toFixed(2)} MB less code (${(r.heapAll / 1e6).toFixed(2)} with ${(r.code / 1e6).toFixed(2)} code) frame ${r.frameMed}/${r.frame95} ms draw ${r.drawMed} ms (${r.frames} frames) cut frame ${r.cutMed}/${r.cutMax} ms (${r.cuts})`);
   firstOfOuting = true;
   while (await pitch());
   await page.waitForSelector('#s-result.on', { timeout: 60000 });
@@ -319,7 +355,7 @@ rows.push(await sample('end'));
 const last = rows[rows.length - 1];
 LOG.put('end', { pitches: pitchNo, inPlays, challenges, chips, ...last });
 LOG.close();
-console.log(`end (pitch ${pitchNo}): geo ${last.geometries} tex ${last.textures} prog ${last.programs} obj ${last.objects}/${last.fpObjects} dom ${last.dom} ls ${last.listeners} raf ${last.raf} to ${last.timeouts} iv ${last.intervals} heap ${(last.heap / 1e6).toFixed(2)} MB frame ${last.frameMed}/${last.frame95} ms`);
+console.log(`end (pitch ${pitchNo}): geo ${last.geometries} tex ${last.textures} prog ${last.programs} obj ${last.objects}/${last.fpObjects} dom ${last.dom} ls ${last.listeners} raf ${last.raf} to ${last.timeouts} iv ${last.intervals} heap ${(last.heap / 1e6).toFixed(2)} MB less code (${(last.code / 1e6).toFixed(2)} code) frame ${last.frameMed}/${last.frame95} ms`);
 if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ pitches: pitchNo, inPlays, challenges, chips, rows }, null, 1));
 
 // held to the second sample (the start of outing 2: the first outing warmed every cache)
@@ -348,9 +384,14 @@ const early = mean(eRows, 1), lateHeap = mean(lRows, 1), span = Math.max(1, mean
 const perOuting = (lateHeap - early) / span;
 const hb = held.length < 3 || slope > HEAP_PER_OUTING || perOuting > HEAP_PER_OUTING;
 if (hb) fails++;
-console.log(`  ${hb ? 'FAIL' : 'ok  '} heap       ${(slope / 1e6).toFixed(3)} MB an outing by the slope, ${(perOuting / 1e6).toFixed(3)} by the means ` +
+console.log(`  ${hb ? 'FAIL' : 'ok  '} heap less code ${(slope / 1e6).toFixed(3)} MB an outing by the slope, ${(perOuting / 1e6).toFixed(3)} by the means ` +
   `(${(early / 1e6).toFixed(2)} MB early, ${(lateHeap / 1e6).toFixed(2)} MB late; ceiling ${(HEAP_PER_OUTING / 1e6).toFixed(2)} MB an outing), ` +
   `${((lateHeap - early) / Math.max(1, pitchNo) * 100 / 1e3).toFixed(1)} KB per 100 pitches${held.length < 3 ? ' (too few outings to hold: run 3 or more)' : ''}`);
+// (the compiled code beside it, printed and not held: see HEAP_PER_OUTING)
+{
+  const c = rows.slice(1).map((r) => r.code), a = rows.slice(1).map((r) => r.heapAll);
+  console.log(`  info code       ${c.map((v) => (v / 1e6).toFixed(2)).join(' ')} MB at outing 2 on (${((c[c.length - 1] - c[0]) / Math.max(1, c.length - 1) / 1e6).toFixed(3)} MB a sample); the whole heap ${a.map((v) => (v / 1e6).toFixed(2)).join(' ')} MB`);
+}
 for (const e of errors.slice(0, 5)) console.log('  page error:', e);
 // the effects were made and freed: a perfect and perfect pitch each outing, each with its sparkle
 const pBad = perfects === 0 || sparkles < perfects;

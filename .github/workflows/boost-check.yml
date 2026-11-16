@@ -11,7 +11,8 @@ name: Golf boost check
 #   node golf/check-boosts.mjs
 #
 # golf/check-payouts.mjs runs beside it: the weekly Mulli-Spin, lifetime coin achievements, the Head to
-# Head daily cap and the Putt Putt Daily card.
+# Head daily cap and the Putt Putt Daily card. So does golf/check-cloud-push.mjs: the cloud save goes up once a
+# session, not once a change, never unchanged, and at once on leaving (Supabase's Disk IO, 2026-11-12).
 #
 # No secrets, no deploy.
 
@@ -21,6 +22,7 @@ on:
       - 'golf/index.html'
       - 'golf/check-boosts.mjs'
       - 'golf/check-payouts.mjs'
+      - 'golf/check-cloud-push.mjs'
       - 'golf/putt/putt.js'
       - 'golf/boosts-baseline.json'
       - 'supabase/**'
@@ -31,6 +33,7 @@ on:
       - 'golf/index.html'
       - 'golf/check-boosts.mjs'
       - 'golf/check-payouts.mjs'
+      - 'golf/check-cloud-push.mjs'
       - 'golf/putt/putt.js'
       - 'golf/boosts-baseline.json'
       - 'supabase/**'
@@ -63,3 +66,8 @@ jobs:
           (python3 -m http.server 8099 >/dev/null 2>&1 &)
           sleep 2
           node golf/check-payouts.mjs
+      - name: The cloud save goes up once a session, never unchanged, and at once on leaving
+        run: |
+          (python3 -m http.server 8099 >/dev/null 2>&1 &)
+          sleep 2
+          node golf/check-cloud-push.mjs

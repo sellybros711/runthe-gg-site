@@ -128,7 +128,8 @@
   }
   /* snap(play, name): a card's play, or the draft drawn in the Studio */
   var playedName = '';
-  function snap(given, name) {
+  /* snap(play, name, card): card is the kind picked in Call it, for the launch events */
+  function snap(given, name, card) {
     var p = A.copy(given || A.draft.play);
     if (!ready(p)) { A.toast('sToast', 'Give it a read (Read, then tap a receiver) or make it a run first.'); $('sHint').textContent = 'Give it a read, or make it a run.'; return false; }
     var D = window.FAW_DAILY;
@@ -136,13 +137,19 @@
     var seed = pending(); forced = null; pend = null;
     played = p; playedName = name || A.draft.name || A.nameFor(p);
     if (window.FAW_CLIP) window.FAW_CLIP.cancel();
+    /* the situation as it was snapped: Go For It moves A.SC on to the next down
+       as soon as it hears the result, so the card's header and the kept snap
+       (a replay re-runs it) read this, never A.SC after the run */
+    var at = A.copy(A.SC);
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
     if (window.FAW_GO) window.FAW_GO.snapped(res);
     /* the coach record and the moments (profile.js) */
     var G = window.FAW_GO;
     if (window.FAW_PROFILE) window.FAW_PROFILE.snapped(res, { name: playedName, run: G && G.active() && G.run() ? G.run().n : null });
-    remember(res, p, D && D.active());
+    remember(res, p, D && D.active(), at);
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('snap', { mode: G && G.active() ? (G.run() && G.run().daily ? 'today' : 'go') : D && D.active() ? 'daily' : 'practice',
+      card: card || 'own', win: !!res.win, outcome: res.outcome, shell: res.shell, distance: res.distance });
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
     if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(b); } });
@@ -158,8 +165,8 @@
      daily's list starts with the day's snap (kept by daily.js, so it is there
      after a reload); the rest are practice. Free play keeps its own list. */
   var LOG_MAX = 12, log = [], shown = null;
-  function remember(r, p, daily) {
-    var e = { sc: A.copy(A.SC), play: A.copy(p), seed: r.seed, win: r.win, yards: r.yards, outcome: r.outcome, daily: !!daily };
+  function remember(r, p, daily, at) {
+    var e = { sc: at || A.copy(A.SC), play: A.copy(p), seed: r.seed, win: r.win, yards: r.yards, outcome: r.outcome, daily: !!daily };
     log.push(e); if (log.length > LOG_MAX) log.shift();
     shown = e;
   }
@@ -211,12 +218,15 @@
        one line of why, and the read's answer; one big button; the rest small */
     var td = r.outcome === 'touchdown';
     c.className = 'rescard ' + (td ? 'win td' : r.win ? 'win' : 'lose');
-    $('rDown').textContent = A.sitText().down + ' · ' + A.sitText().spot;
+    var sit = A.sitText(shown && shown.seed === r.seed ? shown.sc : null);
+    $('rDown').textContent = sit.down + ' · ' + sit.spot;
     $('rTitle').textContent = td ? 'Touchdown' : r.win ? 'First down' : r.outcome === 'interception' ? 'Picked off' : 'Stopped';
     var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
     var line = A.marginText(r) || gained + '.', why = r.reason;
     /* the line already says it: no "Incomplete. Incomplete." */
     if (why.indexOf(line) === 0) why = why.slice(line.length).trim();
+    /* nor at the end: a touchdown read "Six. Nobody laid a hand on him. Six." */
+    if (why.length > line.length && why.slice(-line.length) === line) why = why.slice(0, -line.length).trim();
     $('rLine').textContent = line;
     $('rWhy').textContent = why;
     $('rRead').textContent = window.FAW_CALLS ? window.FAW_CALLS.revealText(r) : r.callName;
@@ -274,10 +284,12 @@
       A.draft.ref = { book: bk.id, id: e.id }; A.draft.name = e.name; A.draft.nameEdited = e.nameEdited; A.saveDraft();
       B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(bk);
       A.toast('rToast', 'Saved to ' + bk.name + '.');
+      if (window.FAW_EVENTS) window.FAW_EVENTS.track('save', { kind: 'play' });
     } });
   });
   $('rCardBtn').addEventListener('click', function () {
     var c = makeCard();
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('save', { kind: 'card' });
     c.toBlob(function (blob) {
       if (!blob) return;
       var u = URL.createObjectURL(blob), a = document.createElement('a');
@@ -303,6 +315,7 @@
   }
   $('rShare').addEventListener('click', function () {
     if (!res) return;
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('share', { kind: CL && CL.supported() ? 'video' : 'line' });
     if (CL && CL.supported()) {
       var c = CL.ready();
       if (c) {
