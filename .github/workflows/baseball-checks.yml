@@ -235,4 +235,10 @@ jobs:
           psql -q -v ON_ERROR_STOP=1 -d rtd_sync -f supabase/172_rtd_career_sync.sql
           psql -q -v ON_ERROR_STOP=1 -d rtd_sync -f supabase/172_rtd_career_sync.sql
           psql -q -v ON_ERROR_STOP=1 -d rtd_sync -f supabase/test/baseball_career_sync_test.sql
-          psql -q -v ON_ERROR_STOP=1 -d rtd_sync -f supabase/test/baseball_profile_test.sql
+          # 127's own test again, with 172 in place, on a database of its own:
+          # it counts a fresh account's seasons from zero.
+          createdb rtd_sync127
+          psql -q -d rtd_sync127 -f supabase/test/baseball_pro_base.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_sync127 -f supabase/127_baseball_profiles.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_sync127 -f supabase/172_rtd_career_sync.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_sync127 -f supabase/test/baseball_profile_test.sql
