@@ -1393,6 +1393,7 @@ async function run(w, h, theme) {
   ok(evDd.length === 1 && JSON.stringify(evDd[0]) === JSON.stringify({ game_name: 'Shut The Door', day: evDay, result: evRes.outcome, pitches: evRes.pitches, score_band: evRes.band }),
     '6 daily_done once: ' + JSON.stringify(evDd));
   ok(evOne('share').length === 0, '6 no share event before a share');
+  ok(await page.isHidden('#r-promo'), '6 a first ever result shows no Run The Diamond card (as the Diamond\'s own promo)');
   /* Share (PR #652): the button opens the share sheet, which draws the result card (card.js) and
      offers the image and the text. The sheet opens from the button, the card draws, and "copy the
      text" copies the share text. Before #652 the button copied at once, and this step waited for that
@@ -1447,6 +1448,25 @@ async function run(w, h, theme) {
   await page.waitForSelector('#h-done:not([hidden])', { timeout: 20000 });
   ok(await page.isHidden('#b-take'), '7 after a reload today shows as done');
   await shot('home-done', true);
+  /* the Run The Diamond card (the owner, 2026-11-16): with a daily from an earlier day on the device,
+     today's result shows it under the menu, "pitched like" still on screen, and a tap sends promo_click */
+  await page.evaluate(() => { const k = 'std_ui_hist_v1', h = JSON.parse(localStorage.getItem(k) || '{}'); h['2026-01-01'] = { number: 1, outcome: 'door_shut', strip: [], percentile: 50, pitches: 4 }; localStorage.setItem(k, JSON.stringify(h)); });
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  await page.waitForSelector('#r-promo:not([hidden])', { timeout: 5000 });
+  const promo = await page.evaluate(() => {
+    const a = document.getElementById('r-promo'), b = a.getBoundingClientRect(), nav = document.getElementById('r-nav').getBoundingClientRect();
+    const like = document.querySelector('.r-like').getBoundingClientRect();
+    a.addEventListener('click', (e) => e.preventDefault());
+    return { text: a.textContent, href: a.getAttribute('href'), h: b.height, below: b.top >= nav.bottom - 1, likeOn: like.top >= 0 && like.bottom <= innerHeight, inside: b.left >= 0 && b.right <= innerWidth };
+  });
+  ok(promo.text === 'Build the whole teamDraft twelve legends. Play 162 and October.' && promo.href === '/baseball/', '7 a later result shows the Run The Diamond card, a link to /baseball/');
+  ok(promo.below && promo.h >= 38 && promo.inside && promo.likeOn, '7 the card sits under the menu, ' + Math.round(promo.h) + ' px, and "pitched like" is still on screen');
+  await page.click('#r-promo');
+  const evPromo = await page.waitForFunction(() => (window.dataLayer || []).some((a) => a && a[0] === 'event' && a[1] === 'promo_click'), null, { timeout: 5000 })
+    .then(() => page.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && a[1] === 'promo_click').map((a) => Object.assign({}, a[2]))), () => []);
+  ok(evPromo.length === 1 && JSON.stringify(evPromo[0]) === JSON.stringify({ game_name: 'Shut The Door', target: 'baseball', mode: 'daily', day: evDay, transport_type: 'beacon' }),
+    '7 the tap sends one promo_click, target baseball: ' + JSON.stringify(evPromo));
 
   /* 8 */
   at('8 debug');

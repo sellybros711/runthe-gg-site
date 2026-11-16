@@ -2346,6 +2346,11 @@ function renderResult() {
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
+  /* Run The Diamond, under the menu: not on a player's first result, as the Diamond's own promo
+     (site PR 1015). The signal is the device's daily history (hist, written before this draws): a
+     daily from an earlier day means this is not the first */
+  var h = hist();
+  $('r-promo').hidden = !Object.keys(h).some(function (d) { return d < S.day; });
   renderStreak();
   /* the stagger's order: the strip's squares, the menu's rows, the tiles, the pitches */
   ['#r-strip .sq', '#r-nav .nv:not([hidden])', '#s-result .r-tile', '#r-reveal .pc'].forEach(function (q) {
@@ -2956,6 +2961,7 @@ function boot() {
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
+  $('r-promo').addEventListener('click', function () { if (EV()) EV().promo('baseball', S.mode, evDay()); });
   initResultNav();
   initClips();
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */

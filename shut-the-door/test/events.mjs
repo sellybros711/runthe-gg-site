@@ -8,7 +8,9 @@
  *   4. never in the way: nothing goes out on the game's own call (it is deferred), a gtag that throws
  *      throws nothing back, and with no gtag on the page nothing happens
  *   5. score_band is the percentile in tens
- *   6. ui.js calls each one where it belongs (the browser check plays them through the page) */
+ *   6. ui.js calls each one where it belongs (the browser check plays them through the page)
+ *   7. promo_click (the result's Run The Diamond card): its fields, and it goes at once as a beacon,
+ *      since its link leaves the page */
 import vm from 'node:vm';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -40,6 +42,7 @@ const FIELDS = {
   outing_end: 'day,game_name,mode,pitches,result,score_band',
   daily_done: 'day,game_name,pitches,result,score_band',
   share: 'day,game_name,method,mode',
+  promo_click: 'day,game_name,mode,target,transport_type',
 };
 const R = { outcome: 'door_shut', pitches: 3, percentile: 76.4, score: 912, share: 'Shut The Door #15', pitchedLike: { name: 'Pete Fairbanks' } };
 
@@ -55,6 +58,7 @@ const R = { outcome: 'door_shut', pitches: 3, percentile: 76.4, score: 912, shar
   ok(s.every((a) => a.length === 3 && a[0] === 'event' && typeof a[1] === 'string' && a[2] && typeof a[2] === 'object'), '1 every call is gtag(\'event\', name, params)');
   ok(s.map((a) => a[1]).join() === 'outing_start,pitch,pitch,pitch,outing_end,daily_done,share', '1 in order: outing_start, a pitch each, outing_end, daily_done, share (' + s.map((a) => a[1]).join() + ')');
   for (const [name, f] of Object.entries(FIELDS)) {
+    if (name === 'promo_click') continue;
     const got = events(s, name);
     ok(got.length >= 1 && got.every((o) => keys(o) === f), '1 ' + name + ' carries exactly ' + f + (got[0] ? ' (' + keys(got[0]) + ')' : ' (none sent)'));
   }
@@ -121,6 +125,24 @@ const R = { outcome: 'door_shut', pitches: 3, percentile: 76.4, score: 912, shar
   try { q.E.outingStart('o1', 'daily', 15, 0); q.E.outingEnd('o1', 'daily', 15, R); q.flush(); } catch (e) { threw2 = true; }
   ok(!threw2 && q.sent.length === 0, '4 with no gtag on the page nothing is sent and nothing throws');
   ok(!/fetch\(|XMLHttpRequest|sendBeacon|createElement\(['"]script|https?:\/\//.test(SRC.replace(/\/\*[\s\S]*?\*\//g, '')), '4 events.js loads nothing and calls no host of its own: only the page\'s gtag');
+}
+
+/* 7 */
+{
+  const p = page();
+  p.E.promo('baseball', 'daily', 15);
+  const now = p.sent.slice();
+  p.flush();
+  const got = events(p.sent, 'promo_click');
+  ok(now.length === 1 && got.length === 1, '7 promo_click goes at once, once (a deferred send would be lost when the link leaves)');
+  ok(got[0] && keys(got[0]) === FIELDS.promo_click && got[0].target === 'baseball' && got[0].mode === 'daily' && got[0].day === 15 && got[0].transport_type === 'beacon',
+    '7 promo_click carries ' + FIELDS.promo_click + ', target baseball, as a beacon (' + JSON.stringify(got[0]) + ')');
+  const q = page(function () { throw new Error('gtag broke'); });
+  let threw = false;
+  try { q.E.promo('baseball', 'daily', 15); } catch (e) { threw = true; }
+  ok(!threw, '7 a gtag that throws on the tap throws nothing back, so the link still goes');
+  ok(/\$\('r-promo'\)\.addEventListener\('click', function \(\) \{ if \(EV\(\)\) EV\(\)\.promo\('baseball'/.test(UI), '7 ui.js sends it from the card\'s tap, and only from it');
+  ok(/<a class="r-promo" id="r-promo" href="\/baseball\/" hidden>/.test(HTML) && HTML.indexOf('id="r-promo"') > HTML.indexOf('id="r-home"'), '7 the card is a plain link to /baseball/, under the menu, hidden until the result says');
 }
 
 /* 5 */

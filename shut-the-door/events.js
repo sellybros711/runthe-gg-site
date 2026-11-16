@@ -6,12 +6,14 @@
      outing_end     an outing started on this page view is over: {mode, day, result, pitches, score_band}
      daily_done     the day's daily is over, the same moment as its outing_end: {day, result, pitches, score_band}
      share          a share went out from the result's share sheet: {mode, day, method}
+     promo_click    the result's Run The Diamond card was tapped: {target, mode, day}
 
    mode is daily, survivor, archive or practice. day is the daily number (#N): today's for a daily,
    practice or Survivor, the past day's for the archive. result on a pitch is the engine's call
    result (ball, called_strike, in_play and the rest), on an outing its outcome (door_shut,
    tie_held, doors_open, walk_off). score_band is the percentile in tens (0, 10 ... 90). method is
    image (the phone's share sheet), save (the image downloaded) or text (the text copied or shared).
+   target is the game the card leads to (baseball).
    Nothing about the player: no id, no name, no email, no free text.
 
    The names follow the site's GA4 style (snake_case, as football's game_started and the arcade's
@@ -24,17 +26,20 @@
    (offline, a test) it does nothing.
 
    Never in the way of play: each send is deferred off the game's own call (setTimeout 0) and
-   swallowed on any error, nothing waits on it, and nothing here reads or changes the game's state. */
+   swallowed on any error, nothing waits on it, and nothing here reads or changes the game's state.
+   The one exception is promo_click: its link leaves the page, so it goes at once, as a beacon (the
+   arcade's metrics.js does the same for a page going away), and a deferred send would be lost. */
 (function () {
   'use strict';
   var GAME = 'Shut The Door';
   var started = {}, ended = {}, pitched = {}, dailies = {};
 
-  function send(ev, p) {
+  function send(ev, p, now) {
     try {
       if (typeof window.gtag !== 'function') return;
       var o = { game_name: GAME };
       for (var k in p) if (Object.prototype.hasOwnProperty.call(p, k) && p[k] != null) o[k] = p[k];
+      if (now) { o.transport_type = 'beacon'; window.gtag('event', ev, o); return; }
       setTimeout(function () { try { if (typeof window.gtag === 'function') window.gtag('event', ev, o); } catch (e) {} }, 0);
     } catch (e) {}
   }
@@ -69,6 +74,7 @@
     }
   }
   function share(mode, day, method) { send('share', { mode: mode, day: num(day), method: method }); }
+  function promo(target, mode, day) { send('promo_click', { target: target, mode: mode, day: num(day) }, true); }
 
-  window.STD_EVENTS = { outingStart: outingStart, pitch: pitch, outingEnd: outingEnd, share: share, band: band };
+  window.STD_EVENTS = { outingStart: outingStart, pitch: pitch, outingEnd: outingEnd, share: share, promo: promo, band: band };
 })();
