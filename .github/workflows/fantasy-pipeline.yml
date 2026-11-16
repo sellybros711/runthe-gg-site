@@ -32,8 +32,10 @@ on:
         description: 'Actually write? Unchecked = build everything and write nothing.'
         type: boolean
         default: false
-  schedule:
-    - cron: '0 9 * * *'
+  # NO SCHEDULE ON main (2026-11-16). The pipeline lives on the league build branch, not on
+  # main, so the daily cron here could only fail at the guard below, and did every day from
+  # 2026-09-24. Nothing the Fantasy Challenge reads comes from this crosswalk. Dispatch it
+  # by hand on the branch the pipeline is on; restore the cron the day the pipeline lands.
 
 concurrency:
   group: fantasy-pipeline
