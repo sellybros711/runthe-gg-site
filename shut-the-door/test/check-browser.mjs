@@ -1463,7 +1463,7 @@ async function run(w, h, theme) {
     return { icon: ic ? { src: ic.getAttribute('src'), loaded: ic.complete && ic.naturalWidth === 192, left: icb.left < a.querySelector('.rp-t').getBoundingClientRect().left, w: Math.round(icb.width), fits: icb.top >= b.top && icb.bottom <= b.bottom } : null,
       text: a.textContent, href: a.getAttribute('href'), h: b.height, below: b.top >= nav.bottom - 1, likeOn: like.top >= 0 && like.bottom <= innerHeight, inside: b.left >= 0 && b.right <= innerWidth };
   });
-  ok(promo.text === 'Build the whole teamDraft twelve legends. Play 162 and October.' && promo.href === '/baseball/', '7 a later result shows the Run The Diamond card, a link to /baseball/');
+  ok(promo.text === 'Build a full rosterSim 162 and see if you can win a WS.' && promo.href === '/baseball/', '7 a later result shows the Run The Diamond card, a link to /baseball/');
   ok(promo.icon && promo.icon.src === '/baseball/icon-192.png?v=3' && promo.icon.left && promo.icon.fits && promo.icon.w === 36, '7 the card carries Run The Diamond\'s own app icon on its left, inside the row (' + JSON.stringify(promo.icon) + ')');
   ok(promo.below && promo.h >= 38 && promo.inside && promo.likeOn, '7 the card sits under the menu, ' + Math.round(promo.h) + ' px, and "pitched like" is still on screen');
   await page.click('#r-promo');
