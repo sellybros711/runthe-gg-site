@@ -8,7 +8,7 @@
  * Its status, by the first rule that holds:
  *   live       in games.json (it goes there the day it goes on the home page)
  *   testers    served by a gated page Function
- *   unlisted   a public folder whose page is not noindexed
+ *   unlisted   a public folder with a page (noindexed until launch)
  *   dev        anything else, including a game that so far lives only on a branch
  *
  * Two islands are places, not games (status hub): RunThe.GG itself, and Marketing.
@@ -94,7 +94,7 @@ export async function discover(src){
         if (bf.some(p => /^functions\/(?!_|api\/)[^[]+\/\[\[path\]\]\.js$/.test(p))) o.gatedOnBranch = true; }
     }
     o.layers = countLayers(o.files);
-    o.status = o.live ? 'live' : o.gated ? 'testers' : (o.dir && o.html && !/<meta[^>]+name=["']robots["'][^>]+noindex/i.test(html)) ? 'unlisted' : 'dev';
+    o.status = o.live ? 'live' : o.gated ? 'testers' : (o.dir && o.html) ? 'unlisted' : 'dev';
     o.note = o.branch ? (o.gatedOnBranch ? 'testers, not merged yet' : 'on a branch, not merged yet') : '';
     if (o.gatedOnBranch) o.status = 'testers';
     o.kind = kindOf(o.key, o.name + ' ' + o.summary);
