@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 172_shut_the_door_ump_purge.sql : a deleted or rejected ump call loses its audio file.
+-- 175_shut_the_door_ump_purge.sql : a deleted or rejected ump call loses its audio file.
 --
 -- Safe to run more than once. Needs 165 (shutdoor_ump_clips and the bucket
 -- shutdoor-ump-voices). Run it BEFORE the site PR merges: the purge job the PR

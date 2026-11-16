@@ -1,6 +1,6 @@
 name: Shut The Door ump purge
 
-# Deletes every umpire call file that no clip row names (supabase/172, shut-the-door/ump-purge.mjs).
+# Deletes every umpire call file that no clip row names (supabase/175, shut-the-door/ump-purge.mjs).
 # A clip row goes when its account is deleted (the user_id cascade), and a rejected clip drops its
 # path, so its file has nobody left to keep it. SQL cannot remove a file from Supabase storage (a
 # delete from storage.objects leaves it in the backing store), so this removes them through the

@@ -1,8 +1,8 @@
--- Shut The Door's ump purge (172). Chain, after 165 and its test:
---   psql -d std -f supabase/172_shut_the_door_ump_purge.sql
---   psql -d std -f supabase/172_shut_the_door_ump_purge.sql   (twice: it is safe to rerun)
+-- Shut The Door's ump purge (175). Chain, after 165 and its test:
+--   psql -d std -f supabase/175_shut_the_door_ump_purge.sql
+--   psql -d std -f supabase/175_shut_the_door_ump_purge.sql   (twice: it is safe to rerun)
 --   psql -d std -f supabase/test/shut_the_door_ump_purge_test.sql
--- It also replays a clip rejected before 172 (path kept) through 172 and the one-off backfill
+-- It also replays a clip rejected before 175 (path kept) through 175 and the one-off backfill
 -- (supabase/shut_the_door_ump_backfill.sql), twice each.
 \set ON_ERROR_STOP on
 insert into auth.users (id) values
@@ -86,7 +86,7 @@ select pg_temp.claim(pg_temp.err($$insert into shutdoor_ump_clips (user_id, line
 select pg_temp.claim(pg_temp.err($$update shutdoor_ump_clips set status = 'approved' where line_id = 'out'$$) like '%shutdoor_ump_clips_rejected_ck%',
   'nor leaves rejected without one, triggers or not');
 set session_replication_role = origin;
-select pg_temp.claim((select convalidated from pg_constraint where conname = 'shutdoor_ump_clips_rejected_ck'), 'with no old rejected paths, 172 validated its check itself');
+select pg_temp.claim((select convalidated from pg_constraint where conname = 'shutdoor_ump_clips_rejected_ck'), 'with no old rejected paths, 175 validated its check itself');
 
 -- the account goes: its rows cascade, and both its files are orphans
 delete from auth.users where id = '00000000-0000-0000-0000-0000000000d1';
@@ -100,7 +100,7 @@ delete from storage.objects o where o.bucket_id = 'shutdoor-ump-voices' and o.na
 select pg_temp.claim(json_array_length(shutdoor_ump_orphans()) = 0 and (select count(*) from storage.objects where bucket_id = 'shutdoor-ump-voices') = 0,
   'after the purge: no orphans, and no file for a rejected or deleted clip');
 
--- a clip rejected BEFORE 172 kept its path. 172 again leaves its check unvalidated, the backfill fixes both
+-- a clip rejected BEFORE 175 kept its path. 175 again leaves its check unvalidated, the backfill fixes both
 alter table shutdoor_ump_clips drop constraint shutdoor_ump_clips_rejected_ck;
 set role authenticated;
 insert into paths values ('c1', pg_temp.clip('00000000-0000-0000-0000-0000000000d2', 'foul'));
@@ -109,9 +109,9 @@ set session_replication_role = replica;
 update shutdoor_ump_clips set status = 'rejected' where storage_path = (select p from paths where k = 'c1');
 set session_replication_role = origin;
 select pg_temp.claim((select storage_path is not null from shutdoor_ump_clips where status = 'rejected' and line_id = 'foul'), 'an old rejected clip, path kept');
-\ir ../172_shut_the_door_ump_purge.sql
-\ir ../172_shut_the_door_ump_purge.sql
-select pg_temp.claim(not (select convalidated from pg_constraint where conname = 'shutdoor_ump_clips_rejected_ck'), '172 with an old rejected path: the check waits for the backfill');
+\ir ../175_shut_the_door_ump_purge.sql
+\ir ../175_shut_the_door_ump_purge.sql
+select pg_temp.claim(not (select convalidated from pg_constraint where conname = 'shutdoor_ump_clips_rejected_ck'), '175 with an old rejected path: the check waits for the backfill');
 select pg_temp.claim(json_array_length(shutdoor_ump_orphans()) = 0, 'before the backfill its file is still named');
 \ir ../shut_the_door_ump_backfill.sql
 \ir ../shut_the_door_ump_backfill.sql

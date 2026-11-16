@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /*
- * Shut The Door: delete every ump call file that no clip row names (supabase/172).
+ * Shut The Door: delete every ump call file that no clip row names (supabase/175).
  *
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE=... node shut-the-door/ump-purge.mjs
  *   node shut-the-door/ump-purge.mjs --self-test      offline, against a fake Supabase
  *
  * Hourly in .github/workflows/shut-the-door-ump-purge.yml. A clip row goes when its account goes
- * (the user_id cascade) and a rejected row drops its path (172's trigger), so a file with no row is
+ * (the user_id cascade) and a rejected row drops its path (175's trigger), so a file with no row is
  * a file nobody may keep. SQL cannot remove it: a delete from storage.objects leaves the file in the
  * backing store (newer Supabase refuses it outright), so this asks the database which files are
  * orphaned (shutdoor_ump_orphans, service role only) and removes them through the Storage API,
@@ -29,7 +29,7 @@ export async function purge({ url, key, fetch: f = globalThis.fetch, log = conso
   async function orphans() {
     const r = await f(base + '/rest/v1/rpc/shutdoor_ump_orphans', { method: 'POST', headers: H, body: JSON.stringify({ p_limit: 1000 }) });
     const text = await r.text();
-    if (!r.ok) throw new Error('shutdoor_ump_orphans: HTTP ' + r.status + ' (has supabase/172 been run?) ' + text.slice(0, 200));
+    if (!r.ok) throw new Error('shutdoor_ump_orphans: HTTP ' + r.status + ' (has supabase/175 been run?) ' + text.slice(0, 200));
     const list = JSON.parse(text);
     if (!Array.isArray(list)) throw new Error('shutdoor_ump_orphans: not a list');
     return list.filter((x) => typeof x === 'string' && x);
@@ -122,7 +122,7 @@ async function selfTest() {
   }
   {
     const F = { fn: async () => ({ ok: false, status: 404, text: async () => '{"code":"PGRST202"}' }) };
-    ok(/172/.test(await throws(purge({ url: 'https://x', key: 'k', fetch: F.fn, log: quiet }))), 'no 172 yet: the run fails and says so');
+    ok(/175/.test(await throws(purge({ url: 'https://x', key: 'k', fetch: F.fn, log: quiet }))), 'no 175 yet: the run fails and says so');
     ok(/both needed/.test(await throws(purge({ url: '', key: 'k', fetch: F.fn, log: quiet }))), 'no secrets: the run fails');
   }
   {

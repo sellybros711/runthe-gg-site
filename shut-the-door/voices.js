@@ -279,7 +279,7 @@ function renderQueue() {
       var url = Q.urls[x.path];
       return '<li class="vr-row" data-id="' + esc(x.id) + '"><div class="vr-h"><b>' + esc(ln ? ln.text : x.line) + '</b><small>' +
         esc([who, when(x.createdAt), x.ms ? (x.ms / 1000).toFixed(1) + ' s' : ''].filter(Boolean).join(' · ')) + '</small></div>' +
-        /* a rejected call has no file (172 deletes it), so it can only stay rejected */
+        /* a rejected call has no file (175 deletes it), so it can only stay rejected */
         (!x.path ? '<p class="quiet">Audio deleted.</p>' : url ? '<audio controls preload="none" src="' + esc(url) + '"></audio>' : '<p class="quiet">Loading the clip.</p>') +
         '<div class="vr-act">' +
           (x.status !== 'approved' && x.path ? '<button class="btn go" type="button" data-vr="approved">Approve</button>' : '') +
