@@ -803,6 +803,7 @@ $('back').addEventListener('click', e => {
   else goHome();
 });
 function goHome() {
+  if (mode === 'edit') books.flush();   // leaving a playbook play: write its runs once
   if (live) backToBoard();
   clearStars();
   mode = 'game'; edit = null; lvl = null; dly = null; chal = null; bars(); homeSync(); show('vHome');

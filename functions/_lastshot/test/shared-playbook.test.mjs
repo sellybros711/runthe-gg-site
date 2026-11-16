@@ -145,3 +145,37 @@ test('the store: local first, the cloud behind it, rev conflicts, the cap', asyn
     assert.ok(!mem['g/b-' + b.id], 'remove drops the slot');
   } finally { delete globalThis.localStorage; delete globalThis.RTG_AUTH; delete globalThis.RTG_SAVE; }
 });
+
+test('the store: stats write later, once a book, and never the index', async () => {
+  const mem = {}, ls = {}, writes = [];
+  globalThis.localStorage = { getItem: k => ls[k] ?? null, setItem: (k, v) => { ls[k] = v; } };
+  globalThis.RTG_AUTH = { state: () => ({ signedIn: true, userId: 'u1' }) };
+  globalThis.RTG_SAVE = {
+    all: g => Promise.resolve(Object.keys(mem).filter(k => k.startsWith(g + '/')).map(k => ({ slot: k.split('/')[1], progress: mem[k].progress, payload: JSON.parse(JSON.stringify(mem[k].payload)) }))),
+    queue: (g, sl, fn) => { const m = fn(); const k = g + '/' + sl; if (!m) return Promise.resolve(null); writes.push(sl); mem[k] = { progress: m.progress, payload: JSON.parse(JSON.stringify(m.payload)) }; return Promise.resolve({ ok: true }); },
+    drop: () => Promise.resolve(null) };
+  try {
+    const S = PB.createStore({ game: 'g', prefix: 'g_pb_', maxBytes: 40000, laterMs: 50 });
+    await S.open();
+    const b = PB.newBook('One'); b.plays.push(PB.newPlay(b, { spots: {}, steps: [] }, { name: 'p' }));
+    S.put(b); await new Promise(r => setTimeout(r, 0));
+    writes.length = 0;
+    // twenty runs of a saved play
+    for (let i = 0; i < 20; i++) { PB.countRun(b.plays[0], 's', 'switch', i % 2 === 0); assert.ok(S.putLater(b)); }
+    await new Promise(r => setTimeout(r, 0));
+    assert.equal(writes.length, 0, 'no cloud write per run');
+    assert.ok(JSON.parse(ls['g_pb_u1']).books[b.id].rev === S.book(b.id).rev, 'the local copy is current at once');
+    assert.equal(S.flush(), 1, 'a flush writes the one changed book');
+    await new Promise(r => setTimeout(r, 0));
+    assert.deepEqual(writes, ['b-' + b.id], 'the book once, the index never');
+    assert.equal(mem['g/b-' + b.id].progress, S.book(b.id).rev, 'with every run in it');
+    assert.equal(S.flush(), 0, 'nothing left to write');
+    // left alone, the timer writes it
+    writes.length = 0; S.putLater(b);
+    await new Promise(r => setTimeout(r, 120));
+    assert.deepEqual(writes, ['b-' + b.id], 'laterMs after the first change at most');
+    // an edit through put() takes the pending stats with it
+    writes.length = 0; S.putLater(b); S.put(b); await new Promise(r => setTimeout(r, 0));
+    assert.equal(S.flush(), 0, 'put() already wrote it');
+  } finally { delete globalThis.localStorage; delete globalThis.RTG_AUTH; delete globalThis.RTG_SAVE; }
+});
