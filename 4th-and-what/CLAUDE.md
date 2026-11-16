@@ -63,6 +63,13 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   snaps, conversions, the longest 4th down converted, the best run, the signature play, and eight
   football moments, each earned once and read straight off the engine's result. No currencies, no pay
   to win, nothing locked behind them.
+- **The launch events** (the owner, 2026-11-14: "use the Supabase table"). `events.js` batches a few
+  named events (open, snap, run_start, run_end, share, save, daily_open, coach_open) to
+  `/api/faw/e` (`functions/api/faw/e.js`, under /api so the game's folder keeps no Function), which keeps only `functions/_faw/events.js`'s
+  whitelist and writes the shared `game_events` (supabase/170) through 171's capped `faw_events_add`.
+  A row carries a device id, never anything personal. It only sends from runthe.gg (never a preview, a
+  dev server or a check). `faw_round_report` (171) gives the launch targets. A new event or prop goes in
+  the whitelist in the same commit, or the collector drops it.
 - **The feel** (the owner, 2026-11-13: sound on by default, with mute). `feel.js` makes every sound with
   Web Audio (nothing to download) and starts on the Snap it tap; `faw_sound` keeps the choice. The 3D
   picture zooms and slides to follow the ball (`play.js`, `ui.zoom`), never past an edge. A spot within

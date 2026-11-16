@@ -133,7 +133,14 @@
     var hash = v === 'studio' && mode === 'game' ? 'draw' : v;
     if (location.hash !== '#' + hash) history.replaceState(null, '', '#' + hash);
     (hooks[v] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
+    if (!(v === 'studio' && mode === 'game')) seen(v);
     window.scrollTo(0, 0);
+  }
+  /* the launch events (events.js): opening the daily and the coach's tools */
+  function seen(v) {
+    var E = window.FAW_EVENTS; if (!E) return;
+    if (v === 'daily') E.track('daily_open', {});
+    else if (v === 'coach' || COACH.indexOf(v) >= 0) E.track('coach_open', { tool: v === 'coach' ? 'hub' : v });
   }
   function on(v, fn) { (hooks[v] = hooks[v] || []).push(fn); }
   function fire(k) { (hooks[k] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } }); if (k === 'remote' && current) (hooks[current] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } }); }
