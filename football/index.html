@@ -8859,7 +8859,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
-<script src="/assets/cloudsave.js?v=3"></script>
+<script src="/assets/cloudsave.js?v=4"></script>
 <!-- THE REWARDED VIDEO PLAYER (Ads Agent, 2026-10-28). Loaded here so the free re-spin can ask it
      whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
      the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
@@ -12546,7 +12546,7 @@ function fantasyWeekEnsure(){
    because the college game asks it too. `show` is this door's own question, so a reader
    who is not shown the mode is never sold it. */
 if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'nfl', nowUrl:'/football/data/fantasy_now.json',
-  href:'/football/fantasy/', entryPrefix:'ps_fantasy_', auth:()=>authState, show:()=>fantasyShow() });
+  href:'/football/fantasy/?from=lockday', entryPrefix:'ps_fantasy_', auth:()=>authState, show:()=>fantasyShow() });
 
 /* THE SAME PADLOCK THE modes sheet DRAWS, written out again rather than shared, because
    MC_LOCK is a const inside the sheet's own painter and hoisting it to module scope to
@@ -12631,8 +12631,10 @@ function fantasyPromoPaint(){
            (120_fantasy_pro_pass.sql), so a change there is a change here too. */
         '<div class="fpm-prize"><span class="fpm-pro">PRO</span><b>Top score this week wins 30 days of Pro.</b></div>'+
         '<div class="fpm-lock">Entries lock '+fpromoLock(lock)+'.</div>'+
-        '<a class="fpm-go" id="b-fanpromo" href="/football/fantasy/">'+(guest?'Sign in and draft':'Draft my lineup')+'</a>'+
+        '<a class="fpm-go" id="b-fanpromo" href="/football/fantasy/?from=results">'+(guest?'Sign in and draft':'Draft my lineup')+'</a>'+
         '<button class="fpm-later" type="button" id="b-fanpromo-x">Not this week</button>';
+      ga('fantasy_promo_shown',{week:n.week});
+      $('b-fanpromo').addEventListener('click',()=>ga('fantasy_promo_click',{week:n.week}));
       $('b-fanpromo-x').onclick=()=>{
         try{ localStorage.setItem(FPROMO_SKIP,k); }catch(_){}
         el.hidden=true;
@@ -12655,7 +12657,7 @@ function ensureFantasyButton(){
   if(!el){
     el=document.createElement('a');
     el.id='b-fantasy';
-    el.href='/football/fantasy/';
+    el.href='/football/fantasy/?from=home';
   }
   /* REBUILT ON EVERY CALL, not only on the one that made the node, which is the Dynasty
      door's rule and matters here for the same reason: this runs on every auth change, and
@@ -13729,8 +13731,18 @@ function tradeSave(){
   /* AND ON TO THE ACCOUNT, as the third slot of this page's shelf. A trade season is one
      sitting rather than forty, so there is less to lose than a dynasty and exactly the same
      number of ways to lose it: this was the last run on the site that a cleared cache still
-     took. See FB_SLOTS and supabase/103_cloud_saves.sql. */
-  dynCloudPush('trade');
+     took. See FB_SLOTS and supabase/103_cloud_saves.sql.
+     ONLY AT REST, LIKE THE DYNASTY (2026-11-16, after the Disk IO outage). This ran after every
+     advanceWeek, about twenty full row writes a season. The account copy now moves where a
+     player can act or leave: before the season, at each trade window (weeks 3, 6 and 9) and
+     after the regular season. The copy in this browser still moves every week, so a reload
+     here loses nothing; another device resumes from the last window. */
+  if(tradeAtRest()) dynCloudPush('trade');
+}
+function tradeAtRest(){
+  if(!run||!run.tradeMachine) return false;
+  if(run.phase!==R.PHASES.SEASON||!run.season||run.season.week===0) return true;
+  return R.isTradeWindow(run);
 }
 function tradeClear(){
   try{ localStorage.removeItem(TRADE_SAVE_KEY); }catch(_){}

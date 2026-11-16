@@ -11,7 +11,13 @@
  * own: the account comes from the gate's signed cookie, server side, so a
  * browser cannot write rows for somebody else.
  *
- * POST /last-shot/e  { s: session id, ev: [{ n, t, p }] }  ->  204
+ * POST /last-shot/e  { s: session id, d: device id, ev: [{ n, t, p }] }  ->  204
+ *
+ * GUESTS (2026-11-16). A row carries the account when the gate knows one,
+ * and the device id the page keeps ('last_shot_device'), so after the launch
+ * a player who never signs in still counts. A guest is let in only once
+ * gate.js PUBLIC_EVENTS is on (the launch PR); until then the route stays
+ * testers only, like the page.
  * Only the names below, only their props, only small values. Anything else
  * in a batch is dropped, never stored. A bad body stores nothing. */
 
@@ -64,12 +70,19 @@ export function cleanBatch(body) {
   return rows;
 }
 
-/* POST /last-shot/e for a gated caller. Never throws: a store error is a 204
-   all the same, so a flaky write never shows in the game. */
+/* The page's device id, or null. */
+export function deviceOf(body) {
+  const d = body && body.d;
+  return typeof d === 'string' && /^[A-Za-z0-9-]{8,40}$/.test(d) ? d : null;
+}
+
+/* POST /last-shot/e for a caller the gate let in: an account (uid), a guest
+   (uid null, a device), or both. Never throws: a store error is a 204 all
+   the same, so a flaky write never shows in the game. */
 export async function postEvents(uid, body, db) {
-  const rows = cleanBatch(body);
-  if (rows.length) {
-    try { await db.insertEvents(rows.map(r => ({ ...r, user_id: uid, game: GAME }))); } catch (e) { /* dropped */ }
+  const rows = cleanBatch(body), device = deviceOf(body);
+  if (rows.length && (uid || device)) {
+    try { await db.insertEvents(uid || null, device, rows); } catch (e) { /* dropped */ }
   }
   return { status: 204 };
 }

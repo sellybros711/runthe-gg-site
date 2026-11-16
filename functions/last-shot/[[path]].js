@@ -13,6 +13,7 @@
 import { supabaseDb } from '../_lastshot/db-supabase.js';
 import { pageGate, roundGate } from '../_lastshot/gate.js';
 import { readBody } from '../_lastshot/events.js';
+import { BUILD } from '../_lastshot/pages.js';
 import { verify, readCookie, secretOf } from '../_stumpire/cookie.js';
 
 export async function onRequest(context) {
@@ -31,7 +32,13 @@ export async function onRequest(context) {
   } catch (e) { out = null; }
   if (!out) return notFound(context);
   if (out.status === 204) return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
-  return new Response(out.body, { status: out.status || 200, headers: { 'Content-Type': out.type, 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+  /* A module asked for at this build's hash (the page and every import carry
+     it) is the same bytes for as long as that URL lives: the browser keeps
+     it a year, privately (it is still a tester's file). The page itself, and
+     anything else, is never cached: the gate decides every visit. */
+  const fresh = /^m\//.test(sub) && new URL(request.url).searchParams.get('b') === BUILD;
+  return new Response(out.body, { status: out.status || 200, headers: { 'Content-Type': out.type,
+    'Cache-Control': fresh ? 'private, max-age=31536000, immutable' : 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
 }
 
 /* The same 404 as functions/arcade/stumpire/[[path]].js, byte for byte in what

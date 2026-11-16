@@ -298,7 +298,10 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 .bannerlogo .lamp { color: var(--teal); margin: 0 .06em; }
 .bannerlogo .lw { color: #fff; }
 .heroname { position: absolute; z-index: 1; left: 10px; bottom: 8px; margin: 0; padding: 5px 10px; border-radius: 8px; background: rgba(6, 14, 24, .7); color: #fff; font-weight: 800; font-size: 13px; }
-.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.mode.go { grid-column: 1 / -1; min-height: 0; padding: 28px 30px; background: radial-gradient(120% 140% at 0% 0%, #6b4a08, #2a1d05 60%, #14100a); border: 2px solid var(--gold); box-shadow: 0 6px 0 rgba(0, 0, 0, .3), 0 0 28px rgba(245, 185, 40, .25); }
+.mode.go b { color: var(--gold); font-size: 60px; }
+.mode.go b::before { content: '\25B6'; font-size: .55em; vertical-align: .18em; margin-right: .3em; font-style: normal; }
 .mode { text-align: left; border-radius: 18px; padding: 26px 24px; display: flex; flex-direction: column; gap: 10px; min-height: 170px; color: #fff; box-shadow: 0 6px 0 rgba(0, 0, 0, .3); }
 .mode b { font: italic 900 46px/1 'Barlow Condensed', sans-serif; }
 .mode span { font-size: 17px; line-height: 1.45; color: rgba(255, 255, 255, .88); max-width: 30em; }
@@ -323,6 +326,7 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
   .modes { grid-template-columns: minmax(0, 1fr); }
   .mode { min-height: 0; padding: 20px; }
   .mode b { font-size: 38px; }
+  .mode.go b { font-size: 48px; }
 }
 
 /* ---------- Play: 4th and what? ---------- */
@@ -394,6 +398,8 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 .rescard .rdaily p { margin: 0; }
 .rescard .rdhead { font-weight: 800; color: var(--gold); margin-bottom: 4px !important; }
 .rescard .rdstats { color: var(--teal); font-weight: 800; margin-top: 4px !important; }
+.rescard .rdnext { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; }
+.rescard .rdnext .rgobtn { margin: 0; }
 @media (max-width: 700px) {
   .bannergo { right: 8px; bottom: 8px; padding: 8px 10px; max-width: 70%; gap: 2px; }
   .bannergo .dnum { font-size: 10px; }
@@ -414,7 +420,6 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 .panel .rsnaps { justify-content: flex-start; margin: 0 0 10px; }
 
 /* ---------- Daily Defense (trivia.js) ---------- */
-.modes { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .mode.trivia { background: linear-gradient(135deg, #6b1f2a, #451219); border: 1px solid #7a2a35; }
 .mode.trivia b { color: #ffd0d6; }
 .view.trivia { grid-template-columns: minmax(0, 1fr); }
@@ -831,6 +836,8 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
 .rescard .rwhy { margin: 6px 0 4px; }
 .rescard .rread { margin: 0 0 10px; padding: 6px 10px; border-radius: 8px; background: rgba(25, 198, 167, .1); border: 1px solid rgba(25, 198, 167, .35); color: #8fe7ff; font-size: 13px; font-weight: 700; }
 .rescard .rplay #rAgain { grid-column: 1 / -1; min-height: 50px; font-size: 18px; font-weight: 900; }
+/* the Daily's card: Go For It is the one gold button; Run it back steps down to a plain one */
+.rescard.daily .rplay #rAgain { background: var(--panel2); color: var(--ink); border-color: var(--edge); box-shadow: none; min-height: 44px; font-size: 15px; }
 .rescard .rmore { grid-template-columns: repeat(3, 1fr); }
 .rescard .rmore .btn { min-height: 34px; font-size: 12px; background: transparent !important; border-color: #23405e; color: #cfd9e4 !important; }
 .rescard .rsnaps { order: 9; }

@@ -137,7 +137,10 @@ if (!window.STD_AUTH || FORCE) {
       if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
       var c = mockClips.filter(function (x) { return x.id === id; })[0];
       if (!c) return Promise.resolve({ error: 'no such clip' });
+      /* as 175: a rejected call loses its file, and with it any way back */
+      if (!c.path && st !== 'rejected') return Promise.resolve({ error: 'that call\'s audio was deleted' });
       c.status = st;
+      if (st === 'rejected') c.path = null;
       return Promise.resolve({ data: { id: id, status: st } });
     },
     plates: function () { return Promise.resolve(mockIn ? JSON.parse(JSON.stringify(mockPlates)) : null); },
@@ -703,7 +706,7 @@ function mockLesson(o) {
    Test switches, mock only:
    ?mockAuth=late   signed out, and the account sheet's sign in succeeds (see the stub above)
    ?mockVote=       open: tomorrow's two candidates, a vote to cast; voted: already cast; locked:
-                    today's daily was picked by a vote (the home says so). Without it the vote is
+                    today's daily was picked by a vote (the home no longer says so). Without it the vote is
                     not on yet, as before VOTE.EPOCH. The two cards are the real schedule's
                     candidates for the vote's first day (modes.js), never a reveal.
    ?mockSurv=N      Survivor: situations before index N are doors shut, N is a walk-off (default 2)

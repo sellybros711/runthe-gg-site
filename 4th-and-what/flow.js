@@ -152,7 +152,7 @@
       card: card || 'own', win: !!res.win, outcome: res.outcome, shell: res.shell, distance: res.distance });
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
-    if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(b); } });
+    if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.putStats(b); } });
     A.watch3d(res, showCard);
     return true;
   }
@@ -225,6 +225,8 @@
     var line = A.marginText(r) || gained + '.', why = r.reason;
     /* the line already says it: no "Incomplete. Incomplete." */
     if (why.indexOf(line) === 0) why = why.slice(line.length).trim();
+    /* nor at the end: a touchdown read "Six. Nobody laid a hand on him. Six." */
+    if (why.length > line.length && why.slice(-line.length) === line) why = why.slice(0, -line.length).trim();
     $('rLine').textContent = line;
     $('rWhy').textContent = why;
     $('rRead').textContent = window.FAW_CALLS ? window.FAW_CALLS.revealText(r) : r.callName;
@@ -280,7 +282,7 @@
     if (b) { A.toast('rToast', 'It is already in ' + b.name + '. This snap counted in its stats.'); return; }
     A.saveDialog(A.copy(played), { distance: A.SC.distance, tag: A.draft.tag, done: function (bk, e) {
       A.draft.ref = { book: bk.id, id: e.id }; A.draft.name = e.name; A.draft.nameEdited = e.nameEdited; A.saveDraft();
-      B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(bk);
+      B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.putStats(bk);
       A.toast('rToast', 'Saved to ' + bk.name + '.');
       if (window.FAW_EVENTS) window.FAW_EVENTS.track('save', { kind: 'play' });
     } });

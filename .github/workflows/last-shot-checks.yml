@@ -44,7 +44,8 @@ jobs:
         run: npx --yes wrangler@3.20.0 pages functions build --outdir "$RUNNER_TEMP/fn"
 
   # The tester round's events and report (supabase/170), applied twice (it
-  # must be idempotent), then checked against players whose numbers are known.
+  # must be idempotent), then checked against players whose numbers are known;
+  # then 171, 173 and 175 (guests) on top, and both checks again.
   round-sql:
     runs-on: ubuntu-latest
     services:
@@ -70,3 +71,15 @@ jobs:
           psql -q -d ev -f supabase/test/game_events_test.sql 2>&1 | tee out.txt
           test "$(grep -c '^ ok ' out.txt)" -ge 11
           ! grep -v '^ ok ' out.txt | grep -q .
+          # then the chain production runs: 171 and 173 (4th and What's), and
+          # 175 twice (guests, the cap, the trim, the report on account or device)
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/171_fourth_and_what_events.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/173_fourth_and_what_events_purge.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/175_last_shot_guest_events.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/175_last_shot_guest_events.sql
+          psql -q -d ev -f supabase/test/game_events_test.sql 2>&1 | tee out2.txt
+          test "$(grep -c '^ ok ' out2.txt)" -ge 11
+          ! grep -v '^ ok ' out2.txt | grep -q .
+          psql -q -d ev -f supabase/test/last_shot_guest_events_test.sql 2>&1 | tee out3.txt
+          test "$(grep -c '^ ok ' out3.txt)" -ge 11
+          ! grep -v '^ ok ' out3.txt | grep -q .

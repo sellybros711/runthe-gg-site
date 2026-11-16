@@ -352,6 +352,21 @@
     return null;
   }
 
+  /* THE CAREER, SENT ONLY WHEN SOMETHING IS NEW (supabase/172_rtd_career_sync.sql).
+     rows: only the seasons the server has not been seen to keep. since: the newest
+     ts this device already holds from the server. Answers {rows, top, n} with only
+     the seasons newer than since, { missing: true } on a database without 172 (the
+     page then falls back to careerMerge), and null on any other failure. */
+  async function careerSync(rows, since) {
+    if (!sb || !session) return null;
+    try {
+      const r = await sb.rpc('rtd_career_sync', { p_rows: Array.isArray(rows) ? rows : [], p_since: Math.max(0, Math.floor(+since || 0)) });
+      if (r && !r.error && r.data && Array.isArray(r.data.rows)) return r.data;
+      if (r && r.error && (r.error.code === 'PGRST202' || r.error.code === '42883')) return { missing: true };
+    } catch (e) {}
+    return null;
+  }
+
   /* The circles for a page of board rows: { user_id: {club, initials, mark,
      tier, ring} }. Public to read, so this works signed out too. */
   async function profilesOf(ids) {
@@ -375,6 +390,6 @@
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
     premiumProducts, modeState, modeSpend,
-    myProfile, saveProfile, careerMerge, profilesOf,
+    myProfile, saveProfile, careerMerge, careerSync, profilesOf,
   };
 })();

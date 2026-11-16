@@ -103,7 +103,7 @@ export function mountBooks(app) {
     root.appendChild(el('h2', { text: 'My Playbooks' }));
     if (!store.ready()) {
       root.appendChild(el('p', { text: 'Playbooks live on your Run The Games account. Sign in to keep them.' }));
-      root.appendChild(el('a', { class: 'btn go', href: '/arcade/', id: 'pbSignIn', text: 'Sign in at the Arcade' }));
+      root.appendChild(el('a', { class: 'btn go solo', href: '/arcade/', id: 'pbSignIn', text: 'Sign in at the Arcade' }));
       root.appendChild(el('p', { class: 'muted', text: 'Nothing is kept while you are signed out.' }));
       return;
     }
@@ -134,6 +134,7 @@ export function mountBooks(app) {
 
   /* ---------- one playbook ---------- */
   function showBook(id) {
+    if (store.flush) store.flush();   // back from a play: its counted runs go up now
     bookId = id; app.show('vBooks'); renderBook();
   }
   function renderBook() {
@@ -261,7 +262,9 @@ export function mountBooks(app) {
   function countRun(ed, res) {
     if (!res || !res.scheme) return;
     B.countRun(ed.entry, situationKey(SC, ed.entry.situation), res.scheme, res.outcome === 'win');
-    saveSoon(ed.book);
+    /* stats only: kept here now, written to the cloud once on leaving the
+       play or the page (the shared store's putLater), not on every run */
+    if (!store.putLater(ed.book)) toast('This playbook is full. Start a second one.');
   }
 
   /* ---------- Save this play (a result card) ----------
@@ -505,6 +508,8 @@ export function mountBooks(app) {
   return {
     open, showBook, fillEditBar, playChanged, countRun, store, signedState, saveRun, openSaved,
     /* the header arrow from a playbook screen: up one level, or false at the top */
+    /* leaving the play: write the runs counted while it was open */
+    flush() { return store.flush ? store.flush() : 0; },
     back() {
       if (screen === 'terms') { renderList(); return true; }
       if (screen === 'export') { renderBook(); return true; }
