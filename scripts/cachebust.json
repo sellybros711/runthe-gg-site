@@ -105,8 +105,8 @@
       "sha": "c5e8527b6d7fa6d3"
     },
     "daily.js": {
-      "v": "8",
-      "sha": "bb0339055d2d36e9"
+      "v": "9",
+      "sha": "03e71d0fbcb5cc50"
     },
     "trivia.js": {
       "v": "4",
@@ -2381,8 +2381,8 @@
       "sha": "017ef6c5a7c7bc06"
     },
     "auth.js": {
-      "v": "3",
-      "sha": "8f6ad68ee7ff9a76"
+      "v": "4",
+      "sha": "e3d28da7797bdd12"
     },
     "/assets/newsletter.js": {
       "v": "2",
@@ -2767,8 +2767,8 @@
       "sha": "9f0e387d6587c96d"
     },
     "/assets/playbook.js": {
-      "v": "1",
-      "sha": "77ccc1ef68c895e3"
+      "v": "2",
+      "sha": "68c3ca6a3a844005"
     }
   },
   "functions/_stumpire/web/admin.html": {

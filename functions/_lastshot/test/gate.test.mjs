@@ -8,9 +8,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { render, MODULE_FILES } from '../build/pages.mjs';
-import { PAGE, MODULES } from '../pages.js';
+import { PAGE, MODULES, BUILD } from '../pages.js';
 import { pageGate } from '../gate.js';
-import { memoryDb } from '../db-supabase.js';
+import { memoryDb, forgetRoles } from '../db-supabase.js';
 import { sign, COOKIE } from '../../_stumpire/cookie.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -56,7 +56,8 @@ test('the page is noindexed, names who it is for, and loads only gated modules',
   assert.match(PAGE, /TESTERS ONLY/);
   assert.ok(PAGE.includes('/last-shot/m/client.js'));
   for (const [f, src] of Object.entries(MODULES)) for (const m of src.matchAll(/from '(\.[^']+)'/g)) {
-    const to = path.posix.normalize(m[1]).replace(/^\.\//, '');
+    assert.ok(m[1].endsWith('?b=' + BUILD), f + ' imports ' + m[1] + ' without the build (a cached module would go stale)');
+    const to = path.posix.normalize(m[1].replace(/\?.*$/, '')).replace(/^\.\//, '');
     assert.ok(MODULES[to] != null, f + ' imports ' + to + ', which is not served');
   }
 });
@@ -133,4 +134,30 @@ test('a tester with the signed cookie gets the page, never cached or indexed', a
     const m = await snap(await LAST(ctx('https://runthe.gg/last-shot/m/sim.js', SECRET_ENV, cookie)));
     assert.equal(m.status, 200); assert.match(m.type, /javascript/); assert.equal(m.body, MODULES['sim.js']);
   } finally { globalThis.fetch = real; }
+});
+
+test('a module at this build is cached a year; the page and anything else never', async () => {
+  const real = globalThis.fetch;
+  let reads = 0;
+  const fake = fakeSupabase({ tess: 'tester' });
+  globalThis.fetch = (u, i) => { if (String(u).includes('stumpire_testers')) reads++; return fake(u, i); };
+  forgetRoles();
+  try {
+    const cookie = await sign(SECRET, 'tess', Date.now());
+    const get = async url => snap(await LAST(ctx(url, SECRET_ENV, cookie)));
+    const cur = await get('https://runthe.gg/last-shot/m/sim.js?b=' + BUILD);
+    assert.equal(cur.status, 200); assert.equal(cur.cache, 'private, max-age=31536000, immutable');
+    assert.equal((await get('https://runthe.gg/last-shot/m/sim.js?b=0000000000')).cache, 'no-store', 'an old build is not kept');
+    assert.equal((await get('https://runthe.gg/last-shot/m/sim.js')).cache, 'no-store', 'no build, no keeping');
+    assert.equal((await get('https://runthe.gg/last-shot?b=' + BUILD)).cache, 'no-store', 'the page never');
+    // a page load: the page and every module, one read of the tester list
+    reads = 0; forgetRoles();
+    await get('https://runthe.gg/last-shot');
+    for (const f of MODULE_FILES) await get('https://runthe.gg/last-shot/m/' + f + '?b=' + BUILD);
+    assert.equal(reads, 1, 'the tester list is read once a page load, not ' + reads + ' times');
+    // a refusal is a refusal from the memory too
+    const stranger = await sign(SECRET, 'stranger', Date.now());
+    forgetRoles();
+    for (let i = 0; i < 2; i++) assert.equal((await snap(await LAST(ctx('https://runthe.gg/last-shot', SECRET_ENV, stranger)))).status, 404);
+  } finally { globalThis.fetch = real; forgetRoles(); }
 });
