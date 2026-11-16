@@ -164,7 +164,17 @@ export async function buildPlayoff({ season, now = Date.now(), fetchPost = score
   const priors = priorsFrom(rows, season);
   const roles = quarterbacks(store, last + 1);
   const built = buildMen(firsts, rosters, todate, priors, roles);
-  const men = applyRoles(built.men, roles).filter((m) => teams.has(m.team_id));
+  /* ONE ROW A MAN, OFF HIS TEAM'S FIRST GAME. A quarterfinal can already name the first round
+     winner it waits for (a rebuilt or late board does: the 2025 dry build listed Ole Miss off
+     its first round game and again off its Sugar Bowl quarterfinal), and buildMen reads both
+     sides of every game it is given. */
+  const seen = new Set();
+  const men = applyRoles(built.men, roles).filter((m) => {
+    const t = teams.get(m.team_id);
+    if (!t || m.game_id !== t.game.id || seen.has(m.player_id)) return false;
+    seen.add(m.player_id);
+    return true;
+  });
   for (const pos of POSITIONS) {
     if (!men.some((m) => m.position === pos)) throw new Error(`the board has no ${pos}`);
   }
@@ -252,8 +262,21 @@ const arg = (flag, fallback) => {
 /* The exact name, not endsWith: test_playoff.mjs ends in playoff.mjs too, and importing this
    from it must not run a build. */
 if (process.argv[1] && path.basename(process.argv[1]) === 'playoff.mjs') {
-  const season = Number(arg('--season', String(new Date().getUTCFullYear())));
+  /* THE SEASON IS THE POINTER'S ONCE THE PLAYOFF IS ON IT. The title game is in January, when
+     the calendar year has moved on, and a refresh then must still find this season's board. */
+  let ptr = null;
+  try { ptr = JSON.parse(fs.readFileSync(path.join(DATA, 'now.json'), 'utf8')); } catch { /* none */ }
+  const fallback = ptr && ptr.kind === 'playoff' ? ptr.season : new Date().getUTCFullYear();
+  const season = Number(arg('--season', String(fallback)));
   const write = process.argv.includes('--write');
+  /* `--check`: is the bracket set? 0 yes, 3 not yet, 1 could not tell. For the watchdog. */
+  if (process.argv.includes('--check')) {
+    const post = await scoreboardPost(season);
+    if (!post) { say('the postseason scoreboard could not be read'); process.exit(1); }
+    try { bracketOf(gamesOf(post)); console.log('set'); process.exit(0); } catch (e) {
+      say(String(e.message)); console.log('not set'); process.exit(3);
+    }
+  }
   if (process.argv.includes('--refresh')) {
     const file = path.join(DATA, `pool_${season}_w${PLAYOFF_WEEK}.json`);
     if (!fs.existsSync(file)) { say('no Playoff board yet. Nothing to refresh.'); process.exit(0); }
@@ -272,6 +295,8 @@ if (process.argv[1] && path.basename(process.argv[1]) === 'playoff.mjs') {
       say(`  $${String(m.price_musd).padStart(4)}M  ${String(m.proj).padStart(6)} = `
         + `${String(m.per_game).padStart(5)} x ${m.exp_games}   ${m.name} ${m.position} ${m.team}`);
     }
+    const ids = pool.pool.map((m) => m.player_id);
+    say(`  ${ids.length - new Set(ids).size} men listed twice`);
     for (const pos of POSITIONS) {
       const ps = pool.pool.filter((m) => m.position === pos);
       say(`  ${pos}: ${ps.length} men, $${ps[ps.length - 1].price_musd}M to $${ps[0].price_musd}M`);
