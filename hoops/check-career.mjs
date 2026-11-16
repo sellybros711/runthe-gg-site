@@ -1410,7 +1410,23 @@ section('19. deals from who you are, more ways out, and goals asked some years')
   ok(C.DEALS.every((d) => !/^(Nike|Adidas|Gatorade|State Farm|Taco Bell|Subway|Kia|Geico|Crocs|Peloton|Airbnb|DoorDash|Bose|Old Spice|Wheaties)$/i.test(d.n)), 'no brand is a real brand\'s name');
   /* Walking away on top is the player's call, so it is held to being asked;
      the rest are held to happening. */
-  ok(['injury', 'cut', 'finale', 'topOffered'].every((k) => how[k]), `every new way out happens or is offered (${JSON.stringify(how)})`);
+  /* Walking away on top is offered to under one career in a hundred, so 300
+     careers on today's rosters can meet none (the 2026-11-09 refresh did).
+     A way out the sweep missed is played on for up to 900 more careers by
+     the same bot; one no career can reach still fails. */
+  const WAYS = ['injury', 'cut', 'finale', 'topOffered'];
+  for (let j = 0; j < 900 && !WAYS.every((k) => how[k]); j++) {
+    const L = C.newLife({ seed: 'enx' + j, league, start: j % 2 ? 'hs' : 'draft' });
+    let g = 0;
+    while (!L.retired && g++ < 6000) {
+      if (L.pending.length) { const c = L.pending[0]; if (c.id === 'ontop') how.topOffered = (how.topOffered || 0) + 1; C.choose(L, (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length); }
+      else C.step(L);
+    }
+    const t = (L.log.filter((l) => /injury ended|Cut, and never|one last season in Europe/.test(l.t)).pop() || {}).t || '';
+    const k = /injury ended/.test(t) ? 'injury' : /Cut, and never/.test(t) ? 'cut' : /Europe/.test(t) ? 'finale' : '';
+    if (k) how[k] = (how[k] || 0) + 1;
+  }
+  ok(WAYS.every((k) => how[k]), `every new way out happens or is offered (${JSON.stringify(how)})`);
   /* The owner's call: a career ending injury is likelier the worse the
      body. Read off the engine's own chance at a sound and a worn body. */
   const P = (dur, health) => C.careerEndP({ dur, m: { health }, age: 29, mem: {}, traits: {} });
