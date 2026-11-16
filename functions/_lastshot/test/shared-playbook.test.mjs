@@ -177,5 +177,13 @@ test('the store: stats write later, once a book, and never the index', async () 
     // an edit through put() takes the pending stats with it
     writes.length = 0; S.putLater(b); S.put(b); await new Promise(r => setTimeout(r, 0));
     assert.equal(S.flush(), 0, 'put() already wrote it');
+    // a flush lost to a closed tab: the next open sends the newer local copy
+    S.putLater(b); const localRev = S.book(b.id).rev;
+    assert.ok(mem['g/b-' + b.id].progress < localRev, 'the cloud is behind');
+    writes.length = 0;
+    const S2 = PB.createStore({ game: 'g', prefix: 'g_pb_', maxBytes: 40000, laterMs: 60000 });
+    await S2.open(); await new Promise(r => setTimeout(r, 0));
+    assert.deepEqual(writes, ['b-' + b.id], 'the next visit sends it');
+    assert.equal(mem['g/b-' + b.id].progress, localRev);
   } finally { delete globalThis.localStorage; delete globalThis.RTG_AUTH; delete globalThis.RTG_SAVE; }
 });

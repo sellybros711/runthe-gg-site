@@ -203,7 +203,13 @@
           rows.forEach(function (r) {
             if (!r || !r.payload) return;
             if (r.slot === INDEX) { if ((r.progress || 0) >= (data.index.rev || 0)) data.index = r.payload; }
-            else if (r.slot.indexOf('b-') === 0) { var id = r.slot.slice(2), mine = data.books[id]; if (!mine || (r.progress || 0) >= (mine.rev || 0)) data.books[id] = r.payload; }
+            else if (r.slot.indexOf('b-') === 0) {
+              var id = r.slot.slice(2), mine = data.books[id];
+              if (!mine || (r.progress || 0) >= (mine.rev || 0)) data.books[id] = r.payload;
+              /* ours is newer: a putLater flush lost to a closed tab goes up now
+                 (the 4th and What Agent's catch, 2026-11-16) */
+              else pushBook(id);
+            }
           });
           /* a book only this browser has (saved while offline) goes up now */
           Object.keys(data.books).forEach(function (id) { if (!rows.some(function (r) { return r.slot === 'b-' + id; })) pushBook(id); });
