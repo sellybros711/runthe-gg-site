@@ -3146,11 +3146,19 @@ window.GA_ID='G-L29P5MRWKE';
   var FROM = (function(){
     try { var f = new URLSearchParams(location.search).get('from') || '';
       return /^[a-z]{2,16}$/.test(f) ? f : ''; } catch (e) { return ''; } })();
+  /* THE TIER EVERY EVENT CARRIES (platform-measuring: guests are counted). WHO is the account
+     the page was let in with (go(), below); a guest is stopped at the gate and still counted. */
+  var WHO = null;
+  function tierNow(){
+    if (!WHO || !WHO.signedIn) return 'guest';
+    return (typeof PRO !== 'undefined' && PRO) ? 'pro' : 'free';
+  }
   function ga(ev, p){
     try {
       if (typeof gtag !== 'function') return;
       var o = p || {}; if (FROM) o.from = FROM;
       if (typeof POOL !== 'undefined' && POOL && POOL.week) o.week = POOL.week;
+      o.tier = tierNow();
       gtag('event', ev, o);
     } catch (e) {}
   }
@@ -3735,6 +3743,8 @@ window.GA_ID='G-L29P5MRWKE';
     var go = function(who){
       if (went) return;
       went = true;
+      WHO = who;
+      ga('fantasy_opened', {});
       if (gate(who)) begin();
     };
     A.onChange(function(who){ if (who && who.ready) go(who); });

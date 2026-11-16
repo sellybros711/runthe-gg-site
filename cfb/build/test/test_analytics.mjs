@@ -5,8 +5,8 @@
  *
  * Both pages sent nothing until 2026-11-16 (the Advisor's review, approved by the owner). What is
  * held here, read off the files: the consent defaults come before the tag, the tag is the site's
- * one property, each page names its game, every event the Marketing ledger lists is sent, and
- * no event carries anything about the player. No network, no browser.
+ * one property, each page names its game, every event the Marketing ledger lists is sent, every
+ * event carries the tier (platform-measuring), and no event carries anything about the player. No network, no browser.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,10 +21,12 @@ const ok = (label, cond, extra) => {
 
 const PAGES = [
   { file: 'cfb/fantasy/index.html', game: 'College Fantasy', call: /ga\('([a-z_]+)'/g,
-    events: ['fantasy_draw_used', 'fantasy_draft_done', 'fantasy_lineup_saved', 'fantasy_entered',
+    tier: /o\.tier = tierNow\(\);/,
+    events: ['fantasy_opened', 'fantasy_draw_used', 'fantasy_draft_done', 'fantasy_lineup_saved', 'fantasy_entered',
       'fantasy_swap', 'fantasy_live_opened'] },
   { file: 'cfb/commish/index.html', game: 'Commissioner Mode', call: /cfbCommishEvent\('([a-z_]+)'/g,
-    events: ['commish_term_start', 'commish_season_played', 'commish_ruling', 'commish_term_renewed',
+    tier: /o\.tier=typeof window\.cfbCommishTier==='function'/,
+    events: ['commish_opened', 'commish_term_start', 'commish_season_played', 'commish_ruling', 'commish_term_renewed',
       'commish_term_done', 'commish_wall'] },
 ];
 
@@ -39,6 +41,7 @@ for (const p of PAGES) {
   ok(`it names the game: ${p.game}`, s.includes(`gtag('set',{game_name:'${p.game}'})`));
   const sent = new Set([...s.matchAll(p.call)].map((m) => m[1]));
   for (const ev of p.events) ok(`sends ${ev}`, sent.has(ev));
+  ok('every event carries the tier, so a guest is counted', p.tier.test(s));
   ok('and nothing it does not list', [...sent].every((e) => p.events.includes(e)), [...sent].join(','));
   /* The fields of every call, read as written. A name, an email or an account id is never one. */
   const calls = [...s.matchAll(new RegExp(p.call.source.replace('([a-z_]+)\'', '[a-z_]+\',\\s*\\{([^}]*)\\}'), 'g'))]

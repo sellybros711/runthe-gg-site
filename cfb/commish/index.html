@@ -2225,7 +2225,11 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 /* One call for every Commish event, so a failed or missing gtag never stops a ruling. */
-function cfbCommishEvent(ev,p){ try{ if(typeof gtag==='function') gtag('event',ev,p||{}); }catch(e){} }
+/* `tier` on every event (platform-measuring: guests are counted): guest, free or pro, from the
+   page's own account state through window.cfbCommishTier, which the page sets once it has one. */
+function cfbCommishEvent(ev,p){ try{ if(typeof gtag==='function'){ var o=p||{};
+  o.tier=typeof window.cfbCommishTier==='function'?window.cfbCommishTier():'guest';
+  gtag('event',ev,o); } }catch(e){} }
 </script>
 </head>
 <body>
@@ -2974,6 +2978,8 @@ const isTesterNow=()=>{
  * there is no second input that can disagree with it. `test_devswitch.mjs` asserts the
  * absence, for a tester too, so putting it back means deleting a guard on purpose. */
 const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
+/* The tier every analytics event carries (cfbCommishEvent, in the head). */
+window.cfbCommishTier=()=>!authState.signedIn?'guest':(ownsCfb()?'pro':'free');
 const isPro=()=>allowed()&&ownsCfb();
 
 /* ── ONE SEASON A DAY, FOR AN ACCOUNT THAT HAS NOT BOUGHT ─────────────────────────
@@ -10003,7 +10009,8 @@ let gatePaint=0;
   await loadStates();
   load();
   const A=window.PS_CFB_AUTH;
-  if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }
+  if(!A){ authState={ready:false,waiting:false,signedIn:false}; cfbCommishEvent('commish_opened',{}); gate(); return; }
+  let openedSent=false;
   A.onChange((st)=>{
     const moved=st.userId!==authState.userId;
     /* The shelf belongs to an account, so a different one (or none) has to be asked again
@@ -10012,6 +10019,9 @@ let gatePaint=0;
     if(moved||!st.signedIn){ cloudPulled=null; cloudMarkSent=null; cloudMarkQueued=null; }
     authState=st;
     if(moved||!st.signedIn) premiumSet=null;
+    /* OPENED, once, as soon as the page knows who is playing, so a guest stopped at the gate counts. */
+    /* Ready, or given up waiting (no accounts reachable): either way the page is in use. */
+    if((st.ready||st.waiting===false)&&!openedSent){ openedSent=true; cfbCommishEvent('commish_opened',{}); }
     /* THE TERM AND THE CAREER THE ACCOUNT IS HOLDING, which is the one thing on this page
        that can arrive from another device. Not awaited: it redraws the door itself if what
        comes back is further on, and does nothing at all otherwise. */
