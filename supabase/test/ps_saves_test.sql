@@ -4,6 +4,7 @@
 --   psql -d saves -f supabase/test/ps_saves_base.sql
 --   psql -d saves -f supabase/103_cloud_saves.sql
 --   psql -d saves -f supabase/143_ps_save_put_fix.sql
+--   psql -d saves -f supabase/174_ps_save_put_skip_equal.sql
 --   psql -d saves -f supabase/test/ps_saves_test.sql
 --
 -- 103 shipped with no test, and every call to ps_save_put raised "column
@@ -36,6 +37,26 @@ select pg_temp.claim((select count(*) = 0 from ps_save_get('putt', 'tour')), 'an
 select pg_temp.claim((select ok from ps_save_put('putt', 'tour', '{"v":2,"lv":2}'::jsonb, 2)), 'and saves its own');
 set test.uid = '11111111-1111-1111-1111-111111111111';
 select pg_temp.claim((select (payload->>'lv')::int = 9 from ps_save_get('putt', 'tour')), 'without touching the first account');
+
+-- 174: an equal save writes nothing (the row keeps its version and its saved_at)
+create temp table before_equal as
+  select ctid::text as row_ctid, xmin::text as row_xmin, saved_at from ps_saves
+   where game = 'putt' and slot = 'tour' and user_id = '11111111-1111-1111-1111-111111111111';
+select pg_temp.claim((select ok and progress = 9 from ps_save_put('putt', 'tour', '{"lv":9,"v":2}'::jsonb, 9)),
+  'an equal save (keys in another order) is accepted');
+select pg_temp.claim((select b.row_ctid = s.ctid::text and b.row_xmin = s.xmin::text and b.saved_at = s.saved_at
+   from ps_saves s, before_equal b
+  where s.game = 'putt' and s.slot = 'tour' and s.user_id = '11111111-1111-1111-1111-111111111111'),
+  'and wrote nothing: same row version, same saved_at');
+select pg_temp.claim((select ok and payload is null and progress = 9 and slot = 'tour'
+   from ps_save_put('putt', 'tour', '{"v":2,"lv":9}'::jsonb, 9)),
+  'and the equal answer carries no payload, only ok, slot and progress');
+select pg_temp.claim((select payload is not null and not ok
+   from ps_save_put('putt', 'tour', '{"v":1}'::jsonb, 1)),
+  'a refused save still carries the stored payload');
+select pg_temp.claim((select ok from ps_save_put('putt', 'tour', '{"v":2,"lv":9,"x":1}'::jsonb, 9)),
+  'a changed payload at the same progress is still written');
+select pg_temp.claim((select (payload->>'x')::int = 1 from ps_save_get('putt', 'tour')), 'and reads back');
 
 -- signed out
 set test.uid = '';
