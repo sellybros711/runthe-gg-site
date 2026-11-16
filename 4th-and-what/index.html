@@ -37,7 +37,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=32">
 </head>
 <body>
 <header class="topbar">
@@ -81,6 +81,9 @@ document.documentElement.setAttribute('data-theme', 'dark');
       <p class="heroname" id="hName"></p>
     </div>
     <div class="modes">
+      <!-- GO FOR IT LEADS (the Advisor's review, approved by the owner 2026-11-16): the main mode
+           since 2026-11-13, so Home names it first. Starts a run, or resumes one (goforit.js) -->
+      <button type="button" class="mode go" id="hGo"><b id="hGoT">Go For It</b><span id="hGoSub">Convert 4th down after 4th down. How far can you go?</span></button>
       <button type="button" class="mode play" data-go="play"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></button>
       <button type="button" class="mode book" data-go="books"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></button>
       <button type="button" class="mode trivia" data-go="trivia"><b>Daily Defense</b><span>One play a day. Pick the defense that stops it.</span></button>
@@ -582,7 +585,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="daily.js?v=8"></script>
 <script src="trivia.js?v=4"></script>
 <script src="calls.js?v=10"></script>
-<script src="goforit.js?v=5"></script>
+<script src="goforit.js?v=6"></script>
 <script src="profile.js?v=1"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>

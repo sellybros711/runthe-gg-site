@@ -296,6 +296,12 @@ async function run(name, viewport, scale) {
   ok(await page.evaluate(() => window.FAW_GO.run().n === 0 && window.FAW_GO.run().stops === 0), 'Go again starts a fresh run');
   await page.click('#cBack');
   ok(await page.evaluate((b) => !window.FAW_GO.active() && JSON.stringify(window.FAW_APP.SC) === b, scBefore), 'leaving the run puts practice back where it was');
+  /* Home leads with Go For It (the owner, 2026-11-16): its card starts or resumes a run */
+  await page.click('.logo');
+  const hg = await page.evaluate(() => ({ first: document.querySelector('#vHome .modes .mode').id, t: document.getElementById('hGoT').textContent }));
+  await page.click('#hGo');
+  ok(hg.first === 'hGo' && /^(Go For It|Resume run)$/.test(hg.t) && await page.isVisible('#vCall') && await page.evaluate(() => window.FAW_GO.active()), "Home's first card is Go For It, and it opens the run: " + hg.t);
+  await page.click('#cBack');
   /* today's run (Phase 2): the day's seeds, posted once, the board on the card */
   await page.click('#goDaily');
   const td = await page.evaluate(() => { const G = window.FAW_GO, d = window.FAW_DAILY.day(); return { daily: G.run().daily === d, seed: window.FAW_CALLS.seed() === G.core.dailySeed(d, 0) }; });
