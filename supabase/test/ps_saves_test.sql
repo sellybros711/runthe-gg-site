@@ -48,6 +48,12 @@ select pg_temp.claim((select b.row_ctid = s.ctid::text and b.row_xmin = s.xmin::
    from ps_saves s, before_equal b
   where s.game = 'putt' and s.slot = 'tour' and s.user_id = '11111111-1111-1111-1111-111111111111'),
   'and wrote nothing: same row version, same saved_at');
+select pg_temp.claim((select ok and payload is null and progress = 9 and slot = 'tour'
+   from ps_save_put('putt', 'tour', '{"v":2,"lv":9}'::jsonb, 9)),
+  'and the equal answer carries no payload, only ok, slot and progress');
+select pg_temp.claim((select payload is not null and not ok
+   from ps_save_put('putt', 'tour', '{"v":1}'::jsonb, 1)),
+  'a refused save still carries the stored payload');
 select pg_temp.claim((select ok from ps_save_put('putt', 'tour', '{"v":2,"lv":9,"x":1}'::jsonb, 9)),
   'a changed payload at the same progress is still written');
 select pg_temp.claim((select (payload->>'x')::int = 1 from ps_save_get('putt', 'tour')), 'and reads back');

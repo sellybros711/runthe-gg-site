@@ -88,7 +88,11 @@ window.__calls=[];
       /* THE RULE, AND IT IS THE ONE IN 103: a write that would move a save backwards is
          refused, and the answer carries what is stored so the caller can adopt it. */
       var have=window.__shelf[key];
-      if(have&&have.progress>body.p_progress){
+      /* AND THE ONE IN 174: an equal save writes nothing and answers without the payload. */
+      if(have&&have.progress===body.p_progress
+        &&JSON.stringify(have.payload)===JSON.stringify(body.p_payload)){
+        out=[{ok:true,slot:have.slot,progress:have.progress,payload:null,saved_at:have.saved_at}];
+      }else if(have&&have.progress>body.p_progress){
         out=[{ok:false,slot:have.slot,progress:have.progress,payload:have.payload,
           saved_at:have.saved_at}];
       }else{

@@ -7,7 +7,11 @@
 -- An UPDATE that changes nothing still writes a new row version, WAL and a dirty page.
 --
 -- WHAT. Before the row is locked, an equal save (same payload, same progress) is answered
--- from what is stored, with ok = true, and nothing is written. The lock itself would dirty the
+-- from what is stored, with ok = true and NO payload, and nothing is written. The caller
+-- already holds those bytes, so sending up to 512 KB back is the cost this file removes.
+-- A refused save (ok = false) still carries the stored payload, because a caller adopts it
+-- (assets/playbook.js, 4th-and-what/book.js). Compared with `is not distinct from`, the form
+-- the site's save rule reads (platform/platform-database-saves.md, scripts/check-saves.mjs). The lock itself would dirty the
 -- page, so the check comes first: two devices sending the same bytes at once is harmless.
 -- Everything else is 143 unchanged: the signature, the return shape, the progress rule, the
 -- grants. No page changes. The client (assets/cloudsave.js v4) also stops resending an equal
@@ -44,11 +48,13 @@ begin
     raise exception 'save too large';
   end if;
 
-  /* AN EQUAL SAVE, ANSWERED WITHOUT A WRITE. Read without a lock: a lock is a write too. */
+  /* AN EQUAL SAVE, ANSWERED WITHOUT A WRITE AND WITHOUT THE PAYLOAD. Read without a lock:
+     a lock is a write too. */
   select s.* into v_row from public.ps_saves s
    where s.user_id = v_user and s.game = p_game and s.slot = p_slot;
-  if found and v_row.progress = v_prog and v_row.payload = p_payload then
-    return query select true, v_row.slot, v_row.progress, v_row.payload, v_row.saved_at;
+  if found and v_row.progress is not distinct from v_prog
+     and v_row.payload is not distinct from p_payload then
+    return query select true, v_row.slot, v_row.progress, null::jsonb, v_row.saved_at;
     return;
   end if;
 
