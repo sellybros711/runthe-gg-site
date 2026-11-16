@@ -70,6 +70,20 @@ ok('the Thanksgiving Eve game is one of them', wed.length >= 1,
 ok('a week with no games wakes nothing', walk('2026-11-16T05:00:00Z', '2026-11-23T05:00:00Z', [])
   .every((d) => d.workflow !== 'fantasy-live.yml'));
 
+console.log('\nTHE HEARTBEAT, AND WHO STARTED IT');
+const beats = week.filter((d) => d.workflow === 'clock-heartbeat.yml');
+ok('the heartbeat beats every hour: 168 a week', beats.length === 168, `${beats.length}`);
+ok('every dispatch says source: clock', walk('2026-11-24T00:00:00Z', '2026-11-28T00:00:00Z')
+  .every((d) => d.inputs.source === 'clock'));
+const offWeek = games.filter((g) => g.s === 2026 && g.w === 9 && g.t === 'REG');
+ok('a published schedule with no game that week wakes the live scorer for nothing',
+  walk('2026-11-16T05:00:00Z', '2026-11-23T05:00:00Z', offWeek).every((d) => d.workflow !== 'fantasy-live.yml'),
+  `${offWeek.length} games of another week`);
+for (const f of ['fantasy-pool', 'fantasy-watchdog', 'fantasy-live', 'clock-heartbeat']) {
+  const y = fs.readFileSync(path.join(ROOT, '.github/workflows', f + '.yml'), 'utf8');
+  ok(`${f}.yml declares the source input (GitHub refuses an undeclared one)`, /\n      source:\n/.test(y));
+}
+
 console.log('\nTHE WORKER CALLS GITHUB THE WAY GITHUB WANTS');
 {
   const calls = [];
@@ -81,10 +95,11 @@ console.log('\nTHE WORKER CALLS GITHUB THE WAY GITHUB WANTS');
   const { tick } = await import('./index.mjs');
   const done = await tick({ GH_TOKEN: 'test-token' }, Date.parse('2026-11-24T13:05:00Z'));
   const d = calls.find((c) => c.url.includes('/dispatches'));
-  ok('Tuesday 8:05 Eastern starts the build', done.length === 1 && /fantasy-pool\.yml.*204/.test(done[0]), done.join(' | '));
+  ok('Tuesday 8:05 Eastern starts the build (and the heartbeat is not due)', done.length === 1 && /fantasy-pool\.yml.*204/.test(done[0]), done.join(' | '));
   ok('on main, with catchup, through the dispatch API', !!d
     && d.url === 'https://api.github.com/repos/sellybros711/runthe-gg-site/actions/workflows/fantasy-pool.yml/dispatches'
-    && JSON.parse(d.opts.body).ref === 'main' && JSON.parse(d.opts.body).inputs.catchup === 'true');
+    && JSON.parse(d.opts.body).ref === 'main' && JSON.parse(d.opts.body).inputs.catchup === 'true'
+    && JSON.parse(d.opts.body).inputs.source === 'clock');
   ok('with the token and the headers GitHub requires', !!d && d.opts.headers.Authorization === 'Bearer test-token'
     && !!d.opts.headers['User-Agent'] && d.opts.method === 'POST');
   calls.length = 0;

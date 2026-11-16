@@ -13,6 +13,10 @@ second net, and each is safe to start twice.
 | `fantasy-pool.yml`, catch-up | Tuesday 8:05am |
 | `fantasy-watchdog.yml` | Tuesday hourly 9am to 11pm, Wednesday every two hours, Thursday every two hours to 6pm |
 | `fantasy-live.yml` | 20 minutes before every kickoff in `football/data/nfl_schedule.json`, and 10 minutes after |
+| `clock-heartbeat.yml` | every hour at twenty past. It does nothing: ci-health watches it, and three hours without one means the clock has stopped |
+
+Every dispatch carries `source: clock`, so the clock's runs can be told from a person pressing
+Run workflow. Every workflow here declares that input, because GitHub refuses one it doesn't know.
 
 The jobs live in one list in `clock.mjs`. Add a game's jobs there.
 

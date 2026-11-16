@@ -174,7 +174,7 @@
       var m = mine;
       if (FL.snap(m.play, m.label, 'mine')) {
         var r = FL.last(), B = root.FAW_BOOK;
-        if (r && B && m.entry && m.book) { B.countSnap(m.entry, r.distance, r.callKey, r.win, r.level); A.store.put(m.book); }
+        if (r && B && m.entry && m.book) { B.countSnap(m.entry, r.distance, r.callKey, r.win, r.level); A.store.putStats(m.book); }
       }
       return;
     }
