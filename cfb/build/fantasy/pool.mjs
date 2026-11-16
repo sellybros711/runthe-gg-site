@@ -434,6 +434,10 @@ export function writePool(pool) {
       ...(prev != null ? { prev } : {}),
       ...(pool.kind ? { kind: pool.kind } : {}),
       ...(pool.ends_at ? { ends_at: pool.ends_at } : {}),
+      /* THE SLATE'S KICKOFFS, for the clock Worker (workers/clock), which wakes the live job
+         before each one and reads this small file rather than the board. A Playoff refresh
+         rewrites the pointer, so a round's kickoffs arrive here as ESPN sets them. */
+      kicks: [...new Set((pool.games || []).map((g) => g.kick).filter(Boolean))].sort(),
     }) + '\n');
   }
   return { name, pointer: ahead };

@@ -28,6 +28,10 @@ on:
         type: boolean
         required: false
         default: false
+      source:
+        description: 'Who started it: clock (workers/clock), or blank for a person'
+        required: false
+        default: ''
 permissions:
   contents: write
 concurrency:

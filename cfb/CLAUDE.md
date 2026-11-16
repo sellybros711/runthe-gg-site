@@ -102,3 +102,11 @@ run against a scratch Postgres; the order of files each needs is in the matching
 - **The pointer carries `prev`, `kind`, `ends_at` and `next`.** The previous week is `prev`, never
   week minus one. The door reads its phase off them: week, waiting, playoff open, playoff live, off.
 - **The shared lock day sheet is not set up for the Playoff**: it would say "Week 100".
+
+**On the clock** (`workers/clock`, shared with the NFL game)
+
+- **The Monday build, the watchdog and the live scorer are started by the clock Worker**, each
+  keeping its GitHub cron as the second net. The build is dispatched with `write` and `catchup`:
+  without `write` a college build is a dry run. Every college workflow declares a `source` input.
+- **The live scorer is woken off `kicks` on the pointer**, which `writePool` writes from the board's
+  games. A pointer with no `kicks` wakes nothing; the GitHub cron still does.

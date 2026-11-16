@@ -36,10 +36,22 @@ async function dispatch(env, workflow, inputs) {
   return res.status;
 }
 
+/* THE COLLEGE SLATE'S KICKOFFS, off the college Fantasy pointer (its `kicks`, written by the
+   build and by each Playoff refresh). Ten minutes at the edge: a kickoff moves between builds,
+   never between two ticks. */
+const CFB_NOW_URL = 'https://runthe.gg/cfb/data/fantasy/now.json';
+async function cfbKicks() {
+  const res = await fetch(CFB_NOW_URL, { cf: { cacheTtl: 600, cacheEverything: true } });
+  if (!res.ok) throw new Error(`college pointer: HTTP ${res.status}`);
+  const j = await res.json();
+  return Array.isArray(j.kicks) ? j.kicks : [];
+}
+
 export async function tick(env, nowMs) {
-  let games = [];
+  let games = [], ckicks = [];
   try { games = await schedule(); } catch (e) { console.log(String(e)); }
-  const jobs = due(nowMs, games);
+  try { ckicks = await cfbKicks(); } catch (e) { console.log(String(e)); }
+  const jobs = due(nowMs, games, ckicks);
   const done = [];
   for (const j of jobs) {
     const status = await dispatch(env, j.workflow, j.inputs);
