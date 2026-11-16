@@ -27,3 +27,6 @@ jobs:
           node-version: 20
       - name: Probe
         run: node cfb/build/fantasy/probe.mjs "${{ inputs.season }}" "${{ inputs.week }}"
+      # The postseason, for the Playoff Fantasy: the finished one before this season.
+      - name: Probe the postseason
+        run: node cfb/build/fantasy/probe-post.mjs "$(( ${{ inputs.season }} - 1 ))"
