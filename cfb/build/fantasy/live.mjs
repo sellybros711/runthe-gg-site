@@ -90,13 +90,24 @@ export async function tick(pool, now) {
     const j = await summary(g.id);
     if (!j) continue;
     read++;
+    /* ADDED ACROSS GAMES, never overwritten. A week has one game a man, so this is that
+       game. In the Playoff a man plays every round his team is alive in, and his total is
+       all of them, each game's line kept beside the others. */
     for (const r of boxRows(j)) {
-      if (onBoard.has(r.id)) scores[r.id] = [r.pts, r.line];
+      if (!onBoard.has(r.id)) continue;
+      const had = scores[r.id];
+      scores[r.id] = had
+        ? [Math.round((had[0] + r.pts) * 10) / 10, [had[1], r.line].filter(Boolean).join(' · ')]
+        : [r.pts, r.line];
     }
   }
   const post = ours.filter((g) => g.live && g.live.state === 'post').length;
   const lastKick = Math.max(...ours.map((g) => Date.parse((g.live && g.live.kick) || g.kick)));
-  const final = post === ours.length && read === ours.length
+  /* THE PLAYOFF IS NOT FINAL UNTIL ITS LAST GAME IS ON THE BOARD. Its later rounds are added
+     as they are set (playoff.mjs --refresh), so "every game on the board is over" is true
+     between rounds too. `expect_games` is how many the week has when it is whole. */
+  const whole = !pool.expect_games || ours.length >= pool.expect_games;
+  const final = whole && post === ours.length && read === ours.length
     && now > lastKick + FINAL_AFTER_H * H;
   say(`  box: ${read} of ${started.length} started games read, `
     + `${Object.keys(scores).length} men scored; ${post} of ${ours.length} final`
@@ -118,7 +129,10 @@ const arg = (flag, fallback) => {
 if (process.argv[1] && process.argv[1].endsWith('live.mjs')) {
   const now = Date.now();
   const ptr = JSON.parse(fs.readFileSync(path.join(DATA, 'now.json'), 'utf8'));
-  const weeks = [readPool(ptr.season, ptr.week - 1), readPool(ptr.season, ptr.week)]
+  /* The week before is the pointer's `prev` (writePool), not week minus one: the Playoff
+     follows the last regular week but is not numbered after it. */
+  const prevWeek = ptr.prev != null ? ptr.prev : ptr.week - 1;
+  const weeks = [readPool(ptr.season, prevWeek), readPool(ptr.season, ptr.week)]
     .filter(Boolean);
   let watch = false, soon = false, sql = '';
   for (const pool of weeks) {
