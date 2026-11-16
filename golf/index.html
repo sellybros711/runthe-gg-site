@@ -42363,6 +42363,8 @@ async function sbSignInGoogle(){
   if(error){ try{localStorage.removeItem('rtt_oauth_pending');}catch(e){} throw new Error(error.message||'Google sign-in failed.'); }
 }
 async function sbSignOut(){
+  // a save still waiting out the cloud push's debounce goes up first, while this account can still write it
+  try{ if(_cloudPushT!=null){ clearTimeout(_cloudPushT); _cloudPushT=null; await Promise.race([cloudPushNow(), new Promise(r=>setTimeout(r,4000))]); } }catch(e){}
   // scope:'local' clears THIS browser's session without a network revoke that can
   // fail and leave the token behind (which would auto-sign you back in on reload).
   if(sb){ try{ await sb.auth.signOut({scope:'local'}); }catch(e){ try{ await sb.auth.signOut(); }catch(_){} } }
@@ -42632,7 +42634,11 @@ function mergeXp(local, server){
 function mergeDailyQuests(local, server){
   if(!server) return local; if(!local) return server;
   if((server.day||0)>(local.day||0)) return server; if((local.day||0)>(server.day||0)) return local;
-  return { day:local.day, daily:local.daily||server.daily?1:0, season:local.season||server.season?1:0, h2h:local.h2h||server.h2h?1:0, share:local.share||server.share?1:0, xpDone:local.xpDone||server.xpDone?1:0 };
+  // the same day: every quest flag either side has is kept, done if done on either. It listed its quests by name, so a
+  // quest added since (the Tour Pass tier, both Putt Putt quests) was dropped by every same-day pull (found 2026-11-16).
+  const out={ day:local.day };
+  Object.keys(local).concat(Object.keys(server)).forEach(function(k){ if(k!=='day') out[k]=(local[k]||server[k])?1:0; });
+  return out;
 }
 // Weekly challenges: newer week wins; same week → max each progress metric + union the done set.
 function mergeWeeklyChal(local, server){
@@ -42733,22 +42739,38 @@ function mergeSpecial(local, server){
   return { wins:Math.max(local.wins||0,server.wins||0), played:Math.max(local.played||0,server.played||0), months };
 }
 let _cloudPushT=null, _cloudSyncing=false;
+/* THE CLOUD SAVE ON A DIET (2026-11-16). Supabase ran out of Disk IO on 2026-11-12 and every game lost sign-in;
+   runtour_cloud_save_push was the biggest writer left: about 200 KB of WAL a call, 9,449 calls in a day, because
+   ~40 places call cloudPush() and each fired a whole bundle 1.2 s later, changed or not. Now:
+   - a push waits CLOUD_PUSH_WAIT (25 s) for the changes to settle, so a round or a shop visit is one push, not many;
+   - a push whose bundle is the same as the last one the server took (_cloudSent, compared key-order blind, since
+     the database stores its JSON keys in its own order) is skipped;
+   - after the pull on sign-in, a merge that changed nothing (the merged bundle IS the server's copy) sends nothing.
+   Leaving still saves at once: pagehide, a hidden tab and sign-out flush a waiting push. The LOCAL save was
+   always instant; only the cross-device copy waits. */
+const CLOUD_PUSH_WAIT=25000;
+let _cloudSent=null, _cloudStats={sent:0, skipped:0};   // _cloudSent: {uid, body} of the last push the server took
+// JSON with every object's keys sorted, so the same bundle compares equal however its keys were ordered
+function cloudCanon(v){ return JSON.stringify(v, function(k, x){ if(x && typeof x==='object' && !Array.isArray(x)){ const o={}; Object.keys(x).sort().forEach(function(q){ o[q]=x[q]; }); return o; } return x; }); }
 // debounced push of the full profile bundle, call this from every place one of the bundled pieces
 // changes; harmless/no-op when signed out or offline (fails open, same posture as the rest of the backend).
 function cloudPush(){
   if(!sb || !sbSignedIn()) return;
   clearTimeout(_cloudPushT);
-  _cloudPushT=setTimeout(()=>{ _cloudPushT=null; cloudPushNow(); }, 1200);
+  _cloudPushT=setTimeout(()=>{ _cloudPushT=null; cloudPushNow(); }, CLOUD_PUSH_WAIT);
 }
 async function cloudPushNow(){
   if(!sb || !sbSignedIn()) return;
   try{
-    const {error}=await sb.rpc('runtour_cloud_save_push',{p_data:cloudBundle(), p_client_ts:Date.now()});
+    const data=cloudBundle(), body=cloudCanon(data), uid=(sbUser&&sbUser.id)||'';
+    if(_cloudSent && _cloudSent.uid===uid && _cloudSent.body===body){ _cloudStats.skipped++; return; }   // nothing changed since the server took it
+    const {error}=await sb.rpc('runtour_cloud_save_push',{p_data:data, p_client_ts:Date.now()});
     if(error) console.warn('[RunTheTour] cloud save push failed:', error.message);
+    else { _cloudSent={uid, body}; _cloudStats.sent++; }   // only a push the server took counts: a failed one is sent again next time
   }catch(e){ console.warn('[RunTheTour] cloud save push failed:', e); }
 }
 // Flush a PENDING debounced push the moment the page is being left/hidden - a player who customizes
-// their golfer and immediately closes the tab must not lose the cloud copy to the 1.2s debounce (the
+// their golfer and immediately closes the tab must not lose the cloud copy to the 25s debounce (the
 // LOCAL save is always instant; this covers the cross-device copy). Fire-and-forget: at hidden/pagehide
 // the request usually completes, and if it doesn't, the next app open pushes the same local state anyway.
 function cloudFlushPending(){ if(_cloudPushT==null) return; clearTimeout(_cloudPushT); _cloudPushT=null; cloudPushNow(); }
@@ -42807,7 +42829,10 @@ async function cloudPull(){
     LS.set(acctKey(SEASON_LOG_KEY), mergeLog(seasonLog(), server.seasonlog, SEASON_LOG_MAX));   // your season history follows the account
     LS.set(acctKey(CAREER_LOG_KEY), mergeLog(careerLog(), server.careerlog, CAREER_LOG_MAX));
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
-    cloudPush();
+    // the merged bundle goes up so every device converges, unless the merge changed nothing: then the server already
+    // holds exactly this, so it is only remembered as sent (every app open used to send the whole bundle back)
+    { const uid=(sbUser&&sbUser.id)||'', merged=cloudCanon(cloudBundle());
+      if(merged===cloudCanon(server)){ _cloudSent={uid, body:merged}; _cloudStats.skipped++; } else cloudPush(); }
     render();
   }catch(e){ /* fail open, local state stands until the next pull */ }
   finally{ _cloudSyncing=false; }
