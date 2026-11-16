@@ -301,12 +301,15 @@
   function card(res) {
     var box = $('rDaily'); if (!box) return;
     box.hidden = !active;
+    $('rCard').classList.toggle('daily', !!active);
     if (!active) return;
     var k = kept();
     $('rDailyHead').textContent = lastFirst ? 'Daily #' + number + ' is in.' : 'Practice. Your daily stands: ' + (k && k.win ? 'converted' : 'stopped') + '.';
     $('rReal').textContent = realText(today);
     $('rVerdict').textContent = verdictText(today);
     $('rDown').textContent = 'Daily #' + number + ' · ' + downText(today) + ' · ' + spotText(today);
+    var G = root.FAW_GO, gr = G && G.run(), gb = $('rDailyGo');
+    if (gb) gb.querySelector('span').textContent = gr && !gr.over && !gr.daily ? 'Resume run' : 'Go For It';
     renderStats();
   }
   function share(res) { return shareText(today, number, res); }
@@ -317,6 +320,14 @@
     banner.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openDaily(); } });
   }
   $('dGo') && $('dGo').addEventListener('click', enter);
+  /* what next, from the day's card: the main mode, or the other daily */
+  function off() { leave(); var w = $('watch'); if (w) w.hidden = true; $('rCard').hidden = true; }
+  $('rDailyGo') && $('rDailyGo').addEventListener('click', function () {
+    var G = root.FAW_GO; if (!G) return;
+    off(); var r = G.run();
+    if (r && !r.over && !r.daily) G.enter(); else G.start();
+  });
+  $('rDailyDef') && $('rDailyDef').addEventListener('click', function () { off(); A.show('trivia'); });
   $('dBack') && $('dBack').addEventListener('click', function () { leave(); A.show('home'); });
   A.on('daily', renderIntro);
   A.on('home', function () { leave(); renderHome(); });
