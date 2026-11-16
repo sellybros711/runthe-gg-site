@@ -703,7 +703,7 @@ function mockLesson(o) {
    Test switches, mock only:
    ?mockAuth=late   signed out, and the account sheet's sign in succeeds (see the stub above)
    ?mockVote=       open: tomorrow's two candidates, a vote to cast; voted: already cast; locked:
-                    today's daily was picked by a vote (the home says so). Without it the vote is
+                    today's daily was picked by a vote (the home no longer says so). Without it the vote is
                     not on yet, as before VOTE.EPOCH. The two cards are the real schedule's
                     candidates for the vote's first day (modes.js), never a reveal.
    ?mockSurv=N      Survivor: situations before index N are doors shut, N is a walk-off (default 2)
