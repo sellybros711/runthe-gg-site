@@ -25,11 +25,20 @@ test('a hand is a run, a quick pass and a shot, the same for the same snap', () 
   TR.pool().forEach(it => assert.ok(K.TYPE[it.concept], it.concept));
 });
 
-test('the look is the snap: the shell shown is the one played, whatever card is picked', () => {
+test('the look is the snap: the shell shown is the one played, and it is the men standing deep', () => {
+  /* a heavy set draws a defense with one safety, so the shell can differ by
+     card: the label is what stands over that card's formation (2026-11-16) */
+  const DEEP = { two: 2, one: 1, zero: 0 };
   let dis = 0;
+  for (const d of [1, 2, 5]) for (let s = 1; s <= 120; s++) {
+    const sc = at({ distance: d });
+    K.deal(sc, s).forEach(c => {
+      const l = E.look(sc, c.play, s), deep = l.defense.filter(x => x.role === 's' && x.at[1] > 8).length;
+      assert.equal(deep, DEEP[l.shell], 'the label is the men deep: ' + l.shell + ' with ' + deep + ' deep, 4th & ' + d);
+    });
+  }
   for (let s = 1; s <= 200; s++) {
-    const h = K.deal(at(), s), shells = h.map(c => E.look(at(), c.play, s).shell);
-    assert.ok(shells.every(x => x === shells[0]), 'one shell for every card: ' + shells);
+    const h = K.deal(at(), s);
     h.forEach(c => { const r = E.run(at(), c.play, s), l = E.look(at(), c.play, s); assert.equal(r.shell, l.shell); assert.equal(r.disguised, r.shell !== E.SHELL[r.call.coverage]); });
     dis += E.run(at(), h[0].play, s).disguised;
   }
@@ -56,6 +65,31 @@ test('the read is worth something: vs nobody deep, the quick game beats the run'
   }
   assert.ok(run[1] > 40, 'enough zero looks: ' + run[1]);
   assert.ok(quick[0] / quick[1] > run[0] / run[1] + 0.1, 'quick ' + (quick[0] / quick[1]).toFixed(2) + ' against run ' + (run[0] / run[1]).toFixed(2));
+});
+
+test('count the box: every hint names the card that converts best on the looks it is shown for', () => {
+  /* the owner, 2026-11-16: "make the read decide". Dealt hands at each
+     distance, from midfield, grouped by the hint the read gives (off the run
+     card's look, as the page does); the card a hint calls must convert at
+     least as often as each other card there, give or take a little noise */
+  const tally = {};
+  for (const [d, n] of [[1, 700], [2, 700], [4, 400], [7, 300]]) {
+    const sc = at({ distance: d, ballOn: 50 });
+    for (let i = 0; i < n; i++) {
+      const s = (i * 2654435761 + d * 97) >>> 0, h = K.deal(sc, s), key = K.hintKey(E.look(sc, h[0].play, s), sc);
+      const row = tally[key] = tally[key] || { n: 0, run: 0, quick: 0, shot: 0 };
+      row.n++;
+      h.forEach(c => { row[c.type] += E.run(sc, c.play, s).win; });
+    }
+  }
+  for (const k of ['light', 'yard', 'loaded', 'zero', 'long']) assert.ok(tally[k] && tally[k].n >= 60, 'enough ' + k + ' looks: ' + (tally[k] && tally[k].n));
+  for (const [k, row] of Object.entries(tally)) {
+    const card = K.HINT[k].card, rate = t => row[t] / row.n;
+    if (!card) continue;
+    for (const t of ['run', 'quick', 'shot']) assert.ok(rate(card) >= rate(t) - 0.03, k + ': ' + card + ' ' + rate(card).toFixed(2) + ' against ' + t + ' ' + rate(t).toFixed(2));
+  }
+  /* and the box decides at 4th and 2: a light box runs, a loaded one throws */
+  assert.ok(tally.light.run / tally.light.n > tally.loaded.run / tally.loaded.n + 0.15, 'the run against a light box beats the run against a loaded one');
 });
 
 test('a new player\'s first hand: three plays that convert well at 4th and 1', () => {

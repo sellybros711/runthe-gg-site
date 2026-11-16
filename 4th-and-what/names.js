@@ -72,8 +72,17 @@
     if (play.handoff && play.handoff.to) {
       var c = O[play.handoff.to], path = play.handoff.path || [], last = path.length ? path[path.length - 1] : [c[0], c[1] + 5];
       var dx = last[0] - 0;
+      /* somebody leads when a block is drawn at the hole: within 2.5 yards
+         across of where the path meets the line. Every man on a run has a
+         block (routes.js), so a block elsewhere is not a lead. */
+      var cx = c[0], prev = c;
+      for (var k = 0; k < path.length; k++) {
+        var q = path[k];
+        if (q[1] >= 0) { cx = q[1] - prev[1] > 0.01 && prev[1] < 0 ? prev[0] + (q[0] - prev[0]) * (0 - prev[1]) / (q[1] - prev[1]) : q[0]; break; }
+        prev = q; cx = q[0];
+      }
       run = { carrier: WHO[play.handoff.to], dir: Math.abs(dx) <= 4.5 ? 'inside' : 'outside', side: dx < -0.5 ? 'left' : dx > 0.5 ? 'right' : 'middle',
-        lead: (play.blocks || []).some(function (b) { return b.who !== play.handoff.to; }) };
+        lead: (play.blocks || []).some(function (b) { return b.who !== play.handoff.to && b.to && Math.abs(b.to[0] - cx) <= 2.5 && b.to[1] >= -1.5; }) };
     }
     return { formation: play.formation, strength: strength, routes: routes, run: run };
   }
@@ -131,7 +140,8 @@
       if (sc > bs) { bs = sc; best = x; }
     });
     if (best) return { text: best.word, why: 'that run is ' + best.word };
-    var base = run.carrier === 'Q' ? 'Sneak' : run.lead ? 'Power' : run.dir === 'inside' ? 'Inside Zone' : 'Outside Zone';
+    /* Power is a lead through an inside hole; an outside run is a zone whoever leads it */
+    var base = run.carrier === 'Q' ? 'Sneak' : run.dir === 'outside' ? 'Outside Zone' : run.lead ? 'Power' : 'Inside Zone';
     var side = run.carrier === 'Q' || run.side === 'middle' ? '' : (run.side === 'left' ? ' Left' : ' Right');
     return { text: base + side, why: null };
   }

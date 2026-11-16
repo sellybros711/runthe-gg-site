@@ -35,7 +35,8 @@
  *   the catch    one roll on separation, distance, pressure and direction
  *   after it     the carrier runs until a free defender reaches him; contact
  *                is a roll to break it, then a fall forward
- *   runs         each blocker holds a defender for a window; unblocked
+ *   runs         blocked by count: the line and the drawn blocks take the
+ *                box, each block holds a defender for a window; unblocked
  *                defenders pursue; a tiny fumble roll at contact
  *   the field    everybody stays inside the sidelines and the end lines; a
  *                carrier downed in his own end zone is a safety
@@ -256,6 +257,11 @@
       var real = opt.call && CALLS[opt.call] ? CALLS[opt.call].coverage : cov;
       shell = shownShell(T, real, seed);
       alignShell(T, Dal, Oal, shell, real, distance);
+      /* the look is what stands there: a short yardage defense has one safety,
+         and alignShell puts him in the middle, so a two deep shell shows one
+         deep (and a Cover 2 call is one that rotated). Only the label: the
+         alignment and the dice are the same. */
+      if (shell === 'two' && Dal.filter(function (d) { return d.role === 's'; }).length < 2) shell = 'one';
       box = FM.boxCount(Dal);
       return box;
     }, rnd, S.down);
@@ -537,15 +543,65 @@
        snap against a straight rush rolls exactly what it did before. */
     if (call.blitz && T.pocket.free && rnd() < T.pocket.free) Tp = Math.min(Tp, T.pocket.freeAt + T.pocket.freeJit * rnd());
 
-    /* ---- run blocking: each lineman takes the nearest man in front of him ---- */
+    /* ---- run blocking: COUNT THE BOX (the owner, 2026-11-16: "make the read decide") ----
+       The box is the men the read counts (FM.boxCount's rule, where they
+       stand at the snap). A man with a block drawn has the defender nearest
+       the spot it was drawn to (within runBlock.claim yards), and the line
+       knows it. The five linemen take the down linemen first, each pair
+       nearest first, and an uncovered lineman climbs to the nearest box
+       defender nobody has. More men in the box than blockers leaves a free
+       hitter (a spare); a light box leaves none. The dice: one roll for each
+       block the line makes, and one more on each down lineman. */
     function engage(blk, def, w) { def.engaged = { by: blk, until: w }; blk.engaging = def; }
     if (isRun) {
-      var front = defense.filter(function (d) { return d.y - Y0 < 7 && Math.abs(d.x - BX) < 9; });
-      ['C', 'LG', 'RG', 'LT', 'RT'].forEach(function (id) {
-        var b = byId[id], best = null, bs = 1e9;
-        front.forEach(function (d) { if (d.engaged) return; var s = dist(b, d); if (s < bs) { bs = s; best = d; } });
-        if (best && bs < 6) engage(b, best, (T.runBlock.base + T.runBlock.jitter * (rnd() * 2 - 1)) * (0.7 + b.power * 0.5));
+      var inBox = defense.filter(function (d) { return Math.abs(d.x0 - BX) <= 5.6 && d.y0 - Y0 <= 7.5; }), claimed = [];
+      FM.ELIGIBLE.forEach(function (id) {
+        var e = byId[id]; if (e.plan !== 'block') return;
+        var at = ctx.abs(ctx.blocks[id]);
+        var best = null, bs = T.runBlock.claim;
+        defense.forEach(function (d) { if (claimed.indexOf(d) >= 0) return; var s = dist(at, d); if (s < bs) { bs = s; best = d; } });
+        if (best) { claimed.push(best); e.claim = best; }
       });
+      /* the defense's spare men: when the box has more than the five and the
+         drawn blocks can take, the men left over are the ones it fits to the
+         ball (aim: the first point of the carrier's path at the line, or
+         past it). They fill before the handoff once they read it. */
+      var cp = byId[ballCarrierId].path || [], aim = cp[cp.length - 1] || { x: BX, y: Y0 + 1 };
+      for (var ai = 0; ai < cp.length; ai++) if (cp[ai].y >= Y0 - 1) { aim = cp[ai]; break; }
+      /* a sneak is a wedge at the ball: it hits before the box can fit, so the line takes whoever is nearest */
+      var nSpare = ballCarrierId === 'QB' ? 0 : inBox.filter(function (d) { return claimed.indexOf(d) < 0; }).length - 5;
+      /* the first one a zone leaves is the backside end, the man on the end
+         of the line away from the run (he has the farthest to come); after
+         him, the backers nearest the ball */
+      var aimSide = aim.x >= BX ? 1 : -1, open = inBox.filter(function (d) { return claimed.indexOf(d) < 0; }), endMan = null;
+      open.forEach(function (d) { if (d.role === 'dl' && (d.x0 - BX) * aimSide < -3 && (!endMan || (d.x0 - BX) * aimSide < (endMan.x0 - BX) * aimSide)) endMan = d; });
+      open.sort(function (a, b) { return (b === endMan) - (a === endMan) || (a.role === 'dl') - (b.role === 'dl') || dist(a, aim) - dist(b, aim); })
+        .forEach(function (d, k) { if (k < nSpare) d.spare = true; });
+      var line = FM.LINEMEN.map(function (id) { return byId[id]; });
+      var pair = function (want) {
+        var pairs = [];
+        line.forEach(function (b) { if (b.engaging) return; inBox.forEach(function (d) { if (d.engaged || d.spare || claimed.indexOf(d) >= 0 || !want(d)) return; pairs.push([dist(b, d), b, d]); }); });
+        pairs.sort(function (p, q) { return p[0] - q[0]; });
+        /* a block on a down lineman loses at once lose of the time (penetration:
+           the NFL's stuffs); on a backer it holds climb as long */
+        pairs.forEach(function (pq) {
+          if (pq[1].engaging || pq[2].engaged) return;
+          var w = (T.runBlock.base + T.runBlock.jitter * (rnd() * 2 - 1)) * (0.7 + pq[1].power * 0.5);
+          if (pq[2].role !== 'dl') {
+            /* THE CLIMB holds climb as long. A backer off the ball (past
+               3.5 yards) has room to see it: per yard past that the block
+               holds deep less, and it whiffs on him whiff of the time per yard.
+               Short yardage backers stand closer, so it leaves them be. */
+            var off = Math.max(0, pq[2].y0 - Y0 - 3.5);
+            w *= T.runBlock.climb * Math.max(0.2, 1 - (T.runBlock.deep || 0) * off);
+            if (T.runBlock.whiff && off > 0 && rnd() < T.runBlock.whiff * off) w = T.runBlock.lostAt;
+          }
+          else if (T.runBlock.lose && rnd() < T.runBlock.lose) w = T.runBlock.lostAt;
+          engage(pq[1], pq[2], w);
+        });
+      };
+      pair(function (d) { return d.role === 'dl'; });
+      pair(function (d) { return d.role !== 'dl'; });
     }
 
     if (pa) say(Math.min(0.3, pa.fake * 0.5), 'fake', 'Play action.');
@@ -621,9 +677,29 @@
       var L2 = len(wx, wy);
       stepToward(e, e.x + wx / L2 * 3, e.y + wy / L2 * 3, e.top);
     }
+    /* PURSUIT ANGLES. A pursuer aims where he can meet the carrier: the
+       earliest t at which the carrier's spot, c + v t, is within his own
+       speed times t of him (|r + v t| = s t, a quadratic in t), no further
+       ahead than T.pursuit.cap seconds, and no further than chase times his
+       distance to the man (a stern chase stays a chase). With no meeting
+       point (he cannot get there) or the carrier near still, he leads him
+       as he always did. */
     function pursue(d, c, want) {
-      var D2 = dist(d, c), lead = Math.min(1, D2 / (d.top * 1.4));
-      stepToward(d, c.x + c.vx * lead, c.y + c.vy * lead, want || d.top);
+      var D2 = dist(d, c), sp = want || d.top, lead = Math.min(1, D2 / (d.top * 1.4)), P = T.pursuit;
+      if (P && P.cap > 0 && c.vx * c.vx + c.vy * c.vy > 1) {
+        var rx = c.x - d.x, ry = c.y - d.y, a = c.vx * c.vx + c.vy * c.vy - sp * sp, b = 2 * (rx * c.vx + ry * c.vy), q = rx * rx + ry * ry, tI = -1;
+        if (Math.abs(a) < 1e-9) { if (b < 0) tI = -q / b; }
+        else {
+          var disc = b * b - 4 * a * q;
+          if (disc >= 0) {
+            var sq = Math.sqrt(disc), t1 = (-b - sq) / (2 * a), t2 = (-b + sq) / (2 * a), lo = Math.min(t1, t2), hi = Math.max(t1, t2);
+            tI = lo > 0 ? lo : hi > 0 ? hi : -1;
+          }
+        }
+        /* a stern chase (the meeting point far off for how near he is) stays a chase */
+        if (tI > 0 && tI <= P.cap && (!P.chase || tI * sp <= P.chase * D2)) lead = tI;
+      }
+      stepToward(d, c.x + c.vx * lead, c.y + c.vy * lead, sp);
     }
     function nearestDefender(r) {
       var best = 1e9;
@@ -824,9 +900,10 @@
           if (isRun) {
             if (!e.engaging) {
               if (dist(e, e.blockTo) > 0.6) { stepToward(e, e.blockTo.x, e.blockTo.y, e.top * 0.9); }
+              /* his man (the one the line left him) first, else whoever comes to him */
               var best = null, bs = 2.6;
-              defense.forEach(function (d) { if (d.engaged) return; var s = dist(e, d); if (s < bs) { bs = s; best = d; } });
-              if (best) engage(e, best, t + (T.runBlock.base + T.runBlock.leadBonus + T.runBlock.jitter * (rnd() * 2 - 1)) * (0.7 + e.power * 0.5));
+              defense.forEach(function (d) { if (d.engaged) return; var s = dist(e, d) - (d === e.claim ? 1 : 0); if (s < bs) { bs = s; best = d; } });
+              if (best) engage(e, best, t + (T.runBlock.base + T.runBlock.leadBonus + T.runBlock.jitter * (rnd() * 2 - 1)) * (T.runBlock.hold[0] + e.power * T.runBlock.hold[1]));
             } else stepToward(e, e.engaging.x, e.engaging.y - 0.8, 3);
           } else stepToward(e, e.blockTo.x, e.blockTo.y, 4);
           return;
@@ -846,6 +923,8 @@
           d.engaged = null;
         }
         if (carrier && (caught || readRun(d))) { pursue(d, carrier); return; }
+        /* a spare man who has read it fills before the ball is handed off: he plays the man drawn to get it */
+        if (isRun && !carrier && d.spare && readRun(d)) { pursue(d, byId[ballCarrierId]); return; }
         /* the ball is in the air. A defender in front of the receiver, near the
            catch, plays the spot; anybody behind him keeps playing his coverage,
            so what decides the catch is the separation the route won. */
@@ -957,7 +1036,7 @@
               dd.missed = T.tackle.missed; continue;
             }
             var crowd = 0; defense.forEach(function (o2) { if (o2 !== dd && !o2.engaged && dist(o2, carrier) < 2.5) crowd++; });
-            var pBreak = Math.max(0.02, T.tackle.broken + (isRun ? T.tackle.runBroken : 0) + (carrier.arch.elusive || 0) - crowd * T.tackle.crowd);
+            var pBreak = Math.max(0.02, T.tackle.broken + (isRun && (T.tackle.runNear == null || carrier.y - Y0 < T.tackle.runNear) ? T.tackle.runBroken : 0) + (carrier.arch.elusive || 0) - crowd * T.tackle.crowd);
             if (rnd() < pBreak) { dd.missed = T.tackle.missed; say(t, 'broken', 'Breaks a tackle.'); continue; }
             if (isRun && rnd() < T.tackle.fumble) { say(t, 'fumble', 'Fumble.'); finish(t, 'fumble', 'fumble', carrier.y); break; }
             var sp2 = len(carrier.vx, carrier.vy), fwd = sp2 > 0.5 ? clamp(carrier.vy / sp2, 0.2, 1) : 0.4;

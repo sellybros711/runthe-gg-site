@@ -45,7 +45,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   `FAW_ENGINE.look()` with it: the defense lined up and its shell, never the call or the blitz. The
   coverage is the first roll, the defense aligns to show it (`config.js` `shell`: two deep for cover 2,
   one deep for 1 and 3, nobody deep for 0), and a `shell.disguise` share of snaps shows another and
-  rotates after the snap. The disguise and the hand (`calls.js` `deal`) each roll on their own stream
+  rotates after the snap. The label is the men standing deep: a defense with one safety (short
+  yardage, a heavy set) shows one deep whatever the shell, so the read can change with the card. The disguise and the hand (`calls.js` `deal`) each roll on their own stream
   off the seed, so they never move the play's dice. A run, a quick pass and a shot, never a run from
   Empty, a sneak only at 1 or 2.
 - **Go For It is the main mode** (the owner, 2026-11-13). `goforit.js`: a run of 4th downs at the NFL
@@ -57,7 +58,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   **Today's run** (Phase 2): snap k of the day's run is seeded from the Eastern day and k (`dailySeed`), the
   same for everybody; the first run of the day that ends is posted (`supabase/169`, the first post
   stands) and the board shows on the card. Practice (any down, spot, level and hash) is the second button. A player's very first Go For It snap
-  gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: all two thirds or better at 4th and 1); the hand,
+  gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: the plan said two thirds or better at 4th and 1;
+  measured 2026-11-16 at 1000 snaps, 78%, 61% and 60%, the comment there has the rest); the hand,
   never the snap.
 - **Your record and the moments** (the launch plan, Phase 2). `profile.js`, on the device (`faw_profile`):
   snaps, conversions, the longest 4th down converted, the best run, the signature play, and eight
@@ -82,6 +84,11 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   QB tap first. The ball changes hands where the QB meets him (the mesh), or is pitched when the
   path takes him away. The carrier runs the path to its end, then the open field. Runs have their
   own tackle numbers (`runBroken`, `drive`) so they gain like real runs.
+- **Count the box** (the owner, 2026-11-16: "make the read decide"). A run is blocked by count
+  (`engine.js`, run blocking): the line and the drawn blocks take the box, and men over the count
+  are free hitters. Every man in a run concept has a drawn block (`routes.js` `runBlocks`, not the
+  sneak). Call it's hint reads the run card's box and the distance (`calls.js` `HINT`), and
+  `test/calls.test.mjs` holds each hint to the card it names: a retune that breaks one rewrites it.
 - **Reads are ordered, up to three** (`play.targets`). The QB goes through them in order; the last
   one is the checkdown when the pocket goes.
 - **Every number in copy comes from the engine** (the distance, the yards, the spot, the pocket

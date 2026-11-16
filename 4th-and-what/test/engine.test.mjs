@@ -102,10 +102,18 @@ test('the carrier runs the path drawn, to the end of it', () => {
 });
 
 test('runs gain like real runs: a long tail, not a wall at three yards', () => {
-  const ys = []; for (let s = 1; s <= 200; s++) ys.push(E.run(at(10), PLAYBOOK['inside zone'], s * 7919).yards);
+  /* the run cards a player is dealt, every look, on a base down and a long
+     4th down (since 2026-11-16: one I formation play into an eight man box
+     is the box read working, not the spread) */
+  const K = require('../calls.js'), ys = [];
+  for (const [down, distance, ballOn] of [[1, 10, 75], [4, 10, 50]]) {
+    const sc = Object.assign({}, C.SCENARIO, { down, distance, ballOn });
+    for (let i = 0; i < 200; i++) { const s = (i * 2654435761 + distance * 97 + down) >>> 0; ys.push(E.run(sc, K.deal(sc, s)[0].play, s).yards); }
+  }
   const share = k => ys.filter(y => y >= k).length / ys.length;
   assert.ok(share(5) > 0.2 && share(5) < 0.5, 'five or more about a third of the time: ' + share(5));
   assert.ok(share(10) > 0.01, 'and now and then ten');
+  assert.ok(share(20) < 0.08, 'but not a race to the end zone: ' + share(20));
 });
 
 test('the same seed and the same play give the same result, frame for frame', () => {
