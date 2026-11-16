@@ -29,6 +29,7 @@
     "setlist-data.yml":          { "owner": "Segue Agent" },
     "shut-the-door-nightly.yml": { "owner": "Shut The Door Game Agent" },
     "sportegories.yml":          { "owner": "Rosters Agent" },
+    "sportegories-watchdog.yml": { "owner": "Rosters Agent" },
     "stumpire-daily.yml":        { "owner": "the owner (Stumpire has no agent)" }
   }
 }
