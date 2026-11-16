@@ -8340,7 +8340,11 @@ function paintSpeed(){
      marked seen when it shows, so closing it or playing are the same to tomorrow.
    - IT WAITS for the result to land (longer after a title, for the confetti), and gives up
      without spending the day if the player has moved on or a sheet is open: the next run that
-     ends gets it instead. */
+     ends gets it instead.
+   - NEVER ON A PLAYER'S FIRST RESULT (the owner, 2026-11-16, from the Advisor's review): a
+     brand-new player sees the record they just earned, not an ad over it. "First" is this
+     browser holding one season, the one just filed, so a signed-in player's career from other
+     devices counts. Nothing is spent: their second run gets it. */
 const STD_PROMO_KEY='rtd_std_promo_v1';
 function etDay(){
   try{return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
@@ -8350,7 +8354,7 @@ function stdPromoDue(){
   try{return localStorage.getItem(STD_PROMO_KEY)!==etDay();}catch(_){return false;}
 }
 function stdPromoSoon(big){
-  if(!stdPromoDue())return;
+  if(!stdPromoDue()||loadHistory().length<2)return;
   setTimeout(()=>{
     const busy=document.querySelector('.sheet.on');
     if(!$('s-over').classList.contains('on')||busy||$('std-promo'))return;

@@ -47,7 +47,7 @@ test('every game is found, once, with the status its sources give it', async () 
   assert.equal(G.stumpire.status, 'testers'); assert.equal(G.stumpire.name, 'Stumpire'); assert.equal(G.stumpire.where, '/arcade/stumpire/');
   assert.equal(G.arcadelab.status, 'testers'); assert.equal(G.arcadelab.name, 'Arcade Lab');
   assert.equal(G.setlist.status, 'unlisted'); assert.equal(G.setlist.name, 'Segue');
-  assert.equal(G.hoops.status, 'dev'); assert.equal(G.hoops.name, 'Run The Floor');
+  assert.equal(G.hoops.status, 'unlisted', 'a public page, noindexed until launch'); assert.equal(G.hoops.name, 'Run The Floor');
   assert.equal(G.shutthedoor.status, 'dev'); assert.equal(G.shutthedoor.branch, 'claude/shut-the-door'); assert.match(G.shutthedoor.note, /branch/);
   assert.equal(G.newthing.name, 'Brand New Thing'); assert.equal(G.newthing.status, 'dev');
 });
