@@ -21,6 +21,9 @@
 -- 2. rtd_career_merge keeps its signature for pages a browser still has cached,
 --    but it no longer rewrites the row when the merge changed nothing.
 --
+-- Each update carries `rows is distinct from v_out`, the form scripts/check-saves.mjs
+-- reads as a guarded save (platform/platform-database-saves.md).
+--
 -- Safe to run twice: both are create or replace, and the grants repeat.
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -79,9 +82,8 @@ begin
         select r, ts from unioned order by ts desc limit 1000
       )
       select coalesce(jsonb_agg(r order by ts), '[]'::jsonb) into v_out from kept;
-      if v_out is distinct from v_have then
-        update public.rtd_career set rows = v_out, updated_at = now() where user_id = v_uid;
-      end if;
+      update public.rtd_career set rows = v_out, updated_at = now()
+        where user_id = v_uid and rows is distinct from v_out;
     end if;
   end if;
 
@@ -143,9 +145,8 @@ begin
   )
   select coalesce(jsonb_agg(r order by ts), '[]'::jsonb) into v_out from kept;
 
-  if v_out is distinct from v_have then
-    update public.rtd_career set rows = v_out, updated_at = now() where user_id = v_uid;
-  end if;
+  update public.rtd_career set rows = v_out, updated_at = now()
+    where user_id = v_uid and rows is distinct from v_out;
   return v_out;
 end $$;
 revoke all on function public.rtd_career_merge(jsonb) from public;
