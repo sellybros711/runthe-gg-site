@@ -57,6 +57,10 @@ on:
         required: false
         type: boolean
         default: false
+      source:
+        description: 'Who started it: blank for a person, clock for workers/clock.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
