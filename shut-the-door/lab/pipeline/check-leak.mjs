@@ -138,6 +138,10 @@ await page.route('**/*', (route) => {
   if (u.hostname === '127.0.0.1') return route.continue();
   if (/fonts\./.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
   if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+  // the ad and analytics tags (the launch, 2026-11-02) answered with an empty script, as check-browser
+  // does: aborting them logs "Failed to load resource: net::ERR_FAILED", which is this check's own
+  // block and not the game's error. Every other host is still aborted, and any console error still fails.
+  if (/(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
   return route.abort();
 });
 const cdp = await ctx.newCDPSession(page);
