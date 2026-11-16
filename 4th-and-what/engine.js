@@ -1054,7 +1054,9 @@
       var short = marker - (spotY || Y0);
       if (cause === 'oob') return 'Pushed out ' + (short < 1 ? 'inches' : Math.round(short) + ' ' + yardsWord(Math.round(short))) + ' short.';
       if (short < 0.6) return 'Stopped inches short. ' + need;
-      if (gained < 0) return 'Dropped for a loss of ' + Math.round(-gained) + '. ' + need;
+      /* a loss that rounds to nothing is no loss: "a loss of 0" read as a bug */
+      if (gained <= -0.5) return 'Dropped for a loss of ' + Math.round(-gained) + '. ' + need;
+      if (gained < 0.5) return 'Stopped at the line. ' + need;
       return 'Tackled ' + Math.round(short) + ' ' + yardsWord(Math.round(short)) + ' short. ' + need;
     }
     if (outcome === 'down') say(tEnd, 'spot', win ? 'First down.' : (marker - spotY < 1 ? 'Tackled a yard short.' : 'Short of the sticks.'));
