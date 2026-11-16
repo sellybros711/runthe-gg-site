@@ -57,6 +57,9 @@ const PLAIN_PRE = 0.45, PLAIN_POST = 0.3, PLAIN_EASE = 0.15;
 // (a pickup this soon after his bobble is posed on his own stride, not the plain one: the plain one, with the bobble's
 // short shuffle drawn eased, skated his foot, check-jolt.mjs skate fielder bobble)
 const QUICK_PICKUP = 1.5;
+// (a dive that comes up short reaches this far short of where the ball lands, in feet: the ball lands past
+// the glove's tip, clear of it, as check-catch.mjs holds every hit that falls in, CLEAR_M)
+const DIVE_SHORT_FT = 2.5;
 const TAKE_KINDS = ['catch', 'drop', 'bobble', 'field', 'pickup', 'receive', 'catch_throw', 'tag'];
 // (the low plate camera is the close one, saved for a run scoring: it keeps the tighter room it had)
 const ROOM_PLATE_FT = 46;
@@ -764,7 +767,14 @@ export class InPlay {
         }
       }
       if (a.kind === 'dive' || a.kind === 'dive_short') {
-        const at = a.to || a.at;
+        let at = a.to || a.at;
+        // (a dive that comes up short reaches for a point DIVE_SHORT_FT short of where the ball lands, on his
+        // line to it: aimed at the landing spot itself, a third baseman diving from 6 ft had his glove 0.31 m
+        // from a soft liner as it dropped, a catch he then did not make, check-catch.mjs hit lands)
+        if (a.kind === 'dive_short') {
+          const from = tr.at(t), d = Math.hypot(at.x - from.x, at.y - from.y);
+          if (d > 1e-3) { const c = Math.min(DIVE_SHORT_FT, d) / d; at = { x: at.x - (at.x - from.x) * c, y: at.y - (at.y - from.y) * c }; }
+        }
         // (an infielder's lunge at a ground ball lays out over 0.45 s, push off to the dirt, as a real one does: in
         // the 0.3 s a shoestring catch takes, off a run his head went over a body's speed, check-jolt.mjs)
         const lay = a.kind === 'dive' ? [0.3, 0.15] : [0.18, 0.12];
@@ -1042,7 +1052,12 @@ export class InPlay {
       }
       f.root.updateMatrixWorld(true);
       const fl = f.jointPoint('foot_l'), fr = f.jointPoint('foot_r');
-      const foot = Math.hypot(fl.x - bag.x, fl.y - bag.y) < Math.hypot(fr.x - bag.x, fr.y - bag.y) ? fl : fr;
+      // (a throw taken at first is the stretch: the glove side foot goes out to the throw and the other one
+      // stays on the bag, always that one. The nearer foot flipped on a stretch whose feet started level: the
+      // stretching foot went onto the bag, the back foot 2.5 ft behind it and the glove 0.27 m short of a
+      // double play's throw home to first, check-catch.mjs throw taken)
+      const stretch = fa.kind === 'receive' && fa.base === 1;
+      const foot = stretch ? (f.glove === 'r' ? fl : fr) : Math.hypot(fl.x - bag.x, fl.y - bag.y) < Math.hypot(fr.x - bag.x, fr.y - bag.y) ? fl : fr;
       // (on the bag: within half a foot of its middle; past that, back onto it)
       const off = Math.hypot(bag.x - foot.x, bag.y - foot.y), need = Math.max(0, off - 0.5) / Math.max(1e-3, off);
       if (need <= 0) continue;
