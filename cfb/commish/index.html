@@ -3394,6 +3394,8 @@ function newTerm(year,scen){
      job again is the one moment a commissioner really does throw one away, so it deletes.
      RTG_SAVE.drop is queued behind the same slot as every save, so it discards whatever write
      of the old term was still pending and lands before the new term's first one. */
+  cloudMarkSent=null; cloudMarkQueued=null;
+  if(cloudTimer){ clearTimeout(cloudTimer); cloudTimer=null; }
   if(window.RTG_SAVE&&authState.signedIn) RTG_SAVE.drop(CLOUD_GAME,'term');
   const seed=E.hashSeed(String(Date.now())+Math.random());
   world=L.createWorld({year:year||2025,membership:MEMBERSHIP[year||2025]||{},seed});
@@ -3476,9 +3478,57 @@ function cloudPush(slot,build){
   if(!window.RTG_SAVE||!authState.signedIn) return;
   RTG_SAVE.queue(CLOUD_GAME,slot,build);
 }
+/*
+ * THE TERM GOES UP WHEN THE TERM MOVED, NOT ON EVERY SAVE (2026-11-16, the Advisor's review,
+ * after the Disk IO outage of 11-12). save() runs on every beat, every ruling and every
+ * repaint of the office, and each one queued the whole world, up to 220 KB, for a full row
+ * rewrite. localStorage still takes every one: a reload on this device lands exactly where
+ * it was. The account takes the ones that matter, read off a small mark:
+ *   the rulings (termProgress), the year and the beat (a finished beat or season), the
+ *   contract (term, length, outcome), the free season marker (`cleared`), the shelf flag,
+ *   the agenda spent this year, and the last point on the tape. The tape is idempotent on a
+ *   repaint, so an office paint leaves it as it was, while a ruling or a press conference
+ *   moves its numbers. That last one is why the mark is wider than termProgress alone: a
+ *   press conference moves the blocs and no ruling is made.
+ * What stays on this device until the next mark: an open case, typed answers, a docket
+ * toggle. They are the middle of a beat, and another device starts that beat again.
+ * A push nobody answered (offline, a dropped request) leaves the mark unsent, so the next
+ * save() tries again. A refused one (another device is further on) is an answer, and does
+ * not retry on every repaint. assets/cloudsave.js v4 and ps_save_put (174) also skip an
+ * equal save: this is the caller's half, which stops the build and the send altogether.
+ */
+/* SENT is what the account answered for. QUEUED is what is on its way, because office() saves
+   more than once in a paint and the second must not queue the same world behind the first. */
+let cloudMarkSent=null, cloudMarkQueued=null, cloudMarkBuilt=null, cloudTimer=null;
+function cloudMark(w){
+  if(!w) return '';
+  const t=w.tape&&w.tape.length?w.tape[w.tape.length-1]:(w.meters||null);
+  return JSON.stringify([termProgress(w),w.year,w.beat,w.term||1,w.termSeasons||0,
+    w.outcome?1:0,w.cleared==null?null:w.cleared,w.careerLogged?1:0,
+    (w.agenda&&w.agenda.year===w.year&&w.agenda.used)||0,t]);
+}
+/* ONE SEND A PRESS. A beat arriving saves in advance() and again when the office paints its
+   tape point, in the same task, so the push waits for the end of that task and goes once with
+   the state the press left. This browser's copy is written at once, every time. */
 function save(){
   try{ localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,world})); }catch(e){}
-  cloudPush('term',()=>world?{payload:{v:1,world:world},progress:termProgress(world)}:null);
+  if(!world||!window.RTG_SAVE||!authState.signedIn||cloudTimer) return;
+  cloudTimer=setTimeout(cloudFlush,0);
+}
+function cloudFlush(){
+  cloudTimer=null;
+  if(!world||!window.RTG_SAVE||!authState.signedIn) return;
+  const mark=cloudMark(world);
+  if(mark===cloudMarkSent||mark===cloudMarkQueued) return;
+  cloudMarkQueued=mark;
+  RTG_SAVE.queue(CLOUD_GAME,'term',()=>{
+    if(!world) return null;
+    cloudMarkBuilt=cloudMark(world);
+    return {payload:{v:1,world:world},progress:termProgress(world)};
+  }).then((r)=>{
+    if(r) cloudMarkSent=cloudMarkBuilt;
+    cloudMarkQueued=null;
+  },()=>{ cloudMarkQueued=null; });
 }
 function load(){
   try{
@@ -9933,7 +9983,8 @@ let gatePaint=0;
     const moved=st.userId!==authState.userId;
     /* The shelf belongs to an account, so a different one (or none) has to be asked again
        rather than trusting a mark left by the last. */
-    if(moved||!st.signedIn) cloudPulled=null;
+    /* A new account has never had this term's mark sent to it. */
+    if(moved||!st.signedIn){ cloudPulled=null; cloudMarkSent=null; cloudMarkQueued=null; }
     authState=st;
     if(moved||!st.signedIn) premiumSet=null;
     /* THE TERM AND THE CAREER THE ACCOUNT IS HOLDING, which is the one thing on this page

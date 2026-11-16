@@ -4,7 +4,7 @@
 --   psql -d saves -f supabase/test/ps_saves_base.sql
 --   psql -d saves -f supabase/103_cloud_saves.sql
 --   psql -d saves -f supabase/143_ps_save_put_fix.sql
---   psql -d saves -f supabase/172_ps_save_put_skip_equal.sql
+--   psql -d saves -f supabase/174_ps_save_put_skip_equal.sql
 --   psql -d saves -f supabase/test/ps_saves_test.sql
 --
 -- 103 shipped with no test, and every call to ps_save_put raised "column
@@ -38,7 +38,7 @@ select pg_temp.claim((select ok from ps_save_put('putt', 'tour', '{"v":2,"lv":2}
 set test.uid = '11111111-1111-1111-1111-111111111111';
 select pg_temp.claim((select (payload->>'lv')::int = 9 from ps_save_get('putt', 'tour')), 'without touching the first account');
 
--- 172: an equal save writes nothing (the row keeps its version and its saved_at)
+-- 174: an equal save writes nothing (the row keeps its version and its saved_at)
 create temp table before_equal as
   select ctid::text as row_ctid, xmin::text as row_xmin, saved_at from ps_saves
    where game = 'putt' and slot = 'tour' and user_id = '11111111-1111-1111-1111-111111111111';

@@ -67,6 +67,9 @@ window.__calls=[];
     var m=/\\/rest\\/v1\\/rpc\\/(ps_save_[a-z]+)$/.exec(url);
     if(!m) return real(u,o);
     var fn=m[1];
+    /* A DROPPED REQUEST, on demand: window.__fail puts fail before they reach the shelf. */
+    if(fn==='ps_save_put'&&window.__fail>0){ window.__fail--; window.__calls.push({fn:'lost'});
+      return Promise.reject(new TypeError('Failed to fetch')); }
     var body={};
     try{ body=JSON.parse((o&&o.body)||'{}'); }catch(e){}
     window.__calls.push({fn:fn,slot:body.p_slot,progress:body.p_progress});
@@ -254,6 +257,61 @@ console.log('\n=== a shelf that cannot be reached is never the reason a term goe
   await p.waitForTimeout(1400);
   const local = await p.evaluate(() => !!localStorage.getItem('cfb_commish_term'));
   ok('and a term still starts and still saves in this browser', local === true);
+  ok('no page errors', errs.length === 0, errs.join(' | '));
+  await p.close();
+}
+
+/*
+ * THE TERM GOES UP WHEN IT MOVED, NOT ON EVERY REPAINT (2026-11-16, the Advisor's review,
+ * after the Disk IO outage of 11-12). save() runs on every office paint, and each one used to
+ * queue the whole world. Now the account takes a save only when the term's mark moves (a
+ * ruling, a beat, a season, the contract), and this browser still takes every one.
+ */
+console.log('\n=== an office repaint sends nothing, a real move sends one ===');
+{
+  const { p, errs } = await open(arm(TESTER) + auth(true) + shelf());
+  await tap(p, '#g-start');
+  await p.waitForTimeout(1200);
+  await quiet(p);
+  const puts = () => p.evaluate(() => window.__calls
+    .filter((c) => c.fn === 'ps_save_put' && c.slot === 'term').length);
+  const lost = () => p.evaluate(() => window.__calls.filter((c) => c.fn === 'lost').length);
+  ok('the new term went up', (await puts()) === 1, String(await puts()));
+  /* The first office paint of a term records the opening point on the tape, which is a real
+     move, so it is settled before the counting starts. */
+  await p.evaluate(() => window.PS_CFB_COMMISH_TEST.repaint());
+  await quiet(p);
+  const start = await puts();
+  ok('  the first paint of the office, which opens the tape, sends one', start === 2, String(start));
+  const localBefore = await p.evaluate(() => localStorage.getItem('cfb_commish_term'));
+  for (let i = 0; i < 6; i++) {
+    await p.evaluate(() => window.PS_CFB_COMMISH_TEST.repaint());
+    await p.waitForTimeout(60);
+  }
+  await quiet(p);
+  ok('six office repaints send nothing', (await puts()) === start, `${await puts()} against ${start}`);
+  ok('  and this browser still has the term', !!(await p.evaluate(() => localStorage.getItem('cfb_commish_term')))
+    && !!localBefore);
+  const beat = await p.evaluate(() => JSON.parse(localStorage.getItem('cfb_commish_term')).world.beat);
+  const year = await p.evaluate(() => JSON.parse(localStorage.getItem('cfb_commish_term')).world.year);
+  await p.evaluate(([bt, y]) => window.PS_CFB_COMMISH_TEST.jump(bt, y + 1), [beat, year]);
+  await quiet(p);
+  ok('a new season sends exactly one', (await puts()) === start + 1, `${await puts()} against ${start}`);
+  ok('  and the account has it', await p.evaluate((y) => window.__shelf['cfb_commish/term'].payload.world.year === y + 1, year));
+  /* A DROPPED REQUEST IS TRIED AGAIN by the next save, even a repaint, because nobody
+     answered it. A refused one would have been an answer. */
+  await p.evaluate(() => { window.__fail = 1; });
+  await p.evaluate(([bt, y]) => window.PS_CFB_COMMISH_TEST.jump(bt, y + 2), [beat, year]);
+  await quiet(p);
+  ok('a send that is lost reaches nobody', (await lost()) === 1
+    && await p.evaluate((y) => window.__shelf['cfb_commish/term'].payload.world.year === y + 1, year));
+  await p.evaluate(() => window.PS_CFB_COMMISH_TEST.repaint());
+  await quiet(p);
+  ok('  and the next save tries it again', await p.evaluate((y) => window.__shelf['cfb_commish/term'].payload.world.year === y + 2, year));
+  const settled = await puts();
+  await p.evaluate(() => window.PS_CFB_COMMISH_TEST.repaint());
+  await quiet(p);
+  ok('  after which a repaint is quiet again', (await puts()) === settled);
   ok('no page errors', errs.length === 0, errs.join(' | '));
   await p.close();
 }
