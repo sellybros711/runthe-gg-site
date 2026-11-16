@@ -1,0 +1,29 @@
+{
+  "_about": "Every database function that rewrites a jsonb column, and what kind of write it is. scripts/check-saves.mjs reads this. event: one write per thing the player did, so an unchanged rewrite cannot repeat. save: called again and again, so it must skip an unchanged write (is distinct from). An unguarded save stays here with status open and an owner until it is fixed. The rule: knowledge base, platform/platform-database-saves.md.",
+
+  "ps_save_put": {
+    "kind": "save", "status": "open",
+    "owner": "College Football Agent with the Perfect Season Agent",
+    "note": "The shared cloud save (assets/cloudsave.js). College Commish, NFL Dynasty, the Trade Machine, Full Team and the 4th and What and Last Shot playbooks all write through it. An equal payload rewrites the row and is sent back whole."
+  },
+  "rtd_career_merge": {
+    "kind": "save", "status": "open",
+    "owner": "Run The Diamond Agent",
+    "note": "Every signed-in page open and hourly refresh sends the whole career, and the merge rewrites rtd_career.rows even when nothing was added."
+  },
+
+  "cfb_fantasy_grant_pass": { "kind": "event", "note": "once, when a College Fantasy pass is bought" },
+  "fantasy_grant_pass": { "kind": "event", "note": "once, when a Fantasy pass is bought" },
+  "premium_grant_bundle": { "kind": "event", "note": "once per purchase or webhook" },
+  "premium_recompute": { "kind": "event", "note": "on a purchase, a refund or a renewal" },
+  "cfb_fantasy_swap": { "kind": "event", "note": "one write per swap the player makes" },
+  "fantasy_swap": { "kind": "event", "note": "one write per swap the player makes" },
+  "rtf_set_profile": { "kind": "event", "note": "hoops/auth.js sends only the fields that changed, when a player changes one" },
+  "shutdoor_post_stats": { "kind": "event", "note": "once per finished outing" },
+  "shutdoor_survivor_post": { "kind": "event", "note": "once per Survivor game" },
+  "shutdoor_survivor_stats": { "kind": "event", "note": "once per Survivor game" },
+  "soccer_h2h_report": { "kind": "event", "note": "once per side per head to head match" },
+  "soccer_h2h_submit_draft": { "kind": "event", "note": "once per side per head to head draft" },
+  "stumpire_save_play": { "kind": "event", "note": "one write per move, each carrying a new version (functions/_stumpire/api.js), so the state always changes" },
+  "stumpire_save_play_v2": { "kind": "event", "note": "as stumpire_save_play" }
+}
