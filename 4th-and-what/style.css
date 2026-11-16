@@ -398,6 +398,8 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 .rescard .rdaily p { margin: 0; }
 .rescard .rdhead { font-weight: 800; color: var(--gold); margin-bottom: 4px !important; }
 .rescard .rdstats { color: var(--teal); font-weight: 800; margin-top: 4px !important; }
+.rescard .rdnext { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; }
+.rescard .rdnext .rgobtn { margin: 0; }
 @media (max-width: 700px) {
   .bannergo { right: 8px; bottom: 8px; padding: 8px 10px; max-width: 70%; gap: 2px; }
   .bannergo .dnum { font-size: 10px; }
@@ -834,6 +836,8 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
 .rescard .rwhy { margin: 6px 0 4px; }
 .rescard .rread { margin: 0 0 10px; padding: 6px 10px; border-radius: 8px; background: rgba(25, 198, 167, .1); border: 1px solid rgba(25, 198, 167, .35); color: #8fe7ff; font-size: 13px; font-weight: 700; }
 .rescard .rplay #rAgain { grid-column: 1 / -1; min-height: 50px; font-size: 18px; font-weight: 900; }
+/* the Daily's card: Go For It is the one gold button; Run it back steps down to a plain one */
+.rescard.daily .rplay #rAgain { background: var(--panel2); color: var(--ink); border-color: var(--edge); box-shadow: none; min-height: 44px; font-size: 15px; }
 .rescard .rmore { grid-template-columns: repeat(3, 1fr); }
 .rescard .rmore .btn { min-height: 34px; font-size: 12px; background: transparent !important; border-color: #23405e; color: #cfd9e4 !important; }
 .rescard .rsnaps { order: 9; }
