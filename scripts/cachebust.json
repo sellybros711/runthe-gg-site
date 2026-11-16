@@ -3255,8 +3255,8 @@
       "sha": "84a6bf5880088165"
     },
     "plate.js": {
-      "v": "2",
-      "sha": "b2c9da92a9b1f849"
+      "v": "3",
+      "sha": "c577f4cd5f618781"
     },
     "menus.js": {
       "v": "25",
@@ -3315,8 +3315,8 @@
       "sha": "602880a846c4c91e"
     },
     "mock-api.js": {
-      "v": "20",
-      "sha": "b7fdaaf7bb81d034"
+      "v": "21",
+      "sha": "44cbca629e07b05a"
     },
     "coach.js": {
       "v": "2",
@@ -3327,8 +3327,8 @@
       "sha": "079c28d2327d3f0e"
     },
     "modes-ui.js": {
-      "v": "12",
-      "sha": "4ef3559bb7d9b39f"
+      "v": "13",
+      "sha": "efa97f191d3ea656"
     },
     "box-ui.js": {
       "v": "2",

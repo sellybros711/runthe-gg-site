@@ -1,0 +1,10 @@
+name = "runthe-gg-clock"
+main = "index.mjs"
+compatibility_date = "2026-11-01"
+
+# Every five minutes. clock.mjs decides in Eastern time what each tick starts.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# GH_TOKEN is a secret, set with `npx wrangler secret put GH_TOKEN` or in the dashboard.
+# Never put it in this file.

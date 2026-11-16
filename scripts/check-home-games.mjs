@@ -41,7 +41,7 @@ const KNOWN = {
 };
 
 // Games that exist in the repo and are not launched. None may be named or linked here.
-const UNLAUNCHED = /\b(Stumpire|Arcade Lab|Last\\sShot|4th and What|Run The Floor|MythiBall|Wrestling|Basketball|Segue)\b/i;
+const UNLAUNCHED = /\b(Stumpire|Arcade Lab|Last\sShot|4th and What|Run The Floor|MythiBall|Wrestling|Basketball|Segue)\b/i;
 const UNLAUNCHED_HREF = /href="\/(hoops|wrestling|mythiball|4th-and-what|setlist|last-?shot|fumble|pitch|watch)(\/|")/i;
 
 const problems = [];

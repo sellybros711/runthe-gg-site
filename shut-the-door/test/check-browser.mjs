@@ -1978,9 +1978,11 @@ async function modes(w, h, full) {
   /* how today was picked, and the archive */
   step(tag + ' 17 the pick and the archive', 300);
   ({ ctx, page, errors } = await modesPage(w, h, '?mockVote=locked&mockEnt=pro'));
-  await page.waitForSelector('#h-pick:not([hidden])', { timeout: 30000 });
-  const pk = await page.textContent('#h-pick');
-  ok(/^Picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
+  /* the owner (2026-11-16): a day the vote picked shows no "picked by your votes" line on the daily card */
+  await page.waitForSelector('#h-title:not(:empty)', { timeout: 30000 });
+  await page.waitForTimeout(500);
+  const pk = await page.evaluate(() => { const e = document.getElementById('h-pick'); return { hidden: e.hidden, shown: getComputedStyle(e).display !== 'none', t: e.textContent }; });
+  ok(pk.hidden && !pk.shown && !/vote/i.test(pk.t), '17 a day the vote picked: the daily card says nothing about the vote (' + JSON.stringify(pk) + ')');
   await page.click('#hm-arc');
   await page.waitForSelector('#hp-arc.on:not([hidden])');
   /* a phone keeps the list; a desk (980 px and up) shows the same days as a calendar (the owner, 2026-11-10) */
