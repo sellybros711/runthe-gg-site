@@ -31,18 +31,27 @@ export async function pageGate(sub, uid, db) {
  *   POST /last-shot/e        a tester's events (events.js)        -> 204
  *   GET  /last-shot/report   the round report, admins only (report.js)
  * Anything else falls through to pageGate. */
-import { postEvents, GAME } from './events.js';
+import { postEvents, deviceOf, GAME } from './events.js';
+
+/* Guests may send events: OFF while the game is tester only. The launch PR
+   turns it on, with the page, so a player who never signs in still counts. */
+export const PUBLIC_EVENTS = false;
 import { renderReport, rangeOf } from './report.js';
 
-export async function roundGate({ method, sub, uid, query, body, nowMs }, db) {
+export async function roundGate({ method, sub, uid, query, body, nowMs, publicEvents = PUBLIC_EVENTS }, db) {
   const s = String(sub || '').replace(/\/+$/, '');
   if (s !== 'e' && s !== 'report') return undefined;
+  if (s === 'e' && method === 'POST' && !uid && publicEvents && deviceOf(body)) {
+    const r = await postEvents(null, body, db);
+    return { status: r.status, type: 'text/plain; charset=utf-8', body: '' };
+  }
   if (!uid) return null;
   let role = null;
   try { role = await db.role(uid); } catch (e) { return null; }
   if (s === 'e') {
-    if (method !== 'POST' || !ROLES.includes(role)) return null;
-    const r = await postEvents(uid, body, db);
+    if (method !== 'POST') return null;
+    if (!ROLES.includes(role) && !publicEvents) return null;
+    const r = await postEvents(ROLES.includes(role) || publicEvents ? uid : null, body, db);
     return { status: r.status, type: 'text/plain; charset=utf-8', body: '' };
   }
   if (method !== 'GET' || role !== 'admin') return null;

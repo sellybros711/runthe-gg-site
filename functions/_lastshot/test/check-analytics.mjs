@@ -132,6 +132,9 @@ const A = await context();
   o = last(evs(), 'open');
   ok(!!o && o.p.first === false && o.s !== s1, 'a reload sends open, first: false, in a new session');
   ok(/^[A-Za-z0-9-]{8,40}$/.test(o.s), 'the session id: ' + o.s);
+  { const ds = [...new Set(posts.filter(p => p.body && p.body.ev).map(p => p.body.d))];
+    ok(ds.length === 1 && /^[A-Za-z0-9-]{8,40}$/.test(ds[0]) && ds[0] === await L(() => localStorage.getItem('last_shot_device')),
+      'every post carries the one device id this browser keeps, across a reload: ' + ds.join(',')); }
   const s2 = o.s;
 
   // a free Run It: run n:1, then result

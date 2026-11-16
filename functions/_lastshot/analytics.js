@@ -3,12 +3,14 @@
  * go anywhere: time to the first Run It, wins within five tries, tries a
  * session and day-1 return.
  *
- *   POST /last-shot/e   { s: <session id>, ev: [{ n, t, p }, ...] }
+ *   POST /last-shot/e   { s: <session id>, d: <device id>, ev: [{ n, t, p }, ...] }
  *
  * Same origin, behind the tester gate, so the gate cookie says who it is. The
  * events carry no personal data, this sets no cookie of its own and nothing
  * here talks to a third party. s is a random id per page load; t is
- * Math.round(performance.now()) when the event happened.
+ * Math.round(performance.now()) when the event happened. d is a random id this
+ * browser keeps ('last_shot_device'), so a player who never signs in still
+ * counts once the game is public (2026-11-16); it says nothing about who.
  *
  * SENDING: track(n, p) queues. The queue goes out when it reaches FLUSH_AT,
  * every FLUSH_MS while anything is queued, and when the page is hidden or
@@ -64,7 +66,19 @@ function cleanP(p) {
   return out;
 }
 
-function bodyOf(ev) { return JSON.stringify({ s: sessionId(), ev }); }
+let dev = null;
+function deviceId() {
+  if (dev) return dev;
+  try {
+    const k = 'last_shot_device', v = localStorage.getItem(k);
+    if (v && /^[A-Za-z0-9-]{8,40}$/.test(v)) return (dev = v);
+    const b = new Uint8Array(12); crypto.getRandomValues(b);
+    dev = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem(k, dev);
+  } catch (e) { dev = dev || sessionId(); }
+  return dev;
+}
+function bodyOf(ev) { return JSON.stringify({ s: sessionId(), d: deviceId(), ev }); }
 
 /* Every batch of MAX_POST. beacon: the page is going, so sendBeacon first. */
 function flush(beacon) {
