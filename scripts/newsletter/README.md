@@ -53,7 +53,7 @@ Add it to `games.json` on the day it goes on the home page. Until it is on that 
 agent never sees a commit about it, so an unreleased game cannot leak into an email.
 
 `dir` is where the game's code lives: a top folder (`football`) or any path, for a game served by
-a Pages Function (Last Shot's is `functions/_lastshot`). A commit counts for the game when it
+a Pages Function (say `functions/_somegame`). A commit counts for the game when it
 touches a file under that path.
 
 ## Rules worth knowing

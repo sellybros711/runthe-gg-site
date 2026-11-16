@@ -47,8 +47,8 @@ function commitsSince(base) {
   for (const rec of raw.split('\x1e').filter((r) => r.trim())) {
     const [sha, date, subject, bodyRaw, filesRaw] = rec.split('\x1f');
     const files = (filesRaw || '').split('\n').map((f) => f.trim()).filter(Boolean);
-    // a dir is a top folder (football) or any path (functions/_lastshot, a game
-    // served by a Pages Function): a commit counts for it if a file is under it
+    // a dir is a top folder (football) or any path (functions/_somegame, for a
+    // game served by a Pages Function): a commit counts for it if a file is under it
     const games = dirs.filter((d) => files.some((f) => f === d || f.startsWith(d + '/')));
     if (!games.length) continue;
     const body = (bodyRaw || '').replace(/Co-Authored-By:.*|Claude-Session:.*/g, '').trim().slice(0, 1200);
