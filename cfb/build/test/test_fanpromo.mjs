@@ -144,7 +144,7 @@ const browser = await pw.chromium.launch({ executablePath: CHROME });
   ok('  it says what the week\'s top score wins', /Top score this week wins Pro\./.test(r.text));
   ok('  and says when entries lock, in Eastern time', /Lineups lock \w{3} \d{1,2}:\d{2}[ap]m ET\./.test(r.text), r.text);
   ok('  it links to the college page', await h.page.evaluate(() =>
-    document.getElementById('b-fanpromo').getAttribute('href') === '/cfb/fantasy/'));
+    document.getElementById('b-fanpromo').getAttribute('href') === '/cfb/fantasy/?from=results'));
   ok('  a guest is not asked the server (no account)', !r.rpcs.some((x) => x.name === 'cfb_fantasy_my_entry'));
   if (SHOTS) {
     await h.page.locator('#o-fanpromo').scrollIntoViewIfNeeded();

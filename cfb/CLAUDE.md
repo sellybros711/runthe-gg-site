@@ -28,6 +28,7 @@ node cfb/build/test/commish/probe_longrun.mjs    30 runs of 50 seasons (--bold, 
 node cfb/build/test/commish/test_standings.mjs   the standings screen, four states
 node cfb/build/test/test_fantasy.mjs             the College Fantasy Challenge (--quick: no browser)
 node cfb/build/test/test_fanpromo.mjs            the results screen's Fantasy card: open week, no lineup in
+node cfb/build/test/test_analytics.mjs           GA on College Fantasy and Commish: consent first, the events, nothing personal
 ```
 
 The SQL suites (`supabase/test/commish_clock_test.sql`, `tenure_test.sql`, `cfb_fantasy_test.sql`)
@@ -56,6 +57,10 @@ run against a scratch Postgres; the order of files each needs is in the matching
 - **A redirect back from Stripe lands on the host the buyer left from.**
 
 **The College Fantasy Challenge**
+
+- **Every event names its game and nothing about the player.** College Fantasy sends the NFL page's six
+  `fantasy_*` events under `game_name` 'College Fantasy'; Commish sends six `commish_*` events through
+  `cfbCommishEvent`. A new event goes in `test_analytics.mjs` and the vault note in the same PR.
 
 - ESPN is the only source. The week locks at the first slate kickoff. There is no results file:
   points live only in `cfb_fantasy_results`.

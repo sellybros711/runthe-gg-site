@@ -2209,6 +2209,24 @@
     padding-left:10px;border-left:2px solid var(--gold-dim,var(--line-2))}
   .foot{margin-top:22px;text-align:center;font-size:11.5px;color:var(--dim-2);line-height:1.6}
 </style>
+<!-- GA4, the site's one property (Advisor's review 2026-11-16: Commissioner Mode sent no event at
+     all). Consent Mode defaults first, the same as every other page on runthe.gg: in Europe, the
+     UK and Switzerland analytics waits for the consent banner. No ads on this page, so ad storage
+     is only ever denied. Every event carries game_name and nothing about the player. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+  gtag('js',new Date());gtag('set',{game_name:'Commissioner Mode'}); gtag('config',id);
+  var s=document.createElement('script');s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+/* One call for every Commish event, so a failed or missing gtag never stops a ruling. */
+function cfbCommishEvent(ev,p){ try{ if(typeof gtag==='function') gtag('event',ev,p||{}); }catch(e){} }
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -3032,6 +3050,8 @@ function seasonWall(){
       office();
       return;
     }
+    /* The day's free season is spent: the wall, and the Pro offer on it. */
+    cfbCommishEvent('commish_wall',{});
     paintWait(st||null);
   });
 }
@@ -3314,6 +3334,7 @@ function renewTerm(years){
   world.term=(world.term||1)+1;
   world.startYear=world.year;
   world.termSeasons=Math.max(1,years|0);
+  cfbCommishEvent('commish_term_renewed',{term:world.term,years:world.termSeasons});
   world.outcome=null;
   /* THE SHELF GUARD IS RELEASED WITH THE CONTRACT. logTerm refuses to file a term twice
      and it keys on this flag, so a renewal that did not clear it would leave every term
@@ -3387,6 +3408,7 @@ function scenApply(w,scen){
 }
 
 function newTerm(year,scen){
+  cfbCommishEvent('commish_term_start',{});
   /* THE OLD TERM IS DROPPED RATHER THAN OVERWRITTEN, and that is what makes the progress
      rule in 103 safe. A fresh term is progress 1 and the one it replaces is whatever it got
      to, so a write would be REFUSED as moving the save backwards and the next sign in on
@@ -5055,6 +5077,7 @@ return p;
  screen has painted, guarded by a sequence so a slow answer for one term cannot land on
  the next one's ending, and silent when the backend is not there. */
 function recordTerm(world,p){
+cfbCommishEvent('commish_term_done',{doctrine:String((p&&p.id)||'')});
 const box=$('y-docsplit');
 if(box){ box.hidden=true; box.innerHTML=''; }
 const P=window.PS_CFB_SPLITS, DOC=window.PS_CFB_DOCTRINE, R=window.PS_CFB_REPORT;
@@ -7105,6 +7128,7 @@ function paintSplit(el,split,optionId,labels){
    handler because the handler is already long and because the sequence guard is the whole
    point: the number on the screen has to belong to the item on the screen. */
 function recordRuling(item,optionId){
+  cfbCommishEvent('commish_ruling',{item:String((item&&item.id)||'')});
   const el=$('r-split');
   if(el){ el.hidden=true; el.innerHTML=''; }
   const P=window.PS_CFB_SPLITS;
@@ -8825,6 +8849,7 @@ function playSeason(year){
     const sim=seasonAt({through:S.WEEKS,titles:true,bracket:true});
     if(!sim) return;
     lastSeason=sim;
+    cfbCommishEvent('commish_season_played',{term:world.term||1,season:Math.max(1,world.year-world.startYear+1)});
     /* THE VIEWING FIGURES GO ON THE WORLD HERE, which is the only place a season is known to
        be finished. The media rights item reads them back to price the next deal, so without
        this call the negotiation is the same whether the player protected every rivalry or

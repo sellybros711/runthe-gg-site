@@ -666,6 +666,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <script src="/assets/rtg-ads.js?v=3"></script>
+<!-- GA4: same property as the rest of runthe.gg, gated by the consent defaults above. The page had
+     the consent and no tag, so College Fantasy sent no event at all (Advisor's review 2026-11-16). -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+  gtag('js',new Date());gtag('set',{game_name:'College Fantasy'}); gtag('config',id);
+  var s=document.createElement('script');s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -1705,6 +1715,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var c = state.chances[cur];
     c.ids.push(man.player_id);
     save();
+    if (c.ids.length === D.SLOTS.length) ga('fantasy_draft_done', { draw: cur + 1 });
     JUST = c.ids.length - 1;
     if (REDUCE){ paintDraft(); return; }
     busy = true;
@@ -1818,6 +1829,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     state.pick = Number(b.dataset.i);
     save();
     clearRefused();
+    ga('fantasy_lineup_saved', { draw: state.pick + 1 });
     toReview();
   });
 
@@ -1909,6 +1921,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       if (res === true){
         state.submitted = state.pick;
         save();
+        ga('fantasy_entered', { draws: state.chances.length });
         /*
          * A SUBMIT LANDS ON THE BOARD, not on your own six.
          *
@@ -2240,6 +2253,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
          longer exists. */
       if (r.ok){
         applySwap(s.out, s.pick);
+        ga('fantasy_swap', {});
         if (SWAP === s){ $('sw-sheet').hidden = true; SWAP = null; }
         if ($('s-in').classList.contains('on')) paintIn(LAST_IN.res, LAST_IN.lookingBack);
         return;
@@ -3106,6 +3120,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      */
     clearBoardTimers();
     lvTab(tab === 'board' ? 'board' : 'games');
+    ga('fantasy_live_opened', { tab: tab === 'board' ? 'board' : 'games' });
     paintScores(null);
     show('s-live');
     /* AFTER `show`, WHICH CANCELS TIMERS. The draft screen's reveal learnt this the same
@@ -3124,6 +3139,22 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   };
 
   /* ---- home ---- */
+  /* GOOGLE ANALYTICS, the same six events the NFL Fantasy page sends (site PR 1020), so the two
+     competitions read side by side under their own game_name. `from` is where the player came in
+     (?from=results, ?from=home), so the results card and the door can be credited with the
+     entries they send. Never anything about the player. */
+  var FROM = (function(){
+    try { var f = new URLSearchParams(location.search).get('from') || '';
+      return /^[a-z]{2,16}$/.test(f) ? f : ''; } catch (e) { return ''; } })();
+  function ga(ev, p){
+    try {
+      if (typeof gtag !== 'function') return;
+      var o = p || {}; if (FROM) o.from = FROM;
+      if (typeof POOL !== 'undefined' && POOL && POOL.week) o.week = POOL.week;
+      gtag('event', ev, o);
+    } catch (e) {}
+  }
+
   function startChance(){
     var i = -1;
     for (var k=0;k<state.chances.length;k++){
@@ -3133,6 +3164,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       if (state.chances.length >= chancesAllowed()){ toReview(); return; }
       state.chances.push({ seed: D.newSeed(), ids: [] });
       i = state.chances.length - 1;
+      ga('fantasy_draw_used', { draw: i + 1, of: chancesAllowed() });
     }
     cur = i;
     save();
