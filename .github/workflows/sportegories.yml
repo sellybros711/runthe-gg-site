@@ -36,6 +36,8 @@ jobs:
       # yesterday's working corpus stays on the site.
       - name: The rebuilt corpus must still answer correctly
         shell: bash
+        env:
+          DECISIONS_OUT: /tmp/decisions.json
         run: node scripts/check-sportegories.mjs | tee /tmp/check.txt
       - name: Every category still checks every league it names
         shell: bash
@@ -87,7 +89,7 @@ jobs:
             if [ -s /tmp/check.txt ]; then grep -E 'FAIL|problem' /tmp/check.txt | head -40; else echo "(no check output: the job failed before the checks ran)"; fi
             echo '```'
             echo
-            echo "An undecided related-name pair (\"related names nobody has decided\") is fixed by adding it to \`same\` (one person) or \`apart\` (two people) in \`scripts/sportegories-people.json\`, judged from the roster and former records (college, position, clubs, ids). Ask the Rosters Agent."
+            echo "The Rosters Agent checks this every day, diagnoses it and opens the fix. An undecided name pair no longer fails the rebuild (it is listed in its own issue instead), so a failure here is something new."
           } > /tmp/body.md
           if [ -n "$NUM" ]; then
             gh issue edit "$NUM" --body-file /tmp/body.md
@@ -95,3 +97,28 @@ jobs:
           else
             gh issue create --title "$TITLE" --body-file /tmp/body.md
           fi
+      # A PERSON IS ASKED ONLY WHAT THE RULE CANNOT DECIDE. An undecided name pair no
+      # longer fails the rebuild: it stays two records and the rest ships. Each one is
+      # listed here, with the evidence and the exact line to add, in one issue that
+      # closes itself once the list is empty.
+      - name: Name pairs for a person to decide
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="Sportegories: name pairs to decide"
+          NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+          N=$( [ -s /tmp/decisions.json ] && jq length /tmp/decisions.json || echo 0 )
+          if [ "$N" = "0" ]; then
+            [ -s /tmp/decisions.json ] && [ -n "$NUM" ] && gh issue comment "$NUM" --body "Nothing left to decide: $RUN_URL" && gh issue close "$NUM"
+            exit 0
+          fi
+          {
+            echo "The rebuild went ahead. These related names are still two records each, because the rule cannot tell one man from two. Decide each one: add its line to \`same\` (one man) or \`apart\` (two men) in \`scripts/sportegories-people.json\`."
+            echo
+            jq -r '.[] | "- **\(.sport) \(.a) / \(.b)**\n  - \(.evidence[0])\n  - \(.evidence[1])\n  - line: `\(.line)`"' /tmp/decisions.json
+            echo
+            echo "Latest run: $RUN_URL"
+          } > /tmp/decide.md
+          if [ -n "$NUM" ]; then gh issue edit "$NUM" --body-file /tmp/decide.md; else gh issue create --title "$TITLE" --body-file /tmp/decide.md; fi
