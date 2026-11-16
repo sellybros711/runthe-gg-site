@@ -8,10 +8,12 @@
  *
  * Honest by construction. The snap's seed is fixed when the screen opens,
  * and the defense on the field is FAW_ENGINE.look() with that seed: exactly
- * what run() starts from, never the call or the blitz. The shell depends on
- * the seed and the situation only, so it is the same whichever card you
- * pick; the men line up over the card's formation. A quarter of snaps
- * disguise it (config.js shell.disguise), so the read is good, not certain.
+ * what run() starts from, never the call or the blitz. The coverage and the
+ * shell it shows are rolled from the seed and the situation, and the men line
+ * up over the card's formation. The label is the men standing deep: a heavy
+ * set or short yardage brings one safety, so a two deep shell shows one deep
+ * there and the read can change with the card. A quarter of snaps disguise it
+ * (config.js shell.disguise), so the read is good, not certain.
  *
  * The hand is dealt from its own stream off the same seed, so a reload deals
  * the same three cards for the same snap. Concepts come from the route

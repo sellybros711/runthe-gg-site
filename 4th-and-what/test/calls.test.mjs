@@ -25,11 +25,20 @@ test('a hand is a run, a quick pass and a shot, the same for the same snap', () 
   TR.pool().forEach(it => assert.ok(K.TYPE[it.concept], it.concept));
 });
 
-test('the look is the snap: the shell shown is the one played, whatever card is picked', () => {
+test('the look is the snap: the shell shown is the one played, and it is the men standing deep', () => {
+  /* a heavy set draws a defense with one safety, so the shell can differ by
+     card: the label is what stands over that card's formation (2026-11-16) */
+  const DEEP = { two: 2, one: 1, zero: 0 };
   let dis = 0;
+  for (const d of [1, 2, 5]) for (let s = 1; s <= 120; s++) {
+    const sc = at({ distance: d });
+    K.deal(sc, s).forEach(c => {
+      const l = E.look(sc, c.play, s), deep = l.defense.filter(x => x.role === 's' && x.at[1] > 8).length;
+      assert.equal(deep, DEEP[l.shell], 'the label is the men deep: ' + l.shell + ' with ' + deep + ' deep, 4th & ' + d);
+    });
+  }
   for (let s = 1; s <= 200; s++) {
-    const h = K.deal(at(), s), shells = h.map(c => E.look(at(), c.play, s).shell);
-    assert.ok(shells.every(x => x === shells[0]), 'one shell for every card: ' + shells);
+    const h = K.deal(at(), s);
     h.forEach(c => { const r = E.run(at(), c.play, s), l = E.look(at(), c.play, s); assert.equal(r.shell, l.shell); assert.equal(r.disguised, r.shell !== E.SHELL[r.call.coverage]); });
     dis += E.run(at(), h[0].play, s).disguised;
   }

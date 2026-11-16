@@ -45,7 +45,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   `FAW_ENGINE.look()` with it: the defense lined up and its shell, never the call or the blitz. The
   coverage is the first roll, the defense aligns to show it (`config.js` `shell`: two deep for cover 2,
   one deep for 1 and 3, nobody deep for 0), and a `shell.disguise` share of snaps shows another and
-  rotates after the snap. The disguise and the hand (`calls.js` `deal`) each roll on their own stream
+  rotates after the snap. The label is the men standing deep: a defense with one safety (short
+  yardage, a heavy set) shows one deep whatever the shell, so the read can change with the card. The disguise and the hand (`calls.js` `deal`) each roll on their own stream
   off the seed, so they never move the play's dice. A run, a quick pass and a shot, never a run from
   Empty, a sneak only at 1 or 2.
 - **Go For It is the main mode** (the owner, 2026-11-13). `goforit.js`: a run of 4th downs at the NFL

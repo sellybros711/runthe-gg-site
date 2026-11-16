@@ -257,6 +257,11 @@
       var real = opt.call && CALLS[opt.call] ? CALLS[opt.call].coverage : cov;
       shell = shownShell(T, real, seed);
       alignShell(T, Dal, Oal, shell, real, distance);
+      /* the look is what stands there: a short yardage defense has one safety,
+         and alignShell puts him in the middle, so a two deep shell shows one
+         deep (and a Cover 2 call is one that rotated). Only the label: the
+         alignment and the dice are the same. */
+      if (shell === 'two' && Dal.filter(function (d) { return d.role === 's'; }).length < 2) shell = 'one';
       box = FM.boxCount(Dal);
       return box;
     }, rnd, S.down);
