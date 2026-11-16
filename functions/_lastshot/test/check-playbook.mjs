@@ -97,6 +97,7 @@ async function run(name, viewport, mobile) {
   await page.click('#hBooks');
   await page.waitForSelector('#pbSignIn');
   ok(await page.isVisible('#pbSignIn'), 'signed out, My Playbooks offers sign in and keeps nothing');
+  { const sb = await page.locator('#pbSignIn').boundingBox(); ok(sb.height < 80, 'the sign in button is a button, not a full height block (' + Math.round(sb.height) + ' px)'); }
   ok(!(await page.isVisible('#pbNew')), 'and no playbook can be started');
 
   /* ---------- signed in ---------- */

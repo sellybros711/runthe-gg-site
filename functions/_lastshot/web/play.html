@@ -163,6 +163,8 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .cutsub{font-weight:700;color:#fff;font-size:16px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 .cutskip{position:absolute;bottom:10px;font-size:12px;font-weight:700;color:rgba(255,255,255,.7)}
 #bRun.pulse{animation:pulse 1.5s ease-in-out infinite}
+#bPlays.pulse{animation:glow 1.5s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,210,63,.7)}50%{box-shadow:0 0 0 8px rgba(255,210,63,0)}}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,176,125,.55)}50%{box-shadow:0 0 0 9px rgba(34,176,125,0);transform:scale(1.03)}}
 .hcard.game.big{padding:26px 18px}.hcard.game.big b{font-size:44px;line-height:1}.hcard.game.big span{font-size:16px;margin-top:8px}
 .hcard.small{padding:12px 16px}.hcard.small b{font-size:17px}.hcard.small span{font-size:13px}
@@ -230,6 +232,9 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .hcard.daily .dtop{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .hcard.daily b{font-size:20px;color:#fff}
 .hcard.daily .dcount{flex:none;display:inline;margin:0;font-size:12px;font-weight:700;color:#9fb0c8;font-variant-numeric:tabular-nums}
+.hcard.game.first{outline:3px solid #ffd23f;outline-offset:2px}
+.hcard.game.first b::after{content:'Start here';margin-left:8px;font-size:12px;font-weight:800;color:#1b1b1b;background:#ffd23f;border-radius:999px;padding:2px 8px;vertical-align:middle}
+.btn.solo{flex:0 0 auto;align-self:flex-start;min-height:44px}
 .hcard.daily #hDailyTitle{color:#ffd23f;font-weight:800;font-size:16px}
 .hcard.daily .dsq{font-size:20px;letter-spacing:2px;margin-top:6px;color:#fff}
 .hcard.daily .dgo{display:inline-block;margin-top:10px;background:var(--green);color:#fff;font-weight:800;font-size:15px;border-radius:999px;padding:7px 18px}
@@ -276,7 +281,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .vs p{margin:0!important;font-weight:800;font-size:16px}
 .vs .vsthem{color:var(--dim);font-weight:700}
 @media (prefers-reduced-motion:reduce){.pop.on,.pop.final.on{animation:none;opacity:1;transform:translate(-50%,-50%)}
-  .team b.flip,.bigword.on,.cutv.on,#bRun.pulse,.star.got,.perfecttag{animation:none}.stage.slow::after{box-shadow:none}}
+  .team b.flip,.bigword.on,.cutv.on,#bRun.pulse,#bPlays.pulse,.star.got,.perfecttag{animation:none}.stage.slow::after{box-shadow:none}}
 </style>
 </head>
 <body>

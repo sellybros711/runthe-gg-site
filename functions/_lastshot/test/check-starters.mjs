@@ -9,7 +9,9 @@
  *   Save this play    signed out it reads Sign in to save; signed in it saves once,
  *                     named from the terminology, with its situation and the run counted,
  *                     then Saved · Open lands on the play
- *   home              Daily, Play (big), Ladder, then My Playbooks smaller
+ *   home              a new browser: Play (big, Start here), Daily, Ladder, then My
+ *                     Playbooks smaller; after its first run the Daily goes back on top
+ *   a run             the frames strip hides while it plays; the card says Run it again
  *
  *   node functions/_lastshot/test/check-starters.mjs   (SHOTS=dir for screenshots) */
 import { createRequire } from 'node:module';
@@ -71,7 +73,8 @@ async function run(name, viewport, mobile) {
   /* ---------- home ---------- */
   const box = id => page.locator('#' + id).boundingBox();
   const [hd, hp, hl, hb] = [await box('hDaily'), await box('hPlay'), await box('hLadder'), await box('hBooks')];
-  ok(hd.y < hp.y && hp.y < hl.y && hl.y < hb.y, 'home reads Daily, Play, Ladder, then My Playbooks');
+  ok(hp.y < hd.y && hd.y < hl.y && hl.y < hb.y, 'a new browser: home reads Play, Daily, Ladder, then My Playbooks');
+  ok(await L(() => document.getElementById('hPlay').classList.contains('first')), 'Play is marked Start here');
   ok(hp.height > hb.height && hp.height >= hl.height, 'Play is the big card and My Playbooks is smaller (' + Math.round(hp.height) + ' vs ' + Math.round(hb.height) + ')');
   ok((await L(() => document.querySelectorAll('.sheet.on, .fsheet.on').length)) === 0, 'no sheet opens by itself');
   await shot('1-home');
@@ -82,6 +85,19 @@ async function run(name, viewport, mobile) {
   ok(same(await clip(), body(starterPlay('pin-down'))), 'a first visit opens on the Pin-down starter');
   ok(await L(() => document.getElementById('bRun').classList.contains('pulse')), 'and Run It pulses');
   ok(same(body(await L(() => window.__lastShot.starter())), body(starterPlay('pin-down'))), 'the first run play is starters.js, one copy');
+
+  /* ---------- a run: the strip gives the court its room; Run it again ---------- */
+  await L(() => window.__lastShot.run(7));
+  ok(await L(() => document.getElementById('framesRow').hidden), 'the frames strip hides while the play runs');
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
+  ok((await page.textContent('#bReplay')) === 'Run it again', 'the card says Run it again, not Replay');
+  await page.click('#bBack');
+  ok(!(await L(() => document.getElementById('framesRow').hidden)), 'back on the clipboard, the strip is back');
+  await L(() => window.__lastShot.home());
+  const [hd2, hp2] = [await box('hDaily'), await box('hPlay')];
+  ok(hd2.y < hp2.y && !(await L(() => document.getElementById('hPlay').classList.contains('first'))), 'after a first run the Daily is back on top, no Start here');
+  await page.click('#hPlay');
+  await page.waitForSelector('#board', { state: 'visible' });
 
   /* ---------- the Plays sheet ---------- */
   await page.click('#bClear');

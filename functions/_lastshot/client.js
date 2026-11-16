@@ -56,6 +56,10 @@ const $ = id => document.getElementById(id);
 const KEY = 'last_shot_play_v1', SPEED_KEY = 'last_shot_speed';
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+/* Set on this browser's first run (2026-11-16). Until then Home leads with
+   Play and its drawn starter, not the Daily's blank board: the time to the
+   first Run It is the tester round's first target. */
+const RAN_KEY = 'last_shot_ran';
 
 let play = loadPlay();
 let hintTimer = null, lastResult = null, live = null, debugOn = false, runPlay = null;
@@ -105,6 +109,8 @@ const ui = {
   changed(p, f) {
     $('bRun').disabled = problems(SCX(), p).length > 0;
     $('bRun').classList.toggle('pulse', mode === 'game' && !ranOnce && playKey(p) === STARTER);
+    /* a blank Daily board: Plays is the way in */
+    $('bPlays').classList.toggle('pulse', mode === 'daily' && !p.steps.length && !!day && !day.played);
     goSync(p);
     $('bUndo').disabled = !p.steps.length && !(f && f.beat > 1);
     $('bClear').disabled = !p.steps.length;
@@ -118,6 +124,7 @@ const ui = {
 };
 function defaultHint() {
   if (!board) return '';
+  if (!play.steps.length && !board.tool && mode === 'daily') return 'Tap Plays to start from one. Or draw your own.';
   if (!play.steps.length && !board.tool) return 'Drag players to set the floor. Then pick a tool.';
   if (!problems(SCX(), play).length) return 'Ready. Run It.';
   return board.tool ? '' : 'Pick a tool.';
@@ -440,6 +447,8 @@ function run(seed, opt, pl) {
   const res = simulate(S, pl || play, seed, mode === 'level' && lvl ? levelOpt(lvl.L) : (opt || {}));
   runPlay = JSON.parse(JSON.stringify(pl || play));
   lastResult = res; ranOnce = true; lastTiming = null;
+  if (!lsGet(RAN_KEY)) lsSet(RAN_KEY, '1');
+  $('framesRow').hidden = true;   // the court gets the strip's room while it plays
   countRunStart(res);
   if (mode === 'edit' && edit) books.countRun(edit, res);
   $('board').hidden = true; $('court').hidden = false;
@@ -649,7 +658,7 @@ function showResult(res) {
   add('p', 'reason', res.reason);
   const row = add('div', 'row');
   const btn = (label, cls, fn, id, to) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; if (id) b.id = id; b.addEventListener('click', () => fn(b)); (to || row).appendChild(b); return b; };
-  btn(practice ? 'Again' : 'Replay', 'go', () => run(freshSeed(), lastOpt), 'bReplay');
+  btn(practice ? 'Again' : 'Run it again', 'go', () => run(freshSeed(), lastOpt), 'bReplay');
   btn('Back to Clipboard', 'alt', backToBoard, 'bBack');
   if (mode === 'edit') btn('Back to playbook', 'alt', () => { backToBoard(); books.showBook(edit.book.id); }, 'bBackBook');
   const row2 = add('div', 'row');
@@ -761,7 +770,7 @@ function backToBoard() {
   $('sheet').classList.remove('on');
   banner(null); cutUi(null); $('clock').classList.remove('them'); $('stage').classList.remove('slow');
   caps.q = []; $('pop').classList.remove('on', 'final', 'shot');
-  $('court').hidden = true; $('board').hidden = false;
+  $('court').hidden = true; $('board').hidden = false; $('framesRow').hidden = false;
   clipTools(true);
   const S = SCX();
   setScore(S.us, S.them, S.clock);
@@ -810,6 +819,13 @@ function bars() {
 /* Home's Ladder card: the stars so far. The Daily card: today, or what you
    filed, and the clock to the next one. */
 function homeSync() {
+  {
+    const fresh = !lsGet(RAN_KEY), d = $('hDaily'), p = $('hPlay');
+    // a.compareDocumentPosition(b) says where b is: FOLLOWING means b comes after a
+    if (fresh && d.compareDocumentPosition(p) & Node.DOCUMENT_POSITION_FOLLOWING) d.parentNode.insertBefore(p, d);
+    if (!fresh && p.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING) p.parentNode.insertBefore(d, p);
+    p.classList.toggle('first', fresh);
+  }
   $('hLadderStars').textContent = starsIn(ladder) + ' of ' + maxStars() + ' stars';
   $('hLadderSub').textContent = LEVELS.length + ' late game spots. Win one to open the next.';
   D.homeCard({ today: day, error: dayState === 'error', off: dayState === 'off' });
@@ -1130,7 +1146,7 @@ async function doShare(text, btn, kind) {
 window.__lastShot = { run, get result() { return lastResult; }, get play() { return play; }, setPlay(p) { if (mode === 'level' || mode === 'daily' || mode === 'beat') savePlay(p); else play = p; board.reset(); },
   /* the feel: tap to result in ms, the live phase, a pause for screenshots, the sound's state */
   get timing() { return lastTiming; }, get phase() { return live ? live.phase || 'preview' : null; }, set paused(v) { paused = !!v; }, get speed() { return speed; },
-  get sound() { return { muted: sound.muted, state: sound.state }; }, starter: () => starterPlay('pin-down'), openPlays, loadStarter, savedRuns: () => [...savedRuns.values()],
+  get sound() { return { muted: sound.muted, state: sound.state }; }, starter: () => starterPlay('pin-down'), openPlays, loadStarter, home: goHome, savedRuns: () => [...savedRuns.values()],
   view: () => board.view(), get board() { return board; }, get mode() { return mode; }, get edit() { return edit; }, books,
   simulate: (seed, opt) => { const r = simulate(SCX(), play, seed, mode === 'level' && lvl ? levelOpt(lvl.L) : opt || {});
     return { outcome: r.outcome, reason: r.reason, shotAt: r.shotAt, scheme: r.scheme, how: r.how, answer: r.answer, ot: r.ot, us: r.us, them: r.them, down: r.down, stars: starsOf(r) }; },

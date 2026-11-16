@@ -103,7 +103,7 @@ export function mountBooks(app) {
     root.appendChild(el('h2', { text: 'My Playbooks' }));
     if (!store.ready()) {
       root.appendChild(el('p', { text: 'Playbooks live on your Run The Games account. Sign in to keep them.' }));
-      root.appendChild(el('a', { class: 'btn go', href: '/arcade/', id: 'pbSignIn', text: 'Sign in at the Arcade' }));
+      root.appendChild(el('a', { class: 'btn go solo', href: '/arcade/', id: 'pbSignIn', text: 'Sign in at the Arcade' }));
       root.appendChild(el('p', { class: 'muted', text: 'Nothing is kept while you are signed out.' }));
       return;
     }
