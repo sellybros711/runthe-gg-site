@@ -14,7 +14,8 @@
 //   stopped     no run at all for longer than the schedule allows (a schedule GitHub disabled,
 //               a file that stopped parsing). Seasonal jobs are exempt.
 //   disabled    the workflow is switched off in GitHub.
-//   unowned     a scheduled workflow with no entry in .github/ci-owners.json.
+//   unowned     a scheduled workflow with no entry in .github/ci-owners.json. (An entry with no
+//               schedule behind it is only a warning.)
 //
 // And one warning that does not fail the run: a job whose recent runs were all cancelled, so it
 // has not finished one lately (the live scoring jobs queue behind each other on purpose).
@@ -255,7 +256,7 @@ export function report(items, unowned, repo) {
   if (unowned.missing.length || unowned.extra.length) {
     out.push('', '## Owners map', '');
     for (const f of unowned.missing) out.push(`- \`${f}\` runs on a schedule and has no owner in \`.github/ci-owners.json\`.`);
-    for (const f of unowned.extra) out.push(`- \`${f}\` is in \`.github/ci-owners.json\` but has no schedule (renamed or removed?).`);
+    for (const f of unowned.extra) out.push(`- \`${f}\` is in \`.github/ci-owners.json\` but has no schedule (a warning: remove the entry).`);
   }
   if (cancelled.length) {
     out.push('', '## Only cancelled lately (a warning, not a failure)', '');
@@ -351,8 +352,10 @@ async function main() {
   const unowned = ownerProblems(scheduled, owners);
   if (flag('--check-owners')) {
     for (const f of unowned.missing) console.error(`::error::${f} runs on a schedule and has no owner in .github/ci-owners.json`);
-    for (const f of unowned.extra) console.error(`::error::${f} is in .github/ci-owners.json but has no schedule`);
-    if (unowned.missing.length || unowned.extra.length) process.exit(1);
+    // A leftover entry only warns: a schedule can be removed in one PR and the map tidied in
+    // another, and neither should go red waiting on the other.
+    for (const f of unowned.extra) console.error(`::warning::${f} is in .github/ci-owners.json but has no schedule (remove the entry)`);
+    if (unowned.missing.length) process.exit(1);
     console.log(`ci owners ok: ${scheduled.length} scheduled workflows, each with an owner`);
     return;
   }
