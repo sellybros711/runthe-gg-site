@@ -168,9 +168,9 @@ ok('every line says what it costs or that it costs nothing',
   await p.evaluate(() => [...document.querySelectorAll('#q-meters .why')]
     .every((e) => /costs you nothing|costs you [\d.]+%|adds [\d.]+%/.test(e.textContent))),
   panel.slice(0, 0) || undefined);
-ok('every line says where the free range ends',
+ok('every line says where the safe range ends',
   await p.evaluate(() => [...document.querySelectorAll('#q-meters .why')]
-    .every((e) => /is free|of their own numbers/.test(e.textContent))));
+    .every((e) => /is fine|of their usual/.test(e.textContent))));
 ok('the line that adds them up is always there, scheme or no scheme',
   /Add those four up/.test(panel), (await p.textContent('#q-fit')).trim().slice(0, 80));
 ok('the quarterback line is named for the passing game', /Passing game/.test(panel)

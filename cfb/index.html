@@ -3905,6 +3905,14 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="rail" id="rail2"></div>
     <p class="railnote"></p>
 
+    <!-- THE WAY ON, LIFTED (the owner's approval, 2026-11-16, the Advisor's review). On a phone this
+         sat about 1,520px down an 844px screen, under the coach's take, the chemistry and the
+         schedule. The team is built and the season is the next thing, so the button comes right
+         after the team. The take and the schedule stay below for anybody who wants them. -->
+    <div style="margin:12px 0 14px">
+      <button class="btn" id="b-play">Play the season</button>
+    </div>
+
     <div class="panel schemepanel" id="q-panel">
       <div class="stripe"></div>
       <div class="eyebrow" id="q-scheme-eye">Coach's take</div>
@@ -3936,9 +3944,6 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="body" id="q-sched"></div>
     </details>
 
-    <div style="margin-top:16px">
-      <button class="btn" id="b-play">Play the season</button>
-    </div>
   </div>
 
   <!-- s-season -->
@@ -4232,6 +4237,28 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div id="o-place"></div>
 
+    <!-- THE WAY ON, LIFTED (the owner's approval, 2026-11-16, the Advisor's review). On a phone
+         Draft Again sat about 1,970px down an 844px screen, under the resume, the team and the
+         tabs. A run is over and the next one is the thing to offer, so the buttons come right
+         after the headline numbers and the placing. The detail stays below for anybody who wants it. -->
+    <!-- THE FANTASY CHALLENGE, OFFERED ONCE A RUN IS DONE (the owner's call, 2026-11-05). Only
+         while this week's entries are open, and only to somebody with no lineup in. An inline
+         card above the buttons, never a sheet. See fantasyPromoPaint(). -->
+    <div class="next-panel">
+      <div class="cfbpromo" id="o-fanpromo" hidden></div>
+      <div class="next-pair">
+        <button class="btn next-secondary" id="b-again">Draft again</button>
+        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
+      </div>
+      <button class="btn next-share" id="b-share">
+        <svg class="btn-ico" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share your season
+      </button>
+      <div class="next-footer">
+        <button class="btn-text next-foot" id="b-home2">Home</button>
+      </div>
+    </div>
+
     <div class="resume" id="o-resume"></div>
 
     <!-- THE TEAM YOU BUILT IS NOT A TAB. It is the thing the whole run was about,
@@ -4261,23 +4288,6 @@ or endorsed by the NCAA, the CFP or any school.
       <span class="dim" style="font-size:11px" id="o-gcount"></span>
     </div>
 
-    <!-- THE FANTASY CHALLENGE, OFFERED ONCE A RUN IS DONE (the owner's call, 2026-11-05). Only
-         while this week's entries are open, and only to somebody with no lineup in. An inline
-         card above the buttons, never a sheet. See fantasyPromoPaint(). -->
-    <div class="next-panel">
-      <div class="cfbpromo" id="o-fanpromo" hidden></div>
-      <div class="next-pair">
-        <button class="btn next-secondary" id="b-again">Draft again</button>
-        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
-      </div>
-      <button class="btn next-share" id="b-share">
-        <svg class="btn-ico" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        Share your season
-      </button>
-      <div class="next-footer">
-        <button class="btn-text next-foot" id="b-home2">Home</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -9999,20 +10009,22 @@ function paintSquad(){
     ? st.qbPass.toFixed(1)+' pass'+(qbRun>=1?', '+qbRun.toFixed(1)+' rush':'')+' a game'
     : 'nobody throwing it';
   const passWhy=recKept>=101
-    ? 'your receivers score at '+recKept+'% of their own numbers'
-    : recKept>=99 ? 'your receivers keep all of their own numbers'
-    : 'your receivers score at '+recKept+'% of their own numbers';
+    ? 'your receivers get '+recKept+'% of their usual'
+    : recKept>=99 ? 'your receivers get all of their usual'
+    : 'your receivers get '+recKept+'% of their usual';
   $('q-meters').innerHTML=
-    '<p class="mhead">Each line is what that part of the roster does to the six names on '+
-      'it. Costing nothing is the good end.</p>'+
+    /* THE COACH TALKS LIKE THE OWNER (the Advisor's review, 2026-11-16: the old lines read like a
+       spreadsheet mid game). Every line still says where its safe range ends, off the engine. */
+    '<p class="mhead">How your six fit. Each line says what it costs you. Costing nothing is '+
+      'what you want.</p>'+
     meter('Passing game',passDet,costs.pass,passWhy)+
     meter('Run and pass',
       (st.rushShare*100).toFixed(0)+'% run, '+(100-st.rushShare*100).toFixed(0)+'% pass',
-      costs.balance,'anything from '+runLo+' to '+runHi+' on the ground is free')+
+      costs.balance,'running it '+runLo+' to '+runHi+' of the time is fine')+
     meter('Reliance',(st.topShare*100).toFixed(0)+'% through one player',
-      costs.concentration,'up to '+pcOf(SC.IDEAL_TOP_SHARE)+' through one man is free')+
+      costs.concentration,'up to '+pcOf(SC.IDEAL_TOP_SHARE)+' through one guy is fine')+
     meter('Depth','quietest two at '+(st.floorShare*100).toFixed(0)+'% of your average',
-      costs.floor,pcOf(SC.IDEAL_FLOOR_SHARE-SC.FLOOR_TOLERANCE)+' or better is free');
+      costs.floor,pcOf(SC.IDEAL_FLOOR_SHARE-SC.FLOOR_TOLERANCE)+' or better is fine');
 
   const strFiltered=schemeName?cr.strengths.filter(t=>!t.startsWith(schemeName)):cr.strengths;
   const notes=[...cr.weaknesses.slice(0,2).map(t=>['bad',t]),
