@@ -57,7 +57,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   **Today's run** (Phase 2): snap k of the day's run is seeded from the Eastern day and k (`dailySeed`), the
   same for everybody; the first run of the day that ends is posted (`supabase/169`, the first post
   stands) and the board shows on the card. Practice (any down, spot, level and hash) is the second button. A player's very first Go For It snap
-  gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: all two thirds or better at 4th and 1); the hand,
+  gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: the plan said two thirds or better at 4th and 1;
+  measured 2026-11-16 at 1000 snaps, 78%, 61% and 60%, the comment there has the rest); the hand,
   never the snap.
 - **Your record and the moments** (the launch plan, Phase 2). `profile.js`, on the device (`faw_profile`):
   snaps, conversions, the longest 4th down converted, the best run, the signature play, and eight

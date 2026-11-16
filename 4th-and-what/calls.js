@@ -40,10 +40,12 @@
   /* A new player's first hand (the launch plan, 1F): three plays that all
      convert two thirds of the time or better at 4th and 1 (measured
      2026-11-13: QB Sneak 75%, Stick 70%, Levels 65%; Toss is 30%, Curl Flat
-     34%. Re-measured 2026-11-16 after the box retune, 100 snaps of each
-     entry from the opponent's 35: QB Sneak 77%, Stick 68%, Levels 62%; the
-     passes did not move). It is the hand, not the snap: the defense and the
-     dice are the seed's as always. */
+     34%. Re-measured 2026-11-16 after the box retune, 1000 snaps of each
+     entry from the opponent's 35: QB Sneak 78%, Stick 61%, Levels 60%. The
+     passes were under two thirds before the retune too: 100 snaps were too
+     few. No shot holds two thirds (Drive is the best, 66%); Mesh is the one
+     quick card over it, 70%. The owner's call). It is the hand, not the
+     snap: the defense and the dice are the seed's as always. */
   var FIRST = { run: 'QB Sneak', quick: 'Stick', shot: 'Levels' };
   /* deal(sc, seed, opt): three cards, one of each kind, on three different
      sets where the pool allows; opt.first deals the first hand */
@@ -81,7 +83,7 @@
     light: { text: "They're light against your run. Run it.", card: 'run' },
     yard: { text: "They're loaded against your run. It's one yard. Lean on them.", card: 'run' },
     loaded: { text: "They're loaded against your run. Throw it.", card: 'quick' },
-    live: { text: "They're light against your run. The run is live.", card: null },
+    live: { text: "They're light against your run. This one's still a throw.", card: 'quick' },
     long: { text: 'Long way to go. Take a shot.', card: 'shot' }
   };
   function hintKey(look, sc) {

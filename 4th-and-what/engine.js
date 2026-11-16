@@ -582,7 +582,15 @@
         pairs.forEach(function (pq) {
           if (pq[1].engaging || pq[2].engaged) return;
           var w = (T.runBlock.base + T.runBlock.jitter * (rnd() * 2 - 1)) * (0.7 + pq[1].power * 0.5);
-          if (pq[2].role !== 'dl') w *= T.runBlock.climb;
+          if (pq[2].role !== 'dl') {
+            /* THE CLIMB holds climb as long. A backer off the ball (past
+               3.5 yards) has room to see it: per yard past that the block
+               holds deep less, and it whiffs on him whiff of the time per yard.
+               Short yardage backers stand closer, so it leaves them be. */
+            var off = Math.max(0, pq[2].y0 - Y0 - 3.5);
+            w *= T.runBlock.climb * Math.max(0.2, 1 - (T.runBlock.deep || 0) * off);
+            if (T.runBlock.whiff && off > 0 && rnd() < T.runBlock.whiff * off) w = T.runBlock.lostAt;
+          }
           else if (T.runBlock.lose && rnd() < T.runBlock.lose) w = T.runBlock.lostAt;
           engage(pq[1], pq[2], w);
         });
@@ -664,9 +672,29 @@
       var L2 = len(wx, wy);
       stepToward(e, e.x + wx / L2 * 3, e.y + wy / L2 * 3, e.top);
     }
+    /* PURSUIT ANGLES. A pursuer aims where he can meet the carrier: the
+       earliest t at which the carrier's spot, c + v t, is within his own
+       speed times t of him (|r + v t| = s t, a quadratic in t), no further
+       ahead than T.pursuit.cap seconds, and no further than chase times his
+       distance to the man (a stern chase stays a chase). With no meeting
+       point (he cannot get there) or the carrier near still, he leads him
+       as he always did. */
     function pursue(d, c, want) {
-      var D2 = dist(d, c), lead = Math.min(1, D2 / (d.top * 1.4));
-      stepToward(d, c.x + c.vx * lead, c.y + c.vy * lead, want || d.top);
+      var D2 = dist(d, c), sp = want || d.top, lead = Math.min(1, D2 / (d.top * 1.4)), P = T.pursuit;
+      if (P && P.cap > 0 && c.vx * c.vx + c.vy * c.vy > 1) {
+        var rx = c.x - d.x, ry = c.y - d.y, a = c.vx * c.vx + c.vy * c.vy - sp * sp, b = 2 * (rx * c.vx + ry * c.vy), q = rx * rx + ry * ry, tI = -1;
+        if (Math.abs(a) < 1e-9) { if (b < 0) tI = -q / b; }
+        else {
+          var disc = b * b - 4 * a * q;
+          if (disc >= 0) {
+            var sq = Math.sqrt(disc), t1 = (-b - sq) / (2 * a), t2 = (-b + sq) / (2 * a), lo = Math.min(t1, t2), hi = Math.max(t1, t2);
+            tI = lo > 0 ? lo : hi > 0 ? hi : -1;
+          }
+        }
+        /* a stern chase (the meeting point far off for how near he is) stays a chase */
+        if (tI > 0 && tI <= P.cap && (!P.chase || tI * sp <= P.chase * D2)) lead = tI;
+      }
+      stepToward(d, c.x + c.vx * lead, c.y + c.vy * lead, sp);
     }
     function nearestDefender(r) {
       var best = 1e9;
