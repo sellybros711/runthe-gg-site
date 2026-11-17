@@ -495,6 +495,7 @@ var api = {
     else if (which === '101') { render101(); openSheet('sheet-101'); }
     else if (which === 'past') { if (ctx.onPast) ctx.onPast(); }
     else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
+    else if (which === 'voice') { if (window.STD_VOICES) window.STD_VOICES.open('home'); }
     else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }
     else if (which === 'menu') { renderMenuTiles(); openSheet('sheet-menu'); }
     else if (which === 'board') { closeSheet(true); if (ctx.board) ctx.board(); }

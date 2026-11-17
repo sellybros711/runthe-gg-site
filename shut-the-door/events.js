@@ -1,4 +1,4 @@
-/* Shut The Door: the five game events (the Advisor's review of 2026-11-16, section 9: the game sent
+/* Shut The Door: the game events (the Advisor's review of 2026-11-16, section 9: the game sent
    none, so its players could not be counted).
 
      outing_start   the mound is up for an outing: {mode, day, resumed}
@@ -7,13 +7,17 @@
      daily_done     the day's daily is over, the same moment as its outing_end: {day, result, pitches, score_band}
      share          a share went out from the result's share sheet: {mode, day, method}
      promo_click    the result's Run The Diamond card was tapped: {target, mode, day}
+     voice_open     the voice of the ump's record sheet opened from a button: {source}
+     voice_sent     a call went to the owner's review from that sheet: {line, method}
 
    mode is daily, survivor, archive or practice. day is the daily number (#N): today's for a daily,
    practice or Survivor, the past day's for the archive. result on a pitch is the engine's call
    result (ball, called_strike, in_play and the rest), on an outing its outcome (door_shut,
    tie_held, doors_open, walk_off). score_band is the percentile in tens (0, 10 ... 90). method is
    image (the phone's share sheet), save (the image downloaded) or text (the text copied or shared).
-   target is the game the card leads to (baseball).
+   target is the game the card leads to (baseball). source is where the sheet was opened from (home,
+   result or settings). line is the script's line id (strike, ball4 and the rest, voices.js LINES),
+   never the audio. method is record (the mic) or upload (a file).
    Nothing about the player: no id, no name, no email, no free text.
 
    The names follow the site's GA4 style (snake_case, as football's game_started and the arcade's
@@ -75,6 +79,8 @@
   }
   function share(mode, day, method) { send('share', { mode: mode, day: num(day), method: method }); }
   function promo(target, mode, day) { send('promo_click', { target: target, mode: mode, day: num(day) }, true); }
+  function voiceOpen(source) { send('voice_open', { source: source }); }
+  function voiceSent(line, method) { send('voice_sent', { line: line, method: method }); }
 
-  window.STD_EVENTS = { outingStart: outingStart, pitch: pitch, outingEnd: outingEnd, share: share, promo: promo, band: band };
+  window.STD_EVENTS = { outingStart: outingStart, pitch: pitch, outingEnd: outingEnd, share: share, promo: promo, voiceOpen: voiceOpen, voiceSent: voiceSent, band: band };
 })();
