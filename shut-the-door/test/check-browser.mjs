@@ -210,7 +210,8 @@ const UNITS = [
   ['17 the modes, 1440x900', 144, () => modes(1440, 900, false)],
   ['18 two halves, 390x844', 92, () => halves(390, 844, false)],
   ['18 two halves, 1440x900', 78, () => halves(1440, 900, true)],
-  ['19 the voice of the ump, 390x844', 7, () => voicesWalk(390, 844)],
+  ['19 the voice of the ump, 390x844', 42, () => voicesWalk(390, 844)],
+  ['19 the voice of the ump, 375x667', 46, () => voicesWalk(375, 667)],
   ['21 the live minimap, 390x844 light', 60, () => liveMinimap(390, 844, 'light')],
   ['21 the live minimap, 1440x900 dark', 60, () => liveMinimap(1440, 900, 'dark')],
 ];
@@ -2639,30 +2640,143 @@ function tinyWav(ms) {
   for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.sin(i / 8) * 8000), 44 + i * 2);
   return b;
 }
+/* the record sheet's mic for the check: a tone from the page's own Web Audio, so the live meter has a
+   level, and (safari) a MediaRecorder that makes only audio/mp4, as iPhone Safari's does. Without
+   safari the browser's own MediaRecorder records the tone (Chrome's webm). fail names a getUserMedia
+   refusal instead (NotAllowedError, NotFoundError) */
+function fakeMic(page, how) {
+  return page.evaluate((how) => {
+    const md = navigator.mediaDevices || (navigator.mediaDevices = {});
+    window.__realMR = window.__realMR || window.MediaRecorder;
+    window.MediaRecorder = window.__realMR;
+    if (how.fail) { md.getUserMedia = () => Promise.reject(new DOMException('no', how.fail)); return; }
+    md.getUserMedia = () => {
+      const ac = new AudioContext(), o = ac.createOscillator(), g = ac.createGain(), d = ac.createMediaStreamDestination();
+      g.gain.value = 0.6; o.connect(g); g.connect(d); o.start();
+      return Promise.resolve(d.stream);
+    };
+    if (how.safari) {
+      class SafariMR {
+        constructor(stream, o) { this.stream = stream; this.state = 'inactive'; this.mimeType = 'audio/mp4'; this.opts = o; }
+        static isTypeSupported(t) { return t === 'audio/mp4'; }
+        start() { this.state = 'recording'; }
+        stop() {
+          this.state = 'inactive';
+          const blob = new Blob([new Uint8Array(18000)], { type: 'audio/mp4' });
+          setTimeout(() => { if (this.ondataavailable) this.ondataavailable({ data: blob }); if (this.onstop) this.onstop(); }, 0);
+        }
+      }
+      window.MediaRecorder = SafariMR;
+    }
+  }, how);
+}
+const voiceEvents = (page) => page.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && /^voice_/.test(a[1])).map((a) => [a[1], Object.assign({}, a[2])]));
 async function voicesWalk(w, h) {
   console.log(`\nthe voice of the ump, ${w}x${h}`);
-  step('19 the voice of the ump', 120);
+  step('19 the voice of the ump', 180);
+  /* signed out: the home's row opens the sheet on its sign-in step */
+  {
+    const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut', { meterOff: true });
+    const row = await page.evaluate(() => { const b = document.getElementById('h-voice'); return b && { text: b.textContent, svg: !!b.querySelector('svg'), shut: document.getElementById('sheet-voices').hidden }; });
+    ok(row && row.text === 'Voice of the umpRecord a call for the game.' && row.svg && row.shut, '19 the home\'s list has the voice of the ump, with its mic, and the sheet is shut until it is tapped');
+    await page.click('#h-voice');
+    await page.waitForSelector('#sheet-voices.on #vo-signin', { timeout: 3000 });
+    ok(!(await page.$('#vo-rec')), '19 signed out, the home\'s row opens the sheet on its sign-in step');
+    ok(errors.length === 0, '19 signed out: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
   const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockOwner=1', { meterOff: true });
+  await page.evaluate(() => {
+    window.__sent = [];
+    const f = window.STD_AUTH.umpSubmit;
+    window.STD_AUTH.umpSubmit = (c) => { window.__sent.push({ line: c.line, mime: c.mime, bytes: c.bytes, ms: c.ms, consent: c.consent, v: c.consentVersion, credit: c.credit }); return f(c); };
+  });
+  /* the home's row, on a phone in the banner's layout too: the row fits its panel */
+  const fit = await page.evaluate(() => {
+    const b = document.getElementById('h-voice'), r = b.getBoundingClientRect(), l = b.closest('.t-list').getBoundingClientRect();
+    return { inside: r.left >= l.left - 1 && r.right <= l.right + 1, noClip: b.scrollWidth <= b.clientWidth + 1, h: Math.round(r.height), side: document.documentElement.scrollWidth <= innerWidth };
+  });
+  ok(fit.inside && fit.noClip && fit.h >= 38 && fit.side, '19 the home\'s row fits its panel, ' + fit.h + ' px, no sideways scroll');
+  await page.click('#h-voice');
+  await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
+  /* idle: the line big, the 12 dots, the red record button in the middle, upload a quiet link, nothing to send */
+  const idle = await page.evaluate(() => {
+    const rec = document.getElementById('vo-rec'), r = rec.getBoundingClientRect(), core = getComputedStyle(rec.querySelector('.vo-core'));
+    const body = document.getElementById('vo-body').getBoundingClientRect(), up = document.querySelector('label.vo-link[for="vo-file"]');
+    return { line: document.getElementById('vo-line').textContent, size: parseFloat(getComputedStyle(document.getElementById('vo-line')).fontSize), dots: document.querySelectorAll('.vo-dots i').length,
+      now: document.querySelectorAll('.vo-dots i.now').length, w: Math.round(r.width), round: r.width === r.height, red: core.backgroundColor, centred: Math.abs((r.left + r.right) / 2 - (body.left + body.right) / 2) < 2,
+      up: !!up && !up.hidden && !up.classList.contains('btn'), send: !!document.getElementById('vo-send'), consent: !!document.getElementById('vo-consent'), head: !!document.querySelector('#sheet-voices .sh-h svg') };
+  });
+  ok(idle.line === 'Strike!' && idle.size >= 36 && idle.dots === 12 && idle.now === 1, '19 idle: line 1 "Strike!" big (' + idle.size + ' px), 12 dots, the first lit');
+  ok(idle.round && idle.w >= 80 && idle.red === 'rgb(229, 56, 59)' && idle.centred, '19 idle: the record button is round, ' + idle.w + ' px, red (' + idle.red + ') and centred');
+  ok(idle.up && !idle.send && !idle.consent && idle.head, '19 idle: upload is a quiet link, no send and no consent yet, the mic in the header');
+  /* recording, as iPhone Safari: audio/mp4 only. The ring, the seconds left, a tap stops it */
+  await fakeMic(page, { safari: true });
+  await page.click('#vo-rec');
+  await page.waitForSelector('#vo-rec.on', { timeout: 3000 });
+  await page.waitForTimeout(500);
+  const rec = await page.evaluate(() => ({ pressed: document.getElementById('vo-rec').getAttribute('aria-pressed'), left: +document.getElementById('vo-left').textContent,
+    ring: +getComputedStyle(document.getElementById('vo-ring')).strokeDashoffset.replace('px', ''), pulse: getComputedStyle(document.getElementById('vo-rec'), '::before').animationName,
+    st: document.getElementById('vo-stage').dataset.st, up: document.querySelector('label.vo-link[for="vo-file"]').hidden,
+    lvl: Math.max(...[...document.querySelectorAll('#vo-bars i')].map((i) => parseFloat(i.style.height) || 0)) }));
+  ok(rec.pressed === 'true' && rec.st === 'rec' && rec.left > 0 && rec.left < 3 && rec.ring < 100 && rec.pulse === 'vo-pulse' && rec.up,
+    '19 recording: a pulsing ring that fills (' + rec.ring + '), ' + rec.left + ' s left, upload out of the way');
+  ok(rec.lvl > 8, '19 recording: the level meter moves with the mic (' + rec.lvl + '%)');
+  await page.click('#vo-rec');
+  await page.waitForSelector('#vo-play', { timeout: 3000 });
+  const take = await page.evaluate(() => ({ st: document.getElementById('vo-stage').dataset.st, send: document.getElementById('vo-send').disabled, consent: document.querySelector('.vo-ok span').textContent,
+    redo: !!document.getElementById('vo-redo'), dur: document.getElementById('vo-dur').textContent }));
+  ok(take.st === 'take' && take.redo && take.send && take.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)), '19 recorded: play it back, record again, and send waits for the consent, word for word (' + take.dur + ')');
+  await page.check('#vo-consent');
+  await page.fill('#vo-cr', 'Big Al');
+  await page.click('#vo-send');
+  await page.waitForFunction(() => /Sent/.test(document.getElementById('vo-msg').textContent), null, { timeout: 3000 });
+  const s1 = await page.evaluate(() => ({ line: document.getElementById('vo-line').textContent, sent: window.__sent[0], dot: document.querySelector('.vo-dots i').className }));
+  ok(s1.sent && s1.sent.mime === 'audio/mp4' && s1.sent.v === 1 && s1.sent.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)) && s1.sent.bytes <= 307200,
+    '19 an iPhone Safari take goes as audio/mp4, with the consent and its version (' + JSON.stringify(s1.sent && { mime: s1.sent.mime, bytes: s1.sent.bytes }) + ')');
+  ok(s1.line === 'Strike three!' && /sent/.test(s1.dot), '19 sent, the dot goes green, on to the next line (' + s1.line + ')');
+  /* Chrome's own recorder (webm): the consent holds for the session, and the take stops itself at 3 s */
+  await fakeMic(page, {});
+  await page.click('#vo-rec');
+  await page.waitForSelector('#vo-play', { timeout: 6000 });
+  const t2 = await page.evaluate(() => ({ okd: !!document.querySelector('details.vo-okd'), ticked: document.getElementById('vo-consent').checked, send: document.getElementById('vo-send').disabled, dur: document.getElementById('vo-dur').textContent }));
+  ok(t2.okd && t2.ticked && !t2.send, '19 the consent is asked once a session: the next take can go at once (' + t2.dur + ')');
+  ok(parseFloat(t2.dur) <= 3, '19 a take stops itself at 3 seconds (' + t2.dur + ')');
+  await page.click('#vo-send');
+  await page.waitForFunction(() => window.__sent.length === 2, null, { timeout: 5000 });
+  const s2 = await page.evaluate(() => window.__sent[1]);
+  ok(s2.mime === 'audio/webm' && s2.ms <= 3000 && s2.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)) && s2.v === 1 && s2.credit === 'Big Al',
+    '19 a Chrome take goes as audio/webm, at most 3 s, the consent still on the row (' + JSON.stringify({ mime: s2.mime, ms: s2.ms, bytes: s2.bytes }) + ')');
+  /* uploads: too long refused, a short one goes */
+  await page.setInputFiles('#vo-file', { name: 'long.wav', mimeType: 'audio/wav', buffer: tinyWav(3600) });
+  await page.waitForFunction(() => /Too long/.test(document.getElementById('vo-msg').textContent), null, { timeout: 5000 });
+  ok(true, '19 an upload longer than 3 seconds is refused');
+  await page.setInputFiles('#vo-file', { name: 'ball.wav', mimeType: 'audio/wav', buffer: tinyWav(900) });
+  await page.waitForSelector('#vo-play', { timeout: 5000 });
+  await page.click('#vo-send');
+  await page.waitForFunction(() => window.__sent.length === 3, null, { timeout: 5000 });
+  /* the mic refused: a plain line and the upload as a button */
+  for (const [fail, say] of [['NotAllowedError', /blocked/], ['NotFoundError', /No mic found/]]) {
+    await fakeMic(page, { fail });
+    await page.click('#vo-rec');
+    await page.waitForSelector('label.vo-upbtn[for="vo-file"]', { timeout: 3000 });
+    const m = await page.evaluate(() => document.getElementById('vo-msg').textContent);
+    ok(say.test(m) && /upload a file/i.test(m), '19 ' + fail + ': "' + m + '" and the upload button');
+  }
+  const ev = await voiceEvents(page);
+  ok(JSON.stringify(ev.filter((e) => e[0] === 'voice_open').map((e) => e[1].source)) === '["home"]', '19 voice_open, source home: ' + JSON.stringify(ev.filter((e) => e[0] === 'voice_open')));
+  ok(JSON.stringify(ev.filter((e) => e[0] === 'voice_sent').map((e) => e[1].line + ':' + e[1].method)) === '["strike:record","strike3:record","ball:upload"]' && ev.every((e) => e[1].game_name === 'Shut The Door'),
+    '19 voice_sent for each call, with its line and method: ' + JSON.stringify(ev.filter((e) => e[0] === 'voice_sent').map((e) => e[1])));
+  await page.click('#sheet-voices .sh-x');
+  ok(await page.evaluate(() => sessionStorage.getItem('std_vo_consent') === '1'), '19 the consent tick is kept for the session, by version');
+  /* settings keeps its row */
   await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
   await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
   await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
   ok(true, '19 the owner sees the review button in settings');
   await page.click('#set-voices');
   await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
-  const l1 = await page.evaluate(() => ({ line: document.getElementById('vo-line').textContent, send: document.getElementById('vo-send').disabled, consent: document.querySelector('.vo-ok span').textContent }));
-  ok(l1.line === 'Strike!' && l1.send && l1.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)), '19 line 1 is "Strike!", the consent shows, nothing to send yet');
-  await page.setInputFiles('#vo-file', { name: 'long.wav', mimeType: 'audio/wav', buffer: tinyWav(3600) });
-  await page.waitForFunction(() => /Too long/.test(document.getElementById('vo-msg').textContent), null, { timeout: 5000 });
-  ok(true, '19 an upload longer than 3 seconds is refused');
-  await page.setInputFiles('#vo-file', { name: 'strike.wav', mimeType: 'audio/wav', buffer: tinyWav(900) });
-  await page.waitForSelector('#vo-play', { timeout: 5000 });
-  ok(await page.evaluate(() => document.getElementById('vo-send').disabled), '19 a take plays back, and waits for the consent');
-  await page.check('#vo-consent');
-  await page.fill('#vo-cr', 'Big Al');
-  await page.click('#vo-send');
-  await page.waitForFunction(() => /Sent/.test(document.getElementById('vo-msg').textContent), null, { timeout: 3000 });
-  const l2 = await page.evaluate(() => document.getElementById('vo-line').textContent);
-  ok(l2 === 'Strike three!', '19 sent, and on to the next line (' + l2 + ')');
+  ok((await voiceEvents(page)).filter((e) => e[0] === 'voice_open').map((e) => e[1].source).join() === 'home,settings', '19 settings still opens it: voice_open, source settings');
   await page.click('#sheet-voices .sh-x');
   await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
   await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
@@ -2671,11 +2785,35 @@ async function voicesWalk(w, h) {
   const q = await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent);
   ok(/Strike!/.test(q) && /Big Al/.test(q), '19 the owner\'s queue holds it, with the credit');
   await page.click('#vr-body [data-vr="approved"]');
-  await page.waitForSelector('#vr-empty', { timeout: 3000 });
+  await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 2, null, { timeout: 3000 });
   await page.click('#vr-body [data-vr-tab="approved"]');
   await page.waitForSelector('#sheet-ump-review .vr-row', { timeout: 3000 });
   const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line)));
   ok(ap.join() === 'strike', '19 approved: on the approved list and the game\'s list');
+  await page.click('#sheet-ump-review .sh-x');
+  /* the result: a quiet row under the menu, "pitched like" still on screen. Today's daily through the
+     calls, as dailyDone, then back to the page (a load the page may already have begun, so the goto
+     waits for whichever lands) */
+  await page.evaluate(async () => {
+    const A = window.STD_API, S = window.STD_UI.state;
+    let st = await A.startOuting(S.scn.id, null, { mode: 'daily' });
+    for (let i = 0; st.status === 'live' && i < 90; i++) st = (await A.throwPitch(st.outingId, { type: S.scn.pitcher.arsenal[0].type, cell: 12 })).state;
+  });
+  await page.waitForTimeout(500);
+  await page.goto(BASE + '?mockEnd=door_shut&mockAuth=1&mockOwner=1', { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.waitForSelector('#d-see', { timeout: 60000 });
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  await page.waitForTimeout(400);
+  const rv = await page.evaluate(() => {
+    const b = document.getElementById('r-voice'), r = b.getBoundingClientRect(), nav = document.getElementById('r-nav').getBoundingClientRect(), like = document.querySelector('.r-like').getBoundingClientRect();
+    return { text: b.textContent, svg: !!b.querySelector('svg'), below: r.top >= nav.bottom - 1, h: r.height, inside: r.left >= 0 && r.right <= innerWidth, likeOn: like.top >= 0 && like.bottom <= innerHeight, shut: document.getElementById('sheet-voices').hidden };
+  });
+  ok(rv.text === 'Voice of the umpRecord a call for the game.' && rv.svg && rv.below && rv.h >= 38 && rv.inside && rv.shut, '19 the result has the voice of the ump under its menu, with its mic, ' + Math.round(rv.h) + ' px, shut until tapped');
+  ok(rv.likeOn, '19 the result: "pitched like" still on screen at ' + w + 'x' + h);
+  await page.click('#r-voice');
+  await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
+  ok((await voiceEvents(page)).filter((e) => e[0] === 'voice_open').map((e) => e[1].source).join() === 'result', '19 the result\'s row opens it: voice_open, source result (the page was reloaded)');
   ok(errors.length === 0, '19 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
@@ -2689,6 +2827,8 @@ try {
   if (process.env.STD_POSTGAME === '1') { for (const t of ['light', 'dark']) { await postgame(390, 844, t); await postgame(1440, 900, t); } throw 'quick'; }
   /* STD_MINIMAP=1: only the live minimap (21) at both sizes, light and dark */
   if (process.env.STD_MINIMAP === '1') { for (const t of ['light', 'dark']) { await liveMinimap(390, 844, t); await liveMinimap(1440, 900, t); } throw 'quick'; }
+  /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
+  if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await run(390, 844, 'light'); await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await run(390, 844, 'light'); await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }

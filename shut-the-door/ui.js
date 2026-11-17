@@ -2961,6 +2961,7 @@ function boot() {
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
+  $('r-voice').addEventListener('click', function () { if (window.STD_VOICES) window.STD_VOICES.open('result'); });
   $('r-promo').addEventListener('click', function () { if (EV()) EV().promo('baseball', S.mode, evDay()); });
   initResultNav();
   initClips();

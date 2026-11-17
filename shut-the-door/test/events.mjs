@@ -1,4 +1,4 @@
-/* Shut The Door: the five game events (events.js), against a stubbed gtag.
+/* Shut The Door: the game events (events.js), against a stubbed gtag.
  * node shut-the-door/test/events.mjs
  *
  *   1. each event goes out once, as gtag('event', name, params), with exactly its fields
@@ -10,7 +10,9 @@
  *   5. score_band is the percentile in tens
  *   6. ui.js calls each one where it belongs (the browser check plays them through the page)
  *   7. promo_click (the result's Run The Diamond card): its fields, and it goes at once as a beacon,
- *      since its link leaves the page */
+ *      since its link leaves the page
+ *   8. voice_open (source: home, result or settings) and voice_sent (line, method), deferred like the
+ *      rest, and sent from the sheet's open and its send in voices.js */
 import vm from 'node:vm';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -43,6 +45,8 @@ const FIELDS = {
   daily_done: 'day,game_name,pitches,result,score_band',
   share: 'day,game_name,method,mode',
   promo_click: 'day,game_name,mode,target,transport_type',
+  voice_open: 'game_name,source',
+  voice_sent: 'game_name,line,method',
 };
 const R = { outcome: 'door_shut', pitches: 3, percentile: 76.4, score: 912, share: 'Shut The Door #15', pitchedLike: { name: 'Pete Fairbanks' } };
 
@@ -58,7 +62,7 @@ const R = { outcome: 'door_shut', pitches: 3, percentile: 76.4, score: 912, shar
   ok(s.every((a) => a.length === 3 && a[0] === 'event' && typeof a[1] === 'string' && a[2] && typeof a[2] === 'object'), '1 every call is gtag(\'event\', name, params)');
   ok(s.map((a) => a[1]).join() === 'outing_start,pitch,pitch,pitch,outing_end,daily_done,share', '1 in order: outing_start, a pitch each, outing_end, daily_done, share (' + s.map((a) => a[1]).join() + ')');
   for (const [name, f] of Object.entries(FIELDS)) {
-    if (name === 'promo_click') continue;
+    if (name === 'promo_click' || name === 'voice_open' || name === 'voice_sent') continue;
     const got = events(s, name);
     ok(got.length >= 1 && got.every((o) => keys(o) === f), '1 ' + name + ' carries exactly ' + f + (got[0] ? ' (' + keys(got[0]) + ')' : ' (none sent)'));
   }
@@ -159,6 +163,21 @@ const R = { outcome: 'door_shut', pitches: 3, percentile: 76.4, score: 912, shar
   ok(/API\.finishOuting\(id\)\.then\(function \(r\) \{\s*\n\s*if \(EV\(\)\) EV\(\)\.outingEnd\(id/.test(fn('finish')), '6 outing_end and daily_done go with the result (finish)');
   ok((UI.match(/shared\('(text|image|save)'\)/g) || []).length >= 5, '6 share goes from the image, the save and the text');
   ok(/<script src="events\.js\?v=\d+"><\/script>\s*\n<script src="ui\.js\?v=\d+"><\/script>/.test(HTML), '6 index.html loads events.js just before ui.js');
+}
+
+/* 8 */
+{
+  const VO = fs.readFileSync(path.join(DIR, 'voices.js'), 'utf8'), MENUS = fs.readFileSync(path.join(DIR, 'menus.js'), 'utf8');
+  const p = page();
+  p.E.voiceOpen('home'); p.E.voiceOpen('result'); p.E.voiceOpen('settings');
+  p.E.voiceSent('strike', 'record', 'u-1'); p.E.voiceSent('ball4', 'upload');
+  ok(p.sent.length === 0, '8 the voice events are deferred, like the rest');
+  const s = p.flush();
+  ok(events(s, 'voice_open').map((o) => keys(o) === FIELDS.voice_open && o.source).join() === 'home,result,settings', '8 voice_open carries ' + FIELDS.voice_open + ': home, result, settings');
+  ok(events(s, 'voice_sent').map((o) => keys(o) === FIELDS.voice_sent && o.line + ':' + o.method).join() === 'strike:record,ball4:upload', '8 voice_sent carries ' + FIELDS.voice_sent + ', nothing else');
+  ok(/MN\(\)\.open\('sheet-voices'[^\n]*\n\s*if \(EVS\(\) && EVS\(\)\.voiceOpen\) EVS\(\)\.voiceOpen\(source\)/.test(VO), '8 voices.js sends voice_open as the sheet opens');
+  ok(/R\.sent\[line\.id\] = true;[\s\S]{0,120}EVS\(\)\.voiceSent\(line\.id, t\.upload \? 'upload' : 'record'\)/.test(VO), '8 voices.js sends voice_sent only after the server took the call');
+  ok(/STD_VOICES\.open\('home'\)/.test(MENUS) && /STD_VOICES\.open\('result'\)/.test(UI) && /open\('settings'\)/.test(VO), '8 each button names its source: the home\'s list, the result\'s row, settings');
 }
 
 console.log(`\n${passes} ok, ${fails} failed`);
