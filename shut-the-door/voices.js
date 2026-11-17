@@ -14,8 +14,9 @@
  * - The consent is ticked before the first send of a session (sessionStorage), and its exact text
  *   and version go on every row. The
  *   server compares the text word for word with its own copy (shutdoor_ump_consent).
- * - The review sheet is the owner's (stumpire_testers role 'admin'); its button shows only when the
- *   server says so, and every call behind it checks again.
+ * - The review sheet is the testers' (any stumpire_testers row, the owner's 'admin' included,
+ *   supabase/176); its button shows only when the server says so, and every call behind it checks
+ *   again. A reject deletes the audio for good (175), so it asks first, inside the sheet.
  * - The game preloads a few approved clips once the mound is up, after a beat, and only while the
  *   sound is on. A call never waits for a clip: a line with none stays silent.
  *
@@ -402,11 +403,12 @@ function open(source) {
 }
 function close() { if (MN() && MN().current() === 'sheet-voices') MN().close(); }
 
-/* ---- the owner's review sheet --------------------------------------------- */
+/* ---- the testers' review sheet -------------------------------------------- */
 
-var Q = { tab: 'pending', rows: null, urls: {}, msg: '' };
+/* confirm: the id of the row whose Reject is asking "Delete it for good?" (one at a time) */
+var Q = { tab: 'pending', rows: null, urls: {}, msg: '', confirm: null };
 function loadQueue() {
-  Q.rows = null; Q.msg = ''; renderQueue();
+  Q.rows = null; Q.msg = ''; Q.confirm = null; renderQueue();
   var a = A();
   if (!a.umpQueue) { Q.rows = []; Q.msg = 'Reviews are not available here.'; return renderQueue(); }
   a.umpQueue(Q.tab).then(function (r) {
@@ -432,14 +434,25 @@ function renderQueue() {
     h += '<ul class="vr-list">' + Q.rows.map(function (x) {
       var ln = lineOf(x.line), who = [x.credit ? 'Credit: ' + x.credit : '', x.username ? '@' + x.username : ''].filter(Boolean).join(' · ');
       var url = Q.urls[x.path];
+      /* who decided (176's reviewedBy), on the Approved and Rejected tabs */
+      var by = x.status !== 'pending' && x.reviewedBy ? (x.status === 'approved' ? 'Approved' : 'Rejected') + ' by @' + x.reviewedBy : '';
+      var asking = Q.confirm === x.id && x.status !== 'rejected';
       return '<li class="vr-row" data-id="' + esc(x.id) + '"><div class="vr-h"><b>' + esc(ln ? ln.text : x.line) + '</b><small>' +
-        esc([who, when(x.createdAt), x.ms ? (x.ms / 1000).toFixed(1) + ' s' : ''].filter(Boolean).join(' · ')) + '</small></div>' +
+        esc([who, when(x.createdAt), x.ms ? (x.ms / 1000).toFixed(1) + ' s' : ''].filter(Boolean).join(' · ')) + '</small>' +
+        (by ? '<small class="vr-by">' + esc(by) + '</small>' : '') + '</div>' +
         /* a rejected call has no file (175 deletes it), so it can only stay rejected */
         (!x.path ? '<p class="quiet">Audio deleted.</p>' : url ? '<audio controls preload="none" src="' + esc(url) + '"></audio>' : '<p class="quiet">Loading the clip.</p>') +
-        '<div class="vr-act">' +
-          (x.status !== 'approved' && x.path ? '<button class="btn go" type="button" data-vr="approved">Approve</button>' : '') +
-          (x.status !== 'rejected' ? '<button class="btn ghost" type="button" data-vr="rejected">Reject</button>' : '') +
-        '</div></li>';
+        (asking ?
+          /* a reject deletes the audio within the hour (175) and cannot be undone: ask first */
+          '<div class="vr-ask" role="group" aria-label="Confirm reject"><p>Delete it for good?</p><div class="vr-act">' +
+            '<button class="btn bad" type="button" data-vr-yes>Yes</button>' +
+            '<button class="btn ghost" type="button" data-vr-no>Cancel</button>' +
+          '</div></div>' :
+          '<div class="vr-act">' +
+            (x.status !== 'approved' && x.path ? '<button class="btn go" type="button" data-vr="approved">Approve</button>' : '') +
+            (x.status !== 'rejected' ? '<button class="btn ghost" type="button" data-vr="rejected">Reject</button>' : '') +
+          '</div>') +
+        '</li>';
     }).join('') + '</ul>';
     if (Q.msg) h += '<p class="au-err" role="status">' + esc(Q.msg) + '</p>';
   }
@@ -452,16 +465,29 @@ function wireQueue() {
   body.addEventListener('click', function (e) {
     var tb = e.target.closest('[data-vr-tab]');
     if (tb) { Q.tab = tb.getAttribute('data-vr-tab'); return loadQueue(); }
-    var b = e.target.closest('[data-vr]'), row = e.target.closest('.vr-row');
-    if (!b || !row || b.disabled) return;
+    var row = e.target.closest('.vr-row');
+    if (!row) return;
+    var id = row.getAttribute('data-id');
+    /* Reject first asks; Cancel puts the row back; Yes is the reject */
+    if (e.target.closest('[data-vr-no]')) { Q.confirm = null; renderQueue(); return focusIn(id, '[data-vr="rejected"]'); }
+    var yes = e.target.closest('[data-vr-yes]');
+    var b = yes || e.target.closest('[data-vr]');
+    if (!b || b.disabled) return;
+    var st = yes ? 'rejected' : b.getAttribute('data-vr');
+    if (st === 'rejected' && !yes) { Q.confirm = id; Q.msg = ''; renderQueue(); return focusIn(id, '[data-vr-no]'); }
     b.disabled = true;
-    A().umpReview(row.getAttribute('data-id'), b.getAttribute('data-vr')).then(function (r) {
+    A().umpReview(id, st).then(function (r) {
       if (!r || r.error) { b.disabled = false; Q.msg = r && r.error ? sentence(r.error) : 'That did not save.'; return renderQueue(); }
-      Q.rows = Q.rows.filter(function (x) { return x.id !== row.getAttribute('data-id'); });
-      Q.msg = '';
+      Q.rows = Q.rows.filter(function (x) { return x.id !== id; });
+      Q.msg = ''; Q.confirm = null;
       renderQueue();
     });
   });
+}
+function focusIn(id, sel) {
+  var body = $('vr-body'), li = body && body.querySelector('.vr-row[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+  var el = li && li.querySelector(sel);
+  if (el) el.focus();
 }
 function openReview() {
   wireQueue();
@@ -470,15 +496,16 @@ function openReview() {
   loadQueue();
 }
 
-/* the settings sheet's buttons: record for everyone, review for the owner once the server says so */
+/* the settings sheet's buttons: record for everyone, review for testers (the owner too) once the server says so */
 function settingsRows(box) {
   if (!box) return;
   var h = '<button type="button" class="set-row set-go" id="set-voices"><span><b>Voice of the ump</b><small>Record a call. The best ones go in the game.</small></span><i class="chev" aria-hidden="true"></i></button>' +
-    '<button type="button" class="set-row set-go" id="set-ump-review" hidden><span><b>Review ump calls</b><small>Only you see this.</small></span><i class="chev" aria-hidden="true"></i></button>';
+    '<button type="button" class="set-row set-go" id="set-ump-review" hidden><span><b>Review ump calls</b><small>Testers only.</small></span><i class="chev" aria-hidden="true"></i></button>';
   box.insertAdjacentHTML('beforeend', h);
   $('set-voices').addEventListener('click', function () { open('settings'); });
   $('set-ump-review').addEventListener('click', openReview);
-  if (signedIn() && A().umpOwner) A().umpOwner().then(function (yes) { var b = $('set-ump-review'); if (b && yes === true) b.hidden = false; });
+  var a = A(), ask = !signedIn() ? null : a.umpRole ? a.umpRole() : a.umpOwner ? a.umpOwner().then(function (y) { return y === true ? 'owner' : null; }) : null;
+  if (ask) ask.then(function (role) { var b = $('set-ump-review'); if (b && (role === 'owner' || role === 'tester')) b.hidden = false; });
 }
 
 /* ---- the game's clips ------------------------------------------------------ */

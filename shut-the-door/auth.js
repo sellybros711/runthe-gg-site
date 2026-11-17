@@ -303,7 +303,8 @@
       return { data: { id: ins.data.id } };
     } catch (e) { return { error: (e && e.message) || 'That did not send.' }; }
   }
-  /* {path: signed url} for the paths the caller may read (approved, or the owner). null on failure. */
+  /* {path: signed url} for the paths the caller may read (approved, the uploader's own pending, a
+     tester's pending, or the owner). null on failure. */
   async function umpUrls(paths, secs) {
     if (!sb || !paths || !paths.length) return null;
     try {
@@ -315,12 +316,19 @@
     } catch (e) { return null; }
   }
   const umpOwner = async () => (await rpc('shutdoor_ump_owner', {}, true)) === true;
+  /* who may review (supabase/176): 'owner', 'tester' or null. Before 176 runs, the owner still
+     gets 'owner' through 165's shutdoor_ump_owner(), and a tester gets null. */
+  async function umpRole() {
+    const r = await rpc('shutdoor_ump_reviewer', {}, true);
+    if (r === 'owner' || r === 'tester') return r;
+    return (await umpOwner()) ? 'owner' : null;
+  }
   const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 100 });
   const umpReview = (id, status) => act('shutdoor_ump_review', { p_id: id, p_status: status });
 
   window.STD_AUTH = {
     API_VERSION: 1,
-    umpApproved, umpMine, umpSubmit, umpUrls, umpOwner, umpQueue, umpReview,
+    umpApproved, umpMine, umpSubmit, umpUrls, umpOwner, umpRole, umpQueue, umpReview,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,
