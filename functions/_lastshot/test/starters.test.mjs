@@ -9,7 +9,7 @@ import { STARTERS, starterPlay, starterById } from '../starters.js';
 
 const N = 120;
 const seedOf = i => (i * 2654435761) >>> 0;
-const rate = (play, opt) => { let w = 0; for (let i = 1; i <= N; i++) if (simulate(SC, play, seedOf(i), opt).outcome === 'win') w++; return w / N; };
+const rate = (play, opt, n = N) => { let w = 0; for (let i = 1; i <= n; i++) if (simulate(SC, play, seedOf(i), opt).outcome === 'win') w++; return w / n; };
 const LAZY = rate({ spots: SC.spots, steps: [{ kind: 'shoot', who: 'O1' }] });
 
 test('four named starters, legal, with notes', () => {
@@ -29,7 +29,7 @@ test('each starter wins, and each has a defense it beats and one that stops it',
   for (const s of STARTERS) {
     const by = Object.fromEntries(DEFENSES.map(d => [d, rate(s.play, { scheme: d })]));
     report[s.id] = by;
-    const all = rate(s.play);
+    const all = rate(s.play, undefined, 400);   // the overall bar on 400 runs: 120 swings it 5 points
     assert.ok(all >= 0.45, s.id + ' wins ' + all);
     assert.ok(all >= LAZY + 0.25, s.id + ' beats the lazy shot: ' + all + ' vs ' + LAZY);
     assert.ok(Math.max(...Object.values(by)) >= 0.6, s.id + ' has a defense it beats: ' + JSON.stringify(by));
