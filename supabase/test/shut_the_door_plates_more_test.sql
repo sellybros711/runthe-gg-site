@@ -1,6 +1,6 @@
--- The throwback plates and Diamond (177). Chain, after 166 and its test:
---   psql -d std -f supabase/177_shut_the_door_plates_more.sql
---   psql -d std -f supabase/177_shut_the_door_plates_more.sql   (twice: it is safe to rerun)
+-- The throwback plates and Diamond (178). Chain, after 166 and its test:
+--   psql -d std -f supabase/178_shut_the_door_plates_more.sql
+--   psql -d std -f supabase/178_shut_the_door_plates_more.sql   (twice: it is safe to rerun)
 --   psql -d std -f supabase/test/shut_the_door_plates_more_test.sql
 \set ON_ERROR_STOP on
 insert into public.profiles (id, username) values
@@ -25,8 +25,8 @@ insert into shutdoor_outings (user_id, day, daily_number, scenario_id, calls, ou
    (select jsonb_agg(jsonb_build_object('type', 'FF', 'cell', 12)) from generate_series(1, 9)), 'walk_off', 9, 300, 20,
    (select jsonb_agg('green'::text) from generate_series(1, 9)));
 
-\i supabase/177_shut_the_door_plates_more.sql
-select pg_temp.claim(true, 'running 177 again is safe');
+\i supabase/178_shut_the_door_plates_more.sql
+select pg_temp.claim(true, 'running 178 again is safe');
 
 -- 1. the rows: 162's clubs kept, the eras beside them
 select pg_temp.claim((select club = 'astros' and throwback = 'astrosbrick' from shutdoor_pack_clubs where id = 'std-2005-nlcs5-lidge'), '2005 Houston: the Astros and the 2000-2012 Astros');

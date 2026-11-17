@@ -2682,10 +2682,12 @@ async function liveMinimap(w, h, theme) {
 }
 
 /* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
-   made here), the consent before the send, the send, then the owner's review: waiting, approve, approved,
-   a reject that asks "Delete it for good?" first (Cancel keeps it, Yes rejects it), each list naming
-   who decided; then a tester (?mockTester=1, 176) sees the row and the same sheet, and a signed in
-   player who is not a tester does not */
+   made here), the consent before the send, the send, then the owner's review: the four tabs, the
+   owner's Waiting buttons, put in the game straight from waiting, Live, a reject that asks "Delete it
+   for good?" first (Cancel keeps it, Yes rejects it), each list naming who decided; then a tester
+   (?mockTester=1, 176) shortlists (177) and a signed in player who is not a tester sees no row; then
+   the owner's Shortlisted tab (177): the count on the settings row, hear it in the game's ump mix,
+   put it in the game, take it out */
 function tinyWav(ms) {
   const rate = 8000, n = Math.round(rate * ms / 1000), b = Buffer.alloc(44 + n * 2);
   b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16);
@@ -2727,7 +2729,7 @@ function fakeMic(page, how) {
 const voiceEvents = (page) => page.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && /^voice_/.test(a[1])).map((a) => [a[1], Object.assign({}, a[2])]));
 async function voicesWalk(w, h) {
   console.log(`\nthe voice of the ump, ${w}x${h}`);
-  step('19 the voice of the ump', 180);
+  step('19 the voice of the ump', 240);
   /* signed out: the home's row opens the sheet on its sign-in step */
   {
     const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut', { meterOff: true });
@@ -2839,6 +2841,12 @@ async function voicesWalk(w, h) {
   await page.waitForSelector('#sheet-ump-review.on .vr-row audio', { timeout: 3000 });
   const q = await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent);
   ok(/Strike!/.test(q) && /Big Al/.test(q), '19 the owner\'s queue holds it, with the credit');
+  const ow = await page.evaluate(() => ({ tabs: [...document.querySelectorAll('#vr-body [data-vr-tab]')].map((b) => b.textContent).join(),
+    acts: [...document.querySelectorAll('#vr-body .vr-row')[0].querySelectorAll('.vr-act button')].map((b) => b.textContent).join(),
+    hear: !!document.querySelector('#vr-body .vr-row [data-vr-hear]'), sel: document.querySelector('#vr-body [aria-selected="true"]').textContent }));
+  ok(ow.tabs === 'Waiting,Shortlisted,Live,Rejected' && ow.sel === 'Waiting', '19 the four tabs, Live in place of Approved, on Waiting: ' + ow.tabs);
+  ok(ow.acts === 'Put in the game,Reject' && ow.hear, '19 the owner\'s Waiting row: Hear it in the game, then ' + ow.acts);
+  /* the owner puts a waiting call straight in the game */
   await page.click('#vr-body [data-vr="approved"]');
   await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 2, null, { timeout: 3000 });
   /* the reject asks first, inside the sheet: no browser dialog, nothing sent until Yes */
@@ -2853,10 +2861,12 @@ async function voicesWalk(w, h) {
   ok(/Rejected by @mockplayer/.test(rj) && /Audio deleted\./.test(rj) && !/Approve|Reject(?! by)/.test(rj.replace('Rejected by', '')), '19 the rejected list: "Rejected by @mockplayer", the audio deleted, no buttons: "' + rj + '"');
   await page.click('#vr-body [data-vr-tab="approved"]');
   await page.waitForSelector('#sheet-ump-review .vr-row', { timeout: 3000 });
-  const apRow = await page.evaluate(() => document.querySelector('#vr-body .vr-row .vr-by').textContent);
-  ok(apRow === 'Approved by @mockplayer', '19 the approved list says who approved it: "' + apRow + '"');
+  const apRow = await page.evaluate(() => ({ by: [...document.querySelectorAll('#vr-body .vr-row .vr-by')].map((b) => b.textContent).join(),
+    acts: [...document.querySelectorAll('#vr-body .vr-row .vr-act button')].map((b) => b.textContent).join() }));
+  ok(apRow.by === 'Put in the game by @mockplayer', '19 the Live list says who put it in the game, no shortlister (straight in): "' + apRow.by + '"');
+  ok(apRow.acts === 'Take it out,Reject', '19 the owner\'s Live row: ' + apRow.acts);
   const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line)));
-  ok(ap.join() === 'strike', '19 approved: on the approved list and the game\'s list');
+  ok(ap.join() === 'strike', '19 put in the game: on the Live list and the game\'s list');
   await page.click('#sheet-ump-review .sh-x');
   /* the result: a quiet row under the menu, "pitched like" still on screen. Today's daily through the
      calls, as dailyDone, then back to the page (a load the page may already have begun, so the goto
@@ -2884,6 +2894,7 @@ async function voicesWalk(w, h) {
   ok(errors.length === 0, '19 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
   await testerWalk(w, h);
+  await ownerShortlistWalk(w, h);
 }
 /* in the open review sheet, on the Waiting tab with at least one row: Reject, Cancel, Reject, Yes */
 async function rejectWalk(page) {
@@ -2938,28 +2949,99 @@ async function testerWalk(w, h) {
   await page.waitForSelector('#sheet-ump-review.on .vr-row audio', { timeout: 3000 });
   const tabs = await page.evaluate(() => [...document.querySelectorAll('#vr-body [data-vr-tab]')].map((b) => b.textContent).join());
   const rows = await page.evaluate(() => document.querySelectorAll('#vr-body .vr-row audio').length);
-  ok(tabs === 'Waiting,Approved,Rejected' && rows === 2, '19 a tester gets the same sheet: ' + tabs + ', ' + rows + ' calls to play');
-  await page.click('#vr-body .vr-row [data-vr="rejected"]');
-  await page.waitForSelector('#vr-body .vr-ask', { timeout: 3000 });
-  /* STD_VO_SHOTS=dir saves the still of the ask, at 390x844 dark */
+  ok(tabs === 'Waiting,Shortlisted,Live,Rejected' && rows === 2, '19 a tester gets the same sheet: ' + tabs + ', ' + rows + ' calls to play');
+  const tw = await page.evaluate(() => ({ lead: document.getElementById('vr-lead').textContent,
+    acts: [...document.querySelectorAll('#vr-body .vr-row')].map((r) => [...r.querySelectorAll('.vr-act button')].map((b) => b.textContent).join()),
+    live: !!document.querySelector('#vr-body [data-vr="approved"]') }));
+  ok(tw.acts.every((a) => a === 'Shortlist,Reject') && !tw.live && tw.lead === 'Shortlist the good ones. The owner puts them in the game.',
+    '19 a tester\'s Waiting rows: Shortlist and Reject, no Put in the game; "' + tw.lead + '"');
+  /* STD_VO_SHOTS=dir saves the still of the tester's Waiting tab, at 390x844 dark */
   if (process.env.STD_VO_SHOTS && w === 390 && h === 844) {
-    const f = path.join(process.env.STD_VO_SHOTS, 'ump-review-tester-confirm-390x844-dark.png');
+    const f = path.join(process.env.STD_VO_SHOTS, 'ump-review-tester-waiting-390x844-dark.png');
     fs.mkdirSync(process.env.STD_VO_SHOTS, { recursive: true });
     await page.waitForTimeout(350);
     await page.screenshot({ path: f });
     console.log('       still: ' + f);
   }
-  await page.click('#vr-body [data-vr-no]');
   const rw = await rejectWalk(page);
   ok(rw.ask && rw.sent0 && rw.cancelled && rw.gone, '19 a tester\'s reject asks first too ' + JSON.stringify(rw));
-  await page.click('#vr-body [data-vr="approved"]');
+  await page.click('#vr-body [data-vr="shortlisted"]');
   await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 0, null, { timeout: 3000 });
+  const tok = await page.evaluate(() => document.querySelector('#vr-body .vr-ok').textContent);
   const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line).join()));
-  ok(ap === 'yer_out', '19 a tester approves the one left: on the game\'s list (' + ap + ')');
+  ok(ap === '' && tok === 'Shortlisted. The owner puts it in the game.', '19 a tester shortlists the one left: not in the game (' + JSON.stringify(ap) + '), "' + tok + '"');
+  await page.click('#vr-body [data-vr-tab="shortlisted"]');
+  await page.waitForSelector('#vr-body .vr-row', { timeout: 3000 });
+  const ts = await page.evaluate(() => ({ by: document.querySelector('#vr-body .vr-row .vr-by').textContent, acts: [...document.querySelectorAll('#vr-body .vr-row .vr-act button')].map((b) => b.textContent).join() }));
+  ok(ts.by === 'Shortlisted by @mockplayer' && ts.acts === 'Reject', '19 a tester\'s Shortlisted row: "' + ts.by + '", ' + ts.acts + ' only');
+  /* the server's rule, through the mock: a tester's approved is a shortlist */
+  const forced = await page.evaluate(() => window.STD_AUTH.umpQueue('shortlisted').then((r) => window.STD_AUTH.umpReview(r.data[0].id, 'approved')).then((r) => r.data.status));
+  ok(forced === 'shortlisted', '19 a tester cannot put a call in the game: approved is taken as ' + forced);
   ok(errors.length === 0, '19 a tester: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
 
+/* the owner's Shortlisted tab (177), dark: the count on the settings row, the sheet opens on the
+   shortlist, each row says who shortlisted it, Hear it in the game goes through sound.js's ump chain
+   (the sound off says so first), Put in the game makes it live, Take it out puts it back. At
+   390x844 the still of the tab. */
+async function ownerShortlistWalk(w, h) {
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockOwner=1', { meterOff: true, theme: 'dark' });
+  await page.evaluate(async (wav) => {
+    const V = window.STD_VOICES, A = window.STD_AUTH, bytes = Uint8Array.from(atob(wav), (c) => c.charCodeAt(0));
+    for (const [line, credit] of [['strike', 'Big Al'], ['steerike', null], ['yer_out', null]]) {
+      await A.umpSubmit({ line, consent: V.CONSENT, consentVersion: V.CONSENT_V, credit, mime: 'audio/wav', bytes: bytes.length, ms: 900, blob: new Blob([bytes], { type: 'audio/wav' }) });
+    }
+    const q = (await A.umpQueue('pending')).data;
+    for (const c of q.filter((x) => x.line !== 'yer_out')) await A.umpReview(c.id, 'shortlisted');
+  }, tinyWav(900).toString('base64'));
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  await page.waitForFunction(() => /shortlisted/.test(document.getElementById('set-ump-review').textContent), null, { timeout: 3000 });
+  const row = await page.evaluate(() => document.getElementById('set-ump-review').textContent);
+  ok(row === 'Review ump calls2 shortlisted for you.', '19 the owner\'s settings row counts the shortlist, quietly: "' + row + '"');
+  await page.click('#set-ump-review');
+  await page.waitForSelector('#sheet-ump-review.on .vr-row audio', { timeout: 3000 });
+  const sl = await page.evaluate(() => ({ sel: document.querySelector('#vr-body [aria-selected="true"]').textContent, lead: document.getElementById('vr-lead').textContent,
+    rows: [...document.querySelectorAll('#vr-body .vr-row')].map((r) => ({ by: [...r.querySelectorAll('.vr-by')].map((b) => b.textContent).join(), hear: !!r.querySelector('[data-vr-hear]'),
+      acts: [...r.querySelectorAll('.vr-act button')].map((b) => b.textContent).join() })) }));
+  ok(sl.sel === 'Shortlisted' && sl.rows.length === 2, '19 with calls on the shortlist the owner\'s sheet opens on it (' + sl.sel + ', ' + sl.rows.length + ' rows)');
+  ok(sl.rows.every((r) => r.by === 'Shortlisted by @mockplayer' && r.hear && r.acts === 'Put in the game,Reject'), '19 each shortlisted row: who shortlisted it, Hear it in the game, Put in the game, Reject ' + JSON.stringify(sl.rows));
+  /* the sound off (the check's default): the row says so, nothing plays */
+  await page.click('#vr-body .vr-row [data-vr-hear]');
+  await page.waitForSelector('#vr-body .vr-heard', { timeout: 3000 });
+  const off = await page.evaluate(() => ({ t: document.querySelector('#vr-body .vr-heard').textContent, last: window.STD_SFX.umpLast() }));
+  ok(off.t === 'The sound is off. Turn it on in settings.' && off.last === null, '19 hear it with the sound off: "' + off.t + '", nothing played');
+  /* the sound on: the clip goes through sound.js's own ump chain (umpVoice), the one the game plays */
+  await page.evaluate(() => window.STD_SFX.setOn(true));
+  await page.click('#vr-body .vr-row [data-vr-hear]');
+  await page.waitForFunction(() => /Played/.test((document.querySelector('#vr-body .vr-heard') || {}).textContent || ''), null, { timeout: 5000 });
+  const on = await page.evaluate(() => ({ t: document.querySelector('#vr-body .vr-heard').textContent, last: window.STD_SFX.umpLast(), audio: document.querySelectorAll('#vr-body .vr-row audio').length }));
+  ok(on.t === 'Played in the game\'s ump mix.' && on.last && on.last.how === 'preview' && on.last.gain === 0.9 && on.last.bus === 'sfx' && on.last.ms > 800 && on.audio === 2,
+    '19 hear it in the game: through the ump chain ' + JSON.stringify(on.last) + ', the plain player still there');
+  if (process.env.STD_VO_SHOTS && w === 390 && h === 844) {
+    const f = path.join(process.env.STD_VO_SHOTS, 'ump-review-owner-shortlisted-390x844-dark.png');
+    fs.mkdirSync(process.env.STD_VO_SHOTS, { recursive: true });
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: f });
+    console.log('       still: ' + f);
+  }
+  await page.click('#vr-body .vr-row [data-vr="approved"]');
+  await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 1, null, { timeout: 3000 });
+  await page.waitForFunction(() => /1 shortlisted/.test(document.getElementById('set-ump-review').textContent), null, { timeout: 3000 });
+  const put = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => ({ lines: l.map((c) => c.line).join(), ok: document.querySelector('#vr-body .vr-ok').textContent, row: document.getElementById('set-ump-review').textContent })));
+  ok(put.lines === 'strike' && put.ok === 'In the game.' && put.row === 'Review ump calls1 shortlisted for you.', '19 put in the game: live on the game\'s list, the count drops ' + JSON.stringify(put));
+  await page.click('#vr-body [data-vr-tab="approved"]');
+  await page.waitForSelector('#vr-body .vr-row', { timeout: 3000 });
+  const lv = await page.evaluate(() => [...document.querySelectorAll('#vr-body .vr-row .vr-by')].map((b) => b.textContent).join(' | '));
+  ok(lv === 'Shortlisted by @mockplayer | Put in the game by @mockplayer', '19 the Live row names both deciders: ' + lv);
+  await page.click('#vr-body .vr-row [data-vr="shortlisted"]');
+  await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 0, null, { timeout: 3000 });
+  const out = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => ({ lines: l.map((c) => c.line).join(), ok: document.querySelector('#vr-body .vr-ok').textContent })));
+  ok(out.lines === '' && out.ok === 'Taken out. It waits on the shortlist.', '19 take it out: off the game\'s list, back on the shortlist ' + JSON.stringify(out));
+  ok(errors.length === 0, '19 the owner\'s shortlist: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
 
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');

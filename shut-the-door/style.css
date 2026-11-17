@@ -2180,3 +2180,9 @@ body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="
 .voices .vr-h .vr-by { color: var(--ink); }
 .voices .vr-ask p { margin: 0 0 8px; font-weight: 700; color: var(--red); }
 .voices .vr-act .btn.bad { background: var(--red); color: #fff; }
+.voices .vr-tabs { display: flex; width: 100%; }
+.voices .vr-tabs button { flex: 1 1 auto; min-width: 0; padding: 6px 6px; }
+.voices .vr-lead { margin: 10px 0 0; }
+.voices .vr-ok { margin: 8px 0 0; }
+.voices .vr-hear { width: 100%; min-height: 42px; margin: 0 0 8px; }
+.voices .vr-heard { margin: -4px 0 8px; font-size: 12px; }

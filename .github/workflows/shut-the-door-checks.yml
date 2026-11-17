@@ -27,9 +27,10 @@ name: Shut The Door checks
 #              175_shut_the_door_ump_purge.sql (a deleted or rejected call loses its file) twice and its test,
 #              which replays an old rejected clip through 175 and the one-off backfill; then
 #              176_shut_the_door_ump_testers.sql (any tester reviews the calls) twice and its test; then
+#              177_shut_the_door_ump_shortlist.sql (a tester shortlists, the owner puts it live) twice and its test; then
 #              162_shut_the_door_plates.sql (the boards 166 builds on), then
 #              166_shut_the_door_board_stats.sql (the stat line on the boards) twice and its test; then
-#              177_shut_the_door_plates_more.sql (the throwback plates, Diamond for Pro) twice and its test
+#              178_shut_the_door_plates_more.sql (the throwback plates, Diamond for Pro) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -198,6 +199,12 @@ jobs:
           $P -f supabase/176_shut_the_door_ump_testers.sql
           $P -f supabase/176_shut_the_door_ump_testers.sql
           $P -f supabase/test/shut_the_door_ump_testers_test.sql
+      - name: 177 applied twice, then its test (a tester shortlists, only the owner puts a call in the game)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/177_shut_the_door_ump_shortlist.sql
+          $P -f supabase/177_shut_the_door_ump_shortlist.sql
+          $P -f supabase/test/shut_the_door_ump_shortlist_test.sql
       - name: 166 applied twice (over 162's boards), then its test
         run: |
           P="psql -X -q -v ON_ERROR_STOP=1 -d std"
@@ -206,9 +213,9 @@ jobs:
           $P -f supabase/166_shut_the_door_board_stats.sql
           $P -f supabase/166_shut_the_door_board_stats.sql
           $P -f supabase/test/shut_the_door_board_stats_test.sql
-      - name: 177 applied twice, then its test (the throwback plates, and Diamond for Pro only)
+      - name: 178 applied twice, then its test (the throwback plates, and Diamond for Pro only)
         run: |
           P="psql -X -q -v ON_ERROR_STOP=1 -d std"
-          $P -f supabase/177_shut_the_door_plates_more.sql
-          $P -f supabase/177_shut_the_door_plates_more.sql
+          $P -f supabase/178_shut_the_door_plates_more.sql
+          $P -f supabase/178_shut_the_door_plates_more.sql
           $P -f supabase/test/shut_the_door_plates_more_test.sql

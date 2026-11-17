@@ -279,11 +279,12 @@
     const r = await rpc('shutdoor_ump_approved', {});
     return Array.isArray(r) ? r : null;
   }
-  /* the caller's own clips still waiting for review (RLS shows nothing else) */
+  /* the caller's own clips still waiting for review: pending, or shortlisted by a tester and
+     waiting for the owner (177; RLS shows nothing else, and before 177 no row is shortlisted) */
   async function umpMine() {
     if (!sb || !session) return null;
     try {
-      const r = await sb.from('shutdoor_ump_clips').select('id, line_id, created_at').eq('status', 'pending');
+      const r = await sb.from('shutdoor_ump_clips').select('id, line_id, created_at').in('status', ['pending', 'shortlisted']);
       return r && !r.error && Array.isArray(r.data) ? r.data : null;
     } catch (e) { return null; }
   }
@@ -323,12 +324,17 @@
     if (r === 'owner' || r === 'tester') return r;
     return (await umpOwner()) ? 'owner' : null;
   }
+  /* a reviewer's waiting counts (177): {pending, shortlisted}, or null (anyone else, or before 177) */
+  async function umpCounts() {
+    const r = await rpc('shutdoor_ump_counts', {}, true);
+    return r && typeof r === 'object' ? r : null;
+  }
   const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 100 });
   const umpReview = (id, status) => act('shutdoor_ump_review', { p_id: id, p_status: status });
 
   window.STD_AUTH = {
     API_VERSION: 1,
-    umpApproved, umpMine, umpSubmit, umpUrls, umpOwner, umpRole, umpQueue, umpReview,
+    umpApproved, umpMine, umpSubmit, umpUrls, umpOwner, umpRole, umpCounts, umpQueue, umpReview,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,

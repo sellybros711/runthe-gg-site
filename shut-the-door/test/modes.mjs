@@ -115,7 +115,7 @@ check('the default is candidate A', M.defaultPack(sched, M.VOTE.EPOCH) === M.can
 
 // ---- the plates: plate.js PACK_CLUBS, the server's shutdoor_pack_clubs and the packs agree -----------
 {
-  console.log('\nthe plates (plate.js, supabase/162, 167 and 177)');
+  console.log('\nthe plates (plate.js, supabase/162, 167 and 178)');
   const fs = await import('fs');
   const { CLUBS, clubNamed } = await import(join(HERE, '..', '3d', 'clubs.js'));
   // a fresh plate.js with its own device store, so each case starts clean
@@ -147,16 +147,16 @@ check('the default is candidate A', M.defaultPack(sched, M.VOTE.EPOCH) === M.can
     JSON.stringify(Object.keys(teams).filter((id) => !want[id])));
   check('plate.js keys every pack with a team by its closer\'s club', sorted(PC) === sorted(want), sorted(want));
   check('plate.js keys every pack in a throwback era by that era\'s plate', sorted(PT) === sorted(wantTb), sorted(wantTb));
-  // the server's lists: 162's rows plus the two proxy spots 167 added; 177's throwbacks
+  // the server's lists: 162's rows plus the two proxy spots 167 added; 178's throwbacks
   const sql = ['162_shut_the_door_plates.sql', '167_shut_the_door_pack_clubs_proxy.sql']
     .map((f) => readFileSync(join(HERE, '..', '..', 'supabase', f), 'utf8')).join('\n');
   const rows = {};
   for (const m of sql.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)'\)/g)) rows[m[1]] = m[2];
   check('the server\'s shutdoor_pack_clubs is the same list', sorted(rows) === sorted(PC));
-  const sql177 = readFileSync(join(HERE, '..', '..', 'supabase', '177_shut_the_door_plates_more.sql'), 'utf8');
+  const sql178 = readFileSync(join(HERE, '..', '..', 'supabase', '178_shut_the_door_plates_more.sql'), 'utf8');
   const tbRows = {};
-  for (const m of sql177.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)', '([a-z]+)'\)/g)) { tbRows[m[1]] = m[3]; check('177 keeps ' + m[1] + '\'s club as 162 has it', PC[m[1]] === m[2]); }
-  check('the server\'s throwbacks (177) are the same list', sorted(tbRows) === sorted(PT), sorted(tbRows));
+  for (const m of sql178.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)', '([a-z]+)'\)/g)) { tbRows[m[1]] = m[3]; check('178 keeps ' + m[1] + '\'s club as 162 has it', PC[m[1]] === m[2]); }
+  check('the server\'s throwbacks (178) are the same list', sorted(tbRows) === sorted(PT), sorted(tbRows));
   const all = PL.all();
   check('every key is a plate plate.js draws', Object.values(PC).concat(Object.values(PT)).every((k) => PL.club(k)));
   check('all 30 of today\'s clubs have a plate, in clubs.js\'s order', PL.current30().length === 30 && PL.current30().join() === CLUBS.map(key).join());
@@ -196,7 +196,7 @@ check('the default is candidate A', M.defaultPack(sched, M.VOTE.EPOCH) === M.can
     check('Pro: Diamond is open and worn', P.unlocked().includes('diamond') && P.current() === 'diamond');
     P.setPro(false);
     P.setServer({ plate: 'diamond', unlocked: ['dodgers', 'diamond'] });
-    check('the server\'s list (177 adds Diamond only for Pro) opens it too', P.current() === 'diamond');
+    check('the server\'s list (178 adds Diamond only for Pro) opens it too', P.current() === 'diamond');
     P.setServer({ plate: 'diamond', unlocked: ['dodgers'] });
     check('Pro ends: back to plain', P.current() === null);
     const svg = P.svg('diamond', 'JE', {});

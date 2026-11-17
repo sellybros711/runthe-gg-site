@@ -1,7 +1,7 @@
 -- ---------------------------------------------------------------------------
--- 177_shut_the_door_plates_more.sql : the throwback plates, and Diamond for Pro
+-- 178_shut_the_door_plates_more.sql : the throwback plates, and Diamond for Pro
 --
--- Run AFTER 162_shut_the_door_plates.sql (and 166). Safe to run more than once.
+-- Run AFTER 162_shut_the_door_plates.sql (and 166, 177). Safe to run more than once.
 --
 -- The owner's ask (2026-11-17): "Can we add all clubs, including historic clubs
 -- that are included in situations, and maybe one special diamond one that is for

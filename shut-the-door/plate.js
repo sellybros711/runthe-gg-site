@@ -12,7 +12,7 @@
  * Since 2026-11-17 (the owner: "all clubs, including historic clubs ... and maybe one special
  * diamond one that is for pro users only"): all 30 of today's clubs (a club no situation has yet is
  * shown, and says so), the THROWBACKS below (another era's name or colours, unlocked by a save in a
- * situation from that era), and Diamond, open only while the account is Pro (supabase/177).
+ * situation from that era), and Diamond, open only while the account is Pro (supabase/178).
  *
  * Unlocks, signed in, are the server's (shutdoor_my_plates, from the stored saves). A guest's live
  * on this device (localStorage) and are shown with the account's once they sign in.
@@ -217,7 +217,7 @@
     'std-2025-ws7-yamamoto': 'dodgers',
   };
   /* The extra plate a situation unlocks: its era's colours or its old name (keysFor's second key).
-     The server's shutdoor_pack_clubs.throwback (supabase/177); test/modes.mjs holds both to the packs. */
+     The server's shutdoor_pack_clubs.throwback (supabase/178); test/modes.mjs holds both to the packs. */
   var PACK_THROWBACKS = {
     'std-2005-nlcs5-lidge': 'astrosbrick', 'std-2010-hoffman-stl': 'brewersgold', 'std-2019-nlwc-hader': 'brewersgold',
   };
