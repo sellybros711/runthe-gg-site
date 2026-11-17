@@ -2678,7 +2678,7 @@ async function voicesWalk(w, h) {
   {
     const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut', { meterOff: true });
     const row = await page.evaluate(() => { const b = document.getElementById('h-voice'); return b && { text: b.textContent, svg: !!b.querySelector('svg'), shut: document.getElementById('sheet-voices').hidden }; });
-    ok(row && row.text === 'Voice of the umpRecord a call for the game.' && row.svg && row.shut, '19 the home\'s list has the voice of the ump, with its mic, and the sheet is shut until it is tapped');
+    ok(row && row.text === 'Voice of the umpRecord your voice. Be the ump!' && row.svg && row.shut, '19 the home\'s list has the voice of the ump, with its mic, and the sheet is shut until it is tapped');
     await page.click('#h-voice');
     await page.waitForSelector('#sheet-voices.on #vo-signin', { timeout: 3000 });
     ok(!(await page.$('#vo-rec')), '19 signed out, the home\'s row opens the sheet on its sign-in step');
@@ -2809,7 +2809,7 @@ async function voicesWalk(w, h) {
     const b = document.getElementById('r-voice'), r = b.getBoundingClientRect(), nav = document.getElementById('r-nav').getBoundingClientRect(), like = document.querySelector('.r-like').getBoundingClientRect();
     return { text: b.textContent, svg: !!b.querySelector('svg'), below: r.top >= nav.bottom - 1, h: r.height, inside: r.left >= 0 && r.right <= innerWidth, likeOn: like.top >= 0 && like.bottom <= innerHeight, shut: document.getElementById('sheet-voices').hidden };
   });
-  ok(rv.text === 'Voice of the umpRecord a call for the game.' && rv.svg && rv.below && rv.h >= 38 && rv.inside && rv.shut, '19 the result has the voice of the ump under its menu, with its mic, ' + Math.round(rv.h) + ' px, shut until tapped');
+  ok(rv.text === 'Voice of the umpRecord your voice. Be the ump!' && rv.svg && rv.below && rv.h >= 38 && rv.inside && rv.shut, '19 the result has the voice of the ump under its menu, with its mic, ' + Math.round(rv.h) + ' px, shut until tapped');
   ok(rv.likeOn, '19 the result: "pitched like" still on screen at ' + w + 'x' + h);
   await page.click('#r-voice');
   await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });

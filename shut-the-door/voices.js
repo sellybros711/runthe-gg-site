@@ -321,7 +321,7 @@ function render(keepMsg) {
   if (!body) return;
   if (!signedIn()) {
     body.innerHTML = '<div class="vo-out"><span class="vo-badge">' + MIC_SVG + '</span>' +
-      '<p class="vo-out-h">Record a call for the game.</p>' +
+      '<p class="vo-out-h">Record your voice. Be the ump!</p>' +
       '<p class="quiet">Sign in to send one. The owner hears every call. The best ones make the game.</p>' +
       '<button class="btn go vo-signin" type="button" id="vo-signin">Sign in</button></div>';
     $('vo-signin').addEventListener('click', function () { close(); if (MN()) MN().show('auth'); });
