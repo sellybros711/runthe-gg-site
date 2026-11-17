@@ -2043,7 +2043,8 @@ function finish() {
   return API.finishOuting(id).then(function (r) {
     if (EV()) EV().outingEnd(id, S.mode, evDay(), r);
     /* a save as a club's closer unlocks its plate (plate.js). Practice is not kept, so it unlocks nothing */
-    var won = r.outcome === 'door_shut' && S.mode !== 'practice' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : null;
+    var won = r.outcome === 'door_shut' && S.mode !== 'practice' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : [];
+    won = won && won.length ? won : null;
     if (won) paintProfile();
     if (S.mode === 'survivor') return survivorNext(r);
     S.result = r;
@@ -2068,13 +2069,14 @@ function finish() {
 
 /* The unlock, on the result after a save that earned a new club's plate. A line, never a popup. */
 function unlockNote() {
-  var el = $('r-unlock'), k = S.unlocked, PL = window.STD_PLATE;
+  var el = $('r-unlock'), ks = S.unlocked, PL = window.STD_PLATE;
   if (!el) return;
-  el.hidden = !k || !PL;
-  if (!k || !PL) { el.innerHTML = ''; return; }
-  var st = authNow();
-  el.innerHTML = PL.svg(k, PL.initials(st.name, st.initials), { cls: 'ru-p' }) +
-    '<span><b>' + esc(PL.nameOf(k)) + ' plate unlocked</b><button type="button" class="ru-go" id="r-unlock-go">wear it</button></span>';
+  el.hidden = !ks || !PL;
+  if (!ks || !PL) { el.innerHTML = ''; return; }
+  /* a save in a throwback era opens two: today's club and that era's colours, one line for both */
+  var st = authNow(), ini = PL.initials(st.name, st.initials);
+  el.innerHTML = ks.map(function (k) { return PL.svg(k, ini, { cls: 'ru-p' }); }).join('') +
+    '<span><b>' + ks.map(function (k) { return esc(PL.nameOf(k)); }).join(' and ') + (ks.length > 1 ? ' plates' : ' plate') + ' unlocked</b><button type="button" class="ru-go" id="r-unlock-go">wear it</button></span>';
   $('r-unlock-go').addEventListener('click', function () { MN.show('auth'); });
 }
 function authNow() { try { return (window.STD_AUTH && window.STD_AUTH.state()) || {}; } catch (e) { return {}; } }
@@ -2088,6 +2090,16 @@ function paintProfile() {
   b.setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
   b.title = st.signedIn ? 'Account' : 'Sign in';
   b.innerHTML = st.signedIn && PL ? PL.svg(PL.current(), PL.initials(st.name, st.initials), { cls: 'hp' }) : '<span>sign in</span>';
+}
+/* The entitlements, once they answer: the archive's menu, and Diamond (plate.js) by the same Pro gate */
+function proPlate(e) {
+  MN.init({ ent: e });
+  if (tab === 'arc') MN.renderPast();
+  if (window.STD_PLATE) {
+    window.STD_PLATE.setPro(e && e.pro);
+    paintProfile();
+    if (MN.current() === 'sheet-auth') MN.renderAuth();
+  }
 }
 /* signed in: the account's plates, and a guest's chosen plate carried over when the account has it */
 function syncPlates() {
@@ -2897,7 +2909,7 @@ function boot() {
       if (document.body.dataset.screen === 's-result' && S.result) renderModes();
       if (document.body.dataset.screen === 's-home' && tab === 'surv' && MU) MU.showSurvivor();
       if (document.body.dataset.screen === 's-home') homeVote();
-      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
+      if (MU) MU.entitlements().then(proPlate);
     });
   } catch (e) {}
   /* a daily played signed out, posted on the sign-in (api.js claim): say where it landed */
@@ -2969,7 +2981,7 @@ function boot() {
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
   window.addEventListener('std-clubs', function () { if (S.scn && document.body.dataset.screen === 's-mound') setPitcher(); });
 
-  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
+  if (MU) MU.entitlements().then(proPlate);
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
     S.dailyScn = scn;

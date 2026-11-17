@@ -434,27 +434,37 @@ function renderAuth() {
   });
 }
 
-/* THE PLATE PICKER (the owner, 2026-11-03): the neutral plate, then every club a save can unlock.
-   A locked one says how to get it. A pick goes to the account, which checks the unlock. */
+/* THE PLATE PICKER (the owner, 2026-11-03; every club, the throwbacks and Diamond, 2026-11-17): the
+   neutral plate and Diamond, today's 30 clubs, then the throwbacks. A locked one says how to get it:
+   a save as that club's closer, "No situation yet" when no pack has one (it opens by itself when a
+   pack adds one), or Pro for Diamond. A pick goes to the account, which checks the unlock. */
 function platePicker(st) {
   var PL = window.STD_PLATE;
   if (!PL) return '';
   var ini = PL.initials(st.name, st.initials), have = PL.unlocked(), cur = PL.current();
   var tile = function (k) {
-    var open = !k || have.indexOf(k) >= 0, nm = k ? PL.nameOf(k) : 'plain';
-    return '<button type="button" class="plk' + (open ? '' : ' locked') + '" data-plate="' + esc(k || '') + '" aria-pressed="' + (k === cur || (!k && !cur)) + '"' +
-      (open ? '' : ' aria-disabled="true"') + ' aria-label="' + esc(open ? nm + ' plate' : 'shut the door as the ' + nm + ' closer to unlock') + '">' +
+    var open = !k || have.indexOf(k) >= 0, how = PL.status(k), tb = k && PL.throwback(k);
+    var nm = !k ? 'Plain' : tb ? tb.name : PL.nameOf(k);
+    var line = open ? '' : how === 'pro' ? 'Pro only.' : how === 'soon' ? 'No situation yet. Coming soon.' :
+      'Shut the door as ' + (tb ? 'a ' + tb.era + ' ' + tb.name : 'the ' + nm) + ' closer to unlock.';
+    return '<button type="button" class="plk' + (open ? '' : ' locked') + (how === 'pro' ? ' gem' : '') + '" data-plate="' + esc(k || '') + '" aria-pressed="' + (k === cur || (!k && !cur)) + '"' +
+      (open ? '' : ' aria-disabled="true"') + ' aria-label="' + esc(PL.nameOf(k) || nm) + ' plate' + (line ? '. ' + esc(line) : '') + '">' +
+      (how === 'pro' ? '<i class="plk-pro">Pro</i>' : '') +
       PL.svg(k, ini, { locked: !open }) + '<span>' + esc(nm) + '</span>' +
-      (open ? '' : '<small>shut the door as the ' + esc(nm) + ' closer to unlock</small>') + '</button>';
+      (tb ? '<em class="plk-era">' + esc(tb.era) + '</em>' : '') +
+      (line ? '<small>' + esc(line) + '</small>' : '') + '</button>';
   };
-  return '<div class="plk-h"><b>your plate</b><span>' + esc(have.length) + ' of ' + esc(PL.earnable().length) + ' clubs</span></div>' +
-    '<div class="plk-grid" id="pk-grid">' + [null].concat(PL.earnable()).map(tile).join('') + '</div>' +
+  var mine = have.filter(function (k) { return PL.all().indexOf(k) >= 0; }).length;
+  return '<div class="plk-h"><b>Your plate</b><span id="pk-count">' + esc(mine) + ' of ' + esc(PL.all().length) + '</span></div>' +
+    '<div class="plk-grid" id="pk-grid">' + [null, PL.DIAMOND].concat(PL.current30()).map(tile).join('') + '</div>' +
+    '<div class="plk-h plk-tb"><b>Throwbacks</b></div>' +
+    '<div class="plk-grid" id="pk-grid-tb">' + PL.throwbacks().map(tile).join('') + '</div>' +
     '<p class="au-err" id="pk-err" role="alert"></p>';
 }
 function wirePicker(st) {
   var A = window.STD_AUTH, PL = window.STD_PLATE, g = $('pk-grid');
   if (!g || !PL) return;
-  g.addEventListener('click', function (e) {
+  var pick = function (e) {
     var b = e.target.closest('.plk');
     if (!b || b.classList.contains('locked')) return;
     var k = b.getAttribute('data-plate') || null;
@@ -465,7 +475,9 @@ function wirePicker(st) {
       renderAuth();
       if (ctx.onPlate) ctx.onPlate();
     });
-  });
+  };
+  g.addEventListener('click', pick);
+  if ($('pk-grid-tb')) $('pk-grid-tb').addEventListener('click', pick);
 }
 
 /* the menu's three tiles: the streak, the best, the last percentile */
