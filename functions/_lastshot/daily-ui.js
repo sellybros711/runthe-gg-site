@@ -19,7 +19,7 @@
  * second visit) and whether start was posted, so a reload does not count as
  * a restart. A new day drops it. Read through cleanPlay, never trusted. */
 import { MIN_FRAMES } from './daily.js';
-import { cleanPlay, starText } from './ladder-ui.js';
+import { cleanPlay, starText, streakLine } from './ladder-ui.js';
 import { adder, verdictBlock, checklist, factsOfDetail, scoreLineOf } from './cards.js';
 
 export const GAME_ID = 'last-shot';
@@ -157,7 +157,7 @@ export function renderBoard(box, lb, max = 10) {
 
 /* ---------- the home card ---------- */
 const $ = id => document.getElementById(id);
-/* st: { today, error, off } */
+/* st: { today, error, off, streak: { now, best } or null } */
 export function homeCard(st) {
   const card = $('hDaily');
   if (!card) return;
@@ -173,12 +173,20 @@ export function homeCard(st) {
   $('hDailyTitle').textContent = !t ? (st.error ? 'Couldn\'t load today\'s shot. Tap to try again.' : 'Loading today\'s shot.')
     : played ? played.scoreText : t.config.title;
   $('hDailyCount').textContent = t ? nextLine() : '';
+  /* the streak, once there is one to show (a first visit has none) */
+  const sk = $('hDailyStreak'), st2 = st.streak;
+  if (sk) { sk.hidden = !(st2 && st2.best > 0); sk.textContent = st2 && st2.best > 0 ? streakLine(st2) : ''; }
 }
 
 /* ---------- the daily result card ----------
- * o: { day, result, reduce, fresh, schemeName }
- * h: { share(btn), beat(btn) or null, save(row) or null (Save this play), practice(), home() }
- * Returns the stars it shows and the places the board and rank land. */
+ * o: { day, result, reduce, streak: { now, best } or null }
+ * h: { share(btn), beat(btn) or null, save(row) or null (Save this play), practice(), home(),
+ *      dock(c, row): the docked card's More (client.js) }
+ * Docked, the card shows the verdict, the stars, the score, the reason, the
+ * rank and the streak, and Share; the rest (marked xtra) is behind More.
+ * No gems (2026-11-17): they belong to the Arcade Lab, which stays tester
+ * only, so a public player would earn what they can never see. The server
+ * still pays them; this card never says so. */
 export function dailyCard(c, o, h) {
   const { day, result } = o, d = result.detail || {};
   const add = adder(c);
@@ -188,23 +196,24 @@ export function dailyCard(c, o, h) {
   c.dataset.stars = String(n);
   add('p', 'lvlname', 'Daily Last Shot #' + day.dayNumber + ' · ' + day.config.title);
   verdictBlock(add, d.outcome === 'win', scoreLineOf(d.us, d.them, d.how === 'ot'), n, o.reduce);
-  checklist(add, n, factsOfDetail(d));
+  checklist(add, n, factsOfDetail(d)).classList.add('xtra');
   add('p', 'dscore', result.scoreText).id = 'dScore';
   if (d.reason) add('p', 'reason', d.reason);
-  add('p', 'facts dscheme', 'Today they played: ' + (d.schemeName || d.scheme || '-')).id = 'dScheme';
+  const sch = add('p', 'facts dscheme xtra', 'Today they played: ' + (d.schemeName || d.scheme || '-')); sch.id = 'dScheme';
   const meta = add('div', 'dmeta');
   const rank = add('b', 'drank', '', meta); rank.id = 'dRank';
-  if (result.gems > 0) add('span', 'dgems', '+' + result.gems + ' gems', meta).id = 'dGems';
-  const box = add('div', 'dboardbox'); box.id = 'dBoard';
+  if (o.streak && o.streak.best > 0) add('span', 'dstreak', streakLine(o.streak), meta).id = 'dStreak';
+  const box = add('div', 'dboardbox xtra'); box.id = 'dBoard';
   add('p', 'muted', 'Loading the board.', box);
-  const count = add('p', 'dcount', nextLine()); count.id = 'dCount';
+  const count = add('p', 'dcount xtra', nextLine()); count.id = 'dCount';
   const btn = (label, cls, fn, id, to) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; b.id = id; b.addEventListener('click', () => fn(b)); to.appendChild(b); return b; };
   const row = add('div', 'row');
   btn('Share', 'go', h.share, 'bDayShare', row);
   if (h.beat) btn('Beat my play', 'alt', h.beat, 'bBeat', row);
-  if (h.save) h.save(row);
-  const row2 = add('div', 'row');
+  const row2 = add('div', 'row xtra');
+  if (h.save) h.save(row2);
   btn('Practice', 'alt', h.practice, 'bDayPractice', row2);
   btn('Home', 'alt', h.home, 'bDayHome', row2);
+  if (h.dock) h.dock(c, row);
   return { n, rank, box, count };
 }
