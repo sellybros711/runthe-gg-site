@@ -58,7 +58,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=32">
+<link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
 <header class="topbar">
@@ -530,6 +530,11 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <p class="rdhead" id="rDailyHead"></p>
         <p class="rdreal"><b>What really happened:</b> <span id="rReal"></span> <span id="rVerdict"></span></p>
         <p class="rdstats" id="rDayStats" hidden></p>
+        <!-- what next (the Advisor's review, 2026-11-16: the Daily ended on Run it back) -->
+        <div class="rdnext" id="rDailyNext">
+          <button type="button" class="playnow rgobtn" id="rDailyGo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span>Go For It</span></button>
+          <button type="button" class="btn" id="rDailyDef">Daily Defense</button>
+        </div>
       </div>
       <div class="rgo" id="rGo" hidden>
         <p class="rgohead" id="rGoHead"></p>
@@ -603,7 +608,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="game.js?v=6"></script>
 <script src="clip.js?v=1"></script>
 <script src="flow.js?v=18"></script>
-<script src="daily.js?v=8"></script>
+<script src="daily.js?v=9"></script>
 <script src="trivia.js?v=4"></script>
 <script src="calls.js?v=11"></script>
 <script src="goforit.js?v=7"></script>

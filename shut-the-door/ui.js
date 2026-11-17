@@ -117,6 +117,10 @@ function fmtDay(day) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).toLowerCase().replace(',', '');
 }
 function pct(v) { return Math.round(v * 100) + '%'; }
+/* the game events (events.js): fire and forget, never in the way of play. The daily number of the
+   spot on the mound: the archive's own day, else today's (Survivor's spots carry none) */
+function EV() { return window.STD_EVENTS || null; }
+function evDay() { var n = S.scn && S.scn.number; return n != null ? n : S.dailyScn ? S.dailyScn.number : null; }
 function toast(msg) {
   var t = $('toast'); t.textContent = msg; t.classList.add('on');
   clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('on'); }, 2200);
@@ -939,6 +943,7 @@ function enterMound() {
   clearTimeout(S.endWinT); S.endWin = null; S.absBusy = false;
   if (S.mini) S.mini.reset();
   show('s-mound');
+  if (EV()) EV().outingStart(S.outing.outingId, S.mode, evDay(), S.outing.pitchNo);
   setPitcher();
   setBatter(true);
   renderHud(S.outing);
@@ -1625,6 +1630,7 @@ function fire(call) {
   $('m-scene').classList.add('flying');
   API.throwPitch(S.outing.outingId, call).then(function (res) {
     var pr = res.pitchResult, batter = batterAt(S.outing.batterIndex);
+    if (EV()) EV().pitch(S.outing.outingId, S.mode, evDay(), pr);
     var painted = isPainted(pr, call);
     if (painted) S.paintedN = pr.n;
     /* rules 4: the batter challenged the call. The umpire's call goes up when it is seen, and the
@@ -2033,7 +2039,9 @@ function nextHalf(ho) {
 /* ---- the end ----------------------------------------------------------------------------- */
 
 function finish() {
-  return API.finishOuting(S.outing.outingId).then(function (r) {
+  var id = S.outing.outingId;
+  return API.finishOuting(id).then(function (r) {
+    if (EV()) EV().outingEnd(id, S.mode, evDay(), r);
     /* a save as a club's closer unlocks its plate (plate.js). Practice is not kept, so it unlocks nothing */
     var won = r.outcome === 'door_shut' && S.mode !== 'practice' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : null;
     if (won) paintProfile();
@@ -2338,6 +2346,11 @@ function renderResult() {
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
+  /* Run The Diamond, under the menu: not on a player's first result, as the Diamond's own promo
+     (site PR 1015). The signal is the device's daily history (hist, written before this draws): a
+     daily from an earlier day means this is not the first */
+  var h = hist();
+  $('r-promo').hidden = !Object.keys(h).some(function (d) { return d < S.day; });
   renderStreak();
   /* the stagger's order: the strip's squares, the menu's rows, the tiles, the pitches */
   ['#r-strip .sq', '#r-nav .nv:not([hidden])', '#s-result .r-tile', '#r-reveal .pc'].forEach(function (q) {
@@ -2695,8 +2708,8 @@ function openCoach() {
    navigator.share run straight off a tap. Where files cannot be shared, the image is saved instead,
    and the text is always one tap away. */
 function shareText(r) { return r.share || (window.STD_SHARE && window.STD_SHARE.text(r, S.scn.number)) || ''; }
-function copyText(text, msg) {
-  function copied() { toast(msg || 'copied. paste it anywhere.'); }
+function copyText(text, msg, done) {
+  function copied() { toast(msg || 'copied. paste it anywhere.'); if (done) done(); }
   function fallback() {
     try {
       var ta = document.createElement('textarea');
@@ -2710,9 +2723,11 @@ function copyText(text, msg) {
 /* the old share: the text, through the share sheet on a phone, else copied */
 function shareTextOnly(text) {
   var touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  if (navigator.share && touch) { navigator.share({ text: text }).catch(function () {}); return; }
-  copyText(text);
+  if (navigator.share && touch) { navigator.share({ text: text }).then(function () { shared('text'); }, function () {}); return; }
+  copyText(text, null, function () { shared('text'); });
 }
+/* a share that went out (events.js): the image through the phone's sheet, the image saved, the text */
+function shared(method) { if (EV()) EV().share(S.mode, evDay(), method); }
 /* what the card shows, every piece from the result */
 function cardOf(r) {
   var s = S.scn, st = S.daily || S.outing;
@@ -2758,13 +2773,14 @@ function saveFile(f) {
   a.href = SH.urls[SH.size]; a.download = f.name; a.rel = 'noopener';
   document.body.appendChild(a); a.click(); a.remove();
   toast('saved. post it anywhere.');
+  shared('save');
 }
 function renderShare(state) {
   var body = $('share-body');
   if (state === 'fail') {
     body.innerHTML = '<p class="quiet">the image did not draw. the text still works.</p>' +
       '<button class="btn go" type="button" id="sh-text">copy the text</button>';
-    $('sh-text').addEventListener('click', function () { copyText(SH.text); });
+    $('sh-text').addEventListener('click', function () { copyText(SH.text, null, function () { shared('text'); }); });
     return;
   }
   var f = SH.files[SH.size], url = SH.urls[SH.size];
@@ -2785,14 +2801,14 @@ function renderShare(state) {
     var file = SH.files[SH.size];
     if (!file) return;
     if (canShareFile(file)) {
-      navigator.share({ files: [file], text: SH.text }).catch(function (e) {
+      navigator.share({ files: [file], text: SH.text }).then(function () { shared('image'); }, function (e) {
         if (e && e.name === 'AbortError') return;
         saveFile(file);
       });
     } else saveFile(file);
   });
   if ($('sh-save')) $('sh-save').addEventListener('click', function () { if (SH.files[SH.size]) saveFile(SH.files[SH.size]); });
-  $('sh-text').addEventListener('click', function () { copyText(SH.text); });
+  $('sh-text').addEventListener('click', function () { copyText(SH.text, null, function () { shared('text'); }); });
 }
 
 /* ---- the board: its own screen, from a button ------------------------------------------------- */
@@ -2945,6 +2961,8 @@ function boot() {
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
+  $('r-voice').addEventListener('click', function () { if (window.STD_VOICES) window.STD_VOICES.open('result'); });
+  $('r-promo').addEventListener('click', function () { if (EV()) EV().promo('baseball', S.mode, evDay()); });
   initResultNav();
   initClips();
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */

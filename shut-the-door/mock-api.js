@@ -98,6 +98,11 @@ var AUTH_MODE = (/[?&]mockAuth=([^&]*)/.exec(location.search) || [])[1] || '';
 var mockIn = AUTH_MODE === '1';
 var authListeners = [];
 function mockSignedIn() { return mockIn; }
+/* the review sheet's role (176): 'owner', 'tester' or null, from ?mockOwner=1 or ?mockTester=1 */
+function mockRole() {
+  if (!mockIn) return null;
+  return /[?&]mockOwner=1/.test(location.search) ? 'owner' : /[?&]mockTester=1/.test(location.search) ? 'tester' : null;
+}
 var mockClips = [];
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
@@ -116,8 +121,9 @@ if (!window.STD_AUTH || FORCE) {
     signIn: AUTH_MODE === 'late' ? lateIn : none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
     board: mockBoard,
-    /* the voice of the ump (supabase/165), FICTIONAL: clips live in this page only. ?mockOwner=1
-       makes the signed-in mock account the owner, so the review sheet can be walked */
+    /* the voice of the ump (supabase/165, 176), FICTIONAL: clips live in this page only. ?mockOwner=1
+       makes the signed-in mock account the owner, ?mockTester=1 a tester (176), so the review
+       sheet can be walked as either */
     umpApproved: function () { return Promise.resolve(mockClips.filter(function (c) { return c.status === 'approved'; }).map(function (c) { return { id: c.id, line: c.line, path: c.path, credit: c.credit }; })); },
     umpMine: function () { return Promise.resolve(mockIn ? mockClips.filter(function (c) { return c.status === 'pending'; }).map(function (c) { return { id: c.id, line_id: c.line }; }) : null); },
     umpSubmit: function (c) {
@@ -128,16 +134,21 @@ if (!window.STD_AUTH || FORCE) {
       return Promise.resolve({ data: { id: id } });
     },
     umpUrls: function (paths) { var m = {}; mockClips.forEach(function (c) { if (paths.indexOf(c.path) >= 0) m[c.path] = c.url; }); return Promise.resolve(m); },
-    umpOwner: function () { return Promise.resolve(mockIn && /[?&]mockOwner=1/.test(location.search)); },
+    umpOwner: function () { return Promise.resolve(mockRole() === 'owner'); },
+    umpRole: function () { return Promise.resolve(mockRole()); },
     umpQueue: function (st) {
-      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      if (!mockRole()) return Promise.resolve({ error: 'testers only' });
       return Promise.resolve({ data: mockClips.filter(function (c) { return c.status === (st || 'pending'); }).map(function (c) { return JSON.parse(JSON.stringify(c)); }) });
     },
     umpReview: function (id, st) {
-      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      if (!mockRole()) return Promise.resolve({ error: 'testers only' });
       var c = mockClips.filter(function (x) { return x.id === id; })[0];
       if (!c) return Promise.resolve({ error: 'no such clip' });
+      /* as 175: a rejected call loses its file, and with it any way back */
+      if (!c.path && st !== 'rejected') return Promise.resolve({ error: 'that call\'s audio was deleted' });
       c.status = st;
+      c.reviewedBy = st === 'pending' ? null : 'mockplayer';
+      if (st === 'rejected') c.path = null;
       return Promise.resolve({ data: { id: id, status: st } });
     },
     plates: function () { return Promise.resolve(mockIn ? JSON.parse(JSON.stringify(mockPlates)) : null); },

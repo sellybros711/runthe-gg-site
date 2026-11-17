@@ -24,6 +24,9 @@ name: Shut The Door checks
 #              163_shut_the_door_vote_nov5.sql (the vote from 2026-11-05) twice and its test; then
 #              164_shut_the_door_vote_anytime.sql (the vote without playing today) twice and its test; then
 #              165_shut_the_door_ump_voices.sql (the voice of the ump) twice and its test, over a storage stub; then
+#              175_shut_the_door_ump_purge.sql (a deleted or rejected call loses its file) twice and its test,
+#              which replays an old rejected clip through 175 and the one-off backfill; then
+#              176_shut_the_door_ump_testers.sql (any tester reviews the calls) twice and its test; then
 #              162_shut_the_door_plates.sql (the boards 166 builds on), then
 #              166_shut_the_door_board_stats.sql (the stat line on the boards) twice and its test
 #
@@ -88,6 +91,10 @@ jobs:
         run: node shut-the-door/test/postgame.mjs
       - name: The result names the real closer in every scheduled pack (names.js versus)
         run: node shut-the-door/test/versus.mjs
+      - name: The game events go out once each, at their moment, with only their fields
+        run: node shut-the-door/test/events.mjs
+      - name: The ump purge deletes only files no row names, through the Storage API, and fails on one it kept
+        run: node shut-the-door/ump-purge.mjs --self-test
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
@@ -178,6 +185,18 @@ jobs:
           $P -f supabase/165_shut_the_door_ump_voices.sql
           $P -f supabase/165_shut_the_door_ump_voices.sql
           $P -f supabase/test/shut_the_door_ump_voices_test.sql
+      - name: 175 applied twice, then its test (and the backfill, twice, inside it)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/175_shut_the_door_ump_purge.sql
+          $P -f supabase/175_shut_the_door_ump_purge.sql
+          $P -f supabase/test/shut_the_door_ump_purge_test.sql
+      - name: 176 applied twice, then its test (testers review the ump calls)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/176_shut_the_door_ump_testers.sql
+          $P -f supabase/176_shut_the_door_ump_testers.sql
+          $P -f supabase/test/shut_the_door_ump_testers_test.sql
       - name: 166 applied twice (over 162's boards), then its test
         run: |
           P="psql -X -q -v ON_ERROR_STOP=1 -d std"

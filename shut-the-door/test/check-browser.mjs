@@ -210,7 +210,8 @@ const UNITS = [
   ['17 the modes, 1440x900', 144, () => modes(1440, 900, false)],
   ['18 two halves, 390x844', 92, () => halves(390, 844, false)],
   ['18 two halves, 1440x900', 78, () => halves(1440, 900, true)],
-  ['19 the voice of the ump, 390x844', 7, () => voicesWalk(390, 844)],
+  ['19 the voice of the ump, 390x844', 42, () => voicesWalk(390, 844)],
+  ['19 the voice of the ump, 375x667', 46, () => voicesWalk(375, 667)],
   ['21 the live minimap, 390x844 light', 60, () => liveMinimap(390, 844, 'light')],
   ['21 the live minimap, 1440x900 dark', 60, () => liveMinimap(1440, 900, 'dark')],
 ];
@@ -842,6 +843,11 @@ async function playOuting(page, o) {
 }
 
 /* The end: everything at once, the coach still closed. */
+/* the game events on the page's dataLayer, as [name, params] (events.js) */
+function gameEvents(page) {
+  const NAMES = ['outing_start', 'pitch', 'outing_end', 'daily_done', 'share'];
+  return page.evaluate((names) => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && names.includes(a[1])).map((a) => [a[1], Object.assign({}, a[2])]), NAMES);
+}
 async function revealCheck(page, label, pitches) {
   const rv = await page.evaluate(() => {
     const vis = (id) => { const el = document.getElementById(id); const b = el && el.getBoundingClientRect(); return !!(b && b.width > 0 && b.height > 0); };
@@ -1368,6 +1374,27 @@ async function run(w, h, theme) {
   at('6 the result');
   await revealCheck(page, '6', play.pitches);
   await shot('result', true);
+  /* the game events (events.js): through the page's own gtag (its script is offline here, so they stay
+     on window.dataLayer, where the page puts them), each once, at its moment, with its fields */
+  const evs = await gameEvents(page);
+  const evDay = await page.evaluate(() => window.STD_UI.state.scn.number);
+  const evNames = evs.map((e) => e[0]);
+  const evOne = (n) => evs.filter((e) => e[0] === n).map((e) => e[1]);
+  const evPitches = evOne('pitch');
+  ok(evNames.join() === ['outing_start'].concat(evPitches.map(() => 'pitch'), ['outing_end', 'daily_done']).join(),
+    '6 the events, in order: outing_start, a pitch each, outing_end, daily_done (' + evNames.join() + ')');
+  ok(evOne('outing_start').length === 1 && JSON.stringify(evOne('outing_start')[0]) === JSON.stringify({ game_name: 'Shut The Door', mode: 'daily', day: evDay, resumed: false }),
+    '6 outing_start once: ' + JSON.stringify(evOne('outing_start')));
+  ok(evPitches.length === play.pitches && evPitches.every((p, i) => p.pitch_no === i + 1 && p.mode === 'daily' && p.day === evDay && typeof p.result === 'string' && Object.keys(p).sort().join() === 'day,game_name,mode,pitch_no,result'),
+    '6 a pitch event for each of the ' + play.pitches + ' pitches, numbered, with the engine\'s result (' + evPitches.map((p) => p.result).join(' ') + ')');
+  const evEnd = evOne('outing_end'), evDd = evOne('daily_done');
+  const evRes = await page.evaluate(() => { const r = window.STD_UI.state.result; return { outcome: r.outcome, pitches: r.pitches, band: Math.max(0, Math.min(90, Math.floor(r.percentile / 10) * 10)) }; });
+  ok(evEnd.length === 1 && JSON.stringify(evEnd[0]) === JSON.stringify({ game_name: 'Shut The Door', mode: 'daily', day: evDay, result: evRes.outcome, pitches: evRes.pitches, score_band: evRes.band }),
+    '6 outing_end once, the result\'s own outcome, pitches and band: ' + JSON.stringify(evEnd));
+  ok(evDd.length === 1 && JSON.stringify(evDd[0]) === JSON.stringify({ game_name: 'Shut The Door', day: evDay, result: evRes.outcome, pitches: evRes.pitches, score_band: evRes.band }),
+    '6 daily_done once: ' + JSON.stringify(evDd));
+  ok(evOne('share').length === 0, '6 no share event before a share');
+  ok(await page.isHidden('#r-promo'), '6 a first ever result shows no Run The Diamond card (as the Diamond\'s own promo)');
   /* Share (PR #652): the button opens the share sheet, which draws the result card (card.js) and
      offers the image and the text. The sheet opens from the button, the card draws, and "copy the
      text" copies the share text. Before #652 the button copied at once, and this step waited for that
@@ -1396,6 +1423,10 @@ async function run(w, h, theme) {
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
   ok(toastSeen && /^copied/.test(said) && /Shut The Door #\d+/.test(clip) && /^https:\/\/runthe\.gg\/shut-the-door\/$/m.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
     '6 copy the text copies the share text, its link the tappable https:// form (toast "' + (said || 'none in 10 s') + '", ' + clip.split('\n').length + ' lines)');
+  const evShare = await page.waitForFunction(() => (window.dataLayer || []).some((a) => a && a[0] === 'event' && a[1] === 'share'), null, { timeout: 5000 })
+    .then(() => gameEvents(page), () => gameEvents(page)).then((l) => l.filter((e) => e[0] === 'share').map((e) => e[1]));
+  ok(evShare.length === 1 && JSON.stringify(evShare[0]) === JSON.stringify({ game_name: 'Shut The Door', mode: 'daily', day: evDay, method: 'text' }),
+    '6 the copy sends one share event, method text: ' + JSON.stringify(evShare));
   await page.click('#sheet-share .sh-x');
   await page.waitForSelector('#sheet-share', { state: 'hidden', timeout: 3000 });
   await shot('shared');
@@ -1410,11 +1441,37 @@ async function run(w, h, theme) {
   await page.waitForSelector('#s-mound.on');
   const practice = await page.evaluate(() => window.STD_UI.state.outing.mode);
   ok(practice === 'practice', '7 run it back starts a practice outing');
+  const evAgain = await page.waitForFunction(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && a[1] === 'outing_start').length >= 2, null, { timeout: 5000 })
+    .then(() => gameEvents(page), () => gameEvents(page)).then((l) => l.filter((e) => e[0] === 'outing_start').map((e) => e[1]));
+  ok(evAgain.length === 2 && evAgain[1].mode === 'practice' && evAgain[1].day === evDay && evAgain[1].resumed === false, '7 run it back sends its own outing_start, mode practice: ' + JSON.stringify(evAgain[1] || null));
   await shot('practice');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#h-done:not([hidden])', { timeout: 20000 });
   ok(await page.isHidden('#b-take'), '7 after a reload today shows as done');
   await shot('home-done', true);
+  /* the Run The Diamond card (the owner, 2026-11-16): with a daily from an earlier day on the device,
+     today's result shows it under the menu, "pitched like" still on screen, and a tap sends promo_click */
+  await page.evaluate(() => { const k = 'std_ui_hist_v1', h = JSON.parse(localStorage.getItem(k) || '{}'); h['2026-01-01'] = { number: 1, outcome: 'door_shut', strip: [], percentile: 50, pitches: 4 }; localStorage.setItem(k, JSON.stringify(h)); });
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  await page.waitForSelector('#r-promo:not([hidden])', { timeout: 5000 });
+  await page.waitForFunction(() => { const i = document.querySelector('#r-promo img.rp-ic'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 10000 }).catch(() => {});
+  const promo = await page.evaluate(() => {
+    const a = document.getElementById('r-promo'), b = a.getBoundingClientRect(), nav = document.getElementById('r-nav').getBoundingClientRect();
+    const like = document.querySelector('.r-like').getBoundingClientRect();
+    a.addEventListener('click', (e) => e.preventDefault());
+    const ic = a.querySelector('img.rp-ic'), icb = ic ? ic.getBoundingClientRect() : null;
+    return { icon: ic ? { src: ic.getAttribute('src'), loaded: ic.complete && ic.naturalWidth === 192, left: icb.left < a.querySelector('.rp-t').getBoundingClientRect().left, w: Math.round(icb.width), fits: icb.top >= b.top && icb.bottom <= b.bottom } : null,
+      text: a.textContent, href: a.getAttribute('href'), h: b.height, below: b.top >= nav.bottom - 1, likeOn: like.top >= 0 && like.bottom <= innerHeight, inside: b.left >= 0 && b.right <= innerWidth };
+  });
+  ok(promo.text === 'Build a full rosterSim 162 and see if you can win a WS.' && promo.href === '/baseball/', '7 a later result shows the Run The Diamond card, a link to /baseball/');
+  ok(promo.icon && promo.icon.src === '/baseball/icon-192.png?v=3' && promo.icon.left && promo.icon.fits && promo.icon.w === 36, '7 the card carries Run The Diamond\'s own app icon on its left, inside the row (' + JSON.stringify(promo.icon) + ')');
+  ok(promo.below && promo.h >= 38 && promo.inside && promo.likeOn, '7 the card sits under the menu, ' + Math.round(promo.h) + ' px, and "pitched like" is still on screen');
+  await page.click('#r-promo');
+  const evPromo = await page.waitForFunction(() => (window.dataLayer || []).some((a) => a && a[0] === 'event' && a[1] === 'promo_click'), null, { timeout: 5000 })
+    .then(() => page.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && a[1] === 'promo_click').map((a) => Object.assign({}, a[2]))), () => []);
+  ok(evPromo.length === 1 && JSON.stringify(evPromo[0]) === JSON.stringify({ game_name: 'Shut The Door', target: 'baseball', mode: 'daily', day: evDay, transport_type: 'beacon' }),
+    '7 the tap sends one promo_click, target baseball: ' + JSON.stringify(evPromo));
 
   /* 8 */
   at('8 debug');
@@ -2574,7 +2631,10 @@ async function liveMinimap(w, h, theme) {
 }
 
 /* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
-   made here), the consent before the send, the send, then the owner's review: waiting, approve, approved */
+   made here), the consent before the send, the send, then the owner's review: waiting, approve, approved,
+   a reject that asks "Delete it for good?" first (Cancel keeps it, Yes rejects it), each list naming
+   who decided; then a tester (?mockTester=1, 176) sees the row and the same sheet, and a signed in
+   player who is not a tester does not */
 function tinyWav(ms) {
   const rate = 8000, n = Math.round(rate * ms / 1000), b = Buffer.alloc(44 + n * 2);
   b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16);
@@ -2583,30 +2643,144 @@ function tinyWav(ms) {
   for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.sin(i / 8) * 8000), 44 + i * 2);
   return b;
 }
+/* the record sheet's mic for the check: a tone from the page's own Web Audio, so the live meter has a
+   level, and (safari) a MediaRecorder that makes only audio/mp4, as iPhone Safari's does. Without
+   safari the browser's own MediaRecorder records the tone (Chrome's webm). fail names a getUserMedia
+   refusal instead (NotAllowedError, NotFoundError) */
+function fakeMic(page, how) {
+  return page.evaluate((how) => {
+    const md = navigator.mediaDevices || (navigator.mediaDevices = {});
+    window.__realMR = window.__realMR || window.MediaRecorder;
+    window.MediaRecorder = window.__realMR;
+    if (how.fail) { md.getUserMedia = () => Promise.reject(new DOMException('no', how.fail)); return; }
+    md.getUserMedia = () => {
+      const ac = new AudioContext(), o = ac.createOscillator(), g = ac.createGain(), d = ac.createMediaStreamDestination();
+      g.gain.value = 0.6; o.connect(g); g.connect(d); o.start();
+      return Promise.resolve(d.stream);
+    };
+    if (how.safari) {
+      class SafariMR {
+        constructor(stream, o) { this.stream = stream; this.state = 'inactive'; this.mimeType = 'audio/mp4'; this.opts = o; }
+        static isTypeSupported(t) { return t === 'audio/mp4'; }
+        start() { this.state = 'recording'; }
+        stop() {
+          this.state = 'inactive';
+          const blob = new Blob([new Uint8Array(18000)], { type: 'audio/mp4' });
+          setTimeout(() => { if (this.ondataavailable) this.ondataavailable({ data: blob }); if (this.onstop) this.onstop(); }, 0);
+        }
+      }
+      window.MediaRecorder = SafariMR;
+    }
+  }, how);
+}
+const voiceEvents = (page) => page.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && /^voice_/.test(a[1])).map((a) => [a[1], Object.assign({}, a[2])]));
 async function voicesWalk(w, h) {
   console.log(`\nthe voice of the ump, ${w}x${h}`);
-  step('19 the voice of the ump', 120);
+  step('19 the voice of the ump', 180);
+  /* signed out: the home's row opens the sheet on its sign-in step */
+  {
+    const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut', { meterOff: true });
+    const row = await page.evaluate(() => { const b = document.getElementById('h-voice'); return b && { text: b.textContent, svg: !!b.querySelector('svg'), shut: document.getElementById('sheet-voices').hidden }; });
+    ok(row && row.text === 'Voice of the umpRecord your voice. Be the ump!' && row.svg && row.shut, '19 the home\'s list has the voice of the ump, with its mic, and the sheet is shut until it is tapped');
+    await page.click('#h-voice');
+    await page.waitForSelector('#sheet-voices.on #vo-signin', { timeout: 3000 });
+    ok(!(await page.$('#vo-rec')), '19 signed out, the home\'s row opens the sheet on its sign-in step');
+    ok(errors.length === 0, '19 signed out: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
   const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockOwner=1', { meterOff: true });
-  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
-  await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
-  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
-  ok(true, '19 the owner sees the review button in settings');
-  await page.click('#set-voices');
+  await page.evaluate(() => {
+    window.__sent = [];
+    const f = window.STD_AUTH.umpSubmit;
+    window.STD_AUTH.umpSubmit = (c) => { window.__sent.push({ line: c.line, mime: c.mime, bytes: c.bytes, ms: c.ms, consent: c.consent, v: c.consentVersion, credit: c.credit }); return f(c); };
+  });
+  /* the home's row, on a phone in the banner's layout too: the row fits its panel */
+  const fit = await page.evaluate(() => {
+    const b = document.getElementById('h-voice'), r = b.getBoundingClientRect(), l = b.closest('.t-list').getBoundingClientRect();
+    return { inside: r.left >= l.left - 1 && r.right <= l.right + 1, noClip: b.scrollWidth <= b.clientWidth + 1, h: Math.round(r.height), side: document.documentElement.scrollWidth <= innerWidth };
+  });
+  ok(fit.inside && fit.noClip && fit.h >= 38 && fit.side, '19 the home\'s row fits its panel, ' + fit.h + ' px, no sideways scroll');
+  await page.click('#h-voice');
   await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
-  const l1 = await page.evaluate(() => ({ line: document.getElementById('vo-line').textContent, send: document.getElementById('vo-send').disabled, consent: document.querySelector('.vo-ok span').textContent }));
-  ok(l1.line === 'Strike!' && l1.send && l1.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)), '19 line 1 is "Strike!", the consent shows, nothing to send yet');
-  await page.setInputFiles('#vo-file', { name: 'long.wav', mimeType: 'audio/wav', buffer: tinyWav(3600) });
-  await page.waitForFunction(() => /Too long/.test(document.getElementById('vo-msg').textContent), null, { timeout: 5000 });
-  ok(true, '19 an upload longer than 3 seconds is refused');
-  await page.setInputFiles('#vo-file', { name: 'strike.wav', mimeType: 'audio/wav', buffer: tinyWav(900) });
-  await page.waitForSelector('#vo-play', { timeout: 5000 });
-  ok(await page.evaluate(() => document.getElementById('vo-send').disabled), '19 a take plays back, and waits for the consent');
+  /* idle: the line big, the 12 dots, the red record button in the middle, upload a quiet link, nothing to send */
+  const idle = await page.evaluate(() => {
+    const rec = document.getElementById('vo-rec'), r = rec.getBoundingClientRect(), core = getComputedStyle(rec.querySelector('.vo-core'));
+    const body = document.getElementById('vo-body').getBoundingClientRect(), up = document.querySelector('label.vo-link[for="vo-file"]');
+    return { line: document.getElementById('vo-line').textContent, size: parseFloat(getComputedStyle(document.getElementById('vo-line')).fontSize), dots: document.querySelectorAll('.vo-dots i').length,
+      now: document.querySelectorAll('.vo-dots i.now').length, w: Math.round(r.width), round: r.width === r.height, red: core.backgroundColor, centred: Math.abs((r.left + r.right) / 2 - (body.left + body.right) / 2) < 2,
+      up: !!up && !up.hidden && !up.classList.contains('btn'), send: !!document.getElementById('vo-send'), consent: !!document.getElementById('vo-consent'), head: !!document.querySelector('#sheet-voices .sh-h svg') };
+  });
+  ok(idle.line === 'Strike!' && idle.size >= 36 && idle.dots === 12 && idle.now === 1, '19 idle: line 1 "Strike!" big (' + idle.size + ' px), 12 dots, the first lit');
+  ok(idle.round && idle.w >= 80 && idle.red === 'rgb(229, 56, 59)' && idle.centred, '19 idle: the record button is round, ' + idle.w + ' px, red (' + idle.red + ') and centred');
+  ok(idle.up && !idle.send && !idle.consent && idle.head, '19 idle: upload is a quiet link, no send and no consent yet, the mic in the header');
+  /* recording, as iPhone Safari: audio/mp4 only. The ring, the seconds left, a tap stops it */
+  await fakeMic(page, { safari: true });
+  await page.click('#vo-rec');
+  await page.waitForSelector('#vo-rec.on', { timeout: 3000 });
+  await page.waitForTimeout(500);
+  const rec = await page.evaluate(() => ({ pressed: document.getElementById('vo-rec').getAttribute('aria-pressed'), left: +document.getElementById('vo-left').textContent,
+    ring: +getComputedStyle(document.getElementById('vo-ring')).strokeDashoffset.replace('px', ''), pulse: getComputedStyle(document.getElementById('vo-rec'), '::before').animationName,
+    st: document.getElementById('vo-stage').dataset.st, up: document.querySelector('label.vo-link[for="vo-file"]').hidden,
+    lvl: Math.max(...[...document.querySelectorAll('#vo-bars i')].map((i) => parseFloat(i.style.height) || 0)) }));
+  ok(rec.pressed === 'true' && rec.st === 'rec' && rec.left > 0 && rec.left < 3 && rec.ring < 100 && rec.pulse === 'vo-pulse' && rec.up,
+    '19 recording: a pulsing ring that fills (' + rec.ring + '), ' + rec.left + ' s left, upload out of the way');
+  ok(rec.lvl > 8, '19 recording: the level meter moves with the mic (' + rec.lvl + '%)');
+  await page.click('#vo-rec');
+  await page.waitForSelector('#vo-play', { timeout: 3000 });
+  const take = await page.evaluate(() => ({ st: document.getElementById('vo-stage').dataset.st, send: document.getElementById('vo-send').disabled, consent: document.querySelector('.vo-ok span').textContent,
+    redo: !!document.getElementById('vo-redo'), dur: document.getElementById('vo-dur').textContent }));
+  ok(take.st === 'take' && take.redo && take.send && take.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)), '19 recorded: play it back, record again, and send waits for the consent, word for word (' + take.dur + ')');
   await page.check('#vo-consent');
   await page.fill('#vo-cr', 'Big Al');
   await page.click('#vo-send');
   await page.waitForFunction(() => /Sent/.test(document.getElementById('vo-msg').textContent), null, { timeout: 3000 });
-  const l2 = await page.evaluate(() => document.getElementById('vo-line').textContent);
-  ok(l2 === 'Strike three!', '19 sent, and on to the next line (' + l2 + ')');
+  const s1 = await page.evaluate(() => ({ line: document.getElementById('vo-line').textContent, sent: window.__sent[0], dot: document.querySelector('.vo-dots i').className }));
+  ok(s1.sent && s1.sent.mime === 'audio/mp4' && s1.sent.v === 1 && s1.sent.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)) && s1.sent.bytes <= 307200,
+    '19 an iPhone Safari take goes as audio/mp4, with the consent and its version (' + JSON.stringify(s1.sent && { mime: s1.sent.mime, bytes: s1.sent.bytes }) + ')');
+  ok(s1.line === 'Strike three!' && /sent/.test(s1.dot), '19 sent, the dot goes green, on to the next line (' + s1.line + ')');
+  /* Chrome's own recorder (webm): the consent holds for the session, and the take stops itself at 3 s */
+  await fakeMic(page, {});
+  await page.click('#vo-rec');
+  await page.waitForSelector('#vo-play', { timeout: 6000 });
+  const t2 = await page.evaluate(() => ({ okd: !!document.querySelector('details.vo-okd'), ticked: document.getElementById('vo-consent').checked, send: document.getElementById('vo-send').disabled, dur: document.getElementById('vo-dur').textContent }));
+  ok(t2.okd && t2.ticked && !t2.send, '19 the consent is asked once a session: the next take can go at once (' + t2.dur + ')');
+  ok(parseFloat(t2.dur) <= 3, '19 a take stops itself at 3 seconds (' + t2.dur + ')');
+  await page.click('#vo-send');
+  await page.waitForFunction(() => window.__sent.length === 2, null, { timeout: 5000 });
+  const s2 = await page.evaluate(() => window.__sent[1]);
+  ok(s2.mime === 'audio/webm' && s2.ms <= 3000 && s2.consent === (await page.evaluate(() => window.STD_VOICES.CONSENT)) && s2.v === 1 && s2.credit === 'Big Al',
+    '19 a Chrome take goes as audio/webm, at most 3 s, the consent still on the row (' + JSON.stringify({ mime: s2.mime, ms: s2.ms, bytes: s2.bytes }) + ')');
+  /* uploads: too long refused, a short one goes */
+  await page.setInputFiles('#vo-file', { name: 'long.wav', mimeType: 'audio/wav', buffer: tinyWav(3600) });
+  await page.waitForFunction(() => /Too long/.test(document.getElementById('vo-msg').textContent), null, { timeout: 5000 });
+  ok(true, '19 an upload longer than 3 seconds is refused');
+  await page.setInputFiles('#vo-file', { name: 'ball.wav', mimeType: 'audio/wav', buffer: tinyWav(900) });
+  await page.waitForSelector('#vo-play', { timeout: 5000 });
+  await page.click('#vo-send');
+  await page.waitForFunction(() => window.__sent.length === 3, null, { timeout: 5000 });
+  /* the mic refused: a plain line and the upload as a button */
+  for (const [fail, say] of [['NotAllowedError', /blocked/], ['NotFoundError', /No mic found/]]) {
+    await fakeMic(page, { fail });
+    await page.click('#vo-rec');
+    await page.waitForSelector('label.vo-upbtn[for="vo-file"]', { timeout: 3000 });
+    const m = await page.evaluate(() => document.getElementById('vo-msg').textContent);
+    ok(say.test(m) && /upload a file/i.test(m), '19 ' + fail + ': "' + m + '" and the upload button');
+  }
+  const ev = await voiceEvents(page);
+  ok(JSON.stringify(ev.filter((e) => e[0] === 'voice_open').map((e) => e[1].source)) === '["home"]', '19 voice_open, source home: ' + JSON.stringify(ev.filter((e) => e[0] === 'voice_open')));
+  ok(JSON.stringify(ev.filter((e) => e[0] === 'voice_sent').map((e) => e[1].line + ':' + e[1].method)) === '["strike:record","strike3:record","ball:upload"]' && ev.every((e) => e[1].game_name === 'Shut The Door'),
+    '19 voice_sent for each call, with its line and method: ' + JSON.stringify(ev.filter((e) => e[0] === 'voice_sent').map((e) => e[1])));
+  await page.click('#sheet-voices .sh-x');
+  ok(await page.evaluate(() => sessionStorage.getItem('std_vo_consent') === '1'), '19 the consent tick is kept for the session, by version');
+  /* settings keeps its row */
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  const ownRow = await page.evaluate(() => document.getElementById('set-ump-review').textContent);
+  ok(ownRow === 'Review ump callsTesters only.', '19 the owner sees the review button in settings: "' + ownRow + '"');
+  await page.click('#set-voices');
+  await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
+  ok((await voiceEvents(page)).filter((e) => e[0] === 'voice_open').map((e) => e[1].source).join() === 'home,settings', '19 settings still opens it: voice_open, source settings');
   await page.click('#sheet-voices .sh-x');
   await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
   await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
@@ -2615,12 +2789,123 @@ async function voicesWalk(w, h) {
   const q = await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent);
   ok(/Strike!/.test(q) && /Big Al/.test(q), '19 the owner\'s queue holds it, with the credit');
   await page.click('#vr-body [data-vr="approved"]');
-  await page.waitForSelector('#vr-empty', { timeout: 3000 });
+  await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 2, null, { timeout: 3000 });
+  /* the reject asks first, inside the sheet: no browser dialog, nothing sent until Yes */
+  let dialogs = 0;
+  page.on('dialog', (d) => { dialogs++; d.dismiss().catch(() => {}); });
+  const rejects = await rejectWalk(page);
+  ok(rejects.ask && rejects.focus && rejects.sent0 && rejects.cancelled && rejects.gone && dialogs === 0,
+    '19 Reject asks "Delete it for good?" with Yes and Cancel in the row, focus on Cancel, nothing sent; Cancel puts Reject back; Yes rejects it; no browser dialog ' + JSON.stringify(rejects));
+  await page.click('#vr-body [data-vr-tab="rejected"]');
+  await page.waitForSelector('#sheet-ump-review .vr-row', { timeout: 3000 });
+  const rj = await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent);
+  ok(/Rejected by @mockplayer/.test(rj) && /Audio deleted\./.test(rj) && !/Approve|Reject(?! by)/.test(rj.replace('Rejected by', '')), '19 the rejected list: "Rejected by @mockplayer", the audio deleted, no buttons: "' + rj + '"');
   await page.click('#vr-body [data-vr-tab="approved"]');
   await page.waitForSelector('#sheet-ump-review .vr-row', { timeout: 3000 });
+  const apRow = await page.evaluate(() => document.querySelector('#vr-body .vr-row .vr-by').textContent);
+  ok(apRow === 'Approved by @mockplayer', '19 the approved list says who approved it: "' + apRow + '"');
   const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line)));
   ok(ap.join() === 'strike', '19 approved: on the approved list and the game\'s list');
+  await page.click('#sheet-ump-review .sh-x');
+  /* the result: a quiet row under the menu, "pitched like" still on screen. Today's daily through the
+     calls, as dailyDone, then back to the page (a load the page may already have begun, so the goto
+     waits for whichever lands) */
+  await page.evaluate(async () => {
+    const A = window.STD_API, S = window.STD_UI.state;
+    let st = await A.startOuting(S.scn.id, null, { mode: 'daily' });
+    for (let i = 0; st.status === 'live' && i < 90; i++) st = (await A.throwPitch(st.outingId, { type: S.scn.pitcher.arsenal[0].type, cell: 12 })).state;
+  });
+  await page.waitForTimeout(500);
+  await page.goto(BASE + '?mockEnd=door_shut&mockAuth=1&mockOwner=1', { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.waitForSelector('#d-see', { timeout: 60000 });
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  await page.waitForTimeout(400);
+  const rv = await page.evaluate(() => {
+    const b = document.getElementById('r-voice'), r = b.getBoundingClientRect(), nav = document.getElementById('r-nav').getBoundingClientRect(), like = document.querySelector('.r-like').getBoundingClientRect();
+    return { text: b.textContent, svg: !!b.querySelector('svg'), below: r.top >= nav.bottom - 1, h: r.height, inside: r.left >= 0 && r.right <= innerWidth, likeOn: like.top >= 0 && like.bottom <= innerHeight, shut: document.getElementById('sheet-voices').hidden };
+  });
+  ok(rv.text === 'Voice of the umpRecord your voice. Be the ump!' && rv.svg && rv.below && rv.h >= 38 && rv.inside && rv.shut, '19 the result has the voice of the ump under its menu, with its mic, ' + Math.round(rv.h) + ' px, shut until tapped');
+  ok(rv.likeOn, '19 the result: "pitched like" still on screen at ' + w + 'x' + h);
+  await page.click('#r-voice');
+  await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
+  ok((await voiceEvents(page)).filter((e) => e[0] === 'voice_open').map((e) => e[1].source).join() === 'result', '19 the result\'s row opens it: voice_open, source result (the page was reloaded)');
   ok(errors.length === 0, '19 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+  await testerWalk(w, h);
+}
+/* in the open review sheet, on the Waiting tab with at least one row: Reject, Cancel, Reject, Yes */
+async function rejectWalk(page) {
+  await page.evaluate(() => {
+    window.__reviews = [];
+    const f = window.STD_AUTH.umpReview;
+    window.STD_AUTH.umpReview = (id, st) => { window.__reviews.push(st); return f(id, st); };
+  });
+  const n0 = await page.evaluate(() => document.querySelectorAll('#vr-body .vr-row').length);
+  await page.click('#vr-body .vr-row [data-vr="rejected"]');
+  await page.waitForSelector('#vr-body .vr-ask', { timeout: 3000 });
+  const ask = await page.evaluate(() => {
+    const a = document.querySelector('#vr-body .vr-ask');
+    return { text: a.querySelector('p').textContent, yes: !!a.querySelector('[data-vr-yes]') && a.querySelector('[data-vr-yes]').textContent, no: a.querySelector('[data-vr-no]') && a.querySelector('[data-vr-no]').textContent,
+      focus: document.activeElement && document.activeElement.hasAttribute('data-vr-no'), rows: document.querySelectorAll('#vr-body .vr-row').length, asks: document.querySelectorAll('#vr-body .vr-ask').length, sent: window.__reviews.length };
+  });
+  await page.click('#vr-body [data-vr-no]');
+  const back = await page.evaluate(() => ({ asks: document.querySelectorAll('#vr-body .vr-ask').length, rej: !!document.querySelector('#vr-body .vr-row [data-vr="rejected"]'), sent: window.__reviews.length, focus: document.activeElement && document.activeElement.getAttribute('data-vr') }));
+  await page.click('#vr-body .vr-row [data-vr="rejected"]');
+  await page.waitForSelector('#vr-body .vr-ask', { timeout: 3000 });
+  await page.click('#vr-body [data-vr-yes]');
+  await page.waitForFunction((n) => document.querySelectorAll('#vr-body .vr-row').length === n - 1, n0, { timeout: 3000 });
+  const after = await page.evaluate(() => window.__reviews.join());
+  return { ask: ask.text === 'Delete it for good?' && ask.yes === 'Yes' && ask.no === 'Cancel' && ask.asks === 1 && ask.rows === n0, focus: ask.focus,
+    sent0: ask.sent === 0, cancelled: back.asks === 0 && back.rej && back.sent === 0 && back.focus === 'rejected', gone: after === 'rejected' };
+}
+/* a tester (176): the settings row, "Testers only.", the same sheet: play, approve, reject with its ask.
+   At 390x844 the still of the ask, dark. A signed in player who is not a tester sees no row. */
+async function testerWalk(w, h) {
+  {
+    const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1', { meterOff: true });
+    await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+    await page.waitForSelector('#sheet-settings.on #set-voices', { timeout: 3000 });
+    await page.waitForTimeout(300);
+    ok(await page.evaluate(() => document.getElementById('set-ump-review').hidden), '19 a signed in player who is not a tester sees no review row');
+    ok(errors.length === 0, '19 a player: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockTester=1', { meterOff: true, theme: 'dark' });
+  /* two calls from a player, through the mock's own send */
+  await page.evaluate(async (wav) => {
+    const V = window.STD_VOICES, bytes = Uint8Array.from(atob(wav), (c) => c.charCodeAt(0));
+    for (const [line, credit] of [['strike', 'Big Al'], ['yer_out', null]]) {
+      await window.STD_AUTH.umpSubmit({ line, consent: V.CONSENT, consentVersion: V.CONSENT_V, credit, mime: 'audio/wav', bytes: bytes.length, ms: 900, blob: new Blob([bytes], { type: 'audio/wav' }) });
+    }
+  }, tinyWav(900).toString('base64'));
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  const row = await page.evaluate(() => document.getElementById('set-ump-review').textContent);
+  ok(row === 'Review ump callsTesters only.', '19 a tester sees the review row in settings: "' + row + '"');
+  await page.click('#set-ump-review');
+  await page.waitForSelector('#sheet-ump-review.on .vr-row audio', { timeout: 3000 });
+  const tabs = await page.evaluate(() => [...document.querySelectorAll('#vr-body [data-vr-tab]')].map((b) => b.textContent).join());
+  const rows = await page.evaluate(() => document.querySelectorAll('#vr-body .vr-row audio').length);
+  ok(tabs === 'Waiting,Approved,Rejected' && rows === 2, '19 a tester gets the same sheet: ' + tabs + ', ' + rows + ' calls to play');
+  await page.click('#vr-body .vr-row [data-vr="rejected"]');
+  await page.waitForSelector('#vr-body .vr-ask', { timeout: 3000 });
+  /* STD_VO_SHOTS=dir saves the still of the ask, at 390x844 dark */
+  if (process.env.STD_VO_SHOTS && w === 390 && h === 844) {
+    const f = path.join(process.env.STD_VO_SHOTS, 'ump-review-tester-confirm-390x844-dark.png');
+    fs.mkdirSync(process.env.STD_VO_SHOTS, { recursive: true });
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: f });
+    console.log('       still: ' + f);
+  }
+  await page.click('#vr-body [data-vr-no]');
+  const rw = await rejectWalk(page);
+  ok(rw.ask && rw.sent0 && rw.cancelled && rw.gone, '19 a tester\'s reject asks first too ' + JSON.stringify(rw));
+  await page.click('#vr-body [data-vr="approved"]');
+  await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 0, null, { timeout: 3000 });
+  const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line).join()));
+  ok(ap === 'yer_out', '19 a tester approves the one left: on the game\'s list (' + ap + ')');
+  ok(errors.length === 0, '19 a tester: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
 
@@ -2633,6 +2918,8 @@ try {
   if (process.env.STD_POSTGAME === '1') { for (const t of ['light', 'dark']) { await postgame(390, 844, t); await postgame(1440, 900, t); } throw 'quick'; }
   /* STD_MINIMAP=1: only the live minimap (21) at both sizes, light and dark */
   if (process.env.STD_MINIMAP === '1') { for (const t of ['light', 'dark']) { await liveMinimap(390, 844, t); await liveMinimap(1440, 900, t); } throw 'quick'; }
+  /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
+  if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await run(390, 844, 'light'); await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await run(390, 844, 'light'); await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
