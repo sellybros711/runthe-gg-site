@@ -2631,7 +2631,10 @@ async function liveMinimap(w, h, theme) {
 }
 
 /* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
-   made here), the consent before the send, the send, then the owner's review: waiting, approve, approved */
+   made here), the consent before the send, the send, then the owner's review: waiting, approve, approved,
+   a reject that asks "Delete it for good?" first (Cancel keeps it, Yes rejects it), each list naming
+   who decided; then a tester (?mockTester=1, 176) sees the row and the same sheet, and a signed in
+   player who is not a tester does not */
 function tinyWav(ms) {
   const rate = 8000, n = Math.round(rate * ms / 1000), b = Buffer.alloc(44 + n * 2);
   b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16);
@@ -2773,7 +2776,8 @@ async function voicesWalk(w, h) {
   await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
   await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
   await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
-  ok(true, '19 the owner sees the review button in settings');
+  const ownRow = await page.evaluate(() => document.getElementById('set-ump-review').textContent);
+  ok(ownRow === 'Review ump callsTesters only.', '19 the owner sees the review button in settings: "' + ownRow + '"');
   await page.click('#set-voices');
   await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
   ok((await voiceEvents(page)).filter((e) => e[0] === 'voice_open').map((e) => e[1].source).join() === 'home,settings', '19 settings still opens it: voice_open, source settings');
@@ -2786,8 +2790,20 @@ async function voicesWalk(w, h) {
   ok(/Strike!/.test(q) && /Big Al/.test(q), '19 the owner\'s queue holds it, with the credit');
   await page.click('#vr-body [data-vr="approved"]');
   await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 2, null, { timeout: 3000 });
+  /* the reject asks first, inside the sheet: no browser dialog, nothing sent until Yes */
+  let dialogs = 0;
+  page.on('dialog', (d) => { dialogs++; d.dismiss().catch(() => {}); });
+  const rejects = await rejectWalk(page);
+  ok(rejects.ask && rejects.focus && rejects.sent0 && rejects.cancelled && rejects.gone && dialogs === 0,
+    '19 Reject asks "Delete it for good?" with Yes and Cancel in the row, focus on Cancel, nothing sent; Cancel puts Reject back; Yes rejects it; no browser dialog ' + JSON.stringify(rejects));
+  await page.click('#vr-body [data-vr-tab="rejected"]');
+  await page.waitForSelector('#sheet-ump-review .vr-row', { timeout: 3000 });
+  const rj = await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent);
+  ok(/Rejected by @mockplayer/.test(rj) && /Audio deleted\./.test(rj) && !/Approve|Reject(?! by)/.test(rj.replace('Rejected by', '')), '19 the rejected list: "Rejected by @mockplayer", the audio deleted, no buttons: "' + rj + '"');
   await page.click('#vr-body [data-vr-tab="approved"]');
   await page.waitForSelector('#sheet-ump-review .vr-row', { timeout: 3000 });
+  const apRow = await page.evaluate(() => document.querySelector('#vr-body .vr-row .vr-by').textContent);
+  ok(apRow === 'Approved by @mockplayer', '19 the approved list says who approved it: "' + apRow + '"');
   const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line)));
   ok(ap.join() === 'strike', '19 approved: on the approved list and the game\'s list');
   await page.click('#sheet-ump-review .sh-x');
@@ -2815,6 +2831,81 @@ async function voicesWalk(w, h) {
   await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 });
   ok((await voiceEvents(page)).filter((e) => e[0] === 'voice_open').map((e) => e[1].source).join() === 'result', '19 the result\'s row opens it: voice_open, source result (the page was reloaded)');
   ok(errors.length === 0, '19 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+  await testerWalk(w, h);
+}
+/* in the open review sheet, on the Waiting tab with at least one row: Reject, Cancel, Reject, Yes */
+async function rejectWalk(page) {
+  await page.evaluate(() => {
+    window.__reviews = [];
+    const f = window.STD_AUTH.umpReview;
+    window.STD_AUTH.umpReview = (id, st) => { window.__reviews.push(st); return f(id, st); };
+  });
+  const n0 = await page.evaluate(() => document.querySelectorAll('#vr-body .vr-row').length);
+  await page.click('#vr-body .vr-row [data-vr="rejected"]');
+  await page.waitForSelector('#vr-body .vr-ask', { timeout: 3000 });
+  const ask = await page.evaluate(() => {
+    const a = document.querySelector('#vr-body .vr-ask');
+    return { text: a.querySelector('p').textContent, yes: !!a.querySelector('[data-vr-yes]') && a.querySelector('[data-vr-yes]').textContent, no: a.querySelector('[data-vr-no]') && a.querySelector('[data-vr-no]').textContent,
+      focus: document.activeElement && document.activeElement.hasAttribute('data-vr-no'), rows: document.querySelectorAll('#vr-body .vr-row').length, asks: document.querySelectorAll('#vr-body .vr-ask').length, sent: window.__reviews.length };
+  });
+  await page.click('#vr-body [data-vr-no]');
+  const back = await page.evaluate(() => ({ asks: document.querySelectorAll('#vr-body .vr-ask').length, rej: !!document.querySelector('#vr-body .vr-row [data-vr="rejected"]'), sent: window.__reviews.length, focus: document.activeElement && document.activeElement.getAttribute('data-vr') }));
+  await page.click('#vr-body .vr-row [data-vr="rejected"]');
+  await page.waitForSelector('#vr-body .vr-ask', { timeout: 3000 });
+  await page.click('#vr-body [data-vr-yes]');
+  await page.waitForFunction((n) => document.querySelectorAll('#vr-body .vr-row').length === n - 1, n0, { timeout: 3000 });
+  const after = await page.evaluate(() => window.__reviews.join());
+  return { ask: ask.text === 'Delete it for good?' && ask.yes === 'Yes' && ask.no === 'Cancel' && ask.asks === 1 && ask.rows === n0, focus: ask.focus,
+    sent0: ask.sent === 0, cancelled: back.asks === 0 && back.rej && back.sent === 0 && back.focus === 'rejected', gone: after === 'rejected' };
+}
+/* a tester (176): the settings row, "Testers only.", the same sheet: play, approve, reject with its ask.
+   At 390x844 the still of the ask, dark. A signed in player who is not a tester sees no row. */
+async function testerWalk(w, h) {
+  {
+    const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1', { meterOff: true });
+    await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+    await page.waitForSelector('#sheet-settings.on #set-voices', { timeout: 3000 });
+    await page.waitForTimeout(300);
+    ok(await page.evaluate(() => document.getElementById('set-ump-review').hidden), '19 a signed in player who is not a tester sees no review row');
+    ok(errors.length === 0, '19 a player: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockTester=1', { meterOff: true, theme: 'dark' });
+  /* two calls from a player, through the mock's own send */
+  await page.evaluate(async (wav) => {
+    const V = window.STD_VOICES, bytes = Uint8Array.from(atob(wav), (c) => c.charCodeAt(0));
+    for (const [line, credit] of [['strike', 'Big Al'], ['yer_out', null]]) {
+      await window.STD_AUTH.umpSubmit({ line, consent: V.CONSENT, consentVersion: V.CONSENT_V, credit, mime: 'audio/wav', bytes: bytes.length, ms: 900, blob: new Blob([bytes], { type: 'audio/wav' }) });
+    }
+  }, tinyWav(900).toString('base64'));
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  const row = await page.evaluate(() => document.getElementById('set-ump-review').textContent);
+  ok(row === 'Review ump callsTesters only.', '19 a tester sees the review row in settings: "' + row + '"');
+  await page.click('#set-ump-review');
+  await page.waitForSelector('#sheet-ump-review.on .vr-row audio', { timeout: 3000 });
+  const tabs = await page.evaluate(() => [...document.querySelectorAll('#vr-body [data-vr-tab]')].map((b) => b.textContent).join());
+  const rows = await page.evaluate(() => document.querySelectorAll('#vr-body .vr-row audio').length);
+  ok(tabs === 'Waiting,Approved,Rejected' && rows === 2, '19 a tester gets the same sheet: ' + tabs + ', ' + rows + ' calls to play');
+  await page.click('#vr-body .vr-row [data-vr="rejected"]');
+  await page.waitForSelector('#vr-body .vr-ask', { timeout: 3000 });
+  /* STD_VO_SHOTS=dir saves the still of the ask, at 390x844 dark */
+  if (process.env.STD_VO_SHOTS && w === 390 && h === 844) {
+    const f = path.join(process.env.STD_VO_SHOTS, 'ump-review-tester-confirm-390x844-dark.png');
+    fs.mkdirSync(process.env.STD_VO_SHOTS, { recursive: true });
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: f });
+    console.log('       still: ' + f);
+  }
+  await page.click('#vr-body [data-vr-no]');
+  const rw = await rejectWalk(page);
+  ok(rw.ask && rw.sent0 && rw.cancelled && rw.gone, '19 a tester\'s reject asks first too ' + JSON.stringify(rw));
+  await page.click('#vr-body [data-vr="approved"]');
+  await page.waitForFunction(() => document.querySelectorAll('#vr-body .vr-row').length === 0, null, { timeout: 3000 });
+  const ap = await page.evaluate(() => window.STD_AUTH.umpApproved().then((l) => l.map((c) => c.line).join()));
+  ok(ap === 'yer_out', '19 a tester approves the one left: on the game\'s list (' + ap + ')');
+  ok(errors.length === 0, '19 a tester: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
 
