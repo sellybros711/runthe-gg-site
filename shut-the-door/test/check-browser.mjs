@@ -2045,7 +2045,7 @@ async function modes(w, h, full) {
   await page.route('**/api/stripe/checkout-bundle', (r) => { posted.push({ body: r.request().postDataJSON(), auth: r.request().headers().authorization }); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ error: 'stripe_not_configured' }) }); });
   await page.evaluate(() => { window.STD_AUTH.token = () => 'tok-check'; });
   await page.click('#sheet-auth [data-pro-buy]');
-  await page.waitForFunction(() => /not on sale yet/.test((document.querySelector('#sheet-auth [data-pro-err]') || {}).textContent || ''), null, { timeout: 15000 });
+  await page.waitForFunction(() => /isn't on sale yet/.test((document.querySelector('#sheet-auth [data-pro-err]') || {}).textContent || ''), null, { timeout: 15000 });
   ok(posted.length === 1 && posted[0].body.bundle === 'door-pro' && posted[0].body.return_path === '/shut-the-door/' && posted[0].auth === 'Bearer tok-check',
     '17 Get Pro posts door-pro to the one checkout with the account token, and says when it is not on sale (' + JSON.stringify(posted) + ')');
   ok(await page.evaluate(() => document.querySelector('#sheet-auth [data-pro-buy]').textContent) === pkBuy.t, '17 and the button reads the same again');
@@ -2099,11 +2099,9 @@ async function modes(w, h, full) {
   await page.click('#hm-arc');
   await page.waitForSelector('#hp-arc.on:not([hidden])');
   const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
-  /* the price is pro.js's copy, which verify-bundles.mjs holds to the catalog (functions/api/stripe/_bundles.js) */
-  const proPrice = '$' + (+(/'door-pro':\s*(\d+)/.exec(fs.readFileSync(path.join(ROOT, 'shut-the-door', 'pro.js'), 'utf8')) || [0, 0])[1] / 100).toFixed(2);
   const arcBuy = await page.evaluate(() => { const b = document.querySelector('#past-body [data-pro-buy]'); return b && { t: b.textContent, h: b.getBoundingClientRect().height }; });
-  ok(!lk.list && /past dailies are for pro/.test(lk.t) && arcBuy && arcBuy.t === 'sign in to get pro · ' + proPrice + ' a year' && arcBuy.h >= 38,
-    '17 free: the past dailies stay locked, with one Get Pro button at the catalog\'s price (' + JSON.stringify(arcBuy) + ')');
+  ok(!lk.list && /past dailies are for pro/.test(lk.t) && arcBuy && arcBuy.t === 'sign in to get pro' && arcBuy.h >= 38,
+    '17 free, signed out: the past dailies stay locked, with one button that asks to sign in first (' + JSON.stringify(arcBuy) + ')');
   await page.click('#past-body [data-pro-buy]');
   await page.waitForTimeout(200);
   ok(await page.evaluate(() => window.STD_MENUS.current() === 'sheet-auth'), '17 free, signed out: Get Pro opens sign in, never a checkout');
