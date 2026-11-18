@@ -2186,3 +2186,71 @@ body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="
 .voices .vr-ok { margin: 8px 0 0; }
 .voices .vr-hear { width: 100%; min-height: 42px; margin: 0 0 8px; }
 .voices .vr-heard { margin: -4px 0 8px; font-size: 12px; }
+
+/* ---- YOUR HISTORY (Pro, history-ui.js): every kept daily and Survivor run, newest first ----
+   The board's frame (the night panel on the left on a desk, the rows on the right). A daily is one row:
+   its kind and outcome, the closer and the spot, the score and pitches. A Survivor run is a block in
+   data blue with its spots as rows. Every row is one tap (44 px and up) that opens its result. */
+#s-hist { padding: 4px 16px 32px; }
+#hi-head { font-size: min(64px, 15.5vw); }
+.hi-tally { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.hi-tally span { display: flex; align-items: baseline; gap: 6px; font-family: var(--sans); font-weight: 600; font-size: 12.8px; letter-spacing: 0.066em; text-transform: uppercase; color: rgba(244, 245, 247, .75); }
+.hi-tally b { font-weight: 700; font-size: 32px; line-height: .9; letter-spacing: 0; color: var(--signal); font-variant-numeric: tabular-nums; }
+.hi-tally span + span b { color: #8fa8ff; }
+.hi-list { padding: 14px 10px 10px; }
+.hi-day + .hi-day { margin-top: 6px; }
+.hi-dh { margin: 10px 8px 6px; font-family: var(--sans); font-weight: 700; font-size: 13px; letter-spacing: 0; color: var(--dim); }
+.hi-items, .hi-spots { list-style: none; margin: 0; padding: 0; }
+.hi-it { display: grid; grid-template-columns: minmax(0, 1fr) auto 10px; grid-template-areas: "tg sc ch" "tx sc ch"; align-items: center; gap: 4px 12px; width: 100%; min-height: 64px;
+  padding: 10px 10px 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--ink); text-align: left; font: inherit; cursor: pointer; margin: 0 0 8px; }
+.hi-it:hover { border-color: var(--line-2); background: var(--panel-2); }
+.hi-it[aria-busy="true"] { opacity: .55; cursor: progress; }
+.hi-it .chev { grid-area: ch; }
+.hi-tg { grid-area: tg; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hi-kind { font-family: var(--sans); font-weight: 700; font-size: 11px; line-height: 1; letter-spacing: .066em; padding: 5px 8px 4px; border-radius: 8px; background: var(--ink); color: var(--bg); white-space: nowrap; }
+.hi-kind.surv { background: var(--data); color: #fff; }
+.hi-tx { grid-area: tx; display: flex; flex-direction: column; min-width: 0; }
+.hi-nm { font-family: var(--sans); font-weight: 700; font-size: 15px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hi-wh { font-size: 12.5px; line-height: 1.3; color: var(--dim); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+.hi-sc { grid-area: sc; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; font-variant-numeric: tabular-nums; }
+.hi-sc b { font-family: var(--sans); font-weight: 700; font-size: 22px; line-height: 1; }
+.hi-sc small { font-size: 11.5px; color: var(--dim); white-space: nowrap; }
+/* a Survivor run: its block, then its spots */
+.hi-run { margin: 0 0 8px; padding: 10px 8px 6px; border-radius: 16px; background: var(--data-soft); box-shadow: inset 3px 0 0 var(--data); }
+.hi-rh { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 0 4px 8px; }
+.hi-rn { font-family: var(--sans); font-weight: 700; font-size: 14px; }
+.hi-rs { display: flex; align-items: baseline; gap: 5px; font-size: 12.5px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.hi-rs b { font-family: var(--sans); font-weight: 700; font-size: 17px; color: var(--ink); }
+.hi-rs b:nth-of-type(2) { margin-left: 8px; }
+.hi-spot { grid-template-columns: 28px minmax(0, 1fr) auto 10px; grid-template-areas: "n tx sc ch"; min-height: 56px; margin-bottom: 6px; }
+.hi-n { grid-area: n; width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: var(--data); color: #fff; font-family: var(--sans); font-weight: 700; font-size: 13px; }
+.hi-spot .hi-sc b { font-size: 18px; }
+.hi-st { margin: 0 4px 4px; font-size: 12.5px; color: var(--dim); }
+.hi-more { display: block; width: 100%; margin: 6px 0 4px; background: var(--panel-2); color: var(--ink); font-family: var(--sans); letter-spacing: .066em; text-transform: uppercase; font-size: 14px; }
+.hi-err { margin: 6px 8px; }
+.hi-list .bd-empty .lock { color: var(--dim); margin-bottom: 6px; }
+/* the way in, at the top of the stats sheet: a button for Pro, a plain locked row for everyone else */
+.st-hist:empty { display: none; }
+.st-hist { margin: 0 0 14px; }
+.hi-row-go { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 14px; background: var(--panel); color: var(--ink); text-align: left; font: inherit; }
+button.hi-row-go { cursor: pointer; }
+button.hi-row-go:hover { background: var(--panel-2); }
+.hi-row-go.locked { border-style: dashed; background: transparent; color: var(--dim); }
+.hi-ic { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--data-soft); color: var(--data); }
+.hi-ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.locked .hi-ic { background: var(--panel-2); color: var(--faint); }
+.hi-rt { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+.hi-rt b { font-family: var(--sans); font-weight: 700; font-size: 15px; color: var(--ink); }
+.locked .hi-rt b { color: var(--dim); }
+.hi-rt small { font-size: 12.5px; line-height: 1.3; color: var(--dim); }
+.hi-pro { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; background: var(--panel-2); color: var(--dim); font: 700 11px/1 var(--sans); letter-spacing: .08em; }
+.hi-pro .lock { width: 11px; height: 9px; margin-top: 4px; border-width: 1.6px; }
+.hi-pro .lock::before { left: 1px; top: -6.5px; width: 5px; height: 5px; border-width: 1.6px; }
+@media (min-width: 880px) {
+  body[data-screen="s-hist"] .app { max-width: 1040px; }
+  #s-hist { padding-top: 8px; }
+  #s-hist .bd-hero { container-type: inline-size; }
+  #hi-head { font-size: min(84px, 26cqi); }
+  .hi-list { padding: 18px 14px 12px; }
+  .hi-it { padding-left: 14px; }
+}

@@ -21,6 +21,8 @@
 var C = window.STD_CONTRACT, API = window.STD_API, M = window.STD_MOUND, AN = window.STD_ANIM, MN = window.STD_MENUS;
 /* the modes around the daily (modes-ui.js): the save, the vote, Survivor, the archive */
 var MU = window.STD_MODES_UI || null;
+/* your history (history-ui.js): the Pro perk's screen */
+var HU = window.STD_HISTORY_UI || null;
 var METER = window.STD_METER || null;
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -136,7 +138,7 @@ var TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', 
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
   /* Survivor and the archive put their own spot on the mound; the home and its links are today's */
-  if (id === 's-home' || id === 's-board') dailyBack();
+  if (id === 's-home' || id === 's-board' || id === 's-hist') dailyBack();
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
@@ -173,6 +175,8 @@ function backPressed() {
   var id = document.body.dataset.screen || 's-home';
   if (id === 's-home') return;
   if (id === 's-clip' && window.STD_CLIP_UI) { window.STD_CLIP_UI.close(); backSync(); return; }
+  /* a kept outing looked back on goes back to the history, its list as it was */
+  if (id === 's-result' && S.mode === 'history') { show('s-hist'); return; }
   if (id === 's-mound' || id === 's-half' || id === 's-next') {
     if (S.busy) { backSync(); return; }
     moundHome();
@@ -2095,6 +2099,7 @@ function paintProfile() {
 function proPlate(e) {
   MN.init({ ent: e });
   if (tab === 'arc') MN.renderPast();
+  if (MN.current() === 'sheet-stats') MN.renderHistRow();
   if (window.STD_PLATE) {
     window.STD_PLATE.setPro(e && e.pro);
     paintProfile();
@@ -2300,6 +2305,26 @@ function wireTabs() {
   }, { passive: true });
 }
 
+/* ---- your history (Pro, history-ui.js): every kept daily and Survivor run. The screen opens only from
+   its row in the stats sheet; a row opens that outing's result again, rebuilt from its calls (api.js
+   historyOpen), in the result's history mode: no share, no board, no post, nothing kept. Its pitches
+   play as clips. Back goes to the list. */
+function showHistory() {
+  if (MN.isOpen()) MN.close(true);
+  show('s-hist');
+  if (HU) HU.show();
+}
+function viewHistory(v) {
+  S.scn = v.scenario;
+  S.mode = 'history';
+  S.outing = v.state;
+  S.result = v.result;
+  S.unlocked = null;
+  renderResult();
+  unlockNote();
+  show('s-result');
+}
+
 /* ---- the archive (Pro, CONTRACT.md 17): a past daily on its own spot and seed. Only reachable
    when entitlements() says archive, which is false for everyone until Pro exists. */
 function playArchive(day) {
@@ -2325,7 +2350,9 @@ function runsOf(r, st) { return r.runs != null ? r.runs : st && st.score ? st.sc
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
   var runs = runsOf(r, st);
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : (S.mode === 'archive' ? 'archive · ' : '') + (s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
+  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored'
+    : (S.mode === 'archive' ? 'archive · ' : S.mode === 'history' ? 'your history · ' + fmtDay(s.day) + ' · ' : '') +
+      (s.survivor ? 'survivor' : s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
@@ -2357,6 +2384,9 @@ function renderResult() {
     vsWhy(r, rv, runs) + '</div>';
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
+  /* a kept outing looked back on (history-ui.js): back to the list, and no board (today's is not its day) */
+  $('r-board').hidden = S.mode === 'history';
+  $('r-hist-go').hidden = S.mode !== 'history';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
   /* Run The Diamond, under the menu: not on a player's first result, as the Diamond's own promo
      (site PR 1015). The signal is the device's daily history (hist, written before this draws): a
@@ -2924,6 +2954,11 @@ function boot() {
     if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
   });
   $('r-vote-go').addEventListener('click', jumpToVote);
+  $('r-hist-go').addEventListener('click', function () { show('s-hist'); });
+  if (HU) HU.init({
+    onOpen: viewHistory, toast: toast,
+    onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
+  });
   if (MU) MU.init({
     onVote: voteRow,
     signIn: function () { MN.show('auth'); },
@@ -2943,7 +2978,7 @@ function boot() {
   MN.onChange = backSync;
   MN.init({
     onPlate: function () { paintProfile(); if (document.body.dataset.screen === 's-board') window.STD_BOARD.load(); },
-    hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
+    hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive, onHistory: showHistory,
     onPast: function () { if (MN.isOpen()) MN.close(true); if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); } setTab('arc', null, true); },
     archiveDays: MU ? MU.archiveDays : null,
     onPref: function (k, v) {
