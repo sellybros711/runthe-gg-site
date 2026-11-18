@@ -302,7 +302,7 @@ export async function run(ROOT, POOL) {
       try { await page.waitForSelector('#b-hp-fantasy', { timeout: 30000 }); } catch (e) { drawn = false; }
       ok('the college front page draws the Fantasy door', drawn);
       if (drawn) {
-        ok('  and it goes to the college mode', (await page.getAttribute('#b-hp-fantasy', 'href')) === '/cfb/fantasy/');
+        ok('  and it goes to the college mode', (await page.getAttribute('#b-hp-fantasy', 'href')) === '/cfb/fantasy/?from=home');
         ok('  red until a lineup is in', !(await page.$eval('#b-hp-fantasy', (e) => e.classList.contains('in'))));
       }
       ok('  and the front page threw nothing', !boom.length, boom.join(' | '));

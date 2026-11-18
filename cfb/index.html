@@ -6145,7 +6145,7 @@ function ensureFantasyDoor(){
   if(!cfbFanDoor){
     cfbFanDoor=document.createElement('a');
     cfbFanDoor.className='hp-cfbfan'; cfbFanDoor.id='b-hp-fantasy';
-    cfbFanDoor.href='/cfb/fantasy/';
+    cfbFanDoor.href='/cfb/fantasy/?from=home';
     cfbFanDoor.onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'home'}); };
   }
   const phase=cfbFanPhase(cfbFanWeek);
@@ -6238,7 +6238,7 @@ function fantasyPromoPaint(){
            supabase/128_cfb_fantasy.sql), so a change there is a change here too. */
         '<div class="cfbpromo-prize"><span class="cfbpromo-pro">PRO</span><b>Top score this week wins Pro.</b></div>'+
         '<div class="cfbpromo-lock">Lineups lock '+cfbFanLock(lock)+'. That\'s the first kickoff.</div>'+
-        '<a class="cfbpromo-go" id="b-fanpromo" href="/cfb/fantasy/">Draft my lineup</a>'+
+        '<a class="cfbpromo-go" id="b-fanpromo" href="/cfb/fantasy/?from=results">Draft my lineup</a>'+
         '<button class="cfbpromo-later" type="button" id="b-fanpromo-x">Not this week</button>';
       $('b-fanpromo').onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'results'}); };
       $('b-fanpromo-x').onclick=()=>{
