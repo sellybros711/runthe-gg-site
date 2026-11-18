@@ -2220,8 +2220,12 @@ async function modes(w, h, full) {
   ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro&checkout=success'));
   await page.waitForFunction(() => !/checkout=/.test(location.search), null, { timeout: 15000 });
   ok(true, '17 back from Stripe: the checkout flag comes off the address');
-  await page.waitForFunction(() => /pro is on/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
-  ok(true, '17 and once entitlements answer Pro, the page says so');
+  /* once entitlements answer Pro, the page says so: the welcome to Pro (pro-welcome.js, the owner 2026-11-18)
+     replaced the "pro is on" toast; step 24 walks it, here it only has to show and close */
+  await page.waitForSelector('#pro-welcome.on', { timeout: 15000 });
+  ok(true, '17 and once entitlements answer Pro, the page says so (the welcome to Pro)');
+  await page.click('#pro-welcome .pw-home');
+  await page.waitForFunction(() => !document.getElementById('pro-welcome'), null, { timeout: 5000 });
   await page.evaluate(usedRun(true));
   await page.click('#h-surv');
   await page.waitForSelector('#hp-surv.on #sv-go', { timeout: 30000 });
