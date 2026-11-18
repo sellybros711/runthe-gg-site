@@ -3271,7 +3271,7 @@
       "sha": "bffd7d6c51f38cfb"
     },
     "grade.js": {
-      "v": "22",
+      "v": "23",
       "sha": "e0ab9b4e2f303121"
     },
     "names.js": {
@@ -3295,11 +3295,11 @@
       "sha": "8ead22ce5b02cae9"
     },
     "card.js": {
-      "v": "7",
+      "v": "8",
       "sha": "ca954b76d1e0c71c"
     },
     "auth.js": {
-      "v": "15",
+      "v": "16",
       "sha": "cdddec99c9c81a57"
     },
     "voices.js": {
@@ -3315,11 +3315,11 @@
       "sha": "374492f48b227041"
     },
     "api.js": {
-      "v": "40",
+      "v": "41",
       "sha": "f3dc448c01a22f7b"
     },
     "mock-api.js": {
-      "v": "29",
+      "v": "30",
       "sha": "2c3d2d12318a5364"
     },
     "coach.js": {
@@ -3331,15 +3331,15 @@
       "sha": "079c28d2327d3f0e"
     },
     "modes-ui.js": {
-      "v": "15",
-      "sha": "54eb5d36ba3cc810"
+      "v": "16",
+      "sha": "909898cd6605798d"
     },
     "pro.js": {
       "v": "4",
       "sha": "2303509fc34b4b07"
     },
     "pro-card.js": {
-      "v": "4",
+      "v": "5",
       "sha": "f6cc73ccca8bee82"
     },
     "history-ui.js": {
@@ -3375,7 +3375,7 @@
       "sha": "abd9d53cd6784a96"
     },
     "ui.js": {
-      "v": "93",
+      "v": "94",
       "sha": "7e79510ac82ffcc2"
     },
     "3d/boot.js": {
