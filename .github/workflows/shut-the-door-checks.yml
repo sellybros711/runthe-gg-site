@@ -99,6 +99,10 @@ jobs:
         run: node shut-the-door/ump-purge.mjs --self-test
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
+      - name: Custom challenges (a daily start replays as main played it; a challenge plays the table; the page's calls)
+        run: node shut-the-door/test/challenge.mjs
+      - name: The matchup upload reads every file back and catches one that differs
+        run: node shut-the-door/pipeline/upload_matchups.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
         run: node shut-the-door/check-rules.mjs
       - name: Every pitch moves like the real pitch (break side, size, crossing point, preview against flight)
@@ -109,7 +113,7 @@ jobs:
         run: node scripts/check-dashes.mjs shut-the-door
       - name: The copy rules, on the files that hold player copy
         run: |
-          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js shut-the-door/voices.js shut-the-door/postgame.js; do
+          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js shut-the-door/voices.js shut-the-door/postgame.js shut-the-door/challenge.js; do
             node scripts/check-copy.mjs "$f"
           done
 
@@ -219,3 +223,9 @@ jobs:
           $P -f supabase/178_shut_the_door_plates_more.sql
           $P -f supabase/178_shut_the_door_plates_more.sql
           $P -f supabase/test/shut_the_door_plates_more_test.sql
+      - name: 183 applied twice, then its test (custom challenges, never on a board)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/183_shut_the_door_challenges.sql
+          $P -f supabase/183_shut_the_door_challenges.sql
+          $P -f supabase/test/shut_the_door_challenges_test.sql

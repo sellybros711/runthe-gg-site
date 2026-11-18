@@ -18,6 +18,9 @@ the shape. This file has the formulas.
 | `auth.js` | `window.STD_AUTH`, the site's account client, plus `submit`, `board`, `myStats` |
 | `pool.js` | node only, at build time: hold tables into the pack, the closer pool's outings |
 | `check-replays.mjs` | replays stored daily results and flags a score the calls do not produce |
+| `challenge.js` | `window.STD_CHALLENGE`, a custom challenge: the spec, its checks, its start on a matchup, the setup line |
+| `matchups.js` | node only, at build time: a matchup's hold table, centre and pro examples, gzipped, and `data/matchups.json` |
+| `data/matchups.json` | every built matchup (pitcher against lineup) with the sha the page checks; the files are in the `shutdoor-matchups` bucket |
 | `pipeline/` | Python and two node scripts, never loaded by the page |
 | `data/packs/<id>.json` | one pack per scenario, under 1.5 MB |
 | `data/schedule.json` | each day to a pack and a daily number |
@@ -745,6 +748,64 @@ Left out, with the reason: Urías 2020 WS G6 (his slurve, SV, has too few left-h
 2019-2021 for a table), Vesia 2024 WS G2 (one pitch to one batter, the lead's reason for leaving out
 Montgomery), Montgomery 2016, Familia 2015 (above). Their verify files stay.
 
+## Custom challenges: the matchups (2026-11-18)
+
+A custom challenge (CONTRACT.md 18) plays any pack's pitcher against any pack's lineup. Each pair
+is a matchup pack, built offline because its outcome tables need the pitch library:
+
+```
+cd shut-the-door/pipeline
+python3 build_matchups.py [--shard i/n] [--skip-built]    cache/matchups/stage/<P>__<Q>.json
+python3 build_matchups.py --check-own [--slow-check]       each pack's own pair against the committed pack
+python3 pros.py                                            cache/pros.json, the lesson's pro examples
+cd .. && node matchups.js pipeline/cache/matchups/stage pipeline/cache/matchups/out --pros pipeline/cache/pros.json
+node matchups.js --index pipeline/cache/matchups/out m1   data/matchups.json
+```
+
+**The model is the packs' model.** `build_matchups.py` runs `build_packs.py`'s own pieces: the
+outcome table (`model.outcome_table`), the real pitch of each outcome (`pick_exemplar`'s rule over
+pools indexed once), the widened pool for an empty cell, and the hitter's record and notes
+(`batter_record`, its league parts computed once; `--slow-check` compares every record with the
+original). Each side is read in its own era. His pitches use the league's outcomes on pitches like
+his in his window. The hitter uses his own pitches against the pitcher's hand, and the similar
+batters', in his pack's batter window. The hitter's lean is measured against the league of his
+pack's window, the one his own numbers come from. A switch hitter bats away from the pitcher's
+hand. Each hitter keeps his zone, stance, name and line from his pack. The running game is the
+pitcher's spot (its era, his pickoff, his catcher) with the lineup's runners. The advancement and
+runner tables are every pack's. `matchups.js` solves the hold table for one half, every state, every
+lead 0 to 3 (`scenario.tableLead`), so any start a player picks is in it. It also adds the rules 2
+centre (`pool.js seqCenter`) and the pro examples (`attachPros`). It plays no pool, since a
+challenge has no percentile.
+
+**Proof.** For a pack built from the same chunks, its own pair comes out exactly the pack: the same
+tables, the same real pitches, the same records (`--check-own` on the 13 clubs' Pagán 2025 and
+Helsley 2024, built 2026-11-18, both "the same"). The thirty packs built in October differ a
+little on some pitch types: Savant has retyped pitches since (the same rows, the same fastball
+tables, other slider counts). So a pack's own pair in a challenge reads today's library, not its
+daily's October one.
+
+**The engine.** `grade.js Model` takes `scenario.tableLead` into M and `situation.bi`, `balls` and
+`strikes` into the start. A daily pack has none of them, so it plays exactly as before:
+`test/challenge.mjs` replays 60 rows that main's engine played (`fixtures/replays-rules12-pre-challenges.json`)
+to every pitch.
+
+**Built 2026-11-18, the thirty packs (900 pairs, none left out).** 202 MB gzipped (771 MB raw), 224
+KB a pair on average and 339 KB at most. `data/matchups.json` is 152 KB. Python about 6 s a pair once
+the pitchers are ready (all thirty pitchers about 200 s, kept on disk in
+`cache/matchups/pitchers`), at most 4 GB of memory with pyarrow installed (the matchups workflow installs it) (pandas then stores its
+strings compactly; without it a proxy lineup's five seasons passed 9 GB). Node about 12 s a pair
+(the solve about 10 s). About 4.5 CPU hours in all. 43 packs would be 1,849 pairs, about 415 MB.
+Starting hold from the default start (up 3, nobody on, nobody out) is 97.1% to 99.7%. The closer
+pool through twelve sampled pairs, up 1 from nobody on, calls green 19%, yellow 26%, orange 33%,
+red 22% (the dailies' mean is 18/27/35/20), and holds 64% to 80%.
+
+**Where they live.** Not in git: they are too big for the site's repo. `.github/workflows/shut-the-door-matchups.yml`
+builds them on six runners from the data workflow's cached chunks, uploads each to the public
+bucket `shutdoor-matchups/<build>/<P>/<Q>.json.gz` (supabase/183 makes it), reads each back against
+its sha (`pipeline/upload_matchups.mjs`), and commits `data/matchups.json`. A challenge keeps the
+build and sha it was made on, so a later build takes a new build id and never moves a challenge
+already made. Bump `MATCHUPS_V` in `api.js` with a new index.
+
 ## Accounts
 
 `supabase/153_shut_the_door.sql`: `shutdoor_outings` (user, day: the calls, outcome, pitches,
@@ -752,6 +813,8 @@ score, percentile, pitched like, strip), `shutdoor_streaks`, and three functions
 definer: `shutdoor_submit` (Eastern day within one, the first submit stands, streak of doors shut on
 consecutive days, a blown save or a missed day resets it, returns `{taken, streak, best, rank,
 players}`), `shutdoor_board(day, limit)` and `shutdoor_my_stats()`.
+`supabase/183_shut_the_door_challenges.sql`: custom challenges, their own two tables and five
+functions, never a board (CONTRACT.md 18).
 `supabase/155_shut_the_door_tie_held.sql` lets `tie_held` in (the check, the submit's guard) and
 adds `tieHeld` to the stats; a held tie resets the streak like any blown save. Its test is
 `supabase/test/shut_the_door_test.sql`. The page needs supabase-js loaded with `defer` (as

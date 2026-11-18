@@ -1,0 +1,128 @@
+name: Shut The Door matchups
+
+# Builds the custom challenges' matchups on GitHub's runners and puts them in their public
+# bucket: every pack's pitcher against every pack's lineup (pipeline/build_matchups.py, then
+# shut-the-door/matchups.js), each checked against its sha after it lands
+# (pipeline/upload_matchups.mjs), and commits the index the page reads (data/matchups.json).
+#
+# RUN IT ONLY AFTER supabase/183_shut_the_door_challenges.sql, which makes the bucket.
+# Actions, Shut The Door matchups, Run workflow, on the branch to build. "upload" unticked
+# builds and keeps the files as an artifact for 7 days, and uploads nothing.
+#
+# A new build (a rebuilt pack, a new pack, a rules change that moves the tables) takes a NEW
+# build id, so every challenge already made keeps playing the files it was made on. Then bump
+# MATCHUPS_V in shut-the-door/api.js (and api.js?v= in index.html, scripts/check-cachebust.mjs
+# --update) in the commit that takes the new index.
+#
+# The library is the data workflow's: the same cached chunks (actions/cache, std-chunks-v2),
+# rebuilt into SQLite on each runner. It never goes in git.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: 'Build id (a new one for every rebuild), e.g. m1'
+        type: string
+        default: 'm1'
+      upload:
+        description: 'Upload to the shutdoor-matchups bucket and commit the index'
+        type: boolean
+        default: false
+
+concurrency:
+  group: shut-the-door-matchups-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    defaults:
+      run:
+        working-directory: shut-the-door/pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install (and pyarrow, so pandas keeps its strings compact: a lineup fits the runner)
+        run: pip install -r requirements.txt pyarrow
+      - name: Restore the library chunks
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            shut-the-door/pipeline/cache/chunks
+            shut-the-door/pipeline/cache/http
+          key: std-chunks-v2-${{ github.run_id }}
+          restore-keys: std-chunks-v2-
+      - name: The grid is contract.js's grid
+        run: python3 prep.py
+      - name: The library (from the chunks; Savant only for a chunk the cache lacks)
+        run: python3 build_library.py --workers 2
+      - name: The pairs of this shard's lineups
+        run: MALLOC_ARENA_MAX=2 python3 build_matchups.py --shard ${{ matrix.shard }}/6
+      - name: The lesson's pro examples (real pitches, as every pack has them)
+        run: python3 pros.py
+      - name: The hold tables, the centre and the pro examples
+        run: node ../matchups.js cache/matchups/stage cache/matchups/out --pros cache/pros.json
+      - name: Keep the shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: matchups-${{ matrix.shard }}
+          path: |
+            shut-the-door/pipeline/cache/matchups/out
+            shut-the-door/pipeline/cache/matchups/failed.json
+          retention-days: 7
+
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: matchups-*
+          path: shards
+      - name: One out dir, and the index
+        run: |
+          mkdir -p out
+          for d in shards/*/out; do cp -r "$d"/. out/; done
+          cat shards/*/failed.json || true
+          node shut-the-door/matchups.js --index out "${{ inputs.build }}"
+          du -sh out
+          find out -name '*.json.gz' | wc -l
+      - name: Upload, and read each one back
+        if: ${{ inputs.upload }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+        run: node shut-the-door/pipeline/upload_matchups.mjs out "${{ inputs.build }}"
+      - name: Commit the index, if it moved
+        if: ${{ inputs.upload }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add shut-the-door/data/matchups.json
+          if git diff --cached --quiet; then
+            echo "Nothing moved."
+            exit 0
+          fi
+          git commit -m "Shut The Door: the matchups index from shut-the-door-matchups.yml (build ${{ inputs.build }})"
+          for i in 1 2 3 4 5; do
+            git push && exit 0
+            echo "push rejected, rebasing (attempt $i)"
+            git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+          done
+          exit 1
