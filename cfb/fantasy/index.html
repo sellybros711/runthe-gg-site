@@ -706,13 +706,13 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     <div class="card hero">
       <span class="hero-cup" data-crest="hc" aria-hidden="true"></span>
       <div class="eyebrow" id="home-week"></div>
-      <h1 class="display hero-h">One lineup.<br><em>One week.</em></h1>
+      <h1 class="display hero-h" id="home-h">One lineup.<br><em>One week.</em></h1>
       <!-- The lineup the reader is about to build, in the chips the board will deal. -->
       <div class="rack" aria-hidden="true"><span class="QB">QB</span><span class="RB">RB</span><span class="RB">RB</span><span class="WR">WR</span><span class="WR">WR</span><span class="TE">TE</span></div>
       <ol class="steps">
-        <li><b>1</b><span><strong>Draft six</strong>QB, two RB, two WR, TE from the week's biggest games. Stay under the cap.</span></li>
+        <li><b>1</b><span id="step-1"><strong>Draft six</strong>QB, two RB, two WR, TE from the week's biggest games. Stay under the cap.</span></li>
         <li><b>2</b><span><strong>Three tries</strong>Draft up to three lineups and submit the one you like best. Pro gets five.</span></li>
-        <li><b>3</b><span><strong>Win the week</strong>Half PPR. Hurt or benched? Swap him before his game. Top score wins 30 days of Pro.</span></li>
+        <li><b>3</b><span id="step-3"><strong>Win the week</strong>Half PPR. Hurt or benched? Swap him before his game. Top score wins 30 days of Pro.</span></li>
       </ol>
       <div class="tiles">
         <div class="t-lock"><span class="eyebrow">Locks</span><b id="home-lock">-</b></div>
@@ -1272,9 +1272,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var bits = [ROSTER_SAY[e.roster] || INJ_SAY[e.st] || 'Listed on the injury report.'];
     if (e.d) bits.push(String(e.d).replace(/\.$/, '') + '.');
     $('inj-line').textContent = bits.join(' ');
-    var src = e.by === 'site' ? 'Ruled out for week ' + POOL.week + ' by RunThe.GG.'
+    var src = e.by === 'site' ? 'Ruled out for ' + wkLow(POOL.week) + ' by RunThe.GG.'
       : (e.st === 'missed' || e.roster ? 'Read off the box scores.' : 'Read off ESPN\'s roster.');
-    $('inj-when').textContent = src + ' Any player can be swapped before his game.';
+    $('inj-when').textContent = src + ' Any player can be swapped ' + swapWhen() + '.';
     $('inj-sheet').hidden = false;
   }
   $('inj-close').onclick = function(){ $('inj-sheet').hidden = true; };
@@ -1303,6 +1303,19 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      first thing that spends it is a draft, and there is no draft before a pool. */
   var CAP = D.CAP_MUSD;
   var BY_ID = {};
+  /* THE PLAYOFF IS A WEEK OF ITS OWN (playoff.mjs builds it as week 100), and it reads as the
+     Playoff everywhere a week is named. The week before it is the pointer's `prev`, carried
+     onto the board at boot, because the Playoff is not numbered after the last regular week. */
+  var PLAYOFF_WEEK = 100;
+  function isPlayoff(w){ return w >= PLAYOFF_WEEK; }
+  function wkCap(w){ return isPlayoff(w) ? 'The Playoff' : 'Week ' + w; }
+  function wkLow(w){ return isPlayoff(w) ? 'the Playoff' : 'week ' + w; }
+  function seasonWk(s, w){ return isPlayoff(w) ? s + ' Playoff' : s + ' week ' + w; }
+  function prevOf(){ return POOL && POOL.prev != null ? POOL.prev : POOL.week - 1; }
+  /* A PLAYOFF SWAP CLOSES AT A MAN'S FIRST PLAYOFF GAME (the owner's call, 2026-11-16). His
+     kick on the board is that game, so the server and this page already agree; the words say it. */
+  function swapWhen(){ return isPlayoff(POOL.week) ? 'before his first Playoff game' : 'before his game'; }
+  function thisWk(){ return isPlayoff(POOL.week) ? 'the Playoff' : 'this week'; }
   var state = null;         /* { season, week, chances:[], pick, submitted } */
   var cur = -1;             /* which chance is being drafted */
 
@@ -2024,7 +2037,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var done = !!res;
     $('b-in-back').hidden = !lookingBack;
     var proj = D.projected(c);
-    $('in-week').textContent = POOL.season + ' week ' + POOL.week
+    $('in-week').textContent = seasonWk(POOL.season, POOL.week)
       + (done && !res.final ? ' · still being played' : '');
     $('in-head').textContent = done ? 'How it went' : 'You are in';
     $('in-lab').textContent = done ? 'Half PPR' : 'Projected';
@@ -2108,14 +2121,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       ? res.played + ' of ' + res.games + ' games are in. This will move.'
       : 'The games are still being played. This will move.';
     $('in-say').textContent = done
-      ? (res.final ? 'Week ' + POOL.week + ' is done. This is what your six scored.'
+      ? (res.final ? wkCap(POOL.week) + ' is done. This is what your six scored.'
         : inSoFar)
-      : (locked() ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
+      : (locked() ? wkCap(POOL.week) + ' has kicked off. Your lineup is in.'
         : 'Your lineup is in. Entries close ' + lockWhen() + '.');
     /* SAID PLAINLY RATHER THAN IMPLIED, and what it says changed the day the entry became
        a row. It read "saved in this browser only" for as long as that was true. */
     $('in-note').textContent = serverEntry()
-      ? 'Entered on your account. One entry a week, and it is final.'
+      ? 'Entered on your account. ' + (isPlayoff(POOL.week) ? 'One entry for the Playoff, and it\'s final.' : 'One entry a week, and it is final.')
       : 'Saved in this browser. It is not on your account, so it will not count.';
     show('s-in');
   }
@@ -2197,8 +2210,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
         + '<button type="button" data-swap="' + esc(m.player_id) + '">Swap</button></div>';
     }).join('');
     if (rest.length){
-      html += '<div class="swapany"><p>Know something we do not? Swap anyone before his '
-        + 'game, for a player at his price or a little below.</p><div class="swb">'
+      html += '<div class="swapany"><p>Know something we do not? Swap anyone ' + swapWhen()
+        + ', for a player at his price or a little below.</p><div class="swb">'
         + rest.map(function(m){
           return '<button type="button" data-swap="' + esc(m.player_id) + '">Swap '
             + esc(m.name) + '</button>';
@@ -2507,7 +2520,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     for (i=0;i<all.length;i++) html += gameRowHTML(all[i]);
     /* Nothing at all is a week whose pool this page could not read, which is a state the
        loading screen already covers. Said rather than left blank anyway. */
-    box.innerHTML = html || '<p class="note">This week\'s games could not be read.</p>';
+    box.innerHTML = html || '<p class="note">' + (isPlayoff(POOL.week) ? 'The Playoff games' : 'This week\'s games') + ' could not be read.</p>';
   }
 
   var BOARD_SEEN = null;    /* key -> { place, score } as last drawn, or null before one */
@@ -2692,7 +2705,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      * phone changed cell tower. It only says so when there is no board there to leave. */
     if (!data){
       if (!BOARD_SEEN) $('lv-boardsay').textContent = 'The board could not be reached. '
-        + 'The games above are this week\'s schedule.';
+        + (isPlayoff(POOL.week) ? 'The games above are the Playoff so far. Later rounds land as they\'re set.' : 'The games above are this week\'s schedule.');
       return;
     }
     if (!rows || !rows.length){
@@ -2712,7 +2725,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       var ents = (data.entrants && data.entrants.length) ? data.entrants : null;
       var n0 = data.week ? data.week.entries : null;
       BOARD_SEEN = null;
-      $('lv-boardlab').textContent = 'This week'
+      $('lv-boardlab').textContent = (isPlayoff(POOL.week) ? 'The Playoff' : 'This week')
         + (n0 ? ' · ' + n0 + (n0 === 1 ? ' entry' : ' entries') : '');
       if (ents){
         var eh = '', j, e;
@@ -2729,14 +2742,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       $('lv-board').innerHTML = '';
       $('lv-boardsay').textContent = (n0 && !(data.week && data.week.open))
         ? 'The board opens at the first kickoff.'
-        : 'Nobody has entered this week. Being first is the prize.';
+        : 'Nobody has entered ' + thisWk() + ' yet. Being first is the prize.';
       return;
     }
     $('lv-boardsay').textContent = '';
 
     var me = data.me && data.me.place ? data.me : null;
     var n = me ? me.entries : (data.week ? data.week.entries : null);
-    $('lv-boardlab').textContent = 'This week'
+    $('lv-boardlab').textContent = (isPlayoff(POOL.week) ? 'The Playoff' : 'This week')
       + (n ? ' · ' + n + (n === 1 ? ' entry' : ' entries') : '');
 
     var html = '', mine = false, i, r;
@@ -3135,7 +3148,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   $('lv-tab-past').onclick = function(){ lvTab('past'); };
 
   function openLive(tab){
-    $('lv-week').textContent = POOL.season + ' week ' + POOL.week;
+    $('lv-week').textContent = seasonWk(POOL.season, POOL.week);
     /* THREE STATES, AND THE THIRD ONE ARRIVED WITH THE ENTRANTS LIST. This screen could not
        be reached before the first kickoff until 112 gave it something to say, so the "not
        being played" sentence was only ever read after the week had finished. Read before it
@@ -3143,8 +3156,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     $('lv-say').textContent = liveOpen()
       ? 'Every game on the slate, and where everybody is, while it happens.'
       : (!locked()
-        ? 'Week ' + POOL.week + ' has not kicked off yet.'
-        : 'Week ' + POOL.week + ' is not being played right now. This is how it finished.');
+        ? wkCap(POOL.week) + ' has not kicked off yet.'
+        : wkCap(POOL.week) + ' is not being played right now. This is how it finished.');
     $('lv-live').hidden = true;
     /*
      * `BOARD_SEEN` IS DELIBERATELY NOT RESET HERE, AND IT WAS, FOR A PASS.
@@ -3389,8 +3402,18 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        door says it too: one word, both surfaces, the way the two how-to surfaces on the
        arcade pages have to agree. A middot list rather than a sentence, which is what this
        repo already reaches for when three facts share a line. */
-    $('home-week').textContent = 'Beta · ' + POOL.season + ' week ' + POOL.week
+    $('home-week').textContent = 'Beta · ' + seasonWk(POOL.season, POOL.week)
       + ' · ' + slate().length + ' games';
+    /* THE PLAYOFF'S OWN PITCH. The team count is read off the board, never written here. */
+    if (isPlayoff(POOL.week)){
+      var nTeams = (POOL.teams && POOL.teams.length) || 0;
+      $('home-h').innerHTML = 'One lineup.<br><em>The whole Playoff.</em>';
+      $('step-1').innerHTML = '<strong>Draft six</strong>QB, two RB, two WR, TE from the '
+        + (nTeams ? nTeams + ' ' : '') + 'Playoff teams. Stay under the cap.';
+      $('step-3').innerHTML = '<strong>Win the Playoff</strong>Half PPR. Your guys score in every '
+        + 'game their team plays, so go deep. Hurt? Swap him before his first Playoff game. '
+        + 'Top score wins 30 days of Pro.';
+    }
     $('home-lock').textContent = locked() ? 'Locked' : untilLock();
     $('home-cap').textContent = money(CAP);
     $('home-drafts').textContent = done + ' of ' + chancesAllowed();
@@ -3406,7 +3429,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
        and finds one gone with nothing to say why. */
     $('home-note').textContent = locked()
-      ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
+      ? wkCap(POOL.week) + ' has kicked off. Nothing more can be submitted.'
       : reopenedLine()
         + 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
     lastWeekCard();
@@ -3429,7 +3452,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
    */
   var LAST = null;
   function lastWeekCard(){
-    var wk = POOL.week - 1;
+    var wk = prevOf();
     if (wk < 1) return;
     var prev = loadWeek(POOL.season, wk);
     if (!prev || prev.submitted == null) return;
@@ -3455,7 +3478,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   function drawLast(){
     if (!LAST) return;
     var d = Math.round((LAST.got - LAST.proj) * 10) / 10;
-    $('last-say').textContent = 'Week ' + LAST.week + (LAST.final ? '' : ', still playing');
+    $('last-say').textContent = wkCap(LAST.week) + (LAST.final ? '' : ', still playing');
     $('last-sub').textContent = 'Projected ' + LAST.proj.toFixed(1) + '. '
       + (d === 0 ? 'Exactly that.' : (d > 0 ? '+' : '') + d.toFixed(1)
         + (d > 0 ? ' better.' : ' short.'));
@@ -3516,7 +3539,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     F.myResult(POOL.season, POOL.week).then(function(r){
       if (r == null){ PRZ_ASKED = false; return; }
       if (r && r.entered) return take(POOL.week, r);
-      var prev = POOL.week - 1;
+      var prev = prevOf();
       if (prev < 1) return;
       return F.myResult(POOL.season, prev).then(function(r2){
         if (r2 == null){ PRZ_ASKED = false; return; }
@@ -3532,8 +3555,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     if (!PRZ) return;
     var place = Number(PRZ.r.place), won = passWon(PRZ.r);
     $('prize-say').textContent = won
-      ? 'You won week ' + PRZ.week
-      : 'Week ' + PRZ.week + ' is settled';
+      ? 'You won ' + wkLow(PRZ.week)
+      : wkCap(PRZ.week) + ' is settled';
     $('prize-sub').textContent = won
       ? (PRZ.r.pass_until ? 'Pro is yours until ' + passDay(PRZ.r.pass_until) : 'Your win is in here')
       : 'Where you finished, out of ' + PRZ.r.entries;
@@ -3556,7 +3579,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   function showPrize(){
     if (!PRZ) return;
     var r = PRZ.r, place = Number(r.place), entries = Number(r.entries);
-    $('prz-eye').textContent = 'Week ' + PRZ.week + ' is settled';
+    $('prz-eye').textContent = wkCap(PRZ.week) + ' is settled';
     $('prz-place').textContent = ordinal(place);
     $('prz-place').classList.toggle('pod', place <= 3);
     $('prz-of').textContent = 'of ' + entries + (entries === 1 ? ' entry' : ' entries');
@@ -3576,12 +3599,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        missing. The win itself is real and stays on their profile. */
     var won = passWon(r);
     if (place === 1 && !won && entries < 2)
-      say = 'You were the only entry this week, so there is no prize. The win still counts.';
+      say = 'You were the only entry in ' + thisWk() + ', so there is no prize. The win still counts.';
     else if (place === 1) say = 'You won the week. Nobody drafted better.';
     else if (place === 2) say = 'So close. One spot off the top.';
     else if (place === 3) say = 'Top three. That is a podium finish.';
     else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field. That is a good week.';
-    else say = 'Not your week. Every week starts from zero.';
+    else say = isPlayoff(PRZ.week) ? 'Not your Playoff. Next season starts from zero.' : 'Not your week. Every week starts from zero.';
 
     /* THE PROJECTION IS THE ONE OTHER THING THIS READER CAN BE PROUD OF, and it is theirs
        alone rather than a comparison with anybody. Said only when it is true, and decided on
@@ -3886,7 +3909,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
            visit that has not moved, fresh bytes on the one that has. */
         return fetch('/cfb/data/fantasy/' + now.file, { cache: 'no-cache' }).then(function(r){
           if(!r.ok) throw new Error('pool'); return r.json();
-        });
+        }).then(function(p){ if (now.prev != null) p.prev = now.prev; return p; });
       })
       .then(function(p){
         POOL = p;

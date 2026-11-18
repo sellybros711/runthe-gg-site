@@ -76,6 +76,11 @@ export async function scoreboardWeek(season, week) {
   return getJSON(`/scoreboard?groups=80&dates=${season}&seasontype=2&week=${week}&limit=300`);
 }
 
+/** The postseason: every bowl and every Playoff game, as one ESPN "week" (seasontype 3). */
+export async function scoreboardPost(season) {
+  return getJSON(`/scoreboard?groups=80&dates=${season}&seasontype=3&week=1&limit=300`);
+}
+
 export async function scoreboardDay(yyyymmdd) {
   return getJSON(`/scoreboard?groups=80&dates=${yyyymmdd}&limit=300`);
 }
@@ -155,6 +160,9 @@ export function gameOf(ev) {
     spread: odds ? num(odds.spread) : null,
     total: odds ? num(odds.overUnder) : null,
     tv: (comp.broadcasts || []).flatMap((b) => b.names || []).slice(0, 2),
+    /* ESPN's headline for a game that has one: a bowl's name, and how a Playoff game is
+       told apart from the other bowls (playoff.mjs). */
+    note: (comp.notes || []).map((n) => n && n.headline).filter(Boolean).join(' | ') || null,
   };
 }
 

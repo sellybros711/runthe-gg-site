@@ -6091,6 +6091,23 @@ const CFB_CREST='<svg class="hp-ico" viewBox="0 0 32 32" aria-hidden="true">'
   +'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'
   +'<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'
   +'<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
+/* THE DOOR'S PHASE, off the pointer alone (the owner's call, 2026-11-16: the Playoff gets a
+ * contest, and the door stops selling a week that is not there).
+ *   week          a regular week, open or being played
+ *   waiting       the regular season is over and the bracket is not set (`next` from playoff.mjs)
+ *   playoff-open  the Playoff board is up and entries are open
+ *   playoff-live  the Playoff has kicked off
+ *   off           a day after the title game, until next season's first week */
+function cfbFanPhase(w,now=Date.now()){
+  const lock=Date.parse(w.locks_at);
+  if(w.kind==='playoff'){
+    const end=w.ends_at?Date.parse(w.ends_at):NaN;
+    if(end>0&&now>end+86400000) return 'off';
+    return lock>now?'playoff-open':'playoff-live';
+  }
+  if(w.next==='playoff'&&!(lock>now)) return 'waiting';
+  return 'week';
+}
 function cfbFanEntered(){
   if(!cfbFanWeek) return false;
   try{
@@ -6121,18 +6138,28 @@ function ensureFantasyDoor(){
     cfbFanDoor.href='/cfb/fantasy/';
     cfbFanDoor.onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'home'}); };
   }
-  const inn=cfbFanEntered();
+  const phase=cfbFanPhase(cfbFanWeek);
+  /* Green only for a lineup in the contest the door is showing. Waiting for the bracket or out of
+     season, the record it would read is last week's, and green would say the wrong thing. */
+  const inn=(phase==='week'||phase==='playoff-open'||phase==='playoff-live')&&cfbFanEntered();
   cfbFanDoor.classList.toggle('in',inn);
   /* WHEN THE WEEK LOCKS, off the pointer's own locks_at, and a plain line once it has. */
   const ms=cfbFanWeek.locks_at?Date.parse(cfbFanWeek.locks_at)-Date.now():NaN;
   const h=Math.floor(ms/3600000), d=Math.floor(h/24);
   const left=!(ms>0)?null:d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
     :Math.max(1,Math.floor(ms/60000))+'m';
+  const sub=phase==='off'?'College Fantasy is back next season.'
+    :phase==='waiting'?'The Playoff Fantasy opens once the bracket\'s set.'
+    :phase==='playoff-open'?(inn?'Your Playoff lineup is in.'
+      :'The Playoff &middot; locks in '+left+' &middot; top score wins Pro')
+    :phase==='playoff-live'?(inn?'Your Playoff lineup is in. Every round counts.'
+      :'The Playoff is on. Entries are closed.')
+    :inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
+    :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
+    :'Six players from the week\'s biggest games. Top score wins Pro.';
   cfbFanDoor.innerHTML='<span class="hp-tag">Beta</span>'+CFB_CREST
     +'<span class="hp-name">Fantasy Challenge</span>'
-    +'<span class="hp-sub">'+(inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
-      :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
-      :'Six players from the week\'s biggest games. Top score wins Pro.')+'</span>'
+    +'<span class="hp-sub">'+sub+'</span>'
     +'<span class="hp-rack" aria-hidden="true"><i class="QB"></i><i class="RB"></i><i class="RB">'
     +'</i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
   const three=ctas.querySelector('.cta3');
@@ -6192,8 +6219,11 @@ function fantasyPromoPaint(){
          while the server was being asked. */
       if(!$('s-over').classList.contains('on')||!(lock>Date.now())) return;
       el.innerHTML='<div class="cfbpromo-top">'+
-        '<span class="cfbpromo-name">Fantasy Challenge</span><span class="cfbpromo-wk">Week '+n.week+'</span></div>'+
-        '<p>Six players from the week\'s biggest games. One lineup. Free to play.</p>'+
+        '<span class="cfbpromo-name">Fantasy Challenge</span><span class="cfbpromo-wk">'
+          +(n.kind==='playoff'?'Playoff':'Week '+n.week)+'</span></div>'+
+        (n.kind==='playoff'
+          ?'<p>Six players from the Playoff teams. They score every game their team plays. Free to play.</p>'
+          :'<p>Six players from the week\'s biggest games. One lineup. Free to play.</p>')+
         /* The prize in the words the door uses. The server grants it (cfb_fantasy_grant_pass,
            supabase/128_cfb_fantasy.sql), so a change there is a change here too. */
         '<div class="cfbpromo-prize"><span class="cfbpromo-pro">PRO</span><b>Top score this week wins Pro.</b></div>'+
@@ -6213,8 +6243,19 @@ function fantasyPromoPaint(){
 /* THE LOCK DAY REMINDER, the football game's sheet for this competition: once per account
    per week, on the Eastern day the slate locks, before the first kickoff. The rule is in
    /assets/fantasy-promo.js. cloudsave.js is loaded for it, so the mark rides on the account. */
-if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
-  href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
+/* NOT FOR THE PLAYOFF. The shared sheet names its week "Week " and the number, and the Playoff is
+   week 100 (playoff.mjs). The door and the results card carry the Playoff instead. So the pointer
+   is read first and the sheet is set up only for a regular week; its own rules are untouched.
+   A pointer that cannot be read sets it up as before. A label in the shared file would bring it
+   back for the Playoff; that file is shared with the NFL game. */
+if(window.RTG_FANPROMO){
+  const fanPromoInit=()=>RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
+    href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
+  fetch('/cfb/data/fantasy/now.json',{cache:'no-cache'})
+    .then(r=>r.ok?r.json():null)
+    .then(n=>{ if(!(n&&n.kind==='playoff')) fanPromoInit(); })
+    .catch(fanPromoInit);
+}
 
 /* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
  *

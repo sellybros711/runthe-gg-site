@@ -92,12 +92,22 @@ jobs:
         id: open
         if: steps.when.outputs.go == 'yes'
         run: |
+          git fetch -q --depth 1 origin main
+          # THE REGULAR SEASON IS OVER: THE PLAYOFF IS NEXT (playoff.mjs). Built once, when the
+          # bracket is set. Until then the build only says the Playoff is next. Once main's
+          # pointer is the Playoff, nothing here ever builds it again.
           if [ "${{ steps.week.outputs.none }}" = "yes" ]; then
-            echo "the season is over. Nothing to build."
-            echo "go=no" >> "$GITHUB_OUTPUT"
+            KIND=$(git show origin/main:cfb/data/fantasy/now.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).kind||"week"))')
+            if [ "$KIND" = "playoff" ]; then
+              echo "the Playoff is already open. Nothing to do."
+              echo "go=no" >> "$GITHUB_OUTPUT"
+            else
+              echo "the regular season is over. Trying the Playoff."
+              echo "go=yes" >> "$GITHUB_OUTPUT"
+              echo "playoff=yes" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
-          git fetch -q --depth 1 origin main
           LIVE=$(git show origin/main:cfb/data/fantasy/now.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const n=JSON.parse(s);console.log(n.season+" "+n.week)})')
           WANT='${{ steps.week.outputs.season }} ${{ steps.week.outputs.week }}'
           echo "live: $LIVE, this week: $WANT"
@@ -110,17 +120,28 @@ jobs:
             echo "go=yes" >> "$GITHUB_OUTPUT"
           fi
 
+      # `built` is whether the pointer now names a board this run made. Only then is anything
+      # published: a Playoff run before the bracket is set only marks the pointer, and
+      # publishing then would send last week's board again, entries and all.
       - name: Build the board
+        id: build
         if: steps.open.outputs.go == 'yes'
         run: |
           set -o pipefail
           WRITE=''
           if [ "${{ steps.when.outputs.write }}" = "true" ]; then WRITE='--write'; fi
-          node cfb/build/fantasy/pool.mjs --season '${{ steps.week.outputs.season }}' \
-            --week '${{ steps.week.outputs.week }}' $WRITE
+          if [ "${{ steps.open.outputs.playoff }}" = "yes" ]; then
+            node cfb/build/fantasy/playoff.mjs --season "$(date -u +%Y)" $WRITE
+            KIND=$(node -e 'console.log(require("./cfb/data/fantasy/now.json").kind||"week")')
+            if [ "$KIND" = "playoff" ]; then echo "built=yes" >> "$GITHUB_OUTPUT"; else echo "built=no" >> "$GITHUB_OUTPUT"; fi
+          else
+            node cfb/build/fantasy/pool.mjs --season '${{ steps.week.outputs.season }}' \
+              --week '${{ steps.week.outputs.week }}' $WRITE
+            echo "built=yes" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Who is out
-        if: steps.open.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        if: steps.build.outputs.built == 'yes' && steps.when.outputs.write == 'true'
         run: node cfb/build/fantasy/injuries.mjs --write
 
       - name: Can it be drafted
@@ -128,13 +149,13 @@ jobs:
         run: node cfb/build/test/test_fantasy.mjs --quick
 
       - name: Install the postgres client
-        if: steps.open.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        if: steps.build.outputs.built == 'yes' && steps.when.outputs.write == 'true'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
 
       # THE BOARD IS PUBLISHED BEFORE ANYTHING IS COMMITTED. A committed board with no row on
       # the server is a page that drafts perfectly and refuses every submit.
       - name: Publish the week to the leaderboard
-        if: steps.open.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        if: steps.build.outputs.built == 'yes' && steps.when.outputs.write == 'true'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
