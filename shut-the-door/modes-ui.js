@@ -100,7 +100,7 @@ function saveBlock(el, opts) {
 /* ---- 2. the vote for tomorrow ---------------------------------------------------------------
    From VOTE.EPOCH on. Before it vote() has no candidates and the block stays hidden. A signed-in
    player picks one of two, played today or not (164); then the block says the vote is in and shows
-   the count. Signed out: the two, and the same sign-in button. The result and the home each carry
+   the count. While the vote is open the other one stays tappable, and a tap moves the vote (180). Signed out: the two, and the same sign-in button. The result and the home each carry
    one; each block keeps its own request count, so one never drops the other's answer. opts.quiet
    (the home's) leaves ctx.onVote, the result menu's row, alone. */
 function voteBlock(el, opts) {
@@ -122,8 +122,9 @@ function drawVote(el, v, busy, opts) {
   var opts = v.candidates.map(function (c, i) {
     var L = cardLine(c), n = v.votes ? (i ? v.votes.b : v.votes.a) : null, on = mine === c.id;
     var share = tot && n != null ? Math.round(n / tot * 100) : 0;
+    var tap = !busy && (v.canVote || (v.canChange && mine && !on));
     return '<button class="vt-o' + (on ? ' on' : '') + (mine ? ' done' : '') + '" type="button" data-id="' + esc(c.id) + '"' +
-      (v.canVote && !busy ? '' : ' disabled') + ' aria-pressed="' + on + '">' +
+      (tap ? '' : ' disabled') + ' aria-pressed="' + on + '">' +
       (v.votes ? '<i class="vt-bar" style="width:' + share + '%" aria-hidden="true"></i>' : '') +
       '<span class="vt-t"><b>' + esc(L.name) + (on ? '<em class="vt-me">your vote</em>' : '') + '</b><span>' + esc(L.meta) + '</span>' +
       (L.setup ? '<span class="vt-s">' + esc(L.setup) + '</span>' : '') + '</span>' +
@@ -132,6 +133,7 @@ function drawVote(el, v, busy, opts) {
   }).join('');
   var foot;
   if (v.error) foot = '<p class="vt-say err">' + esc(v.error) + '.</p>';
+  else if (mine && v.canChange) foot = '<p class="vt-say ok"><b>Your vote is in.</b> Changed your mind? Tap the other one. It locks at midnight Eastern.</p>';
   else if (mine) foot = '<p class="vt-say ok"><b>Your vote is in. It counts.</b> It locks at midnight Eastern.</p>';
   else if (v.canVote) foot = '<p class="vt-say">One vote. Pick the spot you want tomorrow.</p>';
   else if (!st.signedIn) foot = '<div class="vt-in"><p>Sign in to vote.</p><button class="btn save-b" type="button" data-save>' +

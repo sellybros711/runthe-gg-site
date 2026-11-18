@@ -428,6 +428,7 @@
       votes: srv && srv.votes ? { a: srv.votes.a, b: srv.votes.b } : null,
       winner: srv ? srv.winner || null : null,
       canVote: srv ? !!srv.canVote : false,
+      canChange: srv ? !!srv.canChange : false,
       why: srv ? srv.why || null : (ids ? 'could not reach the server' : 'no vote for that day'),
       offline: !srv,
     };
@@ -435,15 +436,18 @@
     return out;
   }
   /* The vote for a day (default tomorrow): {day, open, candidates [card A, card B], myVote,
-     votes {a, b} | null, winner, canVote, why, offline}. votes show once you voted or the day
-     is locked. Offline the candidates still come (modes.js), and canVote is false. */
+     votes {a, b} | null, winner, canVote, canChange, why, offline}. votes show once you voted or
+     the day is locked. canChange: you voted and may move it to the other one until it closes (180);
+     false from a server before 180. Offline the candidates still come (modes.js), and canVote and
+     canChange are false. */
   async function vote(day) {
     const sch = await loadSchedule();
     const d = day || M.addDays(C.easternDay(), 1);
     return voteShape(sch, d, await ask('vote', d));
   }
-  /* Cast this player's one vote for tomorrow. Signed in, played today or not (164). Answers
-     the vote as vote() does, with error set (the server's words) when it was refused. */
+  /* Cast this player's one vote for tomorrow. Signed in, played today or not (164). A second cast
+     for the other one moves the vote (180). Answers the vote as vote() does, with error set (the
+     server's words) when it was refused. */
   async function castVote(scenarioId) {
     const sch = await loadSchedule();
     const d = M.addDays(C.easternDay(), 1);
