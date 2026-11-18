@@ -3151,7 +3151,10 @@ async function challengesWalk(w, h, theme) {
   /* the link: a guest opens it, practices, plays the counted try, signs in and posts it */
   {
     const { ctx, page, errors } = await modesPage(w, h, '?mockAuth=late&c=K7M4QX', { meterOff: true, theme, ready: 'body[data-screen="s-cint"]' });
-    await page.waitForSelector('body[data-screen="s-cint"] #ci-hero .ci-head', { timeout: 90000 });
+    await page.waitForSelector('body[data-screen="s-cint"] #ci-hero .ci-head', { timeout: 90000 }).catch(async (e) => {
+      console.log(secs() + '  the intro shows: ' + JSON.stringify(await page.evaluate(() => (document.getElementById('ci-hero') || {}).textContent).catch(() => null)));
+      throw e;
+    });
     const ci = await page.evaluate(() => ({ head: document.querySelector('.ci-head').textContent, setup: document.querySelector('.ci-setup').textContent,
       hold: /best play holds/i.test(document.querySelector('.ci-facts').textContent), rows: document.querySelectorAll('#ci-list .ch-rows li').length,
       play: !!document.querySelector('[data-ci="play"]'), practice: !!document.querySelector('[data-ci="practice"]'), sign: !!document.querySelector('#ci-hero [data-sign]'),
@@ -3175,7 +3178,8 @@ async function challengesWalk(w, h, theme) {
     ok(/You played it as a guest/.test(await page.textContent('#ci-hero')), tag + ' a guest\'s finished try: the intro says so, with See your result and a sign-in to post');
     await page.click('#ci-hero [data-ci="see"]');
     await page.waitForSelector('body[data-screen="s-result"]', { timeout: 90000 });
-    await page.waitForTimeout(1200);
+    /* the numbers count up to the engine's own: read them once the count is done */
+    await page.waitForFunction(() => { const r = window.STD_UI.state.result; return r && document.getElementById('r-pct').textContent === String(r.score); }, null, { timeout: 15000 }).catch(() => {});
     const rs = await page.evaluate(() => ({ eye: document.getElementById('r-eyebrow').textContent, vs: document.getElementById('r-real').textContent,
       chal: !document.getElementById('r-chal').hidden && document.querySelectorAll('#r-chal .ch-rows li').length, pool: document.getElementById('r-pool').hidden,
       pct: /of closers/.test(document.getElementById('r-kpct').textContent), board: document.getElementById('r-board').hidden, share: !document.getElementById('r-share').hidden,

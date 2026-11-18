@@ -1027,7 +1027,9 @@ if (REAL && REAL.configure) REAL.configure({ loadMatchup: function (build, p, q)
     return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
   });
 } });
-var chalIndex = null;
+/* the index is read once, as the page loads: the page waits on a server call only SERVER_WAIT_MS
+   (api.js), so the stand-in must answer at server speed, never after a cold fetch on a slow runner */
+var chalIndex = REAL ? fetch('data/matchups.json', { cache: 'no-store' }).then(function (r) { return r.json(); }) : null;
 function chalSha(spec) {
   if (!chalIndex) chalIndex = fetch('data/matchups.json', { cache: 'no-store' }).then(function (r) { return r.json(); });
   return chalIndex.then(function (ix) { var pr = ix.pairs[spec.pitcher + '__' + spec.lineup]; return { build: ix.build, sha: pr ? pr.sha : null }; });

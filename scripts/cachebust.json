@@ -3319,8 +3319,8 @@
       "sha": "f3dc448c01a22f7b"
     },
     "mock-api.js": {
-      "v": "28",
-      "sha": "68af0f01a825352b"
+      "v": "29",
+      "sha": "2c3d2d12318a5364"
     },
     "coach.js": {
       "v": "2",
@@ -3366,13 +3366,13 @@
       "v": "1",
       "sha": "9487113b28199624"
     },
-    "events.js": {
-      "v": "3",
-      "sha": "abd9d53cd6784a96"
-    },
     "challenge-ui.js": {
       "v": "1",
       "sha": "2ad0ead7ca7debc8"
+    },
+    "events.js": {
+      "v": "3",
+      "sha": "abd9d53cd6784a96"
     },
     "ui.js": {
       "v": "93",
