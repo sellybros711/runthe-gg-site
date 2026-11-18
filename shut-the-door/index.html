@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=93">
+<link rel="stylesheet" href="style.css?v=94">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -196,6 +196,8 @@ setTimeout(function () {
       <!-- THE ARCHIVE (Pro, CONTRACT.md 17): the past dailies. Open to Pro (supabase/181); everybody else sees them locked, with Get Pro (pro.js). -->
       <div class="h-pane" id="hp-arc" role="tabpanel" aria-labelledby="hm-arc" hidden>
         <div class="card hp-arc-c"><h2 class="hp-h">past dailies</h2><div id="past-body"></div></div>
+        <!-- CUSTOM CHALLENGES (Pro, CONTRACT.md 18): a card with one button to the challenges screen (challenge-ui.js cardHTML). It opens nothing by itself. -->
+        <div id="h-chal"></div>
       </div>
     </div>
     <!-- THE SIDE (the owner, 2026-11-03): on a desk the menu and the footer stand in a column beside the modes.
@@ -206,6 +208,7 @@ setTimeout(function () {
         <button type="button" data-open="how"><i class="mi tl-i hot" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="3"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></i><span class="tl-t"><span>how to play</span><small class="tl-s">a pitch and a spot. three outs.</small></span></button>
         <button type="button" data-open="101"><i class="mi tl-i data" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></i><span class="tl-t"><span>pitching 101</span><small class="tl-s">the ideas the coach uses.</small></span></button>
         <button type="button" data-open="board"><i class="mi tl-i hot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="tl-t"><span>leaderboard</span><small class="tl-s">every closer who posted today.</small></span></button>
+        <button type="button" data-chal-open id="h-chal-go"><i class="mi tl-i data" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></i><span class="tl-t"><span>Challenges</span><small class="tl-s">Set the spot. Send a friend the link.</small></span></button>
         <button type="button" data-open="stats"><i class="mi tl-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="tl-t"><span>stats</span><small class="tl-s">every outing, every grade.</small></span></button>
         <button type="button" data-open="settings"><i class="mi tl-i" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="tl-t"><span>settings</span><small class="tl-s">sound, speed, meter, theme.</small></span></button>
         <button type="button" data-open="voice" id="h-voice"><i class="mi tl-i hot" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8.5" y="3" width="7" height="11" rx="3.5"/><path d="M11 7.4h2M11 10.4h2M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M8.5 21h7"/></svg></i><span class="tl-t"><span>Voice of the ump</span><small class="tl-s">Record your voice. Be the ump!</small></span></button>
@@ -352,6 +355,7 @@ setTimeout(function () {
     <button class="nv" id="r-coach" type="button"><b>talk to pitching coach</b><span>your costliest pitch</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-hist-go" type="button" hidden><b>back to your history</b><span>the full list</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-vote-go" type="button" hidden><b>vote for tomorrow</b><span>pick the next spot</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-chal-go" type="button" hidden><b>standings</b><span>everyone who played it</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-board" type="button"><b>leaderboard</b><span>where you rank</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-share" type="button"><b>share</b><span>the card or the text</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-again" type="button"><b>run it back</b><span>practice. not scored.</span><i class="chev" aria-hidden="true"></i></button>
@@ -373,6 +377,8 @@ setTimeout(function () {
  <div class="r-main">
   <!-- the vote for tomorrow's daily, after the daily, from the vote's first day (modes-ui.js) -->
   <section class="r-tile r-vote" id="r-vote" aria-live="polite" hidden></section>
+  <!-- a custom challenge (challenge-ui.js tileHTML): best-play hold%, the standings and the link -->
+  <section class="r-tile r-chal" id="r-chal" aria-live="polite" hidden></section>
   <!-- after the outing only (postgame.js): the box line, the grade mix, then every at bat's K-Zone -->
   <section class="r-tile r-pbp">
     <div class="r-sec-h"><h3>Your outing</h3><span>The box line, then every at bat</span></div>
@@ -380,7 +386,7 @@ setTimeout(function () {
     <div class="r-mix" id="r-mix"></div>
     <div class="cmp" id="r-reveal"></div>
   </section>
-  <section class="r-tile r-pool">
+  <section class="r-tile r-pool" id="r-pool">
     <div class="r-sec-h"><h3>vs every closer in this spot</h3></div>
     <p class="r-pctline" id="r-pctline"></p>
     <div class="chart" id="r-chart"></div>
@@ -420,6 +426,39 @@ setTimeout(function () {
       <p class="quiet bd-note">Every daily and Survivor run you play is kept here. Tap one to see its result and replay any pitch.</p>
     </div>
     <div class="card bd-list hi-list" id="hi-list" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 6c. CUSTOM CHALLENGES (Pro, the owner 2026-11-18, CONTRACT.md 18): the builder and My challenges. Opened only
+     from a button (the home's menu row, the archive tab's card, the menu sheet). Anyone not Pro sees a locked
+     entry naming the perk with the store's Get Pro block. challenge-ui.js fills it. -->
+<section class="screen" id="s-chal" aria-labelledby="cb-head" data-tab="new">
+  <button class="bd-back" id="cb-back" type="button"><i aria-hidden="true"></i>back</button>
+  <div class="bd-grid ch-grid">
+    <div class="bd-side">
+      <div class="bd-hero ch-hero">
+        <p class="eyebrow" id="cb-eyebrow">Pro &middot; custom challenges</p>
+        <h2 class="bd-head" id="cb-head">challenges</h2>
+        <div class="seam" aria-hidden="true"></div>
+        <p class="ch-say">Any closer against any lineup. You set the spot. Send the link and anyone plays it free.</p>
+      </div>
+      <div class="seg ch-tabs" id="cb-tabs" role="tablist" aria-label="Challenges">
+        <button type="button" role="tab" data-tab="new" aria-selected="true">New challenge</button>
+        <button type="button" role="tab" data-tab="mine" aria-selected="false">My challenges</button>
+      </div>
+      <div class="card bd-list ch-mine" id="cb-mine" aria-live="polite"></div>
+    </div>
+    <div class="card ch-build" id="cb-body"></div>
+  </div>
+</section>
+
+<!-- 6d. A CHALLENGE BY ITS LINK (?c=CODE) or a row of My challenges: who made it, the setup, best-play hold%,
+     the standings, Play (counted) and Practice. Free for anyone; posting a score needs a sign-in. -->
+<section class="screen" id="s-cint" aria-label="A challenge">
+  <button class="bd-back" id="ci-back" type="button"><i aria-hidden="true"></i>home</button>
+  <div class="bd-grid">
+    <div class="bd-side"><div class="bd-hero ci-hero" id="ci-hero"></div></div>
+    <div class="card bd-list ci-list" id="ci-list" aria-live="polite"></div>
   </div>
 </section>
 
@@ -490,6 +529,7 @@ setTimeout(function () {
     </div>
     <div class="menu-list">
       <button type="button" data-open="board"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="mt"><b>leaderboard</b><span>every closer who posted today.</span></span><i class="chev" aria-hidden="true"></i></button>
+      <button type="button" data-chal-open><i class="mi data"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></i><span class="mt"><b>Challenges</b><span>Set the spot. Send a friend the link.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="stats"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="mt"><b>stats</b><span>every outing, every grade.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="settings"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="mt"><b>settings</b><span>sound, speed, meter, theme.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="auth"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></i><span class="mt"><b>account</b><span>sign in to keep your streak.</span></span><i class="chev" aria-hidden="true"></i></button>
@@ -554,14 +594,14 @@ setTimeout(function () {
 <script src="engine.js?v=23"></script>
 <script src="sound.js?v=6"></script>
 <script src="share.js?v=3"></script>
-<script src="card.js?v=6"></script>
+<script src="card.js?v=7"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=15"></script>
 <script src="voices.js?v=6"></script>
 <script src="postgame.js?v=1"></script>
 <script src="challenge.js?v=1"></script>
 <script src="api.js?v=40"></script>
-<script src="mock-api.js?v=27"></script>
+<script src="mock-api.js?v=28"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=9"></script>
 <script src="modes-ui.js?v=15"></script>
@@ -572,7 +612,8 @@ setTimeout(function () {
 <script src="clip.js?v=2"></script>
 <script src="clip-ui.js?v=2"></script>
 <script src="events.js?v=3"></script>
-<script src="ui.js?v=90"></script>
+<script src="challenge-ui.js?v=1"></script>
+<script src="ui.js?v=91"></script>
 <script type="module" src="3d/boot.js?v=119"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=3'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 <script type="module">import { CLUBS, battingClub, clubNamed } from './3d/clubs.js?v=3'; window.STD_CLUBS = CLUBS; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
