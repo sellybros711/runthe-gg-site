@@ -139,6 +139,10 @@ export const SCENARIO = Object.freeze({
     answerNeedThree: 0.6,
     /* A tie goes to overtime, a coin you flip. */
     overtimeWin: 0.5,
+    /* Variety a run (sim.js): each player's share above or below his pace
+       (run, the offense; def, a defender's speed) and a defender's reaction
+       lag. Small on purpose: a good play stays a good play. */
+    jitter: { run: 0.1, def: 0.06, lag: 0.35 },
 
     /* ZONES. How often the rolled defense is a zone (late in a close game,
        about one possession in four at most levels below the pros). */

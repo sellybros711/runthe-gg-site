@@ -36,6 +36,8 @@ const { server } = await startDev(PORT);
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let fails = 0;
 const ok = (c, m) => { console.log((c ? ' ok   ' : ' FAIL ') + m); if (!c) fails++; };
+/* The result card docks (2026-11-17): More opens the rest of it. */
+async function openCard(page) { if (await page.isVisible('#bMore') && (await page.getAttribute('#bMore', 'aria-expanded')) !== 'true') await page.click('#bMore'); }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 /* the fields a starter puts on the clipboard */
 const body = p => p && { spots: p.spots, goAt: p.goAt, steps: p.steps };
@@ -170,6 +172,7 @@ async function run(name, viewport, mobile) {
   ok(tally && tally.byScheme[res1.scheme] && tally.byScheme[res1.scheme].n === 1 && tally.byScheme[res1.scheme].w === (res1.win ? 1 : 0), 'the run counts in the stats, under ' + res1.scheme);
   ok((await L(() => Object.keys(window.__mem).filter(k => k.startsWith('last_shot/b-')).length)) === 1, 'it reaches the account');
   /* the card built again for the same run still says Saved */
+  await openCard(page);
   await page.click('#bSavePlay');
   await page.waitForSelector('#editBar', { state: 'visible' });
   ok((await L(() => window.__lastShot.mode)) === 'edit' && (await L(() => window.__lastShot.edit.entry.id)) === e.id, 'Saved · Open lands on that play');
@@ -192,6 +195,7 @@ async function run(name, viewport, mobile) {
   ok(same(body(await L(() => window.__lastShot.ladder.plays['2-4'])), body(starterPlay('horns-twist'))), 'the level keeps the starter as its play');
   await runTo(5);
   ok((await page.textContent('#bSavePlay')) === 'Save this play', 'the level card has Save this play');
+  await openCard(page);
   await page.click('#bSavePlay');
   await page.waitForFunction(() => document.getElementById('bSavePlay').textContent === 'Saved · Open', null, { timeout: 8000 });
   bks = await books();

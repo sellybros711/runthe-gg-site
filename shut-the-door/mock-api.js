@@ -54,10 +54,14 @@ if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true
    ?mockAuth=1 makes one of the rows yours. */
 var BOARD_NAMES = ['paintsblack', 'highcheese', 'backdoorslider', 'ninthinning', 'lockdownlefty', 'gasmonkey', 'splitfinger', 'bullpencart',
   'framejob', 'chinmusic', 'upstairs', 'sweeperking', 'knucklepuck', 'tunnelvision', 'fullcount', 'corners', 'runnersonsecond', 'pitchclock'];
-/* the plates (supabase/162): a few club keys on the board's rows, and the mock account's unlocks.
-   ?mockPlates=none unlocks nothing */
+/* the plates (supabase/162, 178): a few club keys on the board's rows, and the mock account's unlocks
+   (a 2005 Astros save opens the brick red throwback too). ?mockPlates=none unlocks nothing.
+   ?mockPlates=diamond puts the board's first row in Diamond, as the server answers it for a Pro
+   account. With ?mockEnt=pro the account's own list has Diamond, as 178's shutdoor_unlocked does. */
 var MOCK_PLATES = ['dodgers', null, 'yankees', 'giants', null, 'redsox', 'brewers'];
-var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'giants'], initials: null };
+var MOCK_DIAMOND = /[?&]mockPlates=diamond/.test(location.search);
+var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'astrosbrick', 'giants'], initials: null };
+if (/[?&]mockEnt=pro/.test(location.search)) mockPlates.unlocked.push('diamond');
 /* the stat line (supabase/166), FICTIONAL and valid by postgame.js: a box line of the row's own
    pitches. Every ninth row has none, as a row posted before 166 */
 function mockStats(rk, pitches, outcome) {
@@ -86,7 +90,7 @@ function mockBoard(day, limit) {
       rank: rk, username: rk === mine ? 'mockplayer' : BOARD_NAMES[rk % BOARD_NAMES.length] + (rk > BOARD_NAMES.length ? rk : ''),
       outcome: outcome, pitches: pitches, score: score, percentile: Math.round((1 - f) * 100), pitched_like: null,
       strip: strip, mine: rk === mine, players: players,
-      plate: rk === mine ? mockPlates.plate : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
+      plate: rk === mine ? mockPlates.plate : MOCK_DIAMOND && rk === 1 ? 'diamond' : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
       stats: mockStats(rk === mine ? 1 : rk, pitches, outcome),
     });
   }
@@ -98,6 +102,11 @@ var AUTH_MODE = (/[?&]mockAuth=([^&]*)/.exec(location.search) || [])[1] || '';
 var mockIn = AUTH_MODE === '1';
 var authListeners = [];
 function mockSignedIn() { return mockIn; }
+/* the review sheet's role (176): 'owner', 'tester' or null, from ?mockOwner=1 or ?mockTester=1 */
+function mockRole() {
+  if (!mockIn) return null;
+  return /[?&]mockOwner=1/.test(location.search) ? 'owner' : /[?&]mockTester=1/.test(location.search) ? 'tester' : null;
+}
 var mockClips = [];
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
@@ -116,10 +125,11 @@ if (!window.STD_AUTH || FORCE) {
     signIn: AUTH_MODE === 'late' ? lateIn : none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
     board: mockBoard,
-    /* the voice of the ump (supabase/165), FICTIONAL: clips live in this page only. ?mockOwner=1
-       makes the signed-in mock account the owner, so the review sheet can be walked */
+    /* the voice of the ump (supabase/165, 176, 177), FICTIONAL: clips live in this page only. ?mockOwner=1
+       makes the signed-in mock account the owner, ?mockTester=1 a tester (176), so the review
+       sheet can be walked as either */
     umpApproved: function () { return Promise.resolve(mockClips.filter(function (c) { return c.status === 'approved'; }).map(function (c) { return { id: c.id, line: c.line, path: c.path, credit: c.credit }; })); },
-    umpMine: function () { return Promise.resolve(mockIn ? mockClips.filter(function (c) { return c.status === 'pending'; }).map(function (c) { return { id: c.id, line_id: c.line }; }) : null); },
+    umpMine: function () { return Promise.resolve(mockIn ? mockClips.filter(function (c) { return c.status === 'pending' || c.status === 'shortlisted'; }).map(function (c) { return { id: c.id, line_id: c.line }; }) : null); },
     umpSubmit: function (c) {
       if (!mockIn) return Promise.resolve({ error: 'Sign in first.' });
       if (!c || c.consent !== (window.STD_VOICES && window.STD_VOICES.CONSENT)) return Promise.resolve({ error: 'tick the consent box first' });
@@ -128,18 +138,33 @@ if (!window.STD_AUTH || FORCE) {
       return Promise.resolve({ data: { id: id } });
     },
     umpUrls: function (paths) { var m = {}; mockClips.forEach(function (c) { if (paths.indexOf(c.path) >= 0) m[c.path] = c.url; }); return Promise.resolve(m); },
-    umpOwner: function () { return Promise.resolve(mockIn && /[?&]mockOwner=1/.test(location.search)); },
+    umpOwner: function () { return Promise.resolve(mockRole() === 'owner'); },
+    umpRole: function () { return Promise.resolve(mockRole()); },
+    umpCounts: function () {
+      if (!mockRole()) return Promise.resolve(null);
+      var n = function (st) { return mockClips.filter(function (c) { return c.status === st; }).length; };
+      return Promise.resolve({ pending: n('pending'), shortlisted: n('shortlisted') });
+    },
     umpQueue: function (st) {
-      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      if (!mockRole()) return Promise.resolve({ error: 'testers only' });
       return Promise.resolve({ data: mockClips.filter(function (c) { return c.status === (st || 'pending'); }).map(function (c) { return JSON.parse(JSON.stringify(c)); }) });
     },
     umpReview: function (id, st) {
-      if (!(mockIn && /[?&]mockOwner=1/.test(location.search))) return Promise.resolve({ error: 'owner only' });
+      if (!mockRole()) return Promise.resolve({ error: 'testers only' });
       var c = mockClips.filter(function (x) { return x.id === id; })[0];
       if (!c) return Promise.resolve({ error: 'no such clip' });
       /* as 175: a rejected call loses its file, and with it any way back */
       if (!c.path && st !== 'rejected') return Promise.resolve({ error: 'that call\'s audio was deleted' });
+      /* as 177: a tester's approve is a shortlist; only the owner puts a call in the game or changes a live one */
+      var own = mockRole() === 'owner', was = c.status;
+      if (st === 'approved' && !own) st = 'shortlisted';
+      if (was === 'approved' && !own) return Promise.resolve({ error: 'only the owner changes a call in the game' });
       c.status = st;
+      c.reviewedBy = st === 'pending' ? null : 'mockplayer';
+      if (st === 'pending') c.shortlistedBy = null;
+      else if (st === 'shortlisted' && (was === 'pending' || !c.shortlistedBy)) c.shortlistedBy = 'mockplayer';
+      if (st === 'approved' && was !== 'approved') c.liveBy = 'mockplayer';
+      else if (st === 'pending' || st === 'shortlisted') c.liveBy = null;
       if (st === 'rejected') c.path = null;
       return Promise.resolve({ data: { id: id, status: st } });
     },

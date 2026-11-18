@@ -6,7 +6,10 @@
  *   3. a codec or an x- type reads as its base type; a file with no type is read off its name
  *   4. the recorder takes the first type the browser can make
  *   5. every call the game makes (ui.js SFX.ump) maps to lines on the script, and only to them
- *   6. the preload plan: at most PER_LINE a line, only lines on the script, nothing invented */
+ *   6. the preload plan: at most PER_LINE a line, only lines on the script, nothing invented
+ *   7. the record sheet's helpers: iPhone Safari's take (audio/mp4, a codec on its type) and Chrome's
+ *      (webm) both pass; a mic refusal reads as blocked, no mic, or neither; the meter's bars; the next
+ *      line after a send skips the sent ones */
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -70,6 +73,18 @@ list.push({ id: 'b0', line: 'ball', path: 'u/b0' }, { id: 'x', line: 'not_a_line
 const p = V.plan(list, 2, rand);
 ok(p.filter((c) => c.line === 'strike').length === 2 && p.filter((c) => c.line === 'ball').length === 1 && p.length === 3, '6 at most two a line, off-script and pathless rows dropped');
 ok(V.plan([], 2, rand).length === 0 && V.plan(null).length === 0, '6 nothing approved: nothing fetched');
+
+/* 7 */
+const safari = V.recorderMime((t) => t === 'audio/mp4');
+ok(safari === 'audio/mp4' && V.check({ mime: V.baseMime('audio/mp4;codecs=mp4a.40.2'), bytes: 24000, ms: 1800 }) === null, '7 an iPhone Safari take (audio/mp4, with a codec) goes');
+ok(V.check({ mime: V.baseMime('audio/webm;codecs=opus'), bytes: 24000, ms: 1800 }) === null, '7 a Chrome take (webm) goes');
+ok(/Too big/.test(V.check({ mime: 'audio/mp4', bytes: V.MAX_BYTES + 1, ms: 1800 })) && /Audio files only/.test(V.check({ mime: 'video/mp4', bytes: 2000, ms: 1800 })), '7 over the cap or not audio, either browser: refused');
+ok(V.micError('NotAllowedError') === 'denied' && V.micError('SecurityError') === 'denied' && V.micError('NotFoundError') === 'none' && V.micError('AbortError') === 'other', '7 a mic refusal reads as blocked, no mic, or neither');
+ok(['denied', 'none', 'other', 'cannot'].every((k) => /upload a file/i.test(V.MIC_SAY[k])), '7 every mic refusal points at the upload');
+const pk = V.peaks([0, .2, .9, .1, .4, 1.5], 3);
+ok(pk.length === 3 && pk[0] === .2 && pk[1] === .9 && pk[2] === 1 && V.peaks([], 5).length === 0, '7 the meter: the loudest in each slice, clamped to 1');
+const all = {}; V.LINES.forEach((l) => { all[l.id] = true; });
+ok(V.nextOpen({}, 0) === 1 && V.nextOpen({ strike3: true }, 0) === 2 && V.nextOpen({ strike: true }, V.LINES.length - 1) === 1 && V.nextOpen(all, 3) === -1, '7 after a send: the next line not sent yet, wrapping; none left is -1');
 
 console.log(`\n${passes} ok, ${fails} failed`);
 process.exit(fails ? 1 : 0);

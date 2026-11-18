@@ -21,6 +21,8 @@ const { server } = await startDev(PORT);
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let fails = 0;
 const ok = (c, m) => { console.log((c ? ' ok   ' : ' FAIL ') + m); if (!c) fails++; };
+/* The result card docks (2026-11-17): More opens the rest of it. */
+async function openCard(page) { if (await page.isVisible('#bMore') && (await page.getAttribute('#bMore', 'aria-expanded')) !== 'true') await page.click('#bMore'); }
 
 async function run(name, viewport, mobile) {
   console.log('\n' + name);
@@ -142,12 +144,13 @@ async function run(name, viewport, mobile) {
   await page.click('#pbMore summary');
   await page.selectOption('#pbAgainst', 'over');
   await page.click('#pbRunAgainst');
-  await page.waitForSelector('#bShare', { timeout: 40000 });
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
   const ran = await L(() => window.__lastShot.result.scheme);
   ok(ran === 'over', 'Run against Fight over runs against Fight over');
   const counted = await L(() => { const e = window.__lastShot.edit.entry; const k = Object.keys(e.stats)[0]; return e.stats[k].byScheme; });
   ok(counted && counted.over && counted.over.n === 1, 'the run counts under Fight over');
   ok((await slotRev()) === revBefore, 'and the run alone writes nothing to the cloud');
+  await openCard(page);
   await page.click('#bBackBook');
   await page.waitForSelector('.prow');
   await page.waitForFunction(r => { const m = Object.entries(window.__mem).find(([k]) => k.startsWith('last_shot/b-')); return m && m[1].progress > r; }, revBefore, { timeout: 5000 });
