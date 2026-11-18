@@ -26,7 +26,12 @@ on:
     - cron: '7 17-23 * * 1'     # Monday hourly from noon Eastern (EST; 1pm in EDT)
     - cron: '7 */2 * * 2,3'     # all of Tuesday and Wednesday
     - cron: '7 0-20/2 * * 4'    # Thursday until early afternoon Eastern
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Who started it: clock (workers/clock), or blank for a person'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -58,7 +63,22 @@ jobs:
           OUT=$(node cfb/build/fantasy/next-week.mjs)
           RC=$?
           set -e
-          if [ "$RC" = "2" ]; then echo "no week to build: $OUT"; exit 0; fi
+          # THE REGULAR SEASON IS OVER: IS THE PLAYOFF OPEN? Once the bracket is set (playoff.mjs
+          # --check) and the pointer is not the Playoff yet, the build is dispatched the same way
+          # a missed week is. Before the bracket is set, and after the Playoff opens, nothing.
+          if [ "$RC" = "2" ]; then
+            KIND=$(node -e 'console.log(require("./cfb/data/fantasy/now.json").kind||"week")')
+            if [ "$KIND" = "playoff" ]; then echo "the Playoff is open."; exit 0; fi
+            set +e
+            node cfb/build/fantasy/playoff.mjs --check
+            PRC=$?
+            set -e
+            if [ "$PRC" = "3" ]; then echo "the regular season is over and the bracket is not set yet."; exit 0; fi
+            if [ "$PRC" != "0" ]; then echo "::error::could not tell whether the bracket is set"; exit 1; fi
+            echo "::warning::the bracket is set and the Playoff is not open. Dispatching the build."
+            gh workflow run cfb-fantasy-pool.yml --ref main -f write=true -f catchup=true
+            exit 0
+          fi
           if [ "$RC" != "0" ]; then echo "::error::could not work out the next week: $OUT"; exit 1; fi
           WANT=$(echo "$OUT" | head -1 | awk '{print $1" "$2}')
           LIVE=$(node -e 'const n=require("./cfb/data/fantasy/now.json");console.log(n.season+" "+n.week)')

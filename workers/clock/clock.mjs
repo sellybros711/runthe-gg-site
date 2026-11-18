@@ -55,6 +55,20 @@ export const WALL_JOBS = [
   { workflow: 'fantasy-watchdog.yml', inputs: {}, why: 'the watchdog',
     when: (ny) => at(ny, 10) && ((ny.dow === 2 && ny.h >= 9)
       || (ny.dow === 3 && ny.h % 2 === 0) || (ny.dow === 4 && ny.h % 2 === 0 && ny.h <= 18)) },
+
+  /* COLLEGE FANTASY (the College Football Agent's). The week opens Monday 11am Eastern, five
+     past so Saturday's box scores and the week's lines are in. `write` because a college build
+     dispatched without it is a dry run; `catchup` because it must never rebuild a live week
+     (cfb-fantasy-pool.yml's guard reads the pointer off main). The same run builds the Playoff
+     once the regular season is over and the bracket is set. */
+  { workflow: 'cfb-fantasy-pool.yml', inputs: { write: 'true', catchup: 'true' }, why: 'the college Monday build',
+    when: (ny) => ny.dow === 1 && ny.h === 11 && at(ny, 5) },
+  /* The college watchdog's hours, as cfb-fantasy-watchdog.yml lists them: hourly Monday from
+     noon, every two hours Tuesday and Wednesday, Thursday to mid afternoon. Never before Monday
+     noon: on Sunday the next week already reads as next. A quarter past, clear of the NFL's. */
+  { workflow: 'cfb-fantasy-watchdog.yml', inputs: {}, why: 'the college watchdog',
+    when: (ny) => at(ny, 15) && ((ny.dow === 1 && ny.h >= 12)
+      || ((ny.dow === 2 || ny.dow === 3) && ny.h % 2 === 0) || (ny.dow === 4 && ny.h % 2 === 0 && ny.h <= 14)) },
 ];
 
 /*
@@ -80,8 +94,12 @@ export function liveDue(nowMs, games) {
   return [...hits].sort();
 }
 
-/** Everything due at this instant, each workflow at most once. */
-export function due(nowMs, games) {
+/**
+ * Everything due at this instant, each workflow at most once. `cfbKicks` is the college slate's
+ * kickoffs (the `kicks` on cfb/data/fantasy/now.json, ISO strings), which wake the college live
+ * scorer the same way: twenty minutes before each, and ten after.
+ */
+export function due(nowMs, games, cfbKicks = []) {
   const ny = eastern(nowMs);
   const out = [];
   for (const j of WALL_JOBS) {
@@ -90,6 +108,10 @@ export function due(nowMs, games) {
   const kicks = liveDue(nowMs, games);
   if (kicks.length) {
     out.push({ workflow: 'fantasy-live.yml', inputs: { source: 'clock' }, why: 'kickoff ' + kicks.join(', ') });
+  }
+  const ckicks = liveDue(nowMs, (cfbKicks || []).map((k) => ({ k })));
+  if (ckicks.length) {
+    out.push({ workflow: 'cfb-fantasy-live.yml', inputs: { source: 'clock' }, why: 'college kickoff ' + ckicks.join(', ') });
   }
   return out;
 }
