@@ -52,7 +52,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install (and pyarrow, so pandas keeps its strings compact: a lineup fits the runner)
+      - name: Install, with pyarrow so pandas keeps its strings compact and a lineup fits the runner
         run: pip install -r requirements.txt pyarrow
       - name: Restore the library chunks
         uses: actions/cache/restore@v4
