@@ -237,7 +237,7 @@ function renderStats(m) {
     return '<li><span class="rd">#' + esc(r.number) + '</span><span class="ro">' + esc(C.OUTCOME_LABEL[r.outcome] || '') + '</span><span class="rs">' +
       (r.strip || []).map(function (b) { return '<i class="sq ' + esc(b) + '"></i>'; }).join('') + '</span></li>';
   }).join('');
-  $('stats-body').innerHTML =
+  $('stats-body').innerHTML = '<div class="st-hist" id="st-hist"></div>' +
     '<p class="src-tag ' + m.src + '">' + (m.src === 'account' ? 'your account' : 'this device') + '</p>' +
     '<div class="tiles">' + tile(n, 'played') + tile(shut, 'doors shut') + tile(n ? Math.round(shut / n * 100) + '%' : null, 'shut rate') +
     tile(m.streak, 'streak') + tile(m.best, 'best streak') + tile(m.avgPercentile, 'avg percentile') + '</div>' +
@@ -247,6 +247,19 @@ function renderStats(m) {
       : '<p class="quiet">no pitches graded yet.</p>') +
     (recent ? '<h3>recent</h3><ul class="recent">' + recent + '</ul>' : '') +
     (m.src === 'account' ? '<p class="quiet">kept on your account, on every device.</p>' : '<p class="quiet">kept on this device. sign in to keep it on your account.</p>');
+  renderHistRow();
+}
+/* YOUR HISTORY (Pro, history-ui.js): one row at the top of the stats sheet. Pro opens its screen; anyone
+   else reads a plain locked row that names the perk, with nothing to buy here. The gate is the
+   entitlements' pro (shutdoor_is_pro), false for everyone until Pro is live */
+function renderHistRow() {
+  var el = $('st-hist'), HU = window.STD_HISTORY_UI;
+  if (!el) return;
+  if (!HU) { el.innerHTML = ''; return; }
+  var pro = !!(ctx.ent && ctx.ent.pro && ctx.onHistory);
+  el.innerHTML = HU.rowHTML(pro);
+  var b = $('st-hist-go');
+  if (b && pro) b.addEventListener('click', function () { closeSheet(true); ctx.onHistory(); });
 }
 function showStats() {
   var A = window.STD_AUTH, st = {};
@@ -493,7 +506,7 @@ function renderMenuTiles() {
     tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
 }
 
-var ctx = { onPlate: null, hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null };
+var ctx = { onPlate: null, hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null, onHistory: null };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   open: openSheet,
@@ -503,6 +516,7 @@ var api = {
   streakOf: streakOf,
   PRINCIPLE: PRINCIPLE,
   renderAuth: renderAuth,
+  renderHistRow: renderHistRow,
   /* the past dailies live on the home's archive tab (ui.js setTab) */
   renderPast: function () { renderPast(ctx.scn); },
   show: function (which) {

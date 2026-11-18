@@ -19,13 +19,13 @@
  */
 import * as THREE from 'three';
 import { preload } from '../3d/load.js?v=12';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=28';
-import { People } from '../3d/people.js?v=62';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=29';
+import { People } from '../3d/people.js?v=63';
 import { Pitch } from '../3d/pitch.js?v=16';
 import { labPlay, motion, describe } from '../3d/play.js?v=24';
 import { FT, P, smooth } from '../3d/units.js?v=1';
-import { InPlay } from '../3d/inplay.js?v=75';
-import { crowdClock } from '../3d/crowd.js?v=5';
+import { InPlay } from '../3d/inplay.js?v=76';
+import { crowdClock } from '../3d/crowd.js?v=6';
 
 const Q = new URLSearchParams(location.search);
 const MODE = Q.get('take') === '1' ? 'take' : 'swing';   // kept for the checks' URLs (take=1)

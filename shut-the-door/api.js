@@ -11,6 +11,7 @@
  *   finishOuting(outingId)                 the result; daily and signed in, submitted once
  *   pending()                              today's finished daily not yet on the board, or null
  *   claim()                                signed in: post that daily now, once (also run on sign-in)
+ *   history(before), historyOpen(ref)      Pro: your kept dailies and Survivor runs, and one again
  *
  * All of it runs in the browser from the day's pack (data/schedule.json, then
  * data/packs/<id>.json), as every daily on the site does. The engine is pure;
@@ -261,6 +262,7 @@
   }
 
   function save(rec) {
+    if (rec.history) return;                         // a kept outing looked back on is never written
     if (rec.o.mode === 'survivor') return saveSurvivorLive(rec);
     if (rec.o.mode === 'archive') return saveArchive(rec);
     if (rec.o.mode !== 'daily') return;
@@ -270,6 +272,7 @@
   async function throwPitch(outingId, call) {
     const rec = outings[outingId];
     if (!rec) throw new Error('no such outing');
+    if (rec.history) throw new Error('that outing is over');
     // at, the free aim's point in the cell (catcher's view [u, v]), rides along for the engine to keep or refuse
     const c = Object.assign({ type: call && call.type, cell: call && call.cell }, call && call.at != null ? { at: call.at } : null);
     if (call && call.q != null) c.q = call.q;     // the release (contract.js RELEASE); absent is 1.0x
@@ -308,6 +311,7 @@
   async function finishOuting(outingId) {
     const rec = outings[outingId];
     if (!rec) throw new Error('no such outing');
+    if (rec.history) return clone(rec.result);      // a kept outing again: never posted
     const o = rec.o;
     if (o.status !== 'over') throw new Error('the outing is not over');
     if (o.mode === 'survivor') return finishSurvivor(rec);
@@ -651,6 +655,72 @@
     return Array.isArray(r) ? r : null;
   }
 
+  /* ---------------- your history (Pro, supabase/182): every kept daily and Survivor run ---------------- */
+
+  /* Days of history per page: the server holds it to 1..60. */
+  const HISTORY_DAYS = 30;
+  /* The caller's history, newest first: {signedIn, pro, items, more, oldest, offline}. items are the
+     server's rows (182) with each situation's card from the schedule (title, pitcher, year, the spot):
+       {kind: 'daily', day, number, scenarioId, card, outcome, pitches, score, percentile}
+       {kind: 'survivor', day, run, saves, points, over, spots [{index, scenarioId, card, outcome, pitches, score}]}
+     The server answers it, so pro is its gate (shutdoor_is_pro): false for everyone until Pro is
+     live, and then items is empty. Signed out: nothing is asked. No answer: offline. before is the
+     last page's oldest, for the next page. */
+  async function history(before) {
+    const none = { signedIn: !!signedInUser(), pro: false, items: [], more: false, oldest: null, offline: false };
+    if (!signedInUser()) return none;
+    const r = await ask('history', before || null, HISTORY_DAYS);
+    if (!r || typeof r !== 'object') return Object.assign(none, { offline: true });
+    if (!r.pro) return none;
+    const sch = await loadSchedule();
+    const card = (id) => (sch.packs[id] ? cardOf(sch, id) : { id });
+    const items = (Array.isArray(r.items) ? r.items : []).map((x) => x.kind === 'survivor'
+      ? { kind: 'survivor', day: x.day, run: x.run, saves: x.saves, points: x.points, over: !!x.over,
+          spots: (x.spots || []).map((e) => ({ index: e.index, scenarioId: e.scenarioId, card: card(e.scenarioId), outcome: e.outcome, pitches: e.pitches, score: e.score })) }
+      : { kind: 'daily', day: x.day, number: x.number, scenarioId: x.scenarioId, card: card(x.scenarioId), outcome: x.outcome, pitches: x.pitches, score: x.score, percentile: x.percentile });
+    return { signedIn: true, pro: true, items, more: !!r.more, oldest: r.oldest || null, offline: false };
+  }
+
+  /* One kept outing again, from its calls: {kind, day, run, index, scenario (no reveal), state, result}.
+     ref is a history item ({kind: 'daily', day}) or a Survivor spot ({kind: 'survivor', day, run, index}).
+     The calls come from the server (182) and replay on the outing's own seed (the day's for a daily,
+     modes.js survivorAt for a Survivor spot), exactly as a reload resumes and check-replays checks. The
+     result is the engine's; it opens only when it is the one the server kept (outcome, pitches, score).
+     Its own outing in memory: never saved, resumed or posted, and today's daily is never touched. Its
+     pitches play as clips (clipSpec). Throws when it cannot be shown. */
+  async function historyOpen(ref) {
+    const surv = ref && ref.kind === 'survivor';
+    if (!ref || !ref.day || (surv && !(ref.run >= 0 && ref.index >= 0))) throw new Error('not an outing');
+    if (!signedInUser()) throw new Error('sign in to see your history');
+    const r = await ask('historyOuting', ref.day, surv ? ref.run : null, surv ? ref.index : null);
+    if (!r || !Array.isArray(r.calls) || !r.calls.length) throw new Error('that outing did not load');
+    const sch = await loadSchedule();
+    if (!sch.packs[r.scenarioId]) throw new Error('no such scenario: ' + r.scenarioId);
+    const day = String(r.day).slice(0, 10);
+    let seed;
+    if (surv) {
+      const at = M.survivorAt(sch, day, r.run, r.index);
+      if (at.pack !== r.scenarioId) throw new Error('that spot is not the run\'s');
+      seed = at.seed;
+    } else seed = E.seedFor('daily', day);
+    const p = await loadPack(r.scenarioId);
+    const id = 'history:' + (surv ? 'survivor:' + day + ':' + r.run + ':' + r.index : 'daily:' + day);
+    const o = E.createOuting(p.pack, { seed, mode: surv ? 'survivor' : 'daily', model: p.model, outingId: id, rules: E.rulesOf(r.calls) });
+    for (const c of r.calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
+    if (o.status !== 'over' || o.calls.length !== r.calls.length) throw new Error('that outing does not replay');
+    const res = E.finishOuting(o);
+    if (res.outcome !== r.outcome || res.pitches !== r.pitches || res.score !== r.score) throw new Error('that outing does not replay');
+    for (const k of Object.keys(outings)) if (k.startsWith('history:')) delete outings[k];
+    outings[id] = { o, day, number: surv ? null : r.number, result: res, submitted: true, history: true };
+    const sc = clone(p.pack.scenario);
+    delete sc.reveal;
+    sc.day = day;
+    sc.number = surv ? null : r.number;
+    if (surv) sc.survivor = { run: r.run, index: r.index };
+    return { kind: surv ? 'survivor' : 'daily', day, run: surv ? r.run : null, index: surv ? r.index : null,
+      scenario: sc, state: clone(E.publicState(o)), result: clone(res) };
+  }
+
   /* ---------------- clips (clip.js): one pitch again, from the calls, never stored ---------------- */
 
   /* The clip of pitch n (1 based) of an outing this page holds: { spec, link } (the link's value,
@@ -684,7 +754,7 @@
   }
 
   const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, pending, claim,
-    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, configure, clipSpec, clip };
+    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, history, historyOpen, configure, clipSpec, clip };
   // a sign-in posts the day's finished daily by itself (the board and the result read it after)
   try {
     const A = AUTH();

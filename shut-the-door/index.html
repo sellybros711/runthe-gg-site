@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=92">
+<link rel="stylesheet" href="style.css?v=93">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -350,6 +350,7 @@ setTimeout(function () {
   </div>
   <nav class="r-nav" id="r-nav" aria-label="after the outing">
     <button class="nv" id="r-coach" type="button"><b>talk to pitching coach</b><span>your costliest pitch</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-hist-go" type="button" hidden><b>back to your history</b><span>the full list</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-vote-go" type="button" hidden><b>vote for tomorrow</b><span>pick the next spot</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-board" type="button"><b>leaderboard</b><span>where you rank</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-share" type="button"><b>share</b><span>the card or the text</span><i class="chev" aria-hidden="true"></i></button>
@@ -401,6 +402,24 @@ setTimeout(function () {
       <p class="quiet bd-note">today's daily only. ranked by score. a tie goes to whoever posted first.</p>
     </div>
     <div class="card bd-list" id="bd-list" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 6b. YOUR HISTORY (Pro, the owner 2026-11-18): every kept daily and Survivor run, newest first. Opened only
+     from its row in the stats sheet; a row opens that outing's result again. history-ui.js fills it. -->
+<section class="screen" id="s-hist" aria-labelledby="hi-head">
+  <button class="bd-back" id="hi-back" type="button"><i aria-hidden="true"></i>back</button>
+  <div class="bd-grid">
+    <div class="bd-side">
+      <div class="bd-hero hi-hero">
+        <p class="eyebrow">Pro &middot; kept on your account</p>
+        <h2 class="bd-head" id="hi-head">history</h2>
+        <div class="seam" aria-hidden="true"></div>
+        <div id="hi-sum"></div>
+      </div>
+      <p class="quiet bd-note">Every daily and Survivor run you play is kept here. Tap one to see its result and replay any pitch.</p>
+    </div>
+    <div class="card bd-list hi-list" id="hi-list" aria-live="polite"></div>
   </div>
 </section>
 
@@ -525,10 +544,10 @@ setTimeout(function () {
 <script src="breaks.js?v=1"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=2"></script>
-<script src="plate.js?v=7"></script>
-<script src="menus.js?v=30"></script>
+<script src="plate.js?v=8"></script>
+<script src="menus.js?v=31"></script>
 <script src="rng.js?v=1"></script>
-<script src="modes.js?v=4"></script>
+<script src="modes.js?v=5"></script>
 <script src="grade.js?v=21"></script>
 <script src="names.js?v=2"></script>
 <script src="lesson.js?v=7"></script>
@@ -537,23 +556,24 @@ setTimeout(function () {
 <script src="share.js?v=3"></script>
 <script src="card.js?v=6"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=12"></script>
+<script src="auth.js?v=14"></script>
 <script src="voices.js?v=6"></script>
 <script src="postgame.js?v=1"></script>
-<script src="api.js?v=39"></script>
-<script src="mock-api.js?v=26"></script>
+<script src="api.js?v=40"></script>
+<script src="mock-api.js?v=27"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=9"></script>
 <script src="modes-ui.js?v=15"></script>
 <script src="pro.js?v=2"></script>
+<script src="history-ui.js?v=2"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=3"></script>
 <script src="clip.js?v=2"></script>
 <script src="clip-ui.js?v=2"></script>
 <script src="events.js?v=3"></script>
-<script src="ui.js?v=89"></script>
-<script type="module" src="3d/boot.js?v=122"></script>
-<script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=5'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
-<script type="module">import { CLUBS, battingClub, clubNamed } from './3d/clubs.js?v=5'; window.STD_CLUBS = CLUBS; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
+<script src="ui.js?v=90"></script>
+<script type="module" src="3d/boot.js?v=123"></script>
+<script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=6'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
+<script type="module">import { CLUBS, battingClub, clubNamed } from './3d/clubs.js?v=6'; window.STD_CLUBS = CLUBS; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
 </html>
