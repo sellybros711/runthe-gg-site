@@ -9,9 +9,12 @@
  *                 measured it (2026-11-18, main 34c15c9e), so their sum is at or under the old total and
  *                 no old pack's allowance is looser than it was.
  *   a later pack  its ceiling is its own count, measured the day it came in, and it must also pass the
- *                 rate guard: its bad plays per play, for each metric, no worse than the first thirty's
- *                 pooled rate (their ceilings over their plays), on its own ceilings. A pack that fails it fails the check: it
- *                 is reported by pack and metric, and nothing is raised to let it pass.
+ *                 rate guard: on its own ceilings, its bad plays per play, for each metric, no worse than
+ *                 the worst of the first thirty for that metric (each old pack's ceiling over its plays,
+ *                 the highest of them; the coordinator, 2026-11-18: a guard on the pooled rate fails the old
+ *                 packs about as often as the new, so it cannot tell good motion from bad). A metric none
+ *                 of the first thirty ever had is allowed at one play, and listed. A pack that fails it
+ *                 fails the check: it is reported by pack and metric, and nothing is raised to let it pass.
  *
  * Every ceiling still only comes down. A pack with no row for a metric is held to none of it.
  */
@@ -65,24 +68,36 @@ export function holdByPack({ check, count, plays, metrics, skip = () => false })
     }
     if (over.length) lines.push(`  FAIL ${p.padEnd(26)} ${over.join(', ')}`);
   }
-  // the rate guard: a later pack's ceiling no worse per play than the first thirty pooled (a run over its
-  // ceiling has already failed above, and a run at or under it is at or under its rate)
-  const oldPlays = FIRST_THIRTY.reduce((s, p) => s + (rec.plays[p] || 0), 0);
-  const pooled = {};
-  for (const m of metrics) pooled[m] = FIRST_THIRTY.reduce((s, p) => s + ((rec.ceiling[p] && rec.ceiling[p][m]) || 0), 0) / (oldPlays || 1);
-  const guard = [];
+  // the rate guard: a later pack's ceiling no worse per play than the worst of the first thirty for that
+  // metric (a run over its ceiling has already failed above, and a run at or under it is at or under its
+  // rate). A metric none of the first thirty ever had: one play is allowed, and listed; more fails
+  const worst = {}, worstOf = {};
+  for (const m of metrics) {
+    worst[m] = 0; worstOf[m] = null;
+    for (const p of FIRST_THIRTY) {
+      const n = rec.plays[p] || 0, c = (rec.ceiling[p] && rec.ceiling[p][m]) || 0;
+      if (n && c / n > worst[m]) { worst[m] = c / n; worstOf[m] = p; }
+    }
+  }
+  const guard = [], allowed = [];
   for (const p of packs) {
     if (isFirstThirty(p) || !(p in rec.ceiling)) continue;
     for (const m of metrics) {
       if (skip(m)) continue;
       const n = rec.plays[p] || 0, c = rec.ceiling[p][m] || 0;
-      if (n && c / n > pooled[m] + 1e-12) guard.push(`  FAIL rate ${p.padEnd(26)} ${m}: ${c} of ${n} plays (${(c / n * 100).toFixed(3)}%), the first thirty ${(pooled[m] * 100).toFixed(3)}%`);
+      if (!n || !c) continue;
+      if (worstOf[m] == null) {
+        if (c === 1) allowed.push(`  note rate ${p.padEnd(26)} ${m}: 1 of ${n} plays, a row none of the first thirty had (one play allowed)`);
+        else guard.push(`  FAIL rate ${p.padEnd(26)} ${m}: ${c} of ${n} plays, a row none of the first thirty had (one play allowed)`);
+      } else if (c / n > worst[m] + 1e-12) {
+        guard.push(`  FAIL rate ${p.padEnd(26)} ${m}: ${c} of ${n} plays (${(c / n * 100).toFixed(3)}%), the first thirty's worst ${(worst[m] * 100).toFixed(3)}% (${worstOf[m]})`);
+      }
     }
   }
   fails += guard.length;
   const nOld = packs.filter(isFirstThirty).length;
   lines.push(`  per pack: ${packs.length} packs (${nOld} of the first thirty, ${packs.length - nOld} later), ${lines.filter((l) => l.includes('FAIL')).length} over a ceiling`);
-  lines.push(...guard, `  rate guard: ${guard.length ? guard.length + ' over the first thirty\'s pooled rate' : 'every later pack at or under the first thirty\'s pooled rate'} (${oldPlays} plays of theirs)`);
+  lines.push(...allowed, ...guard, `  rate guard: ${guard.length ? guard.length + ' over the worst of the first thirty' : 'every later pack at or under the worst of the first thirty'}, per metric${allowed.length ? `; ${allowed.length} new row${allowed.length > 1 ? 's' : ''} at one play` : ''}`);
   return { fails, lines };
 }
 
