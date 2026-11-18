@@ -287,6 +287,8 @@ function renderPast(scn) {
     '<p>' + (PRO ? 'past dailies are for pro.' : 'past dailies open later.') + ' today\'s is #' + esc(n) + '.</p>' +
     (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>') +
     (PRO ? PRO.offer('archive') : '') +
+    /* under it, both games on one bill (pro-card.js): a card in the tab the player opened, never a popup */
+    (window.STD_PRO_CARD ? window.STD_PRO_CARD.pair() : '') +
     (past ? calendar(past, false) : '');
   if (past) wireCal(past, false);
 }

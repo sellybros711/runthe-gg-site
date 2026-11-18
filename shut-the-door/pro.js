@@ -23,9 +23,13 @@
 (function () {
 'use strict';
 
-/* a copy of the catalog's cents (verify-bundles.mjs holds the two together) */
-var PRICES = { 'door-pro': 999 };
+/* a copy of the catalog's cents (verify-bundles.mjs holds the two together). Diamond Pro and the pair
+   are here so the promo card (pro-card.js) reads both prices and the saving off the catalog. */
+var PRICES = { 'door-pro': 999, 'diamond-pro': 1499, 'diamond-door-pro': 1999 };
 var BUNDLE = 'door-pro';
+/* the pair, sold from here too (its catalog row returns to /shut-the-door/): a button that says
+   data-pro-buy="diamond-door-pro" sells it, any other data-pro-buy sells BUNDLE */
+var PAIR = 'diamond-door-pro';
 var TERM = ' a year';
 var RETURN = '/shut-the-door/';
 
@@ -66,7 +70,7 @@ function say(el, msg) { if (el) el.textContent = msg; }
 
 function buy(btn) {
   if (!signedIn() || !token()) { if (ctx.signIn) ctx.signIn(); return; }
-  var err = errIn(btn);
+  var err = errIn(btn), which = btn.getAttribute('data-pro-buy') === PAIR ? PAIR : BUNDLE, was = btn.textContent;
   say(err, '');
   btn.disabled = true;
   btn.textContent = 'opening checkout...';
@@ -74,14 +78,14 @@ function buy(btn) {
   fetch('/api/stripe/checkout-bundle', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() },
-    body: JSON.stringify({ bundle: BUNDLE, return_path: RETURN, email: st.email || undefined }),
+    body: JSON.stringify({ bundle: which, return_path: RETURN, email: st.email || undefined }),
   }).then(function (r) { return r.json().catch(function () { return {}; }); }, function () { return {}; }).then(function (d) {
     if (d && d.url) { location.href = d.url; return; }
     btn.disabled = false;
-    btn.textContent = label();
+    btn.textContent = was;
     if (d && d.error === 'already_owned' && ctx.refresh) ctx.refresh();
     say(err, d && d.error === 'stripe_not_configured' ? 'pro isn\'t on sale yet. try again soon.'
-      : d && d.error === 'already_owned' ? 'this account already has pro.'
+      : d && d.error === 'already_owned' ? (which === PAIR ? 'this account already has one of the two. get pro on its own.' : 'this account already has pro.')
       : d && d.error === 'unauthorized' ? 'sign in again, then try once more.'
       : 'checkout didn\'t open. try again.');
   });
@@ -149,6 +153,6 @@ window.STD_PRO = {
   API_VERSION: 1,
   init: function (c) { for (var k in c) ctx[k] = c[k]; },
   offer: offer, billing: billing, returned: returned,
-  price: price, PRICES: PRICES, BUNDLE: BUNDLE,
+  price: price, money: money, signedIn: signedIn, PRICES: PRICES, BUNDLE: BUNDLE, PAIR: PAIR,
 };
 })();
