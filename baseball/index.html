@@ -5479,6 +5479,14 @@ const ICO_PROBALL='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" c
    price that reads as once. */
 const PRO_TERM=' a year';
 const PRO_BUNDLE='diamond-pro';
+/* THE PAIR (the owner, 2026-11-18): Run The Diamond Pro and Shut The Door Pro on one
+   yearly bill. Both prices here are copies of `cents` on the catalog rows in
+   functions/api/stripe/_bundles.js, and scripts/stripe/verify-bundles.mjs fails when
+   either drifts. Offered only to an account that holds neither half: the checkout
+   refuses it otherwise. */
+const PAIR_PRICE='$19.99';
+const PAIR_BUNDLE='diamond-door-pro';
+let stdOwned=false;       // premium_products() includes std_premium (Shut The Door Pro)
 /* The card id to the mode name the board and the server use. One spelling per
    mode on the server, which is runModeOf's. */
 const CARD_METER={era:'era',fran:'franchise',div:'division',cap:'capsurvivor',staff:'staff',trade:'trade'};
@@ -5555,7 +5563,7 @@ async function proRefresh(force){
   }catch(_){}
   /* A slower answer for an account that has since changed is dropped. */
   if(ask!==proAsked)return;
-  if(Array.isArray(prods))proOwned=prods.indexOf('rtd_premium')>=0;
+  if(Array.isArray(prods)){proOwned=prods.indexOf('rtd_premium')>=0;stdOwned=prods.indexOf('std_premium')>=0;}
   meter=st&&st.signed_in?st:null;
   paintProState();
 }
@@ -5671,6 +5679,8 @@ function proSheet(m,fresh){
       ?'Billed yearly through Stripe. It renews until you cancel, which you can do from your account any time. Classic and the daily stay free for everybody.'
       :'Pro belongs to your RunThe.GG account, so it follows you to every device you sign in on.')+'</p>'+
     '<div class="pro-cta"><button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE+PRO_TERM:'Sign in to get Pro')+'</button>'+
+      (stdOwned?'':'<button class="btn ghost" id="b-pro-pair" style="width:100%;margin-top:8px">'+
+        (signed?'Add Shut The Door Pro: both for '+PAIR_PRICE+PRO_TERM:'Sign in to get both games for '+PAIR_PRICE+PRO_TERM)+'</button>')+
       '<p class="pro-err" id="pro-err" hidden></p>'+
       '<button type="button" class="pro-later" data-close-pro>Not now</button></div>';
   wirePro(box);
@@ -5678,16 +5688,21 @@ function proSheet(m,fresh){
     if(!acctId()){closeSheet('sheet-pro');openTrophy();ga('pro_signin',{});return;}
     buyPro(e.currentTarget);
   };
+  if($('b-pro-pair'))$('b-pro-pair').onclick=e=>{
+    if(!acctId()){closeSheet('sheet-pro');openTrophy();ga('pro_signin',{bundle:PAIR_BUNDLE});return;}
+    buyPro(e.currentTarget,PAIR_BUNDLE);
+  };
   if(fresh)ga('pro_sheet_shown',{mode:m||'none',signed:signed?1:0});
 }
 function wirePro(box){box.querySelectorAll('[data-close-pro]').forEach(el=>el.onclick=()=>closeSheet('sheet-pro'));}
 
 /* One POST to the site's one checkout, verdict by the `error` field and never the
    status, the contract functions/api/stripe/checkout-bundle.js keeps on purpose. */
-async function buyPro(btn){
+async function buyPro(btn,bundle){
   const t=typeof A.token==='function'?A.token():null;
   if(!t){closeSheet('sheet-pro');openTrophy();return;}
-  ga('checkout_started',{bundle:PRO_BUNDLE,from:'baseball'});
+  const which=bundle||PRO_BUNDLE,label=btn.textContent;
+  ga('checkout_started',{bundle:which,from:'baseball'});
   const err=$('pro-err');if(err)err.hidden=true;
   btn.disabled=true;btn.textContent='Opening checkout...';
   let d={};
@@ -5695,7 +5710,7 @@ async function buyPro(btn){
     const r=await fetch('/api/stripe/checkout-bundle',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-      body:JSON.stringify({bundle:PRO_BUNDLE,return_path:'/baseball/',
+      body:JSON.stringify({bundle:which,return_path:'/baseball/',
         email:(A.state()&&A.state().email)||undefined})
     });
     d=await r.json().catch(()=>({}));
@@ -5703,11 +5718,11 @@ async function buyPro(btn){
   if(d&&d.url){location.href=d.url;return;}
   if(d&&d.error==='already_owned'){proRefresh(true);}
   btn.disabled=false;
-  btn.textContent='Get Pro for '+PRO_PRICE+PRO_TERM;
+  btn.textContent=label;
   if(err){
     err.hidden=false;
     err.textContent=d&&d.error==='stripe_not_configured'?'Pro is not on sale yet. Try again soon.'
-      :d&&d.error==='already_owned'?'This account already has Pro.'
+      :d&&d.error==='already_owned'?(which===PAIR_BUNDLE?'This account already has one of the two. Get Pro on its own.':'This account already has Pro.')
       :d&&d.error==='unauthorized'?'Sign in again, then try once more.'
       :'Checkout did not open. Try again.';
   }

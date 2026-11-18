@@ -37,6 +37,12 @@
  *                     no daily limit. Permanent. The page asks
  *                     premium_products() and the meter (rtd_mode_spend in
  *                     supabase/121_baseball_pro.sql) reads this table itself.
+ *   std_premium       Shut The Door Pro: Survivor runs with no daily limit,
+ *                     the archive of past dailies, the Diamond plate and no
+ *                     video breaks. One row whose end follows the subscription.
+ *                     The server gate is shutdoor_is_pro (supabase/181), which
+ *                     every Pro door in the game asks, so the page never
+ *                     decides it.
  *   runtour_pack      Coins + bonus packs in Run The Tour. The wallet that gets
  *                     credited (coin_wallet, runtour_wallet()) belongs to the
  *                     golf backend, so the webhook records the grant here as
@@ -165,11 +171,61 @@ export const BUNDLES = {
   'diamond-pro': {
     name: 'Run The Diamond Pro',
     envPrice: 'STRIPE_PRICE_RTD_PRO',
+    lookupKey: 'rtd_pro_year',
+    cents: 1499,
     recurring: true,
     grants: [
       { product: 'rtd_premium' },
     ],
     returnRoots: ['/baseball/'],
+    defaultReturn: '/baseball/',
+  },
+
+  /* Shut The Door Pro: the closer game's own tier, $9.99 A YEAR, renewing (the owner,
+   * 2026-11-18). The same shape as Diamond Pro: `recurring: true`, one premium_unlocks
+   * row whose end follows the subscription. It opens what supabase/160 and 178 already
+   * gate on shutdoor_is_pro (181 switches the gate on): another Survivor run whenever the
+   * last is over (only run 0 is on the board), any past daily (never on the board), the
+   * Diamond plate, and no video break between spots. The daily, the grade and the boards
+   * are the same for everybody.
+   *
+   * `cents` IS THE PRICE A PLAYER READS. The amount charged is the Stripe Price behind the
+   * env var, which setup-premium-bundles.mjs mints from this number, and the page's copy
+   * (shut-the-door/pro.js) is held to it by verify-bundles.mjs. */
+  'door-pro': {
+    name: 'Shut The Door Pro',
+    envPrice: 'STRIPE_PRICE_STD_PRO',
+    lookupKey: 'std_pro_year',
+    cents: 999,
+    recurring: true,
+    grants: [
+      { product: 'std_premium' },
+    ],
+    returnRoots: ['/shut-the-door/'],
+    defaultReturn: '/shut-the-door/',
+  },
+
+  /* Run The Diamond Pro and Shut The Door Pro together, $19.99 A YEAR, renewing (the owner,
+   * 2026-11-18). One subscription, two rows: grantRecurring writes each grant with the same
+   * end, so a renewal, a cancel or a refund moves both at once. Diamond Pro on its own
+   * does NOT include Shut The Door Pro; this is the way to have both on one bill.
+   *
+   * Sold from either game. The one bundle per account rule refuses it to anybody who holds
+   * either half right now (409 already_owned), so a Diamond Pro subscriber is never billed
+   * twice for the baseball half: the page offers them Shut The Door Pro alone instead.
+   * And because two subscriptions can now write one product, grantRecurring leaves a live
+   * row that another subscription wrote alone (webhook.js). */
+  'diamond-door-pro': {
+    name: 'Run The Diamond Pro + Shut The Door Pro',
+    envPrice: 'STRIPE_PRICE_RTD_STD_PRO',
+    lookupKey: 'rtd_std_pro_year',
+    cents: 1999,
+    recurring: true,
+    grants: [
+      { product: 'rtd_premium' },
+      { product: 'std_premium' },
+    ],
+    returnRoots: ['/baseball/', '/shut-the-door/'],
     defaultReturn: '/baseball/',
   },
 

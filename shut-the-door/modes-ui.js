@@ -212,7 +212,11 @@ function drawRun(s) {
       (entries ? '<ol class="sv-run">' + entries + '</ol>' : '');
     if (!s.over) html += '<button class="btn take sm sv-go" type="button" id="sv-go">keep going · spot ' + (s.index + 1) + '</button>';
     else if (s.canStart) html += '<button class="btn take sm sv-go" type="button" id="sv-go">start another run</button>';
-    else { var t = untilTomorrow(); html += '<p class="sv-next">run over. ' + (t ? 'the next one opens in <b>' + esc(t) + '</b>.' : 'the next one opens tomorrow.') + '</p>'; }
+    else {
+      var t = untilTomorrow(); html += '<p class="sv-next">run over. ' + (t ? 'the next one opens in <b>' + esc(t) + '</b>.' : 'the next one opens tomorrow.') + '</p>';
+      /* signed in and not Pro: the store's Get Pro block (pro.js). Pro starts another run (supabase/160, 181) */
+      if (st.signedIn && !s.pro && window.STD_PRO) html += window.STD_PRO.offer('survivor');
+    }
   }
   if (!st.signedIn) html += '<div class="bd-in"><p>sign in to put your run on the leaderboard.</p><button class="btn dk" type="button" id="sv-in">sign in</button></div>';
   el.innerHTML = html;
