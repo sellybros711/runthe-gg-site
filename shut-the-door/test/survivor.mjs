@@ -55,24 +55,24 @@ const auth = {
   async vote(d) {
     if (!S.up) return null;
     const c = M.candidates(sched, d);
-    if (!c) return { day: d, open: false, candidates: null, canVote: false, why: 'no vote for that day' };
+    if (!c) return { day: d, open: false, candidates: null, canVote: false, canChange: false, why: 'no vote for that day' };
     const mine = S.user ? (S.votes[d] || {})[S.user] || null : null;
     const w = d <= TODAY ? lock(d) : null;
     const tally = () => { const v = Object.values(S.votes[d] || {}); return { a: v.filter(x => x === c[0]).length, b: v.filter(x => x === c[1]).length }; };
-    let why = null, can = false;
+    let why = null, can = false, chg = false;
     if (d !== tomorrow) why = 'voting is closed';
     else if (!S.user) why = 'sign in to vote';
-    else if (mine) why = 'you voted';
+    else if (mine) { why = 'you voted'; chg = true; }    // 180: the vote moves until it closes
     else can = true;
-    return { day: d, open: d === tomorrow, candidates: c, myVote: mine, votes: w || mine ? tally() : null, winner: w, canVote: can, why };
+    return { day: d, open: d === tomorrow, candidates: c, myVote: mine, votes: w || mine ? tally() : null, winner: w, canVote: can, canChange: chg, why };
   },
   async voteCast(d, pack) {
     if (!S.up) return null;
     const v = await auth.vote(d);
-    if (!v.canVote && !v.myVote) return { error: v.why };
+    if (!v.canVote && !v.canChange) return { error: v.why };
     if (!v.candidates.includes(pack)) return { error: 'not a candidate' };
     S.votes[d] = S.votes[d] || {};
-    if (!S.votes[d][S.user]) S.votes[d][S.user] = pack;
+    S.votes[d][S.user] = pack;                             // one row a player: a change rewrites it
     return { data: await auth.vote(d) };
   },
   async entitlements() { return S.up ? { signedIn: !!S.user, pro: S.pro, archive: S.pro, survivorRuns: S.pro ? null : 1 } : null; },
@@ -185,9 +185,12 @@ S.locks[TODAY] = M.candidates(sched, TODAY)[1];     // the vote went to B today
   const res = await api.finishOuting(st.outingId);
   check('today\'s daily is the vote\'s B, and it posts', sc.id === S.locks[TODAY] && res.account && res.account.taken === true);
   v = await api.vote();
-  check('after the daily, the vote cast before it stands and no second is open', v.canVote === false && v.why === 'you voted' && v.myVote === v.candidates[1].id);
+  check('after the daily, the vote cast before it stands, no second vote, and it can be changed',
+    v.canVote === false && v.canChange === true && v.why === 'you voted' && v.myVote === v.candidates[1].id);
   const again = await api.castVote(v.candidates[0].id);
-  check('one vote a player: the first stands', again.myVote === v.candidates[1].id && again.votes.a === 0);
+  check('a change moves the one vote: my vote A, A 1, B 0', !again.error && again.myVote === v.candidates[0].id && again.votes.a === 1 && again.votes.b === 0);
+  const back = await api.castVote(v.candidates[1].id);
+  check('changed back: still one vote, A 0, B 1', !back.error && back.myVote === v.candidates[1].id && back.votes.a === 0 && back.votes.b === 1);
   signIn('v2');
   v = await api.vote();
   check('another player who has not played may vote too', v.canVote === true);
@@ -196,7 +199,7 @@ S.locks[TODAY] = M.candidates(sched, TODAY)[1];     // the vote went to B today
   signIn('v1');
   S.up = false;
   const off = await api.vote();
-  check('offline: the same two candidates, no vote possible', off.offline && off.candidates[1].id === v.candidates[1].id && off.canVote === false);
+  check('offline: the same two candidates, no vote and no change possible', off.offline && off.candidates[1].id === v.candidates[1].id && off.canVote === false && off.canChange === false);
   S.up = true;
 }
 

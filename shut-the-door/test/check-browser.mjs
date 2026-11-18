@@ -60,6 +60,12 @@
  *      Survivor board, one run a day and when the next opens) and the
  *      archive (only when entitlements say Pro)
  *
+ *  22. your history (Pro, history-ui.js), through the mock: the stats sheet's row is a plain locked row
+ *      that names the perk for a player who is not Pro (nothing to tap, no buy button) and a button for
+ *      Pro; nothing opens by itself; the list (newest first, every row a 38 px tap and up, no sideways
+ *      scroll) opens a daily's and a Survivor spot's result in the history mode (no share, no board,
+ *      back to the list), and its empty, failed and older states
+ *
  *  21. the live minimap: while a ball is in play on the 3D mound its runner and ball dots move frame
  *      by frame (inplay.js fieldAt, only read), and after the play they go and the lit bases are the
  *      engine's. Through the mock's walk-off, at 390x844 light and 1440x900 dark (STD_MINIMAP=1 alone)
@@ -214,6 +220,8 @@ const UNITS = [
   ['19 the voice of the ump, 375x667', 46, () => voicesWalk(375, 667)],
   ['21 the live minimap, 390x844 light', 60, () => liveMinimap(390, 844, 'light')],
   ['21 the live minimap, 1440x900 dark', 60, () => liveMinimap(1440, 900, 'dark')],
+  ['22 your history, 390x844 light', 30, () => historyWalk(390, 844, 'light')],
+  ['22 your history, 1440x900 dark', 30, () => historyWalk(1440, 900, 'dark')],
 ];
 const MINE = new Set(), DONE = [];
 const SHARD = (() => { const v = argVal('--shard'); if (!v) return { i: 0, n: 1 }; const [i, n] = v.split('/').map(Number); if (!(n >= 1 && i >= 0 && i < n && Number.isInteger(i) && Number.isInteger(n))) throw new Error('--shard I/N: I from 0 to N-1'); return { i, n }; })();
@@ -2067,9 +2075,23 @@ async function modes(w, h, full) {
   await shotM(page, 'vote');
   await page.click('#r-vote .vt-o >> nth=0');
   await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 30000 });
-  const vd = await page.evaluate(() => ({ on: document.querySelectorAll('#r-vote .vt-o.on').length, n: document.querySelectorAll('#r-vote .vt-n').length, say: document.querySelector('#r-vote .vt-say').textContent }));
-  ok(vd.on === 1 && vd.n === 2 && /It counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
+  const voteNow = () => page.evaluate(() => {
+    const bs = [...document.querySelectorAll('#r-vote .vt-o')];
+    return { on: bs.filter((b) => b.classList.contains('on')).length, n: document.querySelectorAll('#r-vote .vt-n').length,
+      say: document.querySelector('#r-vote .vt-say').textContent, mine: bs.findIndex((b) => b.classList.contains('on')),
+      tap: bs.map((b) => !b.disabled), tot: bs.reduce((s, b) => s + +b.querySelector('.vt-n b').textContent, 0) };
+  });
+  const vd = await voteNow();
+  ok(vd.on === 1 && vd.n === 2 && vd.mine === 0 && /Changed your mind\? Tap the other one\./.test(vd.say),
+    '17 a vote is cast, marked, and the count shows: "' + vd.say + '"');
+  ok(!vd.tap[0] && vd.tap[1], '17 after the vote the other one stays tappable, your own does not (180)');
   await shotM(page, 'vote-cast');
+  /* the owner (2026-11-18): a vote can be changed until it closes. The change moves the one vote */
+  await page.click('#r-vote .vt-o >> nth=1');
+  await page.waitForFunction(() => { const b = document.querySelectorAll('#r-vote .vt-o')[1]; return b && b.classList.contains('on'); }, null, { timeout: 30000 });
+  const vc = await voteNow();
+  ok(vc.on === 1 && vc.mine === 1 && vc.tot === vd.tot && vc.tap[0] && !vc.tap[1],
+    '17 a change moves the vote to the other one, the total stays ' + vd.tot + ' (' + vc.tot + ')');
   ok(errors.length === 0, '17 the vote: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 
@@ -2741,6 +2763,90 @@ async function liveMinimap(w, h, theme) {
   await ctx.close();
 }
 
+/* 22. YOUR HISTORY (Pro, the owner 2026-11-18), through the mock's switches (?mockEnt=pro, ?mockHist=). */
+async function historyWalk(w, h, theme) {
+  console.log(`\nyour history, ${w}x${h} ${theme}`);
+  step('22 your history', 120);
+  const tag = '22 ' + w + 'x' + h + ' ' + theme + ':';
+  /* not Pro: a plain locked row that names the perk, nothing to tap, no buy button */
+  {
+    const { ctx, page, errors } = await modesPage(w, h, '?mockAuth=1', { meterOff: true, theme });
+    ok(await page.evaluate(() => document.body.dataset.screen === 's-home' && document.getElementById('sheet-stats').hidden), tag + ' nothing opens by itself');
+    await page.evaluate(() => window.STD_MENUS.show('stats'));
+    await page.waitForSelector('#sheet-stats.on #st-hist .hi-row-go', { timeout: 5000 });
+    const row = await page.evaluate(() => {
+      const r = document.querySelector('#st-hist .hi-row-go');
+      return { text: r.textContent, locked: r.classList.contains('locked'), tag: r.tagName, taps: r.querySelectorAll('button, a').length, buy: /buy|\$|price|upgrade/i.test(r.textContent) };
+    });
+    ok(row.locked && row.tag === 'DIV' && row.taps === 0 && /Your history/.test(row.text) && /PRO/.test(row.text) && !row.buy, tag + ' not Pro: a plain locked row names the perk, nothing to tap, no buy button');
+    ok(errors.length === 0, tag + ' not Pro: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  /* Pro: the row is a button to the screen; the list; a daily and a Survivor spot open their results */
+  {
+    const { ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro', { meterOff: true, theme });
+    ok(await page.evaluate(() => document.body.dataset.screen === 's-home' && !document.getElementById('s-hist').classList.contains('on')), tag + ' Pro: the history does not open by itself');
+    await page.evaluate(() => window.STD_MENUS.show('stats'));
+    await page.waitForSelector('#sheet-stats.on #st-hist-go', { timeout: 5000 });
+    await page.click('#st-hist-go');
+    await page.waitForSelector('body[data-screen="s-hist"] #hi-list .hi-it', { timeout: 20000 });
+    const list = await page.evaluate(() => {
+      const its = [...document.querySelectorAll('#hi-list .hi-it')], days = [...document.querySelectorAll('#hi-list .hi-day')];
+      const order = days.map((d) => Date.parse(d.querySelector('.hi-dh').textContent + ' 2026'));
+      return { n: its.length, minH: Math.min(...its.map((b) => b.getBoundingClientRect().height)), side: document.documentElement.scrollWidth <= innerWidth + 1,
+        newest: order.every((t, i) => i === 0 || t < order[i - 1]), sheet: !document.getElementById('sheet-stats').hidden,
+        daily: !!document.querySelector('.hi-it:not(.hi-spot) .hi-kind'), spot: !!document.querySelector('.hi-run .hi-spot'),
+        score: its.every((b) => /\d/.test((b.querySelector('.hi-sc b') || {}).textContent || '')), where: its.every((b) => (b.querySelector('.hi-wh') || {}).textContent) };
+    });
+    ok(list.n > 3 && list.daily && list.spot && !list.sheet, tag + ' Pro: the list has dailies and a Survivor run (' + list.n + ' rows), the sheet closed');
+    ok(list.newest, tag + ' Pro: newest day first');
+    ok(list.minH >= 38 && list.side, tag + ' Pro: every row a ' + Math.round(list.minH) + ' px tap, no sideways scroll');
+    ok(list.score && list.where, tag + ' Pro: every row has its situation and its score');
+    const want = await page.evaluate(() => { const b = document.querySelector('.hi-it:not(.hi-spot)'); return { day: b.getAttribute('data-day'), score: b.querySelector('.hi-sc b').textContent }; });
+    await page.click('.hi-it:not(.hi-spot)');
+    await page.waitForSelector('body[data-screen="s-result"]', { timeout: 20000 });
+    await page.waitForTimeout(1600);
+    const res = await page.evaluate(() => ({ eyebrow: document.getElementById('r-eyebrow').textContent, score: document.getElementById('r-score').textContent,
+      share: document.getElementById('r-share').hidden, board: document.getElementById('r-board').hidden, back: !document.getElementById('r-hist-go').hidden,
+      vote: document.getElementById('r-vote').hidden, save: document.getElementById('r-save').hidden }));
+    ok(/^your history · /.test(res.eyebrow) && res.score === 'score ' + want.score.replace(/,/g, ''), tag + ' a daily opens its result, the score its row said (' + res.score + ')');
+    ok(res.share && res.board && res.back && res.vote && res.save, tag + ' the history result: no share, no board, no vote, no save, a row back to the list');
+    await page.click('#r-hist-go');
+    await page.waitForSelector('body[data-screen="s-hist"] #hi-list .hi-spot', { timeout: 5000 });
+    await page.click('#hi-list .hi-spot');
+    await page.waitForSelector('body[data-screen="s-result"]', { timeout: 20000 });
+    ok(/survivor · final/.test(await page.textContent('#r-eyebrow')), tag + ' a Survivor spot opens its result');
+    await page.goBack();
+    await page.waitForSelector('body[data-screen="s-hist"]', { timeout: 5000 });
+    ok(true, tag + ' back from a history result goes to the list');
+    await page.click('#hi-back');
+    await page.waitForSelector('body[data-screen="s-home"]', { timeout: 5000 });
+    ok(await page.evaluate(() => window.STD_UI.state.mode === 'daily'), tag + ' home again is today\'s');
+    ok(errors.length === 0, tag + ' Pro: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  /* the states: nothing kept, the call failed, and older outings to load */
+  for (const q of ['empty', 'fail', 'long']) {
+    const { ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro&mockHist=' + q, { meterOff: true, theme });
+    await page.evaluate(() => window.STD_MENUS.show('stats'));
+    await page.waitForSelector('#st-hist-go', { timeout: 5000 });
+    await page.click('#st-hist-go');
+    await page.waitForFunction(() => !/Loading/.test(document.getElementById('hi-list').textContent), null, { timeout: 20000 });
+    if (q === 'empty') ok(/Nothing kept yet/.test(await page.textContent('#hi-list')), tag + ' nothing kept: it says so');
+    if (q === 'fail') {
+      ok(/didn.t load/.test(await page.textContent('#hi-list')) && !!(await page.$('#hi-retry')), tag + ' the call failed: it says so, with try again');
+    }
+    if (q === 'long') {
+      const n0 = await page.$$eval('#hi-list .hi-it', (a) => a.length);
+      await page.click('#hi-more');
+      await page.waitForFunction((n) => document.querySelectorAll('#hi-list .hi-it').length > n, n0, { timeout: 20000 });
+      ok(!(await page.$('#hi-more')), tag + ' older outings load below, and the button goes when there are no more');
+    }
+    ok(errors.length === 0, tag + ' ' + q + ': no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+}
+
 /* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
    made here), the consent before the send, the send, then the owner's review: the four tabs, the
    owner's Waiting buttons, put in the game straight from waiting, Live, a reject that asks "Delete it
@@ -3111,6 +3217,8 @@ try {
   if (process.env.STD_POSTGAME === '1') { for (const t of ['light', 'dark']) { await postgame(390, 844, t); await postgame(1440, 900, t); } throw 'quick'; }
   /* STD_MINIMAP=1: only the live minimap (21) at both sizes, light and dark */
   if (process.env.STD_MINIMAP === '1') { for (const t of ['light', 'dark']) { await liveMinimap(390, 844, t); await liveMinimap(1440, 900, t); } throw 'quick'; }
+  /* STD_HISTORY=1: only your history (22) at both sizes, light and dark */
+  if (process.env.STD_HISTORY === '1') { for (const t of ['light', 'dark']) { await historyWalk(390, 844, t); await historyWalk(1440, 900, t); } throw 'quick'; }
   /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
   if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
