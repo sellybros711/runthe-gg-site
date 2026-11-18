@@ -193,7 +193,7 @@ setTimeout(function () {
         <p class="quiet bd-note">most saves in a row, then points. a held tie ends a run too.</p>
         <div class="card bd-list" id="sv-list" aria-live="polite"></div>
       </div>
-      <!-- THE ARCHIVE (Pro, CONTRACT.md 17): the past dailies. Locked for everyone until Pro exists, with no price and no buy button. -->
+      <!-- THE ARCHIVE (Pro, CONTRACT.md 17): the past dailies. Open to Pro (supabase/181); everybody else sees them locked, with Get Pro (pro.js). -->
       <div class="h-pane" id="hp-arc" role="tabpanel" aria-labelledby="hm-arc" hidden>
         <div class="card hp-arc-c"><h2 class="hp-h">past dailies</h2><div id="past-body"></div></div>
       </div>
@@ -545,7 +545,7 @@ setTimeout(function () {
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=2"></script>
 <script src="plate.js?v=5"></script>
-<script src="menus.js?v=29"></script>
+<script src="menus.js?v=31"></script>
 <script src="rng.js?v=1"></script>
 <script src="modes.js?v=2"></script>
 <script src="grade.js?v=21"></script>
@@ -556,21 +556,22 @@ setTimeout(function () {
 <script src="share.js?v=3"></script>
 <script src="card.js?v=6"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=13"></script>
+<script src="auth.js?v=14"></script>
 <script src="voices.js?v=6"></script>
 <script src="postgame.js?v=1"></script>
-<script src="api.js?v=38"></script>
-<script src="mock-api.js?v=26"></script>
+<script src="api.js?v=39"></script>
+<script src="mock-api.js?v=27"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=9"></script>
-<script src="modes-ui.js?v=13"></script>
+<script src="modes-ui.js?v=15"></script>
+<script src="pro.js?v=2"></script>
 <script src="history-ui.js?v=2"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=3"></script>
 <script src="clip.js?v=2"></script>
 <script src="clip-ui.js?v=2"></script>
 <script src="events.js?v=3"></script>
-<script src="ui.js?v=88"></script>
+<script src="ui.js?v=90"></script>
 <script type="module" src="3d/boot.js?v=119"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=3'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 <script type="module">import { CLUBS, battingClub, clubNamed } from './3d/clubs.js?v=3'; window.STD_CLUBS = CLUBS; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>

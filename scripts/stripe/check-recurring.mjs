@@ -205,5 +205,80 @@ res = await deliver('charge.refunded', { id: 'ch_once', invoice: null, amount: 9
 claim(res.status === 200 && pro().expires_at === null && !sent.some((x) => x.url.includes('/v1/invoices/')),
   'a refund of the old $9.99 one-time Pro changes nothing and asks Stripe for nothing');
 
+// ══ Shut The Door Pro, and the pair ═══════════════════════════════════════════
+/* The owner's calls of 2026-11-18: Shut The Door Pro is $9.99 a year on its own, and
+   Diamond Pro plus Shut The Door Pro is $19.99 a year, one subscription granting both
+   rtd_premium and std_premium. Every event moves both rows together, and because two
+   subscriptions can now write rtd_premium, one subscription's late news never ends a row
+   another subscription is paying for. */
+head('6. SHUT THE DOOR PRO, AND THE PAIR WITH DIAMOND PRO');
+const door = () => db.find((r) => r.product === 'std_premium');
+const subP = (o) => Object.assign({ id: 'sub_p', customer: 'cus_1', status: 'active', cancel_at_period_end: false,
+  metadata: { supabase_user_id: USER, bundle: 'diamond-door-pro' } }, o);
+const paid = (bundle, subId) => deliver('checkout.session.completed', { id: 'cs_' + subId, mode: 'subscription', payment_status: 'paid',
+  client_reference_id: USER, customer: 'cus_1', subscription: subId, metadata: { supabase_user_id: USER, bundle } });
+
+reset();
+stripeSubs.sub_d = { id: 'sub_d', customer: 'cus_1', status: 'active', current_period_end: end1, metadata: { supabase_user_id: USER, bundle: 'door-pro' } };
+res = await paid('door-pro', 'sub_d');
+claim(res.status === 200 && door() && near(door().expires_at, end1 * 1000 + 3 * DAY) && door().source === 'subscription:door-pro',
+  'Shut The Door Pro grants std_premium to the end of the year, plus three days', JSON.stringify(res) + JSON.stringify(db));
+claim(!pro(), 'and nothing of Run The Diamond');
+
+reset();
+stripeSubs.sub_p = subP({ current_period_end: end1 });
+res = await paid('diamond-door-pro', 'sub_p');
+claim(res.status === 200 && pro() && door() && near(pro().expires_at, end1 * 1000 + 3 * DAY) && near(door().expires_at, end1 * 1000 + 3 * DAY),
+  'the pair grants both games, to the same end', JSON.stringify(res) + JSON.stringify(db));
+claim(pro().source === 'subscription:diamond-door-pro' && door().payload.stripe_subscription === 'sub_p', 'both recorded against the one subscription');
+stripeSubs.sub_p = subP({ current_period_end: end2 });
+await deliver('customer.subscription.updated', subP({ current_period_end: end2 }));
+claim(near(pro().expires_at, end2 * 1000 + 3 * DAY) && near(door().expires_at, end2 * 1000 + 3 * DAY), 'a renewal moves both');
+stripeSubs.sub_p = subP({ status: 'canceled', current_period_end: end2 });
+await deliver('customer.subscription.deleted', subP({ status: 'canceled' }));
+claim(near(pro().expires_at, Date.now()) && near(door().expires_at, Date.now()), 'a cancellation ends both');
+claim(!subsTable.length, 'none of it touched the subscriptions table');
+
+reset();
+stripeSubs.sub_p = subP({ current_period_end: end1 });
+await paid('diamond-door-pro', 'sub_p');
+stripeInvoices.in_p = { id: 'in_p', subscription: 'sub_p' };
+res = await deliver('charge.refunded', { id: 'ch_pp', invoice: 'in_p', amount: 1999, amount_refunded: 1999, refunded: true });
+claim(res.status === 200 && near(pro().expires_at, Date.now()) && near(door().expires_at, Date.now())
+  && pro().payload.refunded_through === end1 && door().payload.refunded_through === end1, 'a full refund of the pair ends both, and remembers it', JSON.stringify(db));
+
+head('7. ONE SUBSCRIPTION NEVER ENDS WHAT ANOTHER IS PAYING FOR');
+/* Diamond Pro ran out, then the pair was bought. The old subscription's deletion, or a refund
+   of its old invoice, arriving now must leave the pair's rtd_premium alone. */
+reset();
+db.push({ user_id: USER, product: 'rtd_premium', source: 'subscription:diamond-pro', expires_at: new Date(Date.now() - 2 * DAY).toISOString(),
+  payload: { stripe_subscription: 'sub_1', stripe_customer: 'cus_1', status: 'past_due' } });
+stripeSubs.sub_p = subP({ current_period_end: end1 });
+await paid('diamond-door-pro', 'sub_p');
+claim(pro().source === 'subscription:diamond-door-pro' && near(pro().expires_at, end1 * 1000 + 3 * DAY),
+  'the pair takes over the lapsed Diamond Pro row', JSON.stringify(pro()));
+stripeSubs.sub_1 = sub({ status: 'canceled', current_period_end: end1 - 30 * 86400 });
+await deliver('customer.subscription.deleted', sub({ status: 'canceled' }));
+claim(near(pro().expires_at, end1 * 1000 + 3 * DAY) && pro().payload.stripe_subscription === 'sub_p',
+  'the old Diamond Pro\'s cancellation, arriving late, leaves it alone', JSON.stringify(pro()));
+stripeInvoices.in_1 = { id: 'in_1', subscription: 'sub_1' };
+await deliver('charge.refunded', { id: 'ch_old', invoice: 'in_1', amount: 1499, amount_refunded: 1499, refunded: true });
+claim(near(pro().expires_at, end1 * 1000 + 3 * DAY) && pro().payload.stripe_subscription === 'sub_p',
+  'and so does a refund of an old Diamond Pro invoice', JSON.stringify(pro()));
+stripeSubs.sub_p = subP({ status: 'canceled', current_period_end: end1 });
+await deliver('customer.subscription.deleted', subP({ status: 'canceled' }));
+claim(near(pro().expires_at, Date.now()), 'the pair\'s own cancellation still ends it');
+stripeSubs.sub_1 = sub({ current_period_end: end2 });
+await deliver('customer.subscription.updated', sub({ current_period_end: end2 }));
+claim(near(pro().expires_at, end2 * 1000 + 3 * DAY) && pro().payload.stripe_subscription === 'sub_1',
+  'and once it has ended, a paid subscription may write the row again');
+
+reset();
+db.push({ user_id: USER, product: 'rtd_premium', source: 'bundle:diamond-pro', expires_at: null, payload: {} });
+stripeSubs.sub_p = subP({ current_period_end: end1 });
+await paid('diamond-door-pro', 'sub_p');
+claim(pro().expires_at === null && near(door().expires_at, end1 * 1000 + 3 * DAY),
+  'a pair made in the dashboard for a lifetime Diamond Pro owner leaves the lifetime row alone and grants Shut The Door');
+
 console.log(`\n${fails ? fails + ' of ' + (fails + passes) + ' checks FAILED' : 'All ' + passes + ' checks passed.'}`);
 process.exit(fails ? 1 : 0);

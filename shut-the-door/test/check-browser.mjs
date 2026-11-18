@@ -2045,6 +2045,18 @@ async function modes(w, h, full) {
   await page.evaluate(() => document.querySelector('#pk-grid .plk[data-plate="diamond"]').click());   // aria-disabled: a real tap still lands
   await page.waitForTimeout(300);
   ok(await page.evaluate(() => window.STD_PLATE.current() !== 'diamond' && window.STD_MENUS.current() === 'sheet-auth'), '17 a tap on a locked Diamond wears nothing and opens nothing');
+  /* Get Pro under the grid (the store's pro.js): signed in, one POST to the one checkout, door-pro, back to the game */
+  const pkPrice = '$' + (+(/'door-pro':\s*(\d+)/.exec(fs.readFileSync(path.join(ROOT, 'shut-the-door', 'pro.js'), 'utf8')) || [0, 0])[1] / 100).toFixed(2);
+  const pkBuy = await page.evaluate(() => { const o = document.querySelector('#sheet-auth .pro-offer[data-pro-where="plate"]'), b = o && o.querySelector('[data-pro-buy]'); return b && { t: b.textContent, line: o.querySelector('p').textContent, h: b.getBoundingClientRect().height }; });
+  ok(pkBuy && pkBuy.t === 'get pro · ' + pkPrice + ' a year' && /diamond/.test(pkBuy.line) && pkBuy.h >= 38, '17 not Pro: Get Pro under the plates, at the catalog\'s price (' + JSON.stringify(pkBuy) + ')');
+  const posted = [];
+  await page.route('**/api/stripe/checkout-bundle', (r) => { posted.push({ body: r.request().postDataJSON(), auth: r.request().headers().authorization }); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ error: 'stripe_not_configured' }) }); });
+  await page.evaluate(() => { window.STD_AUTH.token = () => 'tok-check'; });
+  await page.click('#sheet-auth [data-pro-buy]');
+  await page.waitForFunction(() => /isn't on sale yet/.test((document.querySelector('#sheet-auth [data-pro-err]') || {}).textContent || ''), null, { timeout: 15000 });
+  ok(posted.length === 1 && posted[0].body.bundle === 'door-pro' && posted[0].body.return_path === '/shut-the-door/' && posted[0].auth === 'Bearer tok-check',
+    '17 Get Pro posts door-pro to the one checkout with the account token, and says when it is not on sale (' + JSON.stringify(posted) + ')');
+  ok(await page.evaluate(() => document.querySelector('#sheet-auth [data-pro-buy]').textContent) === pkBuy.t, '17 and the button reads the same again');
   await page.click('#pk-grid-tb .plk[data-plate="astrosbrick"]');
   await page.waitForFunction(() => window.STD_PLATE.current() === 'astrosbrick', null, { timeout: 30000 });
   ok(true, '17 an unlocked throwback (the 2000-2012 Astros) can be worn');
@@ -2063,9 +2075,23 @@ async function modes(w, h, full) {
   await shotM(page, 'vote');
   await page.click('#r-vote .vt-o >> nth=0');
   await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 30000 });
-  const vd = await page.evaluate(() => ({ on: document.querySelectorAll('#r-vote .vt-o.on').length, n: document.querySelectorAll('#r-vote .vt-n').length, say: document.querySelector('#r-vote .vt-say').textContent }));
-  ok(vd.on === 1 && vd.n === 2 && /It counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
+  const voteNow = () => page.evaluate(() => {
+    const bs = [...document.querySelectorAll('#r-vote .vt-o')];
+    return { on: bs.filter((b) => b.classList.contains('on')).length, n: document.querySelectorAll('#r-vote .vt-n').length,
+      say: document.querySelector('#r-vote .vt-say').textContent, mine: bs.findIndex((b) => b.classList.contains('on')),
+      tap: bs.map((b) => !b.disabled), tot: bs.reduce((s, b) => s + +b.querySelector('.vt-n b').textContent, 0) };
+  });
+  const vd = await voteNow();
+  ok(vd.on === 1 && vd.n === 2 && vd.mine === 0 && /Changed your mind\? Tap the other one\./.test(vd.say),
+    '17 a vote is cast, marked, and the count shows: "' + vd.say + '"');
+  ok(!vd.tap[0] && vd.tap[1], '17 after the vote the other one stays tappable, your own does not (180)');
   await shotM(page, 'vote-cast');
+  /* the owner (2026-11-18): a vote can be changed until it closes. The change moves the one vote */
+  await page.click('#r-vote .vt-o >> nth=1');
+  await page.waitForFunction(() => { const b = document.querySelectorAll('#r-vote .vt-o')[1]; return b && b.classList.contains('on'); }, null, { timeout: 30000 });
+  const vc = await voteNow();
+  ok(vc.on === 1 && vc.mine === 1 && vc.tot === vd.tot && vc.tap[0] && !vc.tap[1],
+    '17 a change moves the vote to the other one, the total stays ' + vd.tot + ' (' + vc.tot + ')');
   ok(errors.length === 0, '17 the vote: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 
@@ -2095,7 +2121,13 @@ async function modes(w, h, full) {
   await page.click('#hm-arc');
   await page.waitForSelector('#hp-arc.on:not([hidden])');
   const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
-  ok(!lk.list && /open later/.test(lk.t) && !/\$|price|buy|pro\b/i.test(lk.t), '17 free: the past dailies stay locked, no price and no buy button');
+  const arcBuy = await page.evaluate(() => { const b = document.querySelector('#past-body [data-pro-buy]'); return b && { t: b.textContent, h: b.getBoundingClientRect().height }; });
+  ok(!lk.list && /past dailies are for pro/.test(lk.t) && arcBuy && arcBuy.t === 'sign in to get pro' && arcBuy.h >= 38,
+    '17 free, signed out: the past dailies stay locked, with one button that asks to sign in first (' + JSON.stringify(arcBuy) + ')');
+  await page.click('#past-body [data-pro-buy]');
+  await page.waitForTimeout(200);
+  ok(await page.evaluate(() => window.STD_MENUS.current() === 'sheet-auth'), '17 free, signed out: Get Pro opens sign in, never a checkout');
+  await page.evaluate(() => window.STD_MENUS.close(true));
   const cal = await page.evaluate(() => { const c = document.getElementById('arc-cal'); return c && { shown: getComputedStyle(c).display !== 'none', open: c.querySelectorAll('.ac-d.open, button[data-day]').length, now: c.querySelectorAll('.ac-d.now[aria-current="date"]').length, wk: c.querySelectorAll('.ac-wk span').length, grid: getComputedStyle(document.querySelector('#past-body .past-grid')).display }; });
   if (w >= 980) ok(cal && cal.shown && cal.open === 0 && cal.now === 1 && cal.wk === 7 && cal.grid === 'none', '17 free on a desk: a calendar, seven weekdays, today ringed, every past day locked, the tiles hidden (' + JSON.stringify(cal) + ')');
   else ok(!cal || (!cal.shown && cal.grid !== 'none'), '17 free on a phone: the locked tiles as before, no calendar');
@@ -2136,6 +2168,7 @@ async function modes(w, h, full) {
   await page.evaluate(() => window.STD_MENUS.show('auth'));
   await page.waitForSelector('#pk-grid .plk[data-plate="diamond"]:not(.locked)', { timeout: 30000 });
   ok(await page.evaluate(() => !document.querySelector('#pk-grid .plk[data-plate="diamond"] small')), '17 Pro: Diamond is open, with no locked line');
+  ok(await page.evaluate(() => !document.querySelector('#sheet-auth [data-pro-buy]')), '17 Pro: no Get Pro under the plates');
   await page.click('#pk-grid .plk[data-plate="diamond"]');
   await page.waitForFunction(() => window.STD_PLATE.current() === 'diamond' && document.querySelector('#b-profile svg.plate.gem'), null, { timeout: 30000 });
   ok(true, '17 Pro: Diamond is worn, and the header draws the gem');
@@ -2148,6 +2181,47 @@ async function modes(w, h, full) {
   await page.waitForSelector('#s-board.on #bd-list .bd-rows svg.plate.gem', { timeout: 30000 });
   ok(true, '17 the board row wears Diamond');
   ok(errors.length === 0, '17 diamond: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* THE STORE'S BUTTONS AROUND PRO (pro.js): a finished Survivor run offers Pro to a signed in player who is not,
+     Pro gets Manage billing on the archive and no offer anywhere, and the way back from Stripe takes its flag off
+     the address and says Pro is on once entitlements answer it. Nothing opens by itself. */
+  step(tag + ' 17 pro', 200);
+  const usedRun = (pro) => () => { try { localStorage.setItem('std_mock_survivor_v1', JSON.stringify({ day: window.STD_CONTRACT.easternDay(), run: 0,
+    entries: [{ scenarioId: 'mock', outcome: 'door_shut', pitches: 9, score: 800 }, { scenarioId: 'mock', outcome: 'walk_off', pitches: 9, score: 10 }] })); } catch (e) {} };
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1'));
+  await page.evaluate(usedRun(false));
+  await page.click('#h-surv');
+  await page.waitForSelector('#hp-surv.on #sv-you .sv-next', { timeout: 30000 });
+  const svBuy = await page.evaluate(() => { const o = document.querySelector('#sv-you .pro-offer[data-pro-where="survivor"]'), b = o && o.querySelector('[data-pro-buy]'); return b && { t: b.textContent, line: o.querySelector('p').textContent, h: b.getBoundingClientRect().height }; });
+  ok(svBuy && /^get pro · \$\d+\.\d\d a year$/.test(svBuy.t) && /another run/.test(svBuy.line) && svBuy.h >= 38,
+    '17 a run that is over offers Pro for another run (' + JSON.stringify(svBuy) + ')');
+  ok(await nothingOpen(page), '17 and nothing opens by itself');
+  await shotM(page, 'pro-survivor');
+  await page.click('#hm-arc');
+  await page.waitForSelector('#hp-arc.on #past-body [data-pro-buy]');
+  await shotM(page, 'pro-archive');
+  await page.evaluate(() => window.STD_MENUS.show('auth'));
+  await page.waitForSelector('#sheet-auth [data-pro-buy]', { timeout: 30000 });
+  await page.evaluate(() => document.querySelector('#sheet-auth .pro-offer').scrollIntoView({ block: 'center' }));
+  await shotM(page, 'pro-plate');
+  ok(errors.length === 0, '17 pro, not Pro: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro&checkout=success'));
+  await page.waitForFunction(() => !/checkout=/.test(location.search), null, { timeout: 15000 });
+  ok(true, '17 back from Stripe: the checkout flag comes off the address');
+  await page.waitForFunction(() => /pro is on/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
+  ok(true, '17 and once entitlements answer Pro, the page says so');
+  await page.evaluate(usedRun(true));
+  await page.click('#h-surv');
+  await page.waitForSelector('#hp-surv.on #sv-go', { timeout: 30000 });
+  ok(await page.evaluate(() => !document.querySelector('#sv-you [data-pro-buy]') && document.getElementById('sv-go').textContent === 'start another run'),
+    '17 Pro: a finished run starts another, with no offer');
+  await page.click('#hm-arc');
+  await page.waitForSelector('#hp-arc.on #past-body [data-pro-billing]', { timeout: 30000 });
+  ok(await page.evaluate(() => !document.querySelector('#past-body [data-pro-buy]') && !!document.querySelector('#past-body .arc-list, #arc-cal')),
+    '17 Pro: the archive opens, with Manage billing and no offer');
+  ok(errors.length === 0, '17 pro: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 
   /* Survivor */
