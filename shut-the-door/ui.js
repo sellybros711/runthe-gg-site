@@ -2314,7 +2314,7 @@ function playArchive(day) {
       pbp('archive', '#' + scn.number + '. ' + batterAt(st.batterIndex).name + ' leads off.');
     });
   }).catch(function (e) {
-    toast(e && /for Pro/.test(e.message || '') ? 'past dailies open later.' : 'that day didn\'t load. try again.');
+    toast(e && /for Pro/.test(e.message || '') ? 'past dailies are for pro.' : 'that day didn\'t load. try again.');
     if (window.console) console.warn(e);
   });
 }
@@ -2982,6 +2982,21 @@ function boot() {
   window.addEventListener('std-clubs', function () { if (S.scn && document.body.dataset.screen === 's-mound') setPitcher(); });
 
   if (MU) MU.entitlements().then(proPlate);
+  /* the store's buy button and the way back from Stripe (pro.js): a new answer repaints every Pro door */
+  if (window.STD_PRO) {
+    window.STD_PRO.init({
+      signIn: function () { MN.show('auth'); },
+      toast: toast,
+      refresh: function () {
+        return MU ? MU.entitlements().then(function (e) {
+          proPlate(e);
+          if (document.body.dataset.screen === 's-home' && tab === 'surv') MU.showSurvivor();
+          return e;
+        }) : null;
+      },
+    });
+    window.STD_PRO.returned();
+  }
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
     S.dailyScn = scn;

@@ -775,7 +775,7 @@ function schedule() {
 function addDay(d, n) { return new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
 function voteShape(day) {
   var M = window.STD_MODES, today = C.easternDay(), tmrw = addDay(today, 1);
-  var none = { day: day, open: false, candidates: [], myVote: null, votes: null, winner: null, canVote: false, why: 'no vote for that day', offline: false };
+  var none = { day: day, open: false, candidates: [], myVote: null, votes: null, winner: null, canVote: false, canChange: false, why: 'no vote for that day', offline: false };
   if (!VOTE_MODE || !M) return Promise.resolve(none);
   if (day === today && VOTE_MODE !== 'locked') return Promise.resolve(none);
   if (day === tmrw && VOTE_MODE === 'locked') return Promise.resolve(none);
@@ -790,6 +790,7 @@ function voteShape(day) {
       open: true, candidates: cards, myVote: mine,
       votes: mine ? { a: 41 + (mine === ids[0] ? 1 : 0), b: 56 + (mine === ids[1] ? 1 : 0) } : null,
       canVote: !mine && signedIn(),
+      canChange: !!mine && signedIn(),
       why: mine ? 'you voted' : !signedIn() ? 'sign in to vote' : null,
     });
   });
@@ -800,7 +801,7 @@ function castVote(id) {
   var tmrw = addDay(C.easternDay(), 1);
   return voteShape(tmrw).then(function (v) {
     if (!signedIn()) return Object.assign(v, { error: 'sign in to vote' });
-    if (!v.canVote) return Object.assign(v, { error: v.why || 'voting is closed' });
+    if (!v.canVote && !v.canChange) return Object.assign(v, { error: v.why || 'voting is closed' });
     if (!v.candidates.some(function (c) { return c.id === id; })) return Object.assign(v, { error: 'not a candidate' });
     MY_VOTE = id;
     return voteShape(tmrw);

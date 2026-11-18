@@ -33,6 +33,9 @@ name: Shut The Door checks
 #              178_shut_the_door_plates_more.sql (the throwback plates, Diamond for Pro) twice and its test; then
 #              179_shut_the_door_thirteen_clubs.sql (a situation for each of the 13 clubs that had none),
 #              from a clean vote slate, twice and its test
+#              180_shut_the_door_vote_change.sql (a vote can be changed until it closes) twice and its test
+#              101 and 142 (the store's premium_unlocks), then 181_shut_the_door_pro.sql (Pro on sale,
+#              a real std_premium row honoured) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -228,3 +231,17 @@ jobs:
           $P -f supabase/179_shut_the_door_thirteen_clubs.sql
           $P -f supabase/179_shut_the_door_thirteen_clubs.sql
           $P -f supabase/test/shut_the_door_thirteen_clubs_test.sql
+      - name: 180 applied twice, then its test (a vote can be changed until it closes)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/180_shut_the_door_vote_change.sql
+          $P -f supabase/180_shut_the_door_vote_change.sql
+          $P -f supabase/test/shut_the_door_vote_change_test.sql
+      - name: 181 applied twice, then its test (Pro on sale, a std_premium row opens every Pro perk)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/101_premium_bundles.sql
+          $P -f supabase/142_hoops_pass.sql
+          $P -f supabase/181_shut_the_door_pro.sql
+          $P -f supabase/181_shut_the_door_pro.sql
+          $P -f supabase/test/shut_the_door_pro_test.sql
