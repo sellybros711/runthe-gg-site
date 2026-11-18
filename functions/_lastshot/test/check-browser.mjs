@@ -188,7 +188,114 @@ async function feel(name, viewport, mobile) {
   await ctx.close();
 }
 
+/* THE LAUNCH FIXES (2026-11-17): the court takes the stage while a play
+   runs, the card docks under the ball, every control is at least 44 by 44,
+   the sheets close on Escape and on a screen change, reduced motion holds. */
+const TARGETS = () => [...document.querySelectorAll('button, a[href], summary, [role=button], select, input:not([type=hidden])')]
+  .filter(e => e.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && e.getClientRects().length)
+  .map(e => { const r = e.getBoundingClientRect(); return { id: e.id || e.className || e.tagName, w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10 }; })
+  .filter(t => t.w < 44 || t.h < 44);
+async function launch(name, viewport, mobile) {
+  console.log('\nthe launch fixes, ' + name);
+  for (const reduce of [false, true]) {
+    const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, hasTouch: mobile, isMobile: mobile, reducedMotion: reduce ? 'reduce' : 'no-preference' });
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
+    page.on('pageerror', e => errs.push(String(e)));
+    await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+    setWho('dev');
+    await page.goto(base + '/last-shot');
+    await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
+    await page.reload();
+    await page.waitForFunction(() => window.__lastShot && window.__lastShot.view && window.__lastShot.dayState !== 'loading');
+    const tag = reduce ? ' (reduced motion)' : '';
+    if (!reduce) {
+      let small = await page.evaluate(TARGETS);
+      ok(small.length === 0, 'home: every control is 44 by 44 or more' + (small.length ? ': ' + JSON.stringify(small) : ''));
+      // How it works: Escape closes it, and so does going to another screen
+      await page.click('#hHow');
+      ok(await page.isVisible('#howSheet'), 'How it works opens on a tap');
+      await page.keyboard.press('Escape');
+      ok(await page.isHidden('#howSheet'), 'Escape closes How it works');
+      await page.click('#hHow');
+      await page.evaluate(() => window.__lastShot.openLadder());
+      ok(await page.isHidden('#howSheet') && await page.isVisible('#vLadder'), 'a screen change closes How it works');
+      await page.evaluate(() => window.__lastShot.home());
+      ok(await page.isHidden('#howSheet') && await page.isVisible('#vHome'), 'and it is not open over Home');
+    }
+    await page.click('#hPlay', { force: true });
+    await page.waitForSelector('#board', { state: 'visible' });
+    if (!reduce) {
+      const small = await page.evaluate(TARGETS);
+      ok(small.length === 0, 'the clipboard: every control is 44 by 44 or more' + (small.length ? ': ' + JSON.stringify(small) : ''));
+      // Plays: Escape closes it; going home closes it
+      await page.click('#bPlays');
+      ok(await page.isVisible('#playsSheet'), 'Plays opens');
+      await page.keyboard.press('Escape');
+      ok(await page.isHidden('#playsSheet'), 'Escape closes Plays');
+      await page.click('#bPlays');
+      await page.evaluate(() => window.__lastShot.home());
+      ok(await page.isHidden('#playsSheet') && await page.isVisible('#vHome'), 'going home closes Plays');
+      await page.click('#hPlay', { force: true });
+      await page.waitForSelector('#board', { state: 'visible' });
+    }
+    const stage0 = (await page.locator('#stage').boundingBox()).height;
+    await goAt(page, 6);
+    const win = await seedFor(page, 'make');
+    await page.evaluate(s => window.__lastShot.run(s), win);
+    await page.waitForFunction(() => window.__lastShot.phase === 'play', null, { timeout: 5000 });
+    await page.waitForTimeout(600);
+    const st = await page.locator('#stage').boundingBox();
+    const hidden = await page.evaluate(() => ['tools', 'actions', 'goRow'].every(id => !document.getElementById(id).checkVisibility()));
+    ok(st.height > stage0 + 100 && hidden, 'a run gives the court the clipboard\'s rows: the stage ' + Math.round(stage0) + ' to ' + Math.round(st.height) + ' px' + tag);
+    ok(await page.isVisible('.score') && await page.isVisible('#clock'), 'the scoreboard stays' + tag);
+    const v1 = await page.evaluate(() => window.__lastShot.courtView());
+    const full = Math.min((st.width - 24) / 50, (st.height - 24) / 47);
+    ok(v1.s >= full - 0.01 && (!mobile || v1.s > full * 1.2), 'the court is as big as the stage allows: ' + v1.s.toFixed(1) + ' px a foot, the whole court fit ' + full.toFixed(1) + tag);
+    if (!reduce) await (SHOTS && page.screenshot({ path: SHOTS + '/' + name + '-1-run-mid.png' }));
+    await page.waitForTimeout(500);
+    const v2 = await page.evaluate(() => window.__lastShot.courtView());
+    if (reduce) ok(v1.s === v2.s && v1.ox === v2.ox && v1.oy === v2.oy, 'reduced motion: the camera holds still');
+    // the ball drops with no card on it, under GAME WINNER, then the card docks below the rim
+    await page.waitForFunction(() => window.__lastShot.phase === 'after', null, { timeout: 30000 });
+    ok(!(await page.evaluate(() => document.getElementById('sheet').classList.contains('on'))), 'no card while the ball plays out' + tag);
+    await page.waitForSelector('#big:not([hidden])', { timeout: 10000 });
+    await page.waitForTimeout(reduce ? 100 : 300);
+    ok(!(await page.evaluate(() => document.getElementById('sheet').classList.contains('on'))) && (await page.textContent('#big')) === 'GAME WINNER', 'GAME WINNER over the court, the card not up yet' + tag);
+    if (!reduce) await (SHOTS && page.screenshot({ path: SHOTS + '/' + name + '-2-ball-drop.png' }));
+    await page.waitForSelector('#sheet.on', { timeout: 15000 });
+    await page.waitForTimeout(reduce ? 100 : 700);
+    const card = await page.locator('#card').boundingBox(), V = await page.evaluate(() => window.__lastShot.courtView());
+    const court = await page.locator('#court').boundingBox();
+    const rimY = court.y + V.oy + 5.25 * V.s, dropY = court.y + V.oy + (5.25 + 3) * V.s;
+    ok(card.y > dropY, 'the docked card sits under the ball: the rim at ' + Math.round(rimY) + ', the card from ' + Math.round(card.y) + tag);
+    ok(await page.evaluate(() => document.getElementById('sheet').classList.contains('peek')) && card.height < st.height * 0.5, 'no veil over the court, and the card is small: ' + Math.round(card.height) + ' px' + tag);
+    ok(await page.isVisible('#bReplay') && await page.isHidden('#bShare'), 'Run it again first, the rest one tap away' + tag);
+    if (!reduce) {
+      await (SHOTS && page.screenshot({ path: SHOTS + '/' + name + '-3-result-card.png' }));
+      let small = await page.evaluate(TARGETS);
+      ok(small.length === 0, 'the docked card: every control is 44 by 44 or more' + (small.length ? ': ' + JSON.stringify(small) : ''));
+      await page.click('#bMore');
+      small = await page.evaluate(TARGETS);
+      ok(small.length === 0 && await page.isVisible('#bSeed'), 'the whole card: every control is 44 by 44 or more' + (small.length ? ': ' + JSON.stringify(small) : ''));
+      await (SHOTS && page.screenshot({ path: SHOTS + '/' + name + '-4-result-more.png' }));
+      await page.keyboard.press('Escape');
+      ok(await page.isHidden('#bShare') && await page.isVisible('#bReplay'), 'Escape docks the card again');
+    } else {
+      await page.click('#bMore');
+      ok(await page.isVisible('#bShare'), 'reduced motion: More opens the card');
+    }
+    await page.click('#bBack');
+    ok(await page.isVisible('#board') && await page.isVisible('#tools') && await page.isHidden('#sheet'), 'Back to Clipboard brings the rows back' + tag);
+    ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
+    await ctx.close();
+  }
+}
+
 try {
+  await launch('phone', { width: 390, height: 844 }, true);
+  await launch('desktop', { width: 1440, height: 900 }, false);
   await feel('phone', { width: 390, height: 844 }, true);
   await feel('desktop', { width: 1440, height: 900 }, false);
   console.log('\ntap to result: ' + TIMES.join(' · '));
@@ -259,7 +366,10 @@ try {
   const clock = Number(await page.textContent('#clock'));
   ok(clock < 22 && clock > 0, 'the clock is running in tenths: ' + clock);
   if (SHOTS) await page.screenshot({ path: SHOTS + '/last-shot-live.png' });
-  await page.waitForSelector('#bShare', { timeout: 40000 });
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
+  ok(await page.isHidden('#bShare') && await page.isVisible('#bReplay') && await page.isVisible('#bBack') && (await page.textContent('#bMore')) === 'More', 'the card docks: Run it again and Back to Clipboard, the rest behind More');
+  await page.click('#bMore');
+  ok(await page.isVisible('#bShare') && await page.isVisible('#bSavePlay') && await page.isVisible('#bBeat') && (await page.textContent('#bMore')) === 'Less', 'More opens Share, Save this play and Beat my play');
   const verdict = await page.textContent('.verdict');
   ok(/^(WINNER|LOSE)$/.test(verdict), 'a verdict: ' + verdict);
   ok(/^\d+-\d+$/.test(await page.textContent('#card .finalscore')), 'a final score');
@@ -282,8 +392,8 @@ try {
   ok(again.outcome === first.outcome && again.reason === first.reason && again.shotAt === first.shotAt, 'deterministic in the browser');
 
   await page.click('#bReplay');
-  await page.waitForSelector('#bShare', { timeout: 40000 });
-  ok(true, 'Replay runs the same play again');
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
+  ok(await page.isVisible('#bReplay'), 'Replay runs the same play again');
   await page.click('#bBack');
   ok(await page.isVisible('#board') && !(await page.isVisible('#court')), 'Back to Clipboard shows the clipboard');
   const kept = await page.evaluate(() => window.__lastShot.play.steps.length);
