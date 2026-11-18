@@ -3299,8 +3299,8 @@
       "sha": "b2970890cdd43dc7"
     },
     "auth.js": {
-      "v": "12",
-      "sha": "878ed315b47cebf5"
+      "v": "13",
+      "sha": "1d5ead4d83e66a46"
     },
     "voices.js": {
       "v": "6",
@@ -3311,8 +3311,8 @@
       "sha": "fedfba1872eb4e2a"
     },
     "api.js": {
-      "v": "37",
-      "sha": "602880a846c4c91e"
+      "v": "38",
+      "sha": "c02a4ad2b4098c2a"
     },
     "mock-api.js": {
       "v": "25",

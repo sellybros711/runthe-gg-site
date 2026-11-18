@@ -30,7 +30,8 @@ name: Shut The Door checks
 #              177_shut_the_door_ump_shortlist.sql (a tester shortlists, the owner puts it live) twice and its test; then
 #              162_shut_the_door_plates.sql (the boards 166 builds on), then
 #              166_shut_the_door_board_stats.sql (the stat line on the boards) twice and its test; then
-#              178_shut_the_door_plates_more.sql (the throwback plates, Diamond for Pro) twice and its test
+#              178_shut_the_door_plates_more.sql (the throwback plates, Diamond for Pro) twice and its test; then
+#              182_shut_the_door_history.sql (your history, a Pro perk) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -79,6 +80,8 @@ jobs:
         run: node shut-the-door/test/modes.mjs
       - name: The vote, Survivor, the archive and the Pro gate through the page's calls
         run: node shut-the-door/test/survivor.mjs
+      - name: Your history (Pro) through the page's calls, and an outing rebuilt to its kept result
+        run: node shut-the-door/test/history.mjs
       - name: The lesson
         run: node shut-the-door/test/lesson.mjs
       - name: Every scenario names both real clubs (never "us" or "them")
@@ -219,3 +222,9 @@ jobs:
           $P -f supabase/178_shut_the_door_plates_more.sql
           $P -f supabase/178_shut_the_door_plates_more.sql
           $P -f supabase/test/shut_the_door_plates_more_test.sql
+      - name: 182 applied twice, then its test (your history, Pro only, your own rows only)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/182_shut_the_door_history.sql
+          $P -f supabase/182_shut_the_door_history.sql
+          $P -f supabase/test/shut_the_door_history_test.sql
