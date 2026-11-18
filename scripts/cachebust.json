@@ -3355,14 +3355,14 @@
       "sha": "19c20ebdbe539752"
     },
     "3d/boot.js": {
-      "v": "120",
-      "sha": "3d820dd22591aa95"
+      "v": "121",
+      "sha": "0fa81f022fab7d55"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "104",
-      "sha": "45b5a083e2c143bc"
+      "v": "105",
+      "sha": "b1c7f5003cb5f731"
     }
   },
   "soccer/index.html": {
@@ -3485,8 +3485,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "121",
-      "sha": "137520d63e35e13c"
+      "v": "122",
+      "sha": "fcccc3155840777c"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3563,8 +3563,8 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "73",
-      "sha": "03e11d4f9e587bac"
+      "v": "74",
+      "sha": "b24a2608848f710d"
     },
     "preview.js": {
       "v": "14",
@@ -3693,8 +3693,8 @@
       "sha": "a197e1759f72a732"
     },
     "shade-data.js": {
-      "v": "6",
-      "sha": "44e1b2c6d37fce29"
+      "v": "7",
+      "sha": "03830b2e429f0c46"
     },
     "fielders.js": {
       "v": "16",

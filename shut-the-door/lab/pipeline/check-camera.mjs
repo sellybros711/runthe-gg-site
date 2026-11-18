@@ -38,7 +38,7 @@
  *   mid-throw a cut while a throw is in the air (its target still unseen), past the first 30% of its
  *            flight (a cut just after the release, when the shot before has its moment then, goes to a
  *            shot that holds the ball in the air)
- * Each is counted as the plays that have one, held to CEILING: a ceiling that only comes down.
+ * Each is counted as the plays that have one, held per pack (held-packs.mjs): ceilings that only come down.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,6 +47,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
 import { selection, holding, capStr, openCheckpoint, pinDay, flagVal, writeShard, readShards } from './checkpoint.mjs';
+import { holdByPack, measured, packId, PACK_CEILINGS } from './held-packs.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -69,7 +70,13 @@ const LIM = { WHIP_DEG: 1.0, ANG_JERK: 0.1, POS_JERK: 0.5, FOV_JERK: 0.02, MIN_S
 // coverage, not a regression: the 110,256 new plays come in at a lower rate (whip 0.45% of plays against
 // 0.55%, jerk 0.08% against 0.15%). Whip and jerk recorded once at the full set's measured counts, on the
 // coordinator's decision. Lost stays at 7.
+// Held per pack since 2026-11-18 (held-packs.mjs, pack-ceilings.json 'camera'): the first thirty at their own
+// counts as main measured them, each later pack at its own and the rate guard. away is counted, not held. The
+// numbers in CEILING are the totals held before, kept for the record: only its metrics are read now.
 const CEILING = { whip: 755, jerk: 141, lost: 7, short: 0, 'mid-throw': 0, away: Infinity };
+const METRICS = Object.keys(CEILING).filter((w) => CEILING[w] !== Infinity);
+const REC = (PACK_CEILINGS.camera || { ceiling: {} }).ceiling;
+const TOTAL = Object.fromEntries(Object.keys(CEILING).map((w) => [w, CEILING[w] === Infinity ? Infinity : Object.values(REC).reduce((a, q) => a + (q[w] || 0), 0)]));
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }
@@ -238,12 +245,20 @@ let fails = 0;
 console.log('\nplays with a miss');
 for (const w of Object.keys(CEILING)) {
   const m = rows.filter((r) => r.miss && r.miss[w]);
-  const cap = HOLD.cap(CEILING[w]), over = m.length > cap;
-  if (over) fails += Math.ceil(m.length - cap);
+  // (held: the totals against the packs' ceilings in all, each pack held below; a sample at their rate)
+  const cap = HOLD.cap(TOTAL[w]), over = m.length > cap;
+  if (over && HOLD.mode !== 'held') fails += Math.ceil(m.length - cap);
   const byCam = {};
   for (const r of m) { const c2 = r.miss[w].cam || r.miss[w].to || '-'; byCam[c2] = (byCam[c2] || 0) + 1; }
   console.log(`  ${over ? 'FAIL' : 'ok  '} ${w.padEnd(9)} ${String(m.length).padStart(6)} of ${cases.length}${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  ${JSON.stringify(byCam)}`);
   for (const r of m.slice(0, SHOW)) console.log('     ', r.tag, JSON.stringify(r.miss[w]), '|', r.edit);
+}
+{
+  const count = {}, plays = {};
+  for (const c of cases) { const p = packId(c.pack); plays[p] = (plays[p] || 0) + 1; }
+  for (const r of rows) if (r.miss) { const p = packId(r.tag.split(' ')[0]); for (const w of METRICS) if (r.miss[w]) { const q = (count[p] ||= {}); q[w] = (q[w] || 0) + 1; } }
+  if (HOLD.mode === 'held') { const h = holdByPack({ check: 'camera', count, plays, metrics: METRICS }); fails += h.fails; for (const l of h.lines) console.log(l); }
+  if (process.env.PACK_CEILING) fs.writeFileSync(process.env.PACK_CEILING, JSON.stringify(measured(count, plays, METRICS)));
 }
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
