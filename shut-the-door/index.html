@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=97">
+<link rel="stylesheet" href="style.css?v=98">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -178,9 +178,6 @@ setTimeout(function () {
           <div class="hb-body" id="h-top-body" aria-live="polite"></div>
           <button class="btn ghost hb-all" id="h-top-all" type="button" data-open="board">full leaderboard</button>
         </div>
-        <!-- PRO (the owner's pick, direction A, 2026-11-18): a card under the top 3 for anybody who is not Pro,
-             drawn once the entitlements answer (ui.js proPlate, pro-card.js). It sits in the page and opens nothing. -->
-        <div class="h-pro" id="h-pro" hidden></div>
         <!-- THE VOTE FOR TOMORROW (164): from the home, played today or not. The result's block, drawn
              quiet (modes-ui.js voteBlock). It opens nothing; signed out it shows the two and the sign-in button. -->
         <section class="r-tile r-vote h-vote" id="h-vote" aria-live="polite" hidden></section>
@@ -214,6 +211,11 @@ setTimeout(function () {
         <button type="button" data-open="voice" id="h-voice"><i class="mi tl-i hot" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8.5" y="3" width="7" height="11" rx="3.5"/><path d="M11 7.4h2M11 10.4h2M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M8.5 21h7"/></svg></i><span class="tl-t"><span>Voice of the ump</span><small class="tl-s">Record your voice. Be the ump!</small></span></button>
       </nav>
     </div>
+    <!-- PRO (the owner's pick, direction A, 2026-11-18): a card at the foot of the home, just above the footer
+         (the owner, 2026-11-18: moved down from under the top 3), for anybody who is not Pro, drawn once the
+         entitlements answer (ui.js proPlate, pro-card.js). It sits in the page and opens nothing. On a desk
+         desk.js moves it under the columns as the slim bar. -->
+    <div class="h-pro" id="h-pro" hidden></div>
     <footer class="legal">
       <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=2" alt="Shut The Door" width="96" height="96">
       <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=2" alt="" width="96" height="96">

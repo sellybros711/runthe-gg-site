@@ -2210,6 +2210,19 @@ async function modes(w, h, full) {
   ok(top.plates.length === 3 && top.plates.every((p) => p && p.w >= 20 && p.w <= 28 && /^[A-Z0-9]{1,2}$/.test(p.t)), '17 each top 3 row wears its plate with initials, about 24 px (' + JSON.stringify(top.plates) + ')');
   ok(await noSideScroll(page), '17 the top 3 leaves no sideways scroll');
   await shotM(page, 'daily-top3');
+  /* the Pro card on a phone (the owner, 2026-11-18): at the very foot of the home, after the menu and just
+     above the footer, on every tab; no longer under the top 3. A desk has the bar under its columns (23) */
+  if (w < 980) {
+    await page.waitForSelector('#h-pro:not([hidden]) .pc-card', { timeout: 30000 });
+    const foot = await page.evaluate(() => { const p = document.getElementById('h-pro'), r = p.getBoundingClientRect(), m = document.getElementById('h-menu').getBoundingClientRect(),
+      t = document.getElementById('h-top').getBoundingClientRect(), f = document.querySelector('#h-side > .legal');
+      return { up: p.parentElement.id, after: (p.previousElementSibling || {}).id, next: p.nextElementSibling === f, belowMenu: r.top >= m.bottom, belowTop: r.top > t.bottom,
+        gap: Math.round(f.getBoundingClientRect().top - r.bottom), inPane: !!p.closest('.h-pane') }; });
+    ok(foot.up === 'h-side' && foot.after === 'h-menu' && foot.next && foot.belowMenu && foot.belowTop && !foot.inPane && foot.gap >= 0 && foot.gap <= 40,
+      '17 on a phone the Pro card is at the foot of the home, after the menu and just above the footer (' + JSON.stringify(foot) + ')');
+    await page.evaluate(() => document.getElementById('h-pro').scrollIntoView({ block: 'end' }));
+    await shotM(page, 'pro-foot');
+  }
   await page.click('#h-top-all');
   await page.waitForSelector('#s-board.on #bd-list .bd-rows', { timeout: 30000 });
   ok(await nothingOpen(page), '17 full leaderboard opens the day\'s board, and no sheet');
@@ -2463,7 +2476,7 @@ async function deskHome(w, h, theme) {
       go: up('h-go'), top: up('h-top'), vote: up('h-vote'), pro: up('h-pro'), menu: up('h-menu'), sv: !!document.querySelector('#hp-surv > .sv-hero'), arc: !!document.querySelector('#hp-arc > .hp-arc-c:not(.d-arc)'),
       legal: !!document.querySelector('#h-side > .legal'), card: !!document.querySelector('#h-pro .pc-card'), bar: !!document.querySelector('.pb-bar'), cls: document.body.classList.contains('std-desk'),
       tabs: getComputedStyle(document.getElementById('h-modes')).display !== 'none', sw: document.documentElement.scrollWidth <= innerWidth + 1 }; });
-  ok(!P.made.length && P.sit && P.go === 'hp-daily' && P.top === 'hp-daily' && P.vote === 'hp-daily' && P.pro === 'hp-daily' && P.menu === 'h-side' && P.sv && P.arc && P.legal && P.card && !P.bar && !P.cls && P.tabs && P.sw,
+  ok(!P.made.length && P.sit && P.go === 'hp-daily' && P.top === 'hp-daily' && P.vote === 'hp-daily' && P.pro === 'h-side' && P.menu === 'h-side' && P.sv && P.arc && P.legal && P.card && !P.bar && !P.cls && P.tabs && P.sw,
     '23 ' + tag + ' to 390: every node is back where the phone has it, the tabs and the Pro card again (' + JSON.stringify(P) + ')');
   await page.setViewportSize({ width: w, height: h });
   await page.waitForFunction(() => window.STD_DESK.on() && document.querySelector('.d-l #d-surv #sv-go') && document.querySelector('#h-pro .pb-bar'), null, { timeout: 3000 });
