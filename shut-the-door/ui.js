@@ -21,6 +21,11 @@
 var C = window.STD_CONTRACT, API = window.STD_API, M = window.STD_MOUND, AN = window.STD_ANIM, MN = window.STD_MENUS;
 /* the modes around the daily (modes-ui.js): the save, the vote, Survivor, the archive */
 var MU = window.STD_MODES_UI || null;
+/* the home on a desk (desk.js): Survivor and the archive both on screen, the Pro card as the bar */
+var DESK = window.STD_DESK || null;
+function desk() { return !!(DESK && DESK.on()); }
+/* a mode's panel is on screen: its tab is the open one, or the desk shows every mode at once */
+function showing(t) { return tab === t || desk(); }
 /* your history (history-ui.js): the Pro perk's screen */
 var HU = window.STD_HISTORY_UI || null;
 /* the welcome to Pro (pro-welcome.js): once, after a checkout comes back and Pro lands */
@@ -2102,7 +2107,7 @@ function paintProfile() {
 function proPlate(e) {
   MN.init({ ent: e });
   paintProCard(e);
-  if (tab === 'arc') MN.renderPast();
+  if (showing('arc')) MN.renderPast();
   if (MN.current() === 'sheet-stats') MN.renderHistRow();
   if (window.STD_PLATE) {
     window.STD_PLATE.setPro(e && e.pro);
@@ -2111,11 +2116,14 @@ function proPlate(e) {
   }
 }
 /* THE PRO CARD (pro-card.js) under today's top 3: once the entitlements answer, and only while they say
-   not Pro. Repainted with them, so signing in or buying takes it away. */
+   not Pro. Repainted with them, so signing in or buying takes it away. On a desk it is the slim bar
+   under the columns (desk.js), repainted when the window crosses 980 px. */
+var proEnt = null;
 function paintProCard(e) {
   var el = $('h-pro'), C = window.STD_PRO_CARD, show = !!(C && e && !e.pro);
+  proEnt = e;
   if (!el) return;
-  el.innerHTML = show ? C.home() : '';
+  el.innerHTML = show ? (desk() && C.bar ? C.bar() : C.home()) : '';
   el.hidden = !show || !el.innerHTML;
 }
 /* signed in: the account's plates, and a guest's chosen plate carried over when the account has it */
@@ -2232,9 +2240,10 @@ function placePill() {
   bar.style.setProperty('--i', Math.max(0, live.indexOf(tab)));
 }
 function fillTab(t) {
-  if (t === 'daily' && window.STD_BOARD && window.STD_BOARD.peek) window.STD_BOARD.peek();
-  if (t === 'surv' && MU) MU.showSurvivor();
-  if (t === 'arc' && MN.renderPast) MN.renderPast();
+  /* a desk shows every mode at once (desk.js), so each draws whichever tab is picked */
+  if ((t === 'daily' || desk()) && window.STD_BOARD && window.STD_BOARD.peek) window.STD_BOARD.peek();
+  if ((t === 'surv' || desk()) && MU) MU.showSurvivor();
+  if ((t === 'arc' || desk()) && MN.renderPast) MN.renderPast();
 }
 function landTab() { if (tabMove) { clearTimeout(tabMove.t); tabMove.land(); } }
 /* how: 'snap' with no move; keep: remember the pick on this device */
@@ -2332,8 +2341,17 @@ function proWelcome(o) {
   });
   return true;
 }
+/* on a desk (desk.js) Survivor and the archive are columns of their own, with no tabs: scroll to the
+   column; on a phone, to the tabs, with the picked one open */
+function proLand(t) {
+  /* after the home and the tab have settled (show() and the tab's move put the page back at the top) */
+  setTimeout(function () {
+    var el = !desk() ? $('h-modes') : t === 'surv' ? $('d-surv') : document.querySelector('.d-arc');
+    if (el) try { el.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); } catch (e) {}
+  }, TAB_MS + 40);
+}
 function proGo(where) {
-  if (where === 'arc') { MN.show('past'); return; }
+  if (where === 'arc') { MN.show('past'); proLand('arc'); return; }
   if (where === 'hist') { showHistory(); return; }
   if (where === 'plate') {
     MN.show('auth');
@@ -2344,7 +2362,7 @@ function proGo(where) {
     if (MN.isOpen()) MN.close(true);
     if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); }
     setTab('surv', null, true);
-    var m = $('h-modes'); if (m) try { m.scrollIntoView({ block: 'start' }); } catch (e) {}
+    proLand('surv');
   }
 }
 
@@ -2980,7 +2998,7 @@ function boot() {
       if (MN.current() === 'sheet-auth') MN.renderAuth();
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
       if (document.body.dataset.screen === 's-result' && S.result) renderModes();
-      if (document.body.dataset.screen === 's-home' && tab === 'surv' && MU) MU.showSurvivor();
+      if (document.body.dataset.screen === 's-home' && showing('surv') && MU) MU.showSurvivor();
       if (document.body.dataset.screen === 's-home') homeVote();
       if (MU) MU.entitlements().then(proPlate);
     });
@@ -3009,6 +3027,12 @@ function boot() {
     onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
   });
   wireTabs();
+  /* the window crosses 980 px (desk.js): the Pro card turns into the bar or back, and on a desk every
+     mode draws at once. Before the home has its day nothing is drawn yet, so nothing to redo */
+  if (DESK) DESK.onChange(function () {
+    if (proEnt) paintProCard(proEnt);
+    if (S.scn) fillTab(tab);
+  });
   window.STD_BOARD.init({
     day: S.day, before: postIfOwed,
     played: function () { return !!S.dailyResult; },
@@ -3070,7 +3094,7 @@ function boot() {
       refresh: function () {
         return MU ? MU.entitlements().then(function (e) {
           proPlate(e);
-          if (document.body.dataset.screen === 's-home' && tab === 'surv') MU.showSurvivor();
+          if (document.body.dataset.screen === 's-home' && showing('surv')) MU.showSurvivor();
           return e;
         }) : null;
       },
