@@ -66,6 +66,13 @@
  *      scroll) opens a daily's and a Survivor spot's result in the history mode (no share, no board,
  *      back to the list), and its empty, failed and older states
  *
+ *  24. the welcome to Pro (pro-welcome.js), through the mock (?mockAuth=1&mockEnt=pro): never on the boot
+ *      of a Pro member; on the checkout's return (?checkout=success) once Pro lands, full page, the home
+ *      inert under it, a row for each thing Pro opens; not again after a reload or a second return; each
+ *      row and the primary button go where they say (Survivor, the archive, your history, the plate
+ *      picker); Escape, Back to home and the browser's back close it to the home; the pair's checkout adds
+ *      the Run The Diamond line and link; reduced motion drops the shards
+ *
  *  21. the live minimap: while a ball is in play on the 3D mound its runner and ball dots move frame
  *      by frame (inplay.js fieldAt, only read), and after the play they go and the lit bases are the
  *      engine's. Through the mock's walk-off, at 390x844 light and 1440x900 dark (STD_MINIMAP=1 alone)
@@ -222,6 +229,8 @@ const UNITS = [
   ['21 the live minimap, 1440x900 dark', 60, () => liveMinimap(1440, 900, 'dark')],
   ['22 your history, 390x844 light', 30, () => historyWalk(390, 844, 'light')],
   ['22 your history, 1440x900 dark', 30, () => historyWalk(1440, 900, 'dark')],
+  ['24 the welcome to Pro, 390x844 light', 190, () => welcomeWalk(390, 844, 'light')],
+  ['24 the welcome to Pro, 1440x900 dark', 190, () => welcomeWalk(1440, 900, 'dark')],
 ];
 const MINE = new Set(), DONE = [];
 const SHARD = (() => { const v = argVal('--shard'); if (!v) return { i: 0, n: 1 }; const [i, n] = v.split('/').map(Number); if (!(n >= 1 && i >= 0 && i < n && Number.isInteger(i) && Number.isInteger(n))) throw new Error('--shard I/N: I from 0 to N-1'); return { i, n }; })();
@@ -1895,9 +1904,10 @@ async function sizeSweep() {
 
 /* 17. THE MODES AROUND THE DAILY (the owner, 2026-10-30), through the mock's switches. */
 async function modesPage(w, h, q, opts) {
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, reducedMotion: opts && opts.reduced ? 'reduce' : 'no-preference' });
   const page = await ctx.newPage();
   await page.addInitScript(STAGE_TEST);
+  if (opts && opts.init) await page.addInitScript((o) => { try { for (const k in o) localStorage.setItem(k, o[k]); } catch (e) {} }, opts.init);
   if (opts && opts.meterOff) await page.addInitScript(() => { try { localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false, quick: true, sound: false })); } catch (e) {} });
   if (opts && opts.theme) await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, opts.theme);
   const errors = [];
@@ -2847,6 +2857,96 @@ async function historyWalk(w, h, theme) {
   }
 }
 
+/* 24. THE WELCOME TO PRO (the owner, 2026-11-18), through the mock's Pro account and the real return path
+   (pro.js returned()). Every case is a fresh context: the welcome shows once per account per device. */
+async function welcomeWalk(w, h, theme) {
+  console.log(`\nthe welcome to Pro, ${w}x${h} ${theme}`);
+  step('24 the welcome to Pro', 480);
+  const tag = '24 ' + w + 'x' + h + ' ' + theme + ':';
+  const PRO = '?mockAuth=1&mockEnt=pro', BACK = PRO + '&checkout=success';
+  const isUp = (page) => page.evaluate(() => !!document.getElementById('pro-welcome'));
+  const up = async (q, opts) => {
+    const m = await modesPage(w, h, q, Object.assign({ meterOff: true, theme }, opts || {}));
+    await m.page.waitForSelector('#pro-welcome.on', { timeout: 20000 });
+    return m;
+  };
+  /* a Pro member's boot: nothing */
+  {
+    const { ctx, page, errors } = await modesPage(w, h, PRO, { meterOff: true, theme });
+    await page.waitForTimeout(4500);
+    ok(!(await isUp(page)), tag + ' a Pro member\'s boot: no welcome');
+    ok(errors.length === 0, tag + ' boot: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  /* the return: it shows, it says what Pro opens, then never again */
+  {
+    const { ctx, page, errors } = await up(BACK);
+    const v = await page.evaluate(() => {
+      const b = document.getElementById('pro-welcome'), r = b.getBoundingClientRect(), t = b.textContent;
+      const rows = [...b.querySelectorAll('.pw-row')], go = [...b.querySelectorAll('button.pw-row')].map((x) => x.getAttribute('data-pw-go'));
+      const taps = [...b.querySelectorAll('button, a[href]')].filter((x) => x.offsetParent);
+      return { full: r.width >= innerWidth - 1 && r.height >= innerHeight - 1, inert: document.getElementById('app').hasAttribute('inert'),
+        addr: /checkout=/.test(location.search), rows: rows.length, go: go.join(), soon: /Custom challenges\s*soon/i.test(t),
+        head: /Welcome to\s*Shut The Door\s*Pro/i.test(b.querySelector('.pw-h').textContent), wear: /\bwear/i.test(t), pair: !!b.querySelector('.pw-pair'),
+        minH: Math.min(...taps.map((x) => x.getBoundingClientRect().height)), side: document.documentElement.scrollWidth <= innerWidth + 1,
+        focus: b.contains(document.activeElement), toast: document.getElementById('toast').classList.contains('on'),
+        names: ['Unlimited Survivor runs', 'Every past daily', 'Your history', 'The Diamond plate', 'No video ads'].every((n) => t.includes(n)),
+        primary: (b.querySelector('.pw-go') || {}).textContent, home: [...b.querySelectorAll('.pw-home')].map((x) => x.textContent).join() };
+    });
+    ok(v.full && v.inert && !v.addr, tag + ' the checkout\'s return: a full page over an inert home, the flag off the address');
+    ok(v.head && !v.wear, tag + ' the headline welcomes them to Shut The Door Pro, no "wear"');
+    ok(v.rows === 6 && v.names && v.go === 'surv,arc,hist,plate' && v.soon, tag + ' one row for each thing Pro opens, four go somewhere, custom challenges soon (' + v.go + ')');
+    ok(v.primary === 'Play a past daily' && v.home === 'Back to home' && !v.pair, tag + ' the primary goes to the archive, Back to home, no pair line on Pro alone');
+    ok(v.minH >= 38 && v.side && v.focus && !v.toast, tag + ' every tap ' + Math.round(v.minH) + ' px and up, no sideways scroll, the focus inside, the toast gone');
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `24-welcome-${w}x${h}-${theme}.png`) });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+    await page.waitForTimeout(4500);
+    ok(!(await isUp(page)), tag + ' not again after a reload');
+    await page.goto(BASE + BACK, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+    await page.waitForTimeout(4500);
+    ok(!(await isUp(page)), tag + ' not again on a second return for the same account');
+    ok(errors.length === 0, tag + ' return: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  /* each way out goes where it says */
+  const ways = [
+    ['.pw-go', 'the primary: the archive', () => document.body.dataset.screen === 's-home' && localStorage.getItem('std_home_tab_v1') === 'arc' && ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden)],
+    ['[data-pw-go="surv"]', 'Survivor', () => document.body.dataset.screen === 's-home' && localStorage.getItem('std_home_tab_v1') === 'surv'],
+    ['button.pw-row[data-pw-go="arc"]', 'the archive', () => document.body.dataset.screen === 's-home' && localStorage.getItem('std_home_tab_v1') === 'arc'],
+    ['[data-pw-go="hist"]', 'your history', () => document.body.dataset.screen === 's-hist'],
+    ['[data-pw-go="plate"]', 'the plate picker', () => !document.getElementById('sheet-auth').hidden && !!document.getElementById('pk-grid')],
+    ['.pw-home', 'Back to home closes it', () => document.body.dataset.screen === 's-home' && ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden)],
+    ['Escape', 'Escape closes it', () => document.body.dataset.screen === 's-home' && ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden)],
+    ['back', 'the browser\'s back closes it', () => document.body.dataset.screen === 's-home' && /\/shut-the-door\//.test(location.pathname)],
+  ];
+  for (const [how, name, there] of ways) {
+    const { ctx, page, errors } = await up(BACK);
+    if (how === 'Escape') await page.keyboard.press('Escape');
+    else if (how === 'back') await page.goBack();
+    else await page.click('#pro-welcome ' + how);
+    await page.waitForFunction(() => !document.getElementById('pro-welcome'), null, { timeout: 5000 });
+    let went = false;
+    try { await page.waitForFunction(there, null, { timeout: 5000 }); went = true; } catch (e) {}
+    const free = await page.evaluate(() => !document.getElementById('app').hasAttribute('inert'));
+    ok(went && free, tag + ' ' + name + ': it closes and lands there, the home live again');
+    ok(errors.length === 0, tag + ' ' + name + ': no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  /* the pair: Run The Diamond Pro too, a link to /baseball/; and reduced motion: no shards */
+  {
+    const init = { std_pro_buy_v1: JSON.stringify({ bundle: 'diamond-door-pro', at: Date.now() }) };
+    const { ctx, page, errors } = await up(BACK, { init, reduced: true });
+    const v = await page.evaluate(() => { const a = document.querySelector('#pro-welcome .pw-pair'); return { href: a && a.getAttribute('href'), text: a && a.textContent, shards: !!document.querySelector('.pw-shards'), kept: localStorage.getItem('std_pro_buy_v1') }; });
+    ok(v.href === '/baseball/' && /Run The Diamond Pro is unlocked too/.test(v.text), tag + ' the pair: Run The Diamond Pro is unlocked too, a link to /baseball/');
+    ok(!v.shards && v.kept === null, tag + ' reduced motion: no shards; the bundle note is used up');
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `24-welcome-pair-${w}x${h}-${theme}.png`) });
+    ok(errors.length === 0, tag + ' the pair: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+}
+
 /* the voice of the ump through the mock (?mockAuth=1&mockOwner=1): a line, an upload (a short WAV
    made here), the consent before the send, the send, then the owner's review: the four tabs, the
    owner's Waiting buttons, put in the game straight from waiting, Live, a reject that asks "Delete it
@@ -3219,6 +3319,8 @@ try {
   if (process.env.STD_MINIMAP === '1') { for (const t of ['light', 'dark']) { await liveMinimap(390, 844, t); await liveMinimap(1440, 900, t); } throw 'quick'; }
   /* STD_HISTORY=1: only your history (22) at both sizes, light and dark */
   if (process.env.STD_HISTORY === '1') { for (const t of ['light', 'dark']) { await historyWalk(390, 844, t); await historyWalk(1440, 900, t); } throw 'quick'; }
+  /* STD_WELCOME=1: only the welcome to Pro (24) at both sizes, light and dark */
+  if (process.env.STD_WELCOME === '1') { for (const t of ['light', 'dark']) { await welcomeWalk(390, 844, t); await welcomeWalk(1440, 900, t); } throw 'quick'; }
   /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
   if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */

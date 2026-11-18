@@ -18,7 +18,9 @@
  * COMING BACK. Stripe returns to /shut-the-door/?checkout=success (or =cancelled). The flag
  * comes off the address first, so a reload cannot replay it. The webhook writes the grant
  * and the redirect races it, so the page asks again for about ten seconds and never says the
- * payment failed: it cannot know that.
+ * payment failed: it cannot know that. When it lands, the page's welcome (pro-welcome.js, the UI's)
+ * takes over from the toast, once per account; the bundle the button sent (BOUGHT) tells it whether
+ * the pair came back too.
  */
 (function () {
 'use strict';
@@ -32,6 +34,8 @@ var BUNDLE = 'door-pro';
 var PAIR = 'diamond-door-pro';
 var TERM = ' a year';
 var RETURN = '/shut-the-door/';
+/* the bundle a checkout opened for, kept on the device until the page comes back (BOUGHT_MS at most) */
+var BOUGHT = 'std_pro_buy_v1', BOUGHT_MS = 6 * 3600 * 1000;
 
 function money(cents) { return '$' + (cents / 100).toFixed(2); }
 function price() { return money(PRICES[BUNDLE]); }
@@ -40,8 +44,9 @@ function auth() { return window.STD_AUTH || null; }
 function signedIn() { var a = auth(); try { return !!(a && a.state && a.state().signedIn); } catch (e) { return false; } }
 function token() { var a = auth(); try { return a && a.token ? a.token() : null; } catch (e) { return null; } }
 
-/* what the page around it does: sign in, ask entitlements again (answers them), a toast */
-var ctx = { signIn: null, refresh: null, toast: null };
+/* what the page around it does: sign in, ask entitlements again (answers them), a toast, and the
+   welcome once Pro lands (welcome({pair}) answers true when it showed; false, the toast says it) */
+var ctx = { signIn: null, refresh: null, toast: null, welcome: null };
 
 /* The block a screen drops in. `where` is which screen, for the line above the button.
    Plain: one line and one button in the game's own classes (the save button's, btn save-b; the
@@ -80,7 +85,8 @@ function buy(btn) {
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() },
     body: JSON.stringify({ bundle: which, return_path: RETURN, email: st.email || undefined }),
   }).then(function (r) { return r.json().catch(function () { return {}; }); }, function () { return {}; }).then(function (d) {
-    if (d && d.url) { location.href = d.url; return; }
+    /* which bundle went to Stripe, so the welcome (pro-welcome.js) can say what came back with it */
+    if (d && d.url) { try { localStorage.setItem(BOUGHT, JSON.stringify({ bundle: which, at: Date.now() })); } catch (e) {} location.href = d.url; return; }
     btn.disabled = false;
     btn.textContent = was;
     if (d && d.error === 'already_owned' && ctx.refresh) ctx.refresh();
@@ -134,7 +140,10 @@ function returned() {
   var what = back;
   back = null;
   strip();
+  var bought = null;
+  try { bought = JSON.parse(localStorage.getItem(BOUGHT) || 'null'); localStorage.removeItem(BOUGHT); } catch (e) {}
   if (what !== 'success') return;
+  var pair = !!(bought && bought.bundle === PAIR && Date.now() - (+bought.at || 0) < BOUGHT_MS);
   var toast = ctx.toast || function () {};
   toast('payment went through. pro lands in a few seconds.');
   var waits = [800, 1200, 2000, 3000, 3500], i = 0;
@@ -142,7 +151,7 @@ function returned() {
     if (i >= waits.length || !ctx.refresh) return;
     setTimeout(function () {
       Promise.resolve(ctx.refresh()).then(function (e) {
-        if (e && e.pro) { toast('pro is on. have at it.'); return; }
+        if (e && e.pro) { if (!(ctx.welcome && ctx.welcome({ pair: pair }))) toast('pro is on. have at it.'); return; }
         i++; next();
       }, function () { i++; next(); });
     }, waits[i]);
