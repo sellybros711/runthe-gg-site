@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 179_shut_the_door_thirteen_clubs.sql : a situation for each of the 13 clubs that had none
+-- 179_shut_the_door_thirteen_clubs.sql : a situation for 12 of the 13 clubs that had none
 --
 -- Run AFTER the site PR merges and the site has redeployed, and BEFORE 2026-11-24 begins
 -- (Eastern). Safe to run more than once. Needs 160, 161, 163 (the vote) and 162 (the plates).
@@ -9,15 +9,17 @@
 -- so their plates could never unlock: Orioles, Blue Jays, White Sox, Guardians, Tigers, Twins,
 -- Mariners, Marlins, Nationals, Reds, Pirates, Cardinals and Rockies. One real save situation
 -- each joins the packs (shut-the-door/data/packs), and a save there unlocks the club the normal way.
+-- Twelve ship here. The Reds' (std-2025-pagan-mil) waits on a 3D fix to the slow roller's pull up
+-- (the owner, 2026-11-18): a later migration adds it at ord 42, from a day of its own.
 --
 -- WHAT IT CHANGES
 --   * shutdoor_packs.from_day          the first day a situation can be offered (null: always)
---   * shutdoor_packs                   the 13, at ord 30 to 42, from 2026-11-25
+--   * shutdoor_packs                   the 12, at ord 30 to 41, from 2026-11-25
 --   * shutdoor_vote_candidates(day)    draws only from the situations a day has (from_day)
---   * shutdoor_pack_clubs              the 13, each its closer's club (plate.js PACK_CLUBS)
+--   * shutdoor_pack_clubs              the 12, each its closer's club (plate.js PACK_CLUBS)
 --
 -- NO DAY ALREADY DRAWN MOVES. A day's two candidates are stored once, the day before, and every
--- later day reads the 13 before it. So the 13 join on a day of their own, 2026-11-25 (modes.js
+-- later day reads the 13 before it. So the 12 join on a day of their own, 2026-11-25 (modes.js
 -- POOL.FROM, the page's copy of the rule): every day before it draws from the thirty exactly as
 -- it did, on the server and the page alike, and Survivor's runs before it keep their order too.
 -- The server stores 2026-11-25's candidates on 2026-11-24, so this must run before that day
@@ -41,7 +43,7 @@ begin
   end if;
 end $$;
 
--- the 13, in data/schedule.json's rotation order after the thirty (test/modes.mjs checks it)
+-- the 12, in data/schedule.json's rotation order after the thirty (test/modes.mjs checks it)
 insert into public.shutdoor_packs (id, ord, from_day) values
   ('std-2025-alcs7-hoffman', 30, date '2026-11-25'),
   ('std-2016-britton-tor', 31, date '2026-11-25'),
@@ -54,8 +56,7 @@ insert into public.shutdoor_packs (id, ord, from_day) values
   ('std-2025-alcs1-munoz', 38, date '2026-11-25'),
   ('std-2018-davis-wsh', 39, date '2026-11-25'),
   ('std-2020-nlwc2-kintzler', 40, date '2026-11-25'),
-  ('std-2025-pagan-mil', 41, date '2026-11-25'),
-  ('std-2019-nlwc-hudson', 42, date '2026-11-25')
+  ('std-2019-nlwc-hudson', 41, date '2026-11-25')
 on conflict (id) do update set ord = excluded.ord, from_day = excluded.from_day;
 
 -- 160's rule, over the situations the day has. Everything else is 160's, line for line
@@ -99,7 +100,6 @@ insert into public.shutdoor_pack_clubs (id, club) values
   ('std-2025-alcs1-munoz', 'mariners'),
   ('std-2018-davis-wsh', 'rockies'),
   ('std-2020-nlwc2-kintzler', 'marlins'),
-  ('std-2025-pagan-mil', 'reds'),
   ('std-2019-nlwc-hudson', 'nationals')
 on conflict (id) do update set club = excluded.club;
 

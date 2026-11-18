@@ -2130,66 +2130,6 @@
     }
    }
   },
-  "std-2025-pagan-mil": {
-   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=641941",
-   "tracking": {
-    "system": "statcast",
-    "season": 2025,
-    "games": "regular",
-    "n": 1068,
-    "active": "Savant active spin leaderboard, 2025 regular season, spin-based"
-   },
-   "release": {
-    "x": -1.6,
-    "z": 5.6,
-    "ext": 6.86
-   },
-   "armAngle": 42.5,
-   "arsenal": {
-    "FF": {
-     "n": 654,
-     "release": {
-      "x": -1.59,
-      "z": 5.63,
-      "ext": 6.78
-     },
-     "armAngle": 41.7,
-     "spin": {
-      "rate": 2614,
-      "axis": 206,
-      "active": 94.3
-     }
-    },
-    "FS": {
-     "n": 215,
-     "release": {
-      "x": -1.59,
-      "z": 5.55,
-      "ext": 7.05
-     },
-     "armAngle": 44.2,
-     "spin": {
-      "rate": 970,
-      "axis": 240,
-      "active": 79.4
-     }
-    },
-    "FC": {
-     "n": 199,
-     "release": {
-      "x": -1.62,
-      "z": 5.57,
-      "ext": 6.91
-     },
-     "armAngle": 43.1,
-     "spin": {
-      "rate": 2412,
-      "axis": 165,
-      "active": 34.6
-     }
-    }
-   }
-  },
   "std-2025-scott-kc": {
    "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=656945",
    "tracking": {

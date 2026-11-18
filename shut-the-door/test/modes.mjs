@@ -33,7 +33,7 @@ const sql = readFileSync(join(ROOT, 'supabase', '160_shut_the_door_vote_survivor
 const sql161 = readFileSync(join(ROOT, 'supabase', '161_shut_the_door_full_close.sql'), 'utf8');
 const gone = new Set([...(sql161.match(/delete from public\.shutdoor_packs where id in \(([^)]*)\)/) || ['', ''])[1].matchAll(/'(std-[a-z0-9-]+)'/g)].map(m => m[1]));
 const put = [...sql161.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m => [m[1], +m[2]]);
-// then 179: the 13 clubs' situations at the end, each from its first day (modes.js POOL.FROM)
+// then 179: 12 of the 13 clubs' situations at the end, each from its first day (modes.js POOL.FROM)
 const sql179 = readFileSync(join(ROOT, 'supabase', '179_shut_the_door_thirteen_clubs.sql'), 'utf8');
 const put179 = [...sql179.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+), date '(\d{4}-\d\d-\d\d)'\)/gm)].map(m => [m[1], +m[2], m[3]]);
 const rows = [...sql.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m => [m[1], +m[2]])
@@ -60,7 +60,7 @@ check('the preview rotation is the rotation\'s first ten (163)', JSON.stringify(
 /* the server's own test expects modes.js's candidates */
 // the latest test: 163's, drawn from the rules 8 list (161) and the first day 163 set
 // 163's test was drawn from the thirty: its days before POOL.FROM still hold, unchanged. 179's test
-// is drawn from the 43 from POOL.FROM, over the same 60 days
+// is drawn from the 42 from POOL.FROM, over the same 60 days
 const expectOf = (f) => [...readFileSync(join(ROOT, 'supabase', 'test', f), 'utf8')
   .matchAll(/\('(\d{4}-\d\d-\d\d)', '(std-[a-z0-9-]+)', '(std-[a-z0-9-]+)'\)/g)].map(m => m.slice(1));
 const agree = (rows) => rows.every(([d, a, b]) => { const c = M.candidates(sched, d); return c[0] === a && c[1] === b; });
@@ -74,7 +74,7 @@ check('179\'s server test checks the same 60 days', expect.length === 60 && expe
 check('and they are modes.js\'s candidates, day by day', agree(expect), firstOff(expect));
 check('179\'s test keeps 163\'s days before POOL.FROM', expect.filter(([d]) => d < M.POOL.FROM).every((r, i) => r.join() === before[i].join()));
 
-/* the 13 join on their own day: every day before it is what the thirty alone give, the vote and Survivor */
+/* the 12 join on their own day: every day before it is what the thirty alone give, the vote and Survivor */
 {
   const thirty = Object.assign({}, sched, { rotation: sched.rotation.slice(0, M.POOL.BASE) });
   const days = []; for (let d = M.VOTE.EPOCH; d < M.addDays(M.POOL.FROM, 120); d = M.addDays(d, 1)) days.push(d);
@@ -84,11 +84,11 @@ check('179\'s test keeps 163\'s days before POOL.FROM', expect.filter(([d]) => d
     pre.every(d => [0, 1].every(r => Array.from({ length: 60 }, (_, i) => i).every(i => {
       const x = M.survivorAt(sched, d, r, i), y = M.survivorAt(thirty, d, r, i); return x.pack === y.pack && x.seed === y.seed;
     }))));
-  check('the day before POOL.FROM offers none of the 13', M.candidates(sched, M.addDays(M.POOL.FROM, -1)).every(id => sched.rotation.indexOf(id) < M.POOL.BASE));
+  check('the day before POOL.FROM offers none of the 12', M.candidates(sched, M.addDays(M.POOL.FROM, -1)).every(id => sched.rotation.indexOf(id) < M.POOL.BASE));
   const offered = new Set(days.filter(d => d >= M.POOL.FROM).flatMap(d => M.candidates(sched, d)));
   const added = sched.rotation.slice(M.POOL.BASE);
-  check('from POOL.FROM each of the 13 is offered within 120 days', added.every(id => offered.has(id)), JSON.stringify(added.filter(id => !offered.has(id))));
-  check('from POOL.FROM a Survivor cycle is every one of the 43', new Set(Array.from({ length: sched.rotation.length }, (_, i) => M.survivorAt(sched, M.POOL.FROM, 0, i).pack)).size === sched.rotation.length);
+  check('from POOL.FROM each of the 12 is offered within 120 days', added.every(id => offered.has(id)), JSON.stringify(added.filter(id => !offered.has(id))));
+  check('from POOL.FROM a Survivor cycle is every one of the ' + sched.rotation.length, new Set(Array.from({ length: sched.rotation.length }, (_, i) => M.survivorAt(sched, M.POOL.FROM, 0, i).pack)).size === sched.rotation.length);
 }
 
 /* the rule itself, over a year of vote days, with every vote going a random way */
@@ -183,7 +183,7 @@ for (const day of ['2026-11-20', M.addDays(M.POOL.FROM, 3)]) {
     JSON.stringify(Object.keys(teams).filter((id) => !want[id])));
   check('plate.js keys every pack with a team by its closer\'s club', sorted(PC) === sorted(want), sorted(want));
   check('plate.js keys every pack in a throwback era by that era\'s plate', sorted(PT) === sorted(wantTb), sorted(wantTb));
-  // the server's lists: 162's rows, the two proxy spots 167 added and the 13 clubs 179 added; 178's throwbacks
+  // the server's lists: 162's rows, the two proxy spots 167 added and the 12 clubs 179 added; 178's throwbacks
   const sql = ['162_shut_the_door_plates.sql', '167_shut_the_door_pack_clubs_proxy.sql', '179_shut_the_door_thirteen_clubs.sql']
     .map((f) => readFileSync(join(HERE, '..', '..', 'supabase', f), 'utf8')).join('\n');
   const rows = {};
@@ -213,10 +213,11 @@ for (const day of ['2026-11-20', M.addDays(M.POOL.FROM, 3)]) {
   check('a club with a situation opens on a save', PL.status('dodgers') === 'save' && PL.status('astrosbrick') === 'save');
   check('a throwback with no situation yet says so', PL.status('expos') === 'soon' && PL.status('indians') === 'soon');
   // the plates' "No situation yet" list (status 'soon') holds no club of today's (2026-11-18, supabase/179)
+  // the Reds' situation (std-2025-pagan-mil) waits on a 3D fix (the owner, 2026-11-18): the one club still waiting
   const soon = PL.current30().filter((k) => PL.status(k) !== 'save');
-  check('every one of today\'s 30 clubs has a situation: none says "No situation yet"', soon.length === 0, JSON.stringify(soon));
+  check('every one of today\'s clubs but the Reds has a situation: only the Reds say "No situation yet"', JSON.stringify(soon) === '["reds"]', JSON.stringify(soon));
   check('and its situation is a pack of that club\'s, keyed by today\'s name, never a throwback',
-    PL.current30().every((k) => Object.keys(PC).some((id) => PC[id] === k && want[id] === k)));
+    PL.current30().filter((k) => k !== 'reds').every((k) => Object.keys(PC).some((id) => PC[id] === k && want[id] === k)));
   {
     const P = fresh();
     const got = P.earn('std-2005-nlcs5-lidge');

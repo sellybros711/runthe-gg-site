@@ -1,4 +1,4 @@
--- The 13 clubs' situations (179). Chain, after 178 and its test:
+-- 12 of the 13 clubs' situations (179; the Reds' waits on a 3D fix). Chain, after 178 and its test:
 --   psql -d std -c "delete from shutdoor_votes; delete from shutdoor_vote_days"   (a clean slate: the
 --     earlier tests stored vote days far ahead on their own clocks, which 179's guard would refuse)
 --   psql -d std -f supabase/179_shut_the_door_thirteen_clubs.sql
@@ -12,16 +12,17 @@ create or replace function pg_temp.fails(q text) returns boolean language plpgsq
 begin execute q; return false; exception when others then return true; end $$;
 
 -- 1. the list: the thirty as they were, then the 13 from their own day
-select pg_temp.claim((select count(*) from shutdoor_packs) = 43, '43 situations');
+select pg_temp.claim((select count(*) from shutdoor_packs) = 42, '42 situations');
 select pg_temp.claim((select count(*) from shutdoor_packs where ord < 30 and from_day is null) = 30, 'the thirty keep every day');
-select pg_temp.claim((select count(*) from shutdoor_packs where ord between 30 and 42 and from_day = date '2026-11-25') = 13, 'the 13 from 2026-11-25');
+select pg_temp.claim((select count(*) from shutdoor_packs where ord between 30 and 41 and from_day = date '2026-11-25') = 12, 'the 12 from 2026-11-25');
 select pg_temp.claim(shutdoor_fixed_pack(date '2026-10-30') = 'std-2016-ws7-chapman'
   and shutdoor_fixed_pack(date '2026-11-24') = 'std-2009-alcs6-rivera'
   and shutdoor_fixed_pack(date '2026-10-25') = 'std-2001-ws7-rivera', 'the days before the vote are the thirty''s, as before');
 
 -- 2. the plates: each of the 13 unlocks its closer's club
-select pg_temp.claim((select count(*) from shutdoor_pack_clubs c join shutdoor_packs p on p.id = c.id where p.ord >= 30) = 13, 'every one of the 13 has a club');
-select pg_temp.claim((select count(distinct club) from shutdoor_pack_clubs) = 30, 'all 30 of today''s clubs have a situation');
+select pg_temp.claim((select count(*) from shutdoor_pack_clubs c join shutdoor_packs p on p.id = c.id where p.ord >= 30) = 12, 'every one of the 12 has a club');
+select pg_temp.claim((select count(distinct club) from shutdoor_pack_clubs) = 29
+  and not exists (select 1 from shutdoor_pack_clubs where club = 'reds'), '29 of today''s clubs have a situation; the Reds wait');
 select pg_temp.claim((select club from shutdoor_pack_clubs where id = 'std-2016-britton-tor') = 'orioles'
   and (select club from shutdoor_pack_clubs where id = 'std-2025-smith-det') = 'guardians'
   and (select club from shutdoor_pack_clubs where id = 'std-2020-nlwc2-kintzler') = 'marlins', 'Britton the Orioles, Smith the Guardians, Kintzler the Marlins');
@@ -67,11 +68,11 @@ insert into expect values
   ('2026-11-23', 'std-2009-alcs6-rivera', 'std-2013-alcs6-uehara'),
   ('2026-11-24', 'std-2025-ws7-yamamoto', 'std-2010-hoffman-stl'),
   ('2026-11-25', 'std-2018-davis-wsh', 'std-2020-nlwc2-kintzler'),
-  ('2026-11-26', 'std-2025-pagan-mil', 'std-2015-melancon-chc'),
+  ('2026-11-26', 'std-2015-melancon-chc', 'std-2019-nlwc-hudson'),
   ('2026-11-27', 'std-2005-nlcs5-lidge', 'std-2025-smith-det'),
-  ('2026-11-28', 'std-2020-alwc1-colome', 'std-2019-nlwc-hudson'),
-  ('2026-11-29', 'std-2025-ws6-glasnow', 'std-2024-alwc2-vest'),
-  ('2026-11-30', 'std-2008-ws5-lidge', 'std-2025-alcs1-munoz'),
+  ('2026-11-28', 'std-2020-alwc1-colome', 'std-2024-alwc2-vest'),
+  ('2026-11-29', 'std-2025-ws6-glasnow', 'std-2008-ws5-lidge'),
+  ('2026-11-30', 'std-2025-alcs1-munoz', 'std-2011-rivera-min'),
   ('2026-12-01', 'std-2010-ws5-wilson', 'std-2019-rogers-det'),
   ('2026-12-02', 'std-2016-ws7-chapman', 'std-2017-ws2-jansen'),
   ('2026-12-03', 'std-2025-scott-kc', 'std-2011-ws6-feliz'),
@@ -81,16 +82,16 @@ insert into expect values
   ('2026-12-07', 'std-2022-ws6-pressly', 'std-2007-ws4-papelbon'),
   ('2026-12-08', 'std-2015-alcs6-davis', 'std-2025-diaz-cin'),
   ('2026-12-09', 'std-2020-nlwc2-kintzler', 'std-2013-alcs6-uehara'),
-  ('2026-12-10', 'std-2024-ws5-buehler', 'std-2011-rivera-min'),
+  ('2026-12-10', 'std-2024-ws5-buehler', 'std-2019-nlwc-hudson'),
   ('2026-12-11', 'std-2010-hoffman-stl', 'std-2005-nlcs5-lidge'),
-  ('2026-12-12', 'std-2019-nlwc-hudson', 'std-2015-melancon-chc'),
+  ('2026-12-12', 'std-2024-alwc2-vest', 'std-2015-melancon-chc'),
   ('2026-12-13', 'std-2023-ws1-sewald', 'std-2016-britton-tor'),
   ('2026-12-14', 'std-2024-helsley-sf', 'std-2025-alcs1-munoz'),
   ('2026-12-15', 'std-2025-ws7-yamamoto', 'std-2025-ws6-glasnow'),
-  ('2026-12-16', 'std-2009-alcs6-rivera', 'std-2019-nlwc-hader'),
+  ('2026-12-16', 'std-2009-alcs6-rivera', 'std-2011-rivera-min'),
   ('2026-12-17', 'std-2018-davis-wsh', 'std-2023-williams-sd'),
   ('2026-12-18', 'std-2012-ws4-romo', 'std-2020-alwc1-colome'),
-  ('2026-12-19', 'std-2016-ws7-chapman', 'std-2025-pagan-mil'),
+  ('2026-12-19', 'std-2019-nlwc-hader', 'std-2016-ws7-chapman'),
   ('2026-12-20', 'std-2010-ws5-wilson', 'std-2019-rogers-det'),
   ('2026-12-21', 'std-2014-ws7-bumgarner', 'std-2008-alcs7-price'),
   ('2026-12-22', 'std-2025-scott-kc', 'std-2017-ws2-jansen'),
@@ -112,7 +113,7 @@ select pg_temp.claim((select count(*) from expect e where shutdoor_vote_candidat
 select pg_temp.claim(not exists (select 1 from shutdoor_vote_days v join shutdoor_packs p on p.id in (v.a, v.b)
   where p.from_day is not null and v.day < p.from_day), 'no situation is offered before its first day');
 select pg_temp.claim(exists (select 1 from shutdoor_vote_days v join shutdoor_packs p on p.id in (v.a, v.b) where p.ord >= 30),
-  'and the 13 are offered from it');
+  'and the 12 are offered from it');
 
 -- 4. too late: a vote day stored on or after 2026-11-25 stops a first run, and nothing changes
 delete from public.shutdoor_pack_clubs where id = 'std-2025-alcs7-hoffman';

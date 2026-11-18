@@ -9,8 +9,8 @@
  * on any of the VOTE.WINDOW days before D, ordered by the site's hashSeed of
  * 'shut-the-door-vote-' + D + '-' + id, the first two. The first is A. A pack that was played was
  * offered, so nothing played in the last WINDOW days comes back. With 30 packs and two offered a
- * day, at least 30 - 2 x 13 = 4 are eligible each day, so the pairs vary (from POOL.FROM, 43, at
- * least 17).
+ * day, at least 30 - 2 x 13 = 4 are eligible each day, so the pairs vary (from POOL.FROM, 42, at
+ * least 16).
  *
  * The server (supabase/160_shut_the_door_vote_survivor.sql, shutdoor_vote_candidates) runs the
  * same rule over the same list, and locks the winner once the day begins: more votes wins, and
@@ -39,7 +39,7 @@
   /* POOL: the situations the vote and Survivor draw from on a day. The rotation grows only at its end,
      and each growth starts on a day of its own, so no day already drawn, offered or begun moves: a day
      before FROM draws from the rotation's first BASE exactly as it did, a day on or after FROM from the
-     whole rotation. BASE is the 30 of 2026-10-30. FROM is the first day the 13 clubs' situations of
+     whole rotation. BASE is the 30 of 2026-10-30. FROM is the first day the 12 clubs' situations of
      2026-11-18 can be offered (its candidates are stored the day before). The same day is in
      shutdoor_packs.from_day (supabase/179); test/modes.mjs reads both. Move FROM only to a day whose
      candidates the server has not stored yet. */
