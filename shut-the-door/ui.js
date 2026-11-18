@@ -160,9 +160,11 @@ function show(id) {
 /* A challenge link (?c=CODE) stays in the address while its screens are up, so the mound's home (a
    reload) comes back to it. Home takes it off. */
 function dropCode() {
-  if (!Q.get('c')) return;
+  var q = new URLSearchParams(location.search);
+  if (!q.has('c')) return;
+  q.delete('c');
   Q.delete('c');
-  try { history.replaceState(history.state, '', location.pathname + (Q.toString() ? '?' + Q.toString() : '') + location.hash); } catch (e) {}
+  try { history.replaceState(history.state, '', location.pathname + (q.toString() ? '?' + q.toString() : '') + location.hash); } catch (e) {}
 }
 
 /* BACK CLOSES WHAT IS OPEN (the QA audit, 2026-11-02: back left the page from the board, a sheet or

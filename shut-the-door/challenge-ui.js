@@ -299,7 +299,7 @@ function loadMine() {
     if (!Array.isArray(l)) { el.innerHTML = '<div class="bd-lh"><b>My challenges</b></div><p class="quiet ch-wait">Your challenges did not load. Try again later.</p>'; return; }
     if (!l.length) {
       el.innerHTML = '<div class="bd-lh"><b>My challenges</b></div><div class="bd-empty"><b>None yet</b><p>' +
-        (B.pro ? 'Make one above. A link a friend sends you shows up here once you play it.' : 'Open a link a friend sends you. It shows up here once you play it.') + '</p></div>';
+        (B.pro ? 'Make one and it shows up here. So does a friend\'s once you play it.' : 'Open a link a friend sends you. It shows up here once you play it.') + '</p></div>';
       return;
     }
     el.innerHTML = '<div class="bd-lh"><b>My challenges</b><span>Newest first</span></div><ul class="hi-items">' + l.map(mineRow).join('') + '</ul>';
@@ -471,7 +471,7 @@ function versus(r) {
   var them = ch.practice ? null : opponent(ch.results || (v && v.results), mine);
   var you = r.score;
   /* the eyebrow above already says challenge and its code: the bar says who it is against */
-  var kick = ch.practice ? 'Practice · not posted' : them ? 'You vs ' + them.username : 'Your score';
+  var kick = ch.practice ? 'Practice · not posted' : them ? (them.creator ? 'Against the maker' : 'Against the top score') : 'Your score';
   if (!them) {
     return { tone: 'matched', html: '<div class="vs-t"><small>' + esc(kick) + '</small>' +
       '<div class="cv"><span class="cv-s you"><i>You</i><b>' + esc(num(you)) + '</b></span></div>' +

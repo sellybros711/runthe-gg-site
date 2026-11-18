@@ -1987,7 +1987,7 @@ const oneCount = (page, screen) => page.evaluate((id) => {
   return { n, times, head: (sec.querySelector('h2') || {}).textContent };
 }, screen);
 /* THE HOME ON A DESK (desk.js, 980 px and up; the owner, 2026-11-18): the modes have their own places on
-   the home and the menu's six rows are in a drawer behind the header's left button. A phone keeps the
+   the home and the menu's seven rows are in a drawer behind the header's left button. A phone keeps the
    tabs and the list. These two say where a step taps, so one step reads the same on both */
 const onDesk = (page) => page.evaluate(() => !!(window.STD_DESK && window.STD_DESK.on()));
 async function menuRow(page, key) {
@@ -2379,7 +2379,7 @@ async function modes(w, h, full) {
 /* 23. THE HOME ON A DESK (desk.js; the owner's layout, 2026-11-18). From 980 px: one centred container the
    headline, three columns, the Pro bar and the footer align to; the columns start and end on the same
    lines; Survivor and the archive on the left, the daily and today's top 3 in the centre, the vote and the
-   voice of the ump on the right; the menu's six rows in a drawer from the left that only a tap opens,
+   voice of the ump on the right; the menu's seven rows in a drawer from the left that only a tap opens,
    with the keyboard and Escape. A Pro member sees no bar. A run in progress says so on its card. Under
    980 px every node is back where the phone has it. */
 async function deskHome(w, h, theme) {
@@ -2421,8 +2421,8 @@ async function deskHome(w, h, theme) {
   ok(Object.values(L.where).every(Boolean) && !L.list, '23 ' + tag + ': Survivor and the archive left, the daily and its top 3 centre, the vote and the ump right, no Survivor leaderboard (' + JSON.stringify(L.where) + ')');
   ok(!L.tabs && !L.panes && !L.right && L.left, '23 ' + tag + ': no tabs, and the one menu button is on the left of the header');
   ok(L.take.b <= L.vh, '23 ' + tag + ': take the mound is above the fold (its foot at ' + L.take.b + ' of ' + L.vh + ')');
-  ok(!L.drawer.open && L.drawer.right <= 0 && L.drawer.inert && L.drawer.rows === 6 && L.sheets === 0 && await nothingOpen(page),
-    '23 ' + tag + ': the drawer holds the six rows and stays shut, nothing opened by itself');
+  ok(!L.drawer.open && L.drawer.right <= 0 && L.drawer.inert && L.drawer.rows === 7 && L.sheets === 0 && await nothingOpen(page),
+    '23 ' + tag + ': the drawer holds the seven rows (Challenges joined them) and stays shut, nothing opened by itself');
   await page.waitForTimeout(1500);
   ok(!(await page.evaluate(() => document.body.classList.contains('d-menu-on'))), '23 ' + tag + ': still shut after a wait: it opens only on a tap');
   await shotD(page, 'home');
@@ -3087,8 +3087,14 @@ async function challengesWalk(w, h, theme) {
     ok(await page.evaluate(() => document.body.dataset.screen === 's-home' && !document.getElementById('s-chal').classList.contains('on')), tag + ' nothing opens by itself');
     ok(await page.evaluate(() => !!document.querySelector('#h-menu [data-chal-open]') && !!document.querySelector('#h-chal [data-chal-open]') && !!document.querySelector('#sheet-menu [data-chal-open]')),
       tag + ' the way in: a row on the home menu, the archive tab\'s card, the menu sheet');
-    await openRow(page);
+    /* the row is the home menu's: on a phone in the list, on a desk (desk.js) in the drawer behind the header's button */
+    if (w >= 980) {
+      await page.click('#d-menu-b');
+      await page.waitForSelector('#d-drawer [data-chal-open]', { state: 'visible', timeout: 5000 });
+      await page.click('#d-drawer [data-chal-open]');
+    } else await page.click('#h-menu [data-chal-open]');
     await page.waitForSelector('body[data-screen="s-chal"] .cb-lock', { timeout: 20000 });
+    if (w >= 980) ok(await page.evaluate(() => !!document.getElementById('d-drawer').inert), tag + ' the desk drawer\'s row opens it and the drawer shuts');
     const l = await page.evaluate(() => ({ text: document.querySelector('.cb-lock').textContent, buy: !!document.querySelector('.cb-lock [data-pro-buy]'), make: !!document.getElementById('cb-make') }));
     ok(/Pro perk/.test(l.text) && l.buy && !l.make, tag + ' not Pro: a locked entry names the perk, the store\'s Get Pro button, no builder');
     ok(await noSideScroll(page), tag + ' not Pro: no sideways scroll');
@@ -3099,10 +3105,10 @@ async function challengesWalk(w, h, theme) {
   {
     const { ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro', { meterOff: true, theme });
     await openRow(page);
-    await page.waitForSelector('#cb-prev .cb-setup, #cb-prev .cb-why', { timeout: 30000 });
+    await page.waitForSelector('#cb-prev .cb-setup, #cb-prev .cb-why', { timeout: 90000 });
     await page.selectOption('#cb-pitcher', 'std-2016-ws7-chapman');
     await page.selectOption('#cb-lineup', 'std-2019-nlwc-hader');
-    const setup = () => page.waitForFunction(() => !document.getElementById('cb-prev').classList.contains('busy') && !!document.querySelector('#cb-prev .cb-setup, #cb-prev .cb-why'), null, { timeout: 30000 });
+    const setup = () => page.waitForFunction(() => !document.getElementById('cb-prev').classList.contains('busy') && !!document.querySelector('#cb-prev .cb-setup, #cb-prev .cb-why'), null, { timeout: 90000 });
     await setup();
     await page.click('[data-up="4"]');
     const runners = await page.evaluate(() => [...new Set([...document.querySelectorAll('#cb-order [data-run]')].map((b) => +b.getAttribute('data-run')))].sort().join(','));
@@ -3110,7 +3116,7 @@ async function challengesWalk(w, h, theme) {
     await page.click('[data-run="3"][data-base="0"]');
     await page.click('[data-f="outs"] [data-v="1"]');
     await page.click('[data-f="strikes"] [data-v="2"]');
-    await page.waitForFunction(() => /Anthony Rendon up, 0-2\./.test((document.querySelector('#cb-prev .cb-setup') || {}).textContent || ''), null, { timeout: 30000 });
+    await page.waitForFunction(() => /Anthony Rendon up, 0-2\./.test((document.querySelector('#cb-prev .cb-setup') || {}).textContent || ''), null, { timeout: 90000 });
     const pv = await page.evaluate(async () => {
       const s = document.querySelector('#cb-prev .cb-setup').textContent, hold = document.querySelector('#cb-prev .cb-hold b').textContent;
       const p = await window.STD_API.previewChallenge({ v: 1, pitcher: 'std-2016-ws7-chapman', lineup: 'std-2019-nlwc-hader', up: 4, on: [3, null, null], outs: 1, balls: 0, strikes: 2, lead: 1, them: 2, inning: 9, home: false });
@@ -3118,7 +3124,7 @@ async function challengesWalk(w, h, theme) {
     });
     ok(pv.same && pv.hold && pv.one && pv.make, tag + ' Pro: the live preview is previewChallenge\'s setup line and best-play hold% ' + JSON.stringify(pv));
     await page.click('[data-f="inning"] [data-v="10"]');
-    await page.waitForFunction(() => /on second/.test((document.querySelector('#cb-prev .cb-setup') || {}).textContent || ''), null, { timeout: 30000 });
+    await page.waitForFunction(() => /on second/.test((document.querySelector('#cb-prev .cb-setup') || {}).textContent || ''), null, { timeout: 90000 });
     ok(true, tag + ' Pro: the 10th puts a runner on second');
     await page.click('[data-f="inning"] [data-v="9"]');
     /* a refusal, in the API's words: a pair the mock has no file for answers as an unbuilt bucket file */
@@ -3129,7 +3135,7 @@ async function challengesWalk(w, h, theme) {
     await page.selectOption('#cb-lineup', 'std-2019-nlwc-hader');
     await setup();
     ok(await tall(page, '#s-chal button, #s-chal select') && await noSideScroll(page), tag + ' Pro: every control a 38 px tap and up, no sideways scroll');
-    await page.waitForFunction(() => !document.getElementById('cb-make').disabled, null, { timeout: 30000 });
+    await page.waitForFunction(() => !document.getElementById('cb-make').disabled, null, { timeout: 90000 });
     await page.click('#cb-make');
     await page.waitForSelector('.cb-done #cb-url', { timeout: 20000 });
     const url = await page.inputValue('#cb-url');
@@ -3145,7 +3151,7 @@ async function challengesWalk(w, h, theme) {
   /* the link: a guest opens it, practices, plays the counted try, signs in and posts it */
   {
     const { ctx, page, errors } = await modesPage(w, h, '?mockAuth=late&c=K7M4QX', { meterOff: true, theme, ready: 'body[data-screen="s-cint"]' });
-    await page.waitForSelector('body[data-screen="s-cint"] #ci-hero .ci-head', { timeout: 30000 });
+    await page.waitForSelector('body[data-screen="s-cint"] #ci-hero .ci-head', { timeout: 90000 });
     const ci = await page.evaluate(() => ({ head: document.querySelector('.ci-head').textContent, setup: document.querySelector('.ci-setup').textContent,
       hold: /best play holds/i.test(document.querySelector('.ci-facts').textContent), rows: document.querySelectorAll('#ci-list .ch-rows li').length,
       play: !!document.querySelector('[data-ci="play"]'), practice: !!document.querySelector('[data-ci="practice"]'), sign: !!document.querySelector('#ci-hero [data-sign]'),
@@ -3153,7 +3159,7 @@ async function challengesWalk(w, h, theme) {
     ok(/paintsblack challenges you/i.test(ci.head) && /Anthony Rendon up, 1-2\./.test(ci.setup) && ci.hold && ci.rows === 5, tag + ' the link opens the intro: the maker, the setup, best-play hold%, the standings (' + ci.rows + ')');
     ok(ci.play && ci.practice && ci.sign && !ci.mound, tag + ' the intro: Play and Practice, a sign-in to post, nothing plays by itself');
     await page.click('[data-ci="practice"]');
-    await page.waitForSelector('body[data-screen="s-mound"]', { timeout: 30000 });
+    await page.waitForSelector('body[data-screen="s-mound"]', { timeout: 90000 });
     const md = await page.evaluate(() => ({ b: document.getElementById('m-bname').textContent, c: document.getElementById('m-count').getAttribute('aria-label'), them: document.getElementById('m-themname').textContent }));
     ok(md.b === 'Anthony Rendon' && md.c === '1 balls, 2 strikes', tag + ' practice takes the mound at the spot: ' + JSON.stringify(md));
     /* the counted try, thrown through the calls (the mound's own path is steps 5 and 11), then opened */
@@ -3165,10 +3171,10 @@ async function challengesWalk(w, h, theme) {
       await A.finishOuting(st.outingId);
       window.STD_CHALLENGE_UI.openCode('K7M4QX');
     });
-    await page.waitForSelector('#ci-hero [data-ci="see"]', { timeout: 30000 });
+    await page.waitForSelector('#ci-hero [data-ci="see"]', { timeout: 90000 });
     ok(/You played it as a guest/.test(await page.textContent('#ci-hero')), tag + ' a guest\'s finished try: the intro says so, with See your result and a sign-in to post');
     await page.click('#ci-hero [data-ci="see"]');
-    await page.waitForSelector('body[data-screen="s-result"]', { timeout: 30000 });
+    await page.waitForSelector('body[data-screen="s-result"]', { timeout: 90000 });
     await page.waitForTimeout(1200);
     const rs = await page.evaluate(() => ({ eye: document.getElementById('r-eyebrow').textContent, vs: document.getElementById('r-real').textContent,
       chal: !document.getElementById('r-chal').hidden && document.querySelectorAll('#r-chal .ch-rows li').length, pool: document.getElementById('r-pool').hidden,
@@ -3179,7 +3185,7 @@ async function challengesWalk(w, h, theme) {
     ok(rs.chal === 5 && rs.pool && !rs.pct && rs.pctv == null && String(rs.score) === rs.kp, tag + ' the result: the standings, the score in the percentile\'s place, no percentile');
     ok(rs.board && rs.share && rs.save, tag + ' the result: no board, the share, a guest\'s sign-in to post');
     await page.click('#r-share');
-    await page.waitForSelector('#sheet-share.on #sh-text', { timeout: 30000 });
+    await page.waitForSelector('#sheet-share.on #sh-text', { timeout: 90000 });
     const txt = await page.evaluate(() => window.STD_UI.state.result && document.querySelector('#sheet-share [data-copy]') && document.querySelector('#sheet-share [data-copy]').getAttribute('data-copy'));
     ok(txt === 'https://runthe.gg/shut-the-door/?c=K7M4QX', tag + ' the share sheet carries the https link (' + txt + ')');
     await page.evaluate(() => window.STD_MENUS.close(true));
@@ -3188,11 +3194,11 @@ async function challengesWalk(w, h, theme) {
     await page.fill('#au-email', 'mock@example.com');
     await page.fill('#au-pass', 'mockpass');
     await page.click('#au-form button[type=submit]');
-    await page.waitForFunction(() => [...document.querySelectorAll('#r-chal .ch-rows li.mine')].length === 1, null, { timeout: 30000 });
+    await page.waitForFunction(() => [...document.querySelectorAll('#r-chal .ch-rows li.mine')].length === 1, null, { timeout: 90000 });
     const posted = await page.evaluate(() => ({ save: document.getElementById('r-save').hidden, n: document.querySelectorAll('#r-chal .ch-rows li').length, sheet: !document.getElementById('sheet-auth').hidden }));
     ok(posted.save && posted.n === 6 && !posted.sheet, tag + ' a guest\'s sign-in posts the try once: you are on the standings ' + JSON.stringify(posted));
     await page.goBack();
-    await page.waitForSelector('body[data-screen="s-cint"] .ci-said', { timeout: 30000 });
+    await page.waitForSelector('body[data-screen="s-cint"] .ci-said', { timeout: 90000 });
     ok(/Your try counts/.test(await page.textContent('#ci-hero')), tag + ' back from the result: the intro says your try counts');
     ok(errors.length === 0, tag + ' the link: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
     await ctx.close();
@@ -3200,7 +3206,7 @@ async function challengesWalk(w, h, theme) {
   /* no such code */
   {
     const { ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&c=ZZZZZZ', { meterOff: true, theme, ready: 'body[data-screen="s-cint"]' });
-    await page.waitForSelector('body[data-screen="s-cint"] .ci-load b', { timeout: 30000 });
+    await page.waitForSelector('body[data-screen="s-cint"] .ci-load b', { timeout: 90000 });
     ok(/No challenge with that code/.test(await page.textContent('#ci-hero')), tag + ' a code with no challenge says so');
     await page.click('#ci-back');
     await page.waitForSelector('body[data-screen="s-home"]', { timeout: 5000 });

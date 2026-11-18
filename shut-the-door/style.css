@@ -2479,7 +2479,8 @@ button.hi-row-go:hover { background: var(--panel-2); }
 .ch-ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--data-soft); color: var(--data); }
 .ch-ic svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .ch-ctt { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
-.ch-ctt b { font-weight: 700; font-size: 15.5px; }
+.ch-ctt b { font-weight: 700; font-size: 15.5px; color: var(--ink); }
+.ch-card { color: var(--ink); }
 .ch-ctt small { font-size: 12.5px; line-height: 1.35; color: var(--dim); }
 .ch-card-go { width: 100%; min-height: 44px; margin-top: 12px; font-size: 13.5px; letter-spacing: .07em; text-transform: uppercase; }
 .ch-card-go:hover { border-color: var(--data); color: var(--data); }
@@ -2595,7 +2596,7 @@ li.on .cb-n { background: var(--data); color: #fff; }
   .ch-tabs { display: none; }
   #s-chal[data-tab] .ch-mine, #s-chal[data-tab] .ch-build { display: block; }
   .ch-build { padding: 20px 20px 22px; }
-  .cb-picks { grid-template-columns: 1fr 1fr; }
+  .cb-picks { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
   .cb-prev { position: static; margin: 14px 0 16px; }
   .cb-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cb-grid .cb-f:nth-child(n) { grid-column: auto; }
