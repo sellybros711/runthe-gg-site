@@ -256,6 +256,11 @@
      row's own pitches. {data} or {error}. */
   const submitStats = (row) => act('shutdoor_post_stats', { p_day: row.day, p_stats: row.stats });
   const survivorStats = (row) => act('shutdoor_survivor_stats', { p_day: row.day, p_run: row.run, p_index: row.index, p_stats: row.stats });
+  /* Your history, a Pro perk (supabase/182_shut_the_door_history.sql): the caller's own dailies and
+     Survivor runs, newest first, {pro, items, more, oldest}; then one of them with its calls. Both null
+     signed out or on any failure, and empty for a player who is not Pro. */
+  const history = (before, days) => rpc('shutdoor_history', { p_before: before || null, p_days: days || 30 }, true);
+  const historyOuting = (day, run, index) => rpc('shutdoor_history_outing', { p_day: day, p_run: run == null ? null : run, p_index: index == null ? null : index }, true);
   async function survivorBoard(day, limit) {
     const r = await rpc('shutdoor_survivor_board', { p_day: day, p_limit: limit || 50 });
     return Array.isArray(r) ? r : null;
@@ -362,7 +367,7 @@
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,
     vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, submitStats, survivorStats, archiveSubmit,
-    plates, setPlate,
+    history, historyOuting, plates, setPlate,
     challengeCreate, challengeGet, challengeSubmit, myChallenges, matchupUrl,
   };
 })();

@@ -1229,7 +1229,9 @@ played moves. The rule, and the server's copy of it, are in `modes.js` and
   30 are eligible each day, so the pairs vary. A pure function of the day: every device and the
   server agree without asking.
 - **Who votes**: signed in, once, for tomorrow only, played today or not (164, 2026-11-04: from the
-  home without playing; 160 asked for today's daily first). Each candidate's card carries a `setup`
+  home without playing; 160 asked for today's daily first). A player who voted may change it to the
+  other candidate until the vote closes (180, the owner's call 2026-11-18). Still one vote an account:
+  a change moves it, the tally never gains one. Each candidate's card carries a `setup`
   (data/setups.json): the moment in a sentence or two, never how it ended. Not a device id: a device id is a string any script can mint, so it is no limit. Guests see the
   candidates and the result.
 - **The lock**: voting for D closes when D begins (Eastern). The first read of D locks it, the same for
@@ -1241,12 +1243,15 @@ played moves. The rule, and the server's copy of it, are in `modes.js` and
 ```js
 /** The vote for a day (default tomorrow).
  *  @returns {Promise<{day, open, candidates: Card[2], myVote: string|null, votes: {a, b}|null,
- *                     winner: string|null, canVote: boolean, why: string|null, offline: boolean}>}
+ *                     winner: string|null, canVote: boolean, canChange: boolean, why: string|null,
+ *                     offline: boolean}>}
  *  votes show once you voted or the day is locked. why is the server's reason when canVote is false:
- *  'sign in to vote', 'you voted', 'voting is closed'. */
+ *  'sign in to vote', 'you voted', 'voting is closed'. canChange: you voted and the vote is still
+ *  open, so a cast for the other one moves it (180). */
 vote(day)
 
-/** Cast this player's one vote for tomorrow. The same shape, with error set when refused. */
+/** Cast this player's one vote for tomorrow, or move it to the other one while canChange. The same
+ *  shape, with error set when refused. */
 castVote(scenarioId)
 ```
 

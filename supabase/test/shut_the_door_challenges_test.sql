@@ -1,5 +1,5 @@
--- Shut The Door custom challenges (183). Chain, after the 153 to 160 chains, storage_base.sql
--- and their tests:
+-- Shut The Door custom challenges (183). Chain, after the 153 to 182 chains (181 with 101 and 142),
+-- storage_base.sql and their tests:
 --   psql -d std -f supabase/183_shut_the_door_challenges.sql
 --   psql -d std -f supabase/183_shut_the_door_challenges.sql   (twice: it is safe to rerun)
 --   psql -d std -f supabase/test/shut_the_door_challenges_test.sql
@@ -43,7 +43,7 @@ select pg_temp.claim(shutdoor_challenge_spec_ok(pg_temp.spec() || '{"outs":"1"}'
 select pg_temp.claim(shutdoor_challenge_spec_ok(pg_temp.spec() || '{"extra":1}') = 'not a challenge', 'nothing but the spec');
 select pg_temp.claim(shutdoor_challenge_spec_ok(pg_temp.spec() - 'home') = 'not a challenge', 'every field is there');
 
--- 3. making one is for Pro (160's gate answers false for everyone until 181)
+-- 3. making one is for Pro (181's gate: nobody here has a std_premium row)
 set test.uid = '00000000-0000-0000-0000-0000000000c3';
 select pg_temp.claim(pg_temp.fails($$select shutdoor_challenge_create(pg_temp.spec(), 'm1', pg_temp.sha(), 12)$$), 'free: no challenge made');
 reset test.uid;
@@ -110,10 +110,10 @@ select pg_temp.claim((select count(*) from shutdoor_outings o where o.user_id in
   and (select count(*) from shutdoor_archive a where a.user_id in ('00000000-0000-0000-0000-0000000000c1',
   '00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000c3')) = 0, 'no challenge on any board');
 
--- 7. rerun: nothing kept is lost, the gate is 160's again
+-- 7. rerun: nothing kept is lost, and the real gate is back (181's: a std_premium row, which nobody here has)
 reset test.uid;
 \i supabase/183_shut_the_door_challenges.sql
 select pg_temp.claim((select count(*) from shutdoor_challenge_results) = 3, 'a rerun keeps every result');
-\i supabase/160_shut_the_door_vote_survivor.sql
-select pg_temp.claim(shutdoor_is_pro('00000000-0000-0000-0000-0000000000c1') = false, 'rerunning 160 puts the gate back off');
+\i supabase/181_shut_the_door_pro.sql
+select pg_temp.claim(shutdoor_is_pro('00000000-0000-0000-0000-0000000000c1') = false, 'rerunning 181 puts the real gate back');
 delete from shutdoor_challenges;

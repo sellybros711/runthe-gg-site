@@ -187,8 +187,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -447,8 +447,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -705,8 +705,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "80",
-      "sha": "4aef20a378a0d15f"
+      "v": "81",
+      "sha": "d03dfffc116e26a3"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -775,8 +775,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -961,8 +961,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1139,8 +1139,8 @@
       "sha": "c04d30537df36ba9"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1159,8 +1159,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "79",
-      "sha": "248370cd4d018d98"
+      "v": "80",
+      "sha": "1f3187e06f2922e2"
     },
     "/arcade/stats.js": {
       "v": "4",
@@ -1413,8 +1413,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1583,8 +1583,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1757,8 +1757,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -2007,8 +2007,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "80",
-      "sha": "4aef20a378a0d15f"
+      "v": "81",
+      "sha": "d03dfffc116e26a3"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -2203,8 +2203,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "79",
-      "sha": "bb9c8118c7d404bc"
+      "v": "80",
+      "sha": "f92ae7a44c8fd140"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -2227,8 +2227,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "79",
-      "sha": "248370cd4d018d98"
+      "v": "80",
+      "sha": "1f3187e06f2922e2"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -3259,8 +3259,8 @@
       "sha": "d2d99b18119115e3"
     },
     "menus.js": {
-      "v": "28",
-      "sha": "7c7acfeb56723bb5"
+      "v": "31",
+      "sha": "4f3246efe05d06e1"
     },
     "rng.js": {
       "v": "1",
@@ -3299,8 +3299,8 @@
       "sha": "b2970890cdd43dc7"
     },
     "auth.js": {
-      "v": "13",
-      "sha": "b9377f272749b821"
+      "v": "15",
+      "sha": "cdddec99c9c81a57"
     },
     "voices.js": {
       "v": "6",
@@ -3315,12 +3315,12 @@
       "sha": "374492f48b227041"
     },
     "api.js": {
-      "v": "38",
-      "sha": "6039cefcb1364c9e"
+      "v": "40",
+      "sha": "f3dc448c01a22f7b"
     },
     "mock-api.js": {
-      "v": "25",
-      "sha": "96d8b665d583076e"
+      "v": "27",
+      "sha": "3dd758f7a31027d7"
     },
     "coach.js": {
       "v": "2",
@@ -3331,8 +3331,16 @@
       "sha": "079c28d2327d3f0e"
     },
     "modes-ui.js": {
-      "v": "13",
-      "sha": "efa97f191d3ea656"
+      "v": "15",
+      "sha": "54eb5d36ba3cc810"
+    },
+    "pro.js": {
+      "v": "2",
+      "sha": "5806990f9450b61a"
+    },
+    "history-ui.js": {
+      "v": "2",
+      "sha": "b1440ca988edf379"
     },
     "box-ui.js": {
       "v": "2",
@@ -3355,8 +3363,8 @@
       "sha": "abd9d53cd6784a96"
     },
     "ui.js": {
-      "v": "87",
-      "sha": "19c20ebdbe539752"
+      "v": "90",
+      "sha": "9e2149b8759229e9"
     },
     "3d/boot.js": {
       "v": "119",

@@ -237,7 +237,7 @@ function renderStats(m) {
     return '<li><span class="rd">#' + esc(r.number) + '</span><span class="ro">' + esc(C.OUTCOME_LABEL[r.outcome] || '') + '</span><span class="rs">' +
       (r.strip || []).map(function (b) { return '<i class="sq ' + esc(b) + '"></i>'; }).join('') + '</span></li>';
   }).join('');
-  $('stats-body').innerHTML =
+  $('stats-body').innerHTML = '<div class="st-hist" id="st-hist"></div>' +
     '<p class="src-tag ' + m.src + '">' + (m.src === 'account' ? 'your account' : 'this device') + '</p>' +
     '<div class="tiles">' + tile(n, 'played') + tile(shut, 'doors shut') + tile(n ? Math.round(shut / n * 100) + '%' : null, 'shut rate') +
     tile(m.streak, 'streak') + tile(m.best, 'best streak') + tile(m.avgPercentile, 'avg percentile') + '</div>' +
@@ -247,6 +247,19 @@ function renderStats(m) {
       : '<p class="quiet">no pitches graded yet.</p>') +
     (recent ? '<h3>recent</h3><ul class="recent">' + recent + '</ul>' : '') +
     (m.src === 'account' ? '<p class="quiet">kept on your account, on every device.</p>' : '<p class="quiet">kept on this device. sign in to keep it on your account.</p>');
+  renderHistRow();
+}
+/* YOUR HISTORY (Pro, history-ui.js): one row at the top of the stats sheet. Pro opens its screen; anyone
+   else reads a plain locked row that names the perk, with nothing to buy here. The gate is the
+   entitlements' pro (shutdoor_is_pro), false for everyone until Pro is live */
+function renderHistRow() {
+  var el = $('st-hist'), HU = window.STD_HISTORY_UI;
+  if (!el) return;
+  if (!HU) { el.innerHTML = ''; return; }
+  var pro = !!(ctx.ent && ctx.ent.pro && ctx.onHistory);
+  el.innerHTML = HU.rowHTML(pro);
+  var b = $('st-hist-go');
+  if (b && pro) b.addEventListener('click', function () { closeSheet(true); ctx.onHistory(); });
 }
 function showStats() {
   var A = window.STD_AUTH, st = {};
@@ -266,14 +279,15 @@ function showStats() {
 function renderPast(scn) {
   var n = scn ? scn.number : 1, tiles = '';
   /* THE ARCHIVE (Pro, CONTRACT.md 17): every past daily, played on its own spot and seed, never on the
-     board. Only when entitlements() says archive, which is false for everyone until Pro exists, so
-     today every player sees the locked tiles below. No price and no buy button here. */
+     board. Only when entitlements() says archive (shutdoor_is_pro, supabase/181). Everybody else sees
+     the locked tiles below and the store's Get Pro block (pro.js); Pro sees Manage billing under it. */
+  var PRO = window.STD_PRO;
   if (ctx.ent && ctx.ent.archive && ctx.archiveDays && ctx.onArchive) {
     var days = ctx.archiveDays(ctx.today);
     $('past-body').innerHTML = (days.length
       ? '<p>pick a day. it plays on that day\'s spot and luck. it never goes on the leaderboard.</p><div class="arc-list">' +
         days.map(function (d) { return '<button type="button" data-day="' + esc(d.day) + '"><b>#' + esc(d.number) + '</b><span>' + esc(shortDay(d.day)) + '</span></button>'; }).join('') + '</div>'
-      : '<p>nothing before #' + esc(n) + ' yet.</p>') + calendar(days, true);
+      : '<p>nothing before #' + esc(n) + ' yet.</p>') + calendar(days, true) + (PRO ? PRO.billing() : '');
     $('past-body').querySelectorAll('.arc-list [data-day]').forEach(function (b) {
       b.addEventListener('click', function () { ctx.onArchive(b.getAttribute('data-day')); });
     });
@@ -283,8 +297,9 @@ function renderPast(scn) {
   for (var i = n - 1; i >= Math.max(1, n - 12); i--) tiles += '<div class="past-t"><b>#' + i + '</b><span class="lock" aria-hidden="true"></span></div>';
   var past = ctx.archiveDays ? ctx.archiveDays(ctx.today) : null;
   $('past-body').innerHTML =
-    '<p>past dailies open later. today\'s is #' + esc(n) + '.</p>' +
+    '<p>' + (PRO ? 'past dailies are for pro.' : 'past dailies open later.') + ' today\'s is #' + esc(n) + '.</p>' +
     (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>') +
+    (PRO ? PRO.offer('archive') : '') +
     (past ? calendar(past, false) : '');
   if (past) wireCal(past, false);
 }
@@ -437,7 +452,7 @@ function renderAuth() {
 /* THE PLATE PICKER (the owner, 2026-11-03; every club, the throwbacks and Diamond, 2026-11-17): the
    neutral plate and Diamond, today's 30 clubs, then the throwbacks. A locked one says how to get it:
    a save as that club's closer, "No situation yet" when no pack has one (it opens by itself when a
-   pack adds one), or Pro for Diamond. A pick goes to the account, which checks the unlock. */
+   pack adds one), or Pro for Diamond, with Get Pro under the grid. A pick goes to the account, which checks the unlock. */
 function platePicker(st) {
   var PL = window.STD_PLATE;
   if (!PL) return '';
@@ -457,6 +472,8 @@ function platePicker(st) {
   var mine = have.filter(function (k) { return PL.all().indexOf(k) >= 0; }).length;
   return '<div class="plk-h"><b>Your plate</b><span id="pk-count">' + esc(mine) + ' of ' + esc(PL.all().length) + '</span></div>' +
     '<div class="plk-grid" id="pk-grid">' + [null, PL.DIAMOND].concat(PL.current30()).map(tile).join('') + '</div>' +
+    /* Diamond is Pro's (supabase/178): while it is locked, the store's Get Pro block (pro.js) under the grid */
+    (window.STD_PRO && have.indexOf(PL.DIAMOND) < 0 ? window.STD_PRO.offer('plate') : '') +
     '<div class="plk-h plk-tb"><b>Throwbacks</b></div>' +
     '<div class="plk-grid" id="pk-grid-tb">' + PL.throwbacks().map(tile).join('') + '</div>' +
     '<p class="au-err" id="pk-err" role="alert"></p>';
@@ -489,7 +506,7 @@ function renderMenuTiles() {
     tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
 }
 
-var ctx = { onPlate: null, hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null };
+var ctx = { onPlate: null, hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null, onHistory: null };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   open: openSheet,
@@ -499,6 +516,7 @@ var api = {
   streakOf: streakOf,
   PRINCIPLE: PRINCIPLE,
   renderAuth: renderAuth,
+  renderHistRow: renderHistRow,
   /* the past dailies live on the home's archive tab (ui.js setTab) */
   renderPast: function () { renderPast(ctx.scn); },
   show: function (which) {

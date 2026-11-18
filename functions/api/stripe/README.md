@@ -537,6 +537,78 @@ values ('<user uuid>', 'rtf_premium', 'comp')
 on conflict (user_id, product) do update set expires_at = null;
 ```
 
+## Shut The Door Pro ($9.99 a year) and the pair with Diamond Pro ($19.99 a year)
+
+The owner's calls of 2026-11-18. Two catalog rows in `_bundles.js`, both `recurring: true`, so
+they go through the same checkout and webhook as Diamond Pro and no second payment path exists.
+
+| row | grants | price variable | lookup key | sold from |
+|---|---|---|---|---|
+| `door-pro` | `std_premium` | `STRIPE_PRICE_STD_PRO` | `std_pro_year` | `/shut-the-door/` (archive tab, a Survivor run that is over, the plate picker while Diamond is locked) |
+| `diamond-door-pro` | `rtd_premium` and `std_premium`, one subscription | `STRIPE_PRICE_RTD_STD_PRO` | `rtd_std_pro_year` | the Run The Diamond Pro sheet, under Get Pro |
+
+What Shut The Door Pro opens is everything `supabase/160` and `178` already gate on
+`shutdoor_is_pro`, which `181` switches on: another Survivor run as soon as the last is over
+(no cap; only run 0 is on the Survivor board), every past daily in the archive (never on the
+daily board), the Diamond plate, and no video break between Survivor spots. The daily, the
+grade and the boards are the same for everybody. Diamond Pro on its own does NOT include it.
+
+**The price a player reads is the catalog's.** Each row carries `cents` and `lookupKey`. The
+setup script mints the Stripe Price from them, and `verify-bundles.mjs` holds the page copies
+(`shut-the-door/pro.js` `PRICES`, `baseball/index.html` `PRO_PRICE` and `PAIR_PRICE`) to them.
+
+**The pair is refused to anybody holding either half now** (`409 already_owned`, the one bundle
+per account rule). A Diamond Pro subscriber buys Shut The Door Pro alone. The baseball sheet
+hides the pair from an account that already has `std_premium`.
+
+**Two subscriptions can now write one product** (`rtd_premium` from Diamond Pro or from the
+pair). `grantRecurring` leaves a live row that a different subscription wrote, so a late
+cancellation or a refund of somebody's old Diamond Pro never ends the pair they now pay for.
+Once that row has ended, any subscription may write it again (`check-recurring.mjs` section 7).
+
+**Do not let the Customer Portal switch between these products.** A recurring bundle is read
+off the bundle key on the subscription's metadata, so a Diamond Pro subscription switched to
+the pair's price in the portal would keep granting Diamond Pro alone. Leave product switching
+off in Settings, Billing, Customer portal (cancellation and payment methods only).
+
+```
+node scripts/stripe/verify-bundles.mjs     the catalog, the constraint, the page prices
+node scripts/stripe/check-checkout.mjs     who may buy door-pro and the pair
+node scripts/stripe/check-recurring.mjs    sections 6 and 7
+node scripts/stripe/replay-webhook.mjs     both, against a real Postgres with 181 in it
+psql ... -f supabase/test/shut_the_door_pro_test.sql   181 in SQL (shut-the-door-checks.yml)
+```
+
+### Go-live, in this order
+
+1. **Run `supabase/181_shut_the_door_pro.sql`** in the Supabase SQL editor. Then paste
+   `supabase/test/launch_preflight.sql` and confirm row 69 reads **yes**. Until it runs, the
+   table refuses `std_premium` and a paid checkout 500s in the webhook. Nobody owns
+   `std_premium` yet, so running it early unlocks nothing.
+2. **Create the two Prices in Stripe**, both **recurring yearly, USD**:
+   **Shut The Door Pro** at **$9.99**, lookup key `std_pro_year`, and
+   **Run The Diamond Pro + Shut The Door Pro** at **$19.99**, lookup key `rtd_std_pro_year`.
+   Or `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`, which is
+   idempotent and prints the env var lines. Copy both price ids.
+3. **Cloudflare Pages, Production:** `STRIPE_PRICE_STD_PRO = price_...` ($9.99) and
+   `STRIPE_PRICE_RTD_STD_PRO = price_...` ($19.99). Redeploy. Until each is set its button
+   answers "not on sale yet".
+4. **Nothing to change on the webhook.** It already listens for the `customer.subscription.*`
+   and refund events Diamond Pro needs.
+5. **Test each** with a 100% off promotion code restricted to that product, signed in:
+   `/shut-the-door/` archive tab, Get Pro, pay with the code, land back on the game with "pro is
+   on", the archive list opens, Survivor offers another run, Diamond can be worn. Then the pair
+   from `/baseball/`'s Pro sheet: both games open. Cancel each from Manage billing and confirm Pro
+   stays to the end of the period.
+
+To comp somebody for good by hand:
+
+```sql
+insert into public.premium_unlocks (user_id, product, source)
+values ('<user uuid>', 'std_premium', 'comp')
+on conflict (user_id, product) do update set expires_at = null;
+```
+
 ## Run The Floor's coin buckets and Floor Pass (shipped dark)
 
 Both are built and **off**. Nothing below sells anything until its switch is flipped,

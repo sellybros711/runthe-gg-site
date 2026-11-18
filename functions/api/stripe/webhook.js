@@ -44,7 +44,9 @@
  * event about it is written by grantRecurring as the same premium_unlocks row with an
  * end date that follows the subscription. It never reaches upsertSub either. Routing
  * order, which is load bearing: a yearly plan (price, then metadata) first, then a
- * recurring bundle (metadata), then the Arcade Card.
+ * recurring bundle (metadata), then the Arcade Card. Shut The Door Pro and the Diamond +
+ * Shut The Door pair are recurring bundles the same way; the pair is one subscription
+ * that writes two rows.
  */
 import { bundleByKey, yearlyBonus, bundleForYearPrice, bucketByKey, passSeason, puttLivesPack } from './_bundles.js';
 
@@ -644,6 +646,17 @@ async function grantRecurring(env, userId, bundleKey, sub, refund) {
     const have = await pgFirst(env, 'premium_unlocks?user_id=eq.' + encodeURIComponent(userId) +
       '&product=eq.' + encodeURIComponent(g.product) + '&select=expires_at,source,payload&limit=1');
     if (have && !have.expires_at && String(have.source || '').indexOf('subscription:') !== 0) continue;
+
+    /* A LIVE ROW ANOTHER SUBSCRIPTION WROTE IS THAT SUBSCRIPTION'S. Two recurring bundles
+       now grant one product (Diamond Pro and the Diamond + Shut The Door pair both write
+       rtd_premium), so somebody whose Diamond Pro ran out and who then bought the pair has
+       one row the pair keeps. A late event for the old subscription (its deletion arriving
+       after the new checkout, a refund of an old invoice) must not end what the new one
+       paid for. Once that row has ended, any subscription may write it again. */
+    const owner = have && have.payload && have.payload.stripe_subscription;
+    const liveTill = have && have.expires_at ? Date.parse(have.expires_at) : NaN;
+    if (owner && owner !== sub.id && isFinite(liveTill) && liveTill > now.getTime() &&
+        String(have.source || '').indexOf('subscription:') === 0) continue;
 
     const prior = Number((have && have.payload && have.payload.refunded_through) || 0) || 0;
     const refundedThrough = refund ? Math.max(prior, periodEnd || Math.floor(now.getTime() / 1000)) : prior;
