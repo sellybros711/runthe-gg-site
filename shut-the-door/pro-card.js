@@ -5,7 +5,8 @@
  *   pair()  Shut The Door Pro and Run The Diamond Pro together, in the archive tab under the store's own
  *           Get Pro, while the past dailies are locked (menus.js)
  *
- * The Diamond plate leads: it is the one thing on the list a player sees by somebody else's name.
+ * The headlines are the plain product names (the owner, 2026-11-18). The Diamond plate is the picture:
+ * it is the one thing on the list a player sees by somebody else's name.
  *
  * EVERY PRICE IS THE CATALOG'S. They are read off pro.js's PRICES, which verify-bundles.mjs holds to
  * functions/api/stripe/_bundles.js cent for cent, and the saving is arithmetic on those, never typed.
@@ -41,7 +42,7 @@ function home() {
   if (!p) return '';
   var signed = p.signedIn();
   return '<section class="pc-card pro-offer" aria-labelledby="pc-h">' +
-    '<div class="pc-top">' + gem('', 'pc-big') + '<div><i class="pc-chip">pro</i><h2 class="pc-h" id="pc-h">Wear the <em>Diamond.</em></h2></div></div>' +
+    '<div class="pc-top">' + gem('', 'pc-big') + '<div><i class="pc-chip">pro</i><h2 class="pc-h" id="pc-h">Shut The Door <em>Pro</em></h2><p class="pc-sub">Become a member.</p></div></div>' +
     you() +
     '<ul class="pc-list">' + LIST.map(function (t) { return '<li><i>' + TICK + '</i>' + esc(t) + '</li>'; }).join('') + soon() + '</ul>' +
     '<div class="pc-buy"><p class="pc-price"><b>' + esc(p.money(p.PRICES[p.BUNDLE])) + '</b><span>a year</span></p>' +
@@ -57,7 +58,7 @@ function pair() {
   return '<section class="pc-card pc-pair pro-offer" aria-labelledby="pc-ph">' +
     '<div class="pc-duo">' + gem('', 'pc-mid') + '<span aria-hidden="true">+</span><img src="/baseball/icon-192.png?v=3" alt="" width="52" height="52" loading="lazy"></div>' +
     '<i class="pc-chip">both games · pro</i>' +
-    '<h2 class="pc-h" id="pc-ph">Two ballgames. <em>One pass.</em></h2>' +
+    '<h2 class="pc-h" id="pc-ph">Run The Diamond + <em>Shut The Door package</em></h2>' +
     '<div class="pc-two"><div><b>Shut The Door Pro</b><span>Unlimited Survivor runs every day. Every past daily. No video ads.</span><em>soon: custom challenges</em></div>' +
     '<div><b>Run The Diamond Pro</b><span>All six modes, as often as you like. Your batting order. Two Pro parks.</span></div></div>' +
     you() +

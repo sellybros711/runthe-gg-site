@@ -2230,11 +2230,13 @@ body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="
 .pc-card .plate.pc-mid { width: 56px; height: 58px; filter: drop-shadow(0 8px 12px rgba(43, 89, 255, .35)); }
 .pc-duo span { font: 400 26px var(--hero); color: #2b59ff; }
 .pc-duo img { width: 52px; height: 52px; border-radius: 13px; box-shadow: 0 8px 16px -6px rgba(0, 0, 0, .4); }
-.pc-pair .pc-h { font-size: 32px; margin-top: 8px; }
+.pc-pair .pc-h { font-size: 30px; margin-top: 8px; }
+.pc-sub { margin: 4px 0 0; font-size: 14px; font-weight: 600; color: #2d4361; }
 .pc-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 0; }
 .pc-two div { background: rgba(255, 255, 255, .72); border-radius: 12px; padding: 10px; box-shadow: 0 0 0 1px rgba(43, 89, 255, .15); }
 .pc-two b { display: block; font-size: 13px; }
 .pc-two span { display: block; font-size: 12px; line-height: 1.35; color: #2d4361; margin-top: 4px; }
 .pc-two em { display: inline-block; margin-top: 6px; }
-.pc-save { margin: 8px 0 0; font-size: 12px; font-weight: 600; color: #2d4361; text-align: center; }
+.pc-save { margin: 8px 0 0; font-size: 12.5px; font-weight: 700; color: #0b1a2e; text-align: center; }
+@media (max-width: 359px) { .pc-pair .pc-h { font-size: 26px; } .pc-h { font-size: 30px; } }
 @media (min-width: 980px) { .pc-h { font-size: 38px; } }
