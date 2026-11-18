@@ -2,6 +2,9 @@
  *
  * The UI's file. Two blocks a screen drops in where the player chose to look, never anything that opens:
  *   home()  Shut The Door Pro, on the daily tab under today's top 3, for anybody who is not Pro (ui.js)
+ *   bar()   the same offer as one slim row, under the columns of the home on a desk (desk.js; the owner,
+ *           2026-11-18: Pro not featured there). The small gem, the name, the perks on one line, the price
+ *           and the button. ui.js paints it in place of home() while STD_DESK.on()
  *   pair()  Shut The Door Pro and Run The Diamond Pro together, in the archive tab under the store's own
  *           Get Pro, while the past dailies are locked (menus.js)
  *
@@ -50,6 +53,18 @@ function home() {
     '<p class="au-err" data-pro-err role="alert"></p></section>';
 }
 
+function bar() {
+  var p = P();
+  if (!p) return '';
+  var signed = p.signedIn();
+  return '<section class="pb-bar pro-offer" aria-label="Shut The Door Pro">' + gem('', 'pb-gem') +
+    '<p class="pb-name">Shut The Door <em>Pro</em></p>' +
+    '<p class="pb-perks">' + LIST.map(esc).join('<span aria-hidden="true">·</span>') + '</p>' +
+    '<p class="pb-price"><b>' + esc(p.money(p.PRICES[p.BUNDLE])) + '</b> a year</p>' +
+    '<button class="btn pb-go" type="button" data-pro-buy>' + (signed ? 'get pro' : 'sign in to get pro') + '</button>' +
+    '<p class="au-err" data-pro-err role="alert"></p></section>';
+}
+
 function pair() {
   var p = P();
   if (!p) return '';
@@ -68,5 +83,5 @@ function pair() {
     '<p class="au-err" data-pro-err role="alert"></p></section>';
 }
 
-window.STD_PRO_CARD = { API_VERSION: 1, home: home, pair: pair };
+window.STD_PRO_CARD = { API_VERSION: 1, home: home, bar: bar, pair: pair };
 })();
