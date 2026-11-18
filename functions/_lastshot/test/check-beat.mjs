@@ -42,7 +42,7 @@ const BASEC = { clock: 12, down: 1, set: 'box', scheme: 'under', seed: 987654 };
 const SC = challengeScenario(BASEC);
 const mk = (tx, ty, g) => ({ spots: SC.spots, goAt: g, steps: [{ kind: 'screen', who: 'O5', pts: [P(31, 12.3)] }, { kind: 'move', who: 'O2', pts: [P(40, 6), P(tx, ty)] },
   { kind: 'pass', from: 'O1', to: 'O2' }, { kind: 'shoot', who: 'O2' }] });
-const THEIRS = mk(22, 24, 6), BETTER = mk(14, 16, 6), WORSE = mk(46, 28, 2);
+const THEIRS = mk(22, 24, 6), BETTER = mk(14, 14, 6), WORSE = mk(46, 28, 2);
 const CODE = encode({ ...BASEC, play: THEIRS });
 const T = resultOf(decode(CODE));
 const scoreAs = p => scoreOf(simulate(SC, p, BASEC.seed, challengeOpt(BASEC)));
