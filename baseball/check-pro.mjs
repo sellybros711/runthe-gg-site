@@ -77,7 +77,7 @@ window.RTD_AUTH = (function () {
     signIn: async () => ({ error: null }), signUp: async () => ({ error: null }),
     signInGoogle() {}, signOut: async () => {}, available: async () => true,
     setName: async () => ({ error: null }), claim: async () => false, deleteAccount: async () => ({}),
-    premiumProducts: async () => (cfg.signedIn ? (cfg.pro ? ['rtd_premium'] : []) : []),
+    premiumProducts: async () => (cfg.signedIn ? (cfg.products || (cfg.pro ? ['rtd_premium'] : [])) : []),
     modeState: async () => (cfg.signedIn ? (cfg.meter || null) : null),
     modeSpend: async (m) => { window.__spent.push(m); return { ok: true, pro: !!cfg.pro, mode: m }; },
   };
@@ -229,12 +229,35 @@ try {
     claim(sent[0] && sent[0].auth === 'Bearer tok-1', 'with the account token, never a user id in the body');
     const err = await page.textContent('#pro-err');
     claim(/not on sale yet/.test(err), 'a checkout that is not configured says so on the sheet', err);
+    /* THE PAIR (the owner, 2026-11-18): Diamond Pro and Shut The Door Pro for one yearly price,
+       read off the page's own constant, which verify-bundles.mjs holds to the catalog. */
+    const src3 = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
+    const pair = (/const PAIR_PRICE='([^']+)'/.exec(src3) || [])[1] || '(none)';
+    const pairBtn = await page.textContent('#b-pro-pair').catch(() => '');
+    claim(pairBtn.includes('Shut The Door Pro') && pairBtn.includes(pair + ' a year'),
+      'the sheet offers both games together, with the price and that it is yearly', pairBtn);
+    await page.evaluate(() => document.getElementById('b-pro-pair').click());
+    await page.waitForTimeout(250);
+    claim(sent.length === 2 && sent[1].body && sent[1].body.bundle === 'diamond-door-pro' && sent[1].body.return_path === '/baseball/',
+      'the pair posts the diamond-door-pro bundle to the same checkout, back to the game', JSON.stringify(sent));
+    claim((await page.textContent('#b-pro-pair')) === pairBtn, 'and its button reads the same again after the answer');
     await page.evaluate(() => { document.querySelector('#sheet-pro [data-close-pro]').click(); });
 
     await tile(page, 'trade');
     await page.waitForTimeout(300);
     const spent = await page.evaluate(() => window.__spent);
     claim(spent.includes('trade'), 'a start is sent to the server meter', JSON.stringify(spent));
+    await ctx.close();
+  }
+
+  head('3b. AN ACCOUNT WITH SHUT THE DOOR PRO IS NOT OFFERED THE PAIR');
+  {
+    const { ctx, page } = await open({ signedIn: true, products: ['std_premium'] });
+    await page.waitForTimeout(200);
+    await page.evaluate(() => document.getElementById('b-hp-pro').click());
+    await page.waitForTimeout(150);
+    claim(!!(await page.$('#b-pro-buy')) && !(await page.$('#b-pro-pair')),
+      'Diamond Pro on its own is offered, the pair is not (the checkout would refuse it)');
     await ctx.close();
   }
 
