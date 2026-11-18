@@ -2098,6 +2098,7 @@ function paintProfile() {
 /* The entitlements, once they answer: the archive's menu, and Diamond (plate.js) by the same Pro gate */
 function proPlate(e) {
   MN.init({ ent: e });
+  paintProCard(e);
   if (tab === 'arc') MN.renderPast();
   if (MN.current() === 'sheet-stats') MN.renderHistRow();
   if (window.STD_PLATE) {
@@ -2105,6 +2106,14 @@ function proPlate(e) {
     paintProfile();
     if (MN.current() === 'sheet-auth') MN.renderAuth();
   }
+}
+/* THE PRO CARD (pro-card.js) under today's top 3: once the entitlements answer, and only while they say
+   not Pro. Repainted with them, so signing in or buying takes it away. */
+function paintProCard(e) {
+  var el = $('h-pro'), C = window.STD_PRO_CARD, show = !!(C && e && !e.pro);
+  if (!el) return;
+  el.innerHTML = show ? C.home() : '';
+  el.hidden = !show || !el.innerHTML;
 }
 /* signed in: the account's plates, and a guest's chosen plate carried over when the account has it */
 function syncPlates() {
