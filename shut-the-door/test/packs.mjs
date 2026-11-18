@@ -41,7 +41,10 @@ function check(name, cond, detail) {
 /* Release and spin (pipeline/tracking.py, CONTRACT.md 4): for the picture only. A proxy spot is null
    throughout. A tracked pitcher has his release side by his hand (catcher's view: a righty's hand is
    on the third base side, x < 0), a sane height and extension, and on Statcast every pitch type has
-   a spin rate of 1,000 to 3,500 rpm and an axis of 0 to 360. PITCHf/x carries x and z only.
+   a spin rate of 500 to 3,500 rpm and an axis of 0 to 360. PITCHf/x carries x and z only. The floor
+   was 1,000 until 2026-11-18: a real splitter spins slower (Savant 2025, the pitcher's own pitches:
+   Cade Smith's 711 rpm over 251, Emilio Pagan's 970 over 215), and the picture draws any rate down
+   to 72 rpm (3d/preview.js RPS_MIN), so 500 still catches a broken one.
    Gaps in the source stay null (pipeline/tracking.py): a PITCHf/x pitch whose mean release is on the
    wrong side for his hand has no release (the picture uses his overall one), and a Statcast spin the
    picture cannot draw is null with its reason in tracking.spinNull: no axis (Savant has none in 2015:
@@ -77,7 +80,7 @@ function trackingErrs(sc) {
     const s = a.spin;
     if (!statcast) { if (s !== null) errs.push(a.type + ' spin before Statcast'); continue; }
     if (!s) { if (!(t.spinNull && t.spinNull[a.type])) errs.push(a.type + ' has no spin'); continue; }
-    if (!inR(s.rate, 1000, 3500) || !Number.isInteger(s.rate)) errs.push(`${a.type} spin rate ${s.rate}`);
+    if (!inR(s.rate, 500, 3500) || !Number.isInteger(s.rate)) errs.push(`${a.type} spin rate ${s.rate}`);
     if (!inR(s.axis, 0, 360)) errs.push(`${a.type} spin axis ${s.axis}`);
     if (s.active !== null && !inR(s.active, 0, 100)) errs.push(`${a.type} active spin ${s.active}`);
     if (s.active !== null && !t.active) errs.push(a.type + ' active spin without a source');
@@ -294,13 +297,13 @@ let bitten = false;
 for (const f of files) {
   const pack = JSON.parse(readFileSync(f, 'utf8'));
   if (!calibOnly) { shapeChecks(pack, f); determinism(pack); }
-  // the release and spin check bites: a hand on the wrong side, a spin rate past 3,500 and an axis
-  // past 360 on a copy of the first Statcast pitcher are each caught
+  // the release and spin check bites: a hand on the wrong side, a spin rate past 3,500 or under 500
+  // and an axis past 360 on a copy of the first Statcast pitcher are each caught
   if (!calibOnly && !bitten && pack.scenario.pitcher.tracking && pack.scenario.pitcher.tracking.system === 'statcast' && pack.scenario.pitcher.arsenal[0].spin) {
     bitten = true;
     const bad = (fn) => { const sc = JSON.parse(JSON.stringify(pack.scenario)); fn(sc.pitcher); return trackingErrs(sc).length > 0; };
-    check(`${pack.scenario.id}: the release and spin check catches a wrong side, a fast spin and an axis past 360`,
-      bad((p) => { p.release.x = -p.release.x; }) && bad((p) => { p.arsenal[0].spin.rate = 3600; }) &&
+    check(`${pack.scenario.id}: the release and spin check catches a wrong side, a fast spin, a slow one and an axis past 360`,
+      bad((p) => { p.release.x = -p.release.x; }) && bad((p) => { p.arsenal[0].spin.rate = 3600; }) && bad((p) => { p.arsenal[0].spin.rate = 400; }) &&
       bad((p) => { p.arsenal[0].spin.axis = 400; }) && bad((p) => { p.arsenal[0].spin = null; }) && !bad(() => {}));
   }
   const c = calibration(pack);

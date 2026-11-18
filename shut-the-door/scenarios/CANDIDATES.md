@@ -543,3 +543,26 @@ pack build and is unverified here.
 - **Search:** LI9 2.99 at entry (from 702 ninth-inning PAs in that state), outing win-expectancy swing 1.43. MLB leverageIndex of his first plate appearance: 3.47
 - **Sources:** Baseball Savant pitch-by-pitch, game_pk 777472: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=777472; MLB Stats API schedule 2025-06-17 and live feed /api/v1.1/game/777472/feed/live; MLB Stats API people with 2025 season stats; Baseball Savant 661403 2025 season search (regular season and postseason) for the arsenal
 
+
+## The 13 clubs (2026-11-18)
+
+Thirteen of today's clubs had no closer in any pack, so their plates could never open. One real save each,
+in from the start of the 9th (or later), up 1 to 3, all Statcast. Every fact below is in data/verify/<id>.json with its sources.
+The postseason spots were found among every 2015-2025 postseason save by these clubs (Stats API decisions, the entry
+state from the live feed); the regular season ones in the closers' own game logs. Clase and Osuna stay out of the pool.
+
+| club | closer | verify | game | start | faced | real | alternates looked at |
+|---|---|---|---|---|---|---|---|
+| Blue Jays | Jeff Hoffman | `hoffman-2025-alcs7` | 2025-10-20, AL Championship Series Game 7: Seattle Mariners at Toronto Blue Jays | top 9, 0 out, empty, up 4-3 | 3 | door shut, 17 pitches, 0 runs | Jeff Hoffman 2025 ALDS G4 (in with two out in the 8th, up 5-1); Roberto Osuna 2015 ALDS G5 (left out of the pool, and in the 8th) |
+| Orioles | Zack Britton | `rs-britton-2016-09-28` | 2016-09-28, Regular Season Game 2: Baltimore Orioles at Toronto Blue Jays | bottom 9, 0 out, empty, up 3-2 | 3 | door shut, 14 pitches, 0 runs | Britton 2016-09-14 at Boston (up 1-0); Félix Bautista 2023-08-06 vs the Mets (up 2-0) |
+| White Sox | Alex Colomé | `colome-2020-alwc1` | 2020-09-29, AL Wild Card Series Game 1: Chicago White Sox at Oakland Athletics | bottom 9, 0 out, empty, up 4-1 | 3 | door shut, 10 pitches, 0 runs | Liam Hendriks 2021 (no postseason save; the White Sox 2021 ALDS win was 12-6) |
+| Guardians | Cade Smith | `rs-smith-2025-09-23` | 2025-09-23, Regular Season Game 1: Detroit Tigers at Cleveland Guardians | top 9, 0 out, empty, up 5-2 | 3 | door shut, 9 pitches, 0 runs | Cade Smith 2025-09-14 vs the White Sox (up 3-2); Cody Allen 2016 ALCS G1 and G2 (Cleveland Indians: the throwback plate, not today's club); Emmanuel Clase (left out of the pool) |
+| Tigers | Will Vest | `vest-2024-alwc2` | 2024-10-02, AL Wild Card Series Game 2: Detroit Tigers at Houston Astros | bottom 9, 0 out, empty, up 5-2 | 3 | door shut, 7 pitches, 0 runs | Beau Brieske 2024 ALDS G2 (up 3-0); Tyler Holton 2024 ALDS G3 (up 3-0) |
+| Twins | Taylor Rogers | `rs-rogers-2019-09-24` | 2019-09-24, Regular Season Game 1: Minnesota Twins at Detroit Tigers | bottom 9, 0 out, empty, up 4-2 | 3 | door shut, 12 pitches, 0 runs | Jhoan Duran 2023 AL Wild Card Series G1 and G2 (`duran-2023-alwc1`, verified: his 98 mph splitter has no league splitter within 3 mph in any season, an empty cell even widened, as Familia 2015); Rogers 2019-09-28 at Kansas City (up 4-3) |
+| Mariners | Andrés Muñoz | `munoz-2025-alcs1` | 2025-10-12, AL Championship Series Game 1: Seattle Mariners at Toronto Blue Jays | bottom 9, 0 out, empty, up 3-1 | 3 | door shut, 8 pitches, 0 runs | Andrés Muñoz 2025 ALDS G2 (up 3-2); George Kirby 2022 AL Wild Card Series G2 (a starter, up 10-9) |
+| Marlins | Brandon Kintzler | `kintzler-2020-nlwc2` | 2020-10-02, NL Wild Card Series Game 2: Miami Marlins at Chicago Cubs | bottom 9, 0 out, empty, up 2-0 | 4 | door shut, 19 pitches, 0 runs | Tanner Scott 2023 regular season |
+| Nationals | Daniel Hudson | `hudson-2019-nlwc` | 2019-10-01, NL Wild Card Game Game 1: Milwaukee Brewers at Washington Nationals | top 9, 0 out, empty, up 4-3 | 4 | door shut, 11 pitches, 0 runs | Daniel Hudson 2019 NLDS G2 (up 4-2); Sean Doolittle 2017 NLDS G2 (up 6-3); Hudson 2019 World Series G7 (up 6-2, a lead of four: not a save spot) |
+| Reds | Emilio Pagán | `rs-pagan-2025-09-26` | 2025-09-26, Regular Season Game 1: Cincinnati Reds at Milwaukee Brewers | bottom 9, 0 out, empty, up 3-1 | 3 | door shut, 12 pitches, 0 runs | Alexis Díaz 2022-09-25 vs the Brewers (up 2-1); Raisel Iglesias 2020-09-16 vs the Pirates (up 1-0) |
+| Pirates | Mark Melancon | `rs-melancon-2015-09-25` | 2015-09-25, Regular Season Game 1: Pittsburgh Pirates at Chicago Cubs | bottom 9, 0 out, empty, up 3-1 | 5 | door shut, 18 pitches, 1 runs | David Bednar 2023-10-01 vs the Marlins (up 3-0) |
+| Cardinals | Ryan Helsley | `rs-helsley-2024-09-27` | 2024-09-27, Regular Season Game 1: St. Louis Cardinals at San Francisco Giants | bottom 9, 0 out, empty, up 6-3 | 4 | door shut, 13 pitches, 0 runs | Helsley 2024-09-22 vs Cleveland (up 2-1); Trevor Rosenthal 2013 postseason (before Statcast) |
+| Rockies | Wade Davis | `rs-davis-2018-09-28` | 2018-09-28, Regular Season Game 1: Washington Nationals at Colorado Rockies | top 9, 0 out, empty, up 5-2 | 3 | door shut, 11 pitches, 0 runs | Davis 2018-09-16 at San Francisco (up 3-2) |

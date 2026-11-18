@@ -36,6 +36,7 @@
   {"id": "rs-smith-2025-09-23", "plan": "13clubs", "date": "2025-09-23", "gameType": "R", "pitcher": "Cade Smith"},
   {"id": "vest-2024-alwc2", "plan": "13clubs", "date": "2024-10-02", "gameType": "F", "pitcher": "Will Vest"},
   {"id": "duran-2023-alwc1", "plan": "13clubs", "date": "2023-10-03", "gameType": "F", "pitcher": "Jhoan Dur"},
+  {"id": "rs-rogers-2019-09-24", "plan": "13clubs", "date": "2019-09-24", "gameType": "R", "pitcher": "Taylor Rogers"},
   {"id": "munoz-2025-alcs1", "plan": "13clubs", "date": "2025-10-12", "gameType": "L", "pitcher": "Andrés Mu"},
   {"id": "kintzler-2020-nlwc2", "plan": "13clubs", "date": "2020-10-02", "gameType": "F", "pitcher": "Kintzler"},
   {"id": "hudson-2019-nlwc", "plan": "13clubs", "date": "2019-10-01", "gameType": "F", "pitcher": "Daniel Hudson"},

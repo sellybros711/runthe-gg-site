@@ -50,7 +50,7 @@
   {"id": "std-2025-smith-det", "verify": "rs-smith-2025-09-23", "title": "Tigers at Guardians, September 23, 2025", "arsenal": "regular"},
   {"id": "std-2024-alwc2-vest", "verify": "vest-2024-alwc2", "title": "Game 2, 2024 AL Wild Card Series", "arsenal": "regular"},
   {"id": "std-2015-melancon-chc", "verify": "rs-melancon-2015-09-25", "title": "Pirates at Cubs, September 25, 2015", "arsenal": "regular"},
-  {"id": "std-2023-alwc1-duran", "verify": "duran-2023-alwc1", "title": "Game 1, 2023 AL Wild Card Series", "arsenal": "regular"},
+  {"id": "std-2019-rogers-det", "verify": "rs-rogers-2019-09-24", "title": "Twins at Tigers, September 24, 2019", "arsenal": "regular"},
   {"id": "std-2024-helsley-sf", "verify": "rs-helsley-2024-09-27", "title": "Cardinals at Giants, September 27, 2024", "arsenal": "regular"},
   {"id": "std-2025-alcs1-munoz", "verify": "munoz-2025-alcs1", "title": "Game 1, 2025 ALCS", "arsenal": "regular"},
   {"id": "std-2018-davis-wsh", "verify": "rs-davis-2018-09-28", "title": "Nationals at Rockies, September 28, 2018", "arsenal": "regular"},
