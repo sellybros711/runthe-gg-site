@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=94">
+<link rel="stylesheet" href="style.css?v=98">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -178,6 +178,9 @@ setTimeout(function () {
           <div class="hb-body" id="h-top-body" aria-live="polite"></div>
           <button class="btn ghost hb-all" id="h-top-all" type="button" data-open="board">full leaderboard</button>
         </div>
+        <!-- PRO (the owner's pick, direction A, 2026-11-18): a card under the top 3 for anybody who is not Pro,
+             drawn once the entitlements answer (ui.js proPlate, pro-card.js). It sits in the page and opens nothing. -->
+        <div class="h-pro" id="h-pro" hidden></div>
         <!-- THE VOTE FOR TOMORROW (164): from the home, played today or not. The result's block, drawn
              quiet (modes-ui.js voteBlock). It opens nothing; signed out it shows the two and the sign-in button. -->
         <section class="r-tile r-vote h-vote" id="h-vote" aria-live="polite" hidden></section>
@@ -577,7 +580,7 @@ setTimeout(function () {
      engine. -->
 <script src="contract.js?v=17"></script>
 <script src="meter.js?v=6"></script>
-<script src="meter-ui.js?v=11"></script>
+<script src="meter-ui.js?v=12"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=4"></script>
 <script src="aim.js?v=6"></script>
@@ -585,7 +588,7 @@ setTimeout(function () {
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=2"></script>
 <script src="plate.js?v=5"></script>
-<script src="menus.js?v=31"></script>
+<script src="menus.js?v=32"></script>
 <script src="rng.js?v=1"></script>
 <script src="modes.js?v=2"></script>
 <script src="grade.js?v=22"></script>
@@ -605,15 +608,18 @@ setTimeout(function () {
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=9"></script>
 <script src="modes-ui.js?v=15"></script>
-<script src="pro.js?v=2"></script>
+<script src="pro.js?v=4"></script>
+<script src="pro-card.js?v=4"></script>
 <script src="history-ui.js?v=2"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=3"></script>
 <script src="clip.js?v=2"></script>
 <script src="clip-ui.js?v=2"></script>
+<!-- the home on a desk (980 px and up): the columns and the menu drawer. Below 980 px it does nothing -->
+<script src="desk.js?v=1"></script>
 <script src="events.js?v=3"></script>
 <script src="challenge-ui.js?v=1"></script>
-<script src="ui.js?v=91"></script>
+<script src="ui.js?v=93"></script>
 <script type="module" src="3d/boot.js?v=119"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=3'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 <script type="module">import { CLUBS, battingClub, clubNamed } from './3d/clubs.js?v=3'; window.STD_CLUBS = CLUBS; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
