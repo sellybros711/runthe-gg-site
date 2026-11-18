@@ -48,7 +48,8 @@ function where(card) {
     var g = sit.score ? sit.score.us - sit.score.them : null;
     sp = (sit.half === 'bottom' ? 'Bottom ' : 'Top ') + sit.inning + (g == null ? '' : g > 0 ? ', up ' + g : g < 0 ? ', down ' + -g : ', tied');
   }
-  return [occ, sp].filter(Boolean).join(' · ');
+  /* the spot never breaks inside itself ("up" and "1" on two lines): its spaces hold */
+  return [occ, sp.replace(/ /g, '\u00a0')].filter(Boolean).join(' · ');
 }
 function closer(card) { return card && card.pitcher ? card.pitcher : 'The closer'; }
 
