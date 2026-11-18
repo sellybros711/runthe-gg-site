@@ -2055,9 +2055,23 @@ async function modes(w, h, full) {
   await shotM(page, 'vote');
   await page.click('#r-vote .vt-o >> nth=0');
   await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 30000 });
-  const vd = await page.evaluate(() => ({ on: document.querySelectorAll('#r-vote .vt-o.on').length, n: document.querySelectorAll('#r-vote .vt-n').length, say: document.querySelector('#r-vote .vt-say').textContent }));
-  ok(vd.on === 1 && vd.n === 2 && /It counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
+  const voteNow = () => page.evaluate(() => {
+    const bs = [...document.querySelectorAll('#r-vote .vt-o')];
+    return { on: bs.filter((b) => b.classList.contains('on')).length, n: document.querySelectorAll('#r-vote .vt-n').length,
+      say: document.querySelector('#r-vote .vt-say').textContent, mine: bs.findIndex((b) => b.classList.contains('on')),
+      tap: bs.map((b) => !b.disabled), tot: bs.reduce((s, b) => s + +b.querySelector('.vt-n b').textContent, 0) };
+  });
+  const vd = await voteNow();
+  ok(vd.on === 1 && vd.n === 2 && vd.mine === 0 && /Changed your mind\? Tap the other one\./.test(vd.say),
+    '17 a vote is cast, marked, and the count shows: "' + vd.say + '"');
+  ok(!vd.tap[0] && vd.tap[1], '17 after the vote the other one stays tappable, your own does not (180)');
   await shotM(page, 'vote-cast');
+  /* the owner (2026-11-18): a vote can be changed until it closes. The change moves the one vote */
+  await page.click('#r-vote .vt-o >> nth=1');
+  await page.waitForFunction(() => { const b = document.querySelectorAll('#r-vote .vt-o')[1]; return b && b.classList.contains('on'); }, null, { timeout: 30000 });
+  const vc = await voteNow();
+  ok(vc.on === 1 && vc.mine === 1 && vc.tot === vd.tot && vc.tap[0] && !vc.tap[1],
+    '17 a change moves the vote to the other one, the total stays ' + vd.tot + ' (' + vc.tot + ')');
   ok(errors.length === 0, '17 the vote: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 

@@ -3311,12 +3311,12 @@
       "sha": "fedfba1872eb4e2a"
     },
     "api.js": {
-      "v": "37",
-      "sha": "602880a846c4c91e"
+      "v": "38",
+      "sha": "5c614f55d3aaf77b"
     },
     "mock-api.js": {
-      "v": "25",
-      "sha": "96d8b665d583076e"
+      "v": "26",
+      "sha": "6421a6dbfe582e15"
     },
     "coach.js": {
       "v": "2",
@@ -3327,8 +3327,8 @@
       "sha": "079c28d2327d3f0e"
     },
     "modes-ui.js": {
-      "v": "13",
-      "sha": "efa97f191d3ea656"
+      "v": "14",
+      "sha": "1ce1f61334be163e"
     },
     "box-ui.js": {
       "v": "2",
