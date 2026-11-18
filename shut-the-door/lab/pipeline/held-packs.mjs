@@ -12,7 +12,9 @@
  *                 rate guard: on its own ceilings, its bad plays per play, for each metric, no worse than
  *                 the worst of the first thirty for that metric (each old pack's ceiling over its plays,
  *                 the highest of them; the coordinator, 2026-11-18: a guard on the pooled rate fails the old
- *                 packs about as often as the new, so it cannot tell good motion from bad). A metric none
+ *                 packs about as often as the new, so it cannot tell good motion from bad), with room for
+ *                 chance: its count at most that rate times its plays, rounded up, plus CHANCE (2) plays
+ *                 (the owner, 2026-11-18). A metric none
  *                 of the first thirty ever had is allowed at one play, and listed. A pack that fails it
  *                 fails the check: it is reported by pack and metric, and nothing is raised to let it pass.
  *
@@ -30,6 +32,8 @@ export const FIRST_THIRTY = [
   'std-2024-ws5-buehler', 'std-2025-diaz-cin', 'std-2025-scott-kc', 'std-2025-ws6-glasnow', 'std-2025-ws7-yamamoto',
 ];
 const OLD = new Set(FIRST_THIRTY);
+/** The rate guard's room for chance, in plays (the owner, 2026-11-18). */
+export const CHANCE = 2;
 /** A pack's id from its file name or id. */
 export const packId = (f) => String(f).replace(/\.json$/, '');
 export const isFirstThirty = (f) => OLD.has(packId(f));
@@ -70,7 +74,8 @@ export function holdByPack({ check, count, plays, metrics, skip = () => false })
   }
   // the rate guard: a later pack's ceiling no worse per play than the worst of the first thirty for that
   // metric (a run over its ceiling has already failed above, and a run at or under it is at or under its
-  // rate). A metric none of the first thirty ever had: one play is allowed, and listed; more fails
+  // rate), with room for chance: at most the worst rate times his plays, rounded up, plus CHANCE plays (the
+  // owner, 2026-11-18). A metric none of the first thirty ever had: one play is allowed, and listed
   const worst = {}, worstOf = {};
   for (const m of metrics) {
     worst[m] = 0; worstOf[m] = null;
@@ -89,8 +94,8 @@ export function holdByPack({ check, count, plays, metrics, skip = () => false })
       if (worstOf[m] == null) {
         if (c === 1) allowed.push(`  note rate ${p.padEnd(26)} ${m}: 1 of ${n} plays, a row none of the first thirty had (one play allowed)`);
         else guard.push(`  FAIL rate ${p.padEnd(26)} ${m}: ${c} of ${n} plays, a row none of the first thirty had (one play allowed)`);
-      } else if (c / n > worst[m] + 1e-12) {
-        guard.push(`  FAIL rate ${p.padEnd(26)} ${m}: ${c} of ${n} plays (${(c / n * 100).toFixed(3)}%), the first thirty's worst ${(worst[m] * 100).toFixed(3)}% (${worstOf[m]})`);
+      } else if (c > Math.ceil(worst[m] * n - 1e-9) + CHANCE) {
+        guard.push(`  FAIL rate ${p.padEnd(26)} ${m}: ${c} of ${n} plays (${(c / n * 100).toFixed(3)}%), allowed ${Math.ceil(worst[m] * n - 1e-9) + CHANCE} (the first thirty's worst ${(worst[m] * 100).toFixed(3)}%, ${worstOf[m]}, plus ${CHANCE})`);
       }
     }
   }
