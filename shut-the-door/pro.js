@@ -40,7 +40,8 @@ function token() { var a = auth(); try { return a && a.token ? a.token() : null;
 var ctx = { signIn: null, refresh: null, toast: null };
 
 /* The block a screen drops in. `where` is which screen, for the line above the button.
-   Plain: one line and one button in the game's own classes. */
+   Plain: one line and one button in the game's own classes (the save button's, btn save-b; the
+   line in the Survivor card's own voice there, the quiet line everywhere else). */
 var LINES = {
   archive: 'pro opens every past daily. they never go on the leaderboard.',
   survivor: 'pro starts another run right away. only your first run counts on the board.',
@@ -49,8 +50,8 @@ var LINES = {
 function label() { return signedIn() ? 'get pro · ' + price() + TERM : 'sign in to get pro'; }
 function offer(where) {
   return '<div class="pro-offer" data-pro-where="' + esc(where) + '">' +
-    '<p class="sv-say">' + esc(LINES[where] || '') + '</p>' +
-    '<button class="btn take sm" type="button" data-pro-buy>' + esc(label()) + '</button>' +
+    '<p class="' + (where === 'survivor' ? 'sv-say' : 'quiet') + '">' + esc(LINES[where] || '') + '</p>' +
+    '<button class="btn save-b" type="button" data-pro-buy>' + esc(label()) + '</button>' +
     '<p class="au-err" data-pro-err role="alert"></p></div>';
 }
 /* for a Pro account: the one way to cancel or change the card, Stripe's own portal */
