@@ -3,8 +3,9 @@
  * launch commit").
  *
  * READY, NOT ON. Served with the page's modules (build/pages.mjs) and does nothing, because the
- * page carries no ad tag while it is testers only. The launch commit adds the Consent Mode
- * defaults, adsbygoogle.js and /assets/rtg-ads.js to web/play.html, and from then on:
+ * page carries no ad tag: the game launched without ads (check-posture.mjs ADS is false). The
+ * change that turns them on adds the Consent Mode defaults, adsbygoogle.js and
+ * /assets/rtg-ads.js to web/play.html, flips ADS, and from then on:
  *  - the closeable bottom banner sits under the court on every screen, play included (the owner's
  *    exception for this game). The app ends above it (web/play.html, body.rtg-sticky-on), so the
  *    court shrinks to fit and Run It is never under it.

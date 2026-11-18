@@ -2,8 +2,8 @@
 /* Last Shot in Chromium on a phone (390x844, touch): draw a play with all
  * four tools by pointer, run it, watch it to the result, check the reason,
  * the scheme, the share line and the seed panel, replay, go back to the
- * clipboard with the play kept, and check nothing threw. Then the 404 a
- * non-tester gets.
+ * clipboard with the play kept, and check nothing threw. Then a guest (the
+ * game is live): the page and a module, and the 404 for a server file.
  *
  * First THE FEEL, on a phone and on a desktop (1440x900): the starter play a
  * first-time player finds on the clipboard, the Go at chip and the hold, 2x
@@ -311,7 +311,7 @@ try {
   page.on('pageerror', e => errs.push(String(e)));
   setWho('dev');
   const res = await page.goto(base + '/last-shot');
-  ok(res.status() === 200, 'a tester gets the page');
+  ok(res.status() === 200, 'a signed in player gets the page');
   await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
   await page.reload();
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.view);
@@ -383,8 +383,8 @@ try {
   await page.click('#bShare');
   const shared = await page.evaluate(() => navigator.clipboard.readText());
   const lines = shared.split('\n');
-  ok(lines.length === 3 && /^Last Shot (WINNER|LOSE) \d+-\d+/.test(lines[0]) && lines[2] === 'https://runthe.gg/arcade/', 'the share line: ' + JSON.stringify(shared));
-  ok(!/last-shot/.test(shared), 'the share line never links the gated path');
+  ok(lines.length === 3 && /^Last Shot (WINNER|LOSE) \d+-\d+/.test(lines[0]) && lines[2] === 'https://runthe.gg/last-shot/', 'the share line: ' + JSON.stringify(shared));
+  ok(!/beat=|\/m\//.test(shared), 'the share line links the game, never a module or a play');
 
   // The same seed and play give the same result in the page.
   const again = await page.evaluate(() => { const r = window.__lastShot.result; return window.__lastShot.simulate(r.seed); });
@@ -402,13 +402,16 @@ try {
   ok((await page.evaluate(() => window.__lastShot.play.steps.length)) === 0 && await page.isDisabled('#bRun'), 'Clear empties the clipboard');
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
 
-  // Everybody else.
+  // Everybody else: the game is live, so a guest gets it too.
   setWho(null);
-  const nobody = await page.goto(base + '/last-shot');
-  ok(nobody.status() === 404, 'a non-tester gets a 404');
-  ok((await page.content()).includes('<title>') && !(await page.content()).includes('Last Shot'), 'the 404 page never names the game');
+  const guest = await page.goto(base + '/last-shot');
+  ok(guest.status() === 200, 'a guest gets the page');
+  await page.waitForFunction(() => window.__lastShot && window.__lastShot.view);
+  ok(await page.isVisible('#hPlay') && !/TESTERS ONLY/i.test(await page.textContent('body')), 'a guest sees home, and nothing says testers');
   const mod = await page.goto(base + '/last-shot/m/sim.js');
-  ok(mod.status() === 404, 'a non-tester cannot load a module');
+  ok(mod.status() === 200, 'a guest can load a module');
+  const server = await page.goto(base + '/last-shot/m/gate.js');
+  ok(server.status() === 404 && !(await page.content()).includes('Last Shot'), 'a server file is the 404, and the 404 page never names the game');
 } finally {
   await browser.close(); server.close();
 }

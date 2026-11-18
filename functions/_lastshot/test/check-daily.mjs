@@ -239,9 +239,9 @@ async function run(name, viewport, mobile, uid, days) {
   // share: the number, the squares, the score text, the arcade; no spoiler
   await page.click('#bDayShare');
   const shared = await clip();
-  const want = ['Last Shot #' + NUM, squares(d).join(''), scoreText(post.score), 'https://runthe.gg/arcade/'].join('\n');
+  const want = ['Last Shot #' + NUM, squares(d).join(''), scoreText(post.score), 'https://runthe.gg/last-shot/'].join('\n');
   ok(shared === want, 'the share text: ' + JSON.stringify(shared));
-  ok(!Object.values(SCHEME_NAMES).some(n => shared.includes(n)) && !/last-shot/.test(shared), 'no defense and no gated path in it');
+  ok(!Object.values(SCHEME_NAMES).some(n => shared.includes(n)) && !/beat=/.test(shared), 'no defense and no play in it');
 
   // no Beat my play on the daily: its link would carry today's seed, and with it today's defense
   ok((await page.locator('#bBeat').count()) === 0, 'no Beat my play on the daily card (it would spoil the defense)');

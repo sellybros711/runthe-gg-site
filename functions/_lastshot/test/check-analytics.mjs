@@ -14,7 +14,7 @@
  * most 600 characters, only the ten names), a full queue of 20 sending by
  * itself, the 15 s timer, hiding the page sending by sendBeacon, garbage and
  * a throwing localStorage, inert under a driver unless asked, and the dev
- * server's 204 for a tester and 404 for anybody else.
+ * server's 204 for an account or a guest with a device id, 404 for anybody else.
  *
  *   node functions/_lastshot/test/check-analytics.mjs */
 import { createRequire } from 'node:module';
@@ -365,7 +365,9 @@ console.log('\nthe dev endpoint');
   const a = await fetch(BASE + '/last-shot/e?as=dev', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body });
   ok(a.status === 204 && devEvents.length === n0 + 1 && devEvents[n0].body.s === 'abcdefgh', 'a tester: 204, and the body kept');
   const b = await fetch(BASE + '/last-shot/e?as=nobody', { method: 'POST', body });
-  ok(b.status === 404 && devEvents.length === n0 + 1, 'anybody else: the 404, nothing kept');
+  ok(b.status === 404 && devEvents.length === n0 + 1, 'a guest with no device id: the 404, nothing kept');
+  const g = await fetch(BASE + '/last-shot/e?as=nobody', { method: 'POST', body: JSON.stringify({ ...JSON.parse(body), d: 'dev-abcd1234' }) });
+  ok(g.status === 204 && devEvents.length === n0 + 2 && devEvents[n0 + 1].who === null, 'a guest with a device id: 204, and the body kept (the game is live)');
   await fetch(BASE + '/last-shot?as=dev');
 }
 
