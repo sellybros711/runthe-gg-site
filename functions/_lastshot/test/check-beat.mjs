@@ -32,6 +32,8 @@ const { server } = await startDev(PORT);
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let fails = 0;
 const ok = (c, m) => { console.log((c ? ' ok   ' : ' FAIL ') + m); if (!c) fails++; };
+/* The result card docks (2026-11-17): More opens the rest of it. */
+async function openCard(page) { if (await page.isVisible('#bMore') && (await page.getAttribute('#bMore', 'aria-expanded')) !== 'true') await page.click('#bMore'); }
 const DASHES = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
 
 /* Their spot: 12.0, down 1, the box set, a scout that says they go under. */
@@ -40,7 +42,7 @@ const BASEC = { clock: 12, down: 1, set: 'box', scheme: 'under', seed: 987654 };
 const SC = challengeScenario(BASEC);
 const mk = (tx, ty, g) => ({ spots: SC.spots, goAt: g, steps: [{ kind: 'screen', who: 'O5', pts: [P(31, 12.3)] }, { kind: 'move', who: 'O2', pts: [P(40, 6), P(tx, ty)] },
   { kind: 'pass', from: 'O1', to: 'O2' }, { kind: 'shoot', who: 'O2' }] });
-const THEIRS = mk(22, 24, 6), BETTER = mk(14, 16, 6), WORSE = mk(46, 28, 2);
+const THEIRS = mk(22, 24, 6), BETTER = mk(14, 14, 6), WORSE = mk(46, 28, 2);
 const CODE = encode({ ...BASEC, play: THEIRS });
 const T = resultOf(decode(CODE));
 const scoreAs = p => scoreOf(simulate(SC, p, BASEC.seed, challengeOpt(BASEC)));
@@ -117,6 +119,7 @@ async function run(name, viewport, mobile) {
   ok(mineLink.startsWith('I drew this one. Beat it.\n') && mc && mc.seed === BASEC.seed && mc.scheme === 'under' && mc.clock === 12 && JSON.stringify(mc.play.steps) === JSON.stringify(BETTER.steps), 'my Beat my play link carries my play');
 
   // leaving clears the hash, and a reload lands home
+  await openCard(page);
   await page.click('#bCardHome');
   ok(await page.isVisible('#vHome') && (await L(() => location.hash)) === '', 'Home clears the hash');
   await page.reload(); await ready();
@@ -150,7 +153,8 @@ async function run(name, viewport, mobile) {
   await page.waitForSelector('#board', { state: 'visible' });
   await L(() => window.__lastShot.setPlay(window.__lastShot.starter()));
   await L(() => window.__lastShot.run(4242));
-  await page.waitForSelector('#sheet.on #bBeat', { timeout: 40000 });
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
+  await openCard(page);
   const free = await L(() => { const r = window.__lastShot.result; return { outcome: r.outcome, shot: r.shot, shotAt: r.shotAt }; });
   await page.click('#bBeat');
   const fl = await clip(), fc = decode(codeOf(fl) || '');
@@ -167,7 +171,8 @@ async function run(name, viewport, mobile) {
   const L5 = LEVELS.find(l => l.id === '1-5'), s5 = levelScenario(L5).spots;
   await L(p => window.__lastShot.setPlay(p), { ...THEIRS, spots: s5 });
   await L(() => window.__lastShot.run(77));
-  await page.waitForSelector('#sheet.on #bBeat', { timeout: 40000 });
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
+  await openCard(page);
   await page.click('#bBeat');
   const lc = decode(codeOf(await clip()) || '');
   ok(lc && lc.scheme === 'switch' && lc.clock === 22 && lc.seed === 77 && lc.set === 'box', 'a level link carries its scout scheme: ' + (lc && lc.scheme));

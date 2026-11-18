@@ -208,18 +208,74 @@ export function between(a, b, u) {
 
 /* ---------- the court ---------- */
 export function createCourt(cv) {
-  let V = null;
+  let V = null, last = null;
   const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* THE CAMERA (2026-11-17). The stage is taller than the half court on a
+     phone, so a whole court fit leaves a band of nothing under it. While a play
+     runs (opts.cam) the view frames the action instead: every body, the ball
+     and the rim, padded (more above, where the sprites stand up), as big as the
+     stage allows, never smaller than the whole court fit and never more than
+     ZOOM times it. It eases after the action; with reduced motion it holds one
+     frame for the whole run (the box of every frame), so nothing pans. Beyond
+     half court the floor goes on as the other half, mirrored, so a tall stage
+     shows hardwood rather than a void. The clipboard never uses it: a play
+     drawn there lands on the court at the same feet. */
+  const ZOOM = 2.2, EASE = 3.2;
+  let cam = null;
+  function boxOf(list) {
+    let x0 = COURT.RIM.x - 3, x1 = COURT.RIM.x + 3, y0 = COURT.RIM.y - 1, y1 = COURT.RIM.y + 2;
+    const at = (x, y) => { if (!Number.isFinite(x) || !Number.isFinite(y)) return; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; };
+    for (const fr of list) {
+      for (let i = 0; i < 10; i += 2) { at(fr.o[i], fr.o[i + 1]); at(fr.x[i], fr.x[i + 1]); }
+      if (fr.b) at(fr.b[0], fr.b[1]);
+    }
+    return { x0: x0 - 3, x1: x1 + 3, y0: y0 - 7.5, y1: y1 + 3 };
+  }
+  /* the view of a box: centre and scale, clamped as above */
+  function aim(b, w, h) {
+    const full = Math.min((w - 24) / COURT.W, (h - 24) / COURT.H);
+    const s = Math.max(full, Math.min(full * ZOOM, w / (b.x1 - b.x0), h / (b.y1 - b.y0)));
+    const hw = w / (2 * s), hh = h / (2 * s);
+    let cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+    /* room to spare up and down goes below the action (toward half court,
+       where the card docks), never above the baseline */
+    if (2 * hh > b.y1 - b.y0) cy = b.y0 + hh;
+    const lo = hw - 1, hi = COURT.W + 1 - hw;
+    cx = lo <= hi ? Math.max(lo, Math.min(hi, cx)) : COURT.W / 2;
+    cy = Math.max(hh - 8, Math.min(COURT.H * 2 - hh, cy));
+    return { cx, cy, s };
+  }
+  function camView(w, h, fr) {
+    const want = aim(cam.fixed || boxOf([fr]), w, h), now = performance.now();
+    if (!cam.at || cam.w !== w || cam.h !== h) cam.at = want;
+    else {
+      const k = 1 - Math.exp(-Math.min(0.1, (now - cam.t) / 1000) * EASE), a = cam.at;
+      cam.at = { cx: a.cx + (want.cx - a.cx) * k, cy: a.cy + (want.cy - a.cy) * k, s: Math.exp(Math.log(a.s) + (Math.log(want.s) - Math.log(a.s)) * k) };
+    }
+    cam.t = now; cam.w = w; cam.h = h;
+    const { cx, cy, s } = cam.at, ox = w / 2 - cx * s, oy = h / 2 - cy * s;
+    return { s, ox, oy, w, h, px: p => ({ x: ox + p.x * s, y: oy + p.y * s }), ft: q => ({ x: (q.x - ox) / s, y: (q.y - oy) / s }) };
+  }
+  /* A new run: frames is every frame it will show (for the reduced motion box). */
+  function camStart(frames) { cam = { at: null, t: 0, fixed: reduce && frames && frames.length ? boxOf(frames) : null }; }
 
   /* opts.after: { t, made, seed } plays the ball out after the last frame,
      t seconds in: through the net, or off the rim. opts.spin is a count of
      ball turns, for the traced ball's four frames. */
   function draw(fr, opts = {}) {
+    last = () => draw(fr, opts);
     const { w, h, ctx, dpr } = sizeCanvas(cv);
-    V = fitView(w, h, 12);
+    V = opts.cam && cam && fr ? camView(w, h, fr) : fitView(w, h, 12);
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = '#3a2a20'; ctx.fillRect(0, 0, w, h);
     ctx.drawImage(floor(), V.ox, V.oy, COURT.W * V.s, COURT.H * V.s);
+    if (opts.cam && V.oy + COURT.H * V.s < h) {
+      // the far half, the same floor turned over at half court
+      ctx.save(); ctx.translate(0, V.oy + COURT.H * 2 * V.s); ctx.scale(1, -1);
+      ctx.drawImage(floor(), V.ox, 0, COURT.W * V.s, COURT.H * V.s);
+      ctx.restore();
+    }
     if (!fr) { rim(ctx, 0); return; }
     const B = rig();
     // One sprite cell is a whole number of device pixels, so the art stays crisp.
@@ -364,6 +420,7 @@ export function createCourt(cv) {
      his hands to the rim, then played out like ours (through, or off).
        o: { kind: 'two'|'three', seed, k: 0 to 1 of the flight, after: null or { t, made, seed } } */
   function drawAnswer(o) {
+    last = () => drawAnswer(o);
     const { w, h, ctx, dpr } = sizeCanvas(cv);
     V = fitView(w, h, 12);
     ctx.imageSmoothingEnabled = false;
@@ -417,7 +474,8 @@ export function createCourt(cv) {
       ctx.beginPath(); ctx.moveTo(xp.x, xp.y); ctx.lineTo(op.x, op.y); ctx.stroke();
     }
   }
-  return { draw, drawAnswer, view: () => V };
+  /* redraw: the last picture again (a resize, a card coming up) */
+  return { draw, drawAnswer, camStart, redraw: () => { if (last) last(); }, view: () => V };
 }
 
 /* Which traced frame a pose code (sim.js POSE) shows. */

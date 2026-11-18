@@ -71,6 +71,13 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .plk[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--signal); border-color: transparent; }
 .plk.locked { cursor: default; color: var(--dim); }
 .plk small { font-size: 10.5px; font-weight: 500; line-height: 1.25; color: var(--dim); }
+.plk { position: relative; }
+.plk-era { margin-top: -3px; font: 600 10.5px var(--sans); font-style: normal; color: var(--dim); }
+.plk-h.plk-tb { margin-top: 20px; }
+/* Diamond (Pro): a cool sheen on its tile and a small PRO chip in the corner. Nothing moves. */
+.plk.gem { background: linear-gradient(140deg, var(--panel) 40%, rgba(143, 201, 242, .16)); }
+.plk-pro { position: absolute; top: 5px; right: 5px; padding: 2px 6px; border-radius: 999px; background: var(--data); color: #fff;
+  font: 700 9.5px/1.3 var(--sans); font-style: normal; letter-spacing: .08em; text-transform: uppercase; }
 /* the unlock, on the result after the save that earned it */
 .r-unlock { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, .08); color: #fff; font-size: 14px; }
 .r-unlock[hidden] { display: none; }
@@ -800,6 +807,9 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .plate text { stroke: none; }
 .plate.bp { width: 24px; height: 24px; }
 .plate.locked { opacity: .34; filter: grayscale(1); }
+/* the gem keeps an edge on a white panel, and stays a gem (dimmed, not grey) while it is locked */
+.plate.gem { filter: drop-shadow(0 0 1px rgba(11, 26, 46, .5)); }
+.plate.gem.locked { opacity: .5; filter: saturate(.5) drop-shadow(0 0 1px rgba(11, 26, 46, .5)); }
 .bd-rows .nm em { font-style: normal; margin-left: 6px; font-family: var(--sans); font-weight: 600; font-size: 11px; letter-spacing: 0.055em; text-transform: uppercase; color: var(--signal); }
 .bd-rows .n { text-align: right; font-size: 14px; color: var(--dim); }
 .bd-rows .n.sc { font-family: var(--sans); font-weight: 700; font-size: 15.2px; color: var(--ink); }
@@ -1249,19 +1259,21 @@ body[data-screen="s-home"] .wm-dark { display: block !important; }
 body.rtg-sticky-on .title { gap: 8px; }
 body.rtg-sticky-on .t-sit { gap: 6px; }
 body.rtg-sticky-on .t-menu { gap: 8px; }
-body.rtg-sticky-on .t-list { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
-body.rtg-sticky-on .t-list button { grid-column: span 2; justify-content: center; min-height: 40px; padding: 0 6px; font-size: 17px; text-align: center; white-space: nowrap; }
-body.rtg-sticky-on .t-list button:nth-child(n+4) { grid-column: span 3; }
+/* six links on a phone: three on top, stats and settings, then the voice of the ump across the
+   panel with its mic and its sub line (twelve columns: 4 4 4, 6 6, 12). The same up to a desk's
+   two columns, where the menu is a list again */
+body.rtg-sticky-on .t-list { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+body.rtg-sticky-on .t-list button { grid-column: span 4; justify-content: center; min-height: 40px; padding: 0 6px; font-size: 17px; text-align: center; white-space: nowrap; }
 body.rtg-sticky-on .t-list button + button { border-top: 0; box-shadow: inset 1px 0 0 rgba(255, 255, 255, .09); }
-body.rtg-sticky-on .t-list button:nth-child(4) { box-shadow: none; }
+body.rtg-sticky-on .t-list button:nth-child(4) { grid-column: span 6; box-shadow: none; }
+body.rtg-sticky-on .t-list button:nth-child(5) { grid-column: span 6; }
+body.rtg-sticky-on .t-list button:nth-child(6) { grid-column: span 12; box-shadow: none; }
 body.rtg-sticky-on .t-list button:nth-child(n+4) { border-top: 1px solid rgba(255, 255, 255, .09); }
 body.rtg-sticky-on .t-list button::after { display: none; }
 @media (max-width: 370px) { body.rtg-sticky-on .t-list button { font-size: 15.5px; } }
 @media (min-width: 700px) {
   body.rtg-sticky-on .title { gap: 12px; }
-  body.rtg-sticky-on .t-list { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  body.rtg-sticky-on .t-list button, body.rtg-sticky-on .t-list button:nth-child(n+4) { grid-column: auto; border-top: 0; font-size: 16px; }
-  body.rtg-sticky-on .t-list button:nth-child(4) { box-shadow: inset 1px 0 0 rgba(255, 255, 255, .09); }
+  body.rtg-sticky-on .t-list button { font-size: 16px; }
 }
 /* the result: the after-the-outing list is a little shorter on a phone, and on a desk the rail stops
    at the banner so its foot is never behind it */
@@ -1938,6 +1950,18 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
 .t-side { display: contents; }
 .t-list .tl-i, .t-list .tl-s { display: none; }
 .t-list .tl-t { display: contents; }
+/* the voice of the ump's row keeps its mic on a phone too (the owner, 2026-11-17: "its own icon"); the
+   other rows stay label only. The sub line shows only on a desk, as theirs do */
+#h-voice { justify-content: flex-start; gap: 10px; }
+#h-voice::after { margin-left: auto; }
+#h-voice .tl-i { display: grid; place-items: center; width: 26px; height: 26px; flex: 0 0 26px; border-radius: 8px; background: rgba(255, 79, 31, .24); }
+#h-voice .tl-i svg { width: 16px; height: 16px; fill: none; stroke: #ff8a63; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 979px) {
+  body.rtg-sticky-on #h-voice { justify-content: flex-start; gap: 12px; min-height: 54px; padding: 6px 14px; text-align: left; }
+  body.rtg-sticky-on #h-voice .tl-i { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 10px; }
+  body.rtg-sticky-on #h-voice .tl-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  body.rtg-sticky-on #h-voice .tl-s { display: block; font-weight: 500; font-size: 13px; color: rgba(255, 255, 255, .7); }
+}
 
 /* A DESK (the owner, 2026-11-03: "optimize the menu layouts for desktop"). Two columns: the headline across
    the top on one line each, the modes and today's panel on the left at a phone card's reading width,
@@ -2062,20 +2086,90 @@ body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="
 }
 /* the voice of the ump (voices.js): the record sheet, the owner's review */
 .set-row.set-go { width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; color: var(--ink); text-align: left; cursor: pointer; }
-.voices .vo-n { color: var(--dim); font-size: 13px; margin: 0; }
-.voices .vo-line { font-family: var(--hero); font-size: 34px; line-height: 1.1; margin: 6px 0 4px; }
-.voices .vo-hint { margin: 0 0 6px; }
-.voices .vo-rec, .voices .vo-act { display: flex; gap: 8px; margin: 12px 0 6px; }
-.voices .vo-rec .btn, .voices .vo-act .btn { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; }
-.voices .vo-act .btn:disabled { opacity: .5; }
-.voices .vo-on { background: var(--signal); color: #fff; }
-.voices .vo-meter { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
-.voices .vo-meter i { display: block; height: 100%; width: 0; background: var(--signal); }
-.voices .vo-play { width: 100%; margin: 8px 0; }
-.voices .vo-ok { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.4; margin: 12px 0 8px; }
-.voices .vo-ok input { margin-top: 3px; width: 20px; height: 20px; flex: 0 0 auto; }
-.voices .vo-credit { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dim); }
-.voices .vo-credit input { font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink); }
+/* the record sheet: a booth on a phone. --rec is the one red on it, the record button and its ring */
+.voices { --rec: #e5383b; --rec-soft: rgba(229, 56, 59, .14); }
+.sh-h h2.vo-h2 { display: flex; align-items: center; gap: 10px; }
+.vo-hic { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px; background: var(--signal-soft); }
+.vo-hic svg, .vo-badge svg, .rv-ic svg { width: 19px; height: 19px; fill: none; stroke: var(--signal); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.voices .vo-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin: 2px -6px 0; }
+.voices .vo-n { margin: 0; color: var(--dim); font-size: 13px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+.voices .vo-nav { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 8px; border: 0; border-radius: 10px; background: none; color: var(--dim); font: 600 14px var(--sans); }
+.voices #vo-prev { justify-self: start; } .voices #vo-next { justify-self: end; }
+.voices .vo-nav:hover:not(:disabled) { color: var(--ink); background: var(--panel-2); }
+.voices .vo-nav:disabled { opacity: .35; }
+.voices .vo-chev { width: 7px; height: 7px; border: solid currentColor; border-width: 2px 2px 0 0; transform: rotate(45deg); }
+.voices .vo-chev.back { transform: rotate(-135deg); }
+.voices .vo-dots { display: flex; justify-content: center; gap: 5px; margin: 6px 0 14px; }
+.voices .vo-dots i { width: 7px; height: 7px; border-radius: 4px; background: var(--line-2); transition: width .2s, background .2s; }
+.voices .vo-dots i.sent { background: var(--green); }
+.voices .vo-dots i.now { width: 22px; background: var(--ink); }
+.voices .vo-card { padding: 18px 16px 16px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); text-align: center; box-shadow: var(--shadow); }
+.voices .vo-line { margin: 0; font-family: var(--hero); font-weight: 400; font-size: 46px; line-height: 1.05; letter-spacing: .01em; overflow-wrap: anywhere; text-wrap: balance; }
+.voices .vo-hint { margin: 6px 0 0; color: var(--dim); font-size: 14px; }
+.voices .vo-stage { display: flex; flex-direction: column; align-items: center; padding: 16px 0 4px; }
+.voices .vo-bars { display: flex; align-items: center; justify-content: center; gap: 3px; height: 40px; width: 100%; max-width: 300px; }
+.voices .vo-bars i { flex: 1 1 0; max-width: 6px; height: 8%; min-height: 3px; border-radius: 3px; background: var(--line-2); transition: height .06s linear; }
+.voices [data-st="rec"] .vo-bars i { background: var(--rec); }
+.voices [data-st="take"] .vo-bars i { background: var(--faint); }
+.voices [data-st="take"] .vo-bars i.on { background: var(--signal); }
+.voices .vo-recb { position: relative; width: 96px; height: 96px; margin: 14px 0 8px; padding: 0; border: 0; border-radius: 50%; background: none; display: grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.voices .vo-ringsv { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.voices .vo-ringsv circle { fill: none; stroke-width: 4; }
+.voices .vo-ringsv circle:first-child { stroke: var(--line-2); }
+.voices .vo-ringsv circle + circle { stroke: var(--rec); stroke-dasharray: 100; stroke-dashoffset: 100; stroke-linecap: round; }
+.voices .vo-core { width: 74px; height: 74px; border-radius: 50%; background: var(--rec); box-shadow: 0 6px 20px rgba(229, 56, 59, .4), inset 0 -3px 0 rgba(0, 0, 0, .15); transition: width .18s, height .18s, border-radius .18s, transform .1s; }
+.voices .vo-recb:active .vo-core { transform: scale(.94); }
+.voices .vo-recb:focus-visible { outline: 3px solid var(--rec); outline-offset: 4px; }
+.voices .vo-recb.on .vo-core { width: 34px; height: 34px; border-radius: 8px; }
+.voices .vo-recb.on::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; background: var(--rec-soft); animation: vo-pulse 1.1s ease-out infinite; }
+@keyframes vo-pulse { 0% { transform: scale(.9); opacity: 1; } 100% { transform: scale(1.25); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .voices .vo-recb.on::before { animation: none; } }
+.voices .vo-cap { margin: 0; color: var(--dim); font-size: 14px; text-align: center; }
+.voices .vo-cap b { color: var(--rec); font-size: 17px; font-variant-numeric: tabular-nums; }
+.voices .vo-msg { min-height: 0; margin: 8px 0 0; text-align: center; }
+.voices .vo-msg:empty { display: none; }
+.voices .vo-msg.ok { color: var(--green); font-weight: 600; }
+.voices .vo-link { display: inline-flex; align-items: center; min-height: 38px; padding: 0 10px; border: 0; background: none; color: var(--dim); font: 600 13.5px var(--sans); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.voices .vo-link:hover { color: var(--ink); }
+.voices .vo-link[hidden] { display: none; }
+.voices .vo-upbtn { display: inline-flex; align-items: center; justify-content: center; margin-top: 10px; min-width: 200px; cursor: pointer; }
+.voices .vo-take { display: flex; align-items: center; gap: 12px; width: 100%; margin: 12px 0 4px; }
+.voices .vo-playb { width: 52px; height: 52px; flex: 0 0 52px; border: 0; border-radius: 50%; background: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.voices .vo-tri { width: 0; height: 0; margin-left: 4px; border-style: solid; border-width: 9px 0 9px 15px; border-color: transparent transparent transparent var(--bg); }
+.voices .vo-playb.on .vo-tri { width: 14px; height: 14px; margin: 0; border: 0; border-radius: 3px; background: var(--bg); }
+.voices .vo-dur { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.voices .vo-redo { margin-left: auto; }
+.voices .vo-ok { display: flex; gap: 10px; align-items: flex-start; width: 100%; font-size: 13.5px; line-height: 1.4; margin: 10px 0 4px; padding: 12px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+.voices .vo-ok input { margin-top: 2px; width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--signal); }
+.voices .vo-okd { width: 100%; margin: 8px 0 2px; font-size: 13px; color: var(--dim); }
+.voices .vo-okd summary { display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; list-style: none; }
+.voices .vo-okd summary::-webkit-details-marker { display: none; }
+.voices .vo-okd summary::after { content: 'read it'; margin-left: auto; text-decoration: underline; text-underline-offset: 3px; }
+.voices .vo-okd[open] summary::after { content: 'hide'; }
+.voices .vo-okd .vo-ok { color: var(--ink); }
+.voices .vo-tick { width: 6px; height: 11px; margin: 0 4px 3px; border: solid var(--green); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+.voices .vo-credit { display: flex; align-items: center; gap: 10px; width: 100%; margin: 6px 0 0; font-size: 13px; color: var(--dim); }
+.voices .vo-credit span { flex: 0 0 auto; }
+.voices .vo-credit input { flex: 1 1 auto; min-width: 0; font-size: 16px; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.voices .vo-credit input::placeholder { color: var(--faint); }
+.voices .vo-send { width: 100%; margin-top: 14px; min-height: 54px; background: var(--signal); color: #fff; font-size: 15px; letter-spacing: .07em; text-transform: uppercase; box-shadow: 0 3px 0 #c43a12; }
+.voices .vo-send:disabled { background: var(--panel-2); color: var(--faint); box-shadow: none; }
+.voices .vo-pend { margin: 14px 0 0; text-align: center; }
+.voices .vo-out { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12px 0 8px; }
+.voices .vo-badge { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--signal-soft); margin-bottom: 12px; }
+.voices .vo-badge svg { width: 34px; height: 34px; }
+.voices .vo-out-h { margin: 0 0 4px; font-weight: 700; font-size: 18px; }
+.voices .vo-signin { margin-top: 14px; min-width: 200px; background: var(--signal); color: #fff; }
+@media (max-height: 700px) {
+  .voices .vo-line { font-size: 38px; }
+  .voices .vo-card { padding: 12px 14px; }
+  .voices .vo-recb { width: 84px; height: 84px; margin: 8px 0 6px; } .voices .vo-core { width: 64px; height: 64px; }
+}
+/* the result's row: the Run The Diamond card's quiet style, with the mic */
+.r-voice { width: 100%; background: none; font: inherit; text-align: left; cursor: pointer; }
+.r-promo + .r-voice { margin-top: 8px; }
+.rv-ic { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border-radius: 9px; background: rgba(255, 79, 31, .2); }
+.rv-ic svg { stroke: #ff8a63; }
 .voices .vr-list { list-style: none; margin: 12px 0 0; padding: 0; }
 .voices .vr-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .voices .vr-h { display: flex; flex-direction: column; }
@@ -2083,3 +2177,12 @@ body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="
 .voices .vr-row audio { width: 100%; margin: 8px 0; }
 .voices .vr-act { display: flex; gap: 8px; }
 .voices .vr-act .btn { flex: 1 1 0; min-height: 42px; }
+.voices .vr-h .vr-by { color: var(--ink); }
+.voices .vr-ask p { margin: 0 0 8px; font-weight: 700; color: var(--red); }
+.voices .vr-act .btn.bad { background: var(--red); color: #fff; }
+.voices .vr-tabs { display: flex; width: 100%; }
+.voices .vr-tabs button { flex: 1 1 auto; min-width: 0; padding: 6px 6px; }
+.voices .vr-lead { margin: 10px 0 0; }
+.voices .vr-ok { margin: 8px 0 0; }
+.voices .vr-hear { width: 100%; min-height: 42px; margin: 0 0 8px; }
+.voices .vr-heard { margin: -4px 0 8px; font-size: 12px; }
