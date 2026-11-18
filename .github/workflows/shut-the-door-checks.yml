@@ -30,7 +30,9 @@ name: Shut The Door checks
 #              177_shut_the_door_ump_shortlist.sql (a tester shortlists, the owner puts it live) twice and its test; then
 #              162_shut_the_door_plates.sql (the boards 166 builds on), then
 #              166_shut_the_door_board_stats.sql (the stat line on the boards) twice and its test; then
-#              178_shut_the_door_plates_more.sql (the throwback plates, Diamond for Pro) twice and its test
+#              178_shut_the_door_plates_more.sql (the throwback plates, Diamond for Pro) twice and its test; then
+#              179_shut_the_door_thirteen_clubs.sql (a situation for each of the 13 clubs that had none),
+#              from a clean vote slate, twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -219,3 +221,10 @@ jobs:
           $P -f supabase/178_shut_the_door_plates_more.sql
           $P -f supabase/178_shut_the_door_plates_more.sql
           $P -f supabase/test/shut_the_door_plates_more_test.sql
+      - name: 179 applied twice, then its test (a situation for each of the 13 clubs that had none)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -c "delete from public.shutdoor_votes; delete from public.shutdoor_vote_days"
+          $P -f supabase/179_shut_the_door_thirteen_clubs.sql
+          $P -f supabase/179_shut_the_door_thirteen_clubs.sql
+          $P -f supabase/test/shut_the_door_thirteen_clubs_test.sql

@@ -1,0 +1,336 @@
+{
+ "id": "vest-2024-alwc2",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 775344,
+ "date": "2024-10-02",
+ "game": "AL Wild Card Series Game 2: Detroit Tigers at Houston Astros",
+ "gameType": "F",
+ "pitcher": {
+  "id": 676684,
+  "name": "Will Vest",
+  "throws": "R",
+  "team": "Detroit Tigers",
+  "seasonLine": "2.82 ERA, 2 SV, 70.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 2
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 73,
+   "batterId": 605170,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "676684": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Victor Caratini called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Victor Caratini called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Victor Caratini",
+   "batSideListed": "S",
+   "seasonLine": ".269/.336/.408, 8 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 665161,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "676684": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Jeremy Peña flies out sharply to center fielder Parker Meadows.",
+   "feedEvent": "field_out",
+   "feedDescription": "Jeremy Peña flies out sharply to center fielder Parker Meadows.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Jeremy Peña",
+   "batSideListed": "R",
+   "seasonLine": ".266/.308/.394, 15 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 643289,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "676684": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Mauricio Dubón grounds out, second baseman Colt Keith to first baseman Spencer Torkelson.",
+   "feedEvent": "field_out",
+   "feedDescription": "Mauricio Dubón grounds out, second baseman Colt Keith to first baseman Spencer Torkelson.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Mauricio Dubón",
+   "batSideListed": "R",
+   "seasonLine": ".269/.296/.361, 4 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 7,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 676694,
+   "name": "Jake Meyers",
+   "batSideListed": "R"
+  },
+  {
+   "id": 514888,
+   "name": "Jose Altuve",
+   "batSideListed": "R"
+  },
+  {
+   "id": 663656,
+   "name": "Kyle Tucker",
+   "batSideListed": "L"
+  },
+  {
+   "id": 670541,
+   "name": "Yordan Alvarez",
+   "batSideListed": "L"
+  },
+  {
+   "id": 608324,
+   "name": "Alex Bregman",
+   "batSideListed": "R"
+  },
+  {
+   "id": 673237,
+   "name": "Yainer Diaz",
+   "batSideListed": "R"
+  },
+  {
+   "id": 605170,
+   "name": "Victor Caratini",
+   "batSideListed": "S"
+  },
+  {
+   "id": 665161,
+   "name": "Jeremy Peña",
+   "batSideListed": "R"
+  },
+  {
+   "id": 643289,
+   "name": "Mauricio Dubón",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1162,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 651,
+     "usage": 0.5602,
+     "velo": 96.1,
+     "pfxXin": -9.2,
+     "pfxZin": 15.4
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 251,
+     "usage": 0.216,
+     "velo": 86.9,
+     "pfxXin": 6.7,
+     "pfxZin": -2.6
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 146,
+     "usage": 0.1256,
+     "velo": 94.9,
+     "pfxXin": -15.4,
+     "pfxZin": 8.9
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 114,
+     "usage": 0.0981,
+     "velo": 89.0,
+     "pfxXin": -15.4,
+     "pfxZin": 4.0
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=676684"
+  },
+  "postseason": {
+   "pitches": 86,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 62,
+     "usage": 0.7209,
+     "velo": 96.9,
+     "pfxXin": -8.5,
+     "pfxZin": 17.3
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 11,
+     "usage": 0.1279,
+     "velo": 95.7,
+     "pfxXin": -15.2,
+     "pfxZin": 9.7
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 8,
+     "usage": 0.093,
+     "velo": 90.6,
+     "pfxXin": -15.7,
+     "pfxZin": 5.8
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 5,
+     "usage": 0.0581,
+     "velo": 86.9,
+     "pfxXin": 4.1,
+     "pfxZin": 0.1
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=676684"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 775344: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=775344",
+  "MLB Stats API schedule 2024-10-02 and live feed /api/v1.1/game/775344/feed/live",
+  "MLB Stats API people with 2024 season stats",
+  "Baseball Savant 676684 2024 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    605170,
+    665161,
+    643289,
+    676694,
+    514888,
+    663656,
+    670541,
+    608324,
+    673237
+   ],
+   "lineupNames": [
+    "Victor Caratini",
+    "Jeremy Peña",
+    "Mauricio Dubón",
+    "Jake Meyers",
+    "Jose Altuve",
+    "Kyle Tucker",
+    "Yordan Alvarez",
+    "Alex Bregman",
+    "Yainer Diaz"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "DET",
+   "HOU"
+  ],
+  "innings": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    2
+   ],
+   [
+    4,
+    0
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   7,
+   5
+  ],
+  "E": [
+   0,
+   1
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/775344/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 7,
+  "runs": 0,
+  "score": {
+   "us": 5,
+   "them": 2
+  }
+ }
+}

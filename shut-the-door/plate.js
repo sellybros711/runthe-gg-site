@@ -202,7 +202,7 @@
   function chooseLocal(k) { var o = local(); o.plate = k || null; saveLocal(o); }
 
   /* Each situation's closer's club: the packs' pitcher.team keyed. The same list is the server's
-     shutdoor_pack_clubs (supabase/162, plus 167); test/modes.mjs holds both to the packs. */
+     shutdoor_pack_clubs (supabase/162, plus 167 and 179); test/modes.mjs holds both to the packs. */
   var PACK_CLUBS = {
     'std-1988-ws1-eckersley': 'athletics', 'std-2001-ws7-rivera': 'yankees', 'std-2005-nlcs5-lidge': 'astros',
     'std-2007-ws4-papelbon': 'redsox', 'std-2008-alcs7-price': 'rays',
@@ -215,6 +215,12 @@
     'std-2023-williams-sd': 'brewers', 'std-2023-ws1-sewald': 'diamondbacks', 'std-2024-ws5-buehler': 'dodgers',
     'std-2025-diaz-cin': 'mets', 'std-2025-scott-kc': 'dodgers', 'std-2025-ws6-glasnow': 'dodgers',
     'std-2025-ws7-yamamoto': 'dodgers',
+    // the 13 clubs that had none (2026-11-18, supabase/179)
+    'std-2015-melancon-chc': 'pirates', 'std-2016-britton-tor': 'orioles', 'std-2018-davis-wsh': 'rockies',
+    'std-2019-nlwc-hudson': 'nationals', 'std-2020-alwc1-colome': 'whitesox', 'std-2020-nlwc2-kintzler': 'marlins',
+    'std-2023-alwc1-duran': 'twins', 'std-2024-alwc2-vest': 'tigers', 'std-2024-helsley-sf': 'cardinals',
+    'std-2025-alcs1-munoz': 'mariners', 'std-2025-alcs7-hoffman': 'bluejays', 'std-2025-pagan-mil': 'reds',
+    'std-2025-smith-det': 'guardians',
   };
   /* The extra plate a situation unlocks: its era's colours or its old name (keysFor's second key).
      The server's shutdoor_pack_clubs.throwback (supabase/178); test/modes.mjs holds both to the packs. */

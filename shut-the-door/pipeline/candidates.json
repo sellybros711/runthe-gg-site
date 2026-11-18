@@ -30,7 +30,19 @@
   {"id": "kelly-2020-nlds2", "plan": "30", "date": "2020-10-07", "gameType": "D", "pitcher": "Joe Kelly", "inning": 9},
   {"id": "price-2008-alcs7", "plan": "rules8", "date": "2008-10-19", "gameType": "L", "pitcher": "Price", "inning": 8},
   {"id": "rivera-2009-alcs6", "plan": "rules8", "date": "2009-10-25", "gameType": "L", "pitcher": "Rivera", "inning": 8},
-  {"id": "hoffman-2025-alcs7", "plan": "30", "date": "2025-10-20", "gameType": "L", "pitcher": "Jeff Hoffman"}
+  {"id": "hoffman-2025-alcs7", "plan": "30", "date": "2025-10-20", "gameType": "L", "pitcher": "Jeff Hoffman"},
+  {"id": "rs-britton-2016-09-28", "plan": "13clubs", "date": "2016-09-28", "gameType": "R", "pitcher": "Britton"},
+  {"id": "colome-2020-alwc1", "plan": "13clubs", "date": "2020-09-29", "gameType": "F", "pitcher": "Colom"},
+  {"id": "rs-smith-2025-09-23", "plan": "13clubs", "date": "2025-09-23", "gameType": "R", "pitcher": "Cade Smith"},
+  {"id": "vest-2024-alwc2", "plan": "13clubs", "date": "2024-10-02", "gameType": "F", "pitcher": "Will Vest"},
+  {"id": "duran-2023-alwc1", "plan": "13clubs", "date": "2023-10-03", "gameType": "F", "pitcher": "Jhoan Dur"},
+  {"id": "munoz-2025-alcs1", "plan": "13clubs", "date": "2025-10-12", "gameType": "L", "pitcher": "Andrés Mu"},
+  {"id": "kintzler-2020-nlwc2", "plan": "13clubs", "date": "2020-10-02", "gameType": "F", "pitcher": "Kintzler"},
+  {"id": "hudson-2019-nlwc", "plan": "13clubs", "date": "2019-10-01", "gameType": "F", "pitcher": "Daniel Hudson"},
+  {"id": "rs-pagan-2025-09-26", "plan": "13clubs", "date": "2025-09-26", "gameType": "R", "pitcher": "Emilio Pag"},
+  {"id": "rs-melancon-2015-09-25", "plan": "13clubs", "date": "2015-09-25", "gameType": "R", "pitcher": "Melancon"},
+  {"id": "rs-helsley-2024-09-27", "plan": "13clubs", "date": "2024-09-27", "gameType": "R", "pitcher": "Helsley"},
+  {"id": "rs-davis-2018-09-28", "plan": "13clubs", "date": "2018-09-28", "gameType": "R", "pitcher": "Wade Davis"}
  ],
  "proxy": [
   {"id": "eckersley-1988-ws1", "plan": 9, "season": 1988, "file": "1988WS.EVE", "game": "LAN198810150", "pitcher": "ecked001"},

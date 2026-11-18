@@ -1,0 +1,338 @@
+{
+ "id": "duran-2023-alwc1",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 748585,
+ "date": "2023-10-03",
+ "game": "AL Wild Card Series Game 1: Toronto Blue Jays at Minnesota Twins",
+ "gameType": "F",
+ "pitcher": {
+  "id": 661395,
+  "name": "Jhoan Duran",
+  "throws": "R",
+  "team": "Minnesota Twins",
+  "seasonLine": "2.45 ERA, 27 SV, 62.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 69,
+   "batterId": 595281,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661395": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Kevin Kiermaier strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Kevin Kiermaier strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Kevin Kiermaier",
+   "batSideListed": "L",
+   "seasonLine": ".265/.322/.419, 8 HR"
+  },
+  {
+   "atBat": 70,
+   "batterId": 656305,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661395": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Matt Chapman called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Matt Chapman called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Matt Chapman",
+   "batSideListed": "R",
+   "seasonLine": ".240/.330/.424, 17 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 593160,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661395": 6
+   },
+   "pitches": 6,
+   "event": "walk",
+   "des": "Whit Merrifield walks.",
+   "feedEvent": "walk",
+   "feedDescription": "Whit Merrifield walks.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Whit Merrifield",
+   "batSideListed": "R",
+   "seasonLine": ".272/.318/.382, 11 HR"
+  },
+  {
+   "atBat": 72,
+   "batterId": 543807,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661395": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "George Springer grounds out sharply, first baseman Donovan Solano to pitcher Jhoan Duran.",
+   "feedEvent": "field_out",
+   "feedDescription": "George Springer grounds out sharply, first baseman Donovan Solano to pitcher Jhoan Duran.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "George Springer",
+   "batSideListed": "R",
+   "seasonLine": ".258/.327/.405, 21 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 14,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 474832,
+   "name": "Brandon Belt",
+   "batSideListed": "L"
+  },
+  {
+   "id": 665489,
+   "name": "Vladimir Guerrero Jr.",
+   "batSideListed": "R"
+  },
+  {
+   "id": 666182,
+   "name": "Bo Bichette",
+   "batSideListed": "R"
+  },
+  {
+   "id": 624415,
+   "name": "Cavan Biggio",
+   "batSideListed": "L"
+  },
+  {
+   "id": 672386,
+   "name": "Alejandro Kirk",
+   "batSideListed": "R"
+  },
+  {
+   "id": 595281,
+   "name": "Kevin Kiermaier",
+   "batSideListed": "L"
+  },
+  {
+   "id": 656305,
+   "name": "Matt Chapman",
+   "batSideListed": "R"
+  },
+  {
+   "id": 593160,
+   "name": "Whit Merrifield",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543807,
+   "name": "George Springer",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1017,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 459,
+     "usage": 0.4513,
+     "velo": 101.8,
+     "pfxXin": -10.7,
+     "pfxZin": 13.7
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 282,
+     "usage": 0.2773,
+     "velo": 87.7,
+     "pfxXin": 3.7,
+     "pfxZin": -8.9
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 276,
+     "usage": 0.2714,
+     "velo": 98.3,
+     "pfxXin": -12.2,
+     "pfxZin": 2.8
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=661395"
+  },
+  "postseason": {
+   "pitches": 57,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 22,
+     "usage": 0.386,
+     "velo": 101.5,
+     "pfxXin": -11.9,
+     "pfxZin": 12.3
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 20,
+     "usage": 0.3509,
+     "velo": 87.6,
+     "pfxXin": 4.3,
+     "pfxZin": -8.6
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 15,
+     "usage": 0.2632,
+     "velo": 98.3,
+     "pfxXin": -12.7,
+     "pfxZin": 2.0
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=661395"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 748585: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=748585",
+  "MLB Stats API schedule 2023-10-03 and live feed /api/v1.1/game/748585/feed/live",
+  "MLB Stats API people with 2023 season stats",
+  "Baseball Savant 661395 2023 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "top",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    595281,
+    656305,
+    593160,
+    543807,
+    474832,
+    665489,
+    666182,
+    624415,
+    672386
+   ],
+   "lineupNames": [
+    "Kevin Kiermaier",
+    "Matt Chapman",
+    "Whit Merrifield",
+    "George Springer",
+    "Brandon Belt",
+    "Vladimir Guerrero Jr.",
+    "Bo Bichette",
+    "Cavan Biggio",
+    "Alejandro Kirk"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "TOR",
+   "MIN"
+  ],
+  "innings": [
+   [
+    0,
+    2
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    null
+   ]
+  ],
+  "H": [
+   6,
+   5
+  ],
+  "E": [
+   0,
+   1
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/748585/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 14,
+  "runs": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  }
+ }
+}
