@@ -115,32 +115,106 @@ check('the default is candidate A', M.defaultPack(sched, M.VOTE.EPOCH) === M.can
 
 // ---- the plates: plate.js PACK_CLUBS, the server's shutdoor_pack_clubs and the packs agree -----------
 {
-  console.log('\nthe plates (plate.js, supabase/162)');
+  console.log('\nthe plates (plate.js, supabase/162, 167 and 178)');
   const fs = await import('fs');
-  const win = { STD_CLUBS: [], localStorage: null };
-  new Function('window', 'localStorage', readFileSync(join(HERE, '..', 'plate.js'), 'utf8'))(win, null);
-  const PC = win.STD_PLATE.PACK_CLUBS;
   const { CLUBS, clubNamed } = await import(join(HERE, '..', '3d', 'clubs.js'));
+  // a fresh plate.js with its own device store, so each case starts clean
+  const fresh = () => {
+    const store = {};
+    const ls = { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); } };
+    const win = { STD_CLUBS: CLUBS, STD_CLUB_NAMED: clubNamed };
+    new Function('window', 'localStorage', readFileSync(join(HERE, '..', 'plate.js'), 'utf8'))(win, ls);
+    return win.STD_PLATE;
+  };
+  const PL = fresh();
+  const PC = PL.PACK_CLUBS, PT = PL.PACK_THROWBACKS;
   const key = (c) => c ? c.nick.toLowerCase().replace(/[^a-z]/g, '') : null;
-  const want = {};
+  // the packs are the source: each one's closer's team and year, through plate.js keysFor
+  const want = {}, wantTb = {}, teams = {};
   for (const f of fs.readdirSync(join(HERE, '..', 'data', 'packs'))) {
     const p = JSON.parse(readFileSync(join(HERE, '..', 'data', 'packs', f), 'utf8'));
     const id = f.replace(/\.json$/, '');
-    let team = null;
-    const walk = (o) => { if (team || !o || typeof o !== 'object') return; if (o.pitcher && o.id === id) { team = o.pitcher.team; return; } Object.values(o).forEach(walk); };
+    let pit = null;
+    const walk = (o) => { if (pit || !o || typeof o !== 'object') return; if (o.pitcher && o.id === id) { pit = o.pitcher; return; } Object.values(o).forEach(walk); };
     walk(p);
-    const k = key(clubNamed(team));
-    if (k) want[id] = k;
+    const ks = PL.keysFor(pit && pit.team, pit && pit.year);
+    if (pit && pit.team) teams[id] = pit.team + ' ' + pit.year;
+    if (ks[0]) want[id] = ks[0];
+    if (ks[1]) wantTb[id] = ks[1];
   }
-  check('plate.js keys every pack with a team by its closer\'s club', JSON.stringify(Object.keys(PC).sort().map((id) => id + ':' + PC[id])) === JSON.stringify(Object.keys(want).sort().map((id) => id + ':' + want[id])));
-  // the list is 162's rows plus the two proxy spots 167 added
+  const sorted = (o) => JSON.stringify(Object.keys(o).sort().map((id) => id + ':' + o[id]));
+  check('every pack with a team has a plate', Object.keys(teams).length > 0 && Object.keys(teams).every((id) => want[id] && PL.club(want[id])),
+    JSON.stringify(Object.keys(teams).filter((id) => !want[id])));
+  check('plate.js keys every pack with a team by its closer\'s club', sorted(PC) === sorted(want), sorted(want));
+  check('plate.js keys every pack in a throwback era by that era\'s plate', sorted(PT) === sorted(wantTb), sorted(wantTb));
+  // the server's lists: 162's rows plus the two proxy spots 167 added; 178's throwbacks
   const sql = ['162_shut_the_door_plates.sql', '167_shut_the_door_pack_clubs_proxy.sql']
     .map((f) => readFileSync(join(HERE, '..', '..', 'supabase', f), 'utf8')).join('\n');
   const rows = {};
   for (const m of sql.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)'\)/g)) rows[m[1]] = m[2];
-  const sorted = (o) => JSON.stringify(Object.keys(o).sort().map((id) => id + ':' + o[id]));
   check('the server\'s shutdoor_pack_clubs is the same list', sorted(rows) === sorted(PC));
-  check('every key is a club in clubs.js', Object.values(PC).every((k) => CLUBS.some((c) => key(c) === k)));
+  const sql178 = readFileSync(join(HERE, '..', '..', 'supabase', '178_shut_the_door_plates_more.sql'), 'utf8');
+  const tbRows = {};
+  for (const m of sql178.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)', '([a-z]+)'\)/g)) { tbRows[m[1]] = m[3]; check('178 keeps ' + m[1] + '\'s club as 162 has it', PC[m[1]] === m[2]); }
+  check('the server\'s throwbacks (178) are the same list', sorted(tbRows) === sorted(PT), sorted(tbRows));
+  const all = PL.all();
+  check('every key is a plate plate.js draws', Object.values(PC).concat(Object.values(PT)).every((k) => PL.club(k)));
+  check('all 30 of today\'s clubs have a plate, in clubs.js\'s order', PL.current30().length === 30 && PL.current30().join() === CLUBS.map(key).join());
+  check('every key fits the profile\'s check (162: ^[a-z]{2,16}$) and none repeats',
+    all.every((k) => /^[a-z]{2,16}$/.test(k)) && new Set(all).size === all.length);
+  check('every throwback has its era, its two colours and today\'s club', PL.THROWBACKS.every((t) => /^\d{4}-\d{4}$/.test(t.era) && t.from <= t.to &&
+    /^#[0-9A-F]{6}$/i.test(t.pri) && /^#[0-9A-F]{6}$/i.test(t.sec) && CLUBS.some((c) => key(c) === t.franchise)));
+
+  // the unlock rules
+  check('a current club: Tanner Scott\'s 2025 Dodgers unlock the Dodgers', JSON.stringify(PL.keysFor('Los Angeles Dodgers', 2025)) === '["dodgers"]');
+  check('a historic era: Lidge\'s 2005 Astros unlock the Astros and the 2000-2012 Astros', JSON.stringify(PL.keysFor('Houston Astros', 2005)) === '["astros","astrosbrick"]');
+  check('the same club outside that era: 2022 Astros unlock only the Astros', JSON.stringify(PL.keysFor('Houston Astros', 2022)) === '["astros"]');
+  check('a renamed club by its name in its years: a 1994 Montreal Expos closer unlocks the Expos, not the Nationals', JSON.stringify(PL.keysFor('Montreal Expos', 1994)) === '["expos"]');
+  check('a renamed club by its name in its years: the 2016 Indians, and the 2003 Florida Marlins',
+    JSON.stringify(PL.keysFor('Cleveland Indians', 2016)) === '["indians"]' && JSON.stringify(PL.keysFor('Florida Marlins', 2003)) === '["flmarlins"]');
+  check('the Devil Rays are not today\'s Rays by their last word', JSON.stringify(PL.keysFor('Tampa Bay Devil Rays', 2004)) === '["devilrays"]');
+  check('a team no club fits unlocks nothing', PL.keysFor('', 2020).length === 0 && PL.keysFor('Brooklyn Robins', 1920).length === 0);
+  check('a club with a situation opens on a save', PL.status('dodgers') === 'save' && PL.status('astrosbrick') === 'save');
+  check('a club with no situation yet says so', PL.status('orioles') === 'soon' && PL.status('expos') === 'soon');
+  {
+    const P = fresh();
+    const got = P.earn('std-2005-nlcs5-lidge');
+    check('a save in 2005 Houston unlocks both its plates on the device, once', JSON.stringify(got) === '["astros","astrosbrick"]' &&
+      P.earn('std-2005-nlcs5-lidge').length === 0 && P.unlocked().includes('astrosbrick'));
+    check('a save in 2025 Los Angeles unlocks the Dodgers only', JSON.stringify(P.earn('std-2025-scott-kc')) === '["dodgers"]');
+    check('a situation with no club unlocks nothing', P.earn('std-not-a-pack').length === 0);
+  }
+
+  // Diamond: Pro only, in the client
+  {
+    const P = fresh();
+    P.chooseLocal('diamond');
+    check('not Pro: Diamond is locked and never worn, even when the device picked it', !P.unlocked().includes('diamond') && P.current() === null && P.status('diamond') === 'pro');
+    P.setServer({ plate: 'diamond', unlocked: ['dodgers'] });
+    check('not Pro: an account that stored Diamond wears the plain plate', P.current() === null);
+    P.setPro(true);
+    check('Pro: Diamond is open and worn', P.unlocked().includes('diamond') && P.current() === 'diamond');
+    P.setPro(false);
+    P.setServer({ plate: 'diamond', unlocked: ['dodgers', 'diamond'] });
+    check('the server\'s list (178 adds Diamond only for Pro) opens it too', P.current() === 'diamond');
+    P.setServer({ plate: 'diamond', unlocked: ['dodgers'] });
+    check('Pro ends: back to plain', P.current() === null);
+    const svg = P.svg('diamond', 'JE', {});
+    const one = P.svg('diamond', 'JE', {});
+    check('Diamond draws as a gem with the initials, its own gradient ids each time, and nothing that moves',
+      /class="plate gem"/.test(svg) && />JE<\/text>/.test(svg) && svg.match(/id="(pg\d+)f"/)[1] !== one.match(/id="(pg\d+)f"/)[1] && !/animate|<style/.test(svg));
+  }
+
+  // the count line: every plate shown but plain, today 30 clubs, the throwbacks and Diamond
+  {
+    const P = fresh();
+    check('the count is of ' + all.length + ': 30 clubs, ' + PL.THROWBACKS.length + ' throwbacks and Diamond', all.length === 30 + PL.THROWBACKS.length + 1);
+    P.earn('std-2005-nlcs5-lidge'); P.earn('std-2017-ws2-jansen');
+    check('three unlocked count 3', P.unlocked().filter((k) => all.includes(k)).length === 3);
+    P.setPro(true);
+    check('Pro counts Diamond', P.unlocked().filter((k) => all.includes(k)).length === 4);
+  }
+  console.log('     unlockable today: ' + PL.earnable().join(', '));
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');

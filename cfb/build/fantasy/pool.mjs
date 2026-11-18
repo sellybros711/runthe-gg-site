@@ -423,8 +423,17 @@ export function writePool(pool) {
   const ahead = !cur || pool.season > cur.season
     || (pool.season === cur.season && pool.week >= cur.week);
   if (ahead) {
+    /* `prev` IS THE WEEK BEFORE, which the live job finishes alongside this one. It used to
+       be week minus one, which the Playoff (playoff.mjs, a week number of its own) is not, so
+       the pointer says it. Rewriting the same week keeps the prev it already had. The
+       Playoff's `kind` and `ends_at` ride along so the page can tell its phases apart. */
+    const prev = cur && cur.season === pool.season
+      ? (cur.week !== pool.week ? cur.week : cur.prev) : undefined;
     fs.writeFileSync(nowFile, JSON.stringify({
       season: pool.season, week: pool.week, file: name, locks_at: pool.locks_at,
+      ...(prev != null ? { prev } : {}),
+      ...(pool.kind ? { kind: pool.kind } : {}),
+      ...(pool.ends_at ? { ends_at: pool.ends_at } : {}),
     }) + '\n');
   }
   return { name, pointer: ahead };

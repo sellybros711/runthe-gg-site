@@ -38,7 +38,8 @@ import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cl
 import { STARTERS, starterById, starterPlay } from './starters.js';
 import { drawPlay } from './diagram.js';
 import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js';
-import { loadLadder, saveLadder, renderLadder, isOpen, nextOf, starsIn, maxStars, clockLine, scoutLine, starText, cleanPlay as cleanStored } from './ladder-ui.js';
+import { loadLadder, saveLadder, renderLadder, isOpen, nextOf, starsIn, maxStars, clockLine, scoutLine, starText, cleanPlay as cleanStored,
+  keepPlay, markDay, streakOf, startLadderSync, flushLadder, ladderWrites } from './ladder-ui.js';
 import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js';
 import { challengeOpt, beats } from './challenge.js';
 import * as D from './daily-ui.js';
@@ -133,7 +134,7 @@ function defaultHint() {
 function savePlay(p) {
   play = p;
   if (mode === 'edit' && edit) books.playChanged(edit, p);
-  else if (mode === 'level' && lvl) { ladder.plays[lvl.L.id] = p; saveLadder(ladder); }
+  else if (mode === 'level' && lvl) { keepPlay(ladder, lvl.L.id, p); saveLadder(ladder); }
   else if (mode === 'daily' && dly) { dly.local.play = p; D.saveDay(dly.local); }
   else if (mode === 'beat' && chal) chal.mine = p;
   else lsSet(KEY, JSON.stringify(p));
@@ -166,8 +167,10 @@ $('bSpeed').addEventListener('click', () => { speed = speed === 2 ? 1 : 2; lsSet
 function muteSync() { const b = $('bMute'); b.setAttribute('aria-pressed', String(sound.muted)); b.classList.toggle('off', sound.muted); b.setAttribute('aria-label', sound.muted ? 'Sound off' : 'Sound on'); }
 $('bMute').addEventListener('click', () => { sound.setMuted(!sound.muted); muteSync(); });
 speedSync(); muteSync();
-/* Tools off the screen while a play runs (a visibility, so nothing jumps). */
-function clipTools(on) { for (const id of ['tools', 'actions', 'goRow']) $(id).style.visibility = on ? '' : 'hidden'; }
+/* While a play runs and its card is up, the clipboard's rows and the mode
+   bars step aside and the court takes the stage (play.html, .app.running). */
+const APP = document.querySelector('.app');
+function clipTools(on) { APP.classList.toggle('running', !on); }
 const court = createCourt($('court'));
 
 document.querySelectorAll('.tool').forEach(b => b.addEventListener('click', () => {
@@ -352,7 +355,7 @@ function playFrame() {
   if (!pv.play.steps.length) return;
   const res = simulate(pv.sc, pv.play, freshSeed(), { preview: true });
   $('board').hidden = true; $('court').hidden = false;
-  clipTools(false);
+  clipTools(false); court.camStart(res.frames);
   const F = res.frames, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let g = F[0].t, i = 0, prev = performance.now(), hold = reduce ? 0 : 0.3, after = 0.5;
   const token = live = { preview: true, res };
@@ -363,13 +366,13 @@ function playFrame() {
     while (i < F.length - 1 && F[i + 1].t >= g) i++;
     const a = F[i], b = F[i + 1];
     const u = b && a.t > b.t ? Math.max(0, Math.min(1, (a.t - g) / (a.t - b.t))) : 0;
-    court.draw(b ? between(a, b, u) : a, { debug: debugOn });
+    court.draw(b ? between(a, b, u) : a, { debug: debugOn, cam: true });
     if (i >= F.length - 1) { after -= dt; if (after <= 0) { backToBoard(); return; } }
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 }
-window.addEventListener('resize', () => { if (live) court.draw(live.res.frames[live.i]); else board.draw(); });
+window.addEventListener('resize', () => { if (!$('court').hidden) court.redraw(); else board.draw(); });
 
 /* ---------- the live play ---------- */
 function setScore(us, them, clock) {
@@ -452,8 +455,8 @@ function run(seed, opt, pl) {
   countRunStart(res);
   if (mode === 'edit' && edit) books.countRun(edit, res);
   $('board').hidden = true; $('court').hidden = false;
-  clipTools(false);
-  $('sheet').classList.remove('on'); $('vGame').classList.remove('lres'); clearStars(); $('hint').textContent = '';
+  clipTools(false); court.camStart(res.frames);
+  $('sheet').classList.remove('on', 'peek'); $('vGame').classList.remove('lres'); clearStars(); $('hint').textContent = '';
   banner(null); cutUi(null);
   const reduce = reduced();
   const F = res.frames, last = F[F.length - 1];
@@ -548,7 +551,7 @@ function run(seed, opt, pl) {
       if (live.phase === 'cut' && c.w >= T3) toEnd();
     } else {
       if (!fr.h) live.spin += dt * 9;
-      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin });
+      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true });
     }
     if (live.phase === 'play' || live.phase === 'after') {
       while (live.shown < res.events.length && (res.events[live.shown].t >= live.g || live.phase === 'after')) {
@@ -654,24 +657,50 @@ function showResult(res) {
   if (practice) add('p', 'practag', 'Practice · not scored');
   add('h2', 'verdict ' + (win ? 'win' : 'lose'), win ? 'WINNER' : 'LOSE');
   add('div', 'finalscore', scoreLineOf(res.us, res.them, res.how === 'ot'));
-  add('p', 'facts', when + (practice ? ' Practice defense: ' : isZone(res.scheme) ? ' Their defense: ' : ' Their call on screens: ') + res.schemeName + '.');
   add('p', 'reason', res.reason);
+  add('p', 'facts xtra', when + (practice ? ' Practice defense: ' : isZone(res.scheme) ? ' Their defense: ' : ' Their call on screens: ') + res.schemeName + '.');
   const row = add('div', 'row');
   const btn = (label, cls, fn, id, to) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; if (id) b.id = id; b.addEventListener('click', () => fn(b)); (to || row).appendChild(b); return b; };
   btn(practice ? 'Again' : 'Run it again', 'go', () => run(freshSeed(), lastOpt), 'bReplay');
   btn('Back to Clipboard', 'alt', backToBoard, 'bBack');
-  if (mode === 'edit') btn('Back to playbook', 'alt', () => { backToBoard(); books.showBook(edit.book.id); }, 'bBackBook');
-  const row2 = add('div', 'row');
+  const row2 = add('div', 'row xtra');
+  if (mode === 'edit') btn('Back to playbook', 'alt', () => { backToBoard(); books.showBook(edit.book.id); }, 'bBackBook', row2);
   if (mode !== 'edit') saveButton(row2, runOf(res));
   if (!practice) btn('Share', 'alt', b => doShare(shareText(runPlay, res), b, 'result'), 'bShare', row2);
   const ch = beatOf(res);
   if (ch) btn('Beat my play', 'alt', b => shareChallenge(ch, b), 'bBeat', row2);
   const dbg = btn(debugOn ? 'Hide seed' : 'Seed', '', () => { debugOn = !debugOn; pre.hidden = !debugOn; dbg.textContent = debugOn ? 'Hide seed' : 'Seed'; }, 'bSeed', row2);
   dbg.className = 'link';
-  const pre = add('div', 'dbg'); pre.id = 'seedBox'; pre.hidden = !debugOn;
+  const pre = add('div', 'dbg xtra'); pre.id = 'seedBox'; pre.hidden = !debugOn;
   pre.textContent = 'seed ' + res.seed + '\nscheme ' + res.scheme + '\nshot ' + JSON.stringify(res.shot) + '\nanswer ' + JSON.stringify(res.answer) + '\nplay ' + playKey(runPlay);
+  dock(c, row);
   $('sheet').classList.add('on');
+  c.scrollTop = 0;
 }
+
+/* THE DOCKED CARD (2026-11-17). A run's card lands small at the bottom of
+   the court, with no veil over it, after the ball has played out: the
+   verdict, the score, the reason and the first row of buttons, Run it again
+   (or the level's Next level) first. More opens the rest, everything a
+   builder marks xtra (Save this play, Share, Beat my play, the checklist, the
+   board, the seed), and Less, Escape or a tap beside it docks it again. A
+   card with no run behind it (the Daily filed on another visit) opens whole. */
+function dock(c, row, open) {
+  const m = document.createElement('button');
+  m.className = 'btn alt morebtn'; m.id = 'bMore';
+  row.appendChild(m);
+  m.addEventListener('click', () => cardOpen(c.classList.contains('peek')));
+  cardOpen(!!open);
+}
+function cardOpen(on) {
+  const c = $('card'), m = $('bMore');
+  c.classList.toggle('peek', !on);
+  $('sheet').classList.toggle('peek', !on);
+  if (m) { m.textContent = on ? 'Less' : 'More'; m.setAttribute('aria-expanded', String(on)); }
+  if (on) c.scrollTop = 0;
+}
+/* a tap on the veil beside an open card docks it again */
+$('sheet').addEventListener('click', e => { if (e.target === $('sheet') && !$('card').classList.contains('peek') && $('bMore')) cardOpen(false); });
 
 /* The situation a run was in, for a Beat my play link: the free play's,
    the level's (with its scout scheme), the daily's (never a scheme), the
@@ -708,9 +737,9 @@ function showLevelResult(res) {
   add('p', 'lvlname', L.id + ' · ' + L.title);
   verdictBlock(add, win, scoreLineOf(res.us, res.them, res.how === 'ot'), n, reduce);
   if (better && n > 0) add('p', 'newbest', prev ? 'New best. Up from ' + prev + '.' : 'New best.');
-  checklist(add, n, factsOf(res));
+  checklist(add, n, factsOf(res)).classList.add('xtra');
   add('p', 'reason', res.reason);
-  add('p', 'facts', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
+  add('p', 'facts xtra', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
   const row = add('div', 'row');
   const btn = (label, cls, fn, id, to) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; if (id) b.id = id; b.addEventListener('click', () => fn(b)); (to || row).appendChild(b); return b; };
   /* Next level once the next one is open; first when this run won it */
@@ -719,7 +748,7 @@ function showLevelResult(res) {
   if (canNext && n >= 1) goNext();
   btn('Try again', canNext && n >= 1 ? 'alt' : 'go', () => run(freshSeed()), 'bReplay');
   if (canNext && n < 1) goNext();
-  const row2 = add('div', 'row');
+  const row2 = add('div', 'row xtra');
   saveButton(row2, runOf(res));
   btn('Edit the play', 'alt', backToBoard, 'bBack', row2);
   btn('Back to Ladder', 'alt', openLadder, 'bLadder', row2);
@@ -727,7 +756,8 @@ function showLevelResult(res) {
   if (ch) btn('Beat my play', 'alt', b => shareChallenge(ch, b), 'bBeat', row2);
   const dbg = btn(debugOn ? 'Hide seed' : 'Seed', '', () => { debugOn = !debugOn; pre.hidden = !debugOn; dbg.textContent = debugOn ? 'Hide seed' : 'Seed'; }, 'bSeed', row2);
   dbg.className = 'link';
-  const pre = add('div', 'dbg'); pre.id = 'seedBox'; pre.hidden = !debugOn;
+  const pre = add('div', 'dbg xtra'); pre.id = 'seedBox'; pre.hidden = !debugOn;
+  dock(c, row);
   pre.textContent = 'level ' + L.id + '\nseed ' + res.seed + '\nscheme ' + res.scheme + '\nshot ' + JSON.stringify(res.shot) + '\nanswer ' + JSON.stringify(res.answer) + '\not ' + JSON.stringify(res.ot) + '\nplay ' + playKey(runPlay);
   cardUp(res, n);
 }
@@ -736,7 +766,7 @@ function showLevelResult(res) {
 function cardUp(res, n) {
   const c = $('card'), reduce = reduced();
   $('vGame').classList.add('lres');
-  if (res) court.draw(res.frames[res.frames.length - 1]);
+  if (res) court.redraw();   // the last picture of the run, the ball where it came to rest
   $('sheet').classList.add('on');
   c.scrollTop = 0;
   clearStars();
@@ -767,13 +797,14 @@ function party(c, word = 'PERFECT') {
 function backToBoard() {
   live = null; clearStars();
   $('vGame').classList.remove('lres');
-  $('sheet').classList.remove('on');
+  $('sheet').classList.remove('on', 'peek');
   banner(null); cutUi(null); $('clock').classList.remove('them'); $('stage').classList.remove('slow');
   caps.q = []; $('pop').classList.remove('on', 'final', 'shot');
   $('court').hidden = true; $('board').hidden = false; $('framesRow').hidden = false;
   clipTools(true);
   const S = SCX();
   setScore(S.us, S.them, S.clock);
+  goSync(play);   // even when the board is too squeezed to draw (an open edit panel)
   board.draw();
 }
 
@@ -781,6 +812,7 @@ function backToBoard() {
 let lastOpt = {};
 const VIEWS = ['vHome', 'vGame', 'vBooks', 'vLadder', 'vBeat'];
 function show(v) {
+  closeSheets();   // a sheet never stays open over the next screen
   for (const id of VIEWS) $(id).hidden = id !== v;
   $('back').dataset.to = v === 'vHome' ? 'arcade' : v === 'vGame' && mode === 'edit' ? 'book' : v === 'vGame' && mode === 'level' ? 'ladder'
     : v === 'vGame' && mode === 'beat' ? 'beat' : v === 'vBooks' ? 'books' : 'home';
@@ -802,7 +834,21 @@ $('back').addEventListener('click', e => {
   else if (to === 'books' && books.back()) return;
   else goHome();
 });
+/* THE SHEETS (Plays, Test it, How it works): Escape closes the one on top,
+   and any screen change closes them all. With none open, Escape docks an
+   open result card. */
+function closeSheets() {
+  if ($('playsSheet').classList.contains('on')) closePlays();
+  document.querySelectorAll('.fsheet.on').forEach(el => el.classList.remove('on'));
+}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' && e.key !== 'Esc') return;
+  const open = document.querySelector('.fsheet.on');
+  if (open) { e.preventDefault(); if (open.id === 'playsSheet') closePlays(); else open.classList.remove('on'); return; }
+  if ($('sheet').classList.contains('on') && !$('card').classList.contains('peek') && $('bMore')) { e.preventDefault(); cardOpen(false); }
+});
 function goHome() {
+  closeSheets();
   if (mode === 'edit') books.flush();   // leaving a playbook play: write its runs once
   if (live) backToBoard();
   clearStars();
@@ -829,8 +875,14 @@ function homeSync() {
   }
   $('hLadderStars').textContent = starsIn(ladder) + ' of ' + maxStars() + ' stars';
   $('hLadderSub').textContent = LEVELS.length + ' late game spots. Win one to open the next.';
-  D.homeCard({ today: day, error: dayState === 'error', off: dayState === 'off' });
+  D.homeCard({ today: day, error: dayState === 'error', off: dayState === 'off', streak: streakNow() });
 }
+/* THE DAILY STREAK (ladder-ui.js streakOf): the Eastern days a scored shot
+   was filed, kept with the ladder and synced with it. Today is the server's
+   day once it has said, else this clock's. */
+const todayKey = () => (day && day.dateKey) || D.dateKeyNY(Date.now());
+const streakNow = () => streakOf(ladder.days, todayKey());
+function filedToday(key) { if (markDay(ladder, key)) saveLadder(ladder); }
 
 /* THE LADDER. Read again from storage each time, so another tab's stars show. */
 function openLadder() {
@@ -872,7 +924,7 @@ function loadToday() {
     await D.whenSignedIn();
     const r = await D.api('GET', 'today');
     const t = r.data;
-    if (r.status === 200 && t && t.config && Number.isInteger(t.seed) && t.dateKey) { day = t; dayState = 'ok'; }
+    if (r.status === 200 && t && t.config && Number.isInteger(t.seed) && t.dateKey) { day = t; dayState = 'ok'; if (t.played) filedToday(t.dateKey); }
     else { day = null; dayState = r.status === 404 ? 'off' : 'error'; }
     dayLoad = null;
     homeSync();
@@ -949,6 +1001,7 @@ async function takeShot() {
   if (r.status === 200 && r.data && r.data.result) {
     day.played = r.data.result;
     if (typeof r.data.gems === 'number') day.gems = r.data.gems;
+    filedToday(day.dateKey);
     d.local.scored = cp; d.local.play = play; D.saveDay(d.local);
     track('daily_filed', { score });
     d.confirm = false; dayBarSync();
@@ -983,12 +1036,14 @@ function showDailyCard(result, res) {
   /* No Beat my play on the daily: the link carries today's seed, and
      watching it would show a friend today's defense before their one
      scored shot (2026-11-13). Share says how it went, never how. */
-  const parts = D.dailyCard($('card'), { day, result, reduce: reduced() }, {
+  const parts = D.dailyCard($('card'), { day, result, reduce: reduced(), streak: streakNow() }, {
     share: b => doShare(dailyShareText(day.dayNumber, result.squares, result.scoreText), b, 'daily'),
     beat: null,
     save: savedDaily(result, res),
     practice: () => { backToBoard(); dayBarSync(); },
-    home: goHome
+    home: goHome,
+    /* a fresh scored run docks; the filed card on another visit opens whole */
+    dock: (c, row) => dock(c, row, !res)
   });
   if (res) cardUp(res, parts.n);
   else { cardUp(null, 0); }
@@ -1077,10 +1132,11 @@ function showBeatResult(res) {
     verdictBlock(add, res.outcome === 'win', scoreLineOf(res.us, res.them, res.how === 'ot'), n, reduce);
     add('p', 'dscore', summaryOf(res));
     add('p', 'reason', res.reason);
-    add('p', 'facts', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
+    add('p', 'facts xtra', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
     const row = add('div', 'row');
     btn('Draw yours', 'go', drawYours, 'bDraw2', row);
     btn('Watch again', 'alt', watchTheirs, 'bWatchAgain', row);
+    dock(c, row);
     cardUp(res, n);
     return;
   }
@@ -1094,15 +1150,16 @@ function showBeatResult(res) {
   add('p', 'vsthem', 'Them: ' + summaryOf(chal.theirs.res), vs).id = 'beatThem';
   add('div', 'finalscore', scoreLineOf(res.us, res.them, res.how === 'ot'));
   add('p', 'reason', res.reason);
-  add('p', 'facts', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
+  add('p', 'facts xtra', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
   const row = add('div', 'row');
   btn('Try again', 'go', () => { backToBoard(); ui.hint('Same roll. Change the play.'); }, 'bReplay', row);
   const ch = beatOf(res);
   if (ch) btn('Beat my play', 'alt', b => shareChallenge(ch, b), 'bBeat', row);
-  const row2 = add('div', 'row');
+  const row2 = add('div', 'row xtra');
   saveButton(row2, runOf(res));
   btn('Watch theirs', 'alt', watchTheirs, 'bWatchAgain', row2);
   btn('Home', 'alt', goHome, 'bCardHome', row2);
+  dock(c, row);
   cardUp(res, 0);
   if (won) starTimers.push(setTimeout(() => party(c, null), reduce ? 0 : 400));
 }
@@ -1158,7 +1215,11 @@ window.__lastShot = { run, get result() { return lastResult; }, get play() { ret
   openDaily, loadToday, get chal() { return chal ? { ch: chal.ch, theirScore: chal.theirs.score, mine: chal.mine } : null; }, get beatUrl() { return lastBeatUrl; },
   runPlay: () => runPlay,
   /* the tester round's queue, sent now (check-analytics.mjs) */
-  flushEvents: flushNow };
+  flushEvents: flushNow,
+  /* the account's ladder copy and the streak (check-ladder.mjs, check-daily.mjs) */
+  flushLadder, get ladderWrites() { return ladderWrites(); }, get streak() { return streakNow(); }, ladderSynced: () => ladderSync,
+  /* the docked card: open it whole, or dock it; the court's view (the camera) */
+  cardOpen, courtView: () => { const V = court.view(); return V ? { s: V.s, ox: V.ox, oy: V.oy } : null; } };
 $('cut').addEventListener('pointerdown', () => { if (live && live.skip) live.skip(); });
 
 setScore(SC.us, SC.them, SC.clock);
@@ -1180,3 +1241,12 @@ board.reset();
 $('hint').textContent = defaultHint();
 /* Trace the players in the background while the coach draws (court.js). */
 warm();
+/* The ladder's account copy, once the sign in has said who this is: a merge
+   that brings stars or plays in shows at once. The write interval can be
+   shortened by a check (window.__lastShotSyncMs). */
+const ladderSync = startLadderSync({ wait: D.whenSignedIn(), ms: Number(window.__lastShotSyncMs) || 0, onRemote: d => {
+  ladder = d;
+  homeSync();
+  if (!$('vLadder').hidden) renderLadder($('vLadder'), ladder, openLevel);
+  if (mode === 'level' && lvl) levelBar(lvl.L);
+} });

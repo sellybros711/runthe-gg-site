@@ -12,7 +12,7 @@
  * and a dropped connection (one line, the play kept, nothing played), a forged
  * score refused, the scored run posting the score daily.js gives, the result
  * card (stars, score text, today's defense, the rank, the top ten with me,
- * gems), the share text (no spoiler, the arcade link), no Beat my play on the
+ * the streak, no gems), the share text (no spoiler, the arcade link), no Beat my play on the
  * daily, practice after, a reload after playing, already played from another
  * device, and #daily straight in.
  *
@@ -34,6 +34,7 @@ import { simulate } from '../sim.js';
 import { scoreOf } from '../daily.js';
 import { SCHEME_NAMES } from '../scenario.js';
 import { dateKey, seedFor, dayNumber } from '../../_arcadelab/shared/seed.js';
+import { streakOf, streakLine } from '../ladder-ui.js';
 
 const PORT = 8795, BASE = 'http://localhost:' + PORT;
 const OUT = process.env.SHOTS || null;
@@ -46,6 +47,22 @@ const DASHES = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
 /* The day as the server sees it. */
 const TODAY = dateKey(Date.now()), SEED = seedFor(TODAY, 'last-shot'), CFG = dailyConfig(SEED), NUM = dayNumber(TODAY);
 const SC = dailyScenario(CFG);
+/* a date key n days from today (Eastern keys are plain dates, so UTC math is safe) */
+const dayAt = n => { const [y, m, d] = TODAY.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+
+/* THE STREAK, as a rule (ladder-ui.js streakOf), before any browser */
+{
+  const t = '2026-11-17';
+  const cases = [[[], 0, 0], [['2026-11-17'], 1, 1], [['2026-11-15', '2026-11-16', '2026-11-17'], 3, 3], [['2026-11-15', '2026-11-16'], 2, 2],
+    [['2026-11-14', '2026-11-15'], 0, 2], [['2026-11-10', '2026-11-11', '2026-11-12', '2026-11-16', '2026-11-17'], 2, 3], [['2026-10-31', '2026-11-01', '2026-11-02'], 0, 3],
+    [['2026-12-31', '2027-01-01'], 0, 2]];
+  for (const [days, now, best] of cases) {
+    const st = streakOf(days, t);
+    ok(st.now === now && st.best === best, 'the streak of ' + (days.join(' ') || 'no days') + ': ' + st.now + ', best ' + st.best);
+  }
+  ok(streakOf(['2026-12-30', '2026-12-31', '2027-01-01'], '2027-01-01').now === 3, 'a streak runs over the new year');
+  ok(streakLine({ now: 3, best: 5 }) === '3 day streak · Best 5' && streakLine({ now: 0, best: 2 }) === 'No streak · Best 2', 'the streak line: 3 day streak · Best 5, No streak · Best 2');
+}
 
 /* Everybody on the board: 40 testers before us, and a token per signed in tester. */
 const TOKENS = { 'tok-dev': 'dev', 'tok-dev2': 'dev2', 'tok-dev3': 'dev3' };
@@ -66,7 +83,7 @@ function refPlay(tx = 36, ty = 22) {
     { kind: 'pass', from: 'O1', to: 'O2' }, { kind: 'shoot', who: 'O2' }] };
 }
 
-async function run(name, viewport, mobile, uid) {
+async function run(name, viewport, mobile, uid, days) {
   console.log('\n' + name);
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, hasTouch: mobile, isMobile: mobile });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
@@ -95,8 +112,15 @@ async function run(name, viewport, mobile, uid) {
   const posts0 = fake.posts.length;
   await page.goto(BASE + '/last-shot');
   // a returning browser (it has run a play): the Daily leads home. A new one leads with Play (check-starters).
-  await L(() => { try { localStorage.clear(); } catch (e) {} localStorage.setItem('last_shot_ran', '1'); });
+  await L(days => { try { localStorage.clear(); } catch (e) {} localStorage.setItem('last_shot_ran', '1');
+    if (days) localStorage.setItem('last_shot_ladder', JSON.stringify({ v: 1, best: {}, plays: {}, days })); }, days || null);
   await boot();
+  /* the streak before today's shot: days two and one ago still count (2), a
+     first visit has none to show */
+  const pre = days ? streakOf(days, TODAY) : null;
+  if (pre) ok((await page.textContent('#hDailyStreak')) === streakLine(pre) && pre.now === 2 && await page.isVisible('#hDailyStreak'), 'home before today\'s shot: ' + await page.textContent('#hDailyStreak'));
+  else ok(await page.isHidden('#hDailyStreak'), 'a first visit shows no streak');
+  ok(!/gem/i.test(await page.textContent('#vHome')), 'no gems on home');
 
   // home: the Daily card on top, today's number and title, the countdown
   ok((await L(() => window.__lastShot.dayState)) === 'ok', 'today loaded');
@@ -143,6 +167,7 @@ async function run(name, viewport, mobile, uid) {
     ok((await page.textContent('.practag')) === 'Practice · not scored' && /Practice defense: /.test(await page.textContent('#card .facts')), 'practice ' + (i + 1) + ' is labelled, and its defense is the practice roll\'s');
     ok(await page.isHidden('#bShare') || (await page.locator('#bShare').count()) === 0, 'a practice card has no share line');
     ok((await page.textContent('#bSavePlay')) === 'Save this play', 'a practice card has Save this play');
+    ok(await page.isVisible('#bReplay') && await page.isVisible('#bBack') && await page.isHidden('#bSavePlay'), 'the practice card docks: Again and Back to Clipboard, Save behind More');
     await page.click('#bBack');
   }
   ok(seeds.every(s => s !== SEED) && seeds[0] !== seeds[1], 'practice runs on random seeds, never the day\'s');
@@ -197,7 +222,14 @@ async function run(name, viewport, mobile, uid) {
   ok((await page.textContent('#dRank')) === '#' + (above + 1) + ' of ' + total + ' today', 'the rank: ' + await page.textContent('#dRank'));
   const rows = await page.locator('.dboard li').count();
   ok(rows >= 10 && rows <= 11 && (await page.locator('.dboard li.me').count()) === 1 && (await page.textContent('.dboard li.me .dnm')) === 'You', 'the top ten, with me highlighted (' + rows + ' rows)');
-  ok((await page.textContent('#dGems')) === '+' + gems(post.score) + ' gems', 'gems earned: ' + await page.textContent('#dGems'));
+  ok((await page.locator('#dGems').count()) === 0 && !/gem/i.test(await page.textContent('#card')), 'no gems on the card (the server still pays ' + gems(post.score) + ')');
+  const after = days ? streakOf([...days, TODAY], TODAY) : { now: 1, best: 1 };
+  ok((await page.textContent('#dStreak')) === streakLine(after) && await page.isVisible('#dStreak'), 'today\'s shot extends the streak: ' + await page.textContent('#dStreak'));
+  ok(await page.isVisible('#bDayShare') && await page.isVisible('#dRank') && await page.isHidden('#dBoard') && await page.isHidden('#bDayPractice'), 'the card docks: the rank, the streak and Share, the board and the rest behind More');
+  await page.waitForTimeout(1600);
+  await shot('4-result-docked');
+  await page.click('#bMore');
+  ok(await page.isVisible('#dBoard') && await page.isVisible('#bDayPractice') && await page.isVisible('#bSavePlay'), 'More opens the board, Save, Practice and Home');
   ok(!DASHES.test(await page.textContent('#card')), 'no dashes on the card');
   await page.waitForTimeout(1600);
   await shot('4-result');
@@ -228,10 +260,13 @@ async function run(name, viewport, mobile, uid) {
   // a reload after playing: home shows what was filed; the card and the board come back
   await boot();
   ok((await page.textContent('#hDailyTitle')) === scoreText(post.score) && (await page.textContent('#hDailySq')) === squares(d).join('') && (await page.textContent('#hDailyGo')) === 'Result', 'home after playing: the squares and the score text');
+  ok((await page.textContent('#hDailyStreak')) === streakLine(after), 'the streak survives a reload: ' + await page.textContent('#hDailyStreak'));
+  ok(!/gem/i.test(await page.textContent('#vHome')), 'still no gems on home');
   await shot('5-home-played');
   await page.click('#hDaily');
   await page.waitForSelector('#card.daily', { timeout: 10000 });
   ok((await page.textContent('#dScore')) === scoreText(post.score) && await page.isHidden('#dayShot'), 'a second visit: the filed card, no scored button');
+  ok(await page.isVisible('#bDayPractice') && await page.isVisible('#dBoard') && (await page.textContent('#dStreak')) === streakLine(after), 'with no run to show, the card opens whole, the streak on it');
   await page.waitForFunction(() => document.querySelectorAll('.dboard li').length > 0, null, { timeout: 10000 });
   ok((await page.locator('.dboard li.me').count()) === 1 && (await page.locator('#bBeat').count()) === 0, 'the board, and still no Beat my play');
   const st = await starts();
@@ -273,6 +308,12 @@ async function otherDevice() {
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::|status of (400|409|429)/.test(m.text())) errs.push(m.text()); });
   await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  // a missed day ends the streak: two days, then a gap through yesterday
+  await page.goto(BASE + '/last-shot');
+  await page.evaluate(d => { localStorage.clear(); localStorage.setItem('last_shot_ladder', JSON.stringify({ v: 1, best: {}, plays: {}, days: d })); }, [dayAt(-4), dayAt(-3), dayAt(-2)]);
+  await page.reload();
+  await page.waitForFunction(() => window.__lastShot && window.__lastShot.dayState !== 'loading');
+  ok((await page.textContent('#hDailyStreak')) === 'No streak · Best 3' && (await page.evaluate(() => window.__lastShot.streak.now)) === 0, 'a gap resets the streak: ' + await page.textContent('#hDailyStreak'));
   await page.goto(BASE + '/last-shot#daily');
   await page.waitForSelector('#dayBar', { state: 'visible', timeout: 10000 });
   await page.evaluate(p => window.__lastShot.setPlay(p), refPlay());
@@ -286,12 +327,13 @@ async function otherDevice() {
   await page.waitForSelector('#card.daily', { timeout: 20000 });
   ok((await page.textContent('#dScore')) === scoreText(score) && await page.isHidden('#dayShot'), 'already played: the filed result shows, the button is gone');
   ok(await page.isHidden('#dayErr'), 'and no error line');
+  ok((await page.textContent('#dStreak')) === '1 day streak · Best 3', 'filed on another device still counts today here: ' + await page.textContent('#dStreak'));
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await ctx.close();
 }
 
 try {
-  await run('phone', { width: 390, height: 844 }, true, 'dev');
+  await run('phone', { width: 390, height: 844 }, true, 'dev', [dayAt(-5), dayAt(-2), dayAt(-1)]);
   await run('desktop', { width: 1440, height: 900 }, false, 'dev2');
   await otherDevice();
 } finally {

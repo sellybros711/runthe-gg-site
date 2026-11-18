@@ -26,6 +26,7 @@ name: Shut The Door lab checks
 #   gait     every case: each run's start and stop as drawn (pure)              check-gait.mjs
 #   idle     the life at the set runs, is capped and hushed, and the pitch is exact  check-idle.mjs
 #   walkin   the next hitter walks up: in, his stance exactly, feet still, skips, pitch exact  check-walkin.mjs
+#   mitt     no glove hand finger drawn outside the glove (catcher, every pack; fielders), bare hand whole  check-mitt.mjs
 #
 # Runs locally, unchanged (add --resume to pick up a killed run; lab/pipeline/checkpoint.mjs). No
 # secrets, no deploy.
@@ -109,6 +110,9 @@ jobs:
             browser: true
           - name: walkin
             run: node shut-the-door/lab/pipeline/check-walkin.mjs
+            browser: true
+          - name: mitt
+            run: node shut-the-door/lab/pipeline/check-mitt.mjs
             browser: true
     steps:
       - uses: actions/checkout@v4

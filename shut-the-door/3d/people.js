@@ -185,6 +185,42 @@ export function dress(p, kit, numberText, weave) {
   }
 }
 
+/** The bones a glove covers on hand s ('l' | 'r'): the hand and every finger and thumb joint. */
+export const gloveBone = (name, s) => new RegExp(`^(hand|(thumb|index|middle|ring|pinky)_0[123])_${s}$`).test(name);
+/** A vertex is the glove hand's when the bones the glove covers carry at least this share of it. */
+export const GLOVE_HAND_W = 0.5;
+
+/** Each vertex's weight on the bones the glove on hand s covers (gloveBone), from a skinned
+    geometry's skinIndex and skinWeight and the skeleton's bone names. */
+export function gloveHandWeights(geo, names, s) {
+  const on = names.map((n) => gloveBone(n, s)), si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight;
+  const w = new Float32Array(si.count);
+  for (let i = 0; i < si.count; i++) for (let k = 0; k < 4; k++) if (on[si.getComponent(i, k)]) w[i] += sw.getComponent(i, k);
+  return w;
+}
+
+/** The person's hand s is not drawn: every triangle with a vertex of the glove hand (GLOVE_HAND_W)
+    leaves the index of each skinned mesh it is in. The whole index is kept (geometry.userData.fullIndex:
+    fielders.js builds its body from it, where a left handed fielder's left hand is bare), and the
+    same parsed body set up again (a new scenario) takes the same cut. */
+export function gloveHandOff(p, s) {
+  for (const m of p.meshes) {
+    if (!m.isSkinnedMesh || !m.geometry.index) continue;
+    const g = m.geometry, key = `gloveIndex_${s}`;
+    if (!g.userData.fullIndex) g.userData.fullIndex = g.index;
+    if (!g.userData[key]) {
+      const w = gloveHandWeights(g, m.skeleton.bones.map((b) => b.name), s), full = g.userData.fullIndex.array, keep = [];
+      for (let t = 0; t < full.length; t += 3) {
+        const a = full[t], b = full[t + 1], c = full[t + 2];
+        if (w[a] >= GLOVE_HAND_W || w[b] >= GLOVE_HAND_W || w[c] >= GLOVE_HAND_W) continue;
+        keep.push(a, b, c);
+      }
+      g.userData[key] = keep.length === full.length ? g.userData.fullIndex : new THREE.BufferAttribute(new Uint32Array(keep), 1);
+    }
+    if (g.index !== g.userData[key]) g.setIndex(g.userData[key]);
+  }
+}
+
 export function loadPerson(g, scene) {
   // the same parsed glTF can be set up again (a new scenario): first put its skeleton back as it
   // came, without the gear the last setup hung on it
@@ -1534,6 +1570,11 @@ export class People {
     attach(hand, mitt, m);
     c.mitt = mitt;
     c.mittBindQ = mitt.quaternion.clone();
+    // the mitt replaces the hand: the glove hand's skin is not drawn (gloveHandOff). The hand and its
+    // fingers are thicker than the mitt's pocket, the clips curl the fingers, and the mitt takes the
+    // part of the glove's facing the wrist does not (catcherReach), so the bare fingers came out
+    // through the face of the mitt (the owner's phone, 2026-11-17)
+    gloveHandOff(c, 'l');
     face(c, P(0.1 + 0.4 * this.aimX(), -2.85, 0));
     // a catcher's crouch, as a big league catcher sets with the bases empty: hips down at his heels,
     // knees wide, up on the balls of his feet, his trunk over his knees (the owner, 2026-10-30: the

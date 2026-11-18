@@ -44,6 +44,19 @@ export function simulate(sc, play, seed, opt = {}) {
      whole shape, so placing them one by one left the ball unguarded at the
      start (fixed 2026-11-13). Man to man reads only its own man. */
   for (const x of st.X) { x.pos = targetFor(x, st, T); x.aim = { ...x.pos }; }
+  /* VARIETY (2026-11-17). The same play on the same defense ran the same
+     animation every time: 7 runs to see them all. Each player now gets small
+     quirks for the run, from a stream of their own off the seed (so the
+     defense roll, the passes, the shot and the answer draw exactly as before,
+     and a seed is still the same run): a cutter a few percent quicker or
+     slower (never the man dribbling: a drawn clock burn takes the time the
+     coach drew), a defender a touch slower or quicker to react and move. A
+     storyboard preview has none, so the clipboard never wobbles. */
+  {
+    const J = T.jitter || {}, vr = mulberry32((seed ^ 0x9e3779b9) >>> 0), q = a => opt.preview ? 1 : 1 + (vr() * 2 - 1) * (a || 0);
+    for (const id of IDS) st.O[id].vs = q(J.run);
+    for (const x of st.X) { x.vs = q(J.def); x.vl = q(J.lag); }
+  }
   const cap = (text, extra) => st.events.push({ t: round1(st.clock), kind: 'caption', text, ...extra });
   if (isZone(st.scheme)) cap('They are in a ' + SCHEME_NAMES[st.scheme], { slow: true });
 
@@ -68,7 +81,8 @@ export function simulate(sc, play, seed, opt = {}) {
     for (const id of IDS) {
       const p = st.O[id];
       if (!p.path.length) { p.spd = 0; continue; }
-      advanceRunner(p, DT, st.ball.holder === id ? T.dribbleSpeed : T.runSpeed, T);
+      // the man with the ball keeps the pace the coach drew (a clock burn takes the time it took); cutters vary
+      advanceRunner(p, DT, st.ball.holder === id ? T.dribbleSpeed : T.runSpeed * (p.vs || 1), T);
       if (!p.path.length && p.pending) { p.screen = p.pending; p.pending = null; }
     }
     for (const id of IDS) if (!st.O[id].path.length) st.O[id].vel = { x: 0, y: 0 };
@@ -82,7 +96,7 @@ export function simulate(sc, play, seed, opt = {}) {
       // Fighting over the top: stuck on the screener's body until the hold runs out.
       const ls = st.lastScreen, scr = x.holdT > 0 && ls ? st.O[ls.screener] : null;
       if (scr) { const pin = pinBehind(x, scr.pos, T); aim = { x: aim.x * 0.3 + pin.x * 0.7, y: aim.y * 0.3 + pin.y * 0.7 }; hold = 0.5; }
-      advanceDefender(x, aim, DT, T.defSpeed, T.defLag, hold, T);
+      advanceDefender(x, aim, DT, T.defSpeed * (x.vs || 1), T.defLag * (x.vl || 1), hold, T);
     }
     separate(IDS.map(id => st.O[id]), st.X, T);
     animate(st, DT);
@@ -252,7 +266,7 @@ function tryThrow(sc, play, st, T, rng, cap, i) {
     if (!rec.path.length) return false;                       // waiting on a screen
     if (Q.parts.slice(r.part + 1).some(pt => !pt.waitFor.every(w => screenSet(st, w)))) return false;
     target = Q.route[Q.route.length - 1];
-    eta = (Q.len - along(st, k)) / T.runSpeed;
+    eta = (Q.len - along(st, k)) / (T.runSpeed * (rec.vs || 1));
   }
   const flight = dist(passer.pos, target) / T.passSpeed;
   if (eta > flight + 1e-9) return false;

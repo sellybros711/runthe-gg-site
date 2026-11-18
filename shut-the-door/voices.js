@@ -1,8 +1,9 @@
 /* voices.js: the voice of the ump. window.STD_VOICES.
  *
- * Players record (or upload) an umpire's call from a script, the owner listens and approves or
- * rejects it, and the game plays a random approved clip for that call (sound.js ump()). The server
- * is supabase/165_shut_the_door_ump_voices.sql; auth.js makes the calls.
+ * Players record (or upload) an umpire's call from a script. A tester shortlists or rejects it, the
+ * owner puts a shortlisted call in the game (supabase/177), and the game plays a random live
+ * ('approved') clip for that call (sound.js ump()). The server is supabase/165 to 177; auth.js
+ * makes the calls.
  *
  * The rules it keeps:
  * - The record sheet opens from a button (the home's list, the result's row, settings); the review
@@ -14,8 +15,10 @@
  * - The consent is ticked before the first send of a session (sessionStorage), and its exact text
  *   and version go on every row. The
  *   server compares the text word for word with its own copy (shutdoor_ump_consent).
- * - The review sheet is the owner's (stumpire_testers role 'admin'); its button shows only when the
- *   server says so, and every call behind it checks again.
+ * - The review sheet is the testers' (any stumpire_testers row, the owner's 'admin' included,
+ *   supabase/176); its button shows only when the server says so, and every call behind it checks
+ *   again. A tester's Approve is a shortlist; only the owner puts a call in the game (177). A
+ *   reject deletes the audio for good (175), so it asks first, inside the sheet.
  * - The game preloads a few approved clips once the mound is up, after a beat, and only while the
  *   sound is on. A call never waits for a clip: a line with none stays silent.
  *
@@ -285,7 +288,7 @@ function send() {
       if (EVS() && EVS().voiceSent) EVS().voiceSent(line.id, t.upload ? 'upload' : 'record');
       dropTake();
       var next = nextOpen(R.sent, R.i);
-      R.msg = next < 0 ? 'Sent. That\'s every line. The owner hears them all.' : 'Sent. The owner hears every call.';
+      R.msg = next < 0 ? 'Sent. That\'s every line. Every call gets a listen.' : 'Sent. Every call gets a listen.';
       if (next >= 0) R.i = next;
       render(true);
     });
@@ -322,7 +325,7 @@ function render(keepMsg) {
   if (!signedIn()) {
     body.innerHTML = '<div class="vo-out"><span class="vo-badge">' + MIC_SVG + '</span>' +
       '<p class="vo-out-h">Record your voice. Be the ump!</p>' +
-      '<p class="quiet">Sign in to send one. The owner hears every call. The best ones make the game.</p>' +
+      '<p class="quiet">Sign in to send one. Every call gets a listen. The best ones make the game.</p>' +
       '<button class="btn go vo-signin" type="button" id="vo-signin">Sign in</button></div>';
     $('vo-signin').addEventListener('click', function () { close(); if (MN()) MN().show('auth'); });
     return;
@@ -402,48 +405,108 @@ function open(source) {
 }
 function close() { if (MN() && MN().current() === 'sheet-voices') MN().close(); }
 
-/* ---- the owner's review sheet --------------------------------------------- */
+/* ---- the testers' review sheet -------------------------------------------- */
+/* Two steps to the game (the owner, 2026-11-17; supabase/177). A tester's Approve is a shortlist.
+   The owner hears each shortlisted call in the game's own ump mix (sound.js umpPreview, the same
+   chain the game plays a clip through) and puts it in the game or rejects it. Only the owner's tap
+   makes a call live. The owner can also put a waiting call straight in, and take a live one out
+   (back to the shortlist, file kept) or reject it. A tester never changes a live call. The server
+   checks all of it again; the buttons only follow it. */
 
-var Q = { tab: 'pending', rows: null, urls: {}, msg: '' };
+/* role: 'owner' or 'tester' (settingsRows asks). confirm: the id of the row whose Reject is asking
+   "Delete it for good?" (one at a time). heard: {id: what "Hear it in the game" said} */
+var Q = { tab: 'pending', role: null, rows: null, urls: {}, msg: '', ok: '', confirm: null, heard: {} };
+var TABS = [['pending', 'Waiting'], ['shortlisted', 'Shortlisted'], ['approved', 'Live'], ['rejected', 'Rejected']];
+var HEARD = { played: 'Played in the game\'s ump mix.', off: 'The sound is off. Turn it on in settings.', failed: 'That clip didn\'t play. Try again.' };
+/* what each tab offers, by role: [action, label, class]. 'hear' plays it through the game's chain */
+function actions(status, role) {
+  var own = role === 'owner';
+  if (status === 'pending') return own ? [['approved', 'Put in the game', 'go'], ['rejected', 'Reject', 'ghost']] : [['shortlisted', 'Shortlist', 'go'], ['rejected', 'Reject', 'ghost']];
+  if (status === 'shortlisted') return own ? [['approved', 'Put in the game', 'go'], ['rejected', 'Reject', 'ghost']] : [['rejected', 'Reject', 'ghost']];
+  if (status === 'approved') return own ? [['shortlisted', 'Take it out', 'ghost'], ['rejected', 'Reject', 'ghost']] : [];
+  return [];
+}
+var DONE = { shortlisted: 'Shortlisted. The owner puts it in the game.', approved: 'In the game.', rejected: 'Rejected. The audio goes for good.' };
+/* a tester's Waiting tab says what Shortlist does; the owner's tabs say what's theirs */
+var LEAD = {
+  tester: { pending: 'Shortlist the good ones. The owner puts them in the game.', shortlisted: 'Waiting for the owner.', approved: 'In the game now. Only the owner changes these.' },
+  owner: { pending: 'Put a good one straight in the game.', shortlisted: 'Testers liked these. Hear each one in the game first.', approved: 'In the game now. Take one out to hold it on the shortlist.' },
+};
 function loadQueue() {
-  Q.rows = null; Q.msg = ''; renderQueue();
+  Q.rows = null; Q.msg = ''; Q.confirm = null; Q.heard = {}; renderQueue();
   var a = A();
   if (!a.umpQueue) { Q.rows = []; Q.msg = 'Reviews are not available here.'; return renderQueue(); }
-  a.umpQueue(Q.tab).then(function (r) {
+  var tab = Q.tab;
+  a.umpQueue(tab).then(function (r) {
+    if (tab !== Q.tab) return;
     if (!r || r.error) { Q.rows = []; Q.msg = r && r.error ? sentence(r.error) : 'Could not load the calls.'; return renderQueue(); }
     Q.rows = Array.isArray(r.data) ? r.data : [];
     var paths = Q.rows.map(function (x) { return x.path; }).filter(Boolean);
     if (!paths.length || !a.umpUrls) return renderQueue();
     renderQueue();
-    a.umpUrls(paths, 3600).then(function (m) { Q.urls = m || {}; renderQueue(); });
+    a.umpUrls(paths, 3600).then(function (m) { if (tab === Q.tab) { Q.urls = m || {}; renderQueue(); } });
   });
 }
 function when(s) { try { var d = new Date(s); return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } }
+/* who decided (177): who shortlisted it, who put it in the game; on a rejected call, who rejected it */
+function deciders(x) {
+  var out = [];
+  if (x.shortlistedBy) out.push('Shortlisted by @' + x.shortlistedBy);
+  if (x.status === 'approved' && x.liveBy) out.push('Put in the game by @' + x.liveBy);
+  /* a call put live before 177 has no liveBy on an old server: its reviewer put it live */
+  else if (x.status === 'approved' && x.reviewedBy && !('liveBy' in x)) out.push('Put in the game by @' + x.reviewedBy);
+  if (x.status === 'rejected' && x.reviewedBy) out.push('Rejected by @' + x.reviewedBy);
+  return out;
+}
 function renderQueue() {
   var body = $('vr-body');
   if (!body) return;
-  var tabs = [['pending', 'Waiting'], ['approved', 'Approved'], ['rejected', 'Rejected']];
-  var h = '<div class="seg" role="tablist">' + tabs.map(function (t) {
+  var role = Q.role === 'owner' ? 'owner' : 'tester';
+  var h = '<div class="seg vr-tabs" role="tablist">' + TABS.map(function (t) {
     return '<button type="button" role="tab" data-vr-tab="' + t[0] + '" aria-selected="' + (Q.tab === t[0]) + '">' + t[1] + '</button>';
   }).join('') + '</div>';
+  var lead = LEAD[role][Q.tab];
+  if (lead) h += '<p class="quiet vr-lead" id="vr-lead">' + esc(lead) + '</p>';
+  if (Q.ok) h += '<p class="au-err ok vr-ok" role="status">' + esc(Q.ok) + '</p>';
   if (Q.rows == null) h += '<p class="quiet">Loading.</p>';
   else if (!Q.rows.length) h += '<p class="quiet" id="vr-empty">' + esc(Q.msg || 'Nothing here.') + '</p>';
   else {
     h += '<ul class="vr-list">' + Q.rows.map(function (x) {
       var ln = lineOf(x.line), who = [x.credit ? 'Credit: ' + x.credit : '', x.username ? '@' + x.username : ''].filter(Boolean).join(' · ');
       var url = Q.urls[x.path];
+      var by = deciders(x), acts = x.path ? actions(x.status, role) : [];
+      var asking = Q.confirm === x.id && x.status !== 'rejected';
       return '<li class="vr-row" data-id="' + esc(x.id) + '"><div class="vr-h"><b>' + esc(ln ? ln.text : x.line) + '</b><small>' +
-        esc([who, when(x.createdAt), x.ms ? (x.ms / 1000).toFixed(1) + ' s' : ''].filter(Boolean).join(' · ')) + '</small></div>' +
+        esc([who, when(x.createdAt), x.ms ? (x.ms / 1000).toFixed(1) + ' s' : ''].filter(Boolean).join(' · ')) + '</small>' +
+        by.map(function (b) { return '<small class="vr-by">' + esc(b) + '</small>'; }).join('') + '</div>' +
         /* a rejected call has no file (175 deletes it), so it can only stay rejected */
         (!x.path ? '<p class="quiet">Audio deleted.</p>' : url ? '<audio controls preload="none" src="' + esc(url) + '"></audio>' : '<p class="quiet">Loading the clip.</p>') +
-        '<div class="vr-act">' +
-          (x.status !== 'approved' && x.path ? '<button class="btn go" type="button" data-vr="approved">Approve</button>' : '') +
-          (x.status !== 'rejected' ? '<button class="btn ghost" type="button" data-vr="rejected">Reject</button>' : '') +
-        '</div></li>';
+        /* the game's own mix, through sound.js: on every row with a file the reviewer can still act on */
+        (x.path && url && x.status !== 'rejected' ? '<button class="btn ghost vr-hear" type="button" data-vr-hear>Hear it in the game</button>' +
+          (Q.heard[x.id] ? '<p class="quiet vr-heard" role="status">' + esc(HEARD[Q.heard[x.id]] || HEARD.failed) + '</p>' : '') : '') +
+        (asking ?
+          /* a reject deletes the audio within the hour (175) and cannot be undone: ask first */
+          '<div class="vr-ask" role="group" aria-label="Confirm reject"><p>Delete it for good?</p><div class="vr-act">' +
+            '<button class="btn bad" type="button" data-vr-yes>Yes</button>' +
+            '<button class="btn ghost" type="button" data-vr-no>Cancel</button>' +
+          '</div></div>' :
+          acts.length ? '<div class="vr-act">' + acts.map(function (b) {
+            return '<button class="btn ' + b[2] + '" type="button" data-vr="' + b[0] + '">' + b[1] + '</button>';
+          }).join('') + '</div>' : '') +
+        '</li>';
     }).join('') + '</ul>';
     if (Q.msg) h += '<p class="au-err" role="status">' + esc(Q.msg) + '</p>';
   }
   body.innerHTML = h;
+}
+function hear(id, b) {
+  var x = (Q.rows || []).filter(function (r) { return r.id === id; })[0], S = window.STD_SFX;
+  var url = x && Q.urls[x.path];
+  if (!url || !S || !S.umpPreview) { Q.heard[id] = 'failed'; return renderQueue(); }
+  b.disabled = true;
+  S.umpPreview(url).catch(function () { return 'failed'; }).then(function (r) {
+    Q.heard[id] = r; renderQueue(); focusIn(id, '[data-vr-hear]');
+  });
 }
 function wireQueue() {
   var body = $('vr-body');
@@ -451,34 +514,75 @@ function wireQueue() {
   body.dataset.wired = '1';
   body.addEventListener('click', function (e) {
     var tb = e.target.closest('[data-vr-tab]');
-    if (tb) { Q.tab = tb.getAttribute('data-vr-tab'); return loadQueue(); }
-    var b = e.target.closest('[data-vr]'), row = e.target.closest('.vr-row');
-    if (!b || !row || b.disabled) return;
+    if (tb) { Q.tab = tb.getAttribute('data-vr-tab'); Q.ok = ''; return loadQueue(); }
+    var row = e.target.closest('.vr-row');
+    if (!row) return;
+    var id = row.getAttribute('data-id');
+    var hb = e.target.closest('[data-vr-hear]');
+    if (hb) { if (!hb.disabled) hear(id, hb); return; }
+    /* Reject first asks; Cancel puts the row back; Yes is the reject */
+    if (e.target.closest('[data-vr-no]')) { Q.confirm = null; renderQueue(); return focusIn(id, '[data-vr="rejected"]'); }
+    var yes = e.target.closest('[data-vr-yes]');
+    var b = yes || e.target.closest('[data-vr]');
+    if (!b || b.disabled) return;
+    var st = yes ? 'rejected' : b.getAttribute('data-vr');
+    if (st === 'rejected' && !yes) { Q.confirm = id; Q.msg = ''; renderQueue(); return focusIn(id, '[data-vr-no]'); }
     b.disabled = true;
-    A().umpReview(row.getAttribute('data-id'), b.getAttribute('data-vr')).then(function (r) {
+    A().umpReview(id, st).then(function (r) {
       if (!r || r.error) { b.disabled = false; Q.msg = r && r.error ? sentence(r.error) : 'That did not save.'; return renderQueue(); }
-      Q.rows = Q.rows.filter(function (x) { return x.id !== row.getAttribute('data-id'); });
-      Q.msg = '';
+      var now = r.data && r.data.status || st;
+      Q.rows = Q.rows.filter(function (x) { return x.id !== id; });
+      Q.msg = ''; Q.confirm = null;
+      Q.ok = now === 'shortlisted' && Q.tab === 'approved' ? 'Taken out. It waits on the shortlist.' : DONE[now] || '';
       renderQueue();
+      countRow();
     });
   });
 }
+function focusIn(id, sel) {
+  var body = $('vr-body'), li = body && body.querySelector('.vr-row[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+  var el = li && li.querySelector(sel);
+  if (el) el.focus();
+}
 function openReview() {
   wireQueue();
-  Q.tab = 'pending';
+  /* the owner opens on the shortlist when calls wait there */
+  Q.tab = Q.role === 'owner' && Q.count > 0 ? 'shortlisted' : 'pending';
+  Q.ok = '';
   if (MN()) MN().open('sheet-ump-review');
   loadQueue();
 }
 
-/* the settings sheet's buttons: record for everyone, review for the owner once the server says so */
+/* the settings row's sub-line: for the owner, a quiet count of the shortlist ("3 shortlisted for you.") */
+function countLine(role, n) {
+  if (role === 'owner' && n > 0) return n + ' shortlisted for you.';
+  return 'Testers only.';
+}
+function countRow() {
+  var a = A(), b = $('set-ump-review');
+  if (!b || Q.role !== 'owner' || !a.umpCounts) return;
+  a.umpCounts().then(function (c) {
+    Q.count = c && c.shortlisted > 0 ? Number(c.shortlisted) : 0;
+    var s = b.querySelector('small'); if (s) s.textContent = countLine(Q.role, Q.count);
+  });
+}
+
+/* the settings sheet's buttons: record for everyone, review for testers (the owner too) once the server says so */
 function settingsRows(box) {
   if (!box) return;
   var h = '<button type="button" class="set-row set-go" id="set-voices"><span><b>Voice of the ump</b><small>Record a call. The best ones go in the game.</small></span><i class="chev" aria-hidden="true"></i></button>' +
-    '<button type="button" class="set-row set-go" id="set-ump-review" hidden><span><b>Review ump calls</b><small>Only you see this.</small></span><i class="chev" aria-hidden="true"></i></button>';
+    '<button type="button" class="set-row set-go" id="set-ump-review" hidden><span><b>Review ump calls</b><small>Testers only.</small></span><i class="chev" aria-hidden="true"></i></button>';
   box.insertAdjacentHTML('beforeend', h);
   $('set-voices').addEventListener('click', function () { open('settings'); });
   $('set-ump-review').addEventListener('click', openReview);
-  if (signedIn() && A().umpOwner) A().umpOwner().then(function (yes) { var b = $('set-ump-review'); if (b && yes === true) b.hidden = false; });
+  var a = A(), ask = !signedIn() ? null : a.umpRole ? a.umpRole() : a.umpOwner ? a.umpOwner().then(function (y) { return y === true ? 'owner' : null; }) : null;
+  if (ask) ask.then(function (role) {
+    var b = $('set-ump-review');
+    if (!b || (role !== 'owner' && role !== 'tester')) return;
+    Q.role = role;
+    b.hidden = false;
+    countRow();
+  });
 }
 
 /* ---- the game's clips ------------------------------------------------------ */
@@ -508,6 +612,7 @@ function preload() {
 api.open = open;
 api.openReview = openReview;
 api.settingsRows = settingsRows;
+api.actions = actions;
 api.preload = preload;
 window.STD_VOICES = api;
 })();
