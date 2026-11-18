@@ -54,10 +54,14 @@ if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true
    ?mockAuth=1 makes one of the rows yours. */
 var BOARD_NAMES = ['paintsblack', 'highcheese', 'backdoorslider', 'ninthinning', 'lockdownlefty', 'gasmonkey', 'splitfinger', 'bullpencart',
   'framejob', 'chinmusic', 'upstairs', 'sweeperking', 'knucklepuck', 'tunnelvision', 'fullcount', 'corners', 'runnersonsecond', 'pitchclock'];
-/* the plates (supabase/162): a few club keys on the board's rows, and the mock account's unlocks.
-   ?mockPlates=none unlocks nothing */
+/* the plates (supabase/162, 178): a few club keys on the board's rows, and the mock account's unlocks
+   (a 2005 Astros save opens the brick red throwback too). ?mockPlates=none unlocks nothing.
+   ?mockPlates=diamond puts the board's first row in Diamond, as the server answers it for a Pro
+   account. With ?mockEnt=pro the account's own list has Diamond, as 178's shutdoor_unlocked does. */
 var MOCK_PLATES = ['dodgers', null, 'yankees', 'giants', null, 'redsox', 'brewers'];
-var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'giants'], initials: null };
+var MOCK_DIAMOND = /[?&]mockPlates=diamond/.test(location.search);
+var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'astrosbrick', 'giants'], initials: null };
+if (/[?&]mockEnt=pro/.test(location.search)) mockPlates.unlocked.push('diamond');
 /* the stat line (supabase/166), FICTIONAL and valid by postgame.js: a box line of the row's own
    pitches. Every ninth row has none, as a row posted before 166 */
 function mockStats(rk, pitches, outcome) {
@@ -86,7 +90,7 @@ function mockBoard(day, limit) {
       rank: rk, username: rk === mine ? 'mockplayer' : BOARD_NAMES[rk % BOARD_NAMES.length] + (rk > BOARD_NAMES.length ? rk : ''),
       outcome: outcome, pitches: pitches, score: score, percentile: Math.round((1 - f) * 100), pitched_like: null,
       strip: strip, mine: rk === mine, players: players,
-      plate: rk === mine ? mockPlates.plate : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
+      plate: rk === mine ? mockPlates.plate : MOCK_DIAMOND && rk === 1 ? 'diamond' : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
       stats: mockStats(rk === mine ? 1 : rk, pitches, outcome),
     });
   }

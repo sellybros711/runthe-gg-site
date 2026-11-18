@@ -2014,6 +2014,35 @@ async function modes(w, h, full) {
   /* signed in, the header wears the plate with the initials; the picker shows locked clubs and how to get them */
   const hp = await page.evaluate(() => { const b = document.getElementById('b-profile'), p = b.querySelector('svg.plate'); return { pill: b.classList.contains('pill'), plate: !!p, t: p && p.querySelector('text') ? p.querySelector('text').textContent : '', h: b.getBoundingClientRect().height }; });
   ok(!hp.pill && hp.plate && hp.t === 'MO' && hp.h >= 38, '17 signed in, the header shows your plate with your initials (' + JSON.stringify(hp) + ')');
+  /* the picker (the owner, 2026-11-17): plain and Diamond, today's 30, then the throwbacks. The count is of every
+     plate but plain. A club with no situation says so; Diamond is Pro only. Nothing opens on a locked tap. */
+  await page.evaluate(() => window.STD_MENUS.show('auth'));
+  await page.waitForSelector('#pk-grid .plk', { timeout: 30000 });
+  const pkr = await page.evaluate(() => {
+    const t = (b) => ({ k: b.dataset.plate, locked: b.classList.contains('locked'), small: (b.querySelector('small') || {}).textContent || '', pro: !!b.querySelector('.plk-pro'), h: b.getBoundingClientRect().height });
+    const PL = window.STD_PLATE, have = PL.unlocked().filter((k) => PL.all().includes(k)).length;
+    return { count: document.getElementById('pk-count').textContent, have, total: PL.all().length,
+      cur: [...document.querySelectorAll('#pk-grid .plk')].map(t), tb: [...document.querySelectorAll('#pk-grid-tb .plk')].map(t),
+      tbHead: (document.querySelector('.plk-tb b') || {}).textContent || '', svgs: document.querySelectorAll('#pk-grid .plk svg.plate, #pk-grid-tb .plk svg.plate').length };
+  });
+  const dia = pkr.cur.find((x) => x.k === 'diamond'), soon = pkr.cur.concat(pkr.tb).filter((x) => x.locked && /^No situation yet\. Coming soon\.$/.test(x.small));
+  ok(pkr.count === pkr.have + ' of 40' && pkr.total === 40, '17 the picker counts every plate but plain: "' + pkr.count + '"');
+  ok(pkr.cur.length === 32 && pkr.cur[0].k === '' && pkr.tb.length === 9 && pkr.tbHead === 'Throwbacks' && pkr.svgs === 41,
+    '17 the picker: plain, Diamond and 30 clubs, then 9 throwbacks, each with its plate (' + pkr.cur.length + ' + ' + pkr.tb.length + ')');
+  ok(dia && dia.locked && dia.pro && dia.small === 'Pro only.', '17 not Pro: Diamond is locked, tagged Pro, and says "Pro only." (' + JSON.stringify(dia) + ')');
+  ok(soon.some((x) => x.k === 'orioles') && soon.some((x) => x.k === 'expos') && !soon.some((x) => x.k === 'dodgers' || x.k === 'astrosbrick'),
+    '17 a club with no situation says "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
+  ok(pkr.cur.concat(pkr.tb).every((x) => x.h >= 38), '17 every plate tile is at least 38 px tall');
+  ok(await noSideScroll(page), '17 the picker leaves no sideways scroll');
+  await page.evaluate(() => document.querySelector('#pk-grid .plk[data-plate="diamond"]').click());   // aria-disabled: a real tap still lands
+  await page.waitForTimeout(300);
+  ok(await page.evaluate(() => window.STD_PLATE.current() !== 'diamond' && window.STD_MENUS.current() === 'sheet-auth'), '17 a tap on a locked Diamond wears nothing and opens nothing');
+  await page.click('#pk-grid-tb .plk[data-plate="astrosbrick"]');
+  await page.waitForFunction(() => window.STD_PLATE.current() === 'astrosbrick', null, { timeout: 30000 });
+  ok(true, '17 an unlocked throwback (the 2000-2012 Astros) can be worn');
+  await page.click('#pk-grid .plk[data-plate=""]');
+  await page.waitForFunction(() => window.STD_PLATE.current() === null, null, { timeout: 30000 });
+  await page.evaluate(() => window.STD_MENUS.close(true));
   const vt = await page.evaluate(() => [...document.querySelectorAll('#r-vote .vt-o')].map((b) => ({ name: b.querySelector('.vt-t b').textContent, meta: b.querySelector('.vt-t span').textContent, h: b.getBoundingClientRect().height })));
   ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(Top|Bottom) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
   /* the menu's row to the vote (the owner, 2026-10-30): only while it is open; it scrolls, nothing opens */
@@ -2089,6 +2118,28 @@ async function modes(w, h, full) {
   const none = await page.evaluate(() => ({ t: document.getElementById('h-top-body').textContent, h: document.getElementById('h-top-body').offsetHeight }));
   ok(/nobody/.test(none.t) && none.h === top.h, '17 no rows yet: one quiet line in a box of the same height ("' + none.t + '", ' + none.h + ' px)');
   ok(errors.length === 0, '17 the top 3: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* Diamond (the owner, 2026-11-17): Pro only, by the archive's own gate. A Pro account wears it in the header, and a
+     board row the server answers in Diamond draws the gem with its initials, on the board and the top 3. */
+  step(tag + ' 17 diamond', 200);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro&mockPlates=diamond&mockBoard=full'));
+  await page.waitForFunction(() => window.STD_PLATE && window.STD_PLATE.unlocked().includes('diamond'), null, { timeout: 30000 });
+  await page.evaluate(() => window.STD_MENUS.show('auth'));
+  await page.waitForSelector('#pk-grid .plk[data-plate="diamond"]:not(.locked)', { timeout: 30000 });
+  ok(await page.evaluate(() => !document.querySelector('#pk-grid .plk[data-plate="diamond"] small')), '17 Pro: Diamond is open, with no locked line');
+  await page.click('#pk-grid .plk[data-plate="diamond"]');
+  await page.waitForFunction(() => window.STD_PLATE.current() === 'diamond' && document.querySelector('#b-profile svg.plate.gem'), null, { timeout: 30000 });
+  ok(true, '17 Pro: Diamond is worn, and the header draws the gem');
+  await page.evaluate(() => window.STD_MENUS.close(true));
+  await page.waitForSelector('#h-top .hb-rows li', { timeout: 30000 });
+  const gemTop = await page.evaluate(() => { const p = document.querySelector('#h-top .hb-rows li .nm svg.plate.gem'); if (!p) return null; const r = p.getBoundingClientRect(), t = p.querySelector('text').getBBox(); return { w: Math.round(r.width), t: p.querySelector('text').textContent, mid: Math.round(t.x + t.width / 2) }; });
+  ok(gemTop && gemTop.w >= 20 && gemTop.w <= 28 && /^[A-Z0-9]{1,2}$/.test(gemTop.t) && Math.abs(gemTop.mid - 253) <= 12,
+    '17 a top 3 row in Diamond draws the gem with its initials centred (' + JSON.stringify(gemTop) + ')');
+  await page.click('#h-top-all');
+  await page.waitForSelector('#s-board.on #bd-list .bd-rows svg.plate.gem', { timeout: 30000 });
+  ok(true, '17 the board row wears Diamond');
+  ok(errors.length === 0, '17 diamond: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 
   /* Survivor */
