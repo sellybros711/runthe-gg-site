@@ -7,6 +7,9 @@
  * `card` is built by ui.js from the result and nothing else:
  *   {outcome, strip, pitches, percentile, label ('#12' or 'preview'), title,
  *    vsReal, vsHead, vsWhy, pitchedLike}
+ * and for a custom challenge (CONTRACT.md 18) label 'challenge', percentile null, score (drawn in the
+ * percentile's tile), the comparison as the verdict and link (its address, drawn in the footer in
+ * place of SHARE_URL).
  * Every word and number on the image is one of those, the contract's outcome
  * label, or the contract's SHARE_URL. Nothing is invented to fill a space: a
  * missing value leaves its block out.
@@ -262,10 +265,10 @@ function verdict(ctx, c, x, y, w, h, s) {
   }
 }
 
-function footer(ctx, W, y, pad, s, marks) {
+function footer(ctx, W, y, pad, s, marks, link) {
   ctx.fillStyle = 'rgba(255, 255, 255, .14)'; ctx.fillRect(pad, y - 34 * s, W - pad * 2, 1.5 * s);
   font(ctx, 600, 34 * s); spacing(ctx, .04, 34 * s);
-  ctx.fillStyle = '#ffffff'; ctx.fillText(C.SHARE_URL, pad, y + 6 * s);
+  ctx.fillStyle = '#ffffff'; ctx.fillText(clip(ctx, link || C.SHARE_URL, W - pad * 2 - 64 * s), pad, y + 6 * s);
   spacing(ctx, 0, 34 * s);
   if (marks.mark) ctx.drawImage(marks.mark.img, W - pad - 44 * s, y - 24 * s, 44 * s, 44 * s);
 }
@@ -286,6 +289,7 @@ function drawTall(ctx, c, marks) {
   var fw = (iw - 20) / 2, fh = 150;
   fact(ctx, P, y, fw, fh, String(c.pitches), '', c.pitches === 1 ? 'pitch' : 'pitches', 1.25);
   if (c.percentile != null) { var p = Math.round(c.percentile); fact(ctx, P + fw + 20, y, fw, fh, String(p), ordSuffix(p), 'percentile of closers', 1.25); }
+  else if (c.score != null) fact(ctx, P + fw + 20, y, fw, fh, String(c.score), '', 'score', 1.25);
   y += fh + 52;
   label(ctx, 'your calls, graded', P, y, 26, 'rgba(244, 245, 247, .9)');
   y += 26;
@@ -301,7 +305,7 @@ function drawTall(ctx, c, marks) {
     font(ctx, 900, 44, true); ctx.fillStyle = '#ffffff';
     ctx.fillText(clip(ctx, String(c.pitchedLike).toUpperCase(), iw - lw), P + lw, y + 24);
   }
-  footer(ctx, W, H - 66, P, 1, marks);
+  footer(ctx, W, H - 66, P, 1, marks, c.link);
 }
 
 function drawWide(ctx, c, marks) {
@@ -316,6 +320,7 @@ function drawWide(ctx, c, marks) {
   var fy = y + 182, fw = (lw - 16) / 2, fh = 120;
   fact(ctx, P, fy, fw, fh, String(c.pitches), '', c.pitches === 1 ? 'pitch' : 'pitches', 1);
   if (c.percentile != null) { var p = Math.round(c.percentile); fact(ctx, P + fw + 16, fy, fw, fh, String(p), ordSuffix(p), 'percentile of closers', 1); }
+  else if (c.score != null) fact(ctx, P + fw + 16, fy, fw, fh, String(c.score), '', 'score', 1);
   y = 164 - 22;
   label(ctx, 'your calls, graded', rx, y + 22, 20, 'rgba(244, 245, 247, .9)');
   var sh = strip(ctx, c.strip || [], rx, y + 40, rw, 150, .8);
@@ -323,7 +328,7 @@ function drawWide(ctx, c, marks) {
     var vy = Math.max(y + 40 + sh + 30, 300), vh = Math.min(verdictHeight(ctx, c, rw, .9), H - 96 - vy);
     verdict(ctx, c, rx, vy, rw, vh, .9);
   }
-  footer(ctx, W, H - 40, P, s, marks);
+  footer(ctx, W, H - 40, P, s, marks, c.link);
 }
 
 function render(c, size) {
