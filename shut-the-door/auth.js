@@ -357,7 +357,8 @@
     const r = await rpc('shutdoor_ump_counts', {}, true);
     return r && typeof r === 'object' ? r : null;
   }
-  const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 100 });
+  /* the whole list, to the server's cap (177: 500), so the review sheet's Person and Call filters see every row */
+  const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 500 });
   const umpReview = (id, status) => act('shutdoor_ump_review', { p_id: id, p_status: status });
 
   window.STD_AUTH = {
