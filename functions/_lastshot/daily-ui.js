@@ -20,7 +20,7 @@
  * a restart. A new day drops it. Read through cleanPlay, never trusted. */
 import { MIN_FRAMES } from './daily.js';
 import { cleanPlay, starText, streakLine } from './ladder-ui.js';
-import { adder, verdictBlock, checklist, factsOfDetail, scoreLineOf } from './cards.js';
+import { adder, verdictBlock, checklist, factsOfDetail, scoreOfRun } from './cards.js';
 
 export const GAME_ID = 'last-shot';
 export const DAY_KEY = 'last_shot_daily';
@@ -195,7 +195,7 @@ export function dailyCard(c, o, h) {
   const n = d.outcome === 'win' ? (d.stars | 0) : 0;
   c.dataset.stars = String(n);
   add('p', 'lvlname', 'Daily Last Shot #' + day.dayNumber + ' · ' + day.config.title);
-  verdictBlock(add, d.outcome === 'win', scoreLineOf(d.us, d.them, d.how === 'ot'), n, o.reduce);
+  verdictBlock(add, d.outcome === 'win', scoreOfRun(d), n, o.reduce);
   checklist(add, n, factsOfDetail(d)).classList.add('xtra');
   add('p', 'dscore', result.scoreText).id = 'dScore';
   if (d.reason) add('p', 'reason', d.reason);

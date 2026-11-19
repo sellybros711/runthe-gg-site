@@ -7,7 +7,7 @@
 <title>Last Shot | RunThe.GG</title>
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Outfit:wght@600;800&family=Russo+One&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Outfit:wght@600;800&family=Russo+One&family=Permanent+Marker&display=swap">
 <style>
 /* One fixed palette, like the Arcade Lab shell: a light page, a dark
    scoreboard. Served by functions/last-shot/[[path]].js, never as a file. */
@@ -305,8 +305,114 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .vs{margin:8px 0;display:flex;flex-direction:column;gap:2px}
 .vs p{margin:0!important;font-weight:800;font-size:16px}
 .vs .vsthem{color:var(--dim);font-weight:700}
+/* THE COACH'S CLIPBOARD (2026-11-19, the owner's picks A and C from the look mocks).
+   C: the drawing area is a clipboard (hardboard edge, metal clip, the sheet colour as it was) and
+   the rows under it are its tray: frames as paper tabs, Go at as an LED readout like the clock,
+   the four tools as markers on a rail, then Plays (a folder), Undo (a slip), Clear (an eraser),
+   the frame button (a dark block) and Run It, the strongest thing on the page.
+   A: the result card is a scorer's sheet clipped to the bottom of the board: ruled paper, the
+   verdict in marker and underlined, a YOU | THEM scorebook box with our score circled.
+   Only the clipboard is framed. While a play runs (.app.running) the stage is the court's, as it
+   was. The marker font falls back to a heavy system face when fonts are blocked. */
+:root{--mk:'Permanent Marker','Marker Felt','Segoe Print','Bradley Hand',system-ui,sans-serif;--wet:#1b7a55;--paper:#fdfcf7;--rulel:rgba(34,50,77,.10);--board1:#b98450;--board2:#9c6a3a}
+.mk,.cboard .verdict,.cboard .btn.go,.sbook b,.sbook .sot,.app:not(.running) .hint{font-family:var(--mk);font-weight:800;font-synthesis:none}
+.app:not(.running) .stage,.tray,.cboard{background-color:var(--board1);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .14 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+   repeating-linear-gradient(92deg,rgba(255,255,255,.04) 0 2px,rgba(0,0,0,.03) 2px 5px,transparent 5px 11px),
+   linear-gradient(180deg,var(--board1),var(--board2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 -2px 0 rgba(0,0,0,.18),0 10px 24px -12px rgba(0,0,0,.5)}
+/* the metal clip (a picture: it never takes a tap) */
+.clip{position:absolute;left:50%;transform:translateX(-50%);width:132px;height:38px;z-index:3;pointer-events:none}
+.clip .plate{position:absolute;left:0;right:0;bottom:0;height:26px;border-radius:10px 10px 6px 6px;
+  background:linear-gradient(180deg,#f4f5f7 0%,#c9cdd3 38%,#9aa0a8 62%,#d9dce0 100%);
+  box-shadow:0 3px 0 #6f757d,0 6px 10px rgba(0,0,0,.35),inset 0 1px 0 #fff}
+.clip .lever{position:absolute;left:30px;right:30px;top:0;height:20px;border-radius:12px 12px 4px 4px;
+  border:5px solid #b4b9c0;border-bottom:0;box-shadow:inset 0 1px 0 #fff,0 -1px 0 #8a9098}
+.clip .rivet{position:absolute;bottom:8px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#a3a9b1 60%,#6f757d)}
+.clip .rivet.l{left:16px}.clip .rivet.r{right:16px}
+/* C. the board: a hardboard frame round the sheet the play is drawn on */
+.app:not(.running) .stage{margin:12px 6px 0;border-radius:18px 18px 6px 6px}
+.app:not(.running) #board{top:16px;left:8px;width:calc(100% - 16px);height:calc(100% - 24px);border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06),0 2px 6px rgba(0,0,0,.25)}
+.bclip{top:-12px}
+.app.running .bclip{display:none}
+.app:not(.running) .hint{left:16px;right:16px;bottom:14px;font-size:17px;line-height:1.2;color:var(--marker);transform:rotate(-1.5deg)}
+/* the tray: the clipboard's bottom lip, where the frames, the markers and the erasers sit */
+.tray{flex:none;margin:0 6px;border-radius:6px 6px 0 0;padding:8px 8px 10px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
+.app.running #tray,#vGame.lres #tray{display:none}
+.tray .frames,.tray .gorow,.tray .tools,.tray .actions{padding:0}
+.tray .actions{padding-bottom:0}
+.tray .frames{gap:6px}
+.tray .fr{border:0;border-radius:4px;background:var(--board);font-weight:600;padding:0 8px;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.tray .fr b{font-weight:800;font-size:17px;line-height:1}
+.tray .fr.on{background:var(--board);box-shadow:0 0 0 2.5px var(--marker),0 2px 0 rgba(0,0,0,.25)}
+.tray .fr.next{background:rgba(251,250,246,.3);border:2px dashed rgba(251,250,246,.9);box-shadow:none;color:#fff;font-size:13px;font-weight:700;padding:0 10px;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+.tray .golab{color:#fff3e2;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+.tray .gostep{gap:6px}
+.tray .gostep .mini{border:0;border-radius:6px;background:var(--board);color:var(--marker);font-family:'Outfit',sans-serif;font-weight:800;font-size:20px;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.tray .gochip{display:grid;place-items:center;min-height:44px;padding:0 10px;border-radius:6px;background:#1d2129;color:#ffd23f;font-family:'Russo One',ui-monospace,monospace;font-weight:400;font-size:16px;text-shadow:0 0 8px rgba(255,210,63,.4);box-shadow:inset 0 2px 4px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.2)}
+/* the marker rail: an aluminium ledge with the four markers lying in it; the one in hand lifts */
+.tray .tools{gap:5px;margin:0 -2px;padding:7px 5px 6px;border-radius:7px;background:linear-gradient(180deg,#8d939b 0%,#c7cbd1 14%,#e9ebee 40%,#b4b9c0 100%);box-shadow:inset 0 2px 3px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.3)}
+.tray .tool{position:relative;flex:1 1 0;min-width:0;min-height:50px;border:0;padding:4px 6px 4px 11px;border-radius:9px 4px 4px 9px;background:linear-gradient(180deg,#fff 0%,#f1f1ee 55%,#d9d8d2 100%);color:var(--ink);box-shadow:0 2px 2px rgba(0,0,0,.3);transition:transform .12s}
+.tray .tool::before{content:'';position:absolute;left:0;top:0;bottom:0;width:8px;border-radius:9px 0 0 9px;background:var(--marker)}
+.tray .tool::after{content:'';position:absolute;right:-4px;top:50%;width:6px;height:16px;transform:translateY(-50%);background:var(--marker);clip-path:polygon(0 0,100% 30%,100% 70%,0 100%)}
+.tray .tool small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.01em}
+.tray .tool[aria-pressed="true"]{transform:translateY(-5px) rotate(-2deg);background:var(--marker);color:#fff;box-shadow:0 7px 8px -2px rgba(0,0,0,.4)}
+.tray .tool[aria-pressed="true"]::before{background:#ffd23f}
+/* the action row: a folder, a slip, an eraser, a dark block and Run It */
+.tray .actions .btn{min-height:50px;font-size:15px}
+.tray #bPlays{color:#4b3511;border:0;border-radius:9px 9px 4px 4px;box-shadow:0 2px 0 rgba(0,0,0,.28);
+  background:linear-gradient(#f0d79c,#f0d79c) left top/46% 9px no-repeat,linear-gradient(180deg,#f0d79c,#e2c27c) left 8px/100% calc(100% - 8px) no-repeat}
+.tray #bUndo{border:0;border-radius:4px;background:var(--board);color:var(--marker);box-shadow:0 2px 0 rgba(0,0,0,.28)}
+.tray #bClear{border:0;border-radius:6px;color:#fff;padding-top:14px;background:linear-gradient(180deg,#5b3a1f 0 34%,#3a3d44 34% 100%);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.tray #bFrame{border-radius:6px;background:#1d2129;color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.tray #bRun{min-width:104px;border-radius:8px;background:var(--green);color:#fff;font-family:'Russo One','Outfit',sans-serif;font-weight:400;font-size:20px;letter-spacing:.03em;padding:0 12px;text-shadow:0 2px 0 rgba(0,0,0,.2);
+  box-shadow:0 4px 0 #157352,0 0 0 3px rgba(255,210,63,.9),0 8px 14px -4px rgba(0,0,0,.45)}
+.tray #bRun.pulse{animation:pulseRing 1.5s ease-in-out infinite}
+@keyframes pulseRing{0%,100%{box-shadow:0 4px 0 #157352,0 0 0 3px rgba(255,210,63,.9),0 0 0 3px rgba(34,176,125,.55)}50%{box-shadow:0 4px 0 #157352,0 0 0 3px rgba(255,210,63,.9),0 0 0 12px rgba(34,176,125,0);transform:scale(1.03)}}
+.tray .actions .btn.alt,.tray .actions #bUndo,.tray .actions #bClear{flex:1 1 0;padding:0 4px}.tray .actions #bPlays{flex:1.1 1 0;padding:0 4px}
+.tray .actions #bFrame{flex:0 0 auto;padding:0 12px}.tray .actions #bRun{flex:1.5 1 0}
+@media (max-width:430px){.tray .actions #bRun{font-size:18px;padding:0 6px;min-width:96px}.tray .actions #bFrame{flex:0 0 48px;padding:0}}
+@media (max-width:380px){.tray .tool{padding:4px 4px 4px 10px}.tray .tool small{font-size:9.5px;letter-spacing:-.03em}}
+/* A. the result card: a scorer's sheet under the clip, on the board's bottom edge */
+.cboard{position:relative;width:100%;max-width:640px;max-height:92%;display:flex;flex-direction:column;padding:12px 7px 0;border-radius:18px 18px 0 0;pointer-events:auto}
+.sheet.peek .cboard{max-height:64%}
+.cboard>.clip{top:-16px;width:120px}.cboard>.clip .lever{left:28px;right:28px}
+.cboard .card,.cboard .card.peek{position:relative;flex:0 1 auto;min-height:0;max-height:none;max-width:none;border:0;border-radius:4px 4px 0 0;padding:20px 12px 12px 22px;padding-bottom:max(12px,env(safe-area-inset-bottom));
+  background-color:var(--paper);background-image:linear-gradient(90deg,transparent 0 11px,rgba(224,83,61,.35) 11px 12px,transparent 12px),repeating-linear-gradient(180deg,transparent 0 20px,var(--rulel) 20px 21px);
+  background-attachment:local;box-shadow:0 1px 0 rgba(0,0,0,.08),0 -2px 8px rgba(0,0,0,.08)}
+.cboard .card.perfect{box-shadow:0 0 0 3px #ffc21a,0 -10px 40px rgba(255,194,26,.45)}
+.vhead{display:flex;align-items:flex-start;justify-content:space-between;gap:6px 10px;flex-wrap:wrap;min-width:0}
+.lvltop{align-items:flex-start;flex-wrap:wrap;gap:4px 10px}.lvltop>.vhead{flex:0 1 auto;flex-wrap:nowrap;justify-content:flex-start}.lvltop>.stars{margin-left:auto}
+.cboard .card.lvl .lvltop .verdict{font-size:30px}.cboard .card.lvl .sbook b{font-size:19px;padding:3px 8px 2px}.cboard .card.peek .star{font-size:30px}
+.cboard .verdict,.cboard .card.peek .verdict,.cboard .card.lvl .verdict{position:relative;display:inline-block;margin:0 0 10px;font-size:34px;line-height:1.05;letter-spacing:.01em;transform:rotate(-3deg);transform-origin:left bottom}
+.cboard .verdict.win{color:var(--wet)}.cboard .verdict.lose{color:var(--red)}
+.cboard .verdict::after{content:'';position:absolute;left:-2px;right:0;bottom:-9px;height:12px;background:no-repeat center/100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 C 40 2, 90 10, 140 5 S 190 4, 198 7' fill='none' stroke='%231b7a55' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E")}
+.cboard .verdict.lose::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 C 40 2, 90 10, 140 5 S 190 4, 198 7' fill='none' stroke='%23E0533D' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E")}
+.cboard .card.beat .verdict{font-size:28px}
+/* the scorebook box: YOU | THEM, our score circled in the verdict's colour; the plain line
+   (.finalscore, "90-88 · OT") is there for a screen reader and is what the checks read */
+.sbook{position:relative;flex:none}
+.sbook .finalscore{position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--marker);border-radius:3px;background:rgba(255,255,255,.6);font-variant-numeric:tabular-nums}
+.sgrid span{font:700 9px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.14em;color:var(--dim);text-align:center;padding:4px 6px 2px;border-bottom:1.5px solid var(--marker)}
+.sgrid span+span,.sgrid b+b{border-left:1.5px solid var(--marker)}
+.sbook b{font-size:21px;line-height:1;text-align:center;padding:4px 10px 3px;color:var(--ink)}
+.sbook b.us{position:relative;color:var(--wet)}
+.sbook b.us::after{content:'';position:absolute;inset:0 3px;border:2px solid var(--wet);border-radius:50%;transform:rotate(-8deg);opacity:.75}
+.sbook.lose b.us{color:var(--red)}.sbook.lose b.us::after{border-color:var(--red)}
+.sbook .sot{display:block;text-align:center;font-style:normal;font-size:13px;color:var(--marker);margin-top:2px}
+.cboard .reason,.cboard .card.peek .reason,.cboard .card.lvl .reason{font-size:15px;line-height:21px;font-weight:600;color:#1c2433;margin:6px 0}
+.cboard .row{gap:6px;margin-top:8px}
+.cboard .btn,.cboard .card.peek .row .btn{min-height:48px;min-width:44px;flex:1 1 auto;padding:0 8px;font-size:14.5px;white-space:nowrap;touch-action:manipulation}
+.cboard .btn.go,.cboard .card.peek .row .btn.go{flex:1.35 1 auto;border:0;background:var(--green);color:#fff;font-size:16px;text-shadow:0 1px 0 rgba(0,0,0,.2);box-shadow:0 3px 0 #157352,0 6px 12px -6px rgba(0,0,0,.45);
+  border-radius:255px 14px 225px 14px/14px 225px 14px 255px}
+.cboard .btn.alt{background:transparent;border:2.5px solid var(--marker);color:var(--marker);font-weight:700;border-radius:14px 225px 14px 255px/255px 14px 225px 14px}
+.cboard .btn.alt.morebtn,.cboard .card.peek .row .btn.morebtn{flex:0 0 auto;min-width:54px;border-radius:255px 14px 225px 14px/14px 225px 14px 255px}
+.cboard .btn.save[data-state="saved"]{border-color:var(--wet);color:var(--wet)}
+.cboard .dmeta{border-top-color:var(--marker)}
 @media (prefers-reduced-motion:reduce){.pop.on,.pop.final.on{animation:none;opacity:1;transform:translate(-50%,-50%)}
-  .team b.flip,.bigword.on,.cutv.on,.score .clock.zero,#bRun.pulse,#bPlays.pulse,.star.got,.perfecttag{animation:none}.stage.slow::after{box-shadow:none}}
+  .team b.flip,.bigword.on,.cutv.on,.score .clock.zero,#bRun.pulse,#bPlays.pulse,.star.got,.perfecttag{animation:none}.stage.slow::after{box-shadow:none}
+  .tray #bRun.pulse{animation:none}.tray .tool{transition:none}}
 </style>
 </head>
 <body>
@@ -353,8 +459,10 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
     <div class="bigword" id="big" hidden></div>
     <div class="cut" id="cut" hidden><div class="cuthead" id="cutHead"></div><div class="cutv" id="cutV" aria-live="polite"></div><div class="cutsub" id="cutSub"></div><div class="cutskip">Tap to skip</div></div>
     <div class="hint" id="hint"></div>
-    <div class="sheet" id="sheet"><div class="card" id="card"></div></div>
+    <div class="clip bclip" aria-hidden="true"><div class="lever"></div><div class="plate"><i class="rivet l"></i><i class="rivet r"></i></div></div>
+    <div class="sheet" id="sheet"><div class="cboard" id="cardBoard"><div class="clip" aria-hidden="true"><div class="lever"></div><div class="plate"><i class="rivet l"></i><i class="rivet r"></i></div></div><div class="card" id="card"></div></div></div>
   </div>
+  <div class="tray" id="tray">
   <div class="frames" id="framesRow"><div class="frames" id="frames" style="padding:0"></div><button class="fr next" id="bNext">Next frame</button></div>
   <div class="gorow" id="goRow">
     <span class="golab" id="goLab"></span>
@@ -372,6 +480,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
     <button class="btn alt" id="bClear">Clear</button>
     <button class="btn dark" id="bFrame" disabled aria-label="Play this frame">&#9654;<span class="fl"> Frame</span></button>
     <button class="btn go" id="bRun" disabled>Run It</button>
+  </div>
   </div>
   </div>
   <div class="view scroll" id="vBooks" hidden></div>

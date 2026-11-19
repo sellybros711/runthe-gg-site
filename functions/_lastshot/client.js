@@ -44,7 +44,7 @@ import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js';
 import { challengeOpt, beats } from './challenge.js';
 import * as D from './daily-ui.js';
 import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sitLine, scoutOf, renderChallenge, renderBadLink } from './beat-ui.js';
-import { adder, verdictBlock, checklist, factsOf, summaryOf, scoreLineOf } from './cards.js';
+import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js';
 import { createBoard } from './board.js';
 import { mountBooks } from './book-ui.js';
 import { createCourt, between, warm } from './court.js';
@@ -679,8 +679,7 @@ function showResult(res) {
   /* a daily practice says so, and its defense is the practice roll's, not today's */
   const practice = mode === 'daily';
   if (practice) add('p', 'practag', 'Practice · not scored');
-  add('h2', 'verdict ' + (win ? 'win' : 'lose'), win ? 'WINNER' : 'LOSE');
-  add('div', 'finalscore', scoreLineOf(res.us, res.them, res.how === 'ot'));
+  verdictHead(add, win ? 'win' : 'lose', win ? 'WINNER' : 'LOSE', win, scoreOfRun(res));
   add('p', 'reason', res.reason);
   add('p', 'facts xtra', when + (practice ? ' Practice defense: ' : isZone(res.scheme) ? ' Their defense: ' : ' Their call on screens: ') + res.schemeName + '.');
   const row = add('div', 'row');
@@ -759,7 +758,7 @@ function showLevelResult(res) {
   c.dataset.stars = String(n);
   const add = adder(c);
   add('p', 'lvlname', L.id + ' · ' + L.title);
-  verdictBlock(add, win, scoreLineOf(res.us, res.them, res.how === 'ot'), n, reduce);
+  verdictBlock(add, win, scoreOfRun(res), n, reduce);
   if (better && n > 0) add('p', 'newbest', prev ? 'New best. Up from ' + prev + '.' : 'New best.');
   checklist(add, n, factsOf(res)).classList.add('xtra');
   add('p', 'reason', res.reason);
@@ -1154,7 +1153,7 @@ function showBeatResult(res) {
   const n = starsOf(res);
   if (watching) {
     add('p', 'lvlname', 'Their play');
-    verdictBlock(add, res.outcome === 'win', scoreLineOf(res.us, res.them, res.how === 'ot'), n, reduce);
+    verdictBlock(add, res.outcome === 'win', scoreOfRun(res), n, reduce);
     add('p', 'dscore', summaryOf(res));
     add('p', 'reason', res.reason);
     add('p', 'facts xtra', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
@@ -1169,11 +1168,10 @@ function showBeatResult(res) {
   const mine = scoreOf(res), won = beats(mine, chal.theirs.score);
   c.dataset.beat = won ? 'yes' : 'no';
   add('p', 'lvlname', 'Beat my play');
-  add('h2', 'verdict ' + (won ? 'win' : 'lose'), won ? 'You beat it' : 'They still have it').id = 'beatVerdict';
+  verdictHead(add, won ? 'win' : 'lose', won ? 'You beat it' : 'They still have it', res.outcome === 'win', scoreOfRun(res)).id = 'beatVerdict';
   const vs = add('div', 'vs');
   add('p', 'vsme', 'You: ' + summaryOf(res), vs).id = 'beatMine';
   add('p', 'vsthem', 'Them: ' + summaryOf(chal.theirs.res), vs).id = 'beatThem';
-  add('div', 'finalscore', scoreLineOf(res.us, res.them, res.how === 'ot'));
   add('p', 'reason', res.reason);
   add('p', 'facts xtra', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
   const row = add('div', 'row');
