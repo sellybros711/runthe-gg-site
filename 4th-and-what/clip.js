@@ -23,7 +23,7 @@
   'use strict';
   var W = 540, H = 864, TOP = 92, BOT = 132, HOLD = 1400;
   var TYPES = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
-  var job = null, made = null;
+  var job = null, made = null, keep3d = null;
 
   function typeOf() {
     var MR = root.MediaRecorder;
@@ -68,7 +68,10 @@
     made = null;
     var type = supported() ? typeOf() : null;
     if (!type) { job = { promise: Promise.resolve(null) }; return job.promise; }
-    var live = root.document.createElement('canvas'), out = root.document.createElement('canvas');
+    /* the 3D stadium where it can draw, on one canvas kept for every clip (a
+       browser allows only a few WebGL canvases) */
+    var D3 = root.FAW_LIVE3D, use3 = !!(D3 && D3.ok());
+    var live = use3 ? (keep3d || (keep3d = root.document.createElement('canvas'))) : root.document.createElement('canvas'), out = root.document.createElement('canvas');
     out.width = W; out.height = H;
     var x = out.getContext('2d'), stream = out.captureStream(30), rec, chunks = [], cap = '', end = null, raf = 0, stopped = false, show = null;
     try { rec = new root.MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 2500000 }); }
@@ -84,18 +87,20 @@
         resolve(made);
       };
       function paint() { if (stopped) return; frame(x, live, info, cap, end); raf = root.requestAnimationFrame(paint); }
-      live.width = 260; live.height = 400;
+      live.width = use3 ? 390 : 260; live.height = use3 ? 600 : 400;
       frame(x, live, info, '', null);
       rec.start(250);
       paint();
-      show = root.FAW_LIVE.show(live, res, {
+      var ui = {
         caption: function (t) { cap = t; },
         pressure: function () {},
         done: function () {
           end = { title: info.title, line: info.line, win: info.win };
           setTimeout(function () { stopped = true; frame(x, live, info, cap, end); setTimeout(function () { try { rec.stop(); } catch (e) { resolve(null); } }, 120); }, HOLD);
         }
-      });
+      };
+      if (use3) { try { show = D3.show(live, res, ui); } catch (e) { use3 = false; live = root.document.createElement('canvas'); live.width = 260; live.height = 400; } }
+      if (!use3) show = root.FAW_LIVE.show(live, res, ui);
     });
     me.stop = function () { me.cancelled = true; stopped = true; if (show) show.stop(); try { if (rec.state !== 'inactive') rec.stop(); } catch (e) {} };
     job = me;

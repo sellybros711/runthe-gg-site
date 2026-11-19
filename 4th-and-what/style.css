@@ -250,6 +250,13 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 .watch { position: fixed; inset: 0; z-index: 50; background: rgba(4, 9, 16, .92); display: grid; place-items: center; padding: 12px; }
 .stage { position: relative; border-radius: 14px; overflow: hidden; background: #2f8a4a; aspect-ratio: 260 / 400; height: min(92dvh, 900px); max-width: 100%; }
 #cLive { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+#cLive3d { display: block; width: 100%; height: 100%; }
+#cLive[hidden], #cLive3d[hidden] { display: none; }
+/* the 3D stadium's score bar: the down and spot, and the call that was on */
+.stage .bug { position: absolute; left: 10px; right: 10px; bottom: 44px; display: flex; align-items: center; gap: 10px; padding: 7px 12px 7px 14px; border-radius: 10px; background: rgba(6, 12, 22, .9); box-shadow: inset 5px 0 0 #b3122e, inset 8px 0 0 #f5b72a; }
+.stage .bug[hidden] { display: none; }
+.stage .bug b { font: italic 900 20px/1 'Barlow Condensed', 'Arial Narrow', sans-serif; color: #fff; text-transform: uppercase; white-space: nowrap; }
+.stage .bug span { margin-left: auto; font: 800 10px/1.2 'Inter', sans-serif; color: #9fb2c8; letter-spacing: .08em; text-transform: uppercase; text-align: right; }
 .press { position: absolute; left: 10px; right: 10px; top: 10px; height: 14px; border-radius: 4px; background: rgba(10, 14, 30, .55); border: 2px solid rgba(255, 255, 255, .5); overflow: hidden; }
 .press i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #ffd23f, #e0533d); }
 .press span { position: absolute; inset: 0; font: 800 9px/10px 'Inter', sans-serif; color: #fff; text-align: center; letter-spacing: .1em; text-transform: uppercase; }
