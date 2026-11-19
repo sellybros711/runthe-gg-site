@@ -77,12 +77,16 @@
       "sha": "6043dbc804a71fd9"
     },
     "play.js": {
-      "v": "4",
-      "sha": "9d4b93c2caea60e2"
+      "v": "5",
+      "sha": "f47af376ff4c615f"
+    },
+    "live3d.js": {
+      "v": "1",
+      "sha": "57a15bfbeb08f58e"
     },
     "app.js": {
-      "v": "13",
-      "sha": "a4afa84a9824af52"
+      "v": "14",
+      "sha": "4a07c5add3b9755e"
     },
     "home.js": {
       "v": "5",
@@ -97,8 +101,8 @@
       "sha": "fefdb546b27fe98a"
     },
     "clip.js": {
-      "v": "1",
-      "sha": "42acc78a2a9a5a7b"
+      "v": "2",
+      "sha": "ee57c2208849675b"
     },
     "flow.js": {
       "v": "19",
@@ -199,8 +203,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -459,8 +463,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -787,8 +791,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -973,8 +977,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/namesake.js": {
       "v": "1",
@@ -1151,8 +1155,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -1595,8 +1599,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -1911,8 +1915,8 @@
       "sha": "e5a73154c06c0e0a"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/icons.js": {
       "v": "3",
@@ -2137,8 +2141,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/sportegories-data.js": {
       "v": "67",
@@ -2215,8 +2219,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "8",
-      "sha": "15a845209f4b3402"
+      "v": "9",
+      "sha": "49864a18a2451053"
     },
     "/arcade/rosters.js": {
       "v": "12",
@@ -3255,8 +3259,8 @@
       "sha": "84a6bf5880088165"
     },
     "plate.js": {
-      "v": "10",
-      "sha": "4a475c5431690821"
+      "v": "11",
+      "sha": "85f75437da4ed3a1"
     },
     "menus.js": {
       "v": "32",
@@ -3267,8 +3271,8 @@
       "sha": "07b7ca2277fe8038"
     },
     "modes.js": {
-      "v": "7",
-      "sha": "ffae12dce6c70a29"
+      "v": "8",
+      "sha": "d1a606f4c323fcc7"
     },
     "grade.js": {
       "v": "23",
@@ -3315,8 +3319,8 @@
       "sha": "374492f48b227041"
     },
     "api.js": {
-      "v": "42",
-      "sha": "20e6e06ef1feaa01"
+      "v": "43",
+      "sha": "fae8d7dc85a085c4"
     },
     "mock-api.js": {
       "v": "30",
@@ -3383,14 +3387,14 @@
       "sha": "472b590e9609748f"
     },
     "3d/boot.js": {
-      "v": "125",
-      "sha": "333d82da01969026"
+      "v": "126",
+      "sha": "d4bf2bb1d2f7ad9f"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "109",
-      "sha": "4f94e74fd4c0bb2f"
+      "v": "110",
+      "sha": "368a4b38aad57e57"
     }
   },
   "soccer/index.html": {
@@ -3513,8 +3517,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "126",
-      "sha": "471f5f7cd7b16b61"
+      "v": "127",
+      "sha": "3b3efe6dba3c3b1a"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3567,12 +3571,12 @@
       "sha": "e6b56ef962b13bd9"
     },
     "park.js": {
-      "v": "31",
-      "sha": "1cffdb126a8e4838"
+      "v": "32",
+      "sha": "681fd541be9478de"
     },
     "people.js": {
-      "v": "65",
-      "sha": "c48aa4f3de9a925e"
+      "v": "66",
+      "sha": "16b8bc0b233b1878"
     },
     "pitch.js": {
       "v": "16",
@@ -3591,16 +3595,16 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "78",
-      "sha": "b34a94e17d4fd677"
+      "v": "79",
+      "sha": "bb8ed22812f3ee77"
     },
     "preview.js": {
       "v": "14",
       "sha": "0458bea100016e8c"
     },
     "firstperson.js": {
-      "v": "38",
-      "sha": "939ea1252af8d9ac"
+      "v": "39",
+      "sha": "66f822e31c5f978d"
     },
     "idle.js": {
       "v": "2",
@@ -3619,20 +3623,20 @@
   },
   "shut-the-door/3d/park.js": {
     "field.js": {
-      "v": "22",
-      "sha": "5eb73aaeae299f25"
+      "v": "23",
+      "sha": "0d49a8c37c906f97"
     },
     "stands.js": {
-      "v": "32",
-      "sha": "35069bb5207c873e"
+      "v": "33",
+      "sha": "5879447b3685e1da"
     },
     "units.js": {
       "v": "1",
       "sha": "e771dbef0b67350e"
     },
     "crowd.js": {
-      "v": "8",
-      "sha": "150d031e4b97acd3"
+      "v": "9",
+      "sha": "659519465bfe5156"
     }
   },
   "shut-the-door/3d/people.js": {
@@ -3641,11 +3645,11 @@
       "sha": "7cf9dc9116ed14f1"
     },
     "clubs.js": {
-      "v": "8",
+      "v": "9",
       "sha": "ecf3c0f4284435d3"
     },
     "uniforms.js": {
-      "v": "3",
+      "v": "4",
       "sha": "92a0b83dc1552f35"
     },
     "gear3d.js": {
@@ -3669,8 +3673,8 @@
       "sha": "e6b56ef962b13bd9"
     },
     "inplay-plan.js": {
-      "v": "33",
-      "sha": "a197e1759f72a732"
+      "v": "34",
+      "sha": "4958b7351b05d9bf"
     },
     "stance.js": {
       "v": "1",
@@ -3717,24 +3721,24 @@
   },
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
-      "v": "33",
-      "sha": "a197e1759f72a732"
+      "v": "34",
+      "sha": "4958b7351b05d9bf"
     },
     "shade-data.js": {
-      "v": "11",
-      "sha": "3299219b64acbd8a"
+      "v": "12",
+      "sha": "03830b2e429f0c46"
     },
     "fielders.js": {
-      "v": "20",
-      "sha": "d2fe13c7af9199a4"
+      "v": "21",
+      "sha": "3fbf941efa400d19"
     },
     "ballpark.js": {
-      "v": "49",
-      "sha": "59f5beea32ab5f1d"
+      "v": "50",
+      "sha": "9febe8f6198ee019"
     },
     "people.js": {
-      "v": "65",
-      "sha": "c48aa4f3de9a925e"
+      "v": "66",
+      "sha": "16b8bc0b233b1878"
     },
     "looks.js": {
       "v": "6",
@@ -3761,8 +3765,8 @@
       "sha": "e771dbef0b67350e"
     },
     "park.js": {
-      "v": "31",
-      "sha": "1cffdb126a8e4838"
+      "v": "32",
+      "sha": "681fd541be9478de"
     },
     "gear3d.js": {
       "v": "4",
@@ -3819,8 +3823,8 @@
       "sha": "e6b56ef962b13bd9"
     },
     "inplay-plan.js": {
-      "v": "33",
-      "sha": "a197e1759f72a732"
+      "v": "34",
+      "sha": "4958b7351b05d9bf"
     }
   },
   "shut-the-door/3d/stands.js": {
@@ -3829,21 +3833,21 @@
       "sha": "e771dbef0b67350e"
     },
     "field.js": {
-      "v": "22",
-      "sha": "5eb73aaeae299f25"
+      "v": "23",
+      "sha": "0d49a8c37c906f97"
     },
     "load.js": {
       "v": "12",
       "sha": "e6b56ef962b13bd9"
     },
     "crowd.js": {
-      "v": "8",
-      "sha": "150d031e4b97acd3"
+      "v": "9",
+      "sha": "659519465bfe5156"
     }
   },
   "shut-the-door/3d/crowd.js": {
     "clubs.js": {
-      "v": "8",
+      "v": "9",
       "sha": "ecf3c0f4284435d3"
     }
   },
@@ -3863,8 +3867,8 @@
       "sha": "e771dbef0b67350e"
     },
     "people.js": {
-      "v": "65",
-      "sha": "c48aa4f3de9a925e"
+      "v": "66",
+      "sha": "16b8bc0b233b1878"
     }
   },
   "shut-the-door/3d/ballpark.js": {
@@ -3877,23 +3881,23 @@
       "sha": "e6b56ef962b13bd9"
     },
     "inplay-plan.js": {
-      "v": "33",
-      "sha": "a197e1759f72a732"
+      "v": "34",
+      "sha": "4958b7351b05d9bf"
     },
     "field.js": {
-      "v": "22",
-      "sha": "5eb73aaeae299f25"
+      "v": "23",
+      "sha": "0d49a8c37c906f97"
     },
     "foul.js": {
       "v": "2",
       "sha": "fa85bc5ed4fbac6e"
     },
     "crowd.js": {
-      "v": "8",
-      "sha": "150d031e4b97acd3"
+      "v": "9",
+      "sha": "659519465bfe5156"
     },
     "clubs.js": {
-      "v": "8",
+      "v": "9",
       "sha": "ecf3c0f4284435d3"
     }
   }

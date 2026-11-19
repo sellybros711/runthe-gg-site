@@ -2,10 +2,10 @@
  * Shared by the game (stage.js) and the lab (lab/scene.js).
  */
 import * as THREE from 'three';
-import { buildField } from './field.js?v=22';
-import { buildStands } from './stands.js?v=32';
+import { buildField } from './field.js?v=23';
+import { buildStands } from './stands.js?v=33';
 import { P, FT, smooth } from './units.js?v=1';
-import { crowdLight } from './crowd.js?v=8';
+import { crowdLight } from './crowd.js?v=9';
 
 export function makeRenderer(canvas, maxDpr = 2) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });

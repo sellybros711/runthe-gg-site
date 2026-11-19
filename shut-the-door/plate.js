@@ -215,11 +215,11 @@
     'std-2023-williams-sd': 'brewers', 'std-2023-ws1-sewald': 'diamondbacks', 'std-2024-ws5-buehler': 'dodgers',
     'std-2025-diaz-cin': 'mets', 'std-2025-scott-kc': 'dodgers', 'std-2025-ws6-glasnow': 'dodgers',
     'std-2025-ws7-yamamoto': 'dodgers',
-    // 12 of the 13 clubs that had none (2026-11-18, supabase/179); the Reds' wait on a 3D fix
+    // the 13 clubs that had none (2026-11-18, supabase/179)
     'std-2015-melancon-chc': 'pirates', 'std-2016-britton-tor': 'orioles', 'std-2018-davis-wsh': 'rockies',
     'std-2019-nlwc-hudson': 'nationals', 'std-2020-alwc1-colome': 'whitesox', 'std-2020-nlwc2-kintzler': 'marlins',
     'std-2019-rogers-det': 'twins', 'std-2024-alwc2-vest': 'tigers', 'std-2024-helsley-sf': 'cardinals',
-    'std-2025-alcs1-munoz': 'mariners', 'std-2025-alcs7-hoffman': 'bluejays',
+    'std-2025-alcs1-munoz': 'mariners', 'std-2025-alcs7-hoffman': 'bluejays', 'std-2025-pagan-mil': 'reds',
     'std-2025-smith-det': 'guardians',
   };
   /* The extra plate a situation unlocks: its era's colours or its old name (keysFor's second key).

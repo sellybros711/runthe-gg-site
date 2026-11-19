@@ -7,15 +7,15 @@
  */
 import * as THREE from 'three';
 import * as M from './materials.js?v=8';
-import { battingClub, clubNamed } from './clubs.js?v=8';
-import { capFor, frontFor, wornHome } from './uniforms.js?v=3';
+import { battingClub, clubNamed } from './clubs.js?v=9';
+import { capFor, frontFor, wornHome } from './uniforms.js?v=4';
 import * as G from './gear3d.js?v=4';
 import * as HG from './headgear.js?v=5';
 import { measureHead, wear, wornShade } from './headgear.js?v=5';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld, aimBone } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=12';
-import { STANCE_X } from './inplay-plan.js?v=33';
+import { STANCE_X } from './inplay-plan.js?v=34';
 import { stanceOff } from './stance.js?v=1';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
