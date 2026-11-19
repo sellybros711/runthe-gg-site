@@ -76,6 +76,13 @@
  *      has you against them, the standings, no percentile, no board, the share; a guest's sign-in posts
  *      it once and puts you on the standings; My challenges lists it
  *
+ *  26. the menu's unlock row (pro-card.js unlock()), 390x844 dark and light, 375x667 dark and 1440x900 dark
+ *      (STD_UNLOCK=1 alone): the gem fully inside the row and centred on it; the last item in the menu
+ *      sheet under account, and at the foot of the desk's drawer, for
+ *      anybody who is not Pro; "Unlock the full game" over the catalog's price; nothing opens by itself;
+ *      the whole row is the store's buy button (signed out, sign in; signed in, the checkout's post for
+ *      Pro); none for Pro; the sheet's three tiles each read on at most two lines
+ *
  *  22. your history (Pro, history-ui.js), through the mock: the stats sheet's row is a plain locked row
  *      that names the perk for a player who is not Pro (nothing to tap, no buy button) and a button for
  *      Pro; nothing opens by itself; the list (newest first, every row a 38 px tap and up, no sideways
@@ -251,6 +258,10 @@ const UNITS = [
   ['23 the desk home, 1920x1080 light', 40, () => deskHome(1920, 1080, 'light')],
   ['25 custom challenges, 390x844 light', 90, () => challengesWalk(390, 844, 'light')],
   ['25 custom challenges, 1440x900 dark', 90, () => challengesWalk(1440, 900, 'dark')],
+  ['26 the unlock row, 390x844 dark', 25, () => unlockWalk(390, 844, 'dark')],
+  ['26 the unlock row, 390x844 light', 25, () => unlockWalk(390, 844, 'light')],
+  ['26 the unlock row, 375x667 dark', 25, () => unlockWalk(375, 667, 'dark')],
+  ['26 the unlock row, 1440x900 dark', 25, () => unlockWalk(1440, 900, 'dark')],
 ];
 const MINE = new Set(), DONE = [];
 const SHARD = (() => { const v = argVal('--shard'); if (!v) return { i: 0, n: 1 }; const [i, n] = v.split('/').map(Number); if (!(n >= 1 && i >= 0 && i < n && Number.isInteger(i) && Number.isInteger(n))) throw new Error('--shard I/N: I from 0 to N-1'); return { i, n }; })();
@@ -3707,6 +3718,112 @@ async function ownerShortlistWalk(w, h) {
   await ctx.close();
 }
 
+/* THE UNLOCK ROW (the owner, 2026-11-19): a small Diamond row, "Unlock the full game" over the name and the
+   catalog's price, the last item in the menu sheet (under account) and at the foot of the desk's drawer, for
+   anybody who is not Pro. Nothing opens it or opens from it by itself. Its whole row is the store's buy button
+   (pro.js data-pro-buy): signed out it asks to sign in, signed in it posts the checkout for Pro and keeps its
+   two lines through "opening checkout...". A Pro member never sees it. The menu sheet's three tiles read on at
+   most two lines each, the number over its label. STD_UNLOCK_SHOTS=dir saves the stills. */
+async function unlockWalk(w, h, theme) {
+  const tag = w + 'x' + h + ' ' + theme, desk = w >= 980, SLOT = desk ? '#d-pro' : '#menu-pro';
+  console.log('\nthe unlock row, ' + tag);
+  step(tag + ' 26 the unlock row', 200);
+  const price = '$' + (+(/'door-pro':\s*(\d+)/.exec(fs.readFileSync(path.join(ROOT, 'shut-the-door', 'pro.js'), 'utf8')) || [0, 0])[1] / 100).toFixed(2);
+  const still = async (page, name) => {
+    const dir = process.env.STD_UNLOCK_SHOTS || SHOTS;
+    if (!dir) return;
+    fs.mkdirSync(dir, { recursive: true });
+    await page.waitForTimeout(350);
+    const f = path.join(dir, 'unlock-' + name + '-' + w + 'x' + h + '-' + theme + '.png');
+    await page.screenshot({ path: f });
+    console.log('       still: ' + f);
+  };
+  const openMenu = async (page) => {
+    if (desk) { await page.click('#d-menu-b'); await page.waitForSelector('body.d-menu-on'); }
+    else { await page.click('#b-menu'); await page.waitForSelector('#sheet-menu.on'); }
+    await page.waitForTimeout(400);
+  };
+  const row = (page) => page.evaluate((q) => {
+    const slot = document.querySelector(q), r = slot && slot.querySelector('.mu-pro'), b = r && r.querySelector('[data-pro-buy]');
+    if (!r || !b) return null;
+    r.scrollIntoView({ block: 'nearest' });
+    const R = r.getBoundingClientRect(), hit = document.elementFromPoint(R.right - 24, R.top + R.height / 2);
+    /* the gem's own box (the svg and its wrapper) fully inside the row's box, centred on its height */
+    const G = r.querySelector('svg.plate').getBoundingClientRect(), GI = (r.querySelector('.mu-gi') || r.querySelector('svg.plate')).getBoundingClientRect();
+    const inside = (x) => x.width >= 30 && x.height >= 30 && x.left >= R.left && x.right <= R.right && x.top >= R.top && x.bottom <= R.bottom;
+    const gemBox = { l: Math.round(G.left - R.left), t: Math.round(G.top - R.top), w: Math.round(G.width), h: Math.round(G.height), mid: Math.round((G.top + G.bottom) / 2 - (R.top + R.bottom) / 2) };
+    const prev = slot.previousElementSibling;
+    return { t: b.textContent, sub: (r.querySelector('small') || {}).textContent, gem: !!r.querySelector('svg.plate'), h: Math.round(R.height), l: Math.round(R.left), rt: Math.round(R.right),
+      last: !slot.nextElementSibling, after: prev ? (prev.id || prev.className) : null, account: !!(prev && prev.querySelector('button:last-child[data-open="auth"]')),
+      whole: !!(hit && hit.closest('[data-pro-buy]') === b), named: b.getAttribute('data-pro-buy'),
+      gemIn: inside(G) && inside(GI) && Math.abs(gemBox.mid) <= 2, gemBox };
+  }, SLOT);
+
+  /* signed out, not Pro */
+  let { ctx, page, errors } = await modesPage(w, h, '?mockBoard=full', { theme });
+  await page.waitForSelector(SLOT + ':not([hidden]) .mu-pro [data-pro-buy]', { state: 'attached', timeout: 30000 });
+  await page.waitForTimeout(1500);
+  ok(await nothingOpen(page) && !(await page.evaluate(() => document.body.classList.contains('d-menu-on'))), '26 ' + tag + ': the row waits in the closed ' + (desk ? 'drawer' : 'menu sheet') + ', nothing opens by itself');
+  if (!desk) {
+    await openMenu(page);
+    const tiles = await page.evaluate(() => [...document.querySelectorAll('#menu-tiles .tl')].map((t) => { const b = t.querySelector('b'), s = t.querySelector('span'), lh = parseFloat(getComputedStyle(s).lineHeight);
+      return { l: s.textContent, lines: Math.round(s.getBoundingClientRect().height / lh), over: b.getBoundingClientRect().bottom <= s.getBoundingClientRect().top + 1, fits: s.scrollWidth <= t.clientWidth }; }));
+    ok(tiles.length === 3 && tiles.every((x) => x.lines <= 2 && x.over && x.fits) && tiles[0].l === 'doors shut in a row',
+      '26 ' + tag + ': the menu tiles read cleanly, each number over its label on at most two lines (' + JSON.stringify(tiles) + ')');
+    await page.evaluate(() => window.STD_MENUS.close(true));
+    await page.waitForTimeout(300);
+  }
+  await openMenu(page);
+  const R = await row(page);
+  ok(R && R.t === 'Unlock the full game' && R.sub === 'Shut The Door Pro · ' + price + ' a year' && R.gem && R.named === '',
+    '26 ' + tag + ': "Unlock the full game", the small Diamond gem, and the catalog\'s price under it (' + JSON.stringify(R) + ')');
+  ok(R && R.gemIn, '26 ' + tag + ': the gem sits fully inside the row, centred on its height (' + JSON.stringify(R && R.gemBox) + ')');
+  ok(R && R.last && (desk ? R.after === 'h-menu' : R.account), '26 ' + tag + ': the last item, ' + (desk ? 'under the drawer\'s menu' : 'under account'));
+  ok(R && R.h >= 38 && R.whole && (desk || (R.l >= 16 && R.rt <= w - 16)) && await noSideScroll(page), '26 ' + tag + ': the whole row is the tap, at least 38 px, inside the gutter, no sideways scroll');
+  if (!desk) await page.evaluate(() => { const s = document.querySelector('#sheet-menu .sh-in'); s.scrollTop = s.scrollHeight; });
+  await still(page, desk ? 'drawer' : 'sheet');
+  /* the tap anywhere on the row: signed out, sign in first */
+  await page.evaluate((q) => document.querySelector(q + ' .mu-pro').scrollIntoView({ block: 'nearest' }), SLOT);
+  const box = await page.locator(SLOT + ' .mu-pro').boundingBox();
+  await page.mouse.click(box.x + box.width - 24, box.y + box.height / 2);
+  await page.waitForTimeout(250);
+  ok(await page.evaluate(() => window.STD_MENUS.current() === 'sheet-auth' && !document.body.classList.contains('d-menu-on')),
+    '26 ' + tag + ': signed out, a tap on the row opens sign in' + (desk ? ' and the drawer goes' : '') + ', never a checkout');
+  ok(errors.length === 0, '26 ' + tag + ' signed out: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* signed in, not Pro: the tap posts the store's checkout for Pro (answered here as not on sale, so the page stays) */
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1', { theme }));
+  const posts = [];
+  await page.route('**/api/stripe/checkout-bundle', (route) => { posts.push(JSON.parse(route.request().postData() || '{}')); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"error":"stripe_not_configured"}' }); });
+  await page.waitForSelector(SLOT + ':not([hidden]) .mu-pro [data-pro-buy]', { state: 'attached', timeout: 30000 });
+  await page.waitForTimeout(800);
+  ok(await nothingOpen(page) && posts.length === 0, '26 ' + tag + ' signed in: nothing opens and no checkout starts by itself');
+  /* the mock account carries no session token (mock-api.js), and pro.js asks for one before it posts */
+  await page.evaluate(() => { window.STD_AUTH.token = () => 'mock-token'; });
+  await openMenu(page);
+  await page.click(SLOT + ' [data-pro-buy]');
+  await page.waitForFunction((q) => { const e = document.querySelector(q + ' [data-pro-err]'); return e && e.textContent.length > 0; }, SLOT, { timeout: 5000 });
+  const after = await page.evaluate((q) => { const r = document.querySelector(q + ' .mu-pro'); return { t: r.querySelector('[data-pro-buy]').textContent, sub: !!r.querySelector('small'), err: r.querySelector('[data-pro-err]').textContent }; }, SLOT);
+  ok(posts.length === 1 && posts[0].bundle === 'door-pro' && posts[0].return_path === '/shut-the-door/',
+    '26 ' + tag + ' signed in: a tap posts the store\'s checkout for Pro (' + JSON.stringify(posts) + ')');
+  ok(after.t === 'Unlock the full game' && after.sub && /isn't on sale yet/.test(after.err), '26 ' + tag + ' signed in: the row keeps its two lines and says the store\'s answer (' + JSON.stringify(after) + ')');
+  ok(errors.length === 0, '26 ' + tag + ' signed in: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* Pro: no row, anywhere */
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro', { theme }));
+  await page.waitForFunction(() => window.STD_PLATE && window.STD_PLATE.unlocked().includes('diamond'), null, { timeout: 30000 });
+  await page.evaluate(() => window.STD_MODES_UI.entitlements());
+  await page.waitForTimeout(800);
+  await openMenu(page);
+  const pro = await page.evaluate(() => ({ phone: document.getElementById('menu-pro').hidden && !document.querySelector('#sheet-menu [data-pro-buy]'),
+    drawer: !document.getElementById('d-drawer') || (document.getElementById('d-pro').hidden && !document.querySelector('#d-drawer [data-pro-buy]')) }));
+  ok(pro.phone && pro.drawer, '26 ' + tag + ': a Pro member sees no unlock row (' + JSON.stringify(pro) + ')');
+  ok(errors.length === 0, '26 ' + tag + ' Pro: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   /* STD_CLIPS=1: only the clips (19) at both sizes, for a local pass on them */
@@ -3723,7 +3840,9 @@ try {
   if (process.env.STD_DESK === '1') { await deskHome(1440, 900, 'dark'); await deskHome(1920, 1080, 'light'); throw 'quick'; }
   /* STD_CHAL=1: only custom challenges (25) at both sizes, light and dark */
   if (process.env.STD_CHAL === '1') { for (const t of ['light', 'dark']) { await challengesWalk(390, 844, t); await challengesWalk(1440, 900, t); } throw 'quick'; }
-  /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
+  /* STD_UNLOCK=1: only the menu's unlock row (26), the phone sheet in both themes and the desk's drawer */
+  if (process.env.STD_UNLOCK === '1') { await unlockWalk(390, 844, 'dark'); await unlockWalk(390, 844, 'light'); await unlockWalk(375, 667, 'dark'); await unlockWalk(1440, 900, 'dark'); throw 'quick'; }
+    /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
   if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await run(390, 844, 'light'); await bootStuck(390, 844); throw 'quick'; }

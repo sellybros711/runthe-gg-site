@@ -126,11 +126,20 @@ function enter() {
   document.body.appendChild(scrim); document.body.appendChild(dr);
   made.push(btn, scrim, dr);
   put($('h-menu'), dr);
+  /* the unlock row under the menu, for anybody who is not Pro (ui.js paints it with the Pro card) */
+  var dp = el('div', 'd-pro');
+  dp.id = 'd-pro'; dp.hidden = true;
+  dr.appendChild(dp);
   btn.addEventListener('click', function () { setMenu(!isOpen()); });
   scrim.addEventListener('click', function () { setMenu(false, true); });
   dr.querySelector('.d-dx').addEventListener('click', function () { setMenu(false, true); });
   /* a row opens its sheet (menus.js) and the drawer goes */
   dr.querySelectorAll('.t-list button').forEach(function (b) { b.addEventListener('click', onRow); });
+  /* signed out, the unlock row asks to sign in (pro.js), so the drawer goes; signed in it stays for "opening checkout..." */
+  dp.addEventListener('click', function (e) {
+    var P = window.STD_PRO;
+    if (e.target.closest && e.target.closest('[data-pro-buy]') && !(P && P.signedIn())) setMenu(false);
+  });
   if (!wired) { document.addEventListener('keydown', onKey); wired = true; }
   tell();
 }

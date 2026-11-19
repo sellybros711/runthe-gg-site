@@ -2147,6 +2147,13 @@ function paintProCard(e) {
   if (!el) return;
   el.innerHTML = show ? (desk() && C.bar ? C.bar() : C.home()) : '';
   el.hidden = !show || !el.innerHTML;
+  /* and the small unlock row: the last item in the menu sheet, and at the foot of the desk's drawer (desk.js) */
+  ['menu-pro', 'd-pro'].forEach(function (id) {
+    var m = $(id);
+    if (!m) return;
+    m.innerHTML = show && C.unlock ? C.unlock(id) : '';
+    m.hidden = !m.innerHTML;
+  });
 }
 /* signed in: the account's plates, and a guest's chosen plate carried over when the account has it */
 function syncPlates() {

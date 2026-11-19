@@ -7906,3 +7906,18 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1793634109,2026-11-16,2026,Ridgefield Playhouse,Ridgefield,CT,2,13,White Lights,586,false,,,15,77,10,41,false,false,,",",false,closer|encore,,,,Anthem
 1793634109,2026-11-16,2026,Ridgefield Playhouse,Ridgefield,CT,2,14,So Ready,421,false,,,2,164,0,38,false,false,,,false,closer,,,,Groove
 1793634109,2026-11-16,2026,Ridgefield Playhouse,Ridgefield,CT,E,15,Silver Rising,736,false,,,8,83,10,36,false,false,,,false,ballad,,,,Ballad
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,1,1,Jive II,413,false,,,8,94,10,44,false,false,,>,true,opener,,"No California was played for the first time since April 11, 2026 (72 shows). The Old Man's Boat was played for the first time since April 15, 2026 (69 shows).",,Groove
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,1,2,Jive Lee,502,false,,,6,93,0,57,false,false,,",",false,closer|jam,,,,Groove
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,1,3,The Whales,425,false,,,23,49,20,,false,false,,",",false,opener,,,,Rocker
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,1,4,No California,911,true,Ilsey Juber,,71,6,35,,false,false,,",",false,,Ilsey Juber.,,,Easy
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,1,5,Atlas Dogs,727,false,,,5,66,0,46,false,false,,->,true,opener,,,,Easy
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,1,6,Drive,462,false,,,4,129,0,67,false,false,,->,true,opener|jam,,,,Groove
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,1,7,Pumped Up Kicks,534,true,Foster The People,,20,29,20,,false,false,,",",false,,Foster The People.,,,Groove
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,1,8,Give It Time,931,false,,,4,48,0,,false,false,,,false,closer|encore,,,,Anthem
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,2,9,Big Modern!,945,false,,,4,48,0,56,false,false,,>,true,opener|closer|jam|peak,,,,Groove
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,2,10,Moby,677,false,,,39,23,20,,false,false,,>,true,,,,,Space
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,2,11,POP,1020,false,,,8,8,10,,false,false,,>,true,encore,,,,Easy
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,2,12,Creatures,420,false,,,5,152,0,63,false,false,,>,true,jam,With Hella Good tease from Rick.,,Hella Good,Groove
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,2,13,The Old Man's Boat,710,false,,,68,30,35,40,false,false,,,false,,,,,Groove
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,E,14,Arcadia,403,false,,,2,228,0,67,false,false,,->,true,closer,Unfinished.,,,Groove
+1780327778,2026-11-18,2026,John Paul Jones Arena,Charlottesville,VA,E,15,Big Modern!,945,false,,,0,49,0,56,false,false,,,false,opener|closer|jam|peak,,,,Groove

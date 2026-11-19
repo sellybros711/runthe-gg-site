@@ -7,6 +7,10 @@
  *           and the button. ui.js paints it in place of home() while STD_DESK.on()
  *   pair()  Shut The Door Pro and Run The Diamond Pro together, in the archive tab under the store's own
  *           Get Pro, while the past dailies are locked (menus.js)
+ *   unlock(where)  one small row, the last item in the menu sheet and at the foot of the desk's drawer
+ *           (the owner, 2026-11-19): the small gem, "Unlock the full game", the name and the price under it.
+ *           The button is the title alone, so pro.js's "opening checkout..." swaps only its text; a stretched
+ *           ::before makes the whole row the tap. ui.js paints it with the card, so a Pro member never sees it
  *
  * The headlines are the plain product names (the owner, 2026-11-18). The Diamond plate is the picture:
  * it is the one thing on the list a player sees by somebody else's name.
@@ -81,5 +85,21 @@ function pair() {
     '<p class="au-err" data-pro-err role="alert"></p></section>';
 }
 
-window.STD_PRO_CARD = { API_VERSION: 1, home: home, bar: bar, pair: pair };
+function unlock(where) {
+  var p = P();
+  if (!p) return '';
+  var id = 'mu-s-' + String(where || 'menu').replace(/[^a-z0-9-]/gi, '');
+  /* the gem in its own fixed box, with its pixel size written on the svg: iOS Safari drew the bare svg
+     (a flex item sized by CSS alone, with a filter on the svg root and its viewBox off the origin) up and
+     to the left of the row, and the row's rounded clip cut it to a sliver (the owner, 2026-11-19). The
+     shadow is on the box, never on the svg. */
+  var g = gem('', 'mu-gem').replace('<svg ', '<svg width="34" height="35" ');
+  return '<div class="mu-pro pro-offer" data-pro-where="' + esc(where || 'menu') + '"><span class="mu-gi" aria-hidden="true">' + g + '</span>' +
+    '<span class="mu-t"><button class="mu-go" type="button" data-pro-buy aria-describedby="' + id + '">Unlock the full game</button>' +
+    '<small id="' + id + '">Shut The Door Pro · ' + esc(p.money(p.PRICES[p.BUNDLE])) + ' a year</small></span>' +
+    '<i class="chev" aria-hidden="true"></i>' +
+    '<p class="au-err" data-pro-err role="alert"></p></div>';
+}
+
+window.STD_PRO_CARD = { API_VERSION: 1, home: home, bar: bar, pair: pair, unlock: unlock };
 })();
