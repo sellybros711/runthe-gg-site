@@ -2094,8 +2094,14 @@ async function modes(w, h, full) {
   ok(pkr.cur.length === 32 && pkr.cur[0].k === '' && pkr.tb.length === 9 && pkr.tbHead === 'Throwbacks' && pkr.svgs === 41,
     '17 the picker: plain, Diamond and 30 clubs, then 9 throwbacks, each with its plate (' + pkr.cur.length + ' + ' + pkr.tb.length + ')');
   ok(dia && dia.locked && dia.pro && dia.small === 'Pro only.', '17 not Pro: Diamond is locked, tagged Pro, and says "Pro only." (' + JSON.stringify(dia) + ')');
-  ok(soon.some((x) => x.k === 'orioles') && soon.some((x) => x.k === 'expos') && !soon.some((x) => x.k === 'dodgers' || x.k === 'astrosbrick'),
-    '17 a club with no situation says "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
+  /* since 2026-11-18 (supabase 179) every one of today's 30 has a situation: only the throwbacks no pack is in say
+     "No situation yet", and the Orioles say how to open theirs. The Reds' waits on a 3D fix (the owner,
+     2026-11-18), so the Reds are the one club of today's that still says it */
+  const ori = pkr.cur.find((x) => x.k === 'orioles');
+  ok(soon.some((x) => x.k === 'expos') && soon.every((x) => x.k === 'reds' || pkr.tb.some((t) => t.k === x.k)) && !soon.some((x) => x.k === 'astrosbrick'),
+    '17 only a throwback with no situation, and the Reds, say "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
+  ok(ori && ori.locked && ori.small === 'Shut the door as the Orioles closer to unlock.' && JSON.stringify(soon.filter((x) => pkr.cur.some((c) => c.k === x.k)).map((x) => x.k)) === '["reds"]',
+    '17 every one of today\'s clubs but the Reds has a situation: the Orioles say "' + (ori && ori.small) + '"');
   ok(pkr.cur.concat(pkr.tb).every((x) => x.h >= 38), '17 every plate tile is at least 38 px tall');
   ok(await noSideScroll(page), '17 the picker leaves no sideways scroll');
   await page.evaluate(() => document.querySelector('#pk-grid .plk[data-plate="diamond"]').click());   // aria-disabled: a real tap still lands

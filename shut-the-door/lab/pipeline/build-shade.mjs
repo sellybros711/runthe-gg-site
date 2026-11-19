@@ -26,11 +26,18 @@
  * prior, worth n0 balls in all: one ball's variance over the true spread between hitters (s2 / tau2, the
  * spread of the hitters' mean differences less their sampling variance), for spray and for carry each. Both
  * are measured here from the packs; no constant is chosen by hand. A hitter with few balls moves little.
+ *
+ * The prior (the league's balls, the fit's spreads) is measured on the first thirty packs only
+ * (held-packs.mjs FIRST_THIRTY), the packs it was fit on before more came in (2026-11-18). A pack added
+ * later shades its hitters against that same prior and never moves an old pack's fielders: pooled over
+ * every pack, the thirteen new ones moved every old hitter's spots a little, and with them the plays the
+ * lab ceilings were measured on.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { isFirstThirty } from './held-packs.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -49,7 +56,7 @@ function gather() {
     const pack = JSON.parse(fs.readFileSync(path.join(PACKS, f), 'utf8'));
     const id = pack.scenario.id, keys = pack.keys, P = pack.pitches, bats = pack.scenario.batters;
     const coef = pack.runners && pack.runners.dist ? pack.runners.dist.coef : null;
-    const lgSeen = new Set();
+    const lgSeen = new Set(), prior = isFirstThirty(id);
     pack.library.forEach((lib, bi) => {
       if (bi >= bats.length) return;
       const b = bats[bi], own = new Set();
@@ -57,11 +64,11 @@ function gather() {
         if (ref == null || ref < 0 || !KEYS_IP.includes(keys[k])) return;
         const i = Math.floor(ref / 3), t = ref % 3;
         if (t === TIER.batter) own.add(i);
-        else if (t === TIER.league && !lgSeen.has(b.bats + i)) { lgSeen.add(b.bats + i); add(league[b.bats], P[i], coef); }
+        else if (t === TIER.league && prior && !lgSeen.has(b.bats + i)) { lgSeen.add(b.bats + i); add(league[b.bats], P[i], coef); }
       });
       const mine = { g: [], gi: [], a: [], d: [], o: [] };
       for (const i of [...own].sort((x, y) => x - y)) add(mine, P[i], coef);
-      hitters.push({ pack: id, id: String(b.id), name: b.name, bats: b.bats, tier: b.profileTier, mine });
+      hitters.push({ pack: id, id: String(b.id), name: b.name, bats: b.bats, tier: b.profileTier, mine, prior });
     });
   }
   return { hitters, league };
@@ -131,14 +138,14 @@ export function build() {
   const base = { L: {}, R: {} };
   for (const h of ['L', 'R']) for (const k of ['g', 'a', 'd']) base[h][k] = mean(league[h][k]);
   const used = hitters.filter((h) => h.tier === 'batter');
-  const fit = {};
+  const fit = {}, fitOn = used.filter((h) => h.prior);
   for (const k of ['g', 'a', 'd']) {
     // one ball's spread about his own mean, pooled over every hitter with two or more
     let ss = 0, df = 0;
-    for (const h of used) { const x = h.mine[k]; if (x.length < 2) continue; const m = mean(x); for (const v of x) ss += (v - m) * (v - m); df += x.length - 1; }
+    for (const h of fitOn) { const x = h.mine[k]; if (x.length < 2) continue; const m = mean(x); for (const v of x) ss += (v - m) * (v - m); df += x.length - 1; }
     const s2 = ss / df;
     // the true spread between hitters: the raw differences' variance less their sampling variance
-    const raw = used.filter((h) => h.mine[k].length >= 2).map((h) => ({ d: mean(h.mine[k]) - base[h.bats][k], v: s2 / h.mine[k].length }));
+    const raw = fitOn.filter((h) => h.mine[k].length >= 2).map((h) => ({ d: mean(h.mine[k]) - base[h.bats][k], v: s2 / h.mine[k].length }));
     const md = mean(raw.map((r) => r.d));
     const tau2 = Math.max(0, mean(raw.map((r) => (r.d - md) * (r.d - md))) - mean(raw.map((r) => r.v)));
     fit[k] = { s2, tau2, hitters: raw.length };

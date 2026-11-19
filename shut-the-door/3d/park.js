@@ -3,9 +3,9 @@
  */
 import * as THREE from 'three';
 import { buildField } from './field.js?v=22';
-import { buildStands } from './stands.js?v=27';
+import { buildStands } from './stands.js?v=31';
 import { P, FT, smooth } from './units.js?v=1';
-import { crowdLight } from './crowd.js?v=3';
+import { crowdLight } from './crowd.js?v=7';
 
 export function makeRenderer(canvas, maxDpr = 2) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });

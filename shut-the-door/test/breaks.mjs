@@ -35,10 +35,14 @@ const ARM = new Set(['FF', 'SI', 'CH', 'FS', 'FO']);
 const DOWN = new Set(['SL', 'ST', 'SV', 'CU', 'KC', 'CH', 'FS', 'FO']);
 /* degrees off straight down for each type: [lo, hi] (positive glove side). Loose on purpose: real
    pitchers differ (a gyro slider is mostly down, a sweeper mostly across), but a frame that leaves
-   the fastball's run out of the sideways, or flips a hand, falls outside. */
+   the fastball's run out of the sideways, or flips a hand, falls outside. Widened 2026-11-18 for
+   three real shapes the 13 clubs' packs brought (Savant's means, the sign and down checks unmoved):
+   a riding cutter mostly down (Alex Colome 2020, 4.0 in glove side and 5.8 up at 89 mph: 24 degrees;
+   Wade Davis 2018: 29.7), a sweeping curve (Taylor Rogers 2019, 13.3 in glove side: 61) and a
+   splitter that drops straight (Cade Smith 2025, 8.2 in of run against his fastball's 8.7: 1). */
 const BAND = {
-  SL: [15, 65], ST: [35, 80], SV: [20, 70], CU: [8, 40], KC: [8, 40], FC: [30, 115],
-  CH: [-50, 0], FS: [-50, 0], FO: [-50, 0],
+  SL: [15, 65], ST: [35, 80], SV: [20, 70], CU: [8, 65], KC: [8, 40], FC: [20, 115],
+  CH: [-50, 0], FS: [-50, 5], FO: [-50, 0],
 };
 
 /* glove side in inches for this hand (a righty's glove side is x > 0, catcher's view) */

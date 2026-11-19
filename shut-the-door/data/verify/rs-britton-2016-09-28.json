@@ -1,0 +1,291 @@
+{
+ "id": "rs-britton-2016-09-28",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 449227,
+ "date": "2016-09-28",
+ "game": "Regular Season Game 2: Baltimore Orioles at Toronto Blue Jays",
+ "gameType": "R",
+ "pitcher": {
+  "id": 502154,
+  "name": "Zack Britton",
+  "throws": "L",
+  "team": "Baltimore Orioles",
+  "seasonLine": "0.54 ERA, 47 SV, 67.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 2
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 73,
+   "batterId": 607680,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "502154": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Kevin Pillar strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Kevin Pillar strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Kevin Pillar",
+   "batSideListed": "R",
+   "seasonLine": ".266/.303/.376, 7 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 446381,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "502154": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Darwin Barney strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Darwin Barney strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Darwin Barney",
+   "batSideListed": "R",
+   "seasonLine": ".269/.322/.373, 4 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 425900,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "502154": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Dioner Navarro grounds out softly, second baseman Ryan Flaherty to first baseman Chris Davis.",
+   "feedEvent": "field_out",
+   "feedDescription": "Dioner Navarro grounds out softly, second baseman Ryan Flaherty to first baseman Chris Davis.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Dioner Navarro",
+   "batSideListed": "S",
+   "seasonLine": ".207/.265/.322, 6 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 14,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 518626,
+   "name": "Josh Donaldson",
+   "batSideListed": "R"
+  },
+  {
+   "id": 429665,
+   "name": "Edwin Encarnación",
+   "batSideListed": "R"
+  },
+  {
+   "id": 430832,
+   "name": "José Bautista",
+   "batSideListed": "R"
+  },
+  {
+   "id": 431145,
+   "name": "Russell Martin",
+   "batSideListed": "R"
+  },
+  {
+   "id": 453064,
+   "name": "Troy Tulowitzki",
+   "batSideListed": "R"
+  },
+  {
+   "id": 425834,
+   "name": "B.J. Upton",
+   "batSideListed": "R"
+  },
+  {
+   "id": 607680,
+   "name": "Kevin Pillar",
+   "batSideListed": "R"
+  },
+  {
+   "id": 446381,
+   "name": "Darwin Barney",
+   "batSideListed": "R"
+  },
+  {
+   "id": 425900,
+   "name": "Dioner Navarro",
+   "batSideListed": "S"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1018,
+   "types": [
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 934,
+     "usage": 0.9175,
+     "velo": 96.9,
+     "pfxXin": 12.8,
+     "pfxZin": 6.0
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 80,
+     "usage": 0.0786,
+     "velo": 82.6,
+     "pfxXin": -9.1,
+     "pfxZin": -6.9
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 4,
+     "usage": 0.0039,
+     "velo": 96.0,
+     "pfxXin": 4.8,
+     "pfxZin": 11.9
+    }
+   ],
+   "dropped": {
+    "IN": 9
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2016%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=502154"
+  },
+  "postseason": {
+   "pitches": 0,
+   "types": [],
+   "dropped": {}
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 449227: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=449227",
+  "MLB Stats API schedule 2016-09-28 and live feed /api/v1.1/game/449227/feed/live",
+  "MLB Stats API people with 2016 season stats",
+  "Baseball Savant 502154 2016 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    607680,
+    446381,
+    485567,
+    518626,
+    429665,
+    430832,
+    431145,
+    453064,
+    425834
+   ],
+   "lineupNames": [
+    "Kevin Pillar",
+    "Darwin Barney",
+    "Ezequiel Carrera",
+    "Josh Donaldson",
+    "Edwin Encarnación",
+    "José Bautista",
+    "Russell Martin",
+    "Troy Tulowitzki",
+    "B.J. Upton"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "BAL",
+   "TOR"
+  ],
+  "innings": [
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    2,
+    0
+   ]
+  ],
+  "H": [
+   11,
+   6
+  ],
+  "E": [
+   2,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/449227/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 14,
+  "runs": 0,
+  "score": {
+   "us": 3,
+   "them": 2
+  }
+ }
+}

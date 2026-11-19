@@ -1,0 +1,309 @@
+{
+ "id": "rs-helsley-2024-09-27",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 745280,
+ "date": "2024-09-27",
+ "game": "Regular Season Game 1: St. Louis Cardinals at San Francisco Giants",
+ "gameType": "R",
+ "pitcher": {
+  "id": 664854,
+  "name": "Ryan Helsley",
+  "throws": "R",
+  "team": "St. Louis Cardinals",
+  "seasonLine": "2.04 ERA, 49 SV, 66.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 6,
+   "them": 3
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 79,
+   "batterId": 669477,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "664854": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Casey Schmitt pops out to shortstop Masyn Winn.",
+   "feedEvent": "field_out",
+   "feedDescription": "Casey Schmitt pops out to shortstop Masyn Winn.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Casey Schmitt",
+   "batSideListed": "R",
+   "seasonLine": ".252/.283/.477, 6 HR"
+  },
+  {
+   "atBat": 80,
+   "batterId": 573262,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "664854": 5
+   },
+   "pitches": 5,
+   "event": "single",
+   "des": "Mike Yastrzemski singles on a line drive to left fielder Brendan Donovan.",
+   "feedEvent": "single",
+   "feedDescription": "Mike Yastrzemski singles on a line drive to left fielder Brendan Donovan.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Mike Yastrzemski",
+   "batSideListed": "L",
+   "seasonLine": ".231/.302/.437, 18 HR"
+  },
+  {
+   "atBat": 81,
+   "batterId": 671218,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "664854": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Heliot Ramos called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Heliot Ramos called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Heliot Ramos",
+   "batSideListed": "R",
+   "seasonLine": ".269/.322/.469, 22 HR"
+  },
+  {
+   "atBat": 82,
+   "batterId": 664774,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "664854": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "LaMonte Wade Jr. strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "LaMonte Wade Jr. strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "LaMonte Wade Jr.",
+   "batSideListed": "L",
+   "seasonLine": ".260/.380/.381, 8 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 13,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 656305,
+   "name": "Matt Chapman",
+   "batSideListed": "R"
+  },
+  {
+   "id": 624424,
+   "name": "Michael Conforto",
+   "batSideListed": "L"
+  },
+  {
+   "id": 666464,
+   "name": "Jerar Encarnacion",
+   "batSideListed": "R"
+  },
+  {
+   "id": 672275,
+   "name": "Patrick Bailey",
+   "batSideListed": "S"
+  },
+  {
+   "id": 666149,
+   "name": "Tyler Fitzgerald",
+   "batSideListed": "R"
+  },
+  {
+   "id": 669477,
+   "name": "Casey Schmitt",
+   "batSideListed": "R"
+  },
+  {
+   "id": 573262,
+   "name": "Mike Yastrzemski",
+   "batSideListed": "L"
+  },
+  {
+   "id": 671218,
+   "name": "Heliot Ramos",
+   "batSideListed": "R"
+  },
+  {
+   "id": 664774,
+   "name": "LaMonte Wade Jr.",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 931,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 449,
+     "usage": 0.4823,
+     "velo": 89.2,
+     "pfxXin": 4.2,
+     "pfxZin": 0.9
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 423,
+     "usage": 0.4544,
+     "velo": 99.6,
+     "pfxXin": -3.4,
+     "pfxZin": 17.5
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 59,
+     "usage": 0.0634,
+     "velo": 81.2,
+     "pfxXin": 3.6,
+     "pfxZin": -10.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=664854"
+  },
+  "postseason": {
+   "pitches": 0,
+   "types": [],
+   "dropped": {}
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 745280: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=745280",
+  "MLB Stats API schedule 2024-09-27 and live feed /api/v1.1/game/745280/feed/live",
+  "MLB Stats API people with 2024 season stats",
+  "Baseball Savant 664854 2024 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    669477,
+    573262,
+    671218,
+    664774,
+    656305,
+    624424,
+    666464,
+    672275,
+    666149
+   ],
+   "lineupNames": [
+    "Casey Schmitt",
+    "Mike Yastrzemski",
+    "Heliot Ramos",
+    "LaMonte Wade Jr.",
+    "Matt Chapman",
+    "Michael Conforto",
+    "Jerar Encarnacion",
+    "Patrick Bailey",
+    "Tyler Fitzgerald"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "STL",
+   "SF"
+  ],
+  "innings": [
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    3
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    4,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   13,
+   8
+  ],
+  "E": [
+   0,
+   1
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/745280/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 13,
+  "runs": 0,
+  "score": {
+   "us": 6,
+   "them": 3
+  }
+ }
+}
