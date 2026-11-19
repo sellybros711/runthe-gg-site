@@ -10,7 +10,7 @@
  * are painted in a worker; until they land the deck is empty, and if they never do it stays that way.
  * It names no venue: the bus shows a date and how many days away it is, nothing else.
  */
-import { bandPose, PLAYERS, bandFrames } from './world.js?v=6';
+import { bandPose, PLAYERS, bandFrames } from './world.js?v=7';
 
 // A 3 by 5 pixel face for the bus's sign. Only what a date needs.
 const GLYPH = {
