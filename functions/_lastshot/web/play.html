@@ -503,14 +503,6 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
   <p>My Playbooks keeps your plays on your account. Test it runs a play against every defense.</p>
   <div class="row"><button class="btn alt" id="howClose">Close</button></div>
 </div></div>
-<!-- Run The Floor's player rig, for the live play (read only, never edited
-     from here). UNVERSIONED ON PURPOSE: a ?v= here would be recorded by
-     scripts/check-cachebust.mjs, and every later bump of baller.js in hoops
-     would fail that check on this page, so the hoops agents would have to edit
-     Last Shot to ship. Unversioned, Pages revalidates it and this page always
-     gets the current file. court.js uses it only at API_VERSION 2; missing or
-     any other version draws the disc tokens instead. -->
-<script defer src="/hoops/baller.js"></script>
 <!-- Who is signed in, and the account's saves: the arcade's sign in, as the
      Arcade Lab shell loads it, and the site's shared cloud saves (playbooks,
      game last_shot). Absolute paths: this page is served from pages.js. -->

@@ -47,7 +47,7 @@ import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sit
 import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js';
 import { createBoard } from './board.js';
 import { mountBooks } from './book-ui.js';
-import { createCourt, between, warm } from './court.js';
+import { createRunView, between, warm } from './run-view.js';
 import { shareText, dailyShareText } from './share.js';
 import { freshSeed } from './rng.js';
 import { createSound } from './sound.js';
@@ -171,7 +171,7 @@ speedSync(); muteSync();
    bars step aside and the court takes the stage (play.html, .app.running). */
 const APP = document.querySelector('.app');
 function clipTools(on) { APP.classList.toggle('running', !on); }
-const court = createCourt($('court'));
+const court = createRunView($('court'));
 
 document.querySelectorAll('.tool').forEach(b => b.addEventListener('click', () => {
   const t = board.setTool(b.dataset.tool);
@@ -355,7 +355,7 @@ function playFrame() {
   if (!pv.play.steps.length) return;
   const res = simulate(pv.sc, pv.play, freshSeed(), { preview: true });
   $('board').hidden = true; $('court').hidden = false;
-  clipTools(false); court.camStart(res.frames);
+  clipTools(false); court.camStart(res.frames, { res, play: pv.play });
   const F = res.frames, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let g = F[0].t, i = 0, prev = performance.now(), hold = reduce ? 0 : 0.3, after = 0.5;
   const token = live = { preview: true, res };
@@ -455,7 +455,7 @@ function run(seed, opt, pl) {
   countRunStart(res);
   if (mode === 'edit' && edit) books.countRun(edit, res);
   $('board').hidden = true; $('court').hidden = false;
-  clipTools(false); court.camStart(res.frames);
+  clipTools(false); court.camStart(res.frames, { res, play: runPlay });
   $('sheet').classList.remove('on', 'peek'); $('vGame').classList.remove('lres'); clearStars(); $('hint').textContent = '';
   banner(null); cutUi(null); $('clock').classList.remove('zero'); punch(null);
   const reduce = reduced();
@@ -556,7 +556,7 @@ function run(seed, opt, pl) {
       if (live.phase === 'cut' && c.w >= T3) toEnd();
     } else {
       if (!fr.h) live.spin += dt * 9;
-      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true, focus: shotFrom });
+      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true, focus: shotFrom, hold: live.phase === 'hold' });
     }
     if (live.phase === 'play' || live.phase === 'after') {
       while (live.shown < res.events.length && (res.events[live.shown].t >= live.g || live.phase === 'after')) {
@@ -1262,7 +1262,7 @@ loadToday();
 window.addEventListener('hashchange', () => { if (readHash(location.hash)) fromHash(); });
 board.reset();
 $('hint').textContent = defaultHint();
-/* Trace the players in the background while the coach draws (court.js). */
+/* Build the court's floor in the background while the coach draws (run-view.js). */
 warm();
 /* The ladder's account copy, once the sign in has said who this is: a merge
    that brings stars or plays in shows at once. The write interval can be
