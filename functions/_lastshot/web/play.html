@@ -11,7 +11,8 @@
 <style>
 /* One fixed palette, like the Arcade Lab shell: a light page, a dark
    scoreboard. Served by functions/last-shot/[[path]].js, never as a file. */
-:root{--ground:#EFEDE8;--ink:#141414;--green:#22B07D;--red:#E0533D;--dim:#5d5a54;--card:#fff;--edge:rgba(20,20,20,.12);--accent:#E8742A;--board:#fbfaf6;--marker:#22324d}
+/* --go is the fill under white button text: 4.9:1 against white. The brand --green is 2.8:1, too light to read on. */
+:root{--ground:#EFEDE8;--ink:#141414;--green:#22B07D;--red:#E0533D;--dim:#5d5a54;--card:#fff;--edge:rgba(20,20,20,.12);--accent:#E8742A;--board:#fbfaf6;--marker:#22324d;--go:#15805A}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;height:100%;background:var(--ground);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
@@ -47,7 +48,7 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
 .actions{display:flex;gap:6px;padding:4px 10px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
 .btn{min-height:48px;padding:0 16px;border-radius:14px;border:0;background:var(--ink);color:var(--ground);font-weight:700;font-size:16px;flex:1;touch-action:manipulation}
 .btn.alt{background:var(--card);color:var(--ink);border:1px solid var(--edge);flex:.6}
-.btn.go{background:var(--green);color:#fff;flex:1.4}
+.btn.go{background:var(--go);color:#fff;flex:1.4}
 .btn:disabled{opacity:.4;cursor:default}
 .sheet{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(239,237,232,.72);backdrop-filter:blur(3px);z-index:5}
 .sheet.on{display:flex}
@@ -247,7 +248,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .hcard.daily #hDailyTitle{color:#ffd23f;font-weight:800;font-size:16px}
 .hcard.daily .dstreak{display:table;margin-top:8px;font-size:13px;font-weight:800;color:#1d2129;background:#ffd23f;border-radius:999px;padding:2px 10px}
 .hcard.daily .dsq{font-size:20px;letter-spacing:2px;margin-top:6px;color:#fff}
-.hcard.daily .dgo{display:inline-block;margin-top:10px;background:var(--green);color:#fff;font-weight:800;font-size:15px;border-radius:999px;padding:7px 18px}
+.hcard.daily .dgo{display:inline-block;margin-top:10px;background:var(--go);color:#fff;font-weight:800;font-size:15px;border-radius:999px;padding:7px 18px}
 .hcard.daily.done .dgo{background:#fff;color:#1d2129}
 .daybar{display:flex;flex-direction:column;gap:5px;margin:0 10px 4px;padding:6px 10px;border-radius:12px;background:#1d2129;color:#fff}
 .daybar .lrow{display:flex;align-items:center;gap:8px;min-width:0}
@@ -258,7 +259,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .drow .btn{min-height:44px;font-size:15px}
 .drow b{flex:1.2;font-size:15px}
 #bShot{background:#ffd23f;color:#1d2129;font-family:'Outfit',sans-serif;font-weight:800;font-size:17px}
-#bShotYes{background:var(--green);color:#fff}
+#bShotYes{background:var(--go);color:#fff}
 #bShotNo,#bDayResult{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);flex:.8}
 #bDayResult{flex:none;padding:0 14px}
 .card.perfect .lvlname{padding-right:140px}
@@ -367,7 +368,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .tray #bUndo{border:0;border-radius:4px;background:var(--board);color:var(--marker);box-shadow:0 2px 0 rgba(0,0,0,.28)}
 .tray #bClear{border:0;border-radius:6px;color:#fff;padding-top:14px;background:linear-gradient(180deg,#5b3a1f 0 34%,#3a3d44 34% 100%);box-shadow:0 2px 0 rgba(0,0,0,.35)}
 .tray #bFrame{border-radius:6px;background:#1d2129;color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.35)}
-.tray #bRun{min-width:104px;border-radius:8px;background:var(--green);color:#fff;font-family:'Russo One','Outfit',sans-serif;font-weight:400;font-size:20px;letter-spacing:.03em;padding:0 12px;text-shadow:0 2px 0 rgba(0,0,0,.2);
+.tray #bRun{min-width:104px;border-radius:8px;background:var(--go);color:#fff;font-family:'Russo One','Outfit',sans-serif;font-weight:400;font-size:20px;letter-spacing:.03em;padding:0 12px;text-shadow:0 2px 0 rgba(0,0,0,.2);
   box-shadow:0 4px 0 #157352,0 0 0 3px rgba(255,210,63,.9),0 8px 14px -4px rgba(0,0,0,.45)}
 .tray #bRun.pulse{animation:pulseRing 1.5s ease-in-out infinite}
 @keyframes pulseRing{0%,100%{box-shadow:0 4px 0 #157352,0 0 0 3px rgba(255,210,63,.9),0 0 0 3px rgba(34,176,125,.55)}50%{box-shadow:0 4px 0 #157352,0 0 0 3px rgba(255,210,63,.9),0 0 0 12px rgba(34,176,125,0);transform:scale(1.03)}}
@@ -406,7 +407,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .cboard .reason,.cboard .card.peek .reason,.cboard .card.lvl .reason{font-size:15px;line-height:21px;font-weight:600;color:#1c2433;margin:6px 0}
 .cboard .row{gap:6px;margin-top:8px}
 .cboard .btn,.cboard .card.peek .row .btn{min-height:48px;min-width:44px;flex:1 1 auto;padding:0 8px;font-size:14.5px;white-space:nowrap;touch-action:manipulation}
-.cboard .btn.go,.cboard .card.peek .row .btn.go{flex:1.35 1 auto;border:0;background:var(--green);color:#fff;font-size:16px;text-shadow:0 1px 0 rgba(0,0,0,.2);box-shadow:0 3px 0 #157352,0 6px 12px -6px rgba(0,0,0,.45);
+.cboard .btn.go,.cboard .card.peek .row .btn.go{flex:1.35 1 auto;border:0;background:var(--go);color:#fff;font-size:16px;text-shadow:0 1px 0 rgba(0,0,0,.2);box-shadow:0 3px 0 #0e5c40,0 6px 12px -6px rgba(0,0,0,.45);
   border-radius:255px 14px 225px 14px/14px 225px 14px 255px}
 .cboard .btn.alt{background:transparent;border:2.5px solid var(--marker);color:var(--marker);font-weight:700;border-radius:14px 225px 14px 255px/255px 14px 225px 14px}
 .cboard .btn.alt.morebtn,.cboard .card.peek .row .btn.morebtn{flex:0 0 auto;min-width:54px;border-radius:255px 14px 225px 14px/14px 225px 14px 255px}
