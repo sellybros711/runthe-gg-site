@@ -1,0 +1,318 @@
+{
+ "id": "rs-rogers-2019-09-24",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 565588,
+ "date": "2019-09-24",
+ "game": "Regular Season Game 1: Minnesota Twins at Detroit Tigers",
+ "gameType": "R",
+ "pitcher": {
+  "id": 573124,
+  "name": "Taylor Rogers",
+  "throws": "L",
+  "team": "Minnesota Twins",
+  "seasonLine": "2.61 ERA, 30 SV, 69.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 2
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 70,
+   "batterId": 621514,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "573124": 5
+   },
+   "pitches": 5,
+   "event": "field_out",
+   "des": "Christin Stewart flies out to right fielder Jake Cave.",
+   "feedEvent": "field_out",
+   "feedDescription": "Christin Stewart flies out to right fielder Jake Cave.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Christin Stewart",
+   "batSideListed": "L",
+   "seasonLine": ".233/.305/.388, 10 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 641525,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "573124": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Brandon Dixon grounds out, shortstop Jorge Polanco to first baseman Willians Astudillo.",
+   "feedEvent": "field_out",
+   "feedDescription": "Brandon Dixon grounds out, shortstop Jorge Polanco to first baseman Willians Astudillo.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Brandon Dixon",
+   "batSideListed": "R",
+   "seasonLine": ".248/.290/.435, 15 HR"
+  },
+  {
+   "atBat": 72,
+   "batterId": 641513,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "573124": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Travis Demeritte strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Travis Demeritte strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Travis Demeritte",
+   "batSideListed": "R",
+   "seasonLine": ".225/.286/.343, 3 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 12,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 668670,
+   "name": "Jake Rogers",
+   "batSideListed": "R"
+  },
+  {
+   "id": 650489,
+   "name": "Willi Castro",
+   "batSideListed": "S"
+  },
+  {
+   "id": 622682,
+   "name": "Victor Reyes",
+   "batSideListed": "S"
+  },
+  {
+   "id": 608475,
+   "name": "Dawel Lugo",
+   "batSideListed": "R"
+  },
+  {
+   "id": 605612,
+   "name": "Harold Castro",
+   "batSideListed": "L"
+  },
+  {
+   "id": 600869,
+   "name": "Jeimer Candelario",
+   "batSideListed": "S"
+  },
+  {
+   "id": 621514,
+   "name": "Christin Stewart",
+   "batSideListed": "L"
+  },
+  {
+   "id": 641525,
+   "name": "Brandon Dixon",
+   "batSideListed": "R"
+  },
+  {
+   "id": 641513,
+   "name": "Travis Demeritte",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1040,
+   "types": [
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 518,
+     "usage": 0.4981,
+     "velo": 94.8,
+     "pfxXin": 17.4,
+     "pfxZin": 7.4
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 336,
+     "usage": 0.3231,
+     "velo": 80.8,
+     "pfxXin": -13.3,
+     "pfxZin": 1.0
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 185,
+     "usage": 0.1779,
+     "velo": 84.0,
+     "pfxXin": -9.2,
+     "pfxZin": 3.3
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 1,
+     "usage": 0.001,
+     "velo": 94.6,
+     "pfxXin": 7.7,
+     "pfxZin": 13.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2019%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=573124"
+  },
+  "postseason": {
+   "pitches": 26,
+   "types": [
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 15,
+     "usage": 0.5769,
+     "velo": 83.3,
+     "pfxXin": -10.6,
+     "pfxZin": 0.6
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 11,
+     "usage": 0.4231,
+     "velo": 94.7,
+     "pfxXin": 16.8,
+     "pfxZin": 8.0
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2019%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=573124"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 565588: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=565588",
+  "MLB Stats API schedule 2019-09-24 and live feed /api/v1.1/game/565588/feed/live",
+  "MLB Stats API people with 2019 season stats",
+  "Baseball Savant 573124 2019 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    621514,
+    641525,
+    641513,
+    668670,
+    650489,
+    622682,
+    608475,
+    605612,
+    600869
+   ],
+   "lineupNames": [
+    "Christin Stewart",
+    "Brandon Dixon",
+    "Travis Demeritte",
+    "Jake Rogers",
+    "Willi Castro",
+    "Victor Reyes",
+    "Dawel Lugo",
+    "Harold Castro",
+    "Jeimer Candelario"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "MIN",
+   "DET"
+  ],
+  "innings": [
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    4,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   8,
+   6
+  ],
+  "E": [
+   0,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/565588/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 12,
+  "runs": 0,
+  "score": {
+   "us": 4,
+   "them": 2
+  }
+ }
+}

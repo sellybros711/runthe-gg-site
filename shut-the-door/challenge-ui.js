@@ -329,6 +329,11 @@ function openBuilder() {
     if (!B.pro) { el.innerHTML = lockedHTML(); loadMine(); if (!B.opts && has('challengeOptions')) API().challengeOptions().then(function (o) { B.opts = o; }, function () {}); return; }
     return API().challengeOptions().then(function (o) {
       if (my !== B.seq) return;
+      /* only what a built pair can play: a pack newer than the matchups' build (data/matchups.json)
+         is neither a pitcher nor a lineup here until a build takes it in */
+      var pk = Object.keys(o.pairs || {}).map(function (k) { return k.split('__'); });
+      o.pitchers = o.pitchers.filter(function (p) { return pk.some(function (x) { return x[0] === p.id; }); });
+      o.lineups = o.lineups.filter(function (l) { return pk.some(function (x) { return x[1] === l.id; }); });
       B.opts = o;
       if (!B.spec || !pitcherOf(B.spec.pitcher)) B.spec = freshSpec(o);
       drawBuilder();

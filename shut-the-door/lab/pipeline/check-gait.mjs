@@ -28,13 +28,15 @@
  * dead stops 875 to 566.
  *
  * A run that ends at full speed with nothing after it (inplay.js carries the body on and slows it) is not
- * counted at its end. Plays with each are held to CEILING, a ceiling that only comes down. The straight ramps
+ * counted at its end. Plays with each are held per pack (held-packs.mjs), ceilings that only come down. The straight ramps
  * left are the runs with one of his own moments inside a ramp (a runner tagged as he pulls up), kept as
  * planned so the play is decided where the plan decides it.
  */
+import fs from 'node:fs';
 import { inplayCases } from './inplay-cases.mjs';
 import { planPlay } from '../../3d/inplay-plan.js';
 import { selection, holding, capStr } from './checkpoint.mjs';
+import { holdByPack, measured, packId, PACK_CEILINGS } from './held-packs.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const SHOW = arg('--show', 0);
@@ -46,21 +48,20 @@ export const FPS = 60, KINK = 8, BRAKE = 90, PUSH = 45, MOVED_FT = 0.01;
 // moved 0. A ceiling that only comes down
 // (kink fielder 81,432 to 76,958, 2026-11-06: a timed run with time to spare jogs, its push and pull up
 // scaled to its pace, inplay-plan.js Track.arrive)
-const CEILING = {
-  'brake fielder': 3857,
-  'brake runner': 6849,
-  'kink fielder': 76958,
-  'kink runner': 102480,
-};
+// Held per pack since 2026-11-18 (held-packs.mjs, pack-ceilings.json 'gait'): the first thirty at their
+// own counts as main measured them (brake fielder 3,857, brake runner 6,849, kink fielder 76,958, kink
+// runner 102,480 in all, the totals these were), each later pack at its own and the rate guard.
+const METRICS = ['brake fielder', 'brake runner', 'brake umpire', 'kink fielder', 'kink runner', 'kink umpire', 'push fielder', 'push runner', 'push umpire'];
 
 const dt = 1 / FPS;
-const by = {}, worst = {};
-let n = 0;
-const note = (key, plays, v, tag) => { const b = (by[key] ||= { plays: 0, worst: 0 }); if (!plays.has(key)) { plays.add(key); b.plays++; } if (v > b.worst) b.worst = v; (worst[key] ||= []).push({ v, tag }); };
+const by = {}, worst = {}, perPack = {}, packPlays = {};
+let n = 0, pk = null;
+const note = (key, plays, v, tag) => { const b = (by[key] ||= { plays: 0, worst: 0 }); if (!plays.has(key)) { plays.add(key); b.plays++; const q = (perPack[pk] ||= {}); q[key] = (q[key] || 0) + 1; } if (v > b.worst) b.worst = v; (worst[key] ||= []).push({ v, tag }); };
 for (let i = 0; i < all.length; i += SEL.stride) {
   const c = all[i];
   const p = planPlay(c.pr, { bats: c.hand, basesBefore: c.bases0, id: c.id, ...c.align });
   n++;
+  pk = packId(c.pack); packPlays[pk] = (packPlays[pk] || 0) + 1;
   const plays = new Set(), tag = `#${i} ${c.pack} ${c.key}/${c.label} st ${c.st}`;
   const bodies = [];
   for (let k = 1; k <= 9; k++) {
@@ -106,16 +107,21 @@ const HOLD = holding({ stride: SEL.stride, heldStride: 1, n, heldN: all.length, 
 const held = HOLD.mode !== 'report';
 let fails = 0;
 console.log(`\nruns as drawn at ${FPS} frames a second, ${n} plays (every ${SEL.stride === 1 ? '' : SEL.stride + 'th '}case)`);
-const keys = new Set([...Object.keys(by), ...Object.keys(CEILING), 'moved fielder', 'moved runner', 'moved umpire']);
+// (held: each pack to its own ceilings, held-packs.mjs; a sample: the packs' ceilings in all, at its rate)
+const REC = (PACK_CEILINGS.gait || { ceiling: {} }).ceiling;
+const total = (m) => Object.values(REC).reduce((a, q) => a + (q[m] || 0), 0);
+const keys = new Set([...Object.keys(by), ...METRICS, 'moved fielder', 'moved runner', 'moved umpire']);
 for (const key of [...keys].sort()) {
   const b = by[key] || { plays: 0, worst: 0 };
-  const cap = key.startsWith('moved') ? 0 : held ? HOLD.cap(CEILING[key] ?? 0) : Infinity;
+  const cap = key.startsWith('moved') ? 0 : HOLD.mode === 'scaled' ? HOLD.cap(total(key)) : HOLD.mode === 'held' ? total(key) : Infinity;
   const over = b.plays > cap;
-  if (over) fails += Math.ceil(b.plays - cap);
+  // (held, the totals are shown against the packs' ceilings in all; each pack is held below)
+  if (over && (key.startsWith('moved') || HOLD.mode === 'scaled')) fails += Math.ceil(b.plays - cap);
   const unit = key.startsWith('moved') ? 'ft' : 'ft/s^2';
-  console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(16)} ${String(b.plays).padStart(7)} plays${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  worst ${b.worst.toFixed(key.startsWith('moved') ? 3 : 1)} ${unit}`);
+  console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(16)} ${String(b.plays).padStart(7)} plays${cap !== Infinity ? (HOLD.mode === 'held' && !key.startsWith('moved') ? ' (the packs\' ceilings ' : ' (ceiling ') + capStr(cap) + ')' : ''}  worst ${b.worst.toFixed(key.startsWith('moved') ? 3 : 1)} ${unit}`);
 }
+if (HOLD.mode === 'held') { const r = holdByPack({ check: 'gait', count: perPack, plays: packPlays, metrics: METRICS }); fails += r.fails; for (const l of r.lines) console.log(l); }
 if (SHOW) for (const [k, w] of Object.entries(worst)) for (const x of w.sort((a, b) => b.v - a.v).slice(0, SHOW)) console.log(`  ${k}: ${x.v.toFixed(2)} ${x.tag}`);
-if (process.env.GAIT_CEILING) console.log('\nCEILING = ' + JSON.stringify(Object.fromEntries(Object.entries(by).filter(([k]) => !k.startsWith('moved')).map(([k, b]) => [k, b.plays]).sort())));
+if (process.env.PACK_CEILING) fs.writeFileSync(process.env.PACK_CEILING, JSON.stringify(measured(perPack, packPlays, METRICS)));
 console.log(`\n${n} plays, ${fails} over the ceiling (${HOLD.label})`);
 process.exit(fails ? 1 : 0);

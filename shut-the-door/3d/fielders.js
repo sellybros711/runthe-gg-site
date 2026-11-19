@@ -31,7 +31,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { twoBoneIK, wpos } from './rig.js?v=1';
 import { P, FT } from './units.js?v=1';
-import { gloveHandWeights, GLOVE_HAND_W } from './people.js?v=60';
+import { gloveHandWeights, GLOVE_HAND_W } from './people.js?v=64';
 
 const PART = { skin: 0, hair: 1, uniform: 2, trim: 3, shoes: 4, belt: 5, cap: 6, gloveL: 7, gloveR: 8, brim: 9, pants: 10 };
 const NPART = 11;

@@ -29,6 +29,8 @@ function showing(t) { return tab === t || desk(); }
 /* your history (history-ui.js): the Pro perk's screen */
 var HU = window.STD_HISTORY_UI || null;
 var CU = window.STD_CHALLENGE_UI || null;
+/* the welcome to Pro (pro-welcome.js): once, after a checkout comes back and Pro lands */
+var PW = window.STD_PRO_WELCOME || null;
 var METER = window.STD_METER || null;
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -175,7 +177,7 @@ function dropCode() {
    goes home the way the header's lockup does (a fresh home, where the outing resumes); a play in
    flight finishes first, so back then does nothing. */
 var BACK_SKIP = false;
-function openNow() { return (MN && MN.isOpen()) || (document.body.dataset.screen || 's-home') !== 's-home'; }
+function openNow() { return (PW && PW.isOpen()) || (MN && MN.isOpen()) || (document.body.dataset.screen || 's-home') !== 's-home'; }
 function backSync() {
   var mine = !!(history.state && history.state.std);
   if (openNow()) { if (!mine) try { history.pushState({ std: 1 }, ''); } catch (e) {} return; }
@@ -189,6 +191,7 @@ function backSync() {
 function backPressed() {
   /* (a tap home drops the page's own entry: the entry under it still carries ?c, so home takes it off again) */
   if (BACK_SKIP) { BACK_SKIP = false; if ((document.body.dataset.screen || 's-home') === 's-home') dropCode(); backSync(); return; }
+  if (PW && PW.isOpen()) { PW.close(); return; }
   if (MN && MN.isOpen()) { MN.close(); return; }
   var id = document.body.dataset.screen || 's-home';
   if (id === 's-home') return;
@@ -2346,6 +2349,48 @@ function wireTabs() {
   }, { passive: true });
 }
 
+/* ---- THE WELCOME TO PRO (pro-welcome.js; the owner, 2026-11-18). pro.js calls this once, when a
+   checkout has come back and the entitlements say Pro: the answer to the purchase just made, never a
+   boot or a timer. It waits for the loading screen, takes the toast away, and shows once per account
+   on this device (pro-welcome.js SEEN). Each row goes to its place; the primary button is the archive. */
+function proWelcome(o) {
+  if (!PW) return false;
+  var st = {}; try { st = (window.STD_AUTH && window.STD_AUTH.state()) || {}; } catch (e) {}
+  if (PW.seen(st.userId)) return false;
+  var PL = window.STD_PLATE;
+  BOOT.ready.then(function () {
+    var t = $('toast'); if (t) { clearTimeout(toast._t); t.classList.remove('on'); }
+    PW.show({ uid: st.userId, letters: PL && st.signedIn ? PL.initials(st.name, st.initials) : '', pair: !!(o && o.pair) });
+  });
+  return true;
+}
+/* on a desk (desk.js) Survivor and the archive are columns of their own, with no tabs: scroll to the
+   column; on a phone, to the tabs, with the picked one open */
+function proLand(t) {
+  /* after the home and the tab have settled (show() and the tab's move put the page back at the top) */
+  setTimeout(function () {
+    var el = !desk() ? $('h-modes') : t === 'surv' ? $('d-surv') : document.querySelector('.d-arc');
+    if (el) try { el.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); } catch (e) {}
+  }, TAB_MS + 40);
+}
+function proGo(where) {
+  if (where === 'arc') { MN.show('past'); proLand('arc'); return; }
+  if (where === 'hist') { showHistory(); return; }
+  /* custom challenges (challenge-ui.js): the builder, now open to them */
+  if (where === 'chal') { if (CU) CU.open(); return; }
+  if (where === 'plate') {
+    MN.show('auth');
+    var g = $('pk-grid'); if (g) try { g.scrollIntoView({ block: 'start' }); } catch (e) {}
+    return;
+  }
+  if (where === 'surv') {
+    if (MN.isOpen()) MN.close(true);
+    if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); }
+    setTab('surv', null, true);
+    proLand('surv');
+  }
+}
+
 /* ---- your history (Pro, history-ui.js): every kept daily and Survivor run. The screen opens only from
    its row in the stats sheet; a row opens that outing's result again, rebuilt from its calls (api.js
    historyOpen), in the result's history mode: no share, no board, no post, nothing kept. Its pitches
@@ -3133,10 +3178,12 @@ function boot() {
 
   if (MU) MU.entitlements().then(proPlate);
   /* the store's buy button and the way back from Stripe (pro.js): a new answer repaints every Pro door */
+  if (PW) PW.init({ go: proGo, onChange: backSync });
   if (window.STD_PRO) {
     window.STD_PRO.init({
       signIn: function () { MN.show('auth'); },
       toast: toast,
+      welcome: proWelcome,
       refresh: function () {
         return MU ? MU.entitlements().then(function (e) {
           proPlate(e);

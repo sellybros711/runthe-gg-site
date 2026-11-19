@@ -66,7 +66,7 @@
  *      Tab kept inside, Escape and a tap beside it shut it), the ump row's sheet, the Pro bar at the
  *      catalog's price and gone for Pro, a run in progress on its card, and under 980 px every node
  *      back where the phone has it
- *  24. custom challenges (CONTRACT.md 18, challenge-ui.js), through the mock with the real engine on the
+ *  25. custom challenges (CONTRACT.md 18, challenge-ui.js), through the mock with the real engine on the
  *      fixture's matchup: nothing opens by itself; not Pro, the menu row opens a locked entry that names
  *      the perk with the store's Get Pro button and no builder; Pro, the builder's live preview is
  *      previewChallenge's setup line and hold%, a runner is only one of the four hitters before the man
@@ -81,6 +81,13 @@
  *      Pro; nothing opens by itself; the list (newest first, every row a 38 px tap and up, no sideways
  *      scroll) opens a daily's and a Survivor spot's result in the history mode (no share, no board,
  *      back to the list), and its empty, failed and older states
+ *
+ *  24. the welcome to Pro (pro-welcome.js), through the mock (?mockAuth=1&mockEnt=pro): never on the boot
+ *      of a Pro member; on the checkout's return (?checkout=success) once Pro lands, full page, the home
+ *      inert under it, a row for each thing Pro opens; not again after a reload or a second return; each
+ *      row and the primary button go where they say (Survivor, the archive, your history, the plate
+ *      picker); Escape, Back to home and the browser's back close it to the home; the pair's checkout adds
+ *      the Run The Diamond line and link; reduced motion drops the shards
  *
  *  21. the live minimap: while a ball is in play on the 3D mound its runner and ball dots move frame
  *      by frame (inplay.js fieldAt, only read), and after the play they go and the lit bases are the
@@ -238,10 +245,12 @@ const UNITS = [
   ['21 the live minimap, 1440x900 dark', 60, () => liveMinimap(1440, 900, 'dark')],
   ['22 your history, 390x844 light', 30, () => historyWalk(390, 844, 'light')],
   ['22 your history, 1440x900 dark', 30, () => historyWalk(1440, 900, 'dark')],
+  ['24 the welcome to Pro, 390x844 light', 190, () => welcomeWalk(390, 844, 'light')],
+  ['24 the welcome to Pro, 1440x900 dark', 190, () => welcomeWalk(1440, 900, 'dark')],
   ['23 the desk home, 1440x900 dark', 40, () => deskHome(1440, 900, 'dark')],
   ['23 the desk home, 1920x1080 light', 40, () => deskHome(1920, 1080, 'light')],
-  ['24 custom challenges, 390x844 light', 90, () => challengesWalk(390, 844, 'light')],
-  ['24 custom challenges, 1440x900 dark', 90, () => challengesWalk(1440, 900, 'dark')],
+  ['25 custom challenges, 390x844 light', 90, () => challengesWalk(390, 844, 'light')],
+  ['25 custom challenges, 1440x900 dark', 90, () => challengesWalk(1440, 900, 'dark')],
 ];
 const MINE = new Set(), DONE = [];
 const SHARD = (() => { const v = argVal('--shard'); if (!v) return { i: 0, n: 1 }; const [i, n] = v.split('/').map(Number); if (!(n >= 1 && i >= 0 && i < n && Number.isInteger(i) && Number.isInteger(n))) throw new Error('--shard I/N: I from 0 to N-1'); return { i, n }; })();
@@ -1942,9 +1951,10 @@ async function sizeSweep() {
 
 /* 17. THE MODES AROUND THE DAILY (the owner, 2026-10-30), through the mock's switches. */
 async function modesPage(w, h, q, opts) {
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, reducedMotion: opts && opts.reduced ? 'reduce' : 'no-preference' });
   const page = await ctx.newPage();
   await page.addInitScript(STAGE_TEST);
+  if (opts && opts.init) await page.addInitScript((o) => { try { for (const k in o) localStorage.setItem(k, o[k]); } catch (e) {} }, opts.init);
   if (opts && opts.meterOff) await page.addInitScript(() => { try { localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false, quick: true, sound: false })); } catch (e) {} });
   if (opts && opts.theme) await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, opts.theme);
   const errors = [];
@@ -2106,8 +2116,14 @@ async function modes(w, h, full) {
   ok(pkr.cur.length === 32 && pkr.cur[0].k === '' && pkr.tb.length === 9 && pkr.tbHead === 'Throwbacks' && pkr.svgs === 41,
     '17 the picker: plain, Diamond and 30 clubs, then 9 throwbacks, each with its plate (' + pkr.cur.length + ' + ' + pkr.tb.length + ')');
   ok(dia && dia.locked && dia.pro && dia.small === 'Pro only.', '17 not Pro: Diamond is locked, tagged Pro, and says "Pro only." (' + JSON.stringify(dia) + ')');
-  ok(soon.some((x) => x.k === 'orioles') && soon.some((x) => x.k === 'expos') && !soon.some((x) => x.k === 'dodgers' || x.k === 'astrosbrick'),
-    '17 a club with no situation says "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
+  /* since 2026-11-18 (supabase 179) every one of today's 30 has a situation: only the throwbacks no pack is in say
+     "No situation yet", and the Orioles say how to open theirs. The Reds' waits on a 3D fix (the owner,
+     2026-11-18), so the Reds are the one club of today's that still says it */
+  const ori = pkr.cur.find((x) => x.k === 'orioles');
+  ok(soon.some((x) => x.k === 'expos') && soon.every((x) => x.k === 'reds' || pkr.tb.some((t) => t.k === x.k)) && !soon.some((x) => x.k === 'astrosbrick'),
+    '17 only a throwback with no situation, and the Reds, say "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
+  ok(ori && ori.locked && ori.small === 'Shut the door as the Orioles closer to unlock.' && JSON.stringify(soon.filter((x) => pkr.cur.some((c) => c.k === x.k)).map((x) => x.k)) === '["reds"]',
+    '17 every one of today\'s clubs but the Reds has a situation: the Orioles say "' + (ori && ori.small) + '"');
   ok(pkr.cur.concat(pkr.tb).every((x) => x.h >= 38), '17 every plate tile is at least 38 px tall');
   ok(await noSideScroll(page), '17 the picker leaves no sideways scroll');
   await page.evaluate(() => document.querySelector('#pk-grid .plk[data-plate="diamond"]').click());   // aria-disabled: a real tap still lands
@@ -2222,6 +2238,19 @@ async function modes(w, h, full) {
   ok(top.plates.length === 3 && top.plates.every((p) => p && p.w >= 20 && p.w <= 28 && /^[A-Z0-9]{1,2}$/.test(p.t)), '17 each top 3 row wears its plate with initials, about 24 px (' + JSON.stringify(top.plates) + ')');
   ok(await noSideScroll(page), '17 the top 3 leaves no sideways scroll');
   await shotM(page, 'daily-top3');
+  /* the Pro card on a phone (the owner, 2026-11-18): at the very foot of the home, after the menu and just
+     above the footer, on every tab; no longer under the top 3. A desk has the bar under its columns (23) */
+  if (w < 980) {
+    await page.waitForSelector('#h-pro:not([hidden]) .pc-card', { timeout: 30000 });
+    const foot = await page.evaluate(() => { const p = document.getElementById('h-pro'), r = p.getBoundingClientRect(), m = document.getElementById('h-menu').getBoundingClientRect(),
+      t = document.getElementById('h-top').getBoundingClientRect(), f = document.querySelector('#h-side > .legal');
+      return { up: p.parentElement.id, after: (p.previousElementSibling || {}).id, next: p.nextElementSibling === f, belowMenu: r.top >= m.bottom, belowTop: r.top > t.bottom,
+        gap: Math.round(f.getBoundingClientRect().top - r.bottom), inPane: !!p.closest('.h-pane') }; });
+    ok(foot.up === 'h-side' && foot.after === 'h-menu' && foot.next && foot.belowMenu && foot.belowTop && !foot.inPane && foot.gap >= 0 && foot.gap <= 40,
+      '17 on a phone the Pro card is at the foot of the home, after the menu and just above the footer (' + JSON.stringify(foot) + ')');
+    await page.evaluate(() => document.getElementById('h-pro').scrollIntoView({ block: 'end' }));
+    await shotM(page, 'pro-foot');
+  }
   await page.click('#h-top-all');
   await page.waitForSelector('#s-board.on #bd-list .bd-rows', { timeout: 30000 });
   ok(await nothingOpen(page), '17 full leaderboard opens the day\'s board, and no sheet');
@@ -2285,8 +2314,12 @@ async function modes(w, h, full) {
   ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro&checkout=success'));
   await page.waitForFunction(() => !/checkout=/.test(location.search), null, { timeout: 15000 });
   ok(true, '17 back from Stripe: the checkout flag comes off the address');
-  await page.waitForFunction(() => /pro is on/.test(document.getElementById('toast').textContent), null, { timeout: 15000 });
-  ok(true, '17 and once entitlements answer Pro, the page says so');
+  /* once entitlements answer Pro, the page says so: the welcome to Pro (pro-welcome.js, the owner 2026-11-18)
+     replaced the "pro is on" toast; step 24 walks it, here it only has to show and close */
+  await page.waitForSelector('#pro-welcome.on', { timeout: 15000 });
+  ok(true, '17 and once entitlements answer Pro, the page says so (the welcome to Pro)');
+  await page.click('#pro-welcome .pw-home');
+  await page.waitForFunction(() => !document.getElementById('pro-welcome'), null, { timeout: 5000 });
   await page.evaluate(usedRun(true));
   await openMode(page, 'surv');
   await page.waitForFunction((q) => { const b = document.querySelector(q + '#sv-go'); return b && b.textContent === 'start another run'; }, SV, { timeout: 30000 });
@@ -2475,7 +2508,7 @@ async function deskHome(w, h, theme) {
       go: up('h-go'), top: up('h-top'), vote: up('h-vote'), pro: up('h-pro'), menu: up('h-menu'), sv: !!document.querySelector('#hp-surv > .sv-hero'), arc: !!document.querySelector('#hp-arc > .hp-arc-c:not(.d-arc)'),
       legal: !!document.querySelector('#h-side > .legal'), card: !!document.querySelector('#h-pro .pc-card'), bar: !!document.querySelector('.pb-bar'), cls: document.body.classList.contains('std-desk'),
       tabs: getComputedStyle(document.getElementById('h-modes')).display !== 'none', sw: document.documentElement.scrollWidth <= innerWidth + 1 }; });
-  ok(!P.made.length && P.sit && P.go === 'hp-daily' && P.top === 'hp-daily' && P.vote === 'hp-daily' && P.pro === 'hp-daily' && P.menu === 'h-side' && P.sv && P.arc && P.legal && P.card && !P.bar && !P.cls && P.tabs && P.sw,
+  ok(!P.made.length && P.sit && P.go === 'hp-daily' && P.top === 'hp-daily' && P.vote === 'hp-daily' && P.pro === 'h-side' && P.menu === 'h-side' && P.sv && P.arc && P.legal && P.card && !P.bar && !P.cls && P.tabs && P.sw,
     '23 ' + tag + ' to 390: every node is back where the phone has it, the tabs and the Pro card again (' + JSON.stringify(P) + ')');
   await page.setViewportSize({ width: w, height: h });
   await page.waitForFunction(() => window.STD_DESK.on() && document.querySelector('.d-l #d-surv #sv-go') && document.querySelector('#h-pro .pb-bar'), null, { timeout: 3000 });
@@ -3071,12 +3104,12 @@ async function historyWalk(w, h, theme) {
   }
 }
 
-/* 24. CUSTOM CHALLENGES (Pro, the owner 2026-11-18, CONTRACT.md 18), through the mock (?mockEnt=pro, ?mockAuth=,
+/* 25. CUSTOM CHALLENGES (Pro, the owner 2026-11-18, CONTRACT.md 18), through the mock (?mockEnt=pro, ?mockAuth=,
    ?c=). The challenge calls are the real api.js's on the real engine, the matchup the fixture's pair. */
 async function challengesWalk(w, h, theme) {
   console.log(`\ncustom challenges, ${w}x${h} ${theme}`);
-  step('24 custom challenges', 240);
-  const tag = '24 ' + w + 'x' + h + ' ' + theme + ':';
+  step('25 custom challenges', 240);
+  const tag = '25 ' + w + 'x' + h + ' ' + theme + ':';
   const openRow = (page) => page.evaluate(() => {
     const b = [...document.querySelectorAll('[data-chal-open]')].find((x) => x.offsetParent) || document.querySelector('#h-chal-go');
     b.click();
@@ -3217,6 +3250,97 @@ async function challengesWalk(w, h, theme) {
     await page.waitForTimeout(300);
     ok(!/[?&]c=/.test(await page.evaluate(() => location.search)), tag + ' home takes the code off the address');
     ok(errors.length === 0, tag + ' no such code: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+}
+
+/* 24. THE WELCOME TO PRO (the owner, 2026-11-18), through the mock's Pro account and the real return path
+   (pro.js returned()). Every case is a fresh context: the welcome shows once per account per device. */
+async function welcomeWalk(w, h, theme) {
+  console.log(`\nthe welcome to Pro, ${w}x${h} ${theme}`);
+  step('24 the welcome to Pro', 480);
+  const tag = '25 ' + w + 'x' + h + ' ' + theme + ':';
+  const PRO = '?mockAuth=1&mockEnt=pro', BACK = PRO + '&checkout=success';
+  const isUp = (page) => page.evaluate(() => !!document.getElementById('pro-welcome'));
+  const up = async (q, opts) => {
+    const m = await modesPage(w, h, q, Object.assign({ meterOff: true, theme }, opts || {}));
+    await m.page.waitForSelector('#pro-welcome.on', { timeout: 20000 });
+    return m;
+  };
+  /* a Pro member's boot: nothing */
+  {
+    const { ctx, page, errors } = await modesPage(w, h, PRO, { meterOff: true, theme });
+    await page.waitForTimeout(4500);
+    ok(!(await isUp(page)), tag + ' a Pro member\'s boot: no welcome');
+    ok(errors.length === 0, tag + ' boot: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  /* the return: it shows, it says what Pro opens, then never again */
+  {
+    const { ctx, page, errors } = await up(BACK);
+    const v = await page.evaluate(() => {
+      const b = document.getElementById('pro-welcome'), r = b.getBoundingClientRect(), t = b.textContent;
+      const rows = [...b.querySelectorAll('.pw-row')], go = [...b.querySelectorAll('button.pw-row')].map((x) => x.getAttribute('data-pw-go'));
+      const taps = [...b.querySelectorAll('button, a[href]')].filter((x) => x.offsetParent);
+      return { full: r.width >= innerWidth - 1 && r.height >= innerHeight - 1, inert: document.getElementById('app').hasAttribute('inert'),
+        addr: /checkout=/.test(location.search), rows: rows.length, go: go.join(), soon: /Custom challenges\s*soon/i.test(t), chal: /Custom challenges/.test(t),
+        head: /Welcome to\s*Shut The Door\s*Pro/i.test(b.querySelector('.pw-h').textContent), wear: /\bwear/i.test(t), pair: !!b.querySelector('.pw-pair'),
+        minH: Math.min(...taps.map((x) => x.getBoundingClientRect().height)), side: document.documentElement.scrollWidth <= innerWidth + 1,
+        focus: b.contains(document.activeElement), toast: document.getElementById('toast').classList.contains('on'),
+        names: ['Unlimited Survivor runs', 'Every past daily', 'Your history', 'The Diamond plate', 'No video ads'].every((n) => t.includes(n)),
+        primary: (b.querySelector('.pw-go') || {}).textContent, home: [...b.querySelectorAll('.pw-home')].map((x) => x.textContent).join() };
+    });
+    ok(v.full && v.inert && !v.addr, tag + ' the checkout\'s return: a full page over an inert home, the flag off the address');
+    ok(v.head && !v.wear, tag + ' the headline welcomes them to Shut The Door Pro, no "wear"');
+    ok(v.rows === 6 && v.names && v.go === 'surv,arc,hist,plate,chal' && v.chal && !v.soon, tag + ' one row for each thing Pro opens, five go somewhere, custom challenges open, never "soon" (' + v.go + ')');
+    ok(v.primary === 'Play a past daily' && v.home === 'Back to home' && !v.pair, tag + ' the primary goes to the archive, Back to home, no pair line on Pro alone');
+    ok(v.minH >= 38 && v.side && v.focus && !v.toast, tag + ' every tap ' + Math.round(v.minH) + ' px and up, no sideways scroll, the focus inside, the toast gone');
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `24-welcome-${w}x${h}-${theme}.png`) });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+    await page.waitForTimeout(4500);
+    ok(!(await isUp(page)), tag + ' not again after a reload');
+    await page.goto(BASE + BACK, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+    await page.waitForTimeout(4500);
+    ok(!(await isUp(page)), tag + ' not again on a second return for the same account');
+    ok(errors.length === 0, tag + ' return: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  /* each way out goes where it says */
+  const ways = [
+    ['.pw-go', 'the primary: the archive', () => document.body.dataset.screen === 's-home' && localStorage.getItem('std_home_tab_v1') === 'arc' && ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden)],
+    ['[data-pw-go="surv"]', 'Survivor', () => document.body.dataset.screen === 's-home' && localStorage.getItem('std_home_tab_v1') === 'surv'],
+    ['button.pw-row[data-pw-go="arc"]', 'the archive', () => document.body.dataset.screen === 's-home' && localStorage.getItem('std_home_tab_v1') === 'arc'],
+    ['[data-pw-go="hist"]', 'your history', () => document.body.dataset.screen === 's-hist'],
+    ['[data-pw-go="chal"]', 'custom challenges', () => document.body.dataset.screen === 's-chal'],
+    ['[data-pw-go="plate"]', 'the plate picker', () => !document.getElementById('sheet-auth').hidden && !!document.getElementById('pk-grid')],
+    ['.pw-home', 'Back to home closes it', () => document.body.dataset.screen === 's-home' && ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden)],
+    ['Escape', 'Escape closes it', () => document.body.dataset.screen === 's-home' && ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden)],
+    ['back', 'the browser\'s back closes it', () => document.body.dataset.screen === 's-home' && /\/shut-the-door\//.test(location.pathname)],
+  ];
+  for (const [how, name, there] of ways) {
+    const { ctx, page, errors } = await up(BACK);
+    if (how === 'Escape') await page.keyboard.press('Escape');
+    else if (how === 'back') await page.goBack();
+    else await page.click('#pro-welcome ' + how);
+    await page.waitForFunction(() => !document.getElementById('pro-welcome'), null, { timeout: 5000 });
+    let went = false;
+    try { await page.waitForFunction(there, null, { timeout: 5000 }); went = true; } catch (e) {}
+    const free = await page.evaluate(() => !document.getElementById('app').hasAttribute('inert'));
+    ok(went && free, tag + ' ' + name + ': it closes and lands there, the home live again');
+    ok(errors.length === 0, tag + ' ' + name + ': no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  /* the pair: Run The Diamond Pro too, a link to /baseball/; and reduced motion: no shards */
+  {
+    const init = { std_pro_buy_v1: JSON.stringify({ bundle: 'diamond-door-pro', at: Date.now() }) };
+    const { ctx, page, errors } = await up(BACK, { init, reduced: true });
+    const v = await page.evaluate(() => { const a = document.querySelector('#pro-welcome .pw-pair'); return { href: a && a.getAttribute('href'), text: a && a.textContent, shards: !!document.querySelector('.pw-shards'), kept: localStorage.getItem('std_pro_buy_v1') }; });
+    ok(v.href === '/baseball/' && /Run The Diamond Pro is unlocked too/.test(v.text), tag + ' the pair: Run The Diamond Pro is unlocked too, a link to /baseball/');
+    ok(!v.shards && v.kept === null, tag + ' reduced motion: no shards; the bundle note is used up');
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `24-welcome-pair-${w}x${h}-${theme}.png`) });
+    ok(errors.length === 0, tag + ' the pair: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
     await ctx.close();
   }
 }
@@ -3593,9 +3717,11 @@ try {
   if (process.env.STD_MINIMAP === '1') { for (const t of ['light', 'dark']) { await liveMinimap(390, 844, t); await liveMinimap(1440, 900, t); } throw 'quick'; }
   /* STD_HISTORY=1: only your history (22) at both sizes, light and dark */
   if (process.env.STD_HISTORY === '1') { for (const t of ['light', 'dark']) { await historyWalk(390, 844, t); await historyWalk(1440, 900, t); } throw 'quick'; }
+  /* STD_WELCOME=1: only the welcome to Pro (24) at both sizes, light and dark */
+  if (process.env.STD_WELCOME === '1') { for (const t of ['light', 'dark']) { await welcomeWalk(390, 844, t); await welcomeWalk(1440, 900, t); } throw 'quick'; }
   /* STD_DESK=1: only the home on a desk (23), 1440x900 dark and 1920x1080 light */
   if (process.env.STD_DESK === '1') { await deskHome(1440, 900, 'dark'); await deskHome(1920, 1080, 'light'); throw 'quick'; }
-  /* STD_CHAL=1: only custom challenges (24) at both sizes, light and dark */
+  /* STD_CHAL=1: only custom challenges (25) at both sizes, light and dark */
   if (process.env.STD_CHAL === '1') { for (const t of ['light', 'dark']) { await challengesWalk(390, 844, t); await challengesWalk(1440, 900, t); } throw 'quick'; }
   /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
   if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
