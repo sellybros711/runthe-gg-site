@@ -105,7 +105,7 @@ const ui = {
   hint(t) {
     $('hint').textContent = t || '';
     clearTimeout(hintTimer);
-    if (t) hintTimer = setTimeout(() => { $('hint').textContent = defaultHint(); }, 2600);
+    hintTimer = t ? setTimeout(() => { hintTimer = null; $('hint').textContent = defaultHint(); }, 2600) : null;
   },
   changed(p, f) {
     $('bRun').disabled = problems(SCX(), p).length > 0;
@@ -246,7 +246,7 @@ function loadStarter(id) {
   if (live) backToBoard();
   savePlay(p); board.reset();
   track('plays_load', { starter: id });
-  ui.hint(s.name + ' is up. Undo brings yours back.');
+  ui.hint(starterStash.prev.steps && starterStash.prev.steps.length ? s.name + ' is up. Undo brings yours back.' : s.name + ' is up.');
 }
 /* Undo, straight after a starter went on (nothing changed since): the old
    play comes back. Anything else is the board's own Undo. */
@@ -770,7 +770,7 @@ function showLevelResult(res) {
   const next = nextOf(L.id), canNext = !!next && isOpen(ladder, next.id);
   const goNext = () => btn('Next level', n >= 1 ? 'go' : 'alt', () => openLevel(next), 'bNextLvl');
   if (canNext && n >= 1) goNext();
-  btn('Try again', canNext && n >= 1 ? 'alt' : 'go', () => run(freshSeed()), 'bReplay');
+  btn('Run it again', canNext && n >= 1 ? 'alt' : 'go', () => run(freshSeed()), 'bReplay');
   if (canNext && n < 1) goNext();
   const row2 = add('div', 'row xtra');
   saveButton(row2, runOf(res));
@@ -836,6 +836,7 @@ function backToBoard() {
 let lastOpt = {};
 const VIEWS = ['vHome', 'vGame', 'vBooks', 'vLadder', 'vBeat'];
 function show(v) {
+  if (v === 'vGame') { clearTimeout(hintTimer); hintTimer = null; $('hint').textContent = ''; }
   closeSheets();   // a sheet never stays open over the next screen
   for (const id of VIEWS) $(id).hidden = id !== v;
   $('back').dataset.to = v === 'vHome' ? 'arcade' : v === 'vGame' && mode === 'edit' ? 'book' : v === 'vGame' && mode === 'level' ? 'ladder'

@@ -83,7 +83,9 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
 .pname{flex:1;min-width:0;font-family:'Outfit',sans-serif;font-weight:800;font-size:18px!important}
 #pbClock{width:78px}
 .lab{font-size:13px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:6px}
-.actions .btn{white-space:nowrap;padding:0 10px}
+.actions .btn{white-space:nowrap;padding:0 10px;min-width:44px}
+/* a phone: the row fits in its width (the run button never runs off the edge); ▶ Frame keeps its arrow */
+@media (max-width:430px){.actions{gap:5px}.actions .btn{font-size:15px;padding:0 6px}.actions .btn.alt{flex:1 1 0}.actions #bFrame{flex:0 0 48px}.actions #bFrame .fl{display:none}.actions .btn.go{flex:1.6 0 auto}}
 .tbtn{flex:none;min-height:44px;padding:0 14px}
 .sitchip{font-weight:800;color:var(--marker)}
 .more[open]{background:#fff;border:1px solid var(--edge);border-radius:12px;padding:6px 8px;max-height:42vh;overflow:auto}
@@ -99,7 +101,8 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
 .bhead{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 .bname{flex:2;font-family:'Outfit',sans-serif!important;font-weight:800;font-size:20px!important}.bteam{flex:1;min-width:120px}
 .shead{display:flex;gap:6px;align-items:center;margin-top:14px;padding-top:8px;border-top:1px solid var(--edge)}
-.sname{flex:1;font-weight:700}
+.sname{flex:1;min-width:0;font-weight:700}
+.shead .mini{flex:0 0 44px}
 .plays{display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .prow{border:1px solid var(--edge);background:#fff;border-radius:14px;padding:8px}
 .popen{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:0}
@@ -367,7 +370,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
     <button class="btn alt" id="bPlays" aria-label="Start from a play">Plays</button>
     <button class="btn alt" id="bUndo">Undo</button>
     <button class="btn alt" id="bClear">Clear</button>
-    <button class="btn dark" id="bFrame" disabled aria-label="Play this frame">&#9654; Frame</button>
+    <button class="btn dark" id="bFrame" disabled aria-label="Play this frame">&#9654;<span class="fl"> Frame</span></button>
     <button class="btn go" id="bRun" disabled>Run It</button>
   </div>
   </div>
