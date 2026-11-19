@@ -135,11 +135,26 @@
     drawField();
     var box = $('tCalls'); box.innerHTML = '';
     CALLS.forEach(function (c) {
-      box.appendChild(el('button', { type: 'button', class: 'tcall', 'data-call': c, 'aria-pressed': String(!!(k && k.pick === c)),
-        disabled: k || busy ? 'disabled' : null, text: A.CALL_LABEL[c], on: { click: function () { lock(c); } } }));
+      var bt = el('button', { type: 'button', class: 'tcall', 'data-call': c, 'aria-pressed': String(!!(k && k.pick === c)), 'aria-label': A.CALL_LABEL[c],
+        disabled: k || busy ? 'disabled' : null, on: { click: function () { lock(c); } } });
+      /* THE CALL, DRAWN (2026-11-19): its shell and its rush over the X's, then its name */
+      bt.innerHTML = callArt(c) + '<span class="tlab">' + A.CALL_LABEL[c].replace(/ (zone|man|blitz)$/, '') + '<small>' + A.CALL_LABEL[c].split(' ').pop() + '</small></span>';
+      box.appendChild(bt);
     });
     $('tAsk').hidden = !!k;
     if (k && k.rates) reveal(k); else $('tRes').hidden = true;
+  }
+  /* a call's picture: the deep zones shaded (two halves, three thirds, one middle), man as dashed
+     lines to the receivers, the rush as red arrows, five X's. Decoration: the engine decides. */
+  function callArt(c) {
+    var deep = c.indexOf('cover2') === 0 ? 2 : c.indexOf('cover3') === 0 ? 3 : c.indexOf('cover1') === 0 ? 1 : 0;
+    var man = c === 'cover0' || c.indexOf('cover1') === 0, rush = c === 'cover0' ? 3 : /b$/.test(c) ? 2 : 0;
+    var z = '', i, w;
+    if (deep) { w = deep === 1 ? 92 : 164 / deep; for (i = 0; i < deep; i++) { var x0 = deep === 1 ? 40 : 4 + i * w; z += '<path d="M' + x0 + ' 40 Q' + (x0 + w / 2) + ' 4 ' + (x0 + w) + ' 40Z" fill="rgba(73,163,255,.22)" stroke="#49a3ff" stroke-width="1.5"/>'; } }
+    var m = man ? '<g stroke="#ffe36b" stroke-width="1.6" stroke-dasharray="3 3"><path d="M22 56 L18 74"/><path d="M150 56 L156 74"/><path d="M64 58 L60 74"/><path d="M110 58 L114 74"/></g>' : '';
+    var r = ''; for (i = 0; i < rush; i++) { var x = 66 + i * 20; r += '<path d="M' + x + ' 58 L' + (x + 3) + ' 72" stroke="#ff6b5a" stroke-width="2.4"/><path d="M' + (x - 1) + ' 71 l4 5 3 -6z" fill="#ff6b5a"/>'; }
+    var xs = ''; [22, 64, 86, 110, 150].forEach(function (x, k) { var y = 50 + (k % 2) * 4; xs += '<path d="M' + (x - 4) + ' ' + y + ' l8 8 m0 -8 l-8 8" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>'; });
+    return '<svg class="tart" viewBox="0 0 172 82" aria-hidden="true"><line x1="0" y1="78" x2="172" y2="78" stroke="#4aa3ff" stroke-width="2"/>' + z + m + r + xs + '</svg>';
   }
   function lock(c) {
     if (busy || kept()) return;
