@@ -1665,6 +1665,25 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         if (!a.spec.space) continue; out.push({ f, cross:!!a.host, landed:!!b2.host, landedGate:!!b2.gate }); }
       return out; });
     claim(sg.length >= 5 && sg.every(o => !o.cross && o.landed && !o.landedGate), `a space world's greeter waits on the landed walk, where no gate holds them, and not on the crossing that ends at the launch pad (${JSON.stringify(sg)})`);
+    /* EVERY LANDING LETS HIM OUT (QA, 2026-11-19: the Big Top's walk opened with him inside the circus train, 12 ft long
+       and parked 6.5 ft from the start, and he could not move; the ship in the Oz poppies did the same). On every landed
+       walk, at a phone's and a desktop's size, the spot run() stands him on (atS(2)) is clear of every collider by run()'s
+       own rule, he has a first step of a foot and a half that way up the walk, and the hole's end of the walk floods
+       from where he stands. Plans only, so it is quick. */
+    { const land = []; for (const [vw, vh] of [[390, 844], [1440, 900]]){ await pg.setViewportSize({ width:vw, height:vh });
+        land.push(...await pg.evaluate(v => { const TR = window.RTT_PUTT._trailPlan, out = [], R = 0.55;
+          for (let f = 18; f < window.RTT_PUTT.LEVELS.length; f += 18){ const P = TR(f, 'main', true); if (!P || !P.spec || !P.spec.landed) continue;
+            const hit = (x, y) => x < P.b[0] + 2.5 || x > P.b[2] - 2.5 || y > P.b[3] - 2 || (P.poolAt(x, y) || {}).k === 'water' || P.seaAt(x, y) ||
+              P.cols.some(c => c.w ? Math.abs(x - c.x) < c.w / 2 + R && Math.abs(y - c.y) < c.d / 2 + R : Math.hypot(x - c.x, y - c.y) < c.r + R);
+            const g0 = P.atS(2), tn = P.tanS(4), a0 = Math.atan2(tn[1], tn[0]);
+            let step = false; for (let da = 0; da <= Math.PI / 2 + 1e-9 && !step; da += Math.PI / 16) for (const sg2 of [1, -1]){ const a = a0 + sg2 * da;
+              let ok = true; for (let d = 0.25; d <= 1.5 && ok; d += 0.25) if (hit(g0[0] + Math.cos(a) * d, g0[1] + Math.sin(a) * d)) ok = false; if (ok){ step = true; break; } }
+            const end = P.path[P.path.length - 1], G = P._fl.flood(false);
+            out.push({ v, f, th:P.spec.theme, free:!hit(g0[0], g0[1]), step, end:P._fl.near(G, end[0], Math.max(end[1], 1), 2) }); }
+          return out; }, vw + 'x' + vh)); }
+      await pg.setViewportSize({ width:390, height:844 });
+      const bad = land.filter(o => !o.free || !o.step || !o.end);
+      claim(land.length >= 40 && !bad.length, `every landed walk (${land.length / 2} of them, at 390 x 844 and 1440 x 900) stands him clear of every collider, gives him a first step up the walk, and floods to the hole's end` + (bad.length ? ': ' + JSON.stringify(bad) : '')); }
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.
