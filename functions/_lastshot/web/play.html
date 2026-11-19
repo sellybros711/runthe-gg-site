@@ -339,6 +339,8 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 /* the tray: the clipboard's bottom lip, where the frames, the markers and the erasers sit */
 .tray{flex:none;margin:0 6px;border-radius:6px 6px 0 0;padding:8px 8px 10px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
 .app.running #tray,#vGame.lres #tray{display:none}
+/* the clipboard's hint is for the clipboard: never under a running play or its card */
+.app.running #hint,#vGame.lres #hint{visibility:hidden}
 .tray .frames,.tray .gorow,.tray .tools,.tray .actions{padding:0}
 .tray .actions{padding-bottom:0}
 .tray .frames{gap:6px}

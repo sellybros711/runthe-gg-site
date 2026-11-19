@@ -113,30 +113,30 @@ function yawOf(deg) {
 
 /* ---------- the floor ---------- */
 let FLOOR = null;
+/* THE FLOOR (2026-11-19, the owner: maple). Light maple boards that run
+   toward the basket, as a court is laid, with quiet seams and staggered
+   joints; a stained lane; cream lines. It replaced boards that ran across
+   the floor in three loud shades, which read as stripes once zoomed. */
 function floor() {
   if (FLOOR) return FLOOR;
   const W = COURT.W * PX, H = COURT.H * PX;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
-  const wood = ramp('#c48a52');
-  // boards run across the floor, a seam every 3 pixels, joints staggered
-  for (let y = 0; y < H; y++) {
-    const band = Math.floor(y / 3);
-    g.fillStyle = wood[1 + ((band * 7) % 3)];
-    g.fillRect(0, y, W, 1);
-    if (y % 3 === 2) { g.fillStyle = wood[0]; g.globalAlpha = 0.35; g.fillRect(0, y, W, 1); g.globalAlpha = 1; }
-    const j = ((band * 37) % 23) * 4;
-    for (let x = j; x < W; x += 92) { g.fillStyle = wood[0]; g.fillRect(x, y, 1, 1); }
+  for (let x = 0; x < W; x++) {
+    const band = Math.floor(x / 3);
+    g.fillStyle = ((band * 5) % 3) === 0 ? '#d6a76c' : '#dcae74';
+    g.fillRect(x, 0, 1, H);
+    if (x % 3 === 2) { g.globalAlpha = 0.28; g.fillStyle = '#a8743f'; g.fillRect(x, 0, 1, H); g.globalAlpha = 1; }
+    const j = ((band * 37) % 29) * 3;
+    g.globalAlpha = 0.35; g.fillStyle = '#a8743f';
+    for (let y = j; y < H; y += 87) g.fillRect(x, y, 1, 1);
+    g.globalAlpha = 1;
   }
-  // the lane, painted
-  const lane = ramp('#9a4a24');
-  g.fillStyle = lane[2]; g.globalAlpha = 0.55;
+  g.fillStyle = '#a35f2a'; g.globalAlpha = 0.42;
   g.fillRect((COURT.RIM.x - COURT.LANE / 2) * PX, 0, COURT.LANE * PX, COURT.FT * PX);
   g.globalAlpha = 1;
-  // lines, one pixel at a time so nothing is anti aliased
-  g.fillStyle = '#f2ead6';
+  g.fillStyle = '#fbf6ea';
   for (const line of courtLines()) for (let i = 1; i < line.length; i++) pixLine(g, line[i - 1].x * PX, line[i - 1].y * PX, line[i].x * PX, line[i].y * PX);
-  // backboard (the rim is drawn live, over the players' shadows)
   g.fillStyle = '#eef2f6'; g.fillRect((COURT.RIM.x - 3) * PX, 4 * PX - 1, 6 * PX, 2);
   FLOOR = cv;
   return cv;
