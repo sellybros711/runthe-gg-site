@@ -58,7 +58,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=33">
+<link rel="stylesheet" href="style.css?v=34">
 </head>
 <body>
 <header class="topbar">
@@ -538,7 +538,9 @@ document.documentElement.setAttribute('data-theme', 'dark');
       </div>
       <div class="rgo" id="rGo" hidden>
         <p class="rgohead" id="rGoHead"></p>
+        <p class="rgobest" id="rGoBest" hidden>New best</p>
         <p class="rgotally" id="rGoTally"></p>
+        <p class="rgopips" id="rGoPips" aria-hidden="true"></p>
         <p class="rgonext" id="rGoNext"></p>
         <button type="button" class="playnow rgobtn" id="rGoOn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Next down</button>
         <button type="button" class="playnow rgobtn" id="rGoAgain" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Go again</button>
@@ -571,7 +573,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <dialog class="dlg" id="guide">
   <h2>How it works</h2>
   <ol>
-    <li><b>Studio.</b> Pick a formation or a concept. Give each player a route from the list, or draw one: Route, Block, Run (drag from the man who gets the ball: that is his path), Read (the 1st, 2nd and 3rd read), Motion. Move lines a player up. Nothing else moves him.</li>
+    <li><b>Studio.</b> Pick a formation or a concept. Give each player a route from the list, or draw one. Route and Block draw his job. With Run, drag from the man who gets the ball: that drag is his path. Read sets the 1st, 2nd and 3rd read. Motion sends a man before the snap. Move lines a player up. Nothing else moves him.</li>
     <li><b>Play.</b> Set the down, the distance and the spot. Pick the defense, or let it pick. Run Play. Your players run exactly what you drew.</li>
     <li><b>Test vs Defense.</b> Every defense, many snaps each, and the rate for each one.</li>
     <li><b>Playbooks.</b> Save plays to a book on your Run The Games account. Name them in your own words.</li>
@@ -600,18 +602,18 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="stage.js?v=2"></script>
 <script src="events.js?v=2"></script>
 <script src="share.js?v=2"></script>
-<script src="feel.js?v=2"></script>
+<script src="feel.js?v=3"></script>
 <script src="play.js?v=4"></script>
-<script src="app.js?v=12"></script>
-<script src="home.js?v=4"></script>
+<script src="app.js?v=13"></script>
+<script src="home.js?v=5"></script>
 <script src="studio.js?v=6"></script>
 <script src="game.js?v=6"></script>
 <script src="clip.js?v=1"></script>
-<script src="flow.js?v=18"></script>
+<script src="flow.js?v=19"></script>
 <script src="daily.js?v=9"></script>
 <script src="trivia.js?v=4"></script>
-<script src="calls.js?v=11"></script>
-<script src="goforit.js?v=7"></script>
+<script src="calls.js?v=12"></script>
+<script src="goforit.js?v=8"></script>
 <script src="profile.js?v=1"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>

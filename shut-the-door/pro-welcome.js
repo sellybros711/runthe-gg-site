@@ -7,8 +7,8 @@
  * then, and SEEN keeps it from coming back for the same account on this device).
  *
  * What it says is what the gate opens (shutdoor_is_pro, agents/store/decisions 2026-11-18): unlimited
- * Survivor runs, every past daily, your history, the Diamond plate by your name, no video ads. Custom
- * challenges are not live in the code, so they say soon. The pair (Run The Diamond + Shut The Door)
+ * Survivor runs, every past daily, your history, the Diamond plate by your name, no video ads, and custom
+ * challenges (challenge-ui.js: build a spot, send the link). The pair (Run The Diamond + Shut The Door)
  * adds a line and a link to /baseball/.
  *
  * Each row with a place is a button to it; ui.js owns the places (init({go})). The primary button is
@@ -37,7 +37,7 @@ var I = {
   arc: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/>',
   hist: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5v4h4"/><path d="M12 8v4.3l3 1.8"/>',
   ads: '<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M10.5 9.5v5l4-2.5z"/><path d="M4 20L20 4"/>',
-  soon: '<path d="M5 21V4h11l-1.5 3.5L16 11H5"/>',
+  chal: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   go: '<path d="M9 6l6 6-6 6"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
 };
@@ -50,7 +50,7 @@ var ROWS = [
   { go: 'hist', i: 'hist', t: 'Your history', s: 'Every daily and Survivor run, kept.' },
   { go: 'plate', i: 'plate', t: 'The Diamond plate', s: 'By your name on the boards. Pick it now.' },
   { i: 'ads', t: 'No video ads', s: 'Survivor runs straight through.' },
-  { i: 'soon', t: 'Custom challenges', s: 'Build your own spot and send the link.', soon: true },
+  { go: 'chal', i: 'chal', t: 'Custom challenges', s: 'Build your own spot. Send the link.' },
 ];
 
 function gem(letters, cls) {
@@ -77,10 +77,10 @@ function shards() {
 
 function rowHTML(r, k, letters) {
   var icon = r.i === 'plate' ? gem(letters, 'pw-ri-gem') : ico(r.i);
-  var body = '<span class="pw-ri">' + icon + '</span><span class="pw-rt"><b>' + esc(r.t) + (r.soon ? ' <em>soon</em>' : '') + '</b><small>' + esc(r.s) + '</small></span>';
+  var body = '<span class="pw-ri">' + icon + '</span><span class="pw-rt"><b>' + esc(r.t) + '</b><small>' + esc(r.s) + '</small></span>';
   return r.go
     ? '<li style="--k:' + k + '"><button type="button" class="pw-row" data-pw-go="' + r.go + '">' + body + '<span class="pw-ch">' + ico('go') + '</span></button></li>'
-    : '<li style="--k:' + k + '"><div class="pw-row flat' + (r.soon ? ' soon' : '') + '">' + body + '</div></li>';
+    : '<li style="--k:' + k + '"><div class="pw-row flat">' + body + '</div></li>';
 }
 
 function html(o) {
