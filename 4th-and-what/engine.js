@@ -1138,7 +1138,7 @@
       if (gained < 0.5) return 'Stopped at the line. ' + need;
       return 'Tackled ' + Math.round(short) + ' ' + yardsWord(Math.round(short)) + ' short. ' + need;
     }
-    if (outcome === 'down') say(tEnd, 'spot', win ? 'First down.' : (marker - spotY < 1 ? 'Tackled a yard short.' : 'Short of the sticks.'));
+    if (outcome === 'down') say(tEnd, 'spot', win ? 'First down.' : (marker - spotY < 1 ? 'Tackled just short.' : 'Short of the sticks.'));
 
     /* the next snap, when the drive goes on: a first down, or the next down from the spot */
     var next = null;
