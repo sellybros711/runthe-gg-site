@@ -235,19 +235,31 @@ export function createCourt(cv) {
   /* the view of a box: centre and scale, clamped as above */
   function aim(b, w, h) {
     const full = Math.min((w - 24) / COURT.W, (h - 24) / COURT.H);
-    const s = Math.max(full, Math.min(full * ZOOM, w / (b.x1 - b.x0), h / (b.y1 - b.y0)));
+    const s = Math.max(full, Math.min(full * (b.shot ? SHOT_ZOOM : ZOOM), w / (b.x1 - b.x0), h / (b.y1 - b.y0)));
     const hw = w / (2 * s), hh = h / (2 * s);
     let cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
     /* room to spare up and down goes below the action (toward half court,
        where the card docks), never above the baseline */
-    if (2 * hh > b.y1 - b.y0) cy = b.y0 + hh;
+    if (2 * hh > b.y1 - b.y0) cy = b.shot ? cy + hh * 0.18 : b.y0 + hh;   // the shot sits a little above the middle
     const lo = hw - 1, hi = COURT.W + 1 - hw;
     cx = lo <= hi ? Math.max(lo, Math.min(hi, cx)) : COURT.W / 2;
-    cy = Math.max(hh - 8, Math.min(COURT.H * 2 - hh, cy));
+    cy = Math.max(hh - (b.shot ? 2 : 8), Math.min(COURT.H * 2 - hh, cy));
     return { cx, cy, s };
   }
-  function camView(w, h, fr) {
-    const want = aim(cam.fixed || boxOf([fr]), w, h), now = performance.now();
+  /* THE SHOT CAM (2026-11-19). Once the ball is up, the frame is the shooter,
+     the ball and the rim only, up to SHOT_ZOOM times the whole court fit, and
+     the camera eases in on it: the shot in the air, the make and the miss
+     read on a phone. The other eight still stand where they are; most are
+     just off the edge. Reduced motion keeps its one box. */
+  const SHOT_ZOOM = 3.4;
+  function shotBox(fr, f) {
+    const x = [COURT.RIM.x - 2, COURT.RIM.x + 2, f.x], y = [COURT.RIM.y - 1, COURT.RIM.y + 2, f.y];
+    if (fr.b && Number.isFinite(fr.b[0]) && Number.isFinite(fr.b[1])) { x.push(fr.b[0]); y.push(fr.b[1]); }
+    return { x0: Math.min(...x) - 3.5, x1: Math.max(...x) + 3.5, y0: Math.min(...y) - 8.5, y1: Math.max(...y) + 4, shot: true };
+  }
+  function camView(w, h, fr, focus) {
+    const box = cam.fixed || (focus ? shotBox(fr, focus) : boxOf([fr]));
+    const want = aim(box, w, h), now = performance.now();
     if (!cam.at || cam.w !== w || cam.h !== h) cam.at = want;
     else {
       const k = 1 - Math.exp(-Math.min(0.1, (now - cam.t) / 1000) * EASE), a = cam.at;
@@ -266,7 +278,8 @@ export function createCourt(cv) {
   function draw(fr, opts = {}) {
     last = () => draw(fr, opts);
     const { w, h, ctx, dpr } = sizeCanvas(cv);
-    V = opts.cam && cam && fr ? camView(w, h, fr) : fitView(w, h, 12);
+    const focus = opts.focus && fr && (fr.sk != null || opts.after) ? opts.focus : null;
+    V = opts.cam && cam && fr ? camView(w, h, fr, focus) : fitView(w, h, 12);
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = '#3a2a20'; ctx.fillRect(0, 0, w, h);
     ctx.drawImage(floor(), V.ox, V.oy, COURT.W * V.s, COURT.H * V.s);

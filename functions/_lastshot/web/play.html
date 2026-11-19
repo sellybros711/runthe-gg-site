@@ -146,12 +146,18 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .sbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .sbtn .x{display:none}.sbtn.off .x{display:inline}.sbtn.off .w{display:none}.sbtn.off{color:#8a909c}
 .score .clock.them{color:#ff8a73;text-shadow:0 0 10px rgba(224,83,61,.45)}
+.score .clock.zero{color:#ff5a3c;text-shadow:0 0 14px rgba(255,90,60,.7);animation:zero .5s ease-out}
+@keyframes zero{0%{transform:scale(1.35)}100%{transform:none}}
+.stage.make::before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 50% 35%,rgba(255,240,190,.75),rgba(255,210,63,0) 70%);animation:flash .45s ease-out both}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+.stage.miss canvas{animation:knock .28s ease-out}
+@keyframes knock{0%,100%{transform:none}20%{transform:translate(-5px,2px)}45%{transform:translate(4px,-2px)}70%{transform:translate(-2px,1px)}}
 .team b.flip{animation:flip .55s ease-out}
 @keyframes flip{0%{transform:rotateX(90deg);color:#ffd23f}60%{transform:rotateX(-12deg)}100%{transform:none}}
 .pop.shot{top:9%;font-size:24px;background:rgba(29,33,41,.94);color:#fff}
 .stage::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 rgba(0,0,0,0);transition:box-shadow .25s}
 .stage.slow::after{box-shadow:inset 0 0 70px rgba(0,0,0,.6)}
-.bigword{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:'Russo One','Outfit',sans-serif;font-size:min(52px,11vw);line-height:1;color:#ffd23f;text-align:center;white-space:nowrap;pointer-events:none;text-shadow:0 3px 0 #8a5a00,0 0 26px rgba(255,210,63,.65);letter-spacing:.02em;z-index:3}
+.bigword{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:'Russo One','Outfit',sans-serif;font-size:min(48px,10.5vw);line-height:1;color:#ffd23f;text-align:center;white-space:nowrap;pointer-events:none;text-shadow:0 3px 0 #8a5a00;letter-spacing:.02em;z-index:3;background:rgba(20,22,28,.88);padding:12px 20px 14px;border-radius:14px;box-shadow:0 0 0 3px #ffd23f,0 10px 30px rgba(0,0,0,.45)}
 .bigword.on{animation:slam .5s cubic-bezier(.2,1.6,.4,1) both}
 @keyframes slam{0%{opacity:0;transform:translate(-50%,-50%) scale(2.4)}60%{opacity:1}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 .cut{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:18px;gap:6px;touch-action:manipulation;cursor:pointer}
@@ -297,7 +303,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .vs p{margin:0!important;font-weight:800;font-size:16px}
 .vs .vsthem{color:var(--dim);font-weight:700}
 @media (prefers-reduced-motion:reduce){.pop.on,.pop.final.on{animation:none;opacity:1;transform:translate(-50%,-50%)}
-  .team b.flip,.bigword.on,.cutv.on,#bRun.pulse,#bPlays.pulse,.star.got,.perfecttag{animation:none}.stage.slow::after{box-shadow:none}}
+  .team b.flip,.bigword.on,.cutv.on,.score .clock.zero,#bRun.pulse,#bPlays.pulse,.star.got,.perfecttag{animation:none}.stage.slow::after{box-shadow:none}}
 </style>
 </head>
 <body>

@@ -457,12 +457,14 @@ function run(seed, opt, pl) {
   $('board').hidden = true; $('court').hidden = false;
   clipTools(false); court.camStart(res.frames);
   $('sheet').classList.remove('on', 'peek'); $('vGame').classList.remove('lres'); clearStars(); $('hint').textContent = '';
-  banner(null); cutUi(null);
+  banner(null); cutUi(null); $('clock').classList.remove('zero'); punch(null);
   const reduce = reduced();
   const F = res.frames, last = F[F.length - 1];
   const slows = reduce ? [] : slowWindows(res);
   const rateAt = g => slows.reduce((r, w) => g <= w.a && g >= w.b ? Math.min(r, w.rate) : r, 1);
   const shotEnds = !!res.shot && last.sk != null;
+  /* where the shot went up from: the ball on the first frame of the shot (the shot cam frames it with the rim) */
+  const shotF = res.shot ? F.find(f => f.sk != null && f.b) : null, shotFrom = shotF ? { x: shotF.b[0], y: shotF.b[1] } : null;
   const start = res.startClock != null ? res.startClock : S.clock, go = F[0].t;
   const holdGame = Math.max(0, start - go), holdWall = holdWallOf(holdGame);
   const actT = firstActionT(F);
@@ -474,10 +476,13 @@ function run(seed, opt, pl) {
   setScore(S.us, S.them, start);
   let prev = performance.now();
 
+  /* THE BUZZER (2026-11-19). The clock runs out to 0.0 (BLEED seconds, inside
+     the wait the end already had, so a retry is no slower), turns red, and
+     the horn goes at zero, not with time still showing. */
   function toEnd() {
     live.phase = 'end'; live.w = 0;
+    live.bleed = { from: Math.max(0, live.clock || 0), t: reduce ? BLEED : 0, horn: false };
     $('clock').classList.remove('them'); $('stage').classList.remove('slow');
-    sound.buzzer();
     /* OVERTIME gets its own beat: the word, then how it went (phase 'ot'). */
     if (ot) { live.phase = 'ot'; cutUi(null); banner('OVERTIME'); buzz(30); return; }
     endJuice();
@@ -535,7 +540,7 @@ function run(seed, opt, pl) {
       if (live.i >= F.length - 1) {
         live.phase = 'after'; live.after = { t: 0, made: res.shot ? res.shot.made : false, seed: res.seed };
         $('stage').classList.remove('slow');
-        if (res.shot && !res.shot.made) sound.rim();
+        if (res.shot && !res.shot.made) { sound.rim(); punch('miss'); }
       }
     } else if (live.phase === 'after' || ((live.phase === 'end' || live.phase === 'ot') && !live.cut)) {
       // the first beat at the rim at speed, then the rest is dead time
@@ -551,7 +556,7 @@ function run(seed, opt, pl) {
       if (live.phase === 'cut' && c.w >= T3) toEnd();
     } else {
       if (!fr.h) live.spin += dt * 9;
-      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true });
+      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true, focus: shotFrom });
     }
     if (live.phase === 'play' || live.phase === 'after') {
       while (live.shown < res.events.length && (res.events[live.shown].t >= live.g || live.phase === 'after')) {
@@ -563,13 +568,20 @@ function run(seed, opt, pl) {
         if (!e.quiet) caption(e);
         if (/Good$/.test(e.text)) {
           live.made = true;
-          live.us = S.us + res.shot.points; flip('sUs'); sound.swish();
+          live.us = S.us + res.shot.points; flip('sUs'); sound.swish(); punch('make');
           if (res.how === 'make' && res.outcome === 'win') { live.winner = true; banner('GAME WINNER'); sound.crowd(); buzz([40, 50, 40, 50, 140]); }
           else if (ot && res.ot.after === 'end') { banner('TIED IT'); buzz(30); }
         }
         if (e.text === 'They answered') live.them = res.them;
       }
     }
+    if (live.bleed) {
+      const B = live.bleed;
+      B.t = Math.min(BLEED, B.t + raw);
+      clock = B.from * (1 - B.t / BLEED);
+      if (B.t >= BLEED && !B.horn) { B.horn = true; clock = 0; $('clock').classList.add('zero'); sound.buzzer(); }
+    }
+    live.clock = clock;
     pumpCaptions(now);
     setScore(live.us, live.them, Math.max(0, clock));
     if (live.phase === 'after') {
@@ -586,7 +598,7 @@ function run(seed, opt, pl) {
       }
     } else if (live.phase === 'end') {
       live.w += raw;
-      const wait = (live.winner ? 1.3 : ot ? 1.1 : 0.5) / (speed > 1 ? 1.5 : 1);
+      const wait = Math.max(BLEED + 0.1, (live.winner ? 1.3 : ot ? 1.1 : 0.5) / (speed > 1 ? 1.5 : 1));
       if (live.w >= wait) { lastTiming = performance.now() - live.tap; showResult(res); return; }
     }
     requestAnimationFrame(tick);
@@ -594,6 +606,16 @@ function run(seed, opt, pl) {
   requestAnimationFrame(tick);
 }
 
+const BLEED = 0.35;   // seconds for the clock to run out at the end
+/* The make and the miss land on the whole stage: a flash of light on a make,
+   a knock on a miss (both off with reduced motion; the sound still plays). */
+function punch(kind) {
+  const st = $('stage');
+  st.classList.remove('make', 'miss');
+  if (!kind || reduced()) return;
+  void st.offsetWidth; st.classList.add(kind);
+  if (kind === 'miss') buzz(25);
+}
 /* The big word over the court (GAME WINNER), or none. */
 function banner(text) {
   const el = $('big');
@@ -641,7 +663,9 @@ function pop(text, final, shot) {
 /* ---------- the result ---------- */
 function showResult(res) {
   banner(null); cutUi(null);
-  setScore(res.us, res.them, res.shotAt != null ? res.shotAt : 0);
+  /* the clock stays where the horn left it: out (it used to jump back up to
+     the time the shot went up, which the card already says in words) */
+  setScore(res.us, res.them, 0);
   countResult(res);
   if (mode === 'level' && lvl) { showLevelResult(res); return; }
   if (mode === 'daily' && dly && dly.scoring) { const sc = dly.scoring; dly.scoring = null; showDailyCard(sc.result, res); return; }
