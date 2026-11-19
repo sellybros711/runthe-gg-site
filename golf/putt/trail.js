@@ -586,7 +586,7 @@ function plan(spec){
      starting path on your way to the next hole"). A landing walk (spec.landed, putt.js) is the new world's own: it sets off
      from the ship standing on its pad behind the start, and goes to the hole the usual way. It carries no chest and no
      golden ball, so a world's eighteen are still the eighteen walks into its holes. */
-  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5);
+  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5), ln0 = P.things.length, lu0 = used.length;
     // Oz: the ship came down hard in the poppies, so it lies on its side where it landed, with no pad under it
     if (spec.theme === 'oz') place('ozCrash', lx, L + 5, 3, 5, { w:10, d:6 });
     // Wonderland: down the rabbit hole, through the hall and out of the little door, so the walk sets off from the hall's end
@@ -613,7 +613,18 @@ function plan(spec){
     else if (spec.vehicle === 'voyage') place('tiJollyBoat', lx, L + 5, 3, 2.6, { w:6, d:2.6, beach:true });
     // the sea route (Cyclops Isle on): the Greek ship run up on the sand where it came ashore
     else if (spec.vehicle === 'sea') place('seaShip', lx, L + 5, 3, 7, { w:6, d:12, beach:true });
-    else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); } used.push({ x:lx, y:L + 5, r:5.5 }); }
+    else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); }
+    /* AND IT STANDS CLEAR OF HIM (QA, 2026-11-19: the circus train, 12 ft long, was parked 6.5 ft from the start, so the
+       Big Top's walk opened with him inside it and he could not move; the ship in the Oz poppies did the same). Whatever
+       came in, by its own size: while any piece of it, grown by the golfer's own radius (run()'s 0.55 ft) and a little,
+       covers the spot he stands on (atS(2), as run() puts him), it rolls on away from the start half a foot at a time.
+       A vehicle already clear is not moved, so its picture is the one it always had. check-putt holds every landing. */
+    var lv = P.things.slice(ln0), lsd = lx > start.x ? 1 : -1, lsh = 0, lg = atS(2);
+    var lHits = function(dx){ for (var li = 0; li < lv.length; li++){ var lt = lv[li], hw = (lt.w ? lt.w / 2 : lt.r) + 0.6, hd = (lt.w ? lt.d / 2 : lt.r) + 0.6;
+        if (Math.abs(lg[0] - lt.x - dx) < hw && Math.abs(lg[1] - lt.y) < hd) return true; } return false; };
+    while (lsh < 24 && lHits(lsd * lsh)) lsh += 0.5;
+    if (lsh){ lv.forEach(function(t){ t.x += lsd * lsh; }); for (var lu = lu0; lu < used.length; lu++) used[lu].x += lsd * lsh; lx += lsd * lsh; }
+    used.push({ x:lx, y:L + 5, r:5.5 }); }
   if (SPACE && spec.space === 'voyage'){ place('ndBoat', archX, -4.5, 3, 4, { w:7, d:2.6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the river boat at the quay, bound down the Seine to the sea and the Hispaniola
   else if (SPACE && spec.space === 'seine'){ place('ndSteamer', archX, -4.5, 3, 6, { w:12, d:4 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the night boat at the Thames pier, bound across the Channel for Paris
   else if (SPACE && spec.space === 'fog'){ place('btTrain', archX, -4.5, 3, 4.6, { w:12, d:3.6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the circus train again, its lamps lit, bound through the night for London
