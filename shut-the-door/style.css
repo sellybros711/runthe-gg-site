@@ -2310,6 +2310,121 @@ button.hi-row-go:hover { background: var(--panel-2); }
 @media (max-width: 359px) { .pc-pair .pc-h { font-size: 26px; } .pc-h { font-size: 30px; } }
 @media (min-width: 980px) { .pc-h { font-size: 38px; } }
 
+/* ---- THE WELCOME TO PRO (pro-welcome.js; the owner, 2026-11-18) ----
+   One full page over everything, once, after a checkout comes back and Pro lands. The Diamond plate
+   big in the middle of a field of ice: in dark the night with an ice glow, in light the plate's own
+   ice. Anton only for the headline. The gem lands, a band of light crosses it, shards fall once, the
+   rows slide up in turn. Reduced motion (.still): all of it in place, no shards. It never depends on the
+   home's layout: fixed, its own column, its own two at 980 px and up. */
+.pw { --pw-bg: #f2f9ff; --pw-ink: #0b1a2e; --pw-dim: #3a5070; --pw-card: rgba(255, 255, 255, .78); --pw-line: rgba(43, 89, 255, .16); --pw-blue: #2b59ff;
+  --pw-glow: rgba(143, 201, 242, .75); --pw-ray: rgba(255, 255, 255, .7);
+  position: fixed; inset: 0; z-index: 80; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; color: var(--pw-ink);
+  background: radial-gradient(120% 70% at 50% 0%, #ffffff 0%, transparent 60%), linear-gradient(160deg, #f4fbff 0%, #d4ecff 48%, #e3dcff 78%, #bfe0f7 100%); }
+:root[data-theme="dark"] .pw { --pw-bg: #070b14; --pw-ink: #f4f7fb; --pw-dim: #a9b6cc; --pw-card: rgba(255, 255, 255, .06); --pw-line: rgba(143, 201, 242, .2); --pw-blue: #7fa2ff;
+  --pw-glow: rgba(91, 130, 255, .42); --pw-ray: rgba(143, 201, 242, .16);
+  background: radial-gradient(110% 60% at 50% 0%, #17233d 0%, transparent 65%), linear-gradient(170deg, #0b1222 0%, #070b14 60%, #0a0f1d 100%); }
+body.pw-open { overflow: hidden; }
+.pw-bg { position: absolute; inset: 0 0 auto; height: 560px; pointer-events: none; overflow: hidden; }
+.pw-rays { position: absolute; left: 50%; top: 130px; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, var(--pw-ray) 0deg 6deg, transparent 6deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%); mask-image: radial-gradient(circle, #000 0%, transparent 62%); }
+.pw-glow { position: absolute; left: 50%; top: 130px; width: 340px; height: 340px; margin: -170px 0 0 -170px; border-radius: 50%;
+  background: radial-gradient(circle, var(--pw-glow) 0%, transparent 70%); }
+.pw-x { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 3; width: 44px; height: 44px; border: 0; border-radius: 12px;
+  background: var(--pw-card); box-shadow: inset 0 0 0 1px var(--pw-line); display: grid; place-items: center; color: var(--pw-ink); }
+.pw-x svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.pw-in { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 16px 0; min-height: 100%; display: flex; flex-direction: column; }
+.pw-hero { text-align: center; }
+.pw-gem { position: relative; width: 136px; height: 139px; margin: 8px auto 0; }
+.pw-gem .plate.pw-plate { width: 100%; height: 100%; display: block; filter: drop-shadow(0 18px 26px rgba(43, 89, 255, .45)); }
+.pw-shine { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: soft-light; }
+.pw-band { transform-box: view-box; opacity: 0; }
+.pw-gl { position: absolute; width: 22px; height: 22px; color: #fff; opacity: 0; filter: drop-shadow(0 0 6px rgba(143, 201, 242, .95)); }
+.pw-gl svg { width: 100%; height: 100%; fill: currentColor; display: block; }
+.pw-gl.a { top: 6px; left: -14px; } .pw-gl.b { top: 40px; right: -20px; width: 16px; height: 16px; } .pw-gl.c { bottom: 18px; left: 2px; width: 13px; height: 13px; }
+.pw-chip { display: inline-flex; align-items: center; height: 26px; margin: 14px 0 0; padding: 0 12px; border-radius: 999px; background: var(--pw-blue); color: #fff;
+  font: 700 11.5px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+:root[data-theme="dark"] .pw-chip { background: #2b59ff; }
+.pw-h { margin: 10px 0 0; font-family: var(--hero); font-weight: 400; font-size: 46px; line-height: .95; letter-spacing: .01em; text-transform: uppercase; color: var(--pw-ink); }
+.pw-h span { display: block; font-size: .52em; letter-spacing: .04em; color: var(--pw-dim); margin-bottom: 4px; }
+.pw-h em { font-style: normal; color: var(--pw-blue); }
+.pw-sub { margin: 10px 0 0; font-size: 15px; font-weight: 600; color: var(--pw-dim); }
+.pw-pair { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; padding: 10px 14px 10px 10px; min-height: 60px; border-radius: 16px; text-align: left; text-decoration: none; color: var(--pw-ink);
+  background: var(--pw-card); box-shadow: inset 0 0 0 1.5px var(--pw-blue); }
+.pw-pair img { width: 40px; height: 40px; border-radius: 10px; flex: 0 0 40px; }
+.pw-pair span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pw-pair b { font-size: 14.5px; line-height: 1.25; } .pw-pair small { font-size: 12.5px; font-weight: 700; color: var(--pw-blue); margin-top: 2px; }
+.pw-pair > svg { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: var(--pw-blue); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.pw-side { display: flex; flex-direction: column; flex: 1; }
+.pw-list { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 8px; }
+.pw-row { width: 100%; min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 9px 12px 9px 10px; border: 0; border-radius: 16px; text-align: left; color: var(--pw-ink);
+  background: var(--pw-card); box-shadow: inset 0 0 0 1px var(--pw-line); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+button.pw-row:hover { box-shadow: inset 0 0 0 1.5px var(--pw-blue); }
+button.pw-row:active { transform: translateY(1px); }
+.pw-ri { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; display: grid; place-items: center; background: var(--pw-blue); color: #fff; }
+:root[data-theme="dark"] .pw-ri { background: #2b59ff; }
+.pw-ri svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.pw-ri .plate.pw-ri-gem { width: 32px; height: 33px; stroke: none; }
+.pw-row.soon .pw-ri { background: transparent; color: var(--pw-blue); box-shadow: inset 0 0 0 1.5px var(--pw-blue); }
+.pw-rt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pw-rt b { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.pw-rt small { font-size: 12.5px; line-height: 1.35; color: var(--pw-dim); margin-top: 2px; }
+.pw-rt em { font-style: normal; vertical-align: 2px; margin-left: 4px; padding: 2px 7px; border-radius: 999px; background: rgba(43, 89, 255, .14); color: var(--pw-blue); font: 700 9.5px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+.pw-ch svg { width: 18px; height: 18px; display: block; fill: none; stroke: var(--pw-dim); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.pw-act { position: sticky; bottom: 0; display: grid; gap: 8px; margin: 18px -16px 0; padding: 14px 16px max(16px, env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--pw-bg) 28%); }
+.btn.pw-go { min-height: 54px; background: var(--signal); color: #fff; font: 700 15px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; box-shadow: 0 3px 0 #c43a12, 0 10px 24px -10px rgba(255, 79, 31, .7); }
+.btn.pw-home { min-height: 46px; background: transparent; color: var(--pw-ink); box-shadow: inset 0 0 0 1px var(--pw-line); font: 700 13px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+.pw :focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+/* the shards: once, then the element goes (pro-welcome.js) */
+.pw-shards { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.pw-shards i { position: absolute; top: -16px; width: 9px; height: 9px; transform: rotate(45deg) scale(var(--s)); border-radius: 1.5px; opacity: 0;
+  animation: pw-fall 2.6s cubic-bezier(.25, .6, .5, 1) forwards; }
+@keyframes pw-fall { 0% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(var(--s)); } 100% { opacity: .85; transform: translate(var(--dx), 105vh) rotate(var(--r)) scale(var(--s)); } }
+/* the motion, once */
+.pw.on:not(.still) { animation: pw-in .35s ease-out both; }
+.pw.on:not(.still) .pw-gem { animation: pw-gem .8s cubic-bezier(.2, 1.4, .4, 1) .1s both; }
+.pw.on:not(.still) .pw-band { animation: pw-shine 1.3s ease-in-out .75s both; }
+.pw.on:not(.still) .pw-gl { animation: pw-glint 1.6s ease-in-out both; }
+.pw.on:not(.still) .pw-gl.a { animation-delay: .9s; } .pw.on:not(.still) .pw-gl.b { animation-delay: 1.25s; } .pw.on:not(.still) .pw-gl.c { animation-delay: 1.55s; }
+.pw.on:not(.still) .pw-rays { animation: pw-rays 1.2s ease-out both, pw-spin 80s linear infinite; }
+.pw.on:not(.still) .pw-chip, .pw.on:not(.still) .pw-h, .pw.on:not(.still) .pw-sub, .pw.on:not(.still) .pw-pair { animation: pw-up .5s cubic-bezier(.2, .8, .3, 1) .45s both; }
+.pw.on:not(.still) .pw-h { animation-name: pw-slam; animation-delay: .35s; }
+.pw.on:not(.still) .pw-list li { animation: pw-up .45s cubic-bezier(.2, .8, .3, 1) both; animation-delay: calc(.6s + var(--k) * .07s); }
+.pw.on:not(.still) .pw-act { animation: pw-up .45s cubic-bezier(.2, .8, .3, 1) 1s both; }
+.pw.still .pw-band { opacity: 0; } .pw.still .pw-gl { opacity: .9; }
+@keyframes pw-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pw-gem { 0% { opacity: 0; transform: scale(.4) rotate(-12deg); } 100% { opacity: 1; transform: none; } }
+@keyframes pw-shine { 0% { opacity: 1; transform: translateX(-160px) rotate(18deg); } 100% { opacity: 1; transform: translateX(520px) rotate(18deg); } }
+@keyframes pw-glint { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 45% { opacity: 1; transform: scale(1) rotate(45deg); } }
+@keyframes pw-rays { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pw-spin { to { transform: rotate(360deg); } }
+@keyframes pw-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pw-slam { 0% { opacity: 0; transform: scale(1.25); } 60% { opacity: 1; transform: scale(.98); } 100% { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pw, .pw *, .pw-shards { animation: none !important; }
+  .pw-shards { display: none; }
+}
+@media (max-width: 359px) { .pw-h { font-size: 40px; } .pw-gem { width: 124px; height: 127px; } }
+/* a short phone: the gem smaller, so the rows start higher */
+@media (max-height: 700px) and (max-width: 979px) { .pw-gem { width: 116px; height: 118px; } .pw-h { font-size: 40px; } }
+/* a desk: the hero on the left, what Pro opens and the buttons on the right, both centred in the window */
+@media (min-width: 980px) {
+  .pw-in { max-width: 1080px; padding: 0 48px; flex-direction: row; align-items: center; gap: 64px; min-height: 100vh; }
+  .pw-hero { flex: 1 1 0; min-width: 0; }
+  .pw-side { flex: 0 0 470px; padding: 40px 0; }
+  .pw-gem { width: 230px; height: 235px; }
+  .pw-h { font-size: 68px; }
+  .pw-sub { font-size: 16px; }
+  .pw-pair { max-width: 420px; margin: 22px auto 0; }
+  .pw-bg { inset: 0 auto 0 0; width: 55%; height: auto; }
+  .pw-rays, .pw-glow { top: 42%; }
+  .pw-glow { width: 480px; height: 480px; margin: -240px 0 0 -240px; }
+  .pw-list { margin: 0; }
+  .pw-act { position: static; margin: 18px 0 0; padding: 0; background: none; grid-template-columns: 1.4fr 1fr; }
+  .pw-x { top: 18px; right: 18px; }
+}
+:root:not([data-theme="dark"]) .pw-shards i:nth-child(6n+2) { background: #2b59ff !important; }
 /* ---- THE HOME ON A DESK (desk.js; the owner's layout, 2026-11-18, mockup E) ----------------------
    980 px and up, and only under body.std-desk, which desk.js sets there: a phone never matches a rule
    here. One centred container the headline, the three columns, the Pro bar and the footer all align

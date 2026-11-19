@@ -3331,12 +3331,16 @@
       "sha": "909898cd6605798d"
     },
     "pro.js": {
-      "v": "4",
-      "sha": "2303509fc34b4b07"
+      "v": "7",
+      "sha": "1a628246039ec636"
     },
     "pro-card.js": {
       "v": "3",
       "sha": "75ecab824bdcc0c7"
+    },
+    "pro-welcome.js": {
+      "v": "1",
+      "sha": "ae874f7d3249e8eb"
     },
     "history-ui.js": {
       "v": "2",
@@ -3367,8 +3371,8 @@
       "sha": "abd9d53cd6784a96"
     },
     "ui.js": {
-      "v": "92",
-      "sha": "d370727e7872f4ad"
+      "v": "94",
+      "sha": "a801d657a2b91484"
     },
     "3d/boot.js": {
       "v": "124",
