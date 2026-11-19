@@ -296,6 +296,23 @@ if (run('guest')) {
   await ctx.close();
 }
 
+if (run('from')) {
+  R.section('from: a visit sent by another game is counted on every arcade event');
+  const { ctx, p } = await page(br, base, { tier: 'guest', mobile: true });
+  const sets = () => p.evaluate(() => (window.dataLayer || []).filter(x => x && x[0] === 'set' && x[1] && x[1].arcade_from).map(x => x[1].arcade_from));
+  await p.goto(base + '/arcade/career/?from=football-result', { waitUntil: 'load' }); await sleep(1200);
+  R.ok((await sets()).includes('football-result'), 'the landing page sets arcade_from');
+  await p.goto(base + '/arcade/almamater/', { waitUntil: 'load' }); await sleep(1200);
+  R.ok((await sets()).includes('football-result'), 'the next game in the same tab keeps it');
+  await p.goto(base + '/arcade/almamater/?from=%3Cb%3E', { waitUntil: 'load' }); await sleep(800);
+  R.ok(await p.evaluate(() => RTGTokens.from()) === 'football-result', 'a malformed from is ignored');
+  await ctx.close();
+  const fresh = await page(br, base, { tier: 'guest', mobile: true });
+  await fresh.p.goto(base + '/arcade/almamater/', { waitUntil: 'load' }); await sleep(800);
+  R.ok(await fresh.p.evaluate(() => RTGTokens.from()) === null, 'a visit from nowhere carries none');
+  await fresh.ctx.close();
+}
+
 await br.close(); srv.close();
 console.log(R.fails() ? `\n${R.fails()} problem(s)` : '\nphase 3 holds');
 process.exit(R.fails() ? 1 : 0);
