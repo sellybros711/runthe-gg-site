@@ -51,7 +51,7 @@ async function feel(name, viewport, mobile) {
   await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
   const snap = async f => { if (SHOTS) await page.screenshot({ path: SHOTS + '/' + name + '-' + f + '.png' }); };
   setWho('dev');
-  await page.goto(base + '/last-shot');
+  await page.goto(base + '/last-shot/');
   await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
   await page.reload();
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.view);
@@ -205,7 +205,7 @@ async function launch(name, viewport, mobile) {
     page.on('pageerror', e => errs.push(String(e)));
     await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
     setWho('dev');
-    await page.goto(base + '/last-shot');
+    await page.goto(base + '/last-shot/');
     await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
     await page.reload();
     await page.waitForFunction(() => window.__lastShot && window.__lastShot.view && window.__lastShot.dayState !== 'loading');
@@ -310,7 +310,7 @@ try {
   await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
   page.on('pageerror', e => errs.push(String(e)));
   setWho('dev');
-  const res = await page.goto(base + '/last-shot');
+  const res = await page.goto(base + '/last-shot/');
   ok(res.status() === 200, 'a signed in player gets the page');
   await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
   await page.reload();
@@ -404,10 +404,18 @@ try {
 
   // Everybody else: the game is live, so a guest gets it too.
   setWho(null);
-  const guest = await page.goto(base + '/last-shot');
+  const guest = await page.goto(base + '/last-shot/');
   ok(guest.status() === 200, 'a guest gets the page');
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.view);
   ok(await page.isVisible('#hPlay') && !/TESTERS ONLY/i.test(await page.textContent('body')), 'a guest sees home, and nothing says testers');
+  /* the old address: Pages sends a folder's bare name to the folder (308), and
+     the hash rides along (seen with scripts off, since the game tidies the hash) */
+  { const raw = await (await browser.newContext({ javaScriptEnabled: false })).newPage();
+    const bare = await raw.goto(base + '/last-shot#daily');
+    const hop = bare.request().redirectedFrom();
+    ok(bare.status() === 200 && !!hop && (await hop.response()).status() === 308 && new URL(raw.url()).pathname === '/last-shot/' && new URL(raw.url()).hash === '#daily',
+      '/last-shot goes to /last-shot/ (308), and keeps the hash');
+    await raw.context().close(); }
   const mod = await page.goto(base + '/last-shot/m/sim.js');
   ok(mod.status() === 200, 'a guest can load a module');
   const server = await page.goto(base + '/last-shot/m/gate.js');

@@ -31,7 +31,7 @@
  *   minScale     pixels a foot the players and lines never shrink below, so a
  *                small frame stays readable (the court still fits the box)
  *
- * ES module, served to the browser from pages.js like the rest of Last Shot. */
+ * ES module, served to the browser from last-shot/m/ like the rest of Last Shot. */
 import { COURT, dist } from './court-geo.js';
 import { courtLines } from './view.js';
 import { IDS, spotsAfter, holderAfter, framesOf, stepsBefore } from './playbook.js';

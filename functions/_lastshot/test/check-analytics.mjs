@@ -121,7 +121,7 @@ console.log('\nopen, a free run, share, save, Plays');
 const A = await context();
 {
   const { page, L, ready, evs, flush, runTo, posts } = A;
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await ready();
   await L(() => localStorage.setItem('last_shot_speed', '2'));
   await flush();
@@ -258,7 +258,7 @@ const A = await context();
   // a Beat my play link: beat_open, Watch is no run, my run is mode beat
   console.log('\nBeat my play');
   await page.goto('about:blank');   // a new page load, not a hash change
-  await page.goto(BASE + '/last-shot#beat=' + CODE);
+  await page.goto(BASE + '/last-shot/#beat=' + CODE);
   await ready();
   await page.waitForSelector('#vBeat:not([hidden])');
   await flush();
@@ -286,7 +286,7 @@ const A = await context();
   await page.waitForSelector('#sheet.on', { timeout: 60000 });
   await flush();
   ok(evs().filter(e => e.s === s3 && e.n === 'run').length === 1, 'Watch theirs from my card is no run either');
-  await page.goto(BASE + '/last-shot#beat=nope!!');
+  await page.goto(BASE + '/last-shot/#beat=nope!!');
   await page.waitForSelector('#beatBad');
   await flush();
   const bad = last(evs(), 'beat_open');
@@ -309,7 +309,7 @@ console.log('\ngarbage and the timer');
 {
   const G = await context();
   const { page, L, ready, evs, flush, posts, errs } = G;
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await ready();
   await L(() => { for (const k of ['last_shot_ladder', 'last_shot_play_v1', 'last_shot_daily', 'last_shot_beat', 'last_shot_speed']) localStorage.setItem(k, '{{not json'); localStorage.removeItem('last_shot_seen'); });
   await page.reload(); await ready();
@@ -330,7 +330,7 @@ console.log('\ngarbage and the timer');
   await G.ctx.close();
 
   const T = await context({ throwing: true });
-  await T.page.goto(BASE + '/last-shot');
+  await T.page.goto(BASE + '/last-shot/');
   await T.ready();
   await T.flush();
   const to = last(T.evs(), 'open');
@@ -344,7 +344,7 @@ console.log('\ninert');
 {
   const I = await context({ on: false });
   const { page, L, ready, posts, runTo } = I;
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await ready();
   await L(() => localStorage.setItem('last_shot_speed', '2'));
   await page.click('#hPlay');

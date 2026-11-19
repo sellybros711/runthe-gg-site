@@ -75,15 +75,25 @@ their play runs it on its seed; Draw yours opens their spot blank, and Run It al
 and scheme. The card says You beat it or They still have it. A bad link says "That link didn't
 work." Leaving clears the hash (`beat-ui.js`).
 
-**It is live (the launch PR, 2026-11-18).** The page and its browser modules are served by
-`functions/last-shot/[[path]].js` to anybody, signed in or not, never as static files (the source
-is under `functions/`, which `_redirects` 404s). The page is indexable: a canonical
+**It is live (the launch PR, 2026-11-18).** The page and its browser modules are plain static
+files in `last-shot/` at the site root (`index.html` and `m/<name>.js`), served by Pages to anybody,
+signed in or not, with no Function and no database. `build/pages.mjs` writes them from the sources
+here, with the same BUILD as `pages.js`; never edit the folder by hand. A static file costs no
+Function invocation, so a visit costs none until the player's first events (the free plan counts
+100,000 a day, and a Function counts even when its answer is cached). Only two routes are Functions:
+`functions/last-shot/e.js` (POST, the events) and `functions/last-shot/report.js`, both through
+`route.js`. A route file wins for its own path only, so everything else under `/last-shot/` is an
+asset. There is no root `_routes.json`: Pages builds one from `functions/`, and a hand written one
+would decide every Function on the site. `_headers` keeps `/last-shot/m/*` a year (immutable; every
+import carries `?b=BUILD`) and revalidates the page. `/last-shot` redirects to `/last-shot/` (Pages,
+308). The source stays under `functions/`, which `_redirects` 404s. The page is indexable: a canonical
 (`https://runthe.gg/last-shot/`), a description, the share card (og and twitter, the image at
 `/assets/last-shot-og_1200x630.png`, built from the game's own court) and VideoGame JSON-LD, and it
 is in `sitemap.xml`. The share lines link `https://runthe.gg/last-shot/`. Guests' events count by
 their device id (`gate.js PUBLIC_EVENTS`). **The report stays admins only**: GET
 `/last-shot/report` answers a row in `stumpire_testers` with role admin, and everybody else gets the
-site's 404 page, exactly as Stumpire answers them. So does any path the game does not know.
+site's 404 page, exactly as Stumpire answers them. A path with no file under `/last-shot/` is Pages'
+own 404 (the same `404.html`, status 404).
 Not yet on the home page or the newsletter list (`check-posture.mjs` LINKED, a change of its own),
 and no ad tag (ADS; `ads.js` says what turns on). The Daily needs the Lab flag `arcade_last_shot`
 on public, or a guest's home has no Daily card (a 404 hides it).
@@ -122,16 +132,16 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `names.js` | the terminology: names from the set and the actions, in the coach's words |
 | `testit.js` | Test it: every defense, forced after the roll, the same every time |
 | `diagram.js`, `export.js` | a play drawn the way a coach prints it; every print and export option |
-| `web/play.html` -> `pages.js` | the page shell and modules as strings, built by `build/pages.mjs` |
-| `gate.js`, `db-supabase.js` | the page for anybody, the events and the admins only report (pure); the database calls |
-| `check-posture.mjs` | live: indexable, in the sitemap, the report admins only, the same 404 as Stumpire |
+| `web/play.html` -> `last-shot/`, `pages.js` | the static page and modules at the site root, and the same bytes as one bundle for the tests, both built by `build/pages.mjs` |
+| `route.js`, `gate.js`, `db-supabase.js` | the two Function routes (`functions/last-shot/e.js`, `report.js`); the events and the admins only report (pure); the database calls |
+| `check-posture.mjs` | live: indexable, in the sitemap, the folder in step, only the two routes are Functions, the report admins only, the same 404 as Stumpire |
 
 ## Scripts
 
 ```
-node functions/_lastshot/build/pages.mjs          after editing web/play.html or any browser module
-node functions/_lastshot/build/dev-server.mjs     local play at /last-shot (?as=nobody for a guest), the Daily in memory
-node --test functions/_lastshot/test/*.test.mjs   the gate beside Stumpire's, the events, the sim, the three test plays
+node functions/_lastshot/build/pages.mjs          after editing web/play.html or any browser module (writes last-shot/ and pages.js)
+node functions/_lastshot/build/dev-server.mjs     local play at /last-shot/ from the static folder (?as=nobody for a guest), the Daily in memory
+node --test functions/_lastshot/test/*.test.mjs   the folder in step, the routes beside Stumpire's, the events, the sim, the three test plays
 node functions/_lastshot/check-posture.mjs
 node functions/_lastshot/test/check-browser.mjs   a whole play on a phone in Chromium
 node functions/_lastshot/test/check-playbook.mjs  the storyboard and My Playbooks, phone and desktop, cloud in memory

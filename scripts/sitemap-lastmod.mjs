@@ -23,9 +23,7 @@ let changed = 0;
 xml = xml.replace(/<url>([\s\S]*?)<\/url>/g, (whole, inner) => {
   const loc = (inner.match(/<loc>https:\/\/runthe\.gg\/([^<]*)<\/loc>/) || [])[1];
   if (loc == null) return whole;
-  /* a page a Pages Function serves: its source (scripts/check-adsense.mjs FUNCTION_PAGES) */
-  const FN = { 'last-shot/': 'functions/_lastshot/web/play.html' };
-  const rel = FN[loc] || (loc === '' || loc.endsWith('/') ? loc + 'index.html' : loc);
+  const rel = loc === '' || loc.endsWith('/') ? loc + 'index.html' : loc;
   if (!fs.existsSync(path.join(ROOT, rel))) return whole;
   const day = execFileSync('git', ['log', '-1', '--format=%cs', '--', rel], { cwd: ROOT, encoding: 'utf8' }).trim();
   if (!day) return whole;

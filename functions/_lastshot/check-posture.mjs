@@ -9,7 +9,8 @@
  * edits held to one declaration rather than one edit: any one of them can be
  * reverted alone and nothing else fails.
  *
- *   INDEXED   anybody gets the page (pageGate asks nobody), no robots noindex,
+ *   INDEXED   anybody gets the page (a static file in last-shot/, built from
+ *             the sources and byte for byte the bundle), no robots noindex,
  *             a canonical, a description, the share card (og and twitter, an
  *             image that exists), VideoGame JSON-LD, and in sitemap.xml
  *   LINKED    the home page links it and scripts/newsletter/games.json lists
@@ -20,10 +21,18 @@
  *
  * WHATEVER THE STATE, these hold:
  *   source never served    _redirects 404s /functions/*, where the code lives
- *   no static folder       /last-shot is the Function's; a root folder would
- *                          fight it
- *   one 404                a path it does not know, and the report for anybody
- *                          but an admin, get Stumpire's notFound(), byte for byte
+ *   served static          the page and its modules are plain files in
+ *                          last-shot/ (since 2026-11-19), which only
+ *                          build/pages.mjs writes. Before launch the folder
+ *                          must not exist: a static file goes to anybody.
+ *                          functions/last-shot/ holds e.js and report.js and
+ *                          nothing else (a catch all would put every page load
+ *                          back on a Function), and there is no root
+ *                          _routes.json (it would decide every Function on
+ *                          the site). _headers keeps a module a year.
+ *   one 404                the report for anybody but an admin, and the events
+ *                          refused, get Stumpire's notFound(), byte for byte.
+ *                          A path with no file is Pages' own 404 (404.html)
  *   the report             GET /last-shot/report is for admins only. Asked
  *                          here against the real gate, not read off the source
  *
@@ -31,13 +40,14 @@
  * then asks for, in the same commit. It runs on every PR with no path filter:
  * a link added or removed anywhere on the site is what moves the state.
  *
- * test/gate.test.mjs drives the two Functions side by side; this file holds the
- * repo around them. */
+ * test/gate.test.mjs drives the route files beside Stumpire's Function; this
+ * file holds the repo around them. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pageGate, roundGate, PUBLIC_EVENTS } from './gate.js';
+import { roundGate, PUBLIC_EVENTS } from './gate.js';
 import { PAGE } from './pages.js';
+import { staticProblems } from './build/pages.mjs';
 import { memoryDb } from './db-supabase.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -58,16 +68,18 @@ const state = INDEXED ? (LINKED ? 'live' : 'served and unlisted') : 'unlaunched'
 if (LINKED && !INDEXED) problems.push('LINKED without INDEXED: a page the site sends visitors to while telling crawlers to stay away.');
 
 /* ------------------------------------------------------------------ *
- * 1. THE PAGE, as the Function sends it (pages.js, built from web/play.html).
+ * 1. THE PAGE, as Pages serves it (last-shot/index.html, built from
+ *    web/play.html, the same bytes as pages.js).
  * ------------------------------------------------------------------ */
 const SRC = 'functions/_lastshot/web/play.html';
 const page = read(SRC);
 if (PAGE !== page.replaceAll('__BUILD__', (PAGE.match(/\/last-shot\/m\/client\.js\?b=([^"]+)"/) || [])[1] || '__BUILD__'))
   problems.push('pages.js is not built from ' + SRC + '. Run node functions/_lastshot/build/pages.mjs.');
-const guest = pageGate('', null);
-const open = !!(guest && guest.body === PAGE);
-if (INDEXED && !open) problems.push('a guest does not get the page from pageGate. INDEXED says anybody does.');
-if (!INDEXED && open) problems.push('a guest gets the page from pageGate before launch.');
+const open = exists('last-shot');
+if (INDEXED && !open) problems.push('there is no last-shot/ folder, so nobody gets the page. INDEXED says anybody does. Run node functions/_lastshot/build/pages.mjs.');
+if (!INDEXED && open) problems.push('there is a last-shot/ folder before launch, and a static file goes to anybody.');
+if (open) for (const p of staticProblems()) problems.push(p + ' against the sources. Run node functions/_lastshot/build/pages.mjs.');
+if (open && read('last-shot/index.html') !== PAGE) problems.push('last-shot/index.html is not the page in pages.js. Run node functions/_lastshot/build/pages.mjs.');
 const noindex = NOINDEX.test(page);
 if (!INDEXED && !noindex) problems.push(SRC + ' is not noindexed.');
 if (INDEXED) {
@@ -84,7 +96,7 @@ if (INDEXED) {
   for (const m of page.matchAll(/(?:og:image|twitter:image)" content="https:\/\/runthe\.gg\/([^"?]+)/g))
     if (!exists(m[1])) problems.push(SRC + ' points its share image at /' + m[1] + ', which is not in the repo.');
   if (/(?:og:image|twitter:image)" content="https:\/\/runthe\.gg\/last-shot\//.test(page))
-    problems.push('the share image is under /last-shot/, which the Function answers with a 404. Serve it from /assets/.');
+    problems.push('the share image is under /last-shot/, which build/pages.mjs owns and rewrites. Serve it from /assets/.');
   const ld = page.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
   let doc = null;
   try { doc = ld && JSON.parse(ld[1]); } catch (e) { problems.push(SRC + ' JSON-LD does not parse: ' + e.message); }
@@ -120,15 +132,27 @@ if (LINKED) {
  * 3. WHATEVER THE STATE.
  * ------------------------------------------------------------------ */
 if (!/^\/functions\/\*\s+\/404\.html\s+404\s*$/m.test(read('_redirects'))) problems.push('_redirects no longer 404s /functions/*');
-if (exists('last-shot')) problems.push('there is a last-shot/ folder at the site root. /last-shot is the Function\'s; serve files from /assets/.');
+/* Served static: only the two routes are Functions, and Pages builds its own routes. */
+const routes = fs.readdirSync(path.join(ROOT, 'functions/last-shot')).sort();
+if (JSON.stringify(routes) !== JSON.stringify(['e.js', 'report.js']))
+  problems.push('functions/last-shot/ holds ' + routes.join(', ') + '. It holds e.js and report.js only: anything else (a [[path]].js above all) puts the page or its modules back on a Function, one invocation per file.');
+if (exists('_routes.json')) problems.push('there is a root _routes.json. It decides every Function on the site, not only Last Shot\'s; Pages builds the right one from functions/.');
+const headers = read('_headers');
+if (!/^\/last-shot\/m\/\*\n  Cache-Control: public, max-age=31536000, immutable$/m.test(headers)) problems.push('_headers does not keep /last-shot/m/* a year (immutable).');
+if (!/^\/last-shot\/\n  Cache-Control: no-cache$/m.test(headers)) problems.push('_headers does not revalidate /last-shot/.');
 
-const fn = read('functions/last-shot/[[path]].js');
+const route = read('functions/_lastshot/route.js');
 const stump = read('functions/arcade/stumpire/[[path]].js');
 const notFound = s => (s.match(/async function notFound\(context\) \{[\s\S]*?\n\}/) || [''])[0];
-if (!notFound(fn) || notFound(fn) !== notFound(stump)) problems.push('the Last Shot 404 is not byte for byte Stumpire\'s notFound()');
-if (!/pageGate\(/.test(fn) || /\bPAGE\b/.test(fn.replace(/\/\*[\s\S]*?\*\//g, ''))) problems.push('the Function must answer the page only through pageGate()');
-if (!/roundGate\(/.test(fn)) problems.push('the Function must answer the events and the report only through roundGate()');
-if (!/_stumpire\/cookie\.js/.test(fn)) problems.push('the Function must verify the signed cookie, or the report cannot know an admin');
+if (!notFound(route) || notFound(route) !== notFound(stump)) problems.push('the Last Shot 404 (functions/_lastshot/route.js) is not byte for byte Stumpire\'s notFound()');
+if (!/roundGate\(/.test(route)) problems.push('route.js must answer the events and the report only through roundGate()');
+if (!/_stumpire\/cookie\.js/.test(route)) problems.push('route.js must verify the signed cookie, or the report cannot know an admin');
+for (const [f, sub] of [['e.js', 'e'], ['report.js', 'report']]) {
+  if (!routes.includes(f)) continue;
+  const src = read('functions/last-shot/' + f);
+  if (!new RegExp(`answer\\(context, '${sub}'\\)`).test(src)) problems.push('functions/last-shot/' + f + ' must answer through route.js answer(context, \'' + sub + '\')');
+  if (/pages\.js/.test(src)) problems.push('functions/last-shot/' + f + ' imports the page bundle, which a Function never serves now');
+}
 
 /* The report: admins only, asked against the real gate. */
 const db = memoryDb({ t: 'tester', a: 'admin', p: 'player' });
@@ -153,4 +177,4 @@ console.log(`Last Shot posture (${state}): `
              : 'tester only, noindexed, not in the sitemap, ')
   + (LINKED ? 'on the home page and the newsletter list, ' : 'not on the home page or the newsletter list yet, ')
   + (ADS ? 'ad tag on.' : 'no ad tag.'));
-console.log('  /functions/* is a 404, no root folder, the 404 is Stumpire\'s, the report is admins only.');
+console.log('  /functions/* is a 404, the page and modules are static (last-shot/, in step), only e.js and report.js are Functions, the 404 is Stumpire\'s, the report is admins only.');

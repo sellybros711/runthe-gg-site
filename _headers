@@ -8,7 +8,7 @@
 #
 # The page and the modules are separate files, cached independently. When a
 # release renames an export, a browser holding a CACHED index.html alongside a
-# FRESH scoring.js fails to link the module — and an ES module that fails to
+# FRESH scoring.js fails to link the module, and an ES module that fails to
 # link does not run at all, so the page renders its header and nothing else.
 # That is not a visible error, it is a blank screen.
 #
@@ -51,7 +51,7 @@
 /arcade/*
   Cache-Control: no-cache
 
-# Fonts/images/audio under the arcade rarely change and are large — let them
+# Fonts/images/audio under the arcade rarely change and are large, so let them
 # cache hard (override the broad no-cache above for these extensions).
 /arcade/assets/*
   Cache-Control: public, max-age=604800
@@ -106,3 +106,15 @@
   Cache-Control: no-cache
 /shut-the-door/lab/*.js
   Cache-Control: public, max-age=31536000, immutable
+
+# Last Shot (live, unlisted). Static files since 2026-11-19, built into last-shot/ by
+# functions/_lastshot/build/pages.mjs: the page at /last-shot/ and its modules at /last-shot/m/.
+# The page is revalidated like every page. Every import of a module carries ?b=BUILD, a hash of
+# all the modules, so a new build is a new URL and a URL's bytes never change: a phone keeps a
+# module a year. A module is not for a crawler. (POST /last-shot/e and /last-shot/report are
+# Functions, which set their own headers; these rules never reach them.)
+/last-shot/
+  Cache-Control: no-cache
+/last-shot/m/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Robots-Tag: noindex, nofollow

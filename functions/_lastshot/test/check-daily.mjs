@@ -110,7 +110,7 @@ async function run(name, viewport, mobile, uid, days) {
   const clip = () => L(() => navigator.clipboard.readText());
 
   const posts0 = fake.posts.length;
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   // a returning browser (it has run a play): the Daily leads home. A new one leads with Play (check-starters).
   await L(days => { try { localStorage.clear(); } catch (e) {} localStorage.setItem('last_shot_ran', '1');
     if (days) localStorage.setItem('last_shot_ladder', JSON.stringify({ v: 1, best: {}, plays: {}, days })); }, days || null);
@@ -281,7 +281,7 @@ async function run(name, viewport, mobile, uid, days) {
   ok(again === 409, 'a second run is already_played: ' + again);
 
   // #daily goes straight to the Daily
-  await page.goto(BASE + '/last-shot#daily');
+  await page.goto(BASE + '/last-shot/#daily');
   await page.waitForSelector('#dayBar', { state: 'visible', timeout: 10000 });
   ok((await L(() => window.__lastShot.mode)) === 'daily', '#daily opens the Daily');
   await page.click('#bDayHome');
@@ -309,12 +309,12 @@ async function otherDevice() {
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::|status of (400|409|429)/.test(m.text())) errs.push(m.text()); });
   await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
   // a missed day ends the streak: two days, then a gap through yesterday
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await page.evaluate(d => { localStorage.clear(); localStorage.setItem('last_shot_ladder', JSON.stringify({ v: 1, best: {}, plays: {}, days: d })); }, [dayAt(-4), dayAt(-3), dayAt(-2)]);
   await page.reload();
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.dayState !== 'loading');
   ok((await page.textContent('#hDailyStreak')) === 'No streak · Best 3' && (await page.evaluate(() => window.__lastShot.streak.now)) === 0, 'a gap resets the streak: ' + await page.textContent('#hDailyStreak'));
-  await page.goto(BASE + '/last-shot#daily');
+  await page.goto(BASE + '/last-shot/#daily');
   await page.waitForSelector('#dayBar', { state: 'visible', timeout: 10000 });
   await page.evaluate(p => window.__lastShot.setPlay(p), refPlay());
   // the other device files a different play

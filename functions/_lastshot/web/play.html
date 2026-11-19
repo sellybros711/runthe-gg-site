@@ -33,7 +33,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Outfit:wght@600;800&family=Russo+One&display=swap">
 <style>
 /* One fixed palette, like the Arcade Lab shell: a light page, a dark
-   scoreboard. Served by functions/last-shot/[[path]].js, never as a file. */
+   scoreboard. Built into last-shot/index.html by build/pages.mjs. */
 :root{--ground:#EFEDE8;--ink:#141414;--green:#22B07D;--red:#E0533D;--dim:#5d5a54;--card:#fff;--edge:rgba(20,20,20,.12);--accent:#E8742A;--board:#fbfaf6;--marker:#22324d}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -414,7 +414,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 <script defer src="/hoops/baller.js"></script>
 <!-- Who is signed in, and the account's saves: the arcade's sign in, as the
      Arcade Lab shell loads it, and the site's shared cloud saves (playbooks,
-     game last_shot). Absolute paths: this page is served from pages.js. -->
+     game last_shot). Absolute paths, so they resolve from /last-shot/ or anywhere. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/assets/cloudsave.js?v=4"></script>

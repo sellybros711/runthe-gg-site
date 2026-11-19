@@ -7,7 +7,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanBatch, EVENTS, MAX_EVENTS } from '../events.js';
-import { roundGate, pageGate, PUBLIC_EVENTS } from '../gate.js';
+import { roundGate, PUBLIC_EVENTS } from '../gate.js';
+import { listStatic } from '../build/pages.mjs';
 import { memoryDb } from '../db-supabase.js';
 import { renderReport, rangeOf, TARGETS } from '../report.js';
 
@@ -53,8 +54,8 @@ test('POST /last-shot/e: any account, the account from the gate', async () => {
   assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: 't', body, nowMs: NOW, publicEvents: false }, down), null, 'off, a role error is a refusal');
   assert.equal(await roundGate({ method: 'GET', sub: 'report', uid: 'a', nowMs: NOW }, down), null, 'a role error refuses the report');
   assert.equal(await roundGate({ method: 'GET', sub: '', uid: 't', nowMs: NOW }, db), undefined, 'the page is not a round route');
-  assert.equal(pageGate('e'), null, 'the page gate never serves the event route');
-  assert.equal(pageGate('report'), null, 'nor the report');
+  const files = listStatic();
+  assert.ok(!files.some(f => /^(e|report)(\/|\.|$)/.test(f)), 'the static folder holds nothing at the event route or the report');
 });
 
 test('GET /last-shot/report: admins only, the targets marked met or not', async () => {

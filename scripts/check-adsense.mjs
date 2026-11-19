@@ -24,7 +24,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'supabase', 'functions']);
+/* last-shot/ is generated (functions/_lastshot/build/pages.mjs writes it from
+ * functions/_lastshot/web/play.html) and launched without ads: its ad state is
+ * ADS in functions/_lastshot/check-posture.mjs, which says what turns on with it.
+ * It is skipped here exactly as it was while a Function served it from functions/.
+ * Its sitemap entry is still asked both questions below, against the file. */
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'supabase', 'functions', 'last-shot']);
 
 const PUB = 'pagead2.googlesyndication.com';
 const MIN_WORDS = 250;
@@ -137,16 +142,12 @@ for (const file of walk(ROOT).sort()) {
 }
 
 // Anything listed in the sitemap must actually exist and must not be noindexed.
-/* A page a Pages Function serves has no file at its URL. Its source is named here, so the
-   sitemap entry is still asked both questions against the page the Function sends. */
-const FUNCTION_PAGES = { 'last-shot/': 'functions/_lastshot/web/play.html' };
 const sitemap = path.join(ROOT, 'sitemap.xml');
 if (fs.existsSync(sitemap)) {
   const urls = [...fs.readFileSync(sitemap, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   for (const url of urls) {
     let rel = url.replace(/^https?:\/\/runthe\.gg\//, '');
-    if (FUNCTION_PAGES[rel]) rel = FUNCTION_PAGES[rel];
-    else if (rel === '' || rel.endsWith('/')) rel += 'index.html';
+    if (rel === '' || rel.endsWith('/')) rel += 'index.html';
     const target = path.join(ROOT, rel);
     if (!fs.existsSync(target)) {
       problems.push(`sitemap.xml: ${url} does not resolve to a file`);

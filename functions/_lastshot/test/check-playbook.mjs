@@ -46,7 +46,7 @@ async function run(name, viewport, mobile) {
   const shot = async f => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
   const L = fn => page.evaluate(fn);
 
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
   await page.reload();
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.books);
@@ -208,7 +208,7 @@ async function realCloud() {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
   await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|supabase\.co/, r => r.abort());
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await page.waitForFunction(() => !!window.RTG_SAVE && !!window.RTG_AUTH);
   ok(await page.evaluate(() => window.RTG_SAVE.signedIn() === false), 'signed out, the cloud saves have no token');
   ok(await page.evaluate(() => { window.RTG_AUTH.token = () => 'arcade-token'; return window.RTG_SAVE.signedIn(); }), 'signed in through RTG_AUTH, the cloud saves have the token');
