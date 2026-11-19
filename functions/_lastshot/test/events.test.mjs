@@ -1,13 +1,14 @@
 /* The tester round's events and report (Phase 4).
  *   - only known events, only their props, only small clean values are kept
- *   - POST /last-shot/e is for testers and admins; anybody else gets the 404
+ *   - POST /last-shot/e takes any account, or a guest with a device id (launched)
  *   - the account is the gate's, never the body's
  *   - a store error never surfaces (still 204)
  *   - /last-shot/report is for admins only and marks each target met or not */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanBatch, EVENTS, MAX_EVENTS } from '../events.js';
-import { roundGate, pageGate } from '../gate.js';
+import { roundGate, PUBLIC_EVENTS } from '../gate.js';
+import { listStatic } from '../build/pages.mjs';
 import { memoryDb } from '../db-supabase.js';
 import { renderReport, rangeOf, TARGETS } from '../report.js';
 
@@ -39,20 +40,22 @@ test('a batch keeps only known events, known props and clean values', () => {
   assert.ok(Object.keys(EVENTS).length === 10);
 });
 
-test('POST /last-shot/e: testers and admins only, the account from the gate', async () => {
+test('POST /last-shot/e: any account, the account from the gate', async () => {
   const db = memoryDb({ t: 'tester', a: 'admin' });
   const body = { s: S, ev: [{ n: 'open', t: 1, p: { first: true } }], user_id: 'someone-else' };
-  for (const uid of ['t', 'a']) assert.equal((await roundGate({ method: 'POST', sub: 'e', uid, body, nowMs: NOW }, db)).status, 204, uid);
-  assert.deepEqual(db.events.map(e => e.user_id), ['t', 'a'], 'the account is the cookie\'s, never the body\'s');
+  for (const uid of ['t', 'a', 'nobody']) assert.equal((await roundGate({ method: 'POST', sub: 'e', uid, body, nowMs: NOW }, db)).status, 204, uid);
+  assert.deepEqual(db.events.map(e => e.user_id), ['t', 'a', 'nobody'], 'the account is the cookie\'s, never the body\'s');
   assert.ok(db.events.every(e => e.game === 'last-shot' && e.name === 'open'));
-  for (const uid of [null, 'nobody']) assert.equal(await roundGate({ method: 'POST', sub: 'e', uid, body, nowMs: NOW }, db), null, String(uid));
+  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: null, body, nowMs: NOW }, db), null, 'no account and no device id: refused');
   assert.equal(await roundGate({ method: 'GET', sub: 'e', uid: 't', nowMs: NOW }, db), null, 'GET is not a route');
   const broken = { async role() { return 'tester'; }, async insertEvents() { throw new Error('down'); } };
   assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: 't', body, nowMs: NOW }, broken)).status, 204, 'a store error never surfaces');
   const down = { async role() { throw new Error('down'); } };
-  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: 't', body, nowMs: NOW }, down), null, 'a role error is a refusal');
+  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: 't', body, nowMs: NOW, publicEvents: false }, down), null, 'off, a role error is a refusal');
+  assert.equal(await roundGate({ method: 'GET', sub: 'report', uid: 'a', nowMs: NOW }, down), null, 'a role error refuses the report');
   assert.equal(await roundGate({ method: 'GET', sub: '', uid: 't', nowMs: NOW }, db), undefined, 'the page is not a round route');
-  assert.equal(await pageGate('e', 't', db), null, 'the page gate never serves the event route');
+  const files = listStatic();
+  assert.ok(!files.some(f => /^(e|report)(\/|\.|$)/.test(f)), 'the static folder holds nothing at the event route or the report');
 });
 
 test('GET /last-shot/report: admins only, the targets marked met or not', async () => {
@@ -79,19 +82,27 @@ test('GET /last-shot/report: admins only, the targets marked met or not', async 
   assert.equal(TARGETS[0].show(2147483.6), 'never');
 });
 
-test('guests: the device rides along; let in only once the launch turns it on', async () => {
+test('guests: launched, a guest counts by the device; the report stays admins only', async () => {
+  assert.equal(PUBLIC_EVENTS, true, 'the launch turned guests on');
   const db = memoryDb({ t: 'tester' });
   const body = { s: S, d: 'dev-abcd1234', ev: [{ n: 'open', t: 1, p: { first: true } }] };
   await roundGate({ method: 'POST', sub: 'e', uid: 't', body, nowMs: NOW }, db);
   assert.deepEqual(db.events.map(e => [e.user_id, e.device_id]), [['t', 'dev-abcd1234']], 'a tester row carries the account and the device');
-  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: null, body, nowMs: NOW }, db), null, 'a guest is refused while the game is tester only');
-  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: 'stranger', body, nowMs: NOW }, db), null, 'so is a signed in non tester');
-  const open = { method: 'POST', sub: 'e', body, nowMs: NOW, publicEvents: true };
-  assert.equal((await roundGate({ ...open, uid: null }, db)).status, 204, 'after the launch a guest is let in');
+  assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: null, body, nowMs: NOW }, db)).status, 204, 'a guest is let in');
   assert.deepEqual(db.events.slice(-1).map(e => [e.user_id, e.device_id]), [[null, 'dev-abcd1234']]);
-  assert.equal(await roundGate({ ...open, uid: null, body: { ...body, d: 'bad id!' } }, db), null, 'a guest needs a good device id');
-  assert.equal((await roundGate({ ...open, uid: 'stranger' }, db)).status, 204, 'and a signed in player counts by the account');
-  assert.equal(await roundGate({ method: 'GET', sub: 'report', uid: null, query: {}, nowMs: NOW, publicEvents: true }, db), null, 'the report stays admins only');
+  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: null, body: { ...body, d: 'bad id!' }, nowMs: NOW }, db), null, 'a guest needs a good device id');
+  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: null, body: { s: S, ev: body.ev }, nowMs: NOW }, db), null, 'and a guest with no device id is refused');
+  assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: 'stranger', body, nowMs: NOW }, db)).status, 204, 'a signed in player counts by the account');
+  assert.deepEqual(db.events.slice(-1).map(e => [e.user_id, e.device_id]), [['stranger', 'dev-abcd1234']]);
+  const down = { ...db, async role() { throw new Error('down'); } };
+  assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: 'stranger', body, nowMs: NOW }, down)).status, 204, 'events never wait on the tester list');
+  assert.equal(await roundGate({ method: 'GET', sub: 'e', uid: null, body, nowMs: NOW }, db), null, 'only a POST');
+  for (const uid of [null, 'stranger', 't']) assert.equal(await roundGate({ method: 'GET', sub: 'report', uid, query: {}, nowMs: NOW }, db), null, 'the report stays admins only: ' + uid);
+  /* the switch still works the old way if it is ever turned off */
+  const closed = { method: 'POST', sub: 'e', body, nowMs: NOW, publicEvents: false };
+  assert.equal(await roundGate({ ...closed, uid: null }, db), null, 'off: a guest is refused');
+  assert.equal(await roundGate({ ...closed, uid: 'stranger' }, db), null, 'off: so is a signed in non tester');
+  assert.equal((await roundGate({ ...closed, uid: 't' }, db)).status, 204, 'off: a tester still counts');
 });
 
 test('until 175 has run, a tester\'s rows still land in 170\'s table', async () => {

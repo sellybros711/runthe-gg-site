@@ -15,9 +15,8 @@
  *
  * GUESTS (2026-11-16). A row carries the account when the gate knows one,
  * and the device id the page keeps ('last_shot_device'), so after the launch
- * a player who never signs in still counts. A guest is let in only once
- * gate.js PUBLIC_EVENTS is on (the launch PR); until then the route stays
- * testers only, like the page.
+ * a player who never signs in still counts. A guest is let in while
+ * gate.js PUBLIC_EVENTS is on, which it is since the launch (2026-11-18).
  * Only the names below, only their props, only small values. Anything else
  * in a batch is dropped, never stored. A bad body stores nothing. */
 

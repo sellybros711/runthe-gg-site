@@ -24,7 +24,7 @@
  * (scenarioFor), the test numbers from the rows Test it stored. A test whose
  * key no longer matches the play is stale and is left off.
  *
- * ES module, served to the browser from pages.js like the rest of Last Shot. */
+ * ES module, served to the browser from last-shot/m/ like the rest of Last Shot. */
 import { drawFrame, drawPlay, aspectOf } from './diagram.js';
 import { framesOf, scenarioFor, situationKey, playKey } from './playbook.js';
 import { captionOf } from './names.js';

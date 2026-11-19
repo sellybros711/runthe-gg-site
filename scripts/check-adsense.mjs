@@ -24,7 +24,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'supabase', 'functions']);
+/* last-shot/ is generated (functions/_lastshot/build/pages.mjs writes it from
+ * functions/_lastshot/web/play.html) and launched without ads: its ad state is
+ * ADS in functions/_lastshot/check-posture.mjs, which says what turns on with it.
+ * It is skipped here exactly as it was while a Function served it from functions/.
+ * Its sitemap entry is still asked both questions below, against the file. */
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'supabase', 'functions', 'last-shot']);
 
 const PUB = 'pagead2.googlesyndication.com';
 const MIN_WORDS = 250;

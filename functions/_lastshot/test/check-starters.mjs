@@ -67,7 +67,7 @@ async function run(name, viewport, mobile) {
   const runTo = async seed => { await L(s => window.__lastShot.run(s), seed); await page.waitForSelector('#sheet.on', { timeout: 40000 }); };
   const books = () => L(() => window.__lastShot.books.store.books());
 
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await L(() => { try { localStorage.clear(); } catch (e) {} localStorage.setItem('last_shot_speed', '2'); });
   await page.reload();
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.books);

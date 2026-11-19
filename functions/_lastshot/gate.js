@@ -1,60 +1,54 @@
-/* The page gate, as a pure function so the tests can drive it.
+/* The round's two routes, as a pure function so the tests can drive it.
  *
- *   /last-shot              the page shell
- *   /last-shot/m/<file>.js  a browser module
+ * LAUNCHED. The page and its modules are not here any more: since
+ * 2026-11-19 they are static files in last-shot/ at the site root (built by
+ * build/pages.mjs), served to anybody by Cloudflare Pages with no Function
+ * and no database. This file answers only the two routes that are Functions
+ * (functions/last-shot/e.js and report.js, through route.js).
  *
- * WHO GETS IN: anybody with a row in stumpire_testers (role 'tester' or
- * 'admin'), the one tester list every tester-only game uses. It reads the row
- * itself rather than calling stumpire_access(), because that function follows
- * Stumpire's own mode switch: taking Stumpire public would quietly take this
- * game public too. Last Shot has no flag of its own and needs none.
- *
- * Anybody refused gets null, and the Pages Function turns that into the
- * site's 404 page. */
-import { PAGE, MODULES } from './pages.js';
+ * Until the launch the page went only to a row in stumpire_testers. That list
+ * is still what keeps the report to admins (roundGate below). */
 
 export const ROLES = Object.freeze(['tester', 'admin']);
 
-export async function pageGate(sub, uid, db) {
-  const parts = String(sub || '').split('/').filter(Boolean);
-  let out = null;
-  if (parts.length === 0) out = { type: 'text/html; charset=utf-8', body: PAGE };
-  else if (parts.length === 2 && parts[0] === 'm' && MODULES[parts[1]] != null) out = { type: 'text/javascript; charset=utf-8', body: MODULES[parts[1]] };
-  if (!out || !uid) return null;
-  let role = null;
-  try { role = await db.role(uid); } catch (e) { return null; }
-  return ROLES.includes(role) ? out : null;
-}
-
-/* THE TESTER ROUND (Phase 4). Two routes beside the page, behind the same
- * list, refused with the same 404:
- *   POST /last-shot/e        a tester's events (events.js)        -> 204
- *   GET  /last-shot/report   the round report, admins only (report.js)
- * Anything else falls through to pageGate. */
+/* THE ROUTES:
+ *   POST /last-shot/e        a player's events (events.js)        -> 204
+ *   GET  /last-shot/report   the report, admins only (report.js)
+ * Anything else is undefined (not a route here). A refusal is null, the same 404. */
 import { postEvents, deviceOf, GAME } from './events.js';
 
-/* Guests may send events: OFF while the game is tester only. The launch PR
-   turns it on, with the page, so a player who never signs in still counts. */
-export const PUBLIC_EVENTS = false;
+/* Guests may send events. ON since the launch, so a player who never signs
+   in still counts: an account, a good device id, or both. With it off the
+   route is the tester round's: testers and admins only. */
+export const PUBLIC_EVENTS = true;
 import { renderReport, rangeOf } from './report.js';
 
-export async function roundGate({ method, sub, uid, query, body, nowMs, publicEvents = PUBLIC_EVENTS }, db) {
+export function isRound(sub) {
   const s = String(sub || '').replace(/\/+$/, '');
-  if (s !== 'e' && s !== 'report') return undefined;
-  if (s === 'e' && method === 'POST' && !uid && publicEvents && deviceOf(body)) {
-    const r = await postEvents(null, body, db);
-    return { status: r.status, type: 'text/plain; charset=utf-8', body: '' };
-  }
-  if (!uid) return null;
-  let role = null;
-  try { role = await db.role(uid); } catch (e) { return null; }
+  return s === 'e' || s === 'report';
+}
+
+export async function roundGate({ method, sub, uid, query, body, nowMs, publicEvents = PUBLIC_EVENTS }, db) {
+  if (!isRound(sub)) return undefined;
+  const s = String(sub || '').replace(/\/+$/, '');
   if (s === 'e') {
     if (method !== 'POST') return null;
-    if (!ROLES.includes(role) && !publicEvents) return null;
-    const r = await postEvents(ROLES.includes(role) || publicEvents ? uid : null, body, db);
+    if (publicEvents) {
+      if (!uid && !deviceOf(body)) return null;
+    } else {
+      if (!uid) return null;
+      let role = null;
+      try { role = await db.role(uid); } catch (e) { return null; }
+      if (!ROLES.includes(role)) return null;
+    }
+    const r = await postEvents(uid || null, body, db);
     return { status: r.status, type: 'text/plain; charset=utf-8', body: '' };
   }
-  if (method !== 'GET' || role !== 'admin') return null;
+  /* the report: admins only, whatever the game's posture */
+  if (method !== 'GET' || !uid) return null;
+  let role = null;
+  try { role = await db.role(uid); } catch (e) { return null; }
+  if (role !== 'admin') return null;
   const range = rangeOf(query || {}, nowMs);
   let r = null;
   try { r = await db.report(GAME, range.sinceAt, range.untilAt, !range.admins); } catch (e) { r = null; }
