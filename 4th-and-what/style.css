@@ -17,7 +17,7 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 
 /* ---------- the top bar ---------- */
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; padding: max(8px, env(safe-area-inset-top)) 16px 0; background: linear-gradient(#0b1828, #0a1420); border-bottom: 1px solid var(--edge); min-height: 58px; }
-.logo { display: flex; align-items: baseline; text-decoration: none; font: italic 900 30px/1 'Barlow Condensed', 'Inter', sans-serif; letter-spacing: .01em; padding-bottom: 8px; white-space: nowrap; }
+.logo { display: flex; align-items: baseline; text-decoration: none; font: italic 900 30px/1 'Barlow Condensed', 'Avenir Next Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif-condensed, 'Inter', sans-serif; letter-spacing: .01em; padding-bottom: 8px; white-space: nowrap; }
 .logo .l4 { color: var(--gold); }
 .logo .lamp { color: var(--teal); margin: 0 2px; }
 .logo .lw { color: #fff; }
@@ -275,6 +275,9 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
   .topbar { flex-wrap: wrap; padding: max(6px, env(safe-area-inset-top)) 10px 0; gap: 6px; min-height: 0; }
   .logo { font-size: 26px; }
   .navr { margin-left: auto; }
+  /* ONE ROW ON A PHONE (the launch checklist): the site link is its icon here, so the logo,
+     the link, ?, sound and the account button fit at 360 wide even before the web font lands */
+  .navr .home { width: 26px; height: 26px; font-size: 0; background: url(/assets/runthegames-icon_64.png?v=1) center / 26px no-repeat; border-radius: 6px; }
   .tabs { order: 3; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; }
   .tab { padding: 8px 10px; font-size: 13px; white-space: nowrap; }
   .views { padding: 10px 10px max(16px, env(safe-area-inset-bottom)); }
@@ -786,6 +789,22 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
   .ccard { padding: 6px 3px 8px; }
   .ccard b { font-size: 14px; } .ccard small { font-size: 9px; } .ccard .ctype { font-size: 9px; padding: 2px 6px; }
   .csnap { padding: 10px 30px; }
+  .crun { font-size: 13px; padding: 5px 9px; }
+  .callhead { gap: 6px; }
+}
+/* SHORT PHONES (360x640, 375x667): Snap it and MAKE THE CALL above the fold */
+@media (max-width: 760px) and (max-height: 760px) {
+  .callwrap { padding-top: 8px; gap: 6px; }
+  .ccard .thumb, .ccard canvas { max-height: 52px; }
+  .dintro { padding-top: 12px; padding-bottom: 12px; gap: 4px; }
+  .dintro .dteams { font-size: 30px; margin-top: 2px; }
+  .dintro h1 { font-size: 64px; margin-top: 2px; }
+  .dboard { margin: 4px 0 0; }
+  .dboard .dside { padding: 6px 10px 8px; }
+  .dboard .dside span { font-size: 34px; }
+  .dintro .dstakes { margin: 2px 0 4px; }
+  .dstrip { margin: 2px 0; }
+  .dintro .playnow { margin-top: 6px; }
 }
 
 /* ---------- Go For It (goforit.js, the owner 2026-11-13) ---------- */
@@ -803,6 +822,22 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
 .rgohead { color: var(--gold); font: italic 900 22px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; }
 .rgotally { color: #fff; font: 900 18px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
 .rgonext { color: #cfd9e4; font-size: 14px; font-weight: 700; }
+/* THE HIT (2026-11-19): the converted count pops, a new best bursts, the stop you lost breaks */
+.rgobest { color: #1b1300; background: linear-gradient(#ffd75e, var(--gold)); border-radius: 999px; padding: 4px 14px; font: italic 900 18px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .06em; box-shadow: 0 0 18px rgba(245, 183, 42, .7); }
+.rgobest.pop { animation: faw-pop .5s cubic-bezier(.2, 1.6, .4, 1); }
+.rgobest.burst { animation: faw-burst 1.1s ease-out; font-size: 24px; padding: 6px 20px; }
+.rgotally.pop { animation: faw-pop .45s cubic-bezier(.2, 1.6, .4, 1); }
+.rgopips { display: flex; gap: 8px; justify-content: center; margin: 2px 0 0 !important; }
+.rgopips i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+.rgopips i.on { background: var(--gold); box-shadow: 0 0 8px rgba(245, 183, 42, .6); }
+.rgopips i.off { border: 2px solid rgba(245, 183, 42, .35); }
+.rgopips i.lost { background: #ff5a4a; animation: faw-break .7s ease-in .25s forwards; }
+.crun.last { color: #ffd2cc; background: rgba(255, 90, 74, .18); border-color: #ff5a4a; animation: faw-last 1.2s ease-in-out infinite; }
+@keyframes faw-pop { 0% { transform: scale(1); } 40% { transform: scale(1.28); } 100% { transform: scale(1); } }
+@keyframes faw-burst { 0% { transform: scale(.4); opacity: 0; box-shadow: 0 0 0 rgba(245, 183, 42, 0); } 35% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 46px 12px rgba(245, 183, 42, .8); } 100% { transform: scale(1); box-shadow: 0 0 18px rgba(245, 183, 42, .7); } }
+@keyframes faw-break { 0% { transform: scale(1); opacity: 1; } 30% { transform: scale(1.35); } 100% { transform: scale(.6); opacity: .25; background: transparent; border: 2px solid rgba(255, 90, 74, .6); } }
+@keyframes faw-last { 0%, 100% { box-shadow: 0 0 0 rgba(255, 90, 74, 0); } 50% { box-shadow: 0 0 16px rgba(255, 90, 74, .7); } }
+@media (prefers-reduced-motion: reduce) { .rgobest.pop, .rgobest.burst, .rgotally.pop, .rgopips i.lost, .crun.last { animation: none; } .rgopips i.lost { opacity: .4; } }
 .rgobtn { margin: 6px auto 0; font-size: 30px; padding: 8px 40px; min-width: 0; }
 .rescard.go .rplay { display: none; }
 
