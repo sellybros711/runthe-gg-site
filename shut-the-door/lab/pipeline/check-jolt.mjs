@@ -118,6 +118,10 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // Held per pack since 2026-11-18 (held-packs.mjs, pack-ceilings.json 'jolt'): the first thirty at their own
 // counts as main measured them on these same plays, each later pack at its own and the rate guard. The
 // numbers below are the totals held before, kept for the record: only their rows (the metrics) are read now.
+// The Reds' pack left (the owner, 2026-11-18), and its cases sat before Smith 2025's in the held order, so
+// every 20th case of Smith's became other plays of his (277 still). His row is his own count on those, from
+// CI's combined run on 8730562 (the rate guard passed it): pop fielder cover 0 to 1, throw 1 to 2, skate
+// fielder cover 7 to 12, field 48 to 52. No other pack's plays moved.
 const CEILING = {
   'pop fielder -': 425,
   'pop fielder bobble': 2,
