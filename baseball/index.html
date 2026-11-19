@@ -5657,7 +5657,7 @@ function paintPair(){
       rtd.map(r=>'<li>'+ic(r[0],r[1])+r[2]+'</li>').join('')+'</ul></div>'+
     '<div class="pp-c std">'+ICO_GEM+'<b>Shut The Door</b><ul>'+
       std.map(r=>'<li>'+ic('#2b59ff',r[0])+r[1]+'</li>').join('')+
-      '<li class="soon">'+ic('#2b59ff','<path d="M5 21V4h11l-1.5 3.5L16 11H5"/>')+'Custom challenges, soon</li></ul></div></div>'+
+      '<li>'+ic('#2b59ff','<path d="M5 21V4h11l-1.5 3.5L16 11H5"/>')+'Custom challenges</li></ul></div></div>'+
     '<div class="pro-price"><b>'+PAIR_PRICE+'</b><span><strong>a year for both</strong>'+PRO_PRICE+' for this game alone.'+
       (add>0?' The second game costs '+usd(add)+'.':'')+'</span></div>'+
     '<button class="btn gold" id="b-hp-pair">'+(signed?'Get both for '+PAIR_PRICE+PRO_TERM:'Sign in to get both')+'</button>'+
@@ -5765,6 +5765,7 @@ function proSheet(m,fresh){
     '<div class="pro-cta"><button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE+PRO_TERM:'Sign in to get Pro')+'</button>'+
       (stdOwned?'':'<button class="btn ghost" id="b-pro-pair" style="width:100%;margin-top:8px">'+
         (signed?'Add Shut The Door Pro: both for '+PAIR_PRICE+PRO_TERM:'Sign in to get both games for '+PAIR_PRICE+PRO_TERM)+'</button>')+
+      (stdOwned?'':'<p class="pro-note">Shut The Door Pro adds custom challenges. Build a spot and send it to friends.</p>')+
       '<p class="pro-err" id="pro-err" hidden></p>'+
       '<button type="button" class="pro-later" data-close-pro>Not now</button></div>';
   wirePro(box);
