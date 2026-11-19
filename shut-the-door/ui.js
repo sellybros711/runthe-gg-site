@@ -981,9 +981,10 @@ function enterMound() {
   setPitcher();
   setBatter(true);
   renderHud(S.outing);
+  /* the voice of the ump: one player's voice for the whole outing, picked by its id, and a few of
+     that voice's clips fetched a beat after the mound is up (voices.js). Set before the first call */
+  if (window.STD_VOICES) window.STD_VOICES.preload(S.outing.outingId || S.outing.seed);
   if (S.outing.pitchNo === 0) { pbp('', batterAt(S.outing.batterIndex).name + ' leads off.'); if (SFX) SFX.ump('play'); }
-  /* the voice of the ump: a few approved clips, fetched a beat after the mound is up (voices.js) */
-  if (window.STD_VOICES) window.STD_VOICES.preload();
   else pbp(isTied(S.outing) ? 'tied' : '', 'pitch ' + (S.outing.pitchNo + 1) + '. ' + batterAt(S.outing.batterIndex).name + ' up.');
   updateThrow();
   if (DEBUG) { $('m-dbg').hidden = false; $('m-dbg').textContent = 'seed ' + S.outing.seed + ' · ' + S.outing.mode; }
@@ -3176,6 +3177,14 @@ function boot() {
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
   $('r-voice').addEventListener('click', function () { if (window.STD_VOICES) window.STD_VOICES.open('result'); });
+  /* the record sheet's end screen, Back to home: from the mound as the home button goes (after a play
+     in flight), from anywhere else straight home */
+  if (window.STD_VOICES) window.STD_VOICES.onHome = function () {
+    var id = document.body.dataset.screen || 's-home';
+    if (id === 's-home') return;
+    if (id === 's-mound' || id === 's-half' || id === 's-next') return homeWhenSettled();
+    renderHomeState(); show('s-home'); drawHero();
+  };
   $('r-promo').addEventListener('click', function () { if (EV()) EV().promo('baseball', S.mode, evDay()); });
   initResultNav();
   initClips();
