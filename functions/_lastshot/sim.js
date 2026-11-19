@@ -476,7 +476,7 @@ function animate(st, dt) {
   }
 }
 
-/* Pose codes, read by court.js.
+/* Pose codes, read by court2d.js.
    Offense: 0 stand, 1 run, 2 dribble on the move, 3 dribble standing,
             4 shooting, 5 screen set, 6 hands up for the pass, 7 the pass
             just thrown, 8 holding the ball (the catch).
