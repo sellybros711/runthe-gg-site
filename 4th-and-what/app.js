@@ -199,9 +199,12 @@
   /* how close it was, from the engine's spot and the line to gain */
   function marginText(r) {
     if (r.outcome === 'touchdown') return 'Six.';
-    if (r.spotY == null || r.marker >= 100 || (r.outcome !== 'down' && r.outcome !== 'oob')) return r.win ? '' : (r.outcome === 'sack' ? 'Sacked.' : r.outcome === 'incomplete' ? 'Incomplete.' : r.outcome === 'interception' ? 'Picked off.' : '');
+    if (r.spotY == null || r.marker >= 100 || (r.outcome !== 'down' && r.outcome !== 'oob')) return r.win ? '' : (r.outcome === 'sack' ? 'Sacked.' : r.outcome === 'incomplete' ? 'Incomplete.' : r.outcome === 'interception' ? 'Turnover.' : '');
     var d = r.spotY - r.marker, a = Math.abs(d);
-    if (a < 1) return r.win ? 'By inches.' : 'Inches short.';
+    /* short of the sticks, inches means what the engine's reason means (under 0.6), so the
+       card never says "Inches short" over "Tackled 1 yard short" */
+    if (r.win ? a < 1 : a < 0.6) return r.win ? 'By inches.' : 'Inches short.';
+    if (!r.win && a < 1) return '1 yard short.';
     var y = Math.round(a);
     return r.win ? y + (y === 1 ? ' yard' : ' yards') + ' to spare.' : y + (y === 1 ? ' yard' : ' yards') + ' short.';
   }

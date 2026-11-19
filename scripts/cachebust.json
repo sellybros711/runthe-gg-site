@@ -73,20 +73,20 @@
       "sha": "62b4e1dcee456ae1"
     },
     "feel.js": {
-      "v": "2",
-      "sha": "3188bbe2a7c8e1f3"
+      "v": "3",
+      "sha": "3f7a1df68892f1b4"
     },
     "play.js": {
       "v": "4",
       "sha": "9d4b93c2caea60e2"
     },
     "app.js": {
-      "v": "12",
-      "sha": "62358330f9582c7c"
+      "v": "13",
+      "sha": "a4afa84a9824af52"
     },
     "home.js": {
-      "v": "4",
-      "sha": "21a913ee097847a7"
+      "v": "5",
+      "sha": "02c26b377d40b35d"
     },
     "studio.js": {
       "v": "6",
@@ -101,8 +101,8 @@
       "sha": "42acc78a2a9a5a7b"
     },
     "flow.js": {
-      "v": "18",
-      "sha": "c5e8527b6d7fa6d3"
+      "v": "19",
+      "sha": "28bf3467ed43ae0e"
     },
     "daily.js": {
       "v": "9",
@@ -113,12 +113,12 @@
       "sha": "b218a340a3641fdb"
     },
     "calls.js": {
-      "v": "11",
-      "sha": "e4231098f54ded78"
+      "v": "12",
+      "sha": "88f7eeda88e47821"
     },
     "goforit.js": {
-      "v": "7",
-      "sha": "5583cbf3462e9d73"
+      "v": "8",
+      "sha": "ff161f6ccf0c7b8f"
     },
     "profile.js": {
       "v": "1",
