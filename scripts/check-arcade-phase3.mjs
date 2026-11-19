@@ -199,6 +199,7 @@ async function stubbed(ctx, seen, routes) {
       const auth = new Proxy({
         getSession: async () => ({ data: { session: JSON.parse(localStorage.getItem(sk) || 'null') } }),
         signInAnonymously: async () => {
+          if (window.__anonRefuse) return { data: { session: null }, error: { message: 'Anonymous sign-ins are disabled' } };
           const s = { access_token: 'guest-token', user: { id: 'eeeeeeee-9999-4999-8999-999999999999', is_anonymous: true } };
           localStorage.setItem(sk, JSON.stringify(s)); window.__anon = (window.__anon || 0) + 1; return { data: { session: s }, error: null };
         },
@@ -275,6 +276,23 @@ if (run('guest')) {
       R.ok(sh && ans.every(a => a && sh.text.indexOf(a) < 0), 'and no answer is in it', JSON.stringify(ans));
     }
     if (p.errs.length) R.ok(false, `no page errors (${flag})`, p.errs.join(' | '));
+    await ctx.close();
+  }
+
+  // flag on, but Supabase refuses the anonymous sign-in (the dashboard switch
+  // is off): nothing is posted and the note must not say it is on the board
+  {
+    const seen = [];
+    const { ctx, p } = await page(br, base, { tier: 'guest', mobile: true, vp: { width: 375, height: 740 }, time: TIME });
+    await stubbed(ctx, seen, ROUTES);
+    await ctx.addInitScript(() => { window.__anonRefuse = true; });
+    await p.goto(base + '/arcade/almamater/?flags=guestboard', { waitUntil: 'load' }); await sleep(2000);
+    await finishAlma(p);
+    await sleep(1500);
+    const note = await p.evaluate(() => (document.getElementById('funGuest') || {}).textContent || '');
+    R.ok(!seen.some(s => /grid_submit_run/.test(s.u)), 'flag on, sign-in refused: nothing posted');
+    R.ok(/on this device only/.test(note) && !/board/.test(note), 'flag on, sign-in refused: the note does not claim the board', note);
+    if (p.errs.length) R.ok(false, 'no page errors (refused)', p.errs.join(' | '));
     await ctx.close();
   }
 

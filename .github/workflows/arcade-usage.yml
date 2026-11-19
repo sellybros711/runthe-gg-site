@@ -9,7 +9,7 @@ name: Arcade usage report
 # and the arcade has been recording every finished run since launch. This turns
 # that into numbers before anything gets redesigned on a hunch.
 #
-# Only SELECTs. It never writes, and it never fails the run on a bad number —
+# Only SELECTs. It never writes, and it never fails the run on a bad number:
 # there is nothing here to break, only things to read.
 #
 # Actions → Arcade usage report → Run workflow. Uses the same SUPABASE_DB_URL
@@ -47,7 +47,7 @@ jobs:
           DAYS="$(printf '%s' "$DAYS" | tr -cd '0-9')"; [ -n "$DAYS" ] || DAYS=30
           Q() { psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -P pager=off -X -c "$1"; }
 
-          echo "════════ ARCADE USAGE — last $DAYS days ════════"
+          echo "════════ ARCADE USAGE: last $DAYS days ════════"
           echo ""
           echo "── 1. Is anyone here? ──"
           Q "select
@@ -58,6 +58,18 @@ jobs:
                max(puzzle_date)                           as last_day
              from grid_runs
              where puzzle_date >= current_date - $DAYS;"
+
+          echo "── 1b. Guests and accounts ──"
+          # A guest's run is posted under an anonymous auth user (flag
+          # guestboard, 132). Counted apart, so the board filling up with
+          # guests is not read as more accounts. A guest who later signs up
+          # has their rows moved onto the account and counts as an account.
+          Q "select case when u.is_anonymous then 'guest' else 'account' end as who,
+               count(*) as runs, count(distinct g.user_id) as players,
+               count(distinct (g.user_id, g.puzzle_date)) as player_days
+             from grid_runs g left join auth.users u on u.id = g.user_id
+             where g.puzzle_date >= current_date - $DAYS
+             group by 1 order by 1;"
 
           echo "── 2. Which games get played, and which are dead weight? ──"
           # The whole 'too many options' question. A game nobody finishes is not

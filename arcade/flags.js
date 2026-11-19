@@ -68,7 +68,10 @@
     // Supabase dashboard; without either it quietly keeps the run local. It
     // changes who is on the board, not what the puzzle is, so a percentage is
     // safe here.
-    guestboard: { since: null, pct: 0, daily: false },
+    // On for everybody from 2026-11-19, the owner's call: guests' runs on the
+    // four free games' boards, so the boards show everyone who played.
+    // Without the dashboard switch or 132 it keeps the run local, quietly.
+    guestboard: { since: null, pct: 100, daily: false },
     // Sportegories: a Challenge button on any answer marked wrong or not
     // verified. The server looks it up live and rules, and a won challenge is
     // remembered for every later card (135_sportegories_rulings.sql). On for
