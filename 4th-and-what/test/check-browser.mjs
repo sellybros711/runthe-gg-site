@@ -137,6 +137,7 @@ async function run(name, viewport, scale) {
     posts: window.__posts.length, seed: window.FAW_FLOW.last().seed, want: window.FAW_DAILY.core.seedFor(window.FAW_DAILY.day()) }));
   ok(/is in\./.test(dc.head) && dc.real.length > 10 && dc.posts === 1 && dc.seed === dc.want, 'the first snap is the day\'s, against the day\'s defense, posted once, with what really happened: ' + JSON.stringify(dc));
   ok(/converted today/.test(dc.stats) && /Streak 3/.test(dc.stats), 'and the day so far comes back: ' + dc.stats);
+  ok(await page.isVisible('#rDailyVs') && /^(You beat the real call\.|Same as the real thing\.|They made it\. You didn't\.|Nobody made it\.)$/.test(await page.textContent('#rDailyVs')), "the day's snap against the real call: " + await page.textContent('#rDailyVs'));
   ok(await page.isVisible('#rDailyGo') && /^(Go For It|Resume run)$/.test(await page.textContent('#rDailyGo span')) && await page.isVisible('#rDailyDef'), "and the day's card points on: Go For It and Daily Defense");
   await shot('d-card');
   await page.click('#rAgain');
@@ -281,7 +282,7 @@ async function run(name, viewport, scale) {
   ok(/Go for it/i.test(await page.textContent('#goStart')), 'Play leads with Go For It');
   const scBefore = await page.evaluate(() => JSON.stringify(window.FAW_APP.SC));
   await page.click('#goStart');
-  const g0 = await page.evaluate(() => ({ sit: document.getElementById('cSit').textContent, chip: document.getElementById('cRun').textContent, seed: window.FAW_CALLS.seed(), runSeed: window.FAW_GO.run().seed }));
+  const g0 = await page.evaluate(() => ({ sit: document.getElementById('cSit').textContent, chip: document.getElementById('cRun').getAttribute('aria-label'), seed: window.FAW_CALLS.seed(), runSeed: window.FAW_GO.run().seed }));
   ok(await page.isVisible('#vCall') && g0.sit === '4th & 1 · Own 35' && /^0 converted · 0 yds · \u25CF{3}$/.test(g0.chip) && g0.seed === g0.runSeed, 'a run starts at 4th and 1 on your own 35, three stops to spare: ' + g0.chip);
   for (let i = 0; i < 40; i++) {
     await page.click('#cCards .ccard:nth-child(1)'); await page.click('#cSnap');
@@ -289,6 +290,8 @@ async function run(name, viewport, scale) {
     await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
     const gc = await page.evaluate(() => ({ go: !document.getElementById('rGo').hidden, playRow: getComputedStyle(document.querySelector('.rplay')).display, over: !document.getElementById('rGoAgain').hidden, run: window.FAW_GO.run(), best: localStorage.getItem('faw_go_best') }));
     if (i === 0) ok(gc.go && gc.playRow === 'none', 'the card shows the run and hides Run it back and New play');
+    if (i === 0) { const pp = await page.evaluate(() => ({ n: document.querySelectorAll('#rGoPips i').length, on: document.querySelectorAll('#rGoPips i.on').length, left: 3 - (window.FAW_GO.run().stops || 0) })); ok(pp.n === 3 && pp.on === Math.max(0, pp.left), 'the card shows the three stops as pips, the ones left lit: ' + JSON.stringify(pp)); }
+    if (!gc.over && gc.run.stops === 2) ok(await page.evaluate(() => { window.FAW_GO.enter(); const c = document.getElementById('cRun'); const r = c.classList.contains('last') && /Last stop$/.test(c.getAttribute('aria-label')); window.FAW_APP.show('replay'); return r; }), 'one stop left: Call it says Last stop, in red');
     if (gc.over) { ok(gc.run.stops === 3 && (gc.run.n === 0 || JSON.parse(gc.best).n === gc.run.n), 'three stops end the run, and the best is kept: ' + gc.run.n + ' converted'); break; }
     await page.click('#rGoOn');
     ok(i > 0 || (await page.evaluate(() => window.FAW_CALLS.seed() === window.FAW_GO.run().seed)), 'Next down: the run\'s next seed is the look on the field');

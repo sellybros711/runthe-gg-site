@@ -79,15 +79,24 @@
   var prof = load(), last = [];
 
   /* flow.js tells it every scored snap */
+  var announced = false;
   function snapped(res, meta) {
-    var r = record(prof, res, meta); prof = r.profile; last = r.earned; save(prof);
+    var r = record(prof, res, meta); prof = r.profile; last = r.earned; announced = false; save(prof);
     render();
   }
   /* the card's line for a moment just earned */
   function card() {
     var box = $('rMoment'); if (!box) return;
     box.hidden = !last.length;
-    if (last.length) box.textContent = 'New moment: ' + last.map(function (id) { return momentOf(id).name; }).join(', ') + '.';
+    if (!last.length) return;
+    /* MOMENTS AS BADGES (2026-11-19): each one earned pops in with a sparkle, once a snap */
+    box.textContent = '';
+    var h = document.createElement('span'); h.className = 'mhead'; h.textContent = last.length === 1 ? 'New moment' : 'New moments'; box.appendChild(h);
+    last.forEach(function (id, i) {
+      var b = document.createElement('span'); b.className = 'mbadge'; b.style.animationDelay = (i * 0.12) + 's';
+      b.textContent = momentOf(id).name; box.appendChild(b);
+    });
+    if (!announced) { announced = true; if (root.FAW_FEEL) setTimeout(function () { root.FAW_FEEL.play('sparkle', last.length); }, 450); }
   }
   function render() {
     var box = $('pRecord'); if (!box) return;

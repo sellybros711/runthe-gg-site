@@ -11,7 +11,7 @@
  *   bailout  a shot forced up at the bail-out mark is worse again
  *
  * The product is clamped to [minMake, maxMake] and rolled once by the sim. */
-import { zoneOf, dist } from './court-geo.js?b=cfd8bc1f1e';
+import { zoneOf, dist } from './court-geo.js?b=d720f93be5';
 
 /* Piecewise linear over [0, 2, 4, 6] feet. */
 export function contestOf(d, table) {

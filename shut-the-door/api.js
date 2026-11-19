@@ -11,6 +11,10 @@
  *   finishOuting(outingId)                 the result; daily and signed in, submitted once
  *   pending()                              today's finished daily not yet on the board, or null
  *   claim()                                signed in: post that daily now, once (also run on sign-in)
+ *   history(before), historyOpen(ref)      Pro: your kept dailies and Survivor runs, and one again
+ *
+ * CUSTOM CHALLENGES (challenge.js, below): challengeOptions, previewChallenge, createChallenge,
+ * getChallenge, startChallenge, claimChallenge, myChallenges. Pro makes one, anyone plays one.
  *
  * All of it runs in the browser from the day's pack (data/schedule.json, then
  * data/packs/<id>.json), as every daily on the site does. The engine is pure;
@@ -54,9 +58,10 @@
   const M = NODE ? require('./modes.js') : window.STD_MODES;
   const CL = () => (NODE ? require('./clip.js') : window.STD_CLIP);
   const PG = () => (NODE ? require('./postgame.js') : window.STD_POSTGAME);
+  const CH = () => (NODE ? require('./challenge.js') : window.STD_CHALLENGE);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 22;
+  const SCHEDULE_V = 23;
   /* Rules 8 (the closer's outing to the end of the game, engine.js 11) starts with a whole day's
      daily, never partway through one: a daily of a day before this is played as rules 7 (the
      first half alone), so everybody on one day's board plays one game. Set it to the day after
@@ -78,6 +83,11 @@
   const PICKS_KEY = 'std_picks_v1';         // vote days the server has locked: {day: pack}
   const SURVIVOR_KEY = 'std_survivor_v1';   // today's run on this device
   const ARCHIVE_KEY = 'std_archive_v1';     // past dailies played from the archive: {day: {scenarioId, calls, result}}
+  const CHALLENGE_KEY = 'std_challenges_v1'; // custom challenges played here: {codes: {code: {calls, result, submitted, by}}}
+  /* data/matchups.json (matchups.js --index): the pitchers, the lineups and every built pair's sha.
+     A rebuilt index bumps this (the edit, the bump and the record, in one commit). */
+  const MATCHUPS_V = 1;
+  const SITE = 'https://runthe.gg/shut-the-door/';
   const SERVER_WAIT_MS = 4000;              // the page never waits longer than this on the account
   const BASE = 'data/';
 
@@ -91,7 +101,20 @@
   const outings = {};     // outingId -> {o, day, number, result, submitted}
   let practiceN = 0;
 
-  function configure(opts) { if (opts && opts.load) loader = opts.load; }
+  /* A matchup pack (challenge.js) by its build and pair: its JSON text. In the page, the public
+     gzipped file auth.js names, opened in the browser (DecompressionStream). A test passes its own. */
+  let matchupLoader = async (build, pitcher, lineup) => {
+    const A = AUTH();
+    if (!A || !A.matchupUrl) throw new Error('could not load the matchup');
+    const r = await fetch(A.matchupUrl(build, pitcher, lineup));
+    if (!r.ok) throw new Error('could not load the matchup');
+    if (typeof DecompressionStream === 'undefined') throw new Error('this browser cannot open the matchup');
+    return await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
+  };
+  function configure(opts) {
+    if (opts && opts.load) loader = opts.load;
+    if (opts && opts.loadMatchup) matchupLoader = opts.loadMatchup;
+  }
 
   const clone = (x) => JSON.parse(JSON.stringify(x));
 
@@ -261,8 +284,10 @@
   }
 
   function save(rec) {
+    if (rec.history) return;                         // a kept outing looked back on is never written
     if (rec.o.mode === 'survivor') return saveSurvivorLive(rec);
     if (rec.o.mode === 'archive') return saveArchive(rec);
+    if (rec.o.mode === 'challenge' || rec.code) return saveChallenge(rec);
     if (rec.o.mode !== 'daily') return;
     writeSaved({ day: rec.day, scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, result: rec.result, submitted: rec.submitted, by: rec.by || null });
   }
@@ -270,6 +295,7 @@
   async function throwPitch(outingId, call) {
     const rec = outings[outingId];
     if (!rec) throw new Error('no such outing');
+    if (rec.history) throw new Error('that outing is over');
     // at, the free aim's point in the cell (catcher's view [u, v]), rides along for the engine to keep or refuse
     const c = Object.assign({ type: call && call.type, cell: call && call.cell }, call && call.at != null ? { at: call.at } : null);
     if (call && call.q != null) c.q = call.q;     // the release (contract.js RELEASE); absent is 1.0x
@@ -308,9 +334,11 @@
   async function finishOuting(outingId) {
     const rec = outings[outingId];
     if (!rec) throw new Error('no such outing');
+    if (rec.history) return clone(rec.result);      // a kept outing again: never posted
     const o = rec.o;
     if (o.status !== 'over') throw new Error('the outing is not over');
     if (o.mode === 'survivor') return finishSurvivor(rec);
+    if (rec.code) return finishChallenge(rec);
     if (!rec.result) {
       const res = E.finishOuting(o);
       res.share = SH().text(res, rec.number != null ? rec.number : o.pack.scenario.number);
@@ -428,6 +456,7 @@
       votes: srv && srv.votes ? { a: srv.votes.a, b: srv.votes.b } : null,
       winner: srv ? srv.winner || null : null,
       canVote: srv ? !!srv.canVote : false,
+      canChange: srv ? !!srv.canChange : false,
       why: srv ? srv.why || null : (ids ? 'could not reach the server' : 'no vote for that day'),
       offline: !srv,
     };
@@ -435,15 +464,18 @@
     return out;
   }
   /* The vote for a day (default tomorrow): {day, open, candidates [card A, card B], myVote,
-     votes {a, b} | null, winner, canVote, why, offline}. votes show once you voted or the day
-     is locked. Offline the candidates still come (modes.js), and canVote is false. */
+     votes {a, b} | null, winner, canVote, canChange, why, offline}. votes show once you voted or
+     the day is locked. canChange: you voted and may move it to the other one until it closes (180);
+     false from a server before 180. Offline the candidates still come (modes.js), and canVote and
+     canChange are false. */
   async function vote(day) {
     const sch = await loadSchedule();
     const d = day || M.addDays(C.easternDay(), 1);
     return voteShape(sch, d, await ask('vote', d));
   }
-  /* Cast this player's one vote for tomorrow. Signed in, played today or not (164). Answers
-     the vote as vote() does, with error set (the server's words) when it was refused. */
+  /* Cast this player's one vote for tomorrow. Signed in, played today or not (164). A second cast
+     for the other one moves the vote (180). Answers the vote as vote() does, with error set (the
+     server's words) when it was refused. */
   async function castVote(scenarioId) {
     const sch = await loadSchedule();
     const d = M.addDays(C.easternDay(), 1);
@@ -488,6 +520,209 @@
       if (a && a.data) { rec.submitted = true; rec.result.archive = { kept: true, taken: !!a.data.taken }; save(rec); }
     }
     return clone(rec.result);
+  }
+
+  /* ---------------- custom challenges (challenge.js; supabase/183_shut_the_door_challenges.sql) ----------------
+   *
+   * Pro makes one; anyone plays one, signed in or not, for free. A challenge is a server row: its
+   * spec, the matchup build and sha it was made on, its seed and its rules. Everyone who opens the
+   * link plays the same pack, the same luck and the same rules, so "beat my score" is one game.
+   * One counted try a player: the first post stands (the server keeps it). A practice run of the
+   * same spot takes a fresh seed and is never posted. Never a daily, Survivor or the archive, and
+   * never on any of their boards. No percentile: no closer pool was played in a spot a player made.
+   */
+  let matchupIndex = null;
+  const matchupPacks = {};     // build/pitcher__lineup -> pack
+  const challengeRows = {};    // code -> the server's row, as last read
+  let challengePracticeN = 0;
+
+  async function loadMatchups() {
+    if (!matchupIndex) matchupIndex = await loader(BASE + 'matchups.json?v=' + MATCHUPS_V);
+    return matchupIndex;
+  }
+  async function sha256(text) {
+    if (NODE) return require('crypto').createHash('sha256').update(text).digest('hex');
+    const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(d)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  /* A matchup pack, checked against the sha it was made with: every player plays the same bytes. */
+  async function loadMatchup(build, pitcher, lineup, sha) {
+    const k = build + '/' + pitcher + '__' + lineup;
+    if (matchupPacks[k]) return matchupPacks[k];
+    const text = await matchupLoader(build, pitcher, lineup);
+    if (sha && (await sha256(text)) !== sha) throw new Error('the matchup did not load whole. Try again.');
+    const pack = JSON.parse(text);
+    if (pack.v !== E.PACK_VERSION) throw new Error('pack format ' + pack.v + ', engine reads ' + E.PACK_VERSION);
+    matchupPacks[k] = pack;
+    return pack;
+  }
+  /* The scenario a screen shows for a challenge: the pack's, with the spec's start and setup line,
+     without the tables. */
+  function challengeScenario(pack) {
+    const sc = clone(Object.assign({}, pack.scenario));
+    sc.day = null; sc.number = null;
+    return sc;
+  }
+  function bestHoldOf(pack) {
+    const m = new G.Model(pack);
+    return Math.round(m.solve(m.startState()).hold * 1000) / 10;
+  }
+
+  /* What the builder screen picks from: {build, pitchers [{id, name, team, year, throws, resolution}],
+     lineups [{id, team, year, resolution, batters [{id, name}]}], pairs {pitcher__lineup: {startHold}},
+     limits (challenge.js LIMITS), pro}. A pair missing from pairs was not built and cannot be picked. */
+  async function challengeOptions() {
+    const ix = await loadMatchups();
+    const ent = await entitlements();
+    const pairs = {};
+    for (const [k, v] of Object.entries(ix.pairs || {})) pairs[k] = { startHold: v.startHold };
+    return { build: ix.build, pitchers: clone(ix.pitchers), lineups: clone(ix.lineups), pairs, limits: clone(CH().LIMITS), pro: !!ent.pro };
+  }
+
+  /* A spec as it would play, before it is made: {spec, scenario, bestHold} or {error}. bestHold is
+     the hold% best play keeps from that start (the matchup's table). scenario.batters carry each
+     hitter's side against this pitcher. */
+  async function previewChallenge(spec) {
+    const n = CH().normalize(spec);
+    if (n.error) return { error: n.error };
+    const ix = await loadMatchups();
+    const pr = ix.pairs[CH().pairId(n.spec)];
+    if (!pr) return { error: 'that matchup is not built yet' };
+    const pack = CH().packFor(await loadMatchup(ix.build, n.spec.pitcher, n.spec.lineup, pr.sha), n.spec);
+    return { spec: n.spec, scenario: challengeScenario(pack), bestHold: bestHoldOf(pack) };
+  }
+
+  /* Make a challenge (Pro, signed in). {code, url, spec} or {error}. The maker's own first play of
+     it is the maker's score. */
+  async function createChallenge(spec) {
+    const n = CH().normalize(spec);
+    if (n.error) return { error: n.error };
+    if (!signedInUser()) return { error: 'sign in to make a challenge' };
+    const ix = await loadMatchups();
+    const pr = ix.pairs[CH().pairId(n.spec)];
+    if (!pr) return { error: 'that matchup is not built yet' };
+    const r = await ask('challengeCreate', { spec: n.spec, build: ix.build, sha: pr.sha, rules: G.RULES });
+    if (!r) return { error: 'could not reach the server' };
+    if (r.error || !r.data) return { error: r.error || 'that did not work' };
+    return { code: r.data.code, url: SITE + '?c=' + r.data.code, spec: n.spec };
+  }
+
+  /* A challenge by its code: {code, url, spec, creator, mine, createdAt, players, results, myResult,
+     scenario, bestHold, played} or {error}. Signed out too. played is this device's finished try
+     ({score, outcome, submitted}) or null. */
+  async function getChallenge(code) {
+    const c = String(code || '').toUpperCase();
+    if (!CH().CODE_RE.test(c)) return { error: 'not a challenge code' };
+    const row = await ask('challengeGet', c);
+    if (!row) return { error: challengeRows[c] ? 'could not reach the server' : 'no such challenge' };
+    challengeRows[c] = row;
+    const pack = CH().packFor(await loadMatchup(row.build, row.spec.pitcher, row.spec.lineup, row.sha), row.spec);
+    const local = (((readKey(CHALLENGE_KEY) || {}).codes || {})[c]) || null;
+    return Object.assign(clone(row), {
+      url: SITE + '?c=' + c, scenario: challengeScenario(pack), bestHold: bestHoldOf(pack),
+      played: local && local.result ? { score: local.result.score, outcome: local.result.outcome, submitted: !!local.submitted } : null,
+    });
+  }
+
+  /* Play a challenge. The counted try: the challenge's seed and rules, kept on the device and
+     resumed after a reload; signed in, a try the account already posted is replayed, never played
+     again. {practice: true}: the same spot with a fresh seed, never kept or posted. Answers the
+     outing's state (state.challenge: {code, practice}); then throwPitch, challenge, pickoff and
+     finishOuting by its outingId, as a daily. */
+  async function startChallenge(code, opts) {
+    const c = String(code || '').toUpperCase();
+    let row = challengeRows[c];
+    if (!row) { const g = await getChallenge(c); if (g.error) throw new Error(g.error); row = challengeRows[c]; }
+    const pack = CH().packFor(await loadMatchup(row.build, row.spec.pitcher, row.spec.lineup, row.sha), row.spec);
+    const model = new G.Model(pack);
+    const practice = !!(opts && opts.practice);
+    if (practice) {
+      const s = R.practiceSeed(Date.now() + ':' + c + ':' + (++challengePracticeN));
+      const id = 'challenge-practice:' + c + ':' + challengePracticeN;
+      for (const k of Object.keys(outings)) if (k.startsWith('challenge-practice:')) delete outings[k];
+      const o = E.createOuting(pack, { seed: s, mode: 'practice', model, outingId: id, rules: row.rules });
+      outings[id] = { o, day: null, number: null, code: c, practice: true };
+      return Object.assign(clone(E.publicState(o)), { challenge: { code: c, practice: true } });
+    }
+    const id = 'challenge:' + c;
+    if (!outings[id]) {
+      const local = (((readKey(CHALLENGE_KEY) || {}).codes || {})[c]) || null;
+      // the account's try, when it has one, is the try here too
+      const theirs = row.myResult && Array.isArray(row.myResult.calls) ? row.myResult.calls : null;
+      const calls = theirs || (local && Array.isArray(local.calls) ? local.calls : []);
+      const o = E.createOuting(pack, { seed: row.seed >>> 0, mode: 'challenge', model, outingId: id,
+        rules: calls.length ? E.rulesOf(calls) : row.rules });
+      for (const k of calls) { if (o.status !== 'live') break; E.throwPitch(o, k); }
+      outings[id] = { o, day: null, number: null, code: c, result: theirs ? null : (local && local.result) || null,
+        submitted: !!theirs || !!(local && local.submitted), by: local && local.by };
+    }
+    return Object.assign(clone(E.publicState(outings[id].o)), { challenge: { code: c, practice: false } });
+  }
+
+  function saveChallenge(rec) {
+    if (rec.practice) return;
+    const all = (readKey(CHALLENGE_KEY) || {}).codes || {};
+    all[rec.code] = { calls: rec.o.calls, result: rec.result, submitted: !!rec.submitted, by: rec.by || null, at: Date.now() };
+    const keep = Object.keys(all).sort((a, b) => (all[b].at || 0) - (all[a].at || 0)).slice(0, 50);
+    writeKey(CHALLENGE_KEY, { codes: Object.fromEntries(keep.map(k => [k, all[k]])) });
+  }
+
+  async function postChallenge(rec) {
+    if (rec.submitted || !signedInUser()) return;
+    const r = rec.result;
+    const a = await ask('challengeSubmit', { code: rec.code, calls: rec.o.calls, outcome: r.outcome, pitches: r.pitches, score: r.score, strip: r.strip });
+    if (a && a.data) {
+      rec.submitted = true;
+      rec.by = signedInUser();
+      if (a.data.result) challengeRows[rec.code] = a.data.result;
+      rec.result.challenge = Object.assign({}, rec.result.challenge, { taken: a.data.taken !== false });
+      save(rec);
+    }
+  }
+
+  /* The result as a daily's, with result.challenge: {code, url, practice, taken (false when the
+     account's earlier try counts), results, players, creator}: the server's standings once posted,
+     else the last read. percentile is null. */
+  async function finishChallenge(rec) {
+    if (!rec.result) {
+      const res = E.finishOuting(rec.o);
+      res.share = '';
+      res.challenge = { code: rec.code, url: SITE + '?c=' + rec.code, practice: !!rec.practice };
+      rec.result = res;
+      save(rec);
+    }
+    withStats(rec);
+    if (!rec.practice) {
+      if (!rec.posting) rec.posting = postChallenge(rec).finally(() => { rec.posting = null; });
+      await rec.posting;
+      const row = challengeRows[rec.code];
+      if (row) Object.assign(rec.result.challenge, { results: row.results || [], players: row.players || 0, creator: row.creator || null });
+    }
+    return clone(rec.result);
+  }
+
+  /* Signed in: post this device's finished, unposted try of a challenge (after a sign-in).
+     {posted, result} or null signed out. */
+  async function claimChallenge(code) {
+    if (!signedInUser()) return null;
+    const c = String(code || '').toUpperCase();
+    const local = (((readKey(CHALLENGE_KEY) || {}).codes || {})[c]) || null;
+    if (!local || !local.result || local.submitted) return { posted: false };
+    try {
+      await startChallenge(c);
+      const rec = outings['challenge:' + c];
+      if (!rec || rec.o.status !== 'over') return { posted: false };
+      const res = await finishOuting('challenge:' + c);
+      return { posted: !!rec.submitted, result: res };
+    } catch (e) { return { posted: false }; }
+  }
+
+  /* The caller's challenges, made and played, newest first: [{code, url, spec, createdAt, made, players,
+     best, myScore}], or null signed out or offline. */
+  async function myChallenges() {
+    if (!signedInUser()) return null;
+    const r = await ask('myChallenges', 50);
+    return Array.isArray(r) ? r.map(x => Object.assign({ url: SITE + '?c=' + x.code }, x)) : null;
   }
 
   /* ---------------- Survivor: a run of saves (CONTRACT.md section 17) ---------------- */
@@ -647,6 +882,72 @@
     return Array.isArray(r) ? r : null;
   }
 
+  /* ---------------- your history (Pro, supabase/182): every kept daily and Survivor run ---------------- */
+
+  /* Days of history per page: the server holds it to 1..60. */
+  const HISTORY_DAYS = 30;
+  /* The caller's history, newest first: {signedIn, pro, items, more, oldest, offline}. items are the
+     server's rows (182) with each situation's card from the schedule (title, pitcher, year, the spot):
+       {kind: 'daily', day, number, scenarioId, card, outcome, pitches, score, percentile}
+       {kind: 'survivor', day, run, saves, points, over, spots [{index, scenarioId, card, outcome, pitches, score}]}
+     The server answers it, so pro is its gate (shutdoor_is_pro): false for everyone until Pro is
+     live, and then items is empty. Signed out: nothing is asked. No answer: offline. before is the
+     last page's oldest, for the next page. */
+  async function history(before) {
+    const none = { signedIn: !!signedInUser(), pro: false, items: [], more: false, oldest: null, offline: false };
+    if (!signedInUser()) return none;
+    const r = await ask('history', before || null, HISTORY_DAYS);
+    if (!r || typeof r !== 'object') return Object.assign(none, { offline: true });
+    if (!r.pro) return none;
+    const sch = await loadSchedule();
+    const card = (id) => (sch.packs[id] ? cardOf(sch, id) : { id });
+    const items = (Array.isArray(r.items) ? r.items : []).map((x) => x.kind === 'survivor'
+      ? { kind: 'survivor', day: x.day, run: x.run, saves: x.saves, points: x.points, over: !!x.over,
+          spots: (x.spots || []).map((e) => ({ index: e.index, scenarioId: e.scenarioId, card: card(e.scenarioId), outcome: e.outcome, pitches: e.pitches, score: e.score })) }
+      : { kind: 'daily', day: x.day, number: x.number, scenarioId: x.scenarioId, card: card(x.scenarioId), outcome: x.outcome, pitches: x.pitches, score: x.score, percentile: x.percentile });
+    return { signedIn: true, pro: true, items, more: !!r.more, oldest: r.oldest || null, offline: false };
+  }
+
+  /* One kept outing again, from its calls: {kind, day, run, index, scenario (no reveal), state, result}.
+     ref is a history item ({kind: 'daily', day}) or a Survivor spot ({kind: 'survivor', day, run, index}).
+     The calls come from the server (182) and replay on the outing's own seed (the day's for a daily,
+     modes.js survivorAt for a Survivor spot), exactly as a reload resumes and check-replays checks. The
+     result is the engine's; it opens only when it is the one the server kept (outcome, pitches, score).
+     Its own outing in memory: never saved, resumed or posted, and today's daily is never touched. Its
+     pitches play as clips (clipSpec). Throws when it cannot be shown. */
+  async function historyOpen(ref) {
+    const surv = ref && ref.kind === 'survivor';
+    if (!ref || !ref.day || (surv && !(ref.run >= 0 && ref.index >= 0))) throw new Error('not an outing');
+    if (!signedInUser()) throw new Error('sign in to see your history');
+    const r = await ask('historyOuting', ref.day, surv ? ref.run : null, surv ? ref.index : null);
+    if (!r || !Array.isArray(r.calls) || !r.calls.length) throw new Error('that outing did not load');
+    const sch = await loadSchedule();
+    if (!sch.packs[r.scenarioId]) throw new Error('no such scenario: ' + r.scenarioId);
+    const day = String(r.day).slice(0, 10);
+    let seed;
+    if (surv) {
+      const at = M.survivorAt(sch, day, r.run, r.index);
+      if (at.pack !== r.scenarioId) throw new Error('that spot is not the run\'s');
+      seed = at.seed;
+    } else seed = E.seedFor('daily', day);
+    const p = await loadPack(r.scenarioId);
+    const id = 'history:' + (surv ? 'survivor:' + day + ':' + r.run + ':' + r.index : 'daily:' + day);
+    const o = E.createOuting(p.pack, { seed, mode: surv ? 'survivor' : 'daily', model: p.model, outingId: id, rules: E.rulesOf(r.calls) });
+    for (const c of r.calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
+    if (o.status !== 'over' || o.calls.length !== r.calls.length) throw new Error('that outing does not replay');
+    const res = E.finishOuting(o);
+    if (res.outcome !== r.outcome || res.pitches !== r.pitches || res.score !== r.score) throw new Error('that outing does not replay');
+    for (const k of Object.keys(outings)) if (k.startsWith('history:')) delete outings[k];
+    outings[id] = { o, day, number: surv ? null : r.number, result: res, submitted: true, history: true };
+    const sc = clone(p.pack.scenario);
+    delete sc.reveal;
+    sc.day = day;
+    sc.number = surv ? null : r.number;
+    if (surv) sc.survivor = { run: r.run, index: r.index };
+    return { kind: surv ? 'survivor' : 'daily', day, run: surv ? r.run : null, index: surv ? r.index : null,
+      scenario: sc, state: clone(E.publicState(o)), result: clone(res) };
+  }
+
   /* ---------------- clips (clip.js): one pitch again, from the calls, never stored ---------------- */
 
   /* The clip of pitch n (1 based) of an outing this page holds: { spec, link } (the link's value,
@@ -680,7 +981,8 @@
   }
 
   const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, pending, claim,
-    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, configure, clipSpec, clip };
+    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, history, historyOpen, configure, clipSpec, clip,
+    challengeOptions, previewChallenge, createChallenge, getChallenge, startChallenge, claimChallenge, myChallenges };
   // a sign-in posts the day's finished daily by itself (the board and the result read it after)
   try {
     const A = AUTH();

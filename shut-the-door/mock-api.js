@@ -54,10 +54,14 @@ if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true
    ?mockAuth=1 makes one of the rows yours. */
 var BOARD_NAMES = ['paintsblack', 'highcheese', 'backdoorslider', 'ninthinning', 'lockdownlefty', 'gasmonkey', 'splitfinger', 'bullpencart',
   'framejob', 'chinmusic', 'upstairs', 'sweeperking', 'knucklepuck', 'tunnelvision', 'fullcount', 'corners', 'runnersonsecond', 'pitchclock'];
-/* the plates (supabase/162): a few club keys on the board's rows, and the mock account's unlocks.
-   ?mockPlates=none unlocks nothing */
+/* the plates (supabase/162, 178): a few club keys on the board's rows, and the mock account's unlocks
+   (a 2005 Astros save opens the brick red throwback too). ?mockPlates=none unlocks nothing.
+   ?mockPlates=diamond puts the board's first row in Diamond, as the server answers it for a Pro
+   account. With ?mockEnt=pro the account's own list has Diamond, as 178's shutdoor_unlocked does. */
 var MOCK_PLATES = ['dodgers', null, 'yankees', 'giants', null, 'redsox', 'brewers'];
-var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'giants'], initials: null };
+var MOCK_DIAMOND = /[?&]mockPlates=diamond/.test(location.search);
+var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'astrosbrick', 'giants'], initials: null };
+if (/[?&]mockEnt=pro/.test(location.search)) mockPlates.unlocked.push('diamond');
 /* the stat line (supabase/166), FICTIONAL and valid by postgame.js: a box line of the row's own
    pitches. Every ninth row has none, as a row posted before 166 */
 function mockStats(rk, pitches, outcome) {
@@ -86,7 +90,7 @@ function mockBoard(day, limit) {
       rank: rk, username: rk === mine ? 'mockplayer' : BOARD_NAMES[rk % BOARD_NAMES.length] + (rk > BOARD_NAMES.length ? rk : ''),
       outcome: outcome, pitches: pitches, score: score, percentile: Math.round((1 - f) * 100), pitched_like: null,
       strip: strip, mine: rk === mine, players: players,
-      plate: rk === mine ? mockPlates.plate : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
+      plate: rk === mine ? mockPlates.plate : MOCK_DIAMOND && rk === 1 ? 'diamond' : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
       stats: mockStats(rk === mine ? 1 : rk, pitches, outcome),
     });
   }
@@ -771,7 +775,7 @@ function schedule() {
 function addDay(d, n) { return new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
 function voteShape(day) {
   var M = window.STD_MODES, today = C.easternDay(), tmrw = addDay(today, 1);
-  var none = { day: day, open: false, candidates: [], myVote: null, votes: null, winner: null, canVote: false, why: 'no vote for that day', offline: false };
+  var none = { day: day, open: false, candidates: [], myVote: null, votes: null, winner: null, canVote: false, canChange: false, why: 'no vote for that day', offline: false };
   if (!VOTE_MODE || !M) return Promise.resolve(none);
   if (day === today && VOTE_MODE !== 'locked') return Promise.resolve(none);
   if (day === tmrw && VOTE_MODE === 'locked') return Promise.resolve(none);
@@ -786,6 +790,7 @@ function voteShape(day) {
       open: true, candidates: cards, myVote: mine,
       votes: mine ? { a: 41 + (mine === ids[0] ? 1 : 0), b: 56 + (mine === ids[1] ? 1 : 0) } : null,
       canVote: !mine && signedIn(),
+      canChange: !!mine && signedIn(),
       why: mine ? 'you voted' : !signedIn() ? 'sign in to vote' : null,
     });
   });
@@ -796,7 +801,7 @@ function castVote(id) {
   var tmrw = addDay(C.easternDay(), 1);
   return voteShape(tmrw).then(function (v) {
     if (!signedIn()) return Object.assign(v, { error: 'sign in to vote' });
-    if (!v.canVote) return Object.assign(v, { error: v.why || 'voting is closed' });
+    if (!v.canVote && !v.canChange) return Object.assign(v, { error: v.why || 'voting is closed' });
     if (!v.candidates.some(function (c) { return c.id === id; })) return Object.assign(v, { error: 'not a candidate' });
     MY_VOTE = id;
     return voteShape(tmrw);
@@ -917,7 +922,203 @@ function clip(spec) {
   });
 }
 
-window.STD_API = { API_VERSION: 1, MOCK: true, clipSpec: clipSpec, clip: clip, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
+/* YOUR HISTORY (Pro, supabase/182), FICTIONAL: kept outings on the fixture's spot, each played here on its
+   own seed by a few seeded calls, so a row's score and outcome are the result its tap opens. Signed in
+   (?mockAuth=1) and Pro (?mockEnt=pro) only, as the server answers it; otherwise the locked answer.
+   ?mockHist=empty   no rows      fail   the call answers nothing (offline)
+             long    45 days, so the list has older outings to load */
+var HIST_MODE = QS.get('mockHist') || '';
+var HIST_PLAYED = {};
+function histOuting(key, mode) {
+  if (HIST_PLAYED[key]) return Promise.resolve(HIST_PLAYED[key]);
+  return load().then(function (j) {
+    var scn = j.scenario, sd = hashSeed('mock-history-' + key), pick = mulberry32(hashSeed('mock-history-calls-' + key));
+    var id = 'history:' + key;
+    var o = { scn: scn, day: key.slice(0, 10), calls: [], rng: mulberry32(sd), absRng: mulberry32(hashSeed('abs|' + sd)), st: freshState(scn, 'practice', sd, id) };
+    var ars = scn.pitcher.arsenal, cells = [6, 7, 8, 11, 12, 13, 16, 17, 18, 0, 4, 20, 24];
+    for (var i = 0; o.st.status === 'live' && i < 60; i++) {
+      var c = { type: ars[Math.floor(pick() * ars.length)].type, cell: cells[Math.floor(pick() * cells.length)] };
+      o.calls.push(c); apply(scn, o.st, c, o.rng, o.absRng);
+    }
+    OUTINGS[id] = o;
+    return finishOuting(id).then(function (r) {
+      delete r.share;
+      var sc = clone(scn); delete sc.reveal; sc.day = o.day;
+      sc.number = mode === 'daily' ? C.dayNumberOf(o.day) : null;
+      return (HIST_PLAYED[key] = { o: o, scenario: sc, result: r });
+    });
+  });
+}
+function histDays() {
+  var n = HIST_MODE === 'long' ? 45 : 9, out = [], d = C.easternDay();
+  for (var i = 0; i < n; i++) { d = new Date(Date.parse(d + 'T12:00:00Z') - 864e5).toISOString().slice(0, 10); if (i !== 3) out.push(d); }
+  return out;
+}
+function history(before) {
+  var none = { signedIn: signedIn(), pro: false, items: [], more: false, oldest: null, offline: false };
+  if (!signedIn()) return Promise.resolve(none);
+  if (HIST_MODE === 'fail') return Promise.resolve(Object.assign(none, { offline: true }));
+  if (!ENT_PRO) return Promise.resolve(none);
+  if (HIST_MODE === 'empty') return Promise.resolve(Object.assign(none, { pro: true }));
+  return Promise.all([load(), Promise.resolve()]).then(function (a) {
+    var scn = a[0].scenario;
+    var card = { id: scn.id, title: scn.title, pitcher: scn.pitcher.name, year: scn.pitcher.year, situation: scn.situation };
+    var all = histDays().filter(function (d) { return !before || d < before; }), days = all.slice(0, 30);
+    var jobs = [];
+    days.forEach(function (d, k) {
+      jobs.push(histOuting(d + ':daily', 'daily').then(function (h) {
+        return { kind: 'daily', day: d, number: C.dayNumberOf(d), scenarioId: scn.id, card: card, outcome: h.result.outcome, pitches: h.result.pitches, score: h.result.score, percentile: h.result.percentile };
+      }));
+      /* a Survivor run on the first day and the fourth: its spots played in order until one is not a door shut */
+      if (k === 0 || k === 3) {
+        var spots = [];
+        var go = function (i) {
+          return histOuting(d + ':run0:' + i, 'survivor').then(function (h) {
+            spots.push({ index: i, scenarioId: scn.id, card: card, outcome: h.result.outcome, pitches: h.result.pitches, score: h.result.score });
+            return h.result.outcome === 'door_shut' && i < 5 ? go(i + 1) : null;
+          });
+        };
+        jobs.push(go(0).then(function () {
+          var saves = spots.filter(function (x) { return x.outcome === 'door_shut'; }).length;
+          return { kind: 'survivor', day: d, run: 0, saves: saves, points: spots.reduce(function (t, x) { return t + x.score; }, 0),
+            over: spots.some(function (x) { return x.outcome !== 'door_shut'; }), spots: spots, first: true };
+        }));
+      }
+    });
+    return Promise.all(jobs).then(function (items) {
+      /* newest first: by day, and a day's Survivor run after its daily */
+      items.sort(function (x, y) { return x.day === y.day ? (x.kind === 'survivor' ? 1 : -1) : x.day < y.day ? 1 : -1; });
+      items.forEach(function (x) { delete x.first; });
+      var last = days[days.length - 1] || null;
+      return { signedIn: true, pro: true, items: items, more: all.length > days.length, oldest: last, offline: false };
+    });
+  });
+}
+function historyOpen(ref) {
+  if (!signedIn() || !ENT_PRO) return Promise.reject(new Error('your history is for Pro'));
+  var surv = ref && ref.kind === 'survivor';
+  var key = ref.day + (surv ? ':run' + ref.run + ':' + ref.index : ':daily');
+  return histOuting(key, surv ? 'survivor' : 'daily').then(function (h) {
+    var sc = clone(h.scenario);
+    if (surv) sc.survivor = { run: ref.run, index: ref.index };
+    return { kind: surv ? 'survivor' : 'daily', day: ref.day, run: surv ? ref.run : null, index: surv ? ref.index : null, scenario: sc, state: snapshot(h.o), result: clone(h.result) };
+  });
+}
+
+/* ---- custom challenges (CONTRACT.md 18) --------------------------------------------------------
+   The challenge calls are the real api.js's (the STD_API this file replaces), so a challenge plays on
+   the real engine: its matchup is the one built pair in fixtures/ (matchup-<pitcher>__<lineup>.json.gz),
+   checked against its sha in data/matchups.json as the page does. Any other pair says it did not load,
+   as an unbuilt bucket file would. A call on a challenge's outing (its id starts "challenge") goes to
+   the real api.js too. The server (supabase/183) is stood in for here, on the mock account: FICTIONAL
+   handles and scores, kept in localStorage (std_mock_challenges_v1) so a reload sees a post.
+   One challenge is there from the start, CHAL_CODE, made by a fictional player on the fixture's pair.
+     ?mockChal=empty   it has no results yet
+     ?mockChal=fail    the server does not answer (every challenge call null) */
+var REAL = window.STD_API && window.STD_API.challengeOptions ? window.STD_API : null;
+var CHAL_CODE = 'K7M4QX', CHAL_KEY = 'std_mock_challenges_v1', CHAL_MODE = QS.get('mockChal') || '';
+var CHAL_PAIR = { pitcher: 'std-2016-ws7-chapman', lineup: 'std-2019-nlwc-hader' };
+var CHAL_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+if (REAL && REAL.configure) REAL.configure({ loadMatchup: function (build, p, q) {
+  /* only the fixture's pair has a file: any other answers as a missing bucket file would, without a request */
+  if (p !== CHAL_PAIR.pitcher || q !== CHAL_PAIR.lineup) return Promise.reject(new Error('could not load the matchup'));
+  return fetch('fixtures/matchup-' + p + '__' + q + '.json.gz').then(function (r) {
+    if (!r.ok || typeof DecompressionStream === 'undefined') throw new Error('could not load the matchup');
+    return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
+  });
+} });
+/* the index is read once, as the page loads: the page waits on a server call only SERVER_WAIT_MS
+   (api.js), so the stand-in must answer at server speed, never after a cold fetch on a slow runner */
+var chalIndex = REAL ? fetch('data/matchups.json', { cache: 'no-store' }).then(function (r) { return r.json(); }) : null;
+function chalSha(spec) {
+  if (!chalIndex) chalIndex = fetch('data/matchups.json', { cache: 'no-store' }).then(function (r) { return r.json(); });
+  return chalIndex.then(function (ix) { var pr = ix.pairs[spec.pitcher + '__' + spec.lineup]; return { build: ix.build, sha: pr ? pr.sha : null }; });
+}
+function chalRules() { return (window.STD_GRADE && window.STD_GRADE.RULES) || 12; }
+function chalStore() {
+  var st = null;
+  try { st = JSON.parse(localStorage.getItem(CHAL_KEY) || 'null'); } catch (e) {}
+  if (st && st.rows) return st;
+  var seedRes = CHAL_MODE === 'empty' ? [] : [
+    { username: 'highcheese', score: 812, outcome: 'door_shut', pitches: 9 },
+    { username: 'paintsblack', score: 688, outcome: 'door_shut', pitches: 14 },
+    { username: 'framejob', score: 540, outcome: 'tie_held', pitches: 17 },
+    { username: 'chinmusic', score: 310, outcome: 'doors_open', pitches: 12 },
+    { username: 'gasmonkey', score: 122, outcome: 'walk_off', pitches: 6 },
+  ];
+  st = { rows: {} };
+  st.rows[CHAL_CODE] = { code: CHAL_CODE, spec: { v: 1, pitcher: CHAL_PAIR.pitcher, lineup: CHAL_PAIR.lineup, up: 4, on: [3, null, 1], outs: 1, balls: 1, strikes: 2, lead: 1, them: 3, inning: 9, home: false },
+    seed: 20261118, rules: chalRules(), createdAt: '2026-11-18T15:00:00Z', creator: 'paintsblack', results: seedRes };
+  return st;
+}
+function chalSave(st) { try { localStorage.setItem(CHAL_KEY, JSON.stringify(st)); } catch (e) {} }
+function chalRow(row) {
+  var me = mockIn ? 'mockplayer' : null;
+  var res = row.results.slice().sort(function (a, b) { return b.score - a.score; }).map(function (x, i) {
+    return { rank: i + 1, username: x.username, score: x.score, outcome: x.outcome, pitches: x.pitches, creator: x.username === row.creator, mine: !!me && x.username === me };
+  });
+  var mine = me ? row.results.filter(function (x) { return x.username === me; })[0] : null;
+  return chalSha(row.spec).then(function (b) {
+    return { code: row.code, spec: clone(row.spec), build: b.build, sha: b.sha, seed: row.seed, rules: row.rules, createdAt: row.createdAt,
+      creator: row.creator, mine: !!me && row.creator === me, players: res.length, results: res, myResult: mine ? clone(mine) : null };
+  });
+}
+if (window.STD_AUTH && window.STD_AUTH.MOCK) {
+  var A = window.STD_AUTH, off = CHAL_MODE === 'fail';
+  A.challengeGet = function (code) {
+    if (off) return Promise.resolve(null);
+    var row = chalStore().rows[String(code).toUpperCase()];
+    return row ? chalRow(row) : Promise.resolve(null);
+  };
+  A.challengeCreate = function (c) {
+    if (off) return Promise.resolve(null);
+    if (!mockIn) return Promise.resolve({ error: 'sign in to make a challenge' });
+    if (!ENT_PRO) return Promise.resolve({ error: 'custom challenges are for pro' });
+    var st = chalStore(), h = hashSeed(JSON.stringify(c.spec) + Object.keys(st.rows).length), code = '';
+    for (var i = 0; i < 6; i++) { code += CHAL_ABC[h % CHAL_ABC.length]; h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0; }
+    st.rows[code] = { code: code, spec: clone(c.spec), seed: hashSeed('seed:' + code), rules: c.rules, createdAt: new Date().toISOString(), creator: 'mockplayer', results: [] };
+    chalSave(st);
+    return Promise.resolve({ data: { code: code, seed: st.rows[code].seed, rules: c.rules, createdAt: st.rows[code].createdAt } });
+  };
+  A.challengeSubmit = function (r) {
+    if (off) return Promise.resolve(null);
+    if (!mockIn) return Promise.resolve({ error: 'sign in first' });
+    var st = chalStore(), row = st.rows[r.code];
+    if (!row) return Promise.resolve({ error: 'no such challenge' });
+    var had = row.results.some(function (x) { return x.username === 'mockplayer'; });
+    if (!had) row.results.push({ username: 'mockplayer', score: r.score, outcome: r.outcome, pitches: r.pitches, calls: clone(r.calls) });
+    chalSave(st);
+    return chalRow(row).then(function (g) { return { data: { taken: !had, result: g } }; });
+  };
+  A.myChallenges = function () {
+    if (off || !mockIn) return Promise.resolve(off ? null : null);
+    var st = chalStore();
+    return Promise.resolve(Object.keys(st.rows).map(function (k) { return st.rows[k]; }).filter(function (row) {
+      return row.creator === 'mockplayer' || row.results.some(function (x) { return x.username === 'mockplayer'; });
+    }).sort(function (a, b) { return a.createdAt < b.createdAt ? 1 : -1; }).map(function (row) {
+      var mine = row.results.filter(function (x) { return x.username === 'mockplayer'; })[0];
+      var best = row.results.reduce(function (m, x) { return Math.max(m, x.score); }, 0);
+      return { code: row.code, spec: clone(row.spec), createdAt: row.createdAt, made: row.creator === 'mockplayer', players: row.results.length, best: row.results.length ? best : null, myScore: mine ? mine.score : null };
+    }));
+  };
+}
+/* a call on a challenge's outing goes to the real api.js; the rest stays the mock's */
+function viaReal(name, mine) {
+  return function (id) {
+    if (REAL && typeof id === 'string' && /^challenge/.test(id) && REAL[name]) return REAL[name].apply(REAL, arguments);
+    return mine ? mine.apply(null, arguments) : Promise.reject(new Error(name + ' is not in the mock'));
+  };
+}
+function realOnly(name) { return function () { return REAL && REAL[name] ? REAL[name].apply(REAL, arguments) : Promise.reject(new Error('custom challenges are not in this build')); }; }
+var chalCalls = REAL ? {
+  challengeOptions: function () { return REAL.challengeOptions().then(function (o) { o.pro = ENT_PRO; return o; }); },
+  previewChallenge: realOnly('previewChallenge'), createChallenge: realOnly('createChallenge'), getChallenge: realOnly('getChallenge'),
+  startChallenge: realOnly('startChallenge'), claimChallenge: realOnly('claimChallenge'), myChallenges: realOnly('myChallenges'),
+} : {};
+
+window.STD_API = { API_VERSION: 1, MOCK: true, clipSpec: viaReal('clipSpec', clipSpec), clip: clip, getScenario: getScenario, startOuting: startOuting, throwPitch: viaReal('throwPitch', throwPitch), challenge: viaReal('challenge', challenge), finishOuting: viaReal('finishOuting', finishOuting), pickoff: viaReal('pickoff', null),
   pending: pending, claim: claim, entitlements: entitlements, vote: vote, castVote: castVote,
-  survivorState: survivorState, survivorStart: survivorStart, survivorClaim: survivorClaim, survivorBoard: survivorBoard };
+  survivorState: survivorState, survivorStart: survivorStart, survivorClaim: survivorClaim, survivorBoard: survivorBoard,
+  history: history, historyOpen: historyOpen };
+for (var ck in chalCalls) window.STD_API[ck] = chalCalls[ck];
 })();

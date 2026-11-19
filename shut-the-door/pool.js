@@ -319,4 +319,4 @@ if (NODE && require.main === module) {
     `pool ${b.pool.runs} runs, hold rate ${b.pool.holdRate}, bands ${JSON.stringify(b.pool.bands)}, solve ${b.solveMs} ms`);
 }
 
-if (NODE) module.exports = { build, runPool, closerCall, typeForFamily, bandsOf, seqCenter, modelChallenge };
+if (NODE) module.exports = { build, runPool, closerCall, typeForFamily, bandsOf, seqCenter, modelChallenge, attachPros };

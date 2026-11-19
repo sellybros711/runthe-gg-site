@@ -88,3 +88,9 @@ jobs:
           psql -q -d ev -f supabase/test/last_shot_guest_events_test.sql 2>&1 | tee out3.txt
           test "$(grep -c '^ ok ' out3.txt)" -ge 11
           ! grep -v '^ ok ' out3.txt | grep -q .
+          # 183 twice: the server role gets execute back on the four functions
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/183_game_events_service_grants.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/183_game_events_service_grants.sql
+          psql -q -d ev -f supabase/test/game_events_grants_test.sql 2>&1 | tee out4.txt
+          test "$(grep -c '^ ok ' out4.txt)" -ge 12
+          ! grep -v '^ ok ' out4.txt | grep -q .

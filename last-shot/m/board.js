@@ -16,16 +16,24 @@
  * opens a new frame with everyone where the last one left them, and the
  * frames before it show faintly. A new step joins the frame on show. Frames
  * are presentation only: the sim never reads them (playbook.js). */
-import { fitView, sizeCanvas, courtLines } from './view.js?b=cfd8bc1f1e';
-import { COURT, dist } from './court-geo.js?b=cfd8bc1f1e';
-import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf, beatOf, framesOf, stepsBefore, stepsThrough, addToFrame } from './playbook.js?b=cfd8bc1f1e';
-import { startSpots, targetFor } from './defense.js?b=cfd8bc1f1e';
+import { fitView, sizeCanvas, courtLines } from './view.js?b=d720f93be5';
+import { COURT, dist } from './court-geo.js?b=d720f93be5';
+import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf, beatOf, framesOf, stepsBefore, stepsThrough, addToFrame } from './playbook.js?b=d720f93be5';
+import { startSpots, targetFor } from './defense.js?b=d720f93be5';
 
 const HIT = 3.4;          // feet: how close a tap must land to a player
 const MIN_ROUTE = 2.5;    // feet: shorter than this is a tap, not a route
 
 export function createBoard(cv, sc, getPlay, setPlay, ui) {
-  let tool = null, drag = null, pickFrom = null, V = null;
+  let tool = null, drag = null, pickFrom = null, V = null, showH = null;
+  const MIN_SHOW = 34, ROOM = 8;
+  function showFor(p) {
+    let y = 0;
+    const at = q => { if (q && Number.isFinite(q.y) && q.y > y) y = q.y; };
+    for (const k of Object.keys(p.spots || {})) at(p.spots[k]);
+    for (const s of p.steps || []) for (const q of s.pts || []) at(q);
+    return Math.min(COURT.H, Math.max(MIN_SHOW, y + ROOM));
+  }
   /* the frame on show, and how many there are (the last may be empty, just opened) */
   let beat = 1, frameCount = 1;
 
@@ -136,7 +144,14 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
   function draw() {
     const { w, h, ctx } = sizeCanvas(cv);
     if (w < 60 || h < 60) return;   // its screen is hidden: drawn again when it shows
-    V = fitView(w, h, 12);
+    /* THE CLIPBOARD'S CROP (2026-11-19). Every play lives within about 36 ft
+       of the baseline, yet the whole half court was drawn, so on a short phone
+       the players were small and the labels ran into each other. The view
+       shows the baseline down to the deepest player or route plus room to
+       drag, never under MIN_SHOW ft, and holds still while a finger is down
+       (it settles on the next draw after the drag). */
+    if (!drag || showH == null) showH = showFor(play());
+    V = fitView(w, h, 12, showH);
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#fbfaf6'; ctx.fillRect(0, 0, w, h);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';

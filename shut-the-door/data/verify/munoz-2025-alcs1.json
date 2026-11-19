@@ -1,0 +1,327 @@
+{
+ "id": "munoz-2025-alcs1",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 813040,
+ "date": "2025-10-12",
+ "game": "AL Championship Series Game 1: Seattle Mariners at Toronto Blue Jays",
+ "gameType": "L",
+ "pitcher": {
+  "id": 662253,
+  "name": "Andrés Muñoz",
+  "throws": "R",
+  "team": "Seattle Mariners",
+  "seasonLine": "1.73 ERA, 38 SV, 62.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 67,
+   "batterId": 665489,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "662253": 4
+   },
+   "pitches": 4,
+   "event": "field_out",
+   "des": "Vladimir Guerrero Jr. grounds out, shortstop J.P. Crawford to first baseman Josh Naylor.",
+   "feedEvent": "field_out",
+   "feedDescription": "Vladimir Guerrero Jr. grounds out, shortstop J.P. Crawford to first baseman Josh Naylor.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Vladimir Guerrero Jr.",
+   "batSideListed": "R",
+   "seasonLine": ".292/.381/.467, 23 HR"
+  },
+  {
+   "atBat": 68,
+   "batterId": 680718,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "662253": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Addison Barger flies out to center fielder Julio Rodríguez.",
+   "feedEvent": "field_out",
+   "feedDescription": "Addison Barger flies out to center fielder Julio Rodríguez.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Addison Barger",
+   "batSideListed": "L",
+   "seasonLine": ".243/.301/.454, 21 HR"
+  },
+  {
+   "atBat": 69,
+   "batterId": 672386,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "662253": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Alejandro Kirk flies out to left fielder Randy Arozarena.",
+   "feedEvent": "field_out",
+   "feedDescription": "Alejandro Kirk flies out to left fielder Randy Arozarena.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Alejandro Kirk",
+   "batSideListed": "R",
+   "seasonLine": ".282/.348/.421, 15 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 8,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 662139,
+   "name": "Daulton Varsho",
+   "batSideListed": "L"
+  },
+  {
+   "id": 676391,
+   "name": "Ernie Clement",
+   "batSideListed": "R"
+  },
+  {
+   "id": 623993,
+   "name": "Anthony Santander",
+   "batSideListed": "S"
+  },
+  {
+   "id": 665926,
+   "name": "Andrés Giménez",
+   "batSideListed": "L"
+  },
+  {
+   "id": 543807,
+   "name": "George Springer",
+   "batSideListed": "R"
+  },
+  {
+   "id": 676914,
+   "name": "Davis Schneider",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665489,
+   "name": "Vladimir Guerrero Jr.",
+   "batSideListed": "R"
+  },
+  {
+   "id": 680718,
+   "name": "Addison Barger",
+   "batSideListed": "L"
+  },
+  {
+   "id": 672386,
+   "name": "Alejandro Kirk",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1035,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 522,
+     "usage": 0.5043,
+     "velo": 86.1,
+     "pfxXin": 5.9,
+     "pfxZin": -1.5
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 362,
+     "usage": 0.3498,
+     "velo": 98.4,
+     "pfxXin": -11.3,
+     "pfxZin": 13.4
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 129,
+     "usage": 0.1246,
+     "velo": 97.8,
+     "pfxXin": -17.0,
+     "pfxZin": 6.2
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 22,
+     "usage": 0.0213,
+     "velo": 91.6,
+     "pfxXin": -13.4,
+     "pfxZin": -3.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=662253"
+  },
+  "postseason": {
+   "pitches": 106,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 77,
+     "usage": 0.7264,
+     "velo": 83.9,
+     "pfxXin": 7.8,
+     "pfxZin": -1.0
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 21,
+     "usage": 0.1981,
+     "velo": 97.3,
+     "pfxXin": -10.4,
+     "pfxZin": 12.9
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 8,
+     "usage": 0.0755,
+     "velo": 96.9,
+     "pfxXin": -16.8,
+     "pfxZin": 8.0
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=662253"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 813040: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=813040",
+  "MLB Stats API schedule 2025-10-12 and live feed /api/v1.1/game/813040/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 662253 2025 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    665489,
+    680718,
+    672386,
+    662139,
+    676391,
+    623993,
+    665926,
+    543807,
+    676914
+   ],
+   "lineupNames": [
+    "Vladimir Guerrero Jr.",
+    "Addison Barger",
+    "Alejandro Kirk",
+    "Daulton Varsho",
+    "Ernie Clement",
+    "Anthony Santander",
+    "Andrés Giménez",
+    "George Springer",
+    "Davis Schneider"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "SEA",
+   "TOR"
+  ],
+  "innings": [
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    2,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   7,
+   2
+  ],
+  "E": [
+   1,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/813040/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 8,
+  "runs": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  }
+ }
+}

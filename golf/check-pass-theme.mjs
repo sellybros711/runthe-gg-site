@@ -1,10 +1,11 @@
-/* The Tour Pass's seasonal dress: Halloween from Oct 4 to Oct 31, then the harvest to the end of Season 2.
+/* The Tour Pass's seasonal dress: Halloween from Oct 4 to Oct 31, then the harvest to the end of Season 2; the
+ * holidays from Dec 4 to Dec 31, then frost to the end of Season 3 (Feb 1 2027).
  *
  *   (nohup python3 -m http.server 8099 &)
  *   node golf/check-pass-theme.mjs
  *
- *   WINDOW   the theme turns on and off on the right Eastern days, and Season 3 wears none. The theme rides
- *            Season 2, so Oct 4 (Season 1's last day) wears none and Halloween starts with the season on Oct 5.
+ *   WINDOW   the theme turns on and off on the right Eastern days, and Season 4 wears none. A theme rides its
+ *            season, so Oct 4 (Season 1's last day) wears none and Halloween starts with the season on Oct 5.
  *   EVERYWHERE  the hub, the tier-up, the claim summary, the purchase screen, the store card and the home
  *            card all carry the theme's class and its drawn pieces
  *   NOTHING ELSE  the theme is colour and drawings: no tier, price or reward moves
@@ -28,10 +29,12 @@ try {
   const days = [
     ['2026-10-03T16:00:00Z', null, 1], ['2026-10-04T16:00:00Z', null, 1], ['2026-10-05T16:00:00Z', 'halloween', 2],
     ['2026-10-31T16:00:00Z', 'halloween', 2], ['2026-11-01T16:00:00Z', 'harvest', 2], ['2026-11-26T16:00:00Z', 'harvest', 2],
-    ['2026-12-03T16:00:00Z', 'harvest', 2], ['2026-12-04T16:00:00Z', null, 3],
+    ['2026-12-03T16:00:00Z', 'harvest', 2], ['2026-12-04T16:00:00Z', 'holiday', 3], ['2026-12-25T16:00:00Z', 'holiday', 3],
+    ['2026-12-31T16:00:00Z', 'holiday', 3], ['2027-01-01T16:00:00Z', 'frost', 3], ['2027-02-01T16:00:00Z', 'frost', 3],
+    ['2027-02-02T16:00:00Z', null, 4],
   ];
   head('the window');
-  let seen = null;
+  let seen = null; const seen3 = {};
   for (const [at, want, ssn] of days) {
     const page = await b.newPage({ viewport: { width: 430, height: 900 } });
     page.on('pageerror', (e) => errs.push(String(e)));
@@ -42,15 +45,19 @@ try {
       tiers: PASS_TIERS, price: TOURPASS.usd, t5: JSON.stringify(passTierReward(5, 'prem')) }));
     ok(`${at.slice(0, 10)}: ${want || 'no theme'} (Season ${ssn})`, r.th === want && r.n === ssn && (want ? r.cls === ' tpth-' + want : r.cls === ''), r);
     if (r.n === 2) { if (seen) ok(`${at.slice(0, 10)}: the theme moves no number`, r.tiers === seen.tiers && r.price === seen.price && r.t5 === seen.t5); else seen = r; }
+    if (r.n === 3) { if (seen3.r) ok(`${at.slice(0, 10)}: the theme moves no number`, r.tiers === seen3.r.tiers && r.price === seen3.r.price && r.t5 === seen3.r.t5); else seen3.r = r; }
     if (want === 'harvest') ok('the harvest wears its own accent', r.acc === '#cf5a26' && r.acc2 === '#f4b84e', r);
+    if (want === 'holiday') ok('the holidays wear their own accent', r.acc === '#d8343a' && r.acc2 === '#ffd27a', r);
+    if (want === 'frost') ok('frost wears its own accent', r.acc === '#5fb0f0' && r.acc2 === '#cfeeff', r);
     await page.close();
   }
 
   head('every pass surface wears it');
-  for (const th of ['halloween', 'harvest']) {
+  const AT = { halloween: '2026-10-12', harvest: '2026-11-12', holiday: '2026-12-12', frost: '2027-01-12' };
+  for (const th of Object.keys(AT)) {
     const page = await b.newPage({ viewport: { width: 430, height: 900 } });
     page.on('pageerror', (e) => errs.push(String(e)));
-    await page.clock.setSystemTime(new Date(th === 'halloween' ? '2026-10-12T16:00:00Z' : '2026-11-12T16:00:00Z'));
+    await page.clock.setSystemTime(new Date(AT[th] + 'T16:00:00Z'));
     await page.goto(HOST + '/golf/index.html');
     await page.waitForFunction(() => typeof overlayPassLevel === 'function');
     const R = await page.evaluate((th) => {

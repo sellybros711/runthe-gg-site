@@ -34,7 +34,7 @@
  * before repeating it in any copy.
  */
 
-import { BUCKETS, PUTT_LIVES } from '../../functions/api/stripe/_bundles.js';
+import { BUNDLES, BUCKETS, PUTT_LIVES } from '../../functions/api/stripe/_bundles.js';
 
 const CATALOG = [
   {
@@ -63,14 +63,42 @@ const CATALOG = [
    * cannot change from one-time to recurring: the old rtd_pro_once is a
    * different Price and is left alone. */
   {
-    lookupKey: 'rtd_pro_year',
+    lookupKey: BUNDLES['diamond-pro'].lookupKey,
     envVar: 'STRIPE_PRICE_RTD_PRO',
-    amountCents: 1499,
+    amountCents: BUNDLES['diamond-pro'].cents,
     interval: 'year',
     product: {
       name: 'Run The Diamond Pro',
       description: 'Unlimited plays of every Run The Diamond mode: Eras, One Franchise, Division, Cap Survivor, All-Time Pitching Staff and the Trade Machine. Renews yearly until cancelled.',
       metadata: { site_bundle: 'diamond-pro' },
+    },
+  },
+  /* $9.99 A YEAR, recurring, the owner's decision (2026-11-18). Shut The Door's own
+   * tier: Survivor runs with no daily limit, the archive, the Diamond plate, no video
+   * breaks. The amount and the lookup key are the catalog's (_bundles.js), the same
+   * numbers the page shows. */
+  {
+    lookupKey: BUNDLES['door-pro'].lookupKey,
+    envVar: 'STRIPE_PRICE_STD_PRO',
+    amountCents: BUNDLES['door-pro'].cents,
+    interval: 'year',
+    product: {
+      name: 'Shut The Door Pro',
+      description: 'Shut The Door with no daily limit on Survivor runs, every past daily in the archive, the Diamond plate and no video breaks. Renews yearly until cancelled.',
+      metadata: { site_bundle: 'door-pro' },
+    },
+  },
+  /* $19.99 A YEAR, recurring, the owner's decision (2026-11-18): Run The Diamond Pro and
+   * Shut The Door Pro on one subscription. */
+  {
+    lookupKey: BUNDLES['diamond-door-pro'].lookupKey,
+    envVar: 'STRIPE_PRICE_RTD_STD_PRO',
+    amountCents: BUNDLES['diamond-door-pro'].cents,
+    interval: 'year',
+    product: {
+      name: 'Run The Diamond Pro + Shut The Door Pro',
+      description: 'Run The Diamond Pro and Shut The Door Pro together: every Run The Diamond mode with no daily limit, and Shut The Door with unlimited Survivor runs, the archive and the Diamond plate. Renews yearly until cancelled.',
+      metadata: { site_bundle: 'diamond-door-pro' },
     },
   },
   /* $14.99 A YEAR, recurring, the owner's decision (2026-10); it was planned at

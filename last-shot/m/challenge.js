@@ -11,11 +11,11 @@
  *     o: [10 spot numbers, tenths of a foot], g: goAt or null,
  *     k: steps as ['m'|'s', who, x1, y1, x2, y2, ...] | ['p', from, to] | ['h', who] }
  * A typical play is under a kilobyte. */
-import { SCENARIO, DEFENSES } from './scenario.js?b=cfd8bc1f1e';
-import { IDS, scenarioFor } from './playbook.js?b=cfd8bc1f1e';
-import { SETS } from './levels.js?b=cfd8bc1f1e';
-import { cleanPlay, scoreOf } from './daily.js?b=cfd8bc1f1e';
-import { simulate } from './sim.js?b=cfd8bc1f1e';
+import { SCENARIO, DEFENSES } from './scenario.js?b=d720f93be5';
+import { IDS, scenarioFor } from './playbook.js?b=d720f93be5';
+import { SETS } from './levels.js?b=d720f93be5';
+import { cleanPlay, scoreOf } from './daily.js?b=d720f93be5';
+import { simulate } from './sim.js?b=d720f93be5';
 
 export const CHALLENGE_VERSION = 1;
 export const MAX_LINK = 6000;

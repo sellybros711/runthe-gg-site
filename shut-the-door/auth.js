@@ -256,6 +256,11 @@
      row's own pitches. {data} or {error}. */
   const submitStats = (row) => act('shutdoor_post_stats', { p_day: row.day, p_stats: row.stats });
   const survivorStats = (row) => act('shutdoor_survivor_stats', { p_day: row.day, p_run: row.run, p_index: row.index, p_stats: row.stats });
+  /* Your history, a Pro perk (supabase/182_shut_the_door_history.sql): the caller's own dailies and
+     Survivor runs, newest first, {pro, items, more, oldest}; then one of them with its calls. Both null
+     signed out or on any failure, and empty for a player who is not Pro. */
+  const history = (before, days) => rpc('shutdoor_history', { p_before: before || null, p_days: days || 30 }, true);
+  const historyOuting = (day, run, index) => rpc('shutdoor_history_outing', { p_day: day, p_run: run == null ? null : run, p_index: index == null ? null : index }, true);
   async function survivorBoard(day, limit) {
     const r = await rpc('shutdoor_survivor_board', { p_day: day, p_limit: limit || 50 });
     return Array.isArray(r) ? r : null;
@@ -265,6 +270,29 @@
     p_day: row.day, p_scenario: row.scenarioId, p_calls: row.calls, p_outcome: row.outcome,
     p_pitches: row.pitches, p_score: row.score, p_percentile: row.percentile,
   });
+
+  /* ---------------- custom challenges (supabase/183_shut_the_door_challenges.sql) ---------------- */
+
+  /* Make one (Pro): {data: {code, seed, rules, createdAt}} or {error: the server's words}. */
+  const challengeCreate = (c) => act('shutdoor_challenge_create', { p_spec: c.spec, p_build: c.build, p_sha: c.sha, p_rules: c.rules });
+  /* One by its code, signed out too: {code, spec, build, sha, seed, rules, createdAt, creator, mine,
+     players, results [{username, score, outcome, pitches, creator, mine}], myResult}. null when there
+     is none or no answer. */
+  const challengeGet = (code) => rpc('shutdoor_challenge_get', { p_code: code });
+  /* The caller's one counted try: {data: {taken, result: the challenge as challengeGet answers}} or {error}. */
+  const challengeSubmit = (row) => act('shutdoor_challenge_submit', {
+    p_code: row.code, p_calls: row.calls, p_outcome: row.outcome, p_pitches: row.pitches, p_score: row.score, p_strip: row.strip,
+  });
+  /* The caller's challenges, made and played: [{code, spec, createdAt, made, players, best, myScore}]. */
+  async function myChallenges(limit) {
+    const r = await rpc('shutdoor_my_challenges', { p_limit: limit || 50 }, true);
+    return Array.isArray(r) ? r : null;
+  }
+  /* Where a matchup pack is kept (matchups.js builds them, the data workflow puts them there):
+     public, gzipped, checked against its sha before it plays. */
+  const MATCHUP_BUCKET = 'shutdoor-matchups';
+  const matchupUrl = (build, pitcher, lineup) =>
+    url() + '/storage/v1/object/public/' + MATCHUP_BUCKET + '/' + build + '/' + pitcher + '/' + lineup + '.json.gz';
 
   /* The plate (supabase/162_shut_the_door_plates.sql): {plate, unlocked, initials}, the unlocks read
      from the caller's stored saves. setPlate('') goes back to the neutral plate. */
@@ -339,6 +367,7 @@
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,
     vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, submitStats, survivorStats, archiveSubmit,
-    plates, setPlate,
+    history, historyOuting, plates, setPlate,
+    challengeCreate, challengeGet, challengeSubmit, myChallenges, matchupUrl,
   };
 })();

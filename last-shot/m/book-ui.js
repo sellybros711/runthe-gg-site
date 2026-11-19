@@ -16,14 +16,14 @@
  *   mountBooks({ sc, show, openPlay, goHome, runAgainst, currentPlay, redraw })
  *     -> { open, back, showBook, playChanged, countRun, fillEditBar,
  *          signedState, saveRun, openSaved (Save this play on a result card) } */
-import * as B from './book.js?b=cfd8bc1f1e';
-import * as N from './names.js?b=cfd8bc1f1e';
-import { DEFENSES, DEFENSE_NAMES, RUNS, testKey } from './testit.js?b=cfd8bc1f1e';
-import { simulate } from './sim.js?b=cfd8bc1f1e';
-import { IDS, emptyPlay, scenarioFor, situationKey, playKey, cleanSituation, CLOCK_MIN, CLOCK_MAX } from './playbook.js?b=cfd8bc1f1e';
-import { hashStr } from './rng.js?b=cfd8bc1f1e';
-import { drawPlay } from './diagram.js?b=cfd8bc1f1e';
-import * as X from './export.js?b=cfd8bc1f1e';
+import * as B from './book.js?b=d720f93be5';
+import * as N from './names.js?b=d720f93be5';
+import { DEFENSES, DEFENSE_NAMES, RUNS, testKey } from './testit.js?b=d720f93be5';
+import { simulate } from './sim.js?b=d720f93be5';
+import { IDS, emptyPlay, scenarioFor, situationKey, playKey, cleanSituation, CLOCK_MIN, CLOCK_MAX } from './playbook.js?b=d720f93be5';
+import { hashStr } from './rng.js?b=d720f93be5';
+import { drawPlay } from './diagram.js?b=d720f93be5';
+import * as X from './export.js?b=d720f93be5';
 
 const $ = id => document.getElementById(id);
 function el(tag, attrs, kids) {
@@ -229,7 +229,7 @@ export function mountBooks(app) {
     ed.syncChip = () => { const S = scenarioFor(SC, e.situation); chip.textContent = 'Down ' + (S.them - S.us) + ' · ' + S.clock.toFixed(1) + ' · ' + S.handler.slice(1) + ' has it'; };
     ed.syncChip();
     bar.appendChild(el('div', { class: 'erow nowrap' }, [name, el('button', { class: 'btn dark tbtn', id: 'pbTest', text: 'Test it', on: { click: () => testSheet(ed) } })]));
-    const more = el('details', { class: 'more', id: 'pbMore' }, [el('summary', {}, [chip, el('span', { class: 'muted', text: ' · more' })]),
+    const more = el('details', { class: 'more', id: 'pbMore' }, [el('summary', {}, [chip, el('span', { class: 'muted', text: '\u00a0· more' })]),
       el('div', { class: 'erow small' }, [sug]),
       el('div', { class: 'erow' }, [el('label', { class: 'lab' }, ['Clock ', clock]), handler, sec]),
       el('div', { class: 'erow' }, [el('label', { class: 'lab', text: 'Run against' }), against,

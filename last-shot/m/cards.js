@@ -6,7 +6,7 @@
  * the server's filed detail (no sim result on a second visit) exactly as the
  * level card builds them from a fresh run:
  *   { win, ot, p (the make chance or null), shotAt, bailout } */
-import { STAR_RULES, LOOK, CLUTCH, starsOf } from './levels.js?b=cfd8bc1f1e';
+import { STAR_RULES, LOOK, CLUTCH, starsOf } from './levels.js?b=d720f93be5';
 
 export const pct = p => Math.round(p * 100) + '%';
 
@@ -33,12 +33,32 @@ export function factsOfDetail(d) {
   return { win, ot: d.how === 'ot', p, shotAt: d.shotAt, bailout: typeof d.bailout === 'boolean' ? d.bailout : win && p != null && p >= LOOK && late && d.stars < 3 };
 }
 
+/* The scorebook box (2026-11-19): YOU | THEM, our score circled, OT under it.
+   The plain line ("90-88 · OT", .finalscore) stays in it for a screen reader
+   and the checks; the drawn box is aria-hidden. */
+export function scoreBox(add, s, win, to) {
+  const w = add('div', 'sbook ' + (win ? 'win' : 'lose'), null, to);
+  add('div', 'finalscore', scoreLineOf(s.us, s.them, s.ot), w);
+  const g = add('div', 'sgrid', null, w);
+  g.setAttribute('aria-hidden', 'true');
+  add('span', null, 'YOU', g); add('span', null, 'THEM', g);
+  add('b', 'us', String(s.us), g); add('b', null, String(s.them), g);
+  if (s.ot) add('i', 'sot', 'OT', w).setAttribute('aria-hidden', 'true');
+  return w;
+}
+
+/* The verdict and its scorebook box on one line (they wrap on a narrow card). */
+export function verdictHead(add, cls, word, win, s, to) {
+  const h = add('div', 'vhead', null, to);
+  const v = add('h2', 'verdict ' + cls, word, h);
+  scoreBox(add, s, win, h);
+  return v;
+}
+
 /* The verdict, the final score and the stars, side by side. */
-export function verdictBlock(add, win, scoreLine, n, reduce) {
+export function verdictBlock(add, win, s, n, reduce) {
   const top = add('div', 'lvltop');
-  const v = add('div', null, null, top);
-  add('h2', 'verdict ' + (win ? 'win' : 'lose'), win ? 'WINNER' : 'LOSE', v);
-  add('div', 'finalscore', scoreLine, v);
+  verdictHead(add, win ? 'win' : 'lose', win ? 'WINNER' : 'LOSE', win, s, top);
   const st = add('div', 'stars', null, top);
   st.setAttribute('aria-label', n + ' of 3 stars');
   for (let i = 0; i < 3; i++) {
@@ -75,3 +95,5 @@ export function summaryOf(res) {
 }
 
 export const scoreLineOf = (us, them, ot) => us + '-' + them + (ot ? ' · OT' : '');
+/* a run's score for the box: { us, them, ot } */
+export const scoreOfRun = r => ({ us: r.us, them: r.them, ot: r.how === 'ot' });

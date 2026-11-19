@@ -4,10 +4,12 @@ name: Stripe checks
 # fails silently in production:
 #
 #   verify-bundles    the catalog, the SQL constraint, the yearly product lists and
-#                     the webhook's event list agree
+#                     the webhook's event list agree, and every price a page shows is
+#                     the catalog's (baseball/index.html, shut-the-door/pro.js)
 #   check-checkout    who may buy what, through the real checkout endpoint, with the
 #                     yearly switch on in a scratch copy (it ships off)
-#   check-recurring   Run The Diamond Pro, $14.99 a year, through the real checkout and
+#   check-recurring   Run The Diamond Pro ($14.99 a year), Shut The Door Pro ($9.99 a year)
+#                     and the two together ($19.99 a year), through the real checkout and
 #                     webhook against a fake Stripe and Supabase
 #   check-floor-money Run The Floor's coin buckets and Floor Pass, shipped dark: the
 #                     switches are off and agree, and each is driven on in a scratch copy
@@ -46,6 +48,8 @@ on:
       - 'hoops/pass-ui.js'
       - 'hoops/wardrobe.js'
       - 'golf/putt/putt.js'
+      - 'baseball/index.html'
+      - 'shut-the-door/pro.js'
       - '.github/workflows/stripe-checks.yml'
   push:
     paths:
@@ -57,6 +61,8 @@ on:
       - 'hoops/pass-ui.js'
       - 'hoops/wardrobe.js'
       - 'golf/putt/putt.js'
+      - 'baseball/index.html'
+      - 'shut-the-door/pro.js'
       - '.github/workflows/stripe-checks.yml'
   workflow_dispatch: {}
 
@@ -80,7 +86,7 @@ jobs:
         run: node scripts/stripe/verify-bundles.mjs
       - name: Who may buy what
         run: node scripts/stripe/check-checkout.mjs
-      - name: Run The Diamond Pro renews
+      - name: Diamond Pro, Shut The Door Pro and the pair renew
         run: node scripts/stripe/check-recurring.mjs
       - name: Run The Floor's money is dark, and works when lit
         run: node scripts/stripe/check-floor-money.mjs

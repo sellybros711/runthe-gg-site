@@ -62,10 +62,7 @@
     if (PX) R.init(PX);
     var sc = stageFor(res.BX, res.Y0, PX, res.level), cam = sc.cam;
     var frames = res.frames, ids = res.ids, dt = res.dt;
-    var lastT = frames[frames.length - 1].t;
-    var SET = 0.75;                                 /* the beat at the line before the snap */
-    var t = -SET, raf = 0, done = false, prev = 0, capAt = -1, snapped = false;
-    var closeEnd = !!ui.measure && res.outcome === 'down' && res.marker < 100 && res.spotY != null && Math.abs(res.spotY - res.marker) <= 1;
+    var rate = rater(res);
     /* the camera: a zoom z about the focus f (fractions of the picture) */
     var Z = ui.zoom ? { z: 1.3, fx: 0.5, fy: 0.62 } : null;
     function aim(tt, F, bx, by, bz) {
@@ -81,14 +78,7 @@
       canvas.style.transformOrigin = (Z.fx * 100).toFixed(2) + '% ' + (Z.fy * 100).toFixed(2) + '%';
       canvas.style.transform = 'translate(' + (tx * 100).toFixed(2) + '%, ' + (ty * 100).toFixed(2) + '%) scale(' + z.toFixed(3) + ')';
     }
-    var slows = res.events.filter(function (e) { return /throw|catch|incomplete|int|sack|td|spot|broken|fumble|checkdown/.test(e.kind); })
-      .map(function (e) { return { t: e.t, k: e.kind === 'throw' || e.kind === 'checkdown' ? T.slow.throw : e.kind === 'catch' || e.kind === 'incomplete' || e.kind === 'int' ? T.slow.catch : T.slow.tackle }; });
-    function rate(tt) { var k = 1; slows.forEach(function (s) { if (Math.abs(tt - s.t) < T.slow.window) k = Math.min(k, s.k); }); return k; }
-
-    function frameAt(tt) {
-      var i = Math.max(0, Math.min(frames.length - 2, Math.floor(tt / dt))), a = frames[i], b = frames[i + 1], u = Math.max(0, Math.min(1, (tt - a.t) / dt));
-      return { a: a, b: b, u: u };
-    }
+    var frameAt = function (tt) { return frameOf(res, tt); };
 
     function draw(tt) {
       frameStart = performance.now();
@@ -129,6 +119,31 @@
       aim(tt, F, bx, by, bz);
     }
 
+    /* the set is drawn in full before the clock starts: every man's stance traced */
+    frameStart = performance.now() + 1e9;
+    return run(res, ui, draw);
+  }
+
+  /* THE CLOCK, shared by the pixel stadium and the 3D one (live3d.js, 2026-11-19): the beat at
+     the line, the play slowed near the throw, the catch and the tackle, the captions and the
+     events as they happen, the snap, the progress, the measurement, the result, the card.
+     draw(t) paints the picture at play time t (negative is the set). */
+  var SET = 0.75;
+  function rater(res) {
+    var T = root.FAW_CONFIG.TUNING;
+    var slows = res.events.filter(function (e) { return /throw|catch|incomplete|int|sack|td|spot|broken|fumble|checkdown/.test(e.kind); })
+      .map(function (e) { return { t: e.t, k: e.kind === 'throw' || e.kind === 'checkdown' ? T.slow.throw : e.kind === 'catch' || e.kind === 'incomplete' || e.kind === 'int' ? T.slow.catch : T.slow.tackle }; });
+    return function (tt) { var k = 1; slows.forEach(function (s) { if (Math.abs(tt - s.t) < T.slow.window) k = Math.min(k, s.k); }); return k; };
+  }
+  function frameOf(res, tt) {
+    var frames = res.frames, dt = res.dt;
+    var i = Math.max(0, Math.min(frames.length - 2, Math.floor(tt / dt))), a = frames[i], b = frames[i + 1], u = Math.max(0, Math.min(1, (tt - a.t) / dt));
+    return { a: a, b: b, u: u };
+  }
+  function run(res, ui, draw) {
+    var frames = res.frames, lastT = frames[frames.length - 1].t, rate = rater(res);
+    var t = -SET, raf = 0, done = false, prev = 0, capAt = -1, snapped = false;
+    var closeEnd = !!ui.measure && res.outcome === 'down' && res.marker < 100 && res.spotY != null && Math.abs(res.spotY - res.marker) <= 1;
     function caption(tt) {
       if (tt < 0) { ui.caption(tt < -SET * 0.45 ? 'Set.' : 'Hut.'); return; }
       for (var i = res.events.length - 1; i >= 0; i--) {
@@ -165,8 +180,6 @@
         else ui.done(res);
       }, wait);
     }
-    /* the set is drawn in full before the clock starts: every man's stance traced */
-    frameStart = performance.now() + 1e9;
     draw(-SET);
     raf = root.requestAnimationFrame(tick);
     return {
@@ -187,5 +200,5 @@
     ctx.fillRect(Math.round(s[0] - r * 0.7), Math.round(s[1] - r * 4.1), Math.round(r * 1.4), Math.round(r * 1.3));
   }
 
-  root.FAW_LIVE = { show: show, prepare: prepare, W: W, H: H };
+  root.FAW_LIVE = { show: show, prepare: prepare, W: W, H: H, run: run, frameOf: frameOf, rater: rater, SET: SET };
 })(typeof window !== 'undefined' ? window : this);

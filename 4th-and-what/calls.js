@@ -130,7 +130,10 @@
   function draw() {
     var c = $('cField'), sc = A.SC, Y0 = 100 - sc.ballOn, p = current();
     if (!V) V = T.view(c, {});
-    V.set({ BX: sc.ballX, Y0: Y0, marker: Math.min(100, Y0 + sc.distance), behind: 8, ahead: 19, across: T.across() });
+    /* a short phone frames the field tighter so Snap it stays above the fold
+       (the launch checklist); the deep safety stands about 13 yards off, inside 15 */
+    var short = root.innerHeight < 760;
+    V.set({ BX: sc.ballX, Y0: Y0, marker: Math.min(100, Y0 + sc.distance), behind: short ? 6 : 8, ahead: short ? 15 : 19, across: T.across() });
     V.layout();
     var lk = E.look(sc, p, seed);
     $('cRead').textContent = readText(lk);
