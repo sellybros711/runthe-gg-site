@@ -25,7 +25,7 @@ const R = require(ROOT + '/cfb/run.js');
 const rd = (f) => JSON.parse(fs.readFileSync(ROOT + '/cfb/data/' + f, 'utf8'));
 const data = R.indexData(rd('cfb_player_seasons.json'), rd('cfb_team_seasons.json'));
 const league = rd('cfb_league_context.json');
-const ctx = { battery: rd('cfb_battery.json'), curated: rd('cfb_curated.json'), coaches: rd('cfb_coaches.json') };
+const ctx = { battery: rd('cfb_battery.json'), curated: rd('cfb_curated.json'), coaches: rd('cfb_coaches.json'), schools: E.schoolsByPlayer(rd('cfb_player_seasons.json')) };
 
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i >= 0 ? Number(process.argv[i + 1]) : d; };
 

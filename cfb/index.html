@@ -4378,7 +4378,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=35"></script>
+<script src="engine.js?v=36"></script>
 <script src="run.js?v=15"></script>
 <script src="achievements.js?v=12"></script>
 <script src="auth.js?v=10"></script>
@@ -8952,7 +8952,7 @@ async function boot(){
       .then(v=>{ if(v&&typeof v==='object'&&Object.keys(v).length>=400) REAL_RANKS=v; })
       .catch(()=>{});
     DATA=R.indexData(pl,tm);
-    CTX={battery:bat,coaches:co,curated:cu};
+    CTX={battery:bat,coaches:co,curated:cu,schools:E.schoolsByPlayer?E.schoolsByPlayer(pl):undefined};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');

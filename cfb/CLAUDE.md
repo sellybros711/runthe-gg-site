@@ -29,6 +29,7 @@ node cfb/build/test/commish/test_standings.mjs   the standings screen, four stat
 node cfb/build/test/test_fantasy.mjs             the College Fantasy Challenge (--quick: no browser)
 node cfb/build/test/test_fanpromo.mjs            the results screen's Fantasy card: open week, no lineup in
 node cfb/build/test/test_analytics.mjs           GA on College Fantasy and Commish: consent first, the events, nothing personal
+node cfb/build/test/test_chemistry.mjs           the links between two men: a transfer links at every school he played at
 node cfb/build/test/test_playoff.mjs             the Playoff Fantasy's builders (no network)
 node cfb/build/fantasy/playoff.mjs [--season Y]  a dry Playoff board (--write, --refresh, --check)
 ```
