@@ -232,9 +232,11 @@ function factsFrom(scn, extra) {
     situation: { usHome: !!scn.situation.usHome, inning: scn.situation.inning, half: scn.situation.half },
     release: releaseOf(p),
     batters: scn.batters.map((b) => {
+      // his real number and beard are his game's: in a custom challenge the lineup pack's (looks.js)
+      const game = scn.matchup ? scn.matchup.lineup : scn.id;
       const bi = extra.bio && extra.bio[b.id];
       // stanceIn: his real distance off the plate where Statcast has it (rules 12, people.js setupBatter)
-      return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot, stanceIn: b.stanceIn ?? null, heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id, scn.id) };
+      return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot, stanceIn: b.stanceIn ?? null, heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id, game) };
     }),
     uniform: extra.uniform,
   };
