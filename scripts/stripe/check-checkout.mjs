@@ -220,6 +220,60 @@ console.log('\nSOLD YEARLY (the switch on, in a scratch copy)');
   ok('  carrying the account and the bundle on the subscription',
     rs.get('subscription_data[metadata][supabase_user_id]') && rs.get('subscription_data[metadata][bundle]') === 'diamond-pro');
   ok('  and it is not filed as a yearly plan', rs.get('metadata[plan]') !== 'year', rs.get('metadata[plan]'));
+
+  /* SHUT THE DOOR PRO ($9.99 a year) and THE PAIR with Diamond Pro ($19.99 a year), the owner's
+     calls of 2026-11-18. Both renew like Diamond Pro. The pair is refused to anybody holding
+     either half now, so nobody pays twice for one game; the halves stay separate products. */
+  const buyAt = async (bundle, ret) => {
+    const request = new Request('https://runthe.gg/api/stripe/checkout-bundle', {
+      method: 'POST', headers: { Authorization: 'Bearer user-jwt', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bundle, return_path: ret }) });
+    const res = await d.onRequestPost({ env, request });
+    return { status: res.status, body: await res.json(), form: sessions[sessions.length - 1] };
+  };
+  world = { rows: [], subs: [], ready: true };
+  r = await buyAt('door-pro', '/shut-the-door/');
+  ok('Shut The Door Pro without its price set is not on sale yet', r.status === 503 && r.body.error === 'stripe_not_configured', JSON.stringify(r.body));
+  env.STRIPE_PRICE_STD_PRO = 'price_std';
+  env.STRIPE_PRICE_RTD_STD_PRO = 'price_pair';
+  r = await buyAt('door-pro', '/shut-the-door/');
+  ok('Shut The Door Pro opens a subscription on its own price',
+    !!r.body.url && r.form.get('mode') === 'subscription' && r.form.get('line_items[0][price]') === 'price_std', JSON.stringify(r.body));
+  ok('  carrying the account and the bundle on the subscription',
+    r.form.get('subscription_data[metadata][supabase_user_id]') === 'u-1' && r.form.get('subscription_data[metadata][bundle]') === 'door-pro');
+  ok('  and it comes back to the game', r.form.get('success_url') === 'https://runthe.gg/shut-the-door/?checkout=success', r.form.get('success_url'));
+  r = await buyAt('door-pro', '/baseball/');
+  ok('  and never to another game\'s page', r.form.get('success_url') === 'https://runthe.gg/shut-the-door/?checkout=success', r.form.get('success_url'));
+  world.rows = [timed('rtd_premium', 'subscription:diamond-pro', iso(200 * day))];
+  r = await buyAt('door-pro', '/shut-the-door/');
+  ok('a Diamond Pro subscriber may buy Shut The Door Pro (Diamond Pro does not include it)', !!r.body.url, JSON.stringify(r.body));
+  world.rows = [timed('std_premium', 'subscription:door-pro', iso(200 * day))];
+  r = await buyAt('door-pro', '/shut-the-door/');
+  ok('a running Shut The Door Pro cannot be bought twice', r.status === 409 && r.body.error === 'already_owned');
+  world.rows = [timed('std_premium', 'subscription:door-pro', iso(-5 * day))];
+  r = await buyAt('door-pro', '/shut-the-door/');
+  ok('a lapsed one can subscribe again', !!r.body.url, JSON.stringify(r.body));
+
+  world.rows = [];
+  r = await buyAt('diamond-door-pro', '/shut-the-door/');
+  ok('the pair opens one subscription on its own price',
+    !!r.body.url && r.form.get('mode') === 'subscription' && r.form.get('line_items[0][price]') === 'price_pair'
+      && r.form.get('subscription_data[metadata][bundle]') === 'diamond-door-pro', JSON.stringify(r.body));
+  ok('  sold from Shut The Door, it comes back there', r.form.get('success_url') === 'https://runthe.gg/shut-the-door/?checkout=success');
+  r = await buyAt('diamond-door-pro', '/baseball/');
+  ok('  sold from Run The Diamond, it comes back there', r.form.get('success_url') === 'https://runthe.gg/baseball/?checkout=success');
+  world.rows = [timed('rtd_premium', 'subscription:diamond-pro', iso(200 * day))];
+  r = await buyAt('diamond-door-pro', '/baseball/');
+  ok('a running Diamond Pro is refused the pair, so the baseball half is never paid twice', r.status === 409 && r.body.error === 'already_owned');
+  world.rows = [life('rtd_premium', 'bundle:diamond-pro')];
+  r = await buyAt('diamond-door-pro', '/baseball/');
+  ok('so is a lifetime Diamond Pro', r.status === 409 && r.body.error === 'already_owned');
+  world.rows = [timed('std_premium', 'subscription:door-pro', iso(200 * day))];
+  r = await buyAt('diamond-door-pro', '/baseball/');
+  ok('and a running Shut The Door Pro', r.status === 409 && r.body.error === 'already_owned');
+  world.rows = [timed('rtd_premium', 'subscription:diamond-pro', iso(-3 * day)), timed('std_premium', 'fantasy:2026-w9', iso(10 * day))];
+  r = await buyAt('diamond-door-pro', '/baseball/');
+  ok('a lapsed Diamond Pro is not ownership', !!r.body.url, JSON.stringify(r.body));
   rmSync(dir, { recursive: true, force: true });
 }
 

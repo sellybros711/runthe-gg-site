@@ -30,6 +30,12 @@ on:
     - cron: '7,37 0-6 * * 6'
     - cron: '7,37 14-23 * * 6'
     - cron: '7,37 0-8 * * 0'
+    # THE PLAYOFF PLAYS ON ANY DAY (playoff.mjs): quarterfinals midweek, the title game on a
+    # Monday night, which is Tuesday in UTC. Every day of December and January, afternoon and
+    # evening Eastern. The job still decides off the kickoffs, so a day with no game is a
+    # firing that looks and goes back to sleep.
+    - cron: '7,37 16-23 * 12,1 *'
+    - cron: '7,37 0-5 * 12,1 *'
   workflow_dispatch:
     inputs:
       force:
@@ -37,6 +43,10 @@ on:
         type: boolean
         required: false
         default: false
+      source:
+        description: 'Who started it: clock (workers/clock), or blank for a person'
+        required: false
+        default: ''
 
 permissions:
   contents: read

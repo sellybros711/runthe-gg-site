@@ -27,6 +27,10 @@
  *    customer) is dropped and the session retried, rather than failing a
  *    purchase over an optimisation. This is not hypothetical: it blocked the
  *    first live test, with a test-mode customer against a live key.
+ * 10. Every price a page shows (baseball/index.html's PRO_PRICE and PAIR_PRICE,
+ *    shut-the-door/pro.js's PRICES) is the catalog's `cents`, which the setup
+ *    script mints, and the billing portal returns to every game a bundle is
+ *    sold from.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { BUNDLES, BUCKETS, YEARLY_LIVE, yearlyProducts, yearlyBonus } from '../../functions/api/stripe/_bundles.js';
@@ -188,6 +192,51 @@ if (!yearly.length) {
   }
   ok('the webhook handles every plan event');
   console.log('  ..  the yearly switch (YEARLY_LIVE) is ' + (YEARLY_LIVE ? 'ON' : 'off'));
+}
+
+// 10. A PRICE A PLAYER READS IS THE CATALOG'S. A recurring bundle that carries `cents` is
+// minted from it by the setup script, and every page that shows it carries a copy. A copy
+// that drifts sells at one price and says another, and nothing else would notice.
+{
+  const usd = (c) => '$' + (c / 100).toFixed(2);
+  const priced = Object.entries(BUNDLES).filter(([, b]) => b.cents != null);
+  for (const [key, b] of priced) {
+    if (!b.lookupKey) bad(`${key}: has cents but no lookupKey for the setup script to mint`);
+    if (!setup.includes(`BUNDLES['${key}'].cents`)) bad(`${key}: setup-premium-bundles.mjs does not mint the catalog's cents`);
+  }
+  const copies = [
+    ['baseball/index.html', /const PRO_PRICE='([^']+)'/, 'diamond-pro'],
+    ['baseball/index.html', /const PAIR_PRICE='([^']+)'/, 'diamond-door-pro'],
+    ['baseball/index.html', /const PAIR_BUNDLE='([^']+)'/, null, 'diamond-door-pro'],
+  ];
+  let n = 0;
+  for (const [file, re, key, literal] of copies) {
+    const m = re.exec(read(file));
+    if (!m) { bad(`${file}: no ${re} to hold to the catalog`); continue; }
+    if (key && m[1] !== usd(BUNDLES[key].cents)) bad(`${file} shows ${m[1]} for ${key}, the catalog says ${usd(BUNDLES[key].cents)}`);
+    else if (literal && !BUNDLES[m[1]]) bad(`${file} sells '${m[1]}', which is not in the catalog`);
+    else n++;
+  }
+  // Shut The Door's buy button: its PRICES table, cent for cent, and the bundle it sells
+  const pro = read('shut-the-door/pro.js');
+  const pm = /var PRICES = \{([^}]*)\}/.exec(pro);
+  const pb = /var BUNDLE = '([^']+)'/.exec(pro);
+  if (!pm || !pb) bad('shut-the-door/pro.js: no PRICES table or BUNDLE to hold to the catalog');
+  else {
+    const page = Object.fromEntries([...pm[1].matchAll(/'([^']+)':\s*(\d+)/g)].map((x) => [x[1], +x[2]]));
+    if (!(pb[1] in page)) bad(`shut-the-door/pro.js sells ${pb[1]} and has no price for it`);
+    for (const [k, c] of Object.entries(page)) {
+      if (!BUNDLES[k]) bad(`shut-the-door/pro.js prices '${k}', which is not in the catalog`);
+      else if (BUNDLES[k].cents !== c) bad(`shut-the-door/pro.js shows ${usd(c)} for ${k}, the catalog says ${usd(BUNDLES[k].cents)}`);
+      else n++;
+    }
+  }
+  // the billing portal returns a buyer to every game a bundle is sold from
+  const portal = read('functions/api/stripe/portal.js');
+  for (const [key, b] of Object.entries(BUNDLES)) {
+    for (const r of b.returnRoots) if (!portal.includes(`'${r}'`)) bad(`${key} is sold from ${r}, and the billing portal will not return there`);
+  }
+  ok(`the prices the pages show are the catalog's (${n} copies), and the portal returns to every game a bundle is sold from`);
 }
 
 if (failed) {

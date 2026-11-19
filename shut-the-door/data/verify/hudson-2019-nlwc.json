@@ -1,0 +1,349 @@
+{
+ "id": "hudson-2019-nlwc",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 599336,
+ "date": "2019-10-01",
+ "game": "NL Wild Card Game Game 1: Milwaukee Brewers at Washington Nationals",
+ "gameType": "F",
+ "pitcher": {
+  "id": 543339,
+  "name": "Daniel Hudson",
+  "throws": "R",
+  "team": "Washington Nationals",
+  "seasonLine": "2.47 ERA, 8 SV, 73.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 64,
+   "batterId": 519346,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "543339": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Eric Thames strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Eric Thames strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Eric Thames",
+   "batSideListed": "L",
+   "seasonLine": ".247/.346/.505, 25 HR"
+  },
+  {
+   "atBat": 65,
+   "batterId": 456715,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "543339": 3
+   },
+   "pitches": 3,
+   "event": "single",
+   "des": "Lorenzo Cain singles on a line drive to center fielder Victor Robles.",
+   "feedEvent": "single",
+   "feedDescription": "Lorenzo Cain singles on a line drive to center fielder Victor Robles.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Lorenzo Cain",
+   "batSideListed": "R",
+   "seasonLine": ".260/.325/.372, 11 HR"
+  },
+  {
+   "atBat": 66,
+   "batterId": 606115,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "543339": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Orlando Arcia pops out to catcher Kurt Suzuki in foul territory.",
+   "feedEvent": "field_out",
+   "feedDescription": "Orlando Arcia pops out to catcher Kurt Suzuki in foul territory.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Orlando Arcia",
+   "batSideListed": "R",
+   "seasonLine": ".223/.283/.350, 15 HR"
+  },
+  {
+   "atBat": 67,
+   "batterId": 592325,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "543339": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Ben Gamel flies out to center fielder Victor Robles.",
+   "feedEvent": "field_out",
+   "feedDescription": "Ben Gamel flies out to center fielder Victor Robles.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Ben Gamel",
+   "batSideListed": "L",
+   "seasonLine": ".248/.337/.373, 7 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 11,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 663757,
+   "name": "Trent Grisham",
+   "batSideListed": "L"
+  },
+  {
+   "id": 518735,
+   "name": "Yasmani Grandal",
+   "batSideListed": "S"
+  },
+  {
+   "id": 519058,
+   "name": "Mike Moustakas",
+   "batSideListed": "L"
+  },
+  {
+   "id": 605486,
+   "name": "Cory Spangenberg",
+   "batSideListed": "L"
+  },
+  {
+   "id": 623352,
+   "name": "Josh Hader",
+   "batSideListed": "L"
+  },
+  {
+   "id": 519346,
+   "name": "Eric Thames",
+   "batSideListed": "L"
+  },
+  {
+   "id": 456715,
+   "name": "Lorenzo Cain",
+   "batSideListed": "R"
+  },
+  {
+   "id": 606115,
+   "name": "Orlando Arcia",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592325,
+   "name": "Ben Gamel",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1216,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 770,
+     "usage": 0.6332,
+     "velo": 96.2,
+     "pfxXin": -8.5,
+     "pfxZin": 15.5
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 283,
+     "usage": 0.2327,
+     "velo": 86.7,
+     "pfxXin": 2.3,
+     "pfxZin": 1.6
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 91,
+     "usage": 0.0748,
+     "velo": 95.6,
+     "pfxXin": -16.1,
+     "pfxZin": 10.3
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 72,
+     "usage": 0.0592,
+     "velo": 88.6,
+     "pfxXin": -18.0,
+     "pfxZin": 11.6
+    }
+   ],
+   "dropped": {
+    "PO": 1
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2019%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=543339"
+  },
+  "postseason": {
+   "pitches": 154,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 109,
+     "usage": 0.7078,
+     "velo": 96.6,
+     "pfxXin": -9.4,
+     "pfxZin": 16.2
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 44,
+     "usage": 0.2857,
+     "velo": 87.4,
+     "pfxXin": 1.5,
+     "pfxZin": 2.4
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 1,
+     "usage": 0.0065,
+     "velo": 90.0,
+     "pfxXin": -19.6,
+     "pfxZin": 10.0
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2019%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=543339"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 599336: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=599336",
+  "MLB Stats API schedule 2019-10-01 and live feed /api/v1.1/game/599336/feed/live",
+  "MLB Stats API people with 2019 season stats",
+  "Baseball Savant 543339 2019 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "top",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    519346,
+    456715,
+    606115,
+    592325,
+    663757,
+    518735,
+    519058,
+    605486,
+    460075
+   ],
+   "lineupNames": [
+    "Eric Thames",
+    "Lorenzo Cain",
+    "Orlando Arcia",
+    "Ben Gamel",
+    "Trent Grisham",
+    "Yasmani Grandal",
+    "Mike Moustakas",
+    "Cory Spangenberg",
+    "Ryan Braun"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "MIL",
+   "WSH"
+  ],
+  "innings": [
+   [
+    2,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    3
+   ],
+   [
+    0,
+    null
+   ]
+  ],
+  "H": [
+   6,
+   5
+  ],
+  "E": [
+   2,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/599336/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 11,
+  "runs": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  }
+ }
+}

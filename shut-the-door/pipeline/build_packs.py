@@ -581,8 +581,9 @@ def inning_words(n):
 def setup_of(v, spec, us_team, batters):
     """One paragraph, house voice, every fact from the verify file."""
     s = v['situation']
-    nick = us_team.split(' ')[-1].lower() if us_team else 'you'
-    nick = {'sox': 'red sox'}.get(nick, nick)
+    # the club's nickname, two words where it is two (the White Sox are not the Red Sox)
+    two = [n for n in ('Red Sox', 'White Sox', 'Blue Jays') if us_team and us_team.endswith(' ' + n)]
+    nick = two[0].lower() if two else (us_team.split(' ')[-1].lower() if us_team else 'you')
     title = spec['title'].lower()
     first = batters[0]['name']
     lead = s['score']['us'] - s['score']['them']

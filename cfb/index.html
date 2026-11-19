@@ -3939,6 +3939,14 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="rail" id="rail2"></div>
     <p class="railnote"></p>
 
+    <!-- THE WAY ON, LIFTED (the owner's approval, 2026-11-16, the Advisor's review). On a phone this
+         sat about 1,520px down an 844px screen, under the coach's take, the chemistry and the
+         schedule. The team is built and the season is the next thing, so the button comes right
+         after the team. The take and the schedule stay below for anybody who wants them. -->
+    <div style="margin:12px 0 14px">
+      <button class="btn" id="b-play">Play the season</button>
+    </div>
+
     <div class="panel schemepanel" id="q-panel">
       <div class="stripe"></div>
       <div class="eyebrow" id="q-scheme-eye">Coach's take</div>
@@ -3970,9 +3978,6 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="body" id="q-sched"></div>
     </details>
 
-    <div style="margin-top:16px">
-      <button class="btn" id="b-play">Play the season</button>
-    </div>
   </div>
 
   <!-- s-season -->
@@ -4266,6 +4271,28 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div id="o-place"></div>
 
+    <!-- THE WAY ON, LIFTED (the owner's approval, 2026-11-16, the Advisor's review). On a phone
+         Draft Again sat about 1,970px down an 844px screen, under the resume, the team and the
+         tabs. A run is over and the next one is the thing to offer, so the buttons come right
+         after the headline numbers and the placing. The detail stays below for anybody who wants it. -->
+    <!-- THE FANTASY CHALLENGE, OFFERED ONCE A RUN IS DONE (the owner's call, 2026-11-05). Only
+         while this week's entries are open, and only to somebody with no lineup in. An inline
+         card above the buttons, never a sheet. See fantasyPromoPaint(). -->
+    <div class="next-panel">
+      <div class="cfbpromo" id="o-fanpromo" hidden></div>
+      <div class="next-pair">
+        <button class="btn next-secondary" id="b-again">Draft again</button>
+        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
+      </div>
+      <button class="btn next-share" id="b-share">
+        <svg class="btn-ico" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share your season
+      </button>
+      <div class="next-footer">
+        <button class="btn-text next-foot" id="b-home2">Home</button>
+      </div>
+    </div>
+
     <div class="resume" id="o-resume"></div>
 
     <!-- THE TEAM YOU BUILT IS NOT A TAB. It is the thing the whole run was about,
@@ -4295,23 +4322,6 @@ or endorsed by the NCAA, the CFP or any school.
       <span class="dim" style="font-size:11px" id="o-gcount"></span>
     </div>
 
-    <!-- THE FANTASY CHALLENGE, OFFERED ONCE A RUN IS DONE (the owner's call, 2026-11-05). Only
-         while this week's entries are open, and only to somebody with no lineup in. An inline
-         card above the buttons, never a sheet. See fantasyPromoPaint(). -->
-    <div class="next-panel">
-      <div class="cfbpromo" id="o-fanpromo" hidden></div>
-      <div class="next-pair">
-        <button class="btn next-secondary" id="b-again">Draft again</button>
-        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
-      </div>
-      <button class="btn next-share" id="b-share">
-        <svg class="btn-ico" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        Share your season
-      </button>
-      <div class="next-footer">
-        <button class="btn-text next-foot" id="b-home2">Home</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -6091,6 +6101,23 @@ const CFB_CREST='<svg class="hp-ico" viewBox="0 0 32 32" aria-hidden="true">'
   +'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'
   +'<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'
   +'<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
+/* THE DOOR'S PHASE, off the pointer alone (the owner's call, 2026-11-16: the Playoff gets a
+ * contest, and the door stops selling a week that is not there).
+ *   week          a regular week, open or being played
+ *   waiting       the regular season is over and the bracket is not set (`next` from playoff.mjs)
+ *   playoff-open  the Playoff board is up and entries are open
+ *   playoff-live  the Playoff has kicked off
+ *   off           a day after the title game, until next season's first week */
+function cfbFanPhase(w,now=Date.now()){
+  const lock=Date.parse(w.locks_at);
+  if(w.kind==='playoff'){
+    const end=w.ends_at?Date.parse(w.ends_at):NaN;
+    if(end>0&&now>end+86400000) return 'off';
+    return lock>now?'playoff-open':'playoff-live';
+  }
+  if(w.next==='playoff'&&!(lock>now)) return 'waiting';
+  return 'week';
+}
 function cfbFanEntered(){
   if(!cfbFanWeek) return false;
   try{
@@ -6118,21 +6145,31 @@ function ensureFantasyDoor(){
   if(!cfbFanDoor){
     cfbFanDoor=document.createElement('a');
     cfbFanDoor.className='hp-cfbfan'; cfbFanDoor.id='b-hp-fantasy';
-    cfbFanDoor.href='/cfb/fantasy/';
+    cfbFanDoor.href='/cfb/fantasy/?from=home';
     cfbFanDoor.onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'home'}); };
   }
-  const inn=cfbFanEntered();
+  const phase=cfbFanPhase(cfbFanWeek);
+  /* Green only for a lineup in the contest the door is showing. Waiting for the bracket or out of
+     season, the record it would read is last week's, and green would say the wrong thing. */
+  const inn=(phase==='week'||phase==='playoff-open'||phase==='playoff-live')&&cfbFanEntered();
   cfbFanDoor.classList.toggle('in',inn);
   /* WHEN THE WEEK LOCKS, off the pointer's own locks_at, and a plain line once it has. */
   const ms=cfbFanWeek.locks_at?Date.parse(cfbFanWeek.locks_at)-Date.now():NaN;
   const h=Math.floor(ms/3600000), d=Math.floor(h/24);
   const left=!(ms>0)?null:d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
     :Math.max(1,Math.floor(ms/60000))+'m';
+  const sub=phase==='off'?'College Fantasy is back next season.'
+    :phase==='waiting'?'The Playoff Fantasy opens once the bracket\'s set.'
+    :phase==='playoff-open'?(inn?'Your Playoff lineup is in.'
+      :'The Playoff &middot; locks in '+left+' &middot; top score wins Pro')
+    :phase==='playoff-live'?(inn?'Your Playoff lineup is in. Every round counts.'
+      :'The Playoff is on. Entries are closed.')
+    :inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
+    :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
+    :'Six players from the week\'s biggest games. Top score wins Pro.';
   cfbFanDoor.innerHTML='<span class="hp-tag">Beta</span>'+CFB_CREST
     +'<span class="hp-name">Fantasy Challenge</span>'
-    +'<span class="hp-sub">'+(inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
-      :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
-      :'Six players from the week\'s biggest games. Top score wins Pro.')+'</span>'
+    +'<span class="hp-sub">'+sub+'</span>'
     +'<span class="hp-rack" aria-hidden="true"><i class="QB"></i><i class="RB"></i><i class="RB">'
     +'</i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
   const three=ctas.querySelector('.cta3');
@@ -6192,13 +6229,16 @@ function fantasyPromoPaint(){
          while the server was being asked. */
       if(!$('s-over').classList.contains('on')||!(lock>Date.now())) return;
       el.innerHTML='<div class="cfbpromo-top">'+
-        '<span class="cfbpromo-name">Fantasy Challenge</span><span class="cfbpromo-wk">Week '+n.week+'</span></div>'+
-        '<p>Six players from the week\'s biggest games. One lineup. Free to play.</p>'+
+        '<span class="cfbpromo-name">Fantasy Challenge</span><span class="cfbpromo-wk">'
+          +(n.kind==='playoff'?'Playoff':'Week '+n.week)+'</span></div>'+
+        (n.kind==='playoff'
+          ?'<p>Six players from the Playoff teams. They score every game their team plays. Free to play.</p>'
+          :'<p>Six players from the week\'s biggest games. One lineup. Free to play.</p>')+
         /* The prize in the words the door uses. The server grants it (cfb_fantasy_grant_pass,
            supabase/128_cfb_fantasy.sql), so a change there is a change here too. */
         '<div class="cfbpromo-prize"><span class="cfbpromo-pro">PRO</span><b>Top score this week wins Pro.</b></div>'+
         '<div class="cfbpromo-lock">Lineups lock '+cfbFanLock(lock)+'. That\'s the first kickoff.</div>'+
-        '<a class="cfbpromo-go" id="b-fanpromo" href="/cfb/fantasy/">Draft my lineup</a>'+
+        '<a class="cfbpromo-go" id="b-fanpromo" href="/cfb/fantasy/?from=results">Draft my lineup</a>'+
         '<button class="cfbpromo-later" type="button" id="b-fanpromo-x">Not this week</button>';
       $('b-fanpromo').onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'results'}); };
       $('b-fanpromo-x').onclick=()=>{
@@ -6213,8 +6253,19 @@ function fantasyPromoPaint(){
 /* THE LOCK DAY REMINDER, the football game's sheet for this competition: once per account
    per week, on the Eastern day the slate locks, before the first kickoff. The rule is in
    /assets/fantasy-promo.js. cloudsave.js is loaded for it, so the mark rides on the account. */
-if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
-  href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
+/* NOT FOR THE PLAYOFF. The shared sheet names its week "Week " and the number, and the Playoff is
+   week 100 (playoff.mjs). The door and the results card carry the Playoff instead. So the pointer
+   is read first and the sheet is set up only for a regular week; its own rules are untouched.
+   A pointer that cannot be read sets it up as before. A label in the shared file would bring it
+   back for the Playoff; that file is shared with the NFL game. */
+if(window.RTG_FANPROMO){
+  const fanPromoInit=()=>RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
+    href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
+  fetch('/cfb/data/fantasy/now.json',{cache:'no-cache'})
+    .then(r=>r.ok?r.json():null)
+    .then(n=>{ if(!(n&&n.kind==='playoff')) fanPromoInit(); })
+    .catch(fanPromoInit);
+}
 
 /* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
  *
@@ -10048,20 +10099,22 @@ function paintSquad(){
     ? st.qbPass.toFixed(1)+' pass'+(qbRun>=1?', '+qbRun.toFixed(1)+' rush':'')+' a game'
     : 'nobody throwing it';
   const passWhy=recKept>=101
-    ? 'your receivers score at '+recKept+'% of their own numbers'
-    : recKept>=99 ? 'your receivers keep all of their own numbers'
-    : 'your receivers score at '+recKept+'% of their own numbers';
+    ? 'your receivers get '+recKept+'% of their usual'
+    : recKept>=99 ? 'your receivers get all of their usual'
+    : 'your receivers get '+recKept+'% of their usual';
   $('q-meters').innerHTML=
-    '<p class="mhead">Each line is what that part of the roster does to the six names on '+
-      'it. Costing nothing is the good end.</p>'+
+    /* THE COACH TALKS LIKE THE OWNER (the Advisor's review, 2026-11-16: the old lines read like a
+       spreadsheet mid game). Every line still says where its safe range ends, off the engine. */
+    '<p class="mhead">How your six fit. Each line says what it costs you. Costing nothing is '+
+      'what you want.</p>'+
     meter('Passing game',passDet,costs.pass,passWhy)+
     meter('Run and pass',
       (st.rushShare*100).toFixed(0)+'% run, '+(100-st.rushShare*100).toFixed(0)+'% pass',
-      costs.balance,'anything from '+runLo+' to '+runHi+' on the ground is free')+
+      costs.balance,'running it '+runLo+' to '+runHi+' of the time is fine')+
     meter('Reliance',(st.topShare*100).toFixed(0)+'% through one player',
-      costs.concentration,'up to '+pcOf(SC.IDEAL_TOP_SHARE)+' through one man is free')+
+      costs.concentration,'up to '+pcOf(SC.IDEAL_TOP_SHARE)+' through one guy is fine')+
     meter('Depth','quietest two at '+(st.floorShare*100).toFixed(0)+'% of your average',
-      costs.floor,pcOf(SC.IDEAL_FLOOR_SHARE-SC.FLOOR_TOLERANCE)+' or better is free');
+      costs.floor,pcOf(SC.IDEAL_FLOOR_SHARE-SC.FLOOR_TOLERANCE)+' or better is fine');
 
   const strFiltered=schemeName?cr.strengths.filter(t=>!t.startsWith(schemeName)):cr.strengths;
   const notes=[...cr.weaknesses.slice(0,2).map(t=>['bad',t]),

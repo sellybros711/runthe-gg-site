@@ -1,0 +1,289 @@
+{
+ "id": "rs-pagan-2025-09-26",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 776171,
+ "date": "2025-09-26",
+ "game": "Regular Season Game 1: Cincinnati Reds at Milwaukee Brewers",
+ "gameType": "R",
+ "pitcher": {
+  "id": 641941,
+  "name": "Emilio Pagán",
+  "throws": "R",
+  "team": "Cincinnati Reds",
+  "seasonLine": "2.88 ERA, 32 SV, 68.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 67,
+   "batterId": 661388,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "641941": 7
+   },
+   "pitches": 7,
+   "event": "strikeout",
+   "des": "William Contreras called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "William Contreras called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "William Contreras",
+   "batSideListed": "R",
+   "seasonLine": ".260/.355/.399, 17 HR"
+  },
+  {
+   "atBat": 68,
+   "batterId": 686217,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "641941": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Sal Frelick pops out to shortstop Elly De La Cruz.",
+   "feedEvent": "field_out",
+   "feedDescription": "Sal Frelick pops out to shortstop Elly De La Cruz.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Sal Frelick",
+   "batSideListed": "L",
+   "seasonLine": ".288/.351/.405, 12 HR"
+  },
+  {
+   "atBat": 69,
+   "batterId": 683734,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "641941": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Andrew Vaughn pops out to shortstop Elly De La Cruz.",
+   "feedEvent": "field_out",
+   "feedDescription": "Andrew Vaughn pops out to shortstop Elly De La Cruz.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Andrew Vaughn",
+   "batSideListed": "R",
+   "seasonLine": ".254/.307/.411, 14 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 12,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 641343,
+   "name": "Jake Bauers",
+   "batSideListed": "L"
+  },
+  {
+   "id": 655316,
+   "name": "Andruw Monasterio",
+   "batSideListed": "R"
+  },
+  {
+   "id": 687401,
+   "name": "Joey Ortiz",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592885,
+   "name": "Christian Yelich",
+   "batSideListed": "L"
+  },
+  {
+   "id": 694192,
+   "name": "Jackson Chourio",
+   "batSideListed": "R"
+  },
+  {
+   "id": 668930,
+   "name": "Brice Turang",
+   "batSideListed": "L"
+  },
+  {
+   "id": 661388,
+   "name": "William Contreras",
+   "batSideListed": "R"
+  },
+  {
+   "id": 686217,
+   "name": "Sal Frelick",
+   "batSideListed": "L"
+  },
+  {
+   "id": 683734,
+   "name": "Andrew Vaughn",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1068,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 654,
+     "usage": 0.6124,
+     "velo": 95.8,
+     "pfxXin": -6.8,
+     "pfxZin": 18.5
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 215,
+     "usage": 0.2013,
+     "velo": 83.9,
+     "pfxXin": -7.4,
+     "pfxZin": 2.6
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 199,
+     "usage": 0.1863,
+     "velo": 86.9,
+     "pfxXin": 5.0,
+     "pfxZin": 4.7
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=641941"
+  },
+  "postseason": {
+   "pitches": 0,
+   "types": [],
+   "dropped": {}
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 776171: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=776171",
+  "MLB Stats API schedule 2025-09-26 and live feed /api/v1.1/game/776171/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 641941 2025 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    661388,
+    686217,
+    683734,
+    641343,
+    655316,
+    687401,
+    592885,
+    694192,
+    668930
+   ],
+   "lineupNames": [
+    "William Contreras",
+    "Sal Frelick",
+    "Andrew Vaughn",
+    "Jake Bauers",
+    "Andruw Monasterio",
+    "Joey Ortiz",
+    "Christian Yelich",
+    "Jackson Chourio",
+    "Brice Turang"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "CIN",
+   "MIL"
+  ],
+  "innings": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    2,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   9,
+   3
+  ],
+  "E": [
+   1,
+   1
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/776171/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 12,
+  "runs": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  }
+ }
+}

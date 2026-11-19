@@ -68,6 +68,13 @@ export const SERIES = {
   'std-2021-nlcs6-smith': { club: 'Los Angeles Dodgers' },
   'std-2023-ws1-sewald': { club: 'Texas Rangers' },
   'std-2025-ws6-glasnow': { club: 'Toronto Blue Jays' },
+  // the 13 clubs' situations (2026-11-18): the postseason ones, whose titles name no club
+  'std-2025-alcs7-hoffman': { club: 'Seattle Mariners' },
+  'std-2020-alwc1-colome': { club: 'Oakland Athletics' },
+  'std-2024-alwc2-vest': { club: 'Houston Astros' },
+  'std-2025-alcs1-munoz': { club: 'Toronto Blue Jays' },
+  'std-2020-nlwc2-kintzler': { club: 'Chicago Cubs' },
+  'std-2019-nlwc-hudson': { club: 'Milwaukee Brewers' },
 };
 
 const norm = (s) => String(s || '').trim().toLowerCase();

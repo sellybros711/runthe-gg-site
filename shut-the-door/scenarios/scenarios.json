@@ -1,5 +1,5 @@
 {
- "_about": "The approved scenarios in daily rotation order: the ten of CONTRACT.md section 14, then twenty more (2026-10-30). 'verify' names the data/verify file that holds the facts. 'arsenal' is which season mix the pitcher's arsenal uses: 'postseason' for the starters, by the owner's ruling. Proxy spots carry the arsenal source they use.",
+ "_about": "The approved scenarios in daily rotation order: the ten of CONTRACT.md section 14, then twenty more (2026-10-30), then one for each of the 13 clubs that had none (2026-11-18). 'verify' names the data/verify file that holds the facts. 'arsenal' is which season mix the pitcher's arsenal uses: 'postseason' for the starters, by the owner's ruling. Proxy spots carry the arsenal source they use.",
  "scenarios": [
   {"id": "std-2025-ws7-yamamoto", "verify": "yamamoto-2025-ws7", "title": "Game 7, 2025 World Series", "arsenal": "postseason"},
   {"id": "std-2011-ws6-feliz", "verify": "feliz-2011-ws6", "title": "Game 6, 2011 World Series", "arsenal": "regular"},
@@ -43,6 +43,18 @@
   {"id": "std-2008-krod-sea", "verify": "rodriguez-2008-58th", "title": "Mariners at Angels, September 13, 2008", "arsenal": "regular"},
   {"id": "std-2025-ws6-glasnow", "verify": "glasnow-2025-ws6", "title": "Game 6, 2025 World Series", "arsenal": "postseason"},
   {"id": "std-2010-ws5-wilson", "verify": "wilson-2010-ws5", "title": "Game 5, 2010 World Series", "arsenal": "regular"},
-  {"id": "std-2009-alcs6-rivera", "verify": "rivera-2009-alcs6", "title": "Game 6, 2009 ALCS", "arsenal": "regular"}
+  {"id": "std-2009-alcs6-rivera", "verify": "rivera-2009-alcs6", "title": "Game 6, 2009 ALCS", "arsenal": "regular"},
+  {"id": "std-2025-alcs7-hoffman", "verify": "hoffman-2025-alcs7", "title": "Game 7, 2025 ALCS", "arsenal": "regular"},
+  {"id": "std-2016-britton-tor", "verify": "rs-britton-2016-09-28", "title": "Orioles at Blue Jays, September 28, 2016", "arsenal": "regular"},
+  {"id": "std-2020-alwc1-colome", "verify": "colome-2020-alwc1", "title": "Game 1, 2020 AL Wild Card Series", "arsenal": "regular"},
+  {"id": "std-2025-smith-det", "verify": "rs-smith-2025-09-23", "title": "Tigers at Guardians, September 23, 2025", "arsenal": "regular"},
+  {"id": "std-2024-alwc2-vest", "verify": "vest-2024-alwc2", "title": "Game 2, 2024 AL Wild Card Series", "arsenal": "regular"},
+  {"id": "std-2015-melancon-chc", "verify": "rs-melancon-2015-09-25", "title": "Pirates at Cubs, September 25, 2015", "arsenal": "regular"},
+  {"id": "std-2019-rogers-det", "verify": "rs-rogers-2019-09-24", "title": "Twins at Tigers, September 24, 2019", "arsenal": "regular"},
+  {"id": "std-2024-helsley-sf", "verify": "rs-helsley-2024-09-27", "title": "Cardinals at Giants, September 27, 2024", "arsenal": "regular"},
+  {"id": "std-2025-alcs1-munoz", "verify": "munoz-2025-alcs1", "title": "Game 1, 2025 ALCS", "arsenal": "regular"},
+  {"id": "std-2018-davis-wsh", "verify": "rs-davis-2018-09-28", "title": "Nationals at Rockies, September 28, 2018", "arsenal": "regular"},
+  {"id": "std-2020-nlwc2-kintzler", "verify": "kintzler-2020-nlwc2", "title": "Game 2, 2020 NL Wild Card Series", "arsenal": "regular"},
+  {"id": "std-2019-nlwc-hudson", "verify": "hudson-2019-nlwc", "title": "NL Wild Card Game, 2019", "arsenal": "regular"}
  ]
 }

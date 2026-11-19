@@ -21,6 +21,15 @@
 var C = window.STD_CONTRACT, API = window.STD_API, M = window.STD_MOUND, AN = window.STD_ANIM, MN = window.STD_MENUS;
 /* the modes around the daily (modes-ui.js): the save, the vote, Survivor, the archive */
 var MU = window.STD_MODES_UI || null;
+/* the home on a desk (desk.js): Survivor and the archive both on screen, the Pro card as the bar */
+var DESK = window.STD_DESK || null;
+function desk() { return !!(DESK && DESK.on()); }
+/* a mode's panel is on screen: its tab is the open one, or the desk shows every mode at once */
+function showing(t) { return tab === t || desk(); }
+/* your history (history-ui.js): the Pro perk's screen */
+var HU = window.STD_HISTORY_UI || null;
+/* the welcome to Pro (pro-welcome.js): once, after a checkout comes back and Pro lands */
+var PW = window.STD_PRO_WELCOME || null;
 var METER = window.STD_METER || null;
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -136,7 +145,7 @@ var TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', 
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
   /* Survivor and the archive put their own spot on the mound; the home and its links are today's */
-  if (id === 's-home' || id === 's-board') dailyBack();
+  if (id === 's-home' || id === 's-board' || id === 's-hist') dailyBack();
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
@@ -156,7 +165,7 @@ function show(id) {
    goes home the way the header's lockup does (a fresh home, where the outing resumes); a play in
    flight finishes first, so back then does nothing. */
 var BACK_SKIP = false;
-function openNow() { return (MN && MN.isOpen()) || (document.body.dataset.screen || 's-home') !== 's-home'; }
+function openNow() { return (PW && PW.isOpen()) || (MN && MN.isOpen()) || (document.body.dataset.screen || 's-home') !== 's-home'; }
 function backSync() {
   var mine = !!(history.state && history.state.std);
   if (openNow()) { if (!mine) try { history.pushState({ std: 1 }, ''); } catch (e) {} return; }
@@ -169,10 +178,13 @@ function backSync() {
 }
 function backPressed() {
   if (BACK_SKIP) { BACK_SKIP = false; backSync(); return; }
+  if (PW && PW.isOpen()) { PW.close(); return; }
   if (MN && MN.isOpen()) { MN.close(); return; }
   var id = document.body.dataset.screen || 's-home';
   if (id === 's-home') return;
   if (id === 's-clip' && window.STD_CLIP_UI) { window.STD_CLIP_UI.close(); backSync(); return; }
+  /* a kept outing looked back on goes back to the history, its list as it was */
+  if (id === 's-result' && S.mode === 'history') { show('s-hist'); return; }
   if (id === 's-mound' || id === 's-half' || id === 's-next') {
     if (S.busy) { backSync(); return; }
     moundHome();
@@ -2043,7 +2055,8 @@ function finish() {
   return API.finishOuting(id).then(function (r) {
     if (EV()) EV().outingEnd(id, S.mode, evDay(), r);
     /* a save as a club's closer unlocks its plate (plate.js). Practice is not kept, so it unlocks nothing */
-    var won = r.outcome === 'door_shut' && S.mode !== 'practice' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : null;
+    var won = r.outcome === 'door_shut' && S.mode !== 'practice' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : [];
+    won = won && won.length ? won : null;
     if (won) paintProfile();
     if (S.mode === 'survivor') return survivorNext(r);
     S.result = r;
@@ -2068,13 +2081,14 @@ function finish() {
 
 /* The unlock, on the result after a save that earned a new club's plate. A line, never a popup. */
 function unlockNote() {
-  var el = $('r-unlock'), k = S.unlocked, PL = window.STD_PLATE;
+  var el = $('r-unlock'), ks = S.unlocked, PL = window.STD_PLATE;
   if (!el) return;
-  el.hidden = !k || !PL;
-  if (!k || !PL) { el.innerHTML = ''; return; }
-  var st = authNow();
-  el.innerHTML = PL.svg(k, PL.initials(st.name, st.initials), { cls: 'ru-p' }) +
-    '<span><b>' + esc(PL.nameOf(k)) + ' plate unlocked</b><button type="button" class="ru-go" id="r-unlock-go">wear it</button></span>';
+  el.hidden = !ks || !PL;
+  if (!ks || !PL) { el.innerHTML = ''; return; }
+  /* a save in a throwback era opens two: today's club and that era's colours, one line for both */
+  var st = authNow(), ini = PL.initials(st.name, st.initials);
+  el.innerHTML = ks.map(function (k) { return PL.svg(k, ini, { cls: 'ru-p' }); }).join('') +
+    '<span><b>' + ks.map(function (k) { return esc(PL.nameOf(k)); }).join(' and ') + (ks.length > 1 ? ' plates' : ' plate') + ' unlocked</b><button type="button" class="ru-go" id="r-unlock-go">wear it</button></span>';
   $('r-unlock-go').addEventListener('click', function () { MN.show('auth'); });
 }
 function authNow() { try { return (window.STD_AUTH && window.STD_AUTH.state()) || {}; } catch (e) { return {}; } }
@@ -2088,6 +2102,29 @@ function paintProfile() {
   b.setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
   b.title = st.signedIn ? 'Account' : 'Sign in';
   b.innerHTML = st.signedIn && PL ? PL.svg(PL.current(), PL.initials(st.name, st.initials), { cls: 'hp' }) : '<span>sign in</span>';
+}
+/* The entitlements, once they answer: the archive's menu, and Diamond (plate.js) by the same Pro gate */
+function proPlate(e) {
+  MN.init({ ent: e });
+  paintProCard(e);
+  if (showing('arc')) MN.renderPast();
+  if (MN.current() === 'sheet-stats') MN.renderHistRow();
+  if (window.STD_PLATE) {
+    window.STD_PLATE.setPro(e && e.pro);
+    paintProfile();
+    if (MN.current() === 'sheet-auth') MN.renderAuth();
+  }
+}
+/* THE PRO CARD (pro-card.js) under today's top 3: once the entitlements answer, and only while they say
+   not Pro. Repainted with them, so signing in or buying takes it away. On a desk it is the slim bar
+   under the columns (desk.js), repainted when the window crosses 980 px. */
+var proEnt = null;
+function paintProCard(e) {
+  var el = $('h-pro'), C = window.STD_PRO_CARD, show = !!(C && e && !e.pro);
+  proEnt = e;
+  if (!el) return;
+  el.innerHTML = show ? (desk() && C.bar ? C.bar() : C.home()) : '';
+  el.hidden = !show || !el.innerHTML;
 }
 /* signed in: the account's plates, and a guest's chosen plate carried over when the account has it */
 function syncPlates() {
@@ -2203,9 +2240,10 @@ function placePill() {
   bar.style.setProperty('--i', Math.max(0, live.indexOf(tab)));
 }
 function fillTab(t) {
-  if (t === 'daily' && window.STD_BOARD && window.STD_BOARD.peek) window.STD_BOARD.peek();
-  if (t === 'surv' && MU) MU.showSurvivor();
-  if (t === 'arc' && MN.renderPast) MN.renderPast();
+  /* a desk shows every mode at once (desk.js), so each draws whichever tab is picked */
+  if ((t === 'daily' || desk()) && window.STD_BOARD && window.STD_BOARD.peek) window.STD_BOARD.peek();
+  if ((t === 'surv' || desk()) && MU) MU.showSurvivor();
+  if ((t === 'arc' || desk()) && MN.renderPast) MN.renderPast();
 }
 function landTab() { if (tabMove) { clearTimeout(tabMove.t); tabMove.land(); } }
 /* how: 'snap' with no move; keep: remember the pick on this device */
@@ -2288,6 +2326,66 @@ function wireTabs() {
   }, { passive: true });
 }
 
+/* ---- THE WELCOME TO PRO (pro-welcome.js; the owner, 2026-11-18). pro.js calls this once, when a
+   checkout has come back and the entitlements say Pro: the answer to the purchase just made, never a
+   boot or a timer. It waits for the loading screen, takes the toast away, and shows once per account
+   on this device (pro-welcome.js SEEN). Each row goes to its place; the primary button is the archive. */
+function proWelcome(o) {
+  if (!PW) return false;
+  var st = {}; try { st = (window.STD_AUTH && window.STD_AUTH.state()) || {}; } catch (e) {}
+  if (PW.seen(st.userId)) return false;
+  var PL = window.STD_PLATE;
+  BOOT.ready.then(function () {
+    var t = $('toast'); if (t) { clearTimeout(toast._t); t.classList.remove('on'); }
+    PW.show({ uid: st.userId, letters: PL && st.signedIn ? PL.initials(st.name, st.initials) : '', pair: !!(o && o.pair) });
+  });
+  return true;
+}
+/* on a desk (desk.js) Survivor and the archive are columns of their own, with no tabs: scroll to the
+   column; on a phone, to the tabs, with the picked one open */
+function proLand(t) {
+  /* after the home and the tab have settled (show() and the tab's move put the page back at the top) */
+  setTimeout(function () {
+    var el = !desk() ? $('h-modes') : t === 'surv' ? $('d-surv') : document.querySelector('.d-arc');
+    if (el) try { el.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); } catch (e) {}
+  }, TAB_MS + 40);
+}
+function proGo(where) {
+  if (where === 'arc') { MN.show('past'); proLand('arc'); return; }
+  if (where === 'hist') { showHistory(); return; }
+  if (where === 'plate') {
+    MN.show('auth');
+    var g = $('pk-grid'); if (g) try { g.scrollIntoView({ block: 'start' }); } catch (e) {}
+    return;
+  }
+  if (where === 'surv') {
+    if (MN.isOpen()) MN.close(true);
+    if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); }
+    setTab('surv', null, true);
+    proLand('surv');
+  }
+}
+
+/* ---- your history (Pro, history-ui.js): every kept daily and Survivor run. The screen opens only from
+   its row in the stats sheet; a row opens that outing's result again, rebuilt from its calls (api.js
+   historyOpen), in the result's history mode: no share, no board, no post, nothing kept. Its pitches
+   play as clips. Back goes to the list. */
+function showHistory() {
+  if (MN.isOpen()) MN.close(true);
+  show('s-hist');
+  if (HU) HU.show();
+}
+function viewHistory(v) {
+  S.scn = v.scenario;
+  S.mode = 'history';
+  S.outing = v.state;
+  S.result = v.result;
+  S.unlocked = null;
+  renderResult();
+  unlockNote();
+  show('s-result');
+}
+
 /* ---- the archive (Pro, CONTRACT.md 17): a past daily on its own spot and seed. Only reachable
    when entitlements() says archive, which is false for everyone until Pro exists. */
 function playArchive(day) {
@@ -2302,7 +2400,7 @@ function playArchive(day) {
       pbp('archive', '#' + scn.number + '. ' + batterAt(st.batterIndex).name + ' leads off.');
     });
   }).catch(function (e) {
-    toast(e && /for Pro/.test(e.message || '') ? 'past dailies open later.' : 'that day didn\'t load. try again.');
+    toast(e && /for Pro/.test(e.message || '') ? 'past dailies are for pro.' : 'that day didn\'t load. try again.');
     if (window.console) console.warn(e);
   });
 }
@@ -2313,7 +2411,9 @@ function runsOf(r, st) { return r.runs != null ? r.runs : st && st.score ? st.sc
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
   var runs = runsOf(r, st);
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : (S.mode === 'archive' ? 'archive · ' : '') + (s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
+  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored'
+    : (S.mode === 'archive' ? 'archive · ' : S.mode === 'history' ? 'your history · ' + fmtDay(s.day) + ' · ' : '') +
+      (s.survivor ? 'survivor' : s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
@@ -2345,6 +2445,9 @@ function renderResult() {
     vsWhy(r, rv, runs) + '</div>';
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
+  /* a kept outing looked back on (history-ui.js): back to the list, and no board (today's is not its day) */
+  $('r-board').hidden = S.mode === 'history';
+  $('r-hist-go').hidden = S.mode !== 'history';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
   /* Run The Diamond, under the menu: not on a player's first result, as the Diamond's own promo
      (site PR 1015). The signal is the device's daily history (hist, written before this draws): a
@@ -2895,9 +2998,9 @@ function boot() {
       if (MN.current() === 'sheet-auth') MN.renderAuth();
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
       if (document.body.dataset.screen === 's-result' && S.result) renderModes();
-      if (document.body.dataset.screen === 's-home' && tab === 'surv' && MU) MU.showSurvivor();
+      if (document.body.dataset.screen === 's-home' && showing('surv') && MU) MU.showSurvivor();
       if (document.body.dataset.screen === 's-home') homeVote();
-      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
+      if (MU) MU.entitlements().then(proPlate);
     });
   } catch (e) {}
   /* a daily played signed out, posted on the sign-in (api.js claim): say where it landed */
@@ -2912,6 +3015,11 @@ function boot() {
     if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
   });
   $('r-vote-go').addEventListener('click', jumpToVote);
+  $('r-hist-go').addEventListener('click', function () { show('s-hist'); });
+  if (HU) HU.init({
+    onOpen: viewHistory, toast: toast,
+    onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
+  });
   if (MU) MU.init({
     onVote: voteRow,
     signIn: function () { MN.show('auth'); },
@@ -2919,6 +3027,12 @@ function boot() {
     onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
   });
   wireTabs();
+  /* the window crosses 980 px (desk.js): the Pro card turns into the bar or back, and on a desk every
+     mode draws at once. Before the home has its day nothing is drawn yet, so nothing to redo */
+  if (DESK) DESK.onChange(function () {
+    if (proEnt) paintProCard(proEnt);
+    if (S.scn) fillTab(tab);
+  });
   window.STD_BOARD.init({
     day: S.day, before: postIfOwed,
     played: function () { return !!S.dailyResult; },
@@ -2931,7 +3045,7 @@ function boot() {
   MN.onChange = backSync;
   MN.init({
     onPlate: function () { paintProfile(); if (document.body.dataset.screen === 's-board') window.STD_BOARD.load(); },
-    hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
+    hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive, onHistory: showHistory,
     onPast: function () { if (MN.isOpen()) MN.close(true); if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); } setTab('arc', null, true); },
     archiveDays: MU ? MU.archiveDays : null,
     onPref: function (k, v) {
@@ -2969,7 +3083,24 @@ function boot() {
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
   window.addEventListener('std-clubs', function () { if (S.scn && document.body.dataset.screen === 's-mound') setPitcher(); });
 
-  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
+  if (MU) MU.entitlements().then(proPlate);
+  /* the store's buy button and the way back from Stripe (pro.js): a new answer repaints every Pro door */
+  if (PW) PW.init({ go: proGo, onChange: backSync });
+  if (window.STD_PRO) {
+    window.STD_PRO.init({
+      signIn: function () { MN.show('auth'); },
+      toast: toast,
+      welcome: proWelcome,
+      refresh: function () {
+        return MU ? MU.entitlements().then(function (e) {
+          proPlate(e);
+          if (document.body.dataset.screen === 's-home' && showing('surv')) MU.showSurvivor();
+          return e;
+        }) : null;
+      },
+    });
+    window.STD_PRO.returned();
+  }
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
     S.dailyScn = scn;
