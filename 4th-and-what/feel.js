@@ -93,6 +93,10 @@
       [523, 659, 784, 1047].forEach(function (f, i) { setTimeout(function () { tone(f, i === 3 ? 0.5 : 0.16, 0.16, 'square'); tone(f / 2, i === 3 ? 0.5 : 0.16, 0.08, 'triangle'); }, i * 95); });
     },
     /* a stop lost: a low thud as the pip breaks */
+    /* a moment earned: a quick bright sparkle, one more note for each */
+    sparkle: function (n) {
+      for (var i = 0; i < 3 + Math.min(3, (n || 1) - 1); i++) (function (i) { setTimeout(function () { tone(1568 + i * 220, 0.09, 0.07, 'sine'); tone(2093 + i * 260, 0.07, 0.04, 'triangle'); }, i * 55); })(i);
+    },
     pip: function () { noise(0.18, 140, 1, 0.5, 'lowpass', 0.004, 60); tone(150, 0.32, 0.22, 'sine', 55); }
   };
   function play(kind, arg) { if (!on) return; try { var a = ctx(); if (!a || a.state !== 'running') return; SOUNDS[kind] && SOUNDS[kind](arg); } catch (e) {} }

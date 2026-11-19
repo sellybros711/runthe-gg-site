@@ -180,6 +180,7 @@
     /* a run's end sends any playbook stats its snaps kept (book.js putStats) */
     if (st.over && A.store && A.store.flush) A.store.flush();
     $('rGoTally').textContent = tallyText(st);
+    score(st, load(BEST));
     /* THE HIT (2026-11-19): the climb, the stops, the end. Once a snap: the card can be
        shown again for the same snap, and a replay never plays it twice */
     var fresh = res && res.seed !== lastHit; lastHit = res && res.seed;
@@ -187,7 +188,7 @@
     hit(bb, false);
     if (fresh && res.win && !st.over) {
       if (F) F.play('ladder', st.n);
-      hit($('rGoTally'), 'pop');
+      hit($('rGoN'), 'pop');
       /* passing your best mid run: once a run, and only when there was a best to pass */
       if (best && !st.beat && better(st, best)) { st.beat = true; save(KEY, st); flash(bb, 'New best', F); }
     }
@@ -205,6 +206,32 @@
     $('rGoOn').hidden = st.over; $('rGoAgain').hidden = !st.over; $('rGoShare').hidden = !st.over;
     if (st.over && st.daily) $('rGoHead').textContent = "Today's run is in";
     renderBoard();
+  }
+  /* THE SCOREBOARD (2026-11-19): converted, yards and TDs in lights, the stops as bulbs, and a
+     ladder of conversions with your best marked, so the next record is always in view */
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+  function score(s, b) {
+    if (!$('rGoN')) return;
+    $('rGoN').textContent = pad2(s.n); $('rGoY').textContent = String(s.yards); $('rGoT').textContent = String(s.tds || 0);
+    $('rGoBestLbl').textContent = b && b.n ? 'Best ' + b.n : '';
+    var lad = $('rGoLadder'); lad.textContent = '';
+    var bn = b && b.n || 0, L = Math.min(15, Math.max(8, bn + 1, s.n + 1));
+    for (var i = 0; i < L; i++) {
+      var seg = document.createElement('i');
+      seg.className = i < s.n ? 'on' + (i === s.n - 1 ? ' new' : '') : (bn && i === bn - 1 ? 'best' : '');
+      lad.appendChild(seg);
+    }
+  }
+  /* Call it's strip: the same scoreboard in one row */
+  function strip(chip, s) {
+    chip.textContent = '';
+    var add = function (tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; chip.appendChild(e); return e; };
+    add('b', 'led', pad2(s.n)); add('i', null, 'conv');
+    add('b', 'led w', String(s.yards)); add('i', null, 'yds');
+    if (s.tds) { add('b', 'led w', String(s.tds)); add('i', null, s.tds === 1 ? 'TD' : 'TDs'); }
+    var bl = add('span', 'bulbs');
+    for (var i = 0; i < STOPS; i++) { var e = document.createElement('i'); e.className = i < stopsLeft(s) ? 'on' : 'off'; bl.appendChild(e); }
+    if (stopsLeft(s) === 1) add('em', null, 'Last stop');
   }
   /* the hit's pieces: a class that replays its animation, the badge, the pips, the near miss */
   function hit(e, cls) { if (!e) return; if (cls === false) { e.hidden = true; e.classList.remove('burst'); return; } e.classList.remove(cls); void e.offsetWidth; e.classList.add(cls); }
@@ -234,13 +261,13 @@
     $('goStart').querySelector('span').textContent = live && !st.daily ? 'Resume run' : 'Go for it';
     $('goSub').textContent = live ? 'On a run: ' + tallyText(st) + '.' : 'Convert 4th down after 4th down. ' + stopsWord() + " stops and you're done.";
     /* Home's Go For It card (the owner, 2026-11-16: Home leads with it) */
-    if ($('hGoT')) { $('hGoT').textContent = live && !st.daily ? 'Resume run' : 'Go For It'; $('hGoSub').textContent = live && !st.daily ? 'On a run: ' + tallyText(st) + '.' : 'Convert 4th down after 4th down. How far can you go?'; }
+    if ($('hGoT')) { $('hGoT').textContent = live && !st.daily ? 'Resume run' : 'Go For It'; $('hGoSub').textContent = live && !st.daily ? 'On a run: ' + tallyText(st) + '.' : b ? 'Best: ' + tallyText(b) + '.' : 'Convert 4th down after 4th down. How far can you go?'; }
     $('goBest').textContent = b ? 'Best: ' + tallyText(b) : '';
     $('goBest').hidden = !b;
     var dk = load(dayKey(today()));
     $('goDaily').querySelector('span').textContent = dk ? "Today's run is in" : "Today's run";
     $('goDailySub').textContent = dk ? dk.n + ' converted · ' + dk.yards + ' yds' + (dk.rank ? ' · number ' + dk.rank + ' on the board' : '') + '. Back tomorrow.' : 'Same downs for everybody. One shot at the board.';
-    var chip = $('cRun'); if (chip) { chip.hidden = !active || !st; if (active && st) chip.textContent = tallyText(st) + ' · ' + '\u25CF'.repeat(stopsLeft(st)) + '\u25CB'.repeat(STOPS - stopsLeft(st)) + (stopsLeft(st) === 1 ? ' · Last stop' : '');
+    var chip = $('cRun'); if (chip) { chip.hidden = !active || !st; if (active && st) { strip(chip, st); chip.setAttribute('aria-label', tallyText(st) + ' · ' + '\u25CF'.repeat(stopsLeft(st)) + '\u25CB'.repeat(STOPS - stopsLeft(st)) + (stopsLeft(st) === 1 ? ' · Last stop' : '')); }
       chip.classList.toggle('last', !!(active && st && !st.over && stopsLeft(st) === 1)); }
   }
   /* the stops in words, from STOPS (the numbers rule: never typed) */
