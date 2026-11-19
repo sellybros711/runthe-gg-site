@@ -8864,7 +8864,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
      the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
 <script src="/assets/rewarded.js?v=1"></script>
-<script src="/assets/rtg-ads.js?v=3"></script>
+<script src="/assets/rtg-ads.js?v=4"></script>
 <script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
@@ -10365,6 +10365,18 @@ function stickyAd(id){
 }
 function boardRails(id){
   if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
+  if(id!=='s-board'&&window.RTG_ADS&&RTG_ADS.rows) RTG_ADS.rows(false);
+}
+/* THE ROW AD (Ads Agent, 2026-11-19, the owner's call). A 300x250 between the rows of a long
+   board: one in the middle of a board of 80 to 149 runs, then after rank 50, 100 and 150 with 30
+   runs below each, never more than three, and none while the desktop rails are up. The classic
+   board and the Dynasty board share the unit. Both paints call this after they write the list,
+   so a tab, a sort or a new competition moves the ad already asked for and never asks again.
+   /assets/rtg-ads.js owns how it looks and behaves; it never touches a row or a tap. */
+const ROW_SLOT={row:'8108360115'};                            // football-board-row
+function boardRowAd(total,above){
+  if(!window.RTG_ADS||!RTG_ADS.rows) return;
+  RTG_ADS.rows($('s-board').classList.contains('on'), $('lb-rows'), ROW_SLOT.row, {row:'.lbr', offset:above, total:total});
 }
 
 /* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
@@ -28076,6 +28088,7 @@ function paintBoard(){
      on .lb .lbr, which skips layout and paint for every row that is off screen. */
   $('lb-rows').innerHTML=rows.slice(above).map((r,j)=>boardRow(r,above+j)).join('');
   paintMyPin(rows);
+  boardRowAd(rows.length,above);
 }
 
 /* ── DYNASTY BOARD ──────────────────────────────────────────────────────────────
@@ -28197,6 +28210,7 @@ function paintDynastyBoard(){
   const above=paintDynastyPodium(rows)?3:0;
   $('lb-rows').innerHTML=rows.slice(above).map((r,j)=>dynastyRow(r,above+j)).join('');
   paintDynastyMine(rows);
+  boardRowAd(rows.length,above);
 }
 
 /* SEASONS is the big number in seconds; on the score board the two swap so the ranking axis
