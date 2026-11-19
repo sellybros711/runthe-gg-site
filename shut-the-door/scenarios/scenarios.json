@@ -55,6 +55,7 @@
   {"id": "std-2025-alcs1-munoz", "verify": "munoz-2025-alcs1", "title": "Game 1, 2025 ALCS", "arsenal": "regular"},
   {"id": "std-2018-davis-wsh", "verify": "rs-davis-2018-09-28", "title": "Nationals at Rockies, September 28, 2018", "arsenal": "regular"},
   {"id": "std-2020-nlwc2-kintzler", "verify": "kintzler-2020-nlwc2", "title": "Game 2, 2020 NL Wild Card Series", "arsenal": "regular"},
-  {"id": "std-2019-nlwc-hudson", "verify": "hudson-2019-nlwc", "title": "NL Wild Card Game, 2019", "arsenal": "regular"}
+  {"id": "std-2019-nlwc-hudson", "verify": "hudson-2019-nlwc", "title": "NL Wild Card Game, 2019", "arsenal": "regular"},
+  {"id": "std-2025-pagan-mil", "verify": "rs-pagan-2025-09-26", "title": "Reds at Brewers, September 26, 2025", "arsenal": "regular"}
  ]
 }

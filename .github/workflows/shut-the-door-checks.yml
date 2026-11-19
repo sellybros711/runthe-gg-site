@@ -37,6 +37,8 @@ name: Shut The Door checks
 #              101 and 142 (the store's premium_unlocks), then 181_shut_the_door_pro.sql (Pro on sale,
 #              a real std_premium row honoured) twice and its test
 #              182_shut_the_door_history.sql (your history, a Pro perk) twice and its test
+#              184_shut_the_door_reds.sql (the Reds' situation, the last of the 13 clubs), from a clean
+#              vote slate, twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -264,3 +266,10 @@ jobs:
           $P -f supabase/183_shut_the_door_challenges.sql
           $P -f supabase/183_shut_the_door_challenges.sql
           $P -f supabase/test/shut_the_door_challenges_test.sql
+      - name: 184 applied twice, then its test (the Reds' situation, the last of the 13 clubs)
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -c "delete from public.shutdoor_votes; delete from public.shutdoor_vote_days"
+          $P -f supabase/184_shut_the_door_reds.sql
+          $P -f supabase/184_shut_the_door_reds.sql
+          $P -f supabase/test/shut_the_door_reds_test.sql
