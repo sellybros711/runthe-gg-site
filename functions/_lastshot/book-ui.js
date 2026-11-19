@@ -229,7 +229,7 @@ export function mountBooks(app) {
     ed.syncChip = () => { const S = scenarioFor(SC, e.situation); chip.textContent = 'Down ' + (S.them - S.us) + ' · ' + S.clock.toFixed(1) + ' · ' + S.handler.slice(1) + ' has it'; };
     ed.syncChip();
     bar.appendChild(el('div', { class: 'erow nowrap' }, [name, el('button', { class: 'btn dark tbtn', id: 'pbTest', text: 'Test it', on: { click: () => testSheet(ed) } })]));
-    const more = el('details', { class: 'more', id: 'pbMore' }, [el('summary', {}, [chip, el('span', { class: 'muted', text: ' · more' })]),
+    const more = el('details', { class: 'more', id: 'pbMore' }, [el('summary', {}, [chip, el('span', { class: 'muted', text: '\u00a0· more' })]),
       el('div', { class: 'erow small' }, [sug]),
       el('div', { class: 'erow' }, [el('label', { class: 'lab' }, ['Clock ', clock]), handler, sec]),
       el('div', { class: 'erow' }, [el('label', { class: 'lab', text: 'Run against' }), against,

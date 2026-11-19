@@ -113,30 +113,30 @@ function yawOf(deg) {
 
 /* ---------- the floor ---------- */
 let FLOOR = null;
+/* THE FLOOR (2026-11-19, the owner: maple). Light maple boards that run
+   toward the basket, as a court is laid, with quiet seams and staggered
+   joints; a stained lane; cream lines. It replaced boards that ran across
+   the floor in three loud shades, which read as stripes once zoomed. */
 function floor() {
   if (FLOOR) return FLOOR;
   const W = COURT.W * PX, H = COURT.H * PX;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
-  const wood = ramp('#c48a52');
-  // boards run across the floor, a seam every 3 pixels, joints staggered
-  for (let y = 0; y < H; y++) {
-    const band = Math.floor(y / 3);
-    g.fillStyle = wood[1 + ((band * 7) % 3)];
-    g.fillRect(0, y, W, 1);
-    if (y % 3 === 2) { g.fillStyle = wood[0]; g.globalAlpha = 0.35; g.fillRect(0, y, W, 1); g.globalAlpha = 1; }
-    const j = ((band * 37) % 23) * 4;
-    for (let x = j; x < W; x += 92) { g.fillStyle = wood[0]; g.fillRect(x, y, 1, 1); }
+  for (let x = 0; x < W; x++) {
+    const band = Math.floor(x / 3);
+    g.fillStyle = ((band * 5) % 3) === 0 ? '#d6a76c' : '#dcae74';
+    g.fillRect(x, 0, 1, H);
+    if (x % 3 === 2) { g.globalAlpha = 0.28; g.fillStyle = '#a8743f'; g.fillRect(x, 0, 1, H); g.globalAlpha = 1; }
+    const j = ((band * 37) % 29) * 3;
+    g.globalAlpha = 0.35; g.fillStyle = '#a8743f';
+    for (let y = j; y < H; y += 87) g.fillRect(x, y, 1, 1);
+    g.globalAlpha = 1;
   }
-  // the lane, painted
-  const lane = ramp('#9a4a24');
-  g.fillStyle = lane[2]; g.globalAlpha = 0.55;
+  g.fillStyle = '#a35f2a'; g.globalAlpha = 0.42;
   g.fillRect((COURT.RIM.x - COURT.LANE / 2) * PX, 0, COURT.LANE * PX, COURT.FT * PX);
   g.globalAlpha = 1;
-  // lines, one pixel at a time so nothing is anti aliased
-  g.fillStyle = '#f2ead6';
+  g.fillStyle = '#fbf6ea';
   for (const line of courtLines()) for (let i = 1; i < line.length; i++) pixLine(g, line[i - 1].x * PX, line[i - 1].y * PX, line[i].x * PX, line[i].y * PX);
-  // backboard (the rim is drawn live, over the players' shadows)
   g.fillStyle = '#eef2f6'; g.fillRect((COURT.RIM.x - 3) * PX, 4 * PX - 1, 6 * PX, 2);
   FLOOR = cv;
   return cv;
@@ -235,19 +235,31 @@ export function createCourt(cv) {
   /* the view of a box: centre and scale, clamped as above */
   function aim(b, w, h) {
     const full = Math.min((w - 24) / COURT.W, (h - 24) / COURT.H);
-    const s = Math.max(full, Math.min(full * ZOOM, w / (b.x1 - b.x0), h / (b.y1 - b.y0)));
+    const s = Math.max(full, Math.min(full * (b.shot ? SHOT_ZOOM : ZOOM), w / (b.x1 - b.x0), h / (b.y1 - b.y0)));
     const hw = w / (2 * s), hh = h / (2 * s);
     let cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
     /* room to spare up and down goes below the action (toward half court,
        where the card docks), never above the baseline */
-    if (2 * hh > b.y1 - b.y0) cy = b.y0 + hh;
+    if (2 * hh > b.y1 - b.y0) cy = b.shot ? cy + hh * 0.18 : b.y0 + hh;   // the shot sits a little above the middle
     const lo = hw - 1, hi = COURT.W + 1 - hw;
     cx = lo <= hi ? Math.max(lo, Math.min(hi, cx)) : COURT.W / 2;
-    cy = Math.max(hh - 8, Math.min(COURT.H * 2 - hh, cy));
+    cy = Math.max(hh - (b.shot ? 2 : 8), Math.min(COURT.H * 2 - hh, cy));
     return { cx, cy, s };
   }
-  function camView(w, h, fr) {
-    const want = aim(cam.fixed || boxOf([fr]), w, h), now = performance.now();
+  /* THE SHOT CAM (2026-11-19). Once the ball is up, the frame is the shooter,
+     the ball and the rim only, up to SHOT_ZOOM times the whole court fit, and
+     the camera eases in on it: the shot in the air, the make and the miss
+     read on a phone. The other eight still stand where they are; most are
+     just off the edge. Reduced motion keeps its one box. */
+  const SHOT_ZOOM = 3.4;
+  function shotBox(fr, f) {
+    const x = [COURT.RIM.x - 2, COURT.RIM.x + 2, f.x], y = [COURT.RIM.y - 1, COURT.RIM.y + 2, f.y];
+    if (fr.b && Number.isFinite(fr.b[0]) && Number.isFinite(fr.b[1])) { x.push(fr.b[0]); y.push(fr.b[1]); }
+    return { x0: Math.min(...x) - 3.5, x1: Math.max(...x) + 3.5, y0: Math.min(...y) - 8.5, y1: Math.max(...y) + 4, shot: true };
+  }
+  function camView(w, h, fr, focus) {
+    const box = cam.fixed || (focus ? shotBox(fr, focus) : boxOf([fr]));
+    const want = aim(box, w, h), now = performance.now();
     if (!cam.at || cam.w !== w || cam.h !== h) cam.at = want;
     else {
       const k = 1 - Math.exp(-Math.min(0.1, (now - cam.t) / 1000) * EASE), a = cam.at;
@@ -266,7 +278,8 @@ export function createCourt(cv) {
   function draw(fr, opts = {}) {
     last = () => draw(fr, opts);
     const { w, h, ctx, dpr } = sizeCanvas(cv);
-    V = opts.cam && cam && fr ? camView(w, h, fr) : fitView(w, h, 12);
+    const focus = opts.focus && fr && (fr.sk != null || opts.after) ? opts.focus : null;
+    V = opts.cam && cam && fr ? camView(w, h, fr, focus) : fitView(w, h, 12);
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = '#3a2a20'; ctx.fillRect(0, 0, w, h);
     ctx.drawImage(floor(), V.ox, V.oy, COURT.W * V.s, COURT.H * V.s);
