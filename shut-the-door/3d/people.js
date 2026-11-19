@@ -7,8 +7,8 @@
  */
 import * as THREE from 'three';
 import * as M from './materials.js?v=8';
-import { battingClub, clubNamed } from './clubs.js?v=7';
-import { capFor, frontFor } from './uniforms.js?v=2';
+import { battingClub, clubNamed } from './clubs.js?v=8';
+import { capFor, frontFor, wornHome } from './uniforms.js?v=3';
 import * as G from './gear3d.js?v=4';
 import * as HG from './headgear.js?v=5';
 import { measureHead, wear, wornShade } from './headgear.js?v=5';
@@ -112,16 +112,23 @@ export function kitFor(facts, side) {
   const cols = side === 'us' ? ours : (club ? [club.pri, club.sec] : FALLBACK);
   let [trim, other] = darkFirst(cols);
   const home = side === 'us' ? usHome : !usHome;
+  // a custom challenge (facts.matchup): each side is its own pack's side, so its sourced cap and front
+  // number are that pack's, and only in the jersey that game was played in (uniforms.js HOME_SIDE)
+  const mu = facts.matchup;
+  const key = mu ? (side === 'us' ? mu.pitcher : mu.lineup) : facts.scenarioId;
+  const worn = !mu || wornHome(key, side) === home;
+  // one club on both sides (a challenge only): its home whites and road greys tell them apart, in its own colours
+  const same = !!(mu && side !== 'us' && club && clubNamed(facts.pitcher.team) && clubNamed(facts.pitcher.team).nick === club.nick);
   // the two sides never look alike: where the hitters' trim would match the closer's, the club's other
   // colour trims them, if it shows on the base (the nameplate is large type, so 1.8 to 1 will do)
   const ourTrim = darkFirst(ours)[0];
-  if (side !== 'us' && alike(trim, ourTrim) && !alike(other, ourTrim) && contrast(other, home ? WHITE : GREY) >= 1.8) [trim, other] = [other, trim];
+  if (side !== 'us' && !same && alike(trim, ourTrim) && !alike(other, ourTrim) && contrast(other, home ? WHITE : GREY) >= 1.8) [trim, other] = [other, trim];
   const C = (x) => new THREE.Color(x);
   const words = club && club.nick ? (club.as || club.nick).toUpperCase() : null;
   // (only with the words: a side with no club named wears a neutral kit, with nothing on the chest)
-  const fr = words ? frontFor(facts.scenarioId, side) : null;
+  const fr = words && worn ? frontFor(key, side) : null;
   const front = fr ? { at: fr.at, color: C(fr.color || trim), outline: fr.outline ? C(fr.outline) : null } : null;
-  return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim), cap: C(capFor(facts.scenarioId, side) || trim),
+  return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim), cap: C((worn && capFor(key, side)) || trim),
     undershirt: C(trim), belt: C('#111111'), glove: C(lum(other) > 0.85 ? '#f2f2f2' : other), gloveAccent: C(trim), home, words, front };
 }
 

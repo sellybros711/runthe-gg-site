@@ -91,15 +91,15 @@ import * as THREE from 'three';
 import { preload, assetUrl } from './load.js?v=12';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=30';
-import { People } from './people.js?v=64';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=31';
+import { People } from './people.js?v=65';
 import { Pitch, releaseOf } from './pitch.js?v=16';
 import { fromResult, motion } from './play.js?v=24';
 import { look } from './looks.js?v=6';
 import { P, smooth } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=77';
+import { InPlay } from './inplay.js?v=78';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=14';
-import { FirstPerson } from './firstperson.js?v=37';
+import { FirstPerson } from './firstperson.js?v=38';
 import * as IDLE from './idle.js?v=2';
 import * as WALKIN from './walkin.js?v=1';
 
@@ -223,6 +223,8 @@ function factsFrom(scn, extra) {
   const p = scn.pitcher;
   return {
     scenarioId: scn.id, title: scn.title,
+    // a custom challenge's two packs (challenge.js): each side dresses as in its own pack's daily (clubs.js, people.js kitFor)
+    matchup: scn.matchup ? { pitcher: scn.matchup.pitcher, lineup: scn.matchup.lineup, lineupTeam: scn.matchup.lineupTeam } : null,
     pitcher: { name: p.name, team: p.team, throws: p.throws, teamColors: p.teamColors, armAngle: Number.isFinite(p.armAngle) ? p.armAngle : null,
       arsenal: p.arsenal.map((a) => ({ type: a.type, name: a.name, usage: a.usage, velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, shape: a.shape || (C() && C().SHAPE_OF[a.type]), sigmaFt: a.sigmaFt,
         // for the picture only (CONTRACT.md section 4): its own release, arm angle and spin, or null
