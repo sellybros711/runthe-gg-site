@@ -41,7 +41,10 @@ const views = new WeakMap();
 
 let can = null;
 function ok() {
-  if (can === null) { try { const c = document.createElement('canvas'); can = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { can = false; } }
+  /* a very weak phone (2 cores or fewer, or 2 GB or less) keeps the pixel
+     stadium, which it already plays smoothly */
+  const weak = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 2;
+  if (can === null) { try { const c = document.createElement('canvas'); can = !weak && !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { can = false; } }
   return can;
 }
 /* an older phone (few cores) draws at one pixel per pixel */
