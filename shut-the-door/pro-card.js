@@ -89,7 +89,12 @@ function unlock(where) {
   var p = P();
   if (!p) return '';
   var id = 'mu-s-' + String(where || 'menu').replace(/[^a-z0-9-]/gi, '');
-  return '<div class="mu-pro pro-offer" data-pro-where="' + esc(where || 'menu') + '">' + gem('', 'mu-gem') +
+  /* the gem in its own fixed box, with its pixel size written on the svg: iOS Safari drew the bare svg
+     (a flex item sized by CSS alone, with a filter on the svg root and its viewBox off the origin) up and
+     to the left of the row, and the row's rounded clip cut it to a sliver (the owner, 2026-11-19). The
+     shadow is on the box, never on the svg. */
+  var g = gem('', 'mu-gem').replace('<svg ', '<svg width="34" height="35" ');
+  return '<div class="mu-pro pro-offer" data-pro-where="' + esc(where || 'menu') + '"><span class="mu-gi" aria-hidden="true">' + g + '</span>' +
     '<span class="mu-t"><button class="mu-go" type="button" data-pro-buy aria-describedby="' + id + '">Unlock the full game</button>' +
     '<small id="' + id + '">Shut The Door Pro · ' + esc(p.money(p.PRICES[p.BUNDLE])) + ' a year</small></span>' +
     '<i class="chev" aria-hidden="true"></i>' +
