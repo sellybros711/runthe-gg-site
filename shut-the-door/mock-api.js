@@ -108,6 +108,29 @@ function mockRole() {
   return /[?&]mockOwner=1/.test(location.search) ? 'owner' : /[?&]mockTester=1/.test(location.search) ? 'tester' : null;
 }
 var mockClips = [];
+/* ?mockVoices=1: three FICTIONAL contributors already in the review queue, for the review sheet's Person
+   and Call filters. mound_mike has every line live, blue_ump seven, rookie_rae none (and one rejected
+   call, its file gone). The clip is a short silent WAV made here */
+if (/[?&]mockVoices=1/.test(location.search)) (function () {
+  var n = 4000, b = new DataView(new ArrayBuffer(44 + n * 2)), w = function (o, t) { for (var i = 0; i < t.length; i++) b.setUint8(o + i, t.charCodeAt(i)); };
+  w(0, 'RIFF'); b.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+  b.setUint32(24, 8000, true); b.setUint32(28, 16000, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); w(36, 'data'); b.setUint32(40, n * 2, true);
+  var url = URL.createObjectURL(new Blob([b.buffer], { type: 'audio/wav' }));
+  var ids = ['strike', 'strike3', 'ball', 'ball4', 'out', 'yer_out', 'safe', 'foul', 'time', 'play_ball', 'steerike', 'thats_a_strike'], k = 0;
+  var add = function (who, dir, line, st) {
+    k++;
+    var t = new Date(Date.UTC(2026, 10, 18, 12, k)).toISOString();
+    mockClips.push({ id: 'seed-' + k, line: line, status: st, path: st === 'rejected' ? null : dir + '/seed-' + k + '.wav', credit: null, username: who, ms: 900, url: url, createdAt: t,
+      shortlistedBy: st === 'shortlisted' || st === 'approved' ? 'tester_tom' : null, liveBy: st === 'approved' ? 'mockplayer' : null, reviewedBy: st === 'pending' ? null : 'mockplayer' });
+  };
+  ids.forEach(function (l) { add('mound_mike', 'u-mike', l, 'approved'); });
+  ['ball', 'foul'].forEach(function (l) { add('mound_mike', 'u-mike', l, 'pending'); });
+  ids.slice(0, 7).forEach(function (l) { add('blue_ump', 'u-blue', l, 'approved'); });
+  ['foul', 'time', 'play_ball'].forEach(function (l) { add('blue_ump', 'u-blue', l, 'pending'); });
+  add('blue_ump', 'u-blue', 'steerike', 'shortlisted');
+  ['thats_a_strike', 'strike', 'out', 'safe'].forEach(function (l) { add('rookie_rae', 'u-rae', l, 'pending'); });
+  add('rookie_rae', 'u-rae', 'ball4', 'rejected');
+})();
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
   var authState = function () { return mockIn ? { ready: true, waiting: false, signedIn: true, name: 'mockplayer', email: 'mock@example.com', userId: 'mock-user' } : { ready: AUTH_MODE === 'late', waiting: false, signedIn: false }; };

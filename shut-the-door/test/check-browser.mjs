@@ -248,6 +248,10 @@ const UNITS = [
   ['18 two halves, 1440x900', 78, () => halves(1440, 900, true)],
   ['19 the voice of the ump, 390x844', 42, () => voicesWalk(390, 844)],
   ['19 the voice of the ump, 375x667', 46, () => voicesWalk(375, 667)],
+  ['19 the record sheet\'s end, 390x844 dark', 30, () => voicesDone(390, 844, 'dark')],
+  ['19 the record sheet\'s end, 1440x900 light', 30, () => voicesDone(1440, 900, 'light')],
+  ['19 the review filters, 390x844 dark', 25, () => reviewFilters(390, 844, 'dark', 'owner')],
+  ['19 the review filters, 1440x900 light', 25, () => reviewFilters(1440, 900, 'light', 'tester')],
   ['21 the live minimap, 390x844 light', 60, () => liveMinimap(390, 844, 'light')],
   ['21 the live minimap, 1440x900 dark', 60, () => liveMinimap(1440, 900, 'dark')],
   ['22 your history, 390x844 light', 30, () => historyWalk(390, 844, 'light')],
@@ -3571,6 +3575,175 @@ async function voicesWalk(w, h) {
   await testerWalk(w, h);
   await ownerShortlistWalk(w, h);
 }
+/* the record sheet's end screen (the owner, 2026-11-19: a tester on line 12 thought it was stuck).
+   Shut until its row is tapped (the desk's ump row on a desk). On line 12 Skip is Finish. Twelve taps
+   of Skip and Finish reach "All done!" and send nothing: umpSubmit is called zero times. Record a line
+   again goes to line 1. Sending the last line reaches it too, with the count sent and the count waiting.
+   Back to home shuts the sheet and leaves the home up, from the home and from the result */
+async function voicesDone(w, h, theme) {
+  console.log(`\nthe record sheet's end, ${w}x${h} ${theme}`);
+  step('19 the record sheet\'s end', 150);
+  const tag = '19 end ' + w + 'x' + h + ' ' + theme + ': ';
+  const desk = w >= 980;
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1', { meterOff: true, theme });
+  await page.evaluate(() => {
+    window.__calls = 0;
+    const f = window.STD_AUTH.umpSubmit;
+    window.STD_AUTH.umpSubmit = (c) => { window.__calls++; return f(c); };
+  });
+  ok(await nothingOpen(page), tag + 'nothing open by itself');
+  const openRow = async (sel) => { await page.click(sel); await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 }); };
+  const toLast = async () => { for (let i = 0; i < 11; i++) await page.click('#vo-next'); };
+  const inView = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth; };
+  await openRow(desk ? '#d-ump-go' : '#h-voice');
+  await toLast();
+  const last = await page.evaluate(() => {
+    const f = document.getElementById('vo-finish');
+    return { n: document.getElementById('vo-n').textContent, fin: f && f.textContent, dis: f && f.disabled, next: !!document.getElementById('vo-next'), h: f ? Math.round(f.getBoundingClientRect().height) : 0, line: document.getElementById('vo-line').textContent };
+  });
+  ok(last.n === 'Line 12 of 12' && last.fin === 'Finish' && !last.dis && !last.next && last.h >= 38, tag + 'line 12 ("' + last.line + '"): Skip is Finish, ' + last.h + ' px, never a dead button');
+  await page.click('#vo-finish');
+  await page.waitForSelector('#vo-done', { timeout: 3000 });
+  await page.waitForTimeout(250);
+  const done = await page.evaluate((inV) => {
+    const inView = new Function('return ' + inV)();
+    return { calls: window.__calls, h: document.getElementById('vo-done-h').textContent, n: document.getElementById('vo-done-n').textContent,
+      text: document.getElementById('vo-done').textContent, rec: !!document.getElementById('vo-rec'),
+      home: document.getElementById('vo-home').textContent, again: document.getElementById('vo-again').textContent,
+      hh: Math.round(document.getElementById('vo-home').getBoundingClientRect().height), ah: Math.round(document.getElementById('vo-again').getBoundingClientRect().height),
+      seen: inView('vo-home') && inView('vo-again') && inView('vo-done-h'), side: document.documentElement.scrollWidth <= innerWidth + 1,
+      focus: document.activeElement && document.activeElement.id, sent: document.querySelectorAll('#vo-done .vo-dots i.sent').length };
+  }, inView.toString());
+  ok(done.calls === 0 && done.sent === 0, tag + 'twelve taps of Skip and Finish send nothing: umpSubmit called ' + done.calls + ' times');
+  ok(done.h === 'All done!' && done.n === 'No calls sent this session.' && /Every call gets a listen\./.test(done.text) && !done.rec && done.focus === 'vo-done-h',
+    tag + 'the end screen: "' + done.h + '", "' + done.n + '", every call gets a listen, the recorder gone');
+  ok(done.home === 'Back to home' && done.again === 'Record a line again' && done.hh >= 38 && done.ah >= 38 && done.seen && done.side,
+    tag + 'Back to home (' + done.hh + ' px) and Record a line again (' + done.ah + ' px) on screen, no sideways scroll');
+  await page.click('#vo-again');
+  await page.waitForSelector('#vo-rec', { timeout: 3000 });
+  const back = await page.evaluate(() => ({ n: document.getElementById('vo-n').textContent, line: document.getElementById('vo-line').textContent, prev: document.getElementById('vo-prev').disabled, open: !document.getElementById('sheet-voices').hidden }));
+  ok(back.n === 'Line 1 of 12' && back.line === 'Strike!' && back.prev && back.open, tag + 'Record a line again: line 1, "' + back.line + '", the sheet still open');
+  /* the last line's send */
+  await toLast();
+  await page.setInputFiles('#vo-file', { name: 'call.wav', mimeType: 'audio/wav', buffer: tinyWav(900) });
+  await page.waitForSelector('#vo-play', { timeout: 5000 });
+  if (!(await page.evaluate(() => document.getElementById('vo-consent').checked))) await page.check('#vo-consent');
+  await page.click('#vo-send');
+  await page.waitForSelector('#vo-done', { timeout: 5000 });
+  await page.waitForTimeout(250);
+  const sent = await page.evaluate(() => ({ calls: window.__calls, n: document.getElementById('vo-done-n').textContent, p: (document.getElementById('vo-pending') || {}).textContent || '',
+    dots: [...document.querySelectorAll('#vo-done .vo-dots i')].map((i) => i.classList.contains('sent') ? 1 : 0).join('') }));
+  ok(sent.calls === 1 && sent.n === 'You sent 1 call this session.' && /^\d+ calls? waits? for review\.$/.test(sent.p) && sent.dots === '000000000001',
+    tag + 'sending the last line reaches it: "' + sent.n + '", "' + sent.p + '", the 12th dot green');
+  await page.click('#vo-home');
+  await page.waitForSelector('#sheet-voices', { state: 'hidden', timeout: 3000 });
+  const home1 = await page.evaluate(() => ({ screen: document.body.dataset.screen || 's-home', main: !document.getElementById('h-main').hidden }));
+  ok(home1.screen === 's-home' && home1.main && (await nothingOpen(page)), tag + 'Back to home shuts the sheet, the home up');
+  /* from the result: Back to home leaves it for the home. Today's daily through the calls, then back to
+     the page (a load the page may already have begun, so the goto waits for whichever lands, as 19's walk) */
+  await page.evaluate(async () => {
+    const A = window.STD_API, S = window.STD_UI.state;
+    let st = await A.startOuting(S.scn.id, null, { mode: 'daily' });
+    for (let i = 0; st.status === 'live' && i < 90; i++) st = (await A.throwPitch(st.outingId, { type: S.scn.pitcher.arsenal[0].type, cell: 12 })).state;
+  });
+  await page.waitForTimeout(500);
+  await page.goto(BASE + '?mockEnd=door_shut&mockAuth=1', { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.waitForSelector('#d-see', { timeout: 60000 });
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  await openRow('#r-voice');
+  ok(await page.evaluate(() => document.getElementById('vo-n').textContent === 'Line 1 of 12'), tag + 'opened again after the end: line 1');
+  await toLast();
+  await page.click('#vo-finish');
+  await page.waitForSelector('#vo-done', { timeout: 3000 });
+  await page.click('#vo-home');
+  await page.waitForSelector('#sheet-voices', { state: 'hidden', timeout: 3000 });
+  await page.waitForFunction(() => document.body.dataset.screen === 's-home', null, { timeout: 3000 }).catch(() => {});
+  const home2 = await page.evaluate(() => ({ screen: document.body.dataset.screen, main: !document.getElementById('h-main').hidden }));
+  ok(home2.screen === 's-home' && home2.main && (await nothingOpen(page)), tag + 'from the result, Back to home goes to the home (' + home2.screen + ')');
+  ok(errors.length === 0, tag + 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+/* the review sheet's Person and Call filters (the owner, 2026-11-19), through the mock's three FICTIONAL
+   contributors (?mockVoices=1): both filters on every tab, together, kept across the tabs; a person's
+   rows in script order with how many of the 12 lines they have live; the role's own buttons kept */
+async function reviewFilters(w, h, theme, role) {
+  console.log(`\nthe review filters, ${w}x${h} ${theme}, ${role}`);
+  step('19 the review filters', 120);
+  const tag = '19 filters ' + w + 'x' + h + ' ' + role + ': ';
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockVoices=1&' + (role === 'owner' ? 'mockOwner=1' : 'mockTester=1'), { meterOff: true, theme });
+  await menuRow(page, 'settings');
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  await page.click('#set-ump-review');
+  await page.waitForSelector('#sheet-ump-review.on #vr-list .vr-row', { timeout: 3000 });
+  const read = () => page.evaluate(() => {
+    const opts = (id) => [...document.getElementById(id).options].map((o) => o.textContent);
+    const box = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return { h: Math.round(r.height), in: r.left >= 0 && r.right <= innerWidth }; };
+    const set = document.getElementById('vr-set');
+    return { person: opts('vr-person'), line: opts('vr-line'), pv: document.getElementById('vr-person').value, lv: document.getElementById('vr-line').value,
+      rows: [...document.querySelectorAll('#vr-body .vr-row')].map((r) => r.querySelector('.vr-h b').textContent),
+      who: [...document.querySelectorAll('#vr-body .vr-row .vr-h small:first-of-type')].map((r) => (/@(\w+)/.exec(r.textContent) || [])[1]),
+      acts: [...(document.querySelector('#vr-body .vr-row .vr-act') || { querySelectorAll: () => [] }).querySelectorAll('button')].map((b) => b.textContent).join(),
+      set: set ? set.querySelector('#vr-set-n').textContent : null, setText: set ? set.textContent : '', live: set ? set.querySelectorAll('.vo-dots i.sent').length : null,
+      empty: (document.getElementById('vr-empty') || {}).textContent || '', ps: box('vr-person'), ls: box('vr-line'), side: document.documentElement.scrollWidth <= innerWidth + 1 };
+  });
+  const pick = async (id, v) => { await page.selectOption('#' + id, v); await page.waitForTimeout(80); };
+  const tab = async (t) => { await page.click('#vr-body [data-vr-tab="' + t + '"]'); await page.waitForFunction((t) => document.querySelector('#vr-body [data-vr-tab="' + t + '"]').getAttribute('aria-selected') === 'true' && !/Loading\./.test(document.getElementById('vr-body').textContent), t, { timeout: 3000 }); await page.waitForTimeout(80); };
+  /* the owner's sheet opens on the shortlist while calls wait there (177); start from Waiting */
+  if (role === 'owner') ok(await page.evaluate(() => document.querySelector('#vr-body [data-vr-tab="shortlisted"]').getAttribute('aria-selected') === 'true'), tag + 'the owner opens on Shortlisted, as before');
+  await tab('pending');
+  let r = await read();
+  ok(r.pv === 'all' && r.lv === 'all' && JSON.stringify(r.person) === JSON.stringify(['All (9)', '@blue_ump (3)', '@mound_mike (2)', '@rookie_rae (4)']) && r.rows.length === 9,
+    tag + 'Waiting opens on All and All, each person with their count: ' + r.person.join(', '));
+  ok(r.line.length === 13 && r.line[0] === 'All' && r.line[1] === 'Strike!' && r.line[12] === 'That\'s a strike!', tag + 'Call: All, then the 12 lines in script order');
+  ok(r.ps.h >= 38 && r.ls.h >= 38 && r.ps.in && r.ls.in && r.side, tag + 'the two dropdowns side by side, ' + r.ps.h + ' px, inside the screen, no sideways scroll');
+  await pick('vr-person', 'u:rookie_rae');
+  r = await read();
+  ok(r.rows.join('|') === 'Strike!|Out!|Safe!|That\'s a strike!' && r.who.every((x) => x === 'rookie_rae'), tag + 'a person: their calls in script order (' + r.rows.join(', ') + ')');
+  ok(r.set === '0 of 12 lines live' && r.live === 0, tag + 'and how many lines they have live: "' + r.set + '"');
+  await pick('vr-line', 'strike');
+  r = await read();
+  ok(r.rows.join() === 'Strike!' && r.who.join() === 'rookie_rae', tag + 'Person and Call together: one row');
+  await pick('vr-person', 'all');
+  r = await read();
+  ok(r.pv === 'all' && r.lv === 'strike' && r.rows.length === 1 && r.rows[0] === 'Strike!', tag + 'a call alone: every "Strike!" waiting, from anyone (' + r.who.join(', ') + ')');
+  await pick('vr-line', 'foul');
+  r = await read();
+  ok(r.rows.join() === 'Foul ball!,Foul ball!' && r.who.sort().join() === 'blue_ump,mound_mike', tag + 'and "Foul ball!" from two people: ' + r.who.join(', '));
+  await pick('vr-line', 'all');
+  await pick('vr-person', 'u:mound_mike');
+  await page.waitForFunction(() => /of 12 lines live/.test((document.getElementById('vr-set-n') || {}).textContent || ''), null, { timeout: 3000 });
+  r = await read();
+  ok(r.set === '12 of 12 lines live' && r.live === 12 && /A full set\./.test(r.setText) && r.rows.join() === 'Ball!,Foul ball!', tag + 'mound_mike: "' + r.set + '", a full set, his two waiting in script order');
+  await tab('approved');
+  r = await read();
+  ok(r.pv === 'u:mound_mike' && r.rows.length === 12 && r.rows[0] === 'Strike!' && r.rows[11] === 'That\'s a strike!', tag + 'the filter holds on Live: his 12 live calls in script order');
+  ok(r.acts === (role === 'owner' ? 'Take it out,Reject' : ''), tag + 'Live keeps the role\'s buttons: "' + r.acts + '"');
+  await pick('vr-person', 'u:blue_ump');
+  r = await read();
+  ok(r.set === '7 of 12 lines live' && r.rows.length === 7, tag + 'blue_ump on Live: "' + r.set + '"');
+  await tab('shortlisted');
+  r = await read();
+  ok(r.rows.join() === 'Steee-rike!' && r.acts === (role === 'owner' ? 'Put in the game,Reject' : 'Reject'), tag + 'Shortlisted, blue_ump: ' + r.rows.join() + ', buttons ' + r.acts);
+  await tab('rejected');
+  r = await read();
+  ok(r.pv === 'u:blue_ump' && r.rows.length === 0 && r.empty === 'Nothing here for this filter.' && r.person.includes('@blue_ump (0)'), tag + 'Rejected, blue_ump kept with nothing here: "' + r.empty + '", still picked');
+  await pick('vr-person', 'u:rookie_rae');
+  r = await read();
+  ok(r.rows.join() === 'Ball four, take your base!' && /Audio deleted\./.test(await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent)), tag + 'Rejected: a person with no file left still filters by name');
+  await tab('pending');
+  await pick('vr-person', 'u:rookie_rae');
+  r = await read();
+  ok(r.acts === (role === 'owner' ? 'Put in the game,Reject' : 'Shortlist,Reject'), tag + 'Waiting keeps the role\'s buttons: ' + r.acts);
+  if (role === 'owner') {
+    await page.click('#vr-body .vr-row [data-vr="approved"]');
+    await page.waitForFunction(() => /^1 of 12 lines live$/.test((document.getElementById('vr-set-n') || {}).textContent || ''), null, { timeout: 3000 }).catch(() => {});
+    r = await read();
+    ok(r.set === '1 of 12 lines live' && r.rows.join('|') === 'Out!|Safe!|That\'s a strike!', tag + 'put one in the game under the filter: the live count moves ("' + r.set + '"), the filter holds');
+  }
+  ok(errors.length === 0, tag + 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
 /* in the open review sheet, on the Waiting tab with at least one row: Reject, Cancel, Reject, Yes */
 async function rejectWalk(page) {
   await page.evaluate(() => {
@@ -3842,8 +4015,8 @@ try {
   if (process.env.STD_CHAL === '1') { for (const t of ['light', 'dark']) { await challengesWalk(390, 844, t); await challengesWalk(1440, 900, t); } throw 'quick'; }
   /* STD_UNLOCK=1: only the menu's unlock row (26), the phone sheet in both themes and the desk's drawer */
   if (process.env.STD_UNLOCK === '1') { await unlockWalk(390, 844, 'dark'); await unlockWalk(390, 844, 'light'); await unlockWalk(375, 667, 'dark'); await unlockWalk(1440, 900, 'dark'); throw 'quick'; }
-    /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
-  if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
+    /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667, and its end screen */
+  if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); await voicesDone(390, 844, 'dark'); await voicesDone(1440, 900, 'light'); await reviewFilters(390, 844, 'dark', 'owner'); await reviewFilters(1440, 900, 'light', 'tester'); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await run(390, 844, 'light'); await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await run(390, 844, 'light'); await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
