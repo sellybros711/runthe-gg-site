@@ -44,7 +44,10 @@ function finish(pack, closersFile, pros) {
   P.attachPros(pack, pros, model);
   pack.pool = { scores: [], closers: closersFile.closers.map(c => ({ name: c.name, vec: c.vec, reason: c.reason })) };
   const start = model.solve(model.startState());
-  pack.build = Object.assign(pack.build || {}, { startHold: Math.round(start.hold * 10000) / 100, solveMs });
+  // only what the data decides goes in the pack, so two builds of one library make the same bytes;
+  // the solve's time is the machine's and goes in the meta beside it (writePair)
+  pack.build = Object.assign(pack.build || {}, { startHold: Math.round(start.hold * 10000) / 100 });
+  Object.defineProperty(pack, 'solveMs', { value: solveMs, enumerable: false });
   return pack;
 }
 
@@ -55,7 +58,7 @@ function writePair(outDir, pack) {
   const text = JSON.stringify(pack);
   const gz = zlib.gzipSync(Buffer.from(text), { level: 9 });
   fs.writeFileSync(path.join(dir, m.lineup + '.json.gz'), gz);
-  const meta = { sha: sha(text), bytes: text.length, gz: gz.length, startHold: pack.build.startHold, solveMs: pack.build.solveMs };
+  const meta = { sha: sha(text), bytes: text.length, gz: gz.length, startHold: pack.build.startHold, solveMs: pack.solveMs };
   fs.writeFileSync(path.join(dir, m.lineup + '.meta.json'), JSON.stringify(meta));
   return meta;
 }

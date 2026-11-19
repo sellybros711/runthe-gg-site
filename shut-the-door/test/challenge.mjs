@@ -116,6 +116,8 @@ SPEC.pitcher = MM.pitcher; SPEC.lineup = MM.lineup;
     JSON.stringify(MATCHUP.advance) === JSON.stringify(P.advance) && JSON.stringify(MATCHUP.advance) === JSON.stringify(Q.advance)
     && JSON.stringify(MATCHUP.runners) === JSON.stringify(P.runners));
   check('every real pitch the tables name is in the pack', MATCHUP.library.every(lib => Object.values(lib).every(e => e.x.every(row => row.every(x => x < 0 || x / 3 < MATCHUP.pitches.length)))));
+  check('the pack holds only what the data decides (no solve time), so two builds make the same bytes',
+    !('solveMs' in MATCHUP.build) && typeof MATCHUP.build.startHold === 'number');
   check('no percentile: no pool scores, the closers for pitched like', MATCHUP.pool.scores.length === 0 && MATCHUP.pool.closers.length >= 30);
   check('the running game is the pitcher\'s spot with the lineup\'s runners', !MATCHUP.steal || (MATCHUP.steal.pitcher && JSON.stringify(MATCHUP.steal.pitcher) === JSON.stringify(P.steal.pitcher)
     && MATCHUP.scenario.batters.every(b => MATCHUP.steal.runners[String(b.id)])));
