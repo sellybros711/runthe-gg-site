@@ -1057,19 +1057,34 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .rm-word:empty { display: none; }
 .relm.is-done .rm-call { display: none; }
 .relm.is-done .rm-word { margin-right: auto; animation: rm-pop .26s cubic-bezier(.2, 1.6, .4, 1); }
+/* the stop's word whole (2026-11-19): where the verb and "perfect release" do not share a line (every
+   corner dock, the panel 216 to 264 px inside) the chip takes its own line under the verb */
+.relm.is-done .rm-head { flex-wrap: wrap; row-gap: 8px; }
 .relm.is-good .rm-word { background: var(--data); color: #fff; }
 .relm.is-best .rm-word { background: var(--signal); color: #fff; }
 @keyframes rm-pop { 0% { opacity: 0; transform: scale(1.5); } 100% { opacity: 1; transform: none; } }
 /* the two stops, lit in turn, holding what each landed on */
-.rm-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.rm-step { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 40px; padding: 8px 12px; border-radius: 10px;
+/* NEVER PAST ITS EDGE (the owner, 2026-11-19: at 1010x1020 the 2 pitch desk dock's RELEASE ON TIME ran
+   off the panel and the screen, ON TIME on two lines). The tracks may shrink below their words
+   (minmax(0, 1fr)) and each step is its own container: a step too narrow for the word and the value
+   on one line (under 180 px, so a 2 up phone or a 252 px corner dock) stacks the word over the value,
+   each on one line. A long practice value ellipsizes inside its step, never past it. */
+.rm-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.rm-step { display: flex; align-items: center; min-width: 0; min-height: 40px; padding: 8px 12px; box-sizing: border-box; border-radius: 10px; container-type: inline-size;
   background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); color: rgba(244, 245, 247, .5); transition: background .15s, color .15s; }
 .rm-step[hidden] { display: none; }
-.rm-step b { font-family: var(--sans); font-weight: 700; font-size: 15px; letter-spacing: 0.055em; text-transform: uppercase; }
+.rm-sx { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-style: normal; }
+.rm-sx b, .rm-sx span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rm-step b { flex: none; font-family: var(--sans); font-weight: 700; font-size: 15px; letter-spacing: 0.055em; text-transform: uppercase; }
 .rm-step span { font-family: var(--sans); font-weight: 700; font-size: 13.6px; letter-spacing: 0.022em; text-transform: uppercase; color: #fff; font-variant-numeric: tabular-nums; }
+@container (max-width: 155.98px) {
+  .rm-sx { flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; line-height: 1.1; }
+  .rm-sx b { flex: none; max-width: 100%; font-size: 12px; }
+  .rm-sx span { max-width: 100%; font-size: 14.4px; }
+}
 .rm-step.on { background: rgba(255, 255, 255, .14); box-shadow: inset 0 0 0 1.5px #fff; color: #fff; }
 .rm-step.perfect { background: var(--signal); box-shadow: none; color: #fff; }
-.relm:not(.two) .rm-steps { grid-template-columns: 1fr; }
+.relm:not(.two) .rm-steps { grid-template-columns: minmax(0, 1fr); }
 /* THE CUE (the owner, 2026-10-30: "It needs to be clear you must tap the bottom bar to time your
    pitches"). While the panel waits for a tap it says so in its biggest type, with a breathing dot
    so it reads as live, and the key on a keyboard. After a few pitches (meter-ui.js QUIET_AFTER) it
@@ -1694,12 +1709,12 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .relm.cue:not(.is-done) { gap: 18px; }
   .relm .rm-cue-t b { font-size: 30px; }
   .relm .rm-cue-t small { font-size: 14px; }
-  .relm .rm-steps { grid-template-columns: 1fr; }
+  .relm .rm-steps { grid-template-columns: minmax(0, 1fr); }
   .relm .rm-step { min-height: 52px; }
   /* re-aim keeps its own row over the cue: the cue's big line ran under it when the panel was short */
   .relm.cue:not(.is-done) { padding-top: 54px; }
   /* a 2 pitch dock is short: the two stops side by side, so the panel grows as little as it can */
-  #m-dock:has(#m-arsenal[data-n="2"]) .relm.two .rm-steps { grid-template-columns: 1fr 1fr; }
+  #m-dock:has(#m-arsenal[data-n="2"]) .relm.two .rm-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 /* A SHORT UPRIGHT PHONE (320x568, the QA audit 2026-11-02). The aim grid and the plate under it need
    about 300 px of the height at the cell rule's frame, and the full dock and card left 234, so the
