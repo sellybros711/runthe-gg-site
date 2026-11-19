@@ -423,6 +423,29 @@
   }
 
 
+  /* WHERE THE VISIT CAME FROM. Another game's "Today's puzzle" card links here
+     with ?from=<game>-<surface> (football-result, cfb-result, baseball-result).
+     It is kept for the rest of this tab's visit, so the second and third game
+     played still count to it, and set on every GA4 event the arcade sends as
+     arcade_from. gtag's own 'set' through the dataLayer, so it works whichever
+     script loads first, and sends nothing until the page's consent allows. */
+  var FROM = (function(){
+    var v = null;
+    try{
+      var m = /[?&]from=([a-z0-9-]{1,40})(?:&|$)/.exec(location.search || '');
+      if (m) { v = m[1]; sessionStorage.setItem('rtg:from', v); }
+      else v = sessionStorage.getItem('rtg:from');
+    }catch(e){}
+    if (v && !/^[a-z0-9-]{1,40}$/.test(v)) v = null;
+    if (v) {
+      try{
+        window.dataLayer = window.dataLayer || [];
+        (function(){ window.dataLayer.push(arguments); })('set', { arcade_from: v });
+      }catch(e){}
+    }
+    return v;
+  })();
+
   /* GA4: one event when a play actually starts, tagged with the specific arcade
      game so each game can be reported on its own. Inert if gtag is absent. */
   /* Roll Call and Chain were missing, so their starts were reported under
@@ -436,6 +459,7 @@
     try{
       if (typeof window.gtag !== 'function') return;
       var p = { arcade_game: GA_LABEL[game] || game, game_name: 'Run The Arcade' };
+      if (FROM) p.arcade_from = FROM;
       if (extra) for (var k in extra) p[k] = extra[k];
       window.gtag('event', ev, p);
     }catch(e){}
@@ -513,6 +537,7 @@
   }
 
   window.RTGTokens = {
+    from: function(){ return FROM; },
     GAMES: GAMES.slice(),
     FREE_GAMES: FREE_LIST.slice(),
     PER_GAME_DAILY: PER_GAME_DAILY,
