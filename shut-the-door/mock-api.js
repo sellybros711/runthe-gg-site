@@ -1005,8 +1005,120 @@ function historyOpen(ref) {
   });
 }
 
-window.STD_API = { API_VERSION: 1, MOCK: true, clipSpec: clipSpec, clip: clip, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
+/* ---- custom challenges (CONTRACT.md 18) --------------------------------------------------------
+   The challenge calls are the real api.js's (the STD_API this file replaces), so a challenge plays on
+   the real engine: its matchup is the one built pair in fixtures/ (matchup-<pitcher>__<lineup>.json.gz),
+   checked against its sha in data/matchups.json as the page does. Any other pair says it did not load,
+   as an unbuilt bucket file would. A call on a challenge's outing (its id starts "challenge") goes to
+   the real api.js too. The server (supabase/183) is stood in for here, on the mock account: FICTIONAL
+   handles and scores, kept in localStorage (std_mock_challenges_v1) so a reload sees a post.
+   One challenge is there from the start, CHAL_CODE, made by a fictional player on the fixture's pair.
+     ?mockChal=empty   it has no results yet
+     ?mockChal=fail    the server does not answer (every challenge call null) */
+var REAL = window.STD_API && window.STD_API.challengeOptions ? window.STD_API : null;
+var CHAL_CODE = 'K7M4QX', CHAL_KEY = 'std_mock_challenges_v1', CHAL_MODE = QS.get('mockChal') || '';
+var CHAL_PAIR = { pitcher: 'std-2016-ws7-chapman', lineup: 'std-2019-nlwc-hader' };
+var CHAL_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+if (REAL && REAL.configure) REAL.configure({ loadMatchup: function (build, p, q) {
+  /* only the fixture's pair has a file: any other answers as a missing bucket file would, without a request */
+  if (p !== CHAL_PAIR.pitcher || q !== CHAL_PAIR.lineup) return Promise.reject(new Error('could not load the matchup'));
+  return fetch('fixtures/matchup-' + p + '__' + q + '.json.gz').then(function (r) {
+    if (!r.ok || typeof DecompressionStream === 'undefined') throw new Error('could not load the matchup');
+    return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
+  });
+} });
+/* the index is read once, as the page loads: the page waits on a server call only SERVER_WAIT_MS
+   (api.js), so the stand-in must answer at server speed, never after a cold fetch on a slow runner */
+var chalIndex = REAL ? fetch('data/matchups.json', { cache: 'no-store' }).then(function (r) { return r.json(); }) : null;
+function chalSha(spec) {
+  if (!chalIndex) chalIndex = fetch('data/matchups.json', { cache: 'no-store' }).then(function (r) { return r.json(); });
+  return chalIndex.then(function (ix) { var pr = ix.pairs[spec.pitcher + '__' + spec.lineup]; return { build: ix.build, sha: pr ? pr.sha : null }; });
+}
+function chalRules() { return (window.STD_GRADE && window.STD_GRADE.RULES) || 12; }
+function chalStore() {
+  var st = null;
+  try { st = JSON.parse(localStorage.getItem(CHAL_KEY) || 'null'); } catch (e) {}
+  if (st && st.rows) return st;
+  var seedRes = CHAL_MODE === 'empty' ? [] : [
+    { username: 'highcheese', score: 812, outcome: 'door_shut', pitches: 9 },
+    { username: 'paintsblack', score: 688, outcome: 'door_shut', pitches: 14 },
+    { username: 'framejob', score: 540, outcome: 'tie_held', pitches: 17 },
+    { username: 'chinmusic', score: 310, outcome: 'doors_open', pitches: 12 },
+    { username: 'gasmonkey', score: 122, outcome: 'walk_off', pitches: 6 },
+  ];
+  st = { rows: {} };
+  st.rows[CHAL_CODE] = { code: CHAL_CODE, spec: { v: 1, pitcher: CHAL_PAIR.pitcher, lineup: CHAL_PAIR.lineup, up: 4, on: [3, null, 1], outs: 1, balls: 1, strikes: 2, lead: 1, them: 3, inning: 9, home: false },
+    seed: 20261118, rules: chalRules(), createdAt: '2026-11-18T15:00:00Z', creator: 'paintsblack', results: seedRes };
+  return st;
+}
+function chalSave(st) { try { localStorage.setItem(CHAL_KEY, JSON.stringify(st)); } catch (e) {} }
+function chalRow(row) {
+  var me = mockIn ? 'mockplayer' : null;
+  var res = row.results.slice().sort(function (a, b) { return b.score - a.score; }).map(function (x, i) {
+    return { rank: i + 1, username: x.username, score: x.score, outcome: x.outcome, pitches: x.pitches, creator: x.username === row.creator, mine: !!me && x.username === me };
+  });
+  var mine = me ? row.results.filter(function (x) { return x.username === me; })[0] : null;
+  return chalSha(row.spec).then(function (b) {
+    return { code: row.code, spec: clone(row.spec), build: b.build, sha: b.sha, seed: row.seed, rules: row.rules, createdAt: row.createdAt,
+      creator: row.creator, mine: !!me && row.creator === me, players: res.length, results: res, myResult: mine ? clone(mine) : null };
+  });
+}
+if (window.STD_AUTH && window.STD_AUTH.MOCK) {
+  var A = window.STD_AUTH, off = CHAL_MODE === 'fail';
+  A.challengeGet = function (code) {
+    if (off) return Promise.resolve(null);
+    var row = chalStore().rows[String(code).toUpperCase()];
+    return row ? chalRow(row) : Promise.resolve(null);
+  };
+  A.challengeCreate = function (c) {
+    if (off) return Promise.resolve(null);
+    if (!mockIn) return Promise.resolve({ error: 'sign in to make a challenge' });
+    if (!ENT_PRO) return Promise.resolve({ error: 'custom challenges are for pro' });
+    var st = chalStore(), h = hashSeed(JSON.stringify(c.spec) + Object.keys(st.rows).length), code = '';
+    for (var i = 0; i < 6; i++) { code += CHAL_ABC[h % CHAL_ABC.length]; h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0; }
+    st.rows[code] = { code: code, spec: clone(c.spec), seed: hashSeed('seed:' + code), rules: c.rules, createdAt: new Date().toISOString(), creator: 'mockplayer', results: [] };
+    chalSave(st);
+    return Promise.resolve({ data: { code: code, seed: st.rows[code].seed, rules: c.rules, createdAt: st.rows[code].createdAt } });
+  };
+  A.challengeSubmit = function (r) {
+    if (off) return Promise.resolve(null);
+    if (!mockIn) return Promise.resolve({ error: 'sign in first' });
+    var st = chalStore(), row = st.rows[r.code];
+    if (!row) return Promise.resolve({ error: 'no such challenge' });
+    var had = row.results.some(function (x) { return x.username === 'mockplayer'; });
+    if (!had) row.results.push({ username: 'mockplayer', score: r.score, outcome: r.outcome, pitches: r.pitches, calls: clone(r.calls) });
+    chalSave(st);
+    return chalRow(row).then(function (g) { return { data: { taken: !had, result: g } }; });
+  };
+  A.myChallenges = function () {
+    if (off || !mockIn) return Promise.resolve(off ? null : null);
+    var st = chalStore();
+    return Promise.resolve(Object.keys(st.rows).map(function (k) { return st.rows[k]; }).filter(function (row) {
+      return row.creator === 'mockplayer' || row.results.some(function (x) { return x.username === 'mockplayer'; });
+    }).sort(function (a, b) { return a.createdAt < b.createdAt ? 1 : -1; }).map(function (row) {
+      var mine = row.results.filter(function (x) { return x.username === 'mockplayer'; })[0];
+      var best = row.results.reduce(function (m, x) { return Math.max(m, x.score); }, 0);
+      return { code: row.code, spec: clone(row.spec), createdAt: row.createdAt, made: row.creator === 'mockplayer', players: row.results.length, best: row.results.length ? best : null, myScore: mine ? mine.score : null };
+    }));
+  };
+}
+/* a call on a challenge's outing goes to the real api.js; the rest stays the mock's */
+function viaReal(name, mine) {
+  return function (id) {
+    if (REAL && typeof id === 'string' && /^challenge/.test(id) && REAL[name]) return REAL[name].apply(REAL, arguments);
+    return mine ? mine.apply(null, arguments) : Promise.reject(new Error(name + ' is not in the mock'));
+  };
+}
+function realOnly(name) { return function () { return REAL && REAL[name] ? REAL[name].apply(REAL, arguments) : Promise.reject(new Error('custom challenges are not in this build')); }; }
+var chalCalls = REAL ? {
+  challengeOptions: function () { return REAL.challengeOptions().then(function (o) { o.pro = ENT_PRO; return o; }); },
+  previewChallenge: realOnly('previewChallenge'), createChallenge: realOnly('createChallenge'), getChallenge: realOnly('getChallenge'),
+  startChallenge: realOnly('startChallenge'), claimChallenge: realOnly('claimChallenge'), myChallenges: realOnly('myChallenges'),
+} : {};
+
+window.STD_API = { API_VERSION: 1, MOCK: true, clipSpec: viaReal('clipSpec', clipSpec), clip: clip, getScenario: getScenario, startOuting: startOuting, throwPitch: viaReal('throwPitch', throwPitch), challenge: viaReal('challenge', challenge), finishOuting: viaReal('finishOuting', finishOuting), pickoff: viaReal('pickoff', null),
   pending: pending, claim: claim, entitlements: entitlements, vote: vote, castVote: castVote,
   survivorState: survivorState, survivorStart: survivorStart, survivorClaim: survivorClaim, survivorBoard: survivorBoard,
   history: history, historyOpen: historyOpen };
+for (var ck in chalCalls) window.STD_API[ck] = chalCalls[ck];
 })();

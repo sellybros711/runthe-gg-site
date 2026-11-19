@@ -207,7 +207,10 @@ function Model(pack, opts) {
   this.rest = Array.from({ length: this.H }, (_, h) => this.R.slice(h).reduce((a, x) => a + x, 0));
   this.before = Array.from({ length: this.H }, (_, h) => this.R.slice(0, h).reduce((a, x) => a + x, 0));
   this.lead0 = sc.situation.score.us - sc.situation.score.them;
-  this.M = Math.max(1, this.lead0 + this.rest[0]);
+  // a custom challenge's matchup (pipeline/build_matchups.py) is solved for every lead up to its
+  // scenario.tableLead, so a challenge can start at any of them; a daily pack has none, and its M is
+  // the starting lead as it always was
+  this.M = Math.max(1, this.lead0 + this.rest[0], sc.tableLead | 0);
   this.arsenal = sc.pitcher.arsenal;
   this.types = this.arsenal.map(a => a.type);
   this.zoneFt = pack.kernelZoneFt;
@@ -415,7 +418,9 @@ Model.prototype.meanLost = function (st, ctx) {
 
 Model.prototype.startState = function () {
   const s = this.pack.scenario.situation;
-  return Object.assign(this.H > 1 ? { h: 0 } : {}, { bi: 0, b: 0, s: 0, outs: s.outs, bases: s.bases, margin: this.lead0 });
+  // a custom challenge (challenge.js) may start with any hitter up and the count already going:
+  // situation.bi, balls and strikes. A daily's situation has none of them, so it starts as it always did
+  return Object.assign(this.H > 1 ? { h: 0 } : {}, { bi: s.bi | 0, b: s.balls | 0, s: s.strikes | 0, outs: s.outs, bases: s.bases, margin: this.lead0 });
 };
 
 /* Whether a state is ever priced for the goal it does not own (THE HALVES): a tie that his team's

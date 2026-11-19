@@ -1238,6 +1238,12 @@ BUILD.pen = function(B, t){ ringFence(B, t, t.th); };
    in it); its walls and the gate are this one build, a row of tiles a solid, in the world's wall colours: a fort's stone
    or a ship's planks. The kind's pieces, the lever and the vault chest move, so run() draws them. */
 var GYM_DECK = 0.45, GYM_WALL = 0.95;
+/* AT THE DOOR, WALKING INTO IT: the only place a gym takes him. The door (ax, ay) stands 0.8 ft in front of the room's
+   front wall (gymFit), and the room is one solid block to the walk (blocked(), 0.55 ft round him), so the nearest he can
+   stand to it is 0.25 ft past the door. The band is 0.95 ft either side of the door's x, from 0.4 ft short of it to
+   1.5 ft past it: every way up the spur to the door is in it, and nothing behind the room or further up the land is.
+   (With no far bound, walking up the screen anywhere in line with a door, 80 ft past it, put him in the room.) */
+function atGymDoor(G, x, y, vy){ var dy = y - G.ay; return Math.abs(x - G.ax) < 0.95 && dy < 0.4 && dy > -1.5 && vy < -0.3; }
 var GYM_PAL = { pirate:{ deck:['#c3935f', '#b38353', '#6e4a2c'] } };
 function gymPal(th){ return GYM_PAL[baseTh(th)] || GYM_PAL.pirate; }
 // what the gym's kind sets into its floor at a point of the room (gyms.js KINDS README, floor()), or null for deck
@@ -2482,7 +2488,7 @@ function run(box, P, pic, api){
     if (moved > 0.5) hint.classList.add('gone');
     // the gym's gate: walked into from the path, he is in, a tile at a time (and once out, he has to step away first)
     if (gym && !gym.in && !paused){ if (gym.lock){ if (Math.hypot(g.x - GY.ax, g.y - GY.ay) > 1.8) gym.lock = false; }
-      else if (Math.abs(g.x - GY.ax) < 0.95 && g.y - GY.ay < 0.4 && g.vy < -0.3) gymEnter(tsec); }
+      else if (atGymDoor(GY, g.x, g.y, g.vy)) gymEnter(tsec); }
     // the civilian by the gate says their piece as he walks up: the plainer one once he has pulled the lever twice
     if (gym && civIt && !gym.in){ var dcv = Math.hypot(civIt.x - g.x, civIt.y - g.y); if (dcv < 3.6 && !gym.nearCiv){ gym.nearCiv = true; say(GL.clue(gym.G, gym.resets), 7000, civIt); } else if (dcv > 5.5) gym.nearCiv = false; }
     // lava sends him back to the last safe ground
@@ -6686,5 +6692,5 @@ function folkFn(id, f){ var F = FOLK3D[id], ax = f * 0.6, ay = 0.8, k = F.k || 1
 var FOLK_P = { spec:{ fine:true }, seed:1 };
 function folkPic(id, f){ var F = FOLK3D[id]; if (!F) return null; f = f < 0 ? -1 : 1; var k = F.k || 1;
   return propSprite('folkpic:' + id + ':' + f, FOLK_P, folkFn(id, f), 2 * F.r * k + 0.4, 2 * F.r * k + 0.4, F.h * k); }
-window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT, folkPic:folkPic };
+window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, atGymDoor:atGymDoor, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT, folkPic:folkPic };
 })();

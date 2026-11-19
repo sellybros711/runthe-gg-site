@@ -73,20 +73,20 @@
       "sha": "62b4e1dcee456ae1"
     },
     "feel.js": {
-      "v": "2",
-      "sha": "3188bbe2a7c8e1f3"
+      "v": "3",
+      "sha": "3f7a1df68892f1b4"
     },
     "play.js": {
       "v": "4",
       "sha": "9d4b93c2caea60e2"
     },
     "app.js": {
-      "v": "12",
-      "sha": "62358330f9582c7c"
+      "v": "13",
+      "sha": "a4afa84a9824af52"
     },
     "home.js": {
-      "v": "4",
-      "sha": "21a913ee097847a7"
+      "v": "5",
+      "sha": "02c26b377d40b35d"
     },
     "studio.js": {
       "v": "6",
@@ -101,8 +101,8 @@
       "sha": "42acc78a2a9a5a7b"
     },
     "flow.js": {
-      "v": "18",
-      "sha": "c5e8527b6d7fa6d3"
+      "v": "19",
+      "sha": "28bf3467ed43ae0e"
     },
     "daily.js": {
       "v": "9",
@@ -113,12 +113,12 @@
       "sha": "b218a340a3641fdb"
     },
     "calls.js": {
-      "v": "11",
-      "sha": "e4231098f54ded78"
+      "v": "12",
+      "sha": "88f7eeda88e47821"
     },
     "goforit.js": {
-      "v": "7",
-      "sha": "5583cbf3462e9d73"
+      "v": "8",
+      "sha": "ff161f6ccf0c7b8f"
     },
     "profile.js": {
       "v": "1",
@@ -2937,8 +2937,8 @@
       "sha": "ada21cf4617ec17e"
     },
     "putt/trail.js": {
-      "v": "74",
-      "sha": "d0649efd3236942e"
+      "v": "75",
+      "sha": "bef8456dc7b7ad03"
     },
     "putt/mapland.js": {
       "v": "28",
@@ -3271,8 +3271,8 @@
       "sha": "ffae12dce6c70a29"
     },
     "grade.js": {
-      "v": "21",
-      "sha": "a3463240f03a1a97"
+      "v": "23",
+      "sha": "e0ab9b4e2f303121"
     },
     "names.js": {
       "v": "2",
@@ -3295,12 +3295,12 @@
       "sha": "8ead22ce5b02cae9"
     },
     "card.js": {
-      "v": "6",
-      "sha": "b2970890cdd43dc7"
+      "v": "8",
+      "sha": "ca954b76d1e0c71c"
     },
     "auth.js": {
-      "v": "14",
-      "sha": "1d5ead4d83e66a46"
+      "v": "16",
+      "sha": "cdddec99c9c81a57"
     },
     "voices.js": {
       "v": "6",
@@ -3310,13 +3310,17 @@
       "v": "1",
       "sha": "fedfba1872eb4e2a"
     },
+    "challenge.js": {
+      "v": "1",
+      "sha": "374492f48b227041"
+    },
     "api.js": {
-      "v": "41",
-      "sha": "d4a88a910c9ef843"
+      "v": "42",
+      "sha": "20e6e06ef1feaa01"
     },
     "mock-api.js": {
-      "v": "27",
-      "sha": "3dd758f7a31027d7"
+      "v": "30",
+      "sha": "2c3d2d12318a5364"
     },
     "coach.js": {
       "v": "2",
@@ -3335,12 +3339,12 @@
       "sha": "1a628246039ec636"
     },
     "pro-card.js": {
-      "v": "3",
-      "sha": "75ecab824bdcc0c7"
+      "v": "5",
+      "sha": "f6cc73ccca8bee82"
     },
     "pro-welcome.js": {
-      "v": "1",
-      "sha": "ae874f7d3249e8eb"
+      "v": "2",
+      "sha": "d6a84798478fefb0"
     },
     "history-ui.js": {
       "v": "2",
@@ -3366,13 +3370,17 @@
       "v": "1",
       "sha": "9487113b28199624"
     },
+    "challenge-ui.js": {
+      "v": "2",
+      "sha": "f1bcf4ede1ea92a0"
+    },
     "events.js": {
       "v": "3",
       "sha": "abd9d53cd6784a96"
     },
     "ui.js": {
-      "v": "94",
-      "sha": "a801d657a2b91484"
+      "v": "95",
+      "sha": "472b590e9609748f"
     },
     "3d/boot.js": {
       "v": "124",
