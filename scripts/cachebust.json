@@ -1292,6 +1292,10 @@
       "v": "3",
       "sha": "cc149708e8a0216e"
     },
+    "/arcade/favteam.js": {
+      "v": "1",
+      "sha": "d28844bc9b057049"
+    },
     "/arcade/day.js": {
       "v": "4",
       "sha": "748d7deb2e57101d"
