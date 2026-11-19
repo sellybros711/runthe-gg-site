@@ -77,12 +77,16 @@
       "sha": "6043dbc804a71fd9"
     },
     "play.js": {
-      "v": "4",
-      "sha": "9d4b93c2caea60e2"
+      "v": "5",
+      "sha": "f47af376ff4c615f"
+    },
+    "live3d.js": {
+      "v": "1",
+      "sha": "57a15bfbeb08f58e"
     },
     "app.js": {
-      "v": "13",
-      "sha": "a4afa84a9824af52"
+      "v": "14",
+      "sha": "4a07c5add3b9755e"
     },
     "home.js": {
       "v": "5",
@@ -97,8 +101,8 @@
       "sha": "fefdb546b27fe98a"
     },
     "clip.js": {
-      "v": "1",
-      "sha": "42acc78a2a9a5a7b"
+      "v": "2",
+      "sha": "ee57c2208849675b"
     },
     "flow.js": {
       "v": "19",
