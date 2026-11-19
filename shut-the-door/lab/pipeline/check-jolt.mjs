@@ -29,8 +29,8 @@
  *          down) sliding over SKATE_MS: a body carried along the grass with its feet still.
  *
  * Each is counted as the plays that have one, by who (fielder or runner) and what he was last doing
- * (his last act: a catch, a throw, a tag, a cover, '-' before any), held to CEILING: a ceiling that only
- * comes down. A change that pops more fails; one that pops less lowers the number in the same commit.
+ * (his last act: a catch, a throw, a tag, a cover, '-' before any), held per pack (held-packs.mjs): ceilings
+ * that only come down. A change that pops more fails; one that pops less lowers the number in the same commit.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,6 +39,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
 import { selection, holding, capStr, openCheckpoint, treeHash, pinDay } from './checkpoint.mjs';
+import { holdByPack, measured, packId, heldOrder, PACK_CEILINGS } from './held-packs.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -114,6 +115,13 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // fixes 8,297 plays, 1,940 (23.38%) and 4,771 (57.50%); after them 1,788 (21.55%) and 4,090 (49.29%). Both down per
 // play, so these are CI's counts on the 8,297 at b8082f9, recorded once on the coordinator's decision. pop fielder
 // bobble is 2 (18.6 m/s at worst, heads just over the body's 16): it was 0 on main's 8,438.
+// Held per pack since 2026-11-18 (held-packs.mjs, pack-ceilings.json 'jolt'): the first thirty at their own
+// counts as main measured them on these same plays, each later pack at its own and the rate guard. The
+// numbers below are the totals held before, kept for the record: only their rows (the metrics) are read now.
+// The Reds' pack left (the owner, 2026-11-18), and its cases sat before Smith 2025's in the held order, so
+// every 20th case of Smith's became other plays of his (277 still). His row is his own count on those, from
+// CI's combined run on 8730562 (the rate guard passed it): pop fielder cover 0 to 1, throw 1 to 2, skate
+// fielder cover 7 to 12, field 48 to 52. No other pack's plays moved.
 const CEILING = {
   'pop fielder -': 425,
   'pop fielder bobble': 2,
@@ -188,7 +196,9 @@ const ROWS_OUT = process.argv.includes('--rows-out') ? process.argv[process.argv
 
 const cases = [];
 let idx = 0;
-for (const c of inplayCases()) {
+// (the cases in the held order: the first thirty packs as main had them, then the later packs, so every
+// 20th case of the first thirty is the very play main's ceilings were measured on, held-packs.mjs)
+for (const c of heldOrder([...inplayCases()])) {
   if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0 && Math.floor(idx / STRIDE) % SEL.shard.n === SEL.shard.i) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, align: c.align, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
   idx++;
 }
@@ -312,18 +322,32 @@ let fails = 0;
 const any = (w) => rows.filter((r) => !r.err && r.hits.some((h) => h.what === w)).length;
 console.log(`\nbodies ${EVERY ? 'every one, on screen or not,' : 'on screen'} at ${FPS} frames a second, ${rows.length - errs.length} plays (every ${STRIDE}${STRIDE === 1 ? 'st' : 'th'} case), ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 console.log(`  plays with a pop: ${any('pop')}, with a skate: ${any('skate')}`);
-const keys = new Set([...Object.keys(by), ...(held ? Object.keys(CEILING) : [])]);
+// (held: the totals against the packs' ceilings in all, each pack held below; a sample at their rate)
+const REC = (PACK_CEILINGS.jolt || { ceiling: {} }).ceiling;
+const METRICS = [...new Set([...Object.keys(CEILING), ...Object.keys(by)])].sort();
+const total = (m) => Object.values(REC).reduce((a, q) => a + (q[m] || 0), 0);
+const keys = new Set([...Object.keys(by), ...(held ? METRICS : [])]);
 for (const key of [...keys].sort((a, b) => (by[b]?.plays ?? 0) - (by[a]?.plays ?? 0))) {
   const b = by[key] || { plays: 0, worst: 0 };
-  const cap = held ? HOLD.cap(CEILING[key] ?? 0) : Infinity;
+  const cap = held ? HOLD.cap(total(key)) : Infinity;
   const over = b.plays > cap;
-  if (over) fails += Math.ceil(b.plays - cap);
+  if (over && HOLD.mode !== 'held') fails += Math.ceil(b.plays - cap);
   console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(28)} ${String(b.plays).padStart(6)} plays${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  worst ${b.worst.toFixed(1)} m/s`);
+}
+{
+  const count = {}, plays = {};
+  for (const r of rows) {
+    if (r.err) continue;
+    const p = packId(r.tag.split(' ')[1]);
+    plays[p] = (plays[p] || 0) + 1;
+    for (const key of new Set(r.hits.map((h) => `${h.what} ${h.who} ${h.act}`))) { const q = (count[p] ||= {}); q[key] = (q[key] || 0) + 1; }
+  }
+  if (HOLD.mode === 'held') { const h = holdByPack({ check: 'jolt', count, plays, metrics: METRICS }); fails += h.fails; for (const l of h.lines) console.log(l); }
+  if (process.env.PACK_CEILING) fs.writeFileSync(process.env.PACK_CEILING, JSON.stringify(measured(count, plays, METRICS)));
 }
 for (const r of rows) for (const q of r.trace || []) console.log('TRACE', JSON.stringify(q));
 if (process.env.JOLT_DUMP) for (const r of rows) for (const h of (r.hits || []).filter((x) => !process.env.JOLT_WHAT || `${x.what} ${x.who} ${x.act}` === process.env.JOLT_WHAT)) console.log('HIT', r.tag, JSON.stringify(h));
 if (SHOW) for (const w of worst.sort((a, b) => b.ms - a.ms).slice(0, SHOW)) console.log(JSON.stringify(w));
-if (process.env.JOLT_CEILING) console.log('\nCEILING = ' + JSON.stringify(Object.fromEntries(Object.entries(by).map(([k, b]) => [k, b.plays]).sort())));
 console.log(`\n${rows.length - errs.length} plays, ${fails} over the ceiling (${HOLD.label})`);
 if (browser) await browser.close();
 if (server) server.close();

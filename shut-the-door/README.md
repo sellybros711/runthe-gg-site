@@ -745,6 +745,44 @@ Left out, with the reason: Urías 2020 WS G6 (his slurve, SV, has too few left-h
 2019-2021 for a table), Vesia 2024 WS G2 (one pitch to one batter, the lead's reason for leaving out
 Montgomery), Montgomery 2016, Familia 2015 (above). Their verify files stay.
 
+**The 13 clubs (2026-11-18).** Thirteen of today's clubs had no closer in any pack, so their plates
+could never open. The owner's fix: one real save situation each, so each plate opens the normal way.
+Each is his club's last pitcher, in from the start of the 9th, up 1 to 3, all Statcast (2015 on), each
+one half (three outs or more). The postseason ones came from every 2015-2025 postseason save by these
+clubs (the Stats API's decisions, the entry state from the live feed); the regular season ones from
+the closers' own game logs, a save that set or tied a club record or sat in a race (the Stats API's
+standings for the day before, and its season saves by club from 1969). Clase and Osuna stay left out
+(`closer_pool.py`), so the Guardians' spot is Cade Smith's and the Blue Jays' Jeff Hoffman's. A
+Cleveland Indians or Florida Marlins pack would open the throwback plate, not today's club
+(`plate.js keysFor`), so the Guardians' spot is 2022 on and the Marlins' 2012 on. Left out: Jhoan
+Duran 2023 AL Wild Card Series G1 (his 98 mph splitter has no league splitter within 3 mph in any
+season, so `build_packs.py` finds an empty cell even widened, as Familia 2015 did). Its verify file stays.
+
+| # | pack | club | spot | start | real |
+|---|---|---|---|---|---|
+| 31 | `std-2025-alcs7-hoffman` | Blue Jays | 2025 ALCS G7, SEA at TOR | top 9, 0 out, empty, up 4-3 | door shut |
+| 32 | `std-2016-britton-tor` | Orioles | 2016-09-28, BAL at TOR | bottom 9, 0 out, empty, up 3-2 | door shut |
+| 33 | `std-2020-alwc1-colome` | White Sox | 2020 AL Wild Card Series G1, CWS at OAK | bottom 9, 0 out, empty, up 4-1 | door shut |
+| 34 | `std-2025-smith-det` | Guardians | 2025-09-23, DET at CLE | top 9, 0 out, empty, up 5-2 | door shut |
+| 35 | `std-2024-alwc2-vest` | Tigers | 2024 AL Wild Card Series G2, DET at HOU | bottom 9, 0 out, empty, up 5-2 | door shut |
+| 36 | `std-2015-melancon-chc` | Pirates | 2015-09-25, PIT at CHC | bottom 9, 0 out, empty, up 3-1 | door shut |
+| 37 | `std-2019-rogers-det` | Twins | 2019-09-24, MIN at DET | bottom 9, 0 out, empty, up 4-2 | door shut |
+| 38 | `std-2024-helsley-sf` | Cardinals | 2024-09-27, STL at SF | bottom 9, 0 out, empty, up 6-3 | door shut |
+| 39 | `std-2025-alcs1-munoz` | Mariners | 2025 ALCS G1, SEA at TOR | bottom 9, 0 out, empty, up 3-1 | door shut |
+| 40 | `std-2018-davis-wsh` | Rockies | 2018-09-28, WSH at COL | top 9, 0 out, empty, up 5-2 | door shut |
+| 41 | `std-2020-nlwc2-kintzler` | Marlins | 2020 NL Wild Card Series G2, MIA at CHC | bottom 9, 0 out, empty, up 2-0 | door shut |
+| 42 | `std-2019-nlwc-hudson` | Nationals | 2019 NL Wild Card Game, MIL at WSH | top 9, 0 out, empty, up 4-3 | door shut |
+
+Twelve ship. The Reds' (`std-2025-pagan-mil`, Emilio Pagan 2025-09-26 at Milwaukee, up 3-1 in the
+bottom of the 9th) was built and is held back until a 3D fix to the slow roller's pull up: it was the
+one pack over `check-gait`'s rate guard (the owner, 2026-11-18). Its verify file and candidate stay,
+and its data and pack come back with a later migration at ord 42, from a day of its own.
+
+They go on the end of the rotation, and the schedule is extended, never reshuffled: every listed
+day keeps its entry (`build_schedule.mjs`). The vote and Survivor take them from a day of their own,
+`modes.js POOL.FROM` (2026-11-25), the same day as `shutdoor_packs.from_day` (supabase 179): a day
+before it draws from the thirty exactly as it did, on the page and the server.
+
 ## Accounts
 
 `supabase/153_shut_the_door.sql`: `shutdoor_outings` (user, day: the calls, outcome, pitches,

@@ -5,7 +5,9 @@
  * Daily #1 is contract.js's EPOCH (the lead sets it). The scenarios rotate
  * in scenarios/scenarios.json order, day number mod their count. New ones go
  * on the end, so every day already served keeps its pack: days 1-10 were the
- * first ten, and since 2026-10-30 there are 30. Past the last listed day
+ * first ten, and since 2026-10-30 there are 30 (43 from 2026-11-18). A day
+ * already listed keeps its entry when the rotation grows: the schedule is
+ * extended, never reshuffled. Past the last listed day
  * api.js keeps rotating by the same rule, so the schedule never runs out.
  *
  * previewRotation is the rotation the preview days before the epoch were
@@ -66,7 +68,11 @@ const start = Date.UTC(+C.EPOCH.slice(0, 4), +C.EPOCH.slice(5, 7) - 1, +C.EPOCH.
 for (let i = 0; i < days; i++) {
   const day = new Date(start + i * 86400000).toISOString().slice(0, 10);
   const number = C.dayNumberOf(day);
-  sched[day] = { pack: rotation[(number - 1) % rotation.length], number };
+  // a day already listed keeps its entry: the schedule is extended, never reshuffled, when the
+  // rotation grows (2026-11-18, 30 to 43). From the vote on (modes.js VOTE.EPOCH) a day's pack is
+  // the vote's, and the vote's pool grows on a day of its own (modes.js POOL)
+  const was = old.days && old.days[day];
+  sched[day] = was && was.number === number ? was : { pack: rotation[(number - 1) % rotation.length], number };
 }
 writeFileSync(out, JSON.stringify({ v: 1, epoch: C.EPOCH, rotation, previewRotation, packs, days: sched }) + '\n');
 console.log(`schedule: ${days} days from ${C.EPOCH}, ${rotation.length} packs: ` +

@@ -1,0 +1,309 @@
+{
+ "id": "rs-smith-2025-09-23",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 776218,
+ "date": "2025-09-23",
+ "game": "Regular Season Game 1: Detroit Tigers at Cleveland Guardians",
+ "gameType": "R",
+ "pitcher": {
+  "id": 671922,
+  "name": "Cade Smith",
+  "throws": "R",
+  "team": "Cleveland Guardians",
+  "seasonLine": "2.93 ERA, 16 SV, 73.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 66,
+   "batterId": 682985,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "671922": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Riley Greene strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Riley Greene strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Riley Greene",
+   "batSideListed": "L",
+   "seasonLine": ".258/.313/.493, 36 HR"
+  },
+  {
+   "atBat": 67,
+   "batterId": 693307,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "671922": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Dillon Dingler called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Dillon Dingler called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Dillon Dingler",
+   "batSideListed": "R",
+   "seasonLine": ".278/.327/.425, 13 HR"
+  },
+  {
+   "atBat": 68,
+   "batterId": 656716,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "671922": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Zach McKinstry lines out to third baseman José Ramírez.",
+   "feedEvent": "field_out",
+   "feedDescription": "Zach McKinstry lines out to third baseman José Ramírez.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Zach McKinstry",
+   "batSideListed": "L",
+   "seasonLine": ".259/.333/.438, 12 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 9,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 672761,
+   "name": "Wenceel Pérez",
+   "batSideListed": "S"
+  },
+  {
+   "id": 628451,
+   "name": "Andy Ibáñez",
+   "batSideListed": "R"
+  },
+  {
+   "id": 678009,
+   "name": "Parker Meadows",
+   "batSideListed": "L"
+  },
+  {
+   "id": 650402,
+   "name": "Gleyber Torres",
+   "batSideListed": "R"
+  },
+  {
+   "id": 681481,
+   "name": "Kerry Carpenter",
+   "batSideListed": "L"
+  },
+  {
+   "id": 679529,
+   "name": "Spencer Torkelson",
+   "batSideListed": "R"
+  },
+  {
+   "id": 682985,
+   "name": "Riley Greene",
+   "batSideListed": "L"
+  },
+  {
+   "id": 693307,
+   "name": "Dillon Dingler",
+   "batSideListed": "R"
+  },
+  {
+   "id": 656716,
+   "name": "Zach McKinstry",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1182,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 826,
+     "usage": 0.6988,
+     "velo": 96.4,
+     "pfxXin": -8.7,
+     "pfxZin": 16.5
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 251,
+     "usage": 0.2124,
+     "velo": 87.6,
+     "pfxXin": -8.2,
+     "pfxZin": -2.1
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 105,
+     "usage": 0.0888,
+     "velo": 85.1,
+     "pfxXin": 12.5,
+     "pfxZin": 4.1
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=671922"
+  },
+  "postseason": {
+   "pitches": 58,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 45,
+     "usage": 0.7759,
+     "velo": 96.1,
+     "pfxXin": -7.6,
+     "pfxZin": 15.4
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 13,
+     "usage": 0.2241,
+     "velo": 85.0,
+     "pfxXin": -2.2,
+     "pfxZin": -5.3
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=671922"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 776218: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=776218",
+  "MLB Stats API schedule 2025-09-23 and live feed /api/v1.1/game/776218/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 671922 2025 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "top",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    682985,
+    693307,
+    656716,
+    672761,
+    628451,
+    678009,
+    650402,
+    681481,
+    679529
+   ],
+   "lineupNames": [
+    "Riley Greene",
+    "Dillon Dingler",
+    "Zach McKinstry",
+    "Wenceel Pérez",
+    "Andy Ibáñez",
+    "Parker Meadows",
+    "Gleyber Torres",
+    "Kerry Carpenter",
+    "Spencer Torkelson"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "DET",
+   "CLE"
+  ],
+  "innings": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    3
+   ],
+   [
+    0,
+    2
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    null
+   ]
+  ],
+  "H": [
+   5,
+   7
+  ],
+  "E": [
+   1,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/776218/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 9,
+  "runs": 0,
+  "score": {
+   "us": 5,
+   "them": 2
+  }
+ }
+}

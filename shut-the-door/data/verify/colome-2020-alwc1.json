@@ -1,0 +1,300 @@
+{
+ "id": "colome-2020-alwc1",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 635910,
+ "date": "2020-09-29",
+ "game": "AL Wild Card Series Game 1: Chicago White Sox at Oakland Athletics",
+ "gameType": "F",
+ "pitcher": {
+  "id": 517008,
+  "name": "Alex Colomé",
+  "throws": "R",
+  "team": "Chicago White Sox",
+  "seasonLine": "0.81 ERA, 12 SV, 22.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 1
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 65,
+   "batterId": 543257,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "517008": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Robbie Grossman pops out to third baseman Yoan Moncada in foul territory.",
+   "feedEvent": "field_out",
+   "feedDescription": "Robbie Grossman pops out to third baseman Yoan Moncada in foul territory.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Robbie Grossman",
+   "batSideListed": "S",
+   "seasonLine": ".241/.344/.482, 8 HR"
+  },
+  {
+   "atBat": 66,
+   "batterId": 543760,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "517008": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Marcus Semien grounds out sharply, third baseman Yoan Moncada to first baseman Jose Abreu.",
+   "feedEvent": "field_out",
+   "feedDescription": "Marcus Semien grounds out sharply, third baseman Yoan Moncada to first baseman Jose Abreu.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Marcus Semien",
+   "batSideListed": "R",
+   "seasonLine": ".223/.305/.374, 7 HR"
+  },
+  {
+   "atBat": 67,
+   "batterId": 621566,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "517008": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Matt Olson strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Matt Olson strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Matt Olson",
+   "batSideListed": "L",
+   "seasonLine": ".195/.310/.424, 14 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 10,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 592192,
+   "name": "Mark Canha",
+   "batSideListed": "R"
+  },
+  {
+   "id": 571875,
+   "name": "Jake Lamb",
+   "batSideListed": "L"
+  },
+  {
+   "id": 657656,
+   "name": "Ramón Laureano",
+   "batSideListed": "R"
+  },
+  {
+   "id": 640461,
+   "name": "Chad Pinder",
+   "batSideListed": "R"
+  },
+  {
+   "id": 669221,
+   "name": "Sean Murphy",
+   "batSideListed": "R"
+  },
+  {
+   "id": 600303,
+   "name": "Tommy La Stella",
+   "batSideListed": "L"
+  },
+  {
+   "id": 543257,
+   "name": "Robbie Grossman",
+   "batSideListed": "S"
+  },
+  {
+   "id": 543760,
+   "name": "Marcus Semien",
+   "batSideListed": "R"
+  },
+  {
+   "id": 621566,
+   "name": "Matt Olson",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 366,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 262,
+     "usage": 0.7158,
+     "velo": 89.3,
+     "pfxXin": 4.0,
+     "pfxZin": 5.8
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 104,
+     "usage": 0.2842,
+     "velo": 94.4,
+     "pfxXin": -2.5,
+     "pfxZin": 17.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2020%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=517008"
+  },
+  "postseason": {
+   "pitches": 22,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 13,
+     "usage": 0.5909,
+     "velo": 90.4,
+     "pfxXin": 1.5,
+     "pfxZin": 6.7
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 9,
+     "usage": 0.4091,
+     "velo": 94.9,
+     "pfxXin": -3.4,
+     "pfxZin": 18.9
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2020%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=517008"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 635910: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=635910",
+  "MLB Stats API schedule 2020-09-29 and live feed /api/v1.1/game/635910/feed/live",
+  "MLB Stats API people with 2020 season stats",
+  "Baseball Savant 517008 2020 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    543257,
+    543760,
+    621566,
+    592192,
+    571875,
+    657656,
+    640461,
+    669221,
+    600303
+   ],
+   "lineupNames": [
+    "Robbie Grossman",
+    "Marcus Semien",
+    "Matt Olson",
+    "Mark Canha",
+    "Jake Lamb",
+    "Ramón Laureano",
+    "Chad Pinder",
+    "Sean Murphy",
+    "Tommy La Stella"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "CWS",
+   "OAK"
+  ],
+  "innings": [
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    2,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   9,
+   3
+  ],
+  "E": [
+   0,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/635910/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 10,
+  "runs": 0,
+  "score": {
+   "us": 4,
+   "them": 1
+  }
+ }
+}

@@ -2104,8 +2104,14 @@ async function modes(w, h, full) {
   ok(pkr.cur.length === 32 && pkr.cur[0].k === '' && pkr.tb.length === 9 && pkr.tbHead === 'Throwbacks' && pkr.svgs === 41,
     '17 the picker: plain, Diamond and 30 clubs, then 9 throwbacks, each with its plate (' + pkr.cur.length + ' + ' + pkr.tb.length + ')');
   ok(dia && dia.locked && dia.pro && dia.small === 'Pro only.', '17 not Pro: Diamond is locked, tagged Pro, and says "Pro only." (' + JSON.stringify(dia) + ')');
-  ok(soon.some((x) => x.k === 'orioles') && soon.some((x) => x.k === 'expos') && !soon.some((x) => x.k === 'dodgers' || x.k === 'astrosbrick'),
-    '17 a club with no situation says "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
+  /* since 2026-11-18 (supabase 179) every one of today's 30 has a situation: only the throwbacks no pack is in say
+     "No situation yet", and the Orioles say how to open theirs. The Reds' waits on a 3D fix (the owner,
+     2026-11-18), so the Reds are the one club of today's that still says it */
+  const ori = pkr.cur.find((x) => x.k === 'orioles');
+  ok(soon.some((x) => x.k === 'expos') && soon.every((x) => x.k === 'reds' || pkr.tb.some((t) => t.k === x.k)) && !soon.some((x) => x.k === 'astrosbrick'),
+    '17 only a throwback with no situation, and the Reds, say "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
+  ok(ori && ori.locked && ori.small === 'Shut the door as the Orioles closer to unlock.' && JSON.stringify(soon.filter((x) => pkr.cur.some((c) => c.k === x.k)).map((x) => x.k)) === '["reds"]',
+    '17 every one of today\'s clubs but the Reds has a situation: the Orioles say "' + (ori && ori.small) + '"');
   ok(pkr.cur.concat(pkr.tb).every((x) => x.h >= 38), '17 every plate tile is at least 38 px tall');
   ok(await noSideScroll(page), '17 the picker leaves no sideways scroll');
   await page.evaluate(() => document.querySelector('#pk-grid .plk[data-plate="diamond"]').click());   // aria-disabled: a real tap still lands
@@ -2220,6 +2226,19 @@ async function modes(w, h, full) {
   ok(top.plates.length === 3 && top.plates.every((p) => p && p.w >= 20 && p.w <= 28 && /^[A-Z0-9]{1,2}$/.test(p.t)), '17 each top 3 row wears its plate with initials, about 24 px (' + JSON.stringify(top.plates) + ')');
   ok(await noSideScroll(page), '17 the top 3 leaves no sideways scroll');
   await shotM(page, 'daily-top3');
+  /* the Pro card on a phone (the owner, 2026-11-18): at the very foot of the home, after the menu and just
+     above the footer, on every tab; no longer under the top 3. A desk has the bar under its columns (23) */
+  if (w < 980) {
+    await page.waitForSelector('#h-pro:not([hidden]) .pc-card', { timeout: 30000 });
+    const foot = await page.evaluate(() => { const p = document.getElementById('h-pro'), r = p.getBoundingClientRect(), m = document.getElementById('h-menu').getBoundingClientRect(),
+      t = document.getElementById('h-top').getBoundingClientRect(), f = document.querySelector('#h-side > .legal');
+      return { up: p.parentElement.id, after: (p.previousElementSibling || {}).id, next: p.nextElementSibling === f, belowMenu: r.top >= m.bottom, belowTop: r.top > t.bottom,
+        gap: Math.round(f.getBoundingClientRect().top - r.bottom), inPane: !!p.closest('.h-pane') }; });
+    ok(foot.up === 'h-side' && foot.after === 'h-menu' && foot.next && foot.belowMenu && foot.belowTop && !foot.inPane && foot.gap >= 0 && foot.gap <= 40,
+      '17 on a phone the Pro card is at the foot of the home, after the menu and just above the footer (' + JSON.stringify(foot) + ')');
+    await page.evaluate(() => document.getElementById('h-pro').scrollIntoView({ block: 'end' }));
+    await shotM(page, 'pro-foot');
+  }
   await page.click('#h-top-all');
   await page.waitForSelector('#s-board.on #bd-list .bd-rows', { timeout: 30000 });
   ok(await nothingOpen(page), '17 full leaderboard opens the day\'s board, and no sheet');
@@ -2477,7 +2496,7 @@ async function deskHome(w, h, theme) {
       go: up('h-go'), top: up('h-top'), vote: up('h-vote'), pro: up('h-pro'), menu: up('h-menu'), sv: !!document.querySelector('#hp-surv > .sv-hero'), arc: !!document.querySelector('#hp-arc > .hp-arc-c:not(.d-arc)'),
       legal: !!document.querySelector('#h-side > .legal'), card: !!document.querySelector('#h-pro .pc-card'), bar: !!document.querySelector('.pb-bar'), cls: document.body.classList.contains('std-desk'),
       tabs: getComputedStyle(document.getElementById('h-modes')).display !== 'none', sw: document.documentElement.scrollWidth <= innerWidth + 1 }; });
-  ok(!P.made.length && P.sit && P.go === 'hp-daily' && P.top === 'hp-daily' && P.vote === 'hp-daily' && P.pro === 'hp-daily' && P.menu === 'h-side' && P.sv && P.arc && P.legal && P.card && !P.bar && !P.cls && P.tabs && P.sw,
+  ok(!P.made.length && P.sit && P.go === 'hp-daily' && P.top === 'hp-daily' && P.vote === 'hp-daily' && P.pro === 'h-side' && P.menu === 'h-side' && P.sv && P.arc && P.legal && P.card && !P.bar && !P.cls && P.tabs && P.sw,
     '23 ' + tag + ' to 390: every node is back where the phone has it, the tabs and the Pro card again (' + JSON.stringify(P) + ')');
   await page.setViewportSize({ width: w, height: h });
   await page.waitForFunction(() => window.STD_DESK.on() && document.querySelector('.d-l #d-surv #sv-go') && document.querySelector('#h-pro .pb-bar'), null, { timeout: 3000 });

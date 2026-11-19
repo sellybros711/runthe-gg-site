@@ -2258,7 +2258,8 @@ button.hi-row-go:hover { background: var(--panel-2); }
 /* ---- PRO, THE PROMO CARDS (pro-card.js; the owner's pick, direction A, 2026-11-18) ----
    The Diamond plate's own ice, the same in both themes because it is the gem's colour, not the page's:
    ink on ice, data blue for the second line and the ticks. Anton only for the one headline. */
-#hp-daily .h-pro { margin: 12px 0 0; }
+/* at the foot of the home, over the footer (a phone, and up to 979 px) */
+#h-side > .h-pro { margin: 12px 0 0; }
 .hp-arc-c .pc-card { margin: 14px 0 0; }
 .pc-card { position: relative; overflow: hidden; border-radius: 22px; padding: 18px 18px 14px; color: #0b1a2e; text-align: left;
   background: radial-gradient(130% 90% at 100% 0%, rgba(255, 255, 255, .95), transparent 55%), linear-gradient(140deg, #f4fbff 0%, #bfe6ff 45%, #d9d2ff 70%, #8fc9f2 100%);

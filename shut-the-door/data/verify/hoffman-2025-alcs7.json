@@ -238,5 +238,101 @@
   "MLB Stats API schedule 2025-10-20 and live feed /api/v1.1/game/813037/feed/live",
   "MLB Stats API people with 2025 season stats",
   "Baseball Savant 656546 2025 season search (regular season and postseason) for the arsenal"
- ]
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "top",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    660844,
+    645302,
+    677594,
+    663728,
+    647304,
+    593871,
+    668227,
+    553993,
+    641487
+   ],
+   "lineupNames": [
+    "Leo Rivas",
+    "Victor Robles",
+    "Julio Rodríguez",
+    "Cal Raleigh",
+    "Josh Naylor",
+    "Jorge Polanco",
+    "Randy Arozarena",
+    "Eugenio Suárez",
+    "J.P. Crawford"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "SEA",
+   "TOR"
+  ],
+  "innings": [
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    3
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    null
+   ]
+  ],
+  "H": [
+   8,
+   10
+  ],
+  "E": [
+   0,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/813037/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 17,
+  "runs": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  }
+ }
 }
