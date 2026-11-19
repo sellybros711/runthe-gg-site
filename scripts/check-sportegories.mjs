@@ -24,7 +24,7 @@
  *
  * Run: node scripts/check-sportegories.mjs      (no network, no browser)
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 import { candidates, groups, pairKey, norm as pkNorm } from './sportegories-people.mjs';
 
@@ -421,18 +421,35 @@ console.log('\n8) the tips describe the game as it is');
   const SAME = new Set(PEOPLE.same.map(([sp, a, b]) => pairKey(sp, a, b)));
   const APART = new Set(PEOPLE.apart.map(([sp, a, b]) => pairKey(sp, a, b)));
   const joined = (i, j) => groupOf.has(i) && groupOf.get(i) === groupOf.get(j);
-  const open = [], split = [];
+  const open = [], split = [], decide = [];
   let autoN = 0, askN = 0;
   for (const [i, j, v] of candidates(SH)) {
     const A = SH[i], B = SH[j], key = pairKey(A.sport, A.name, B.name), label = A.sport + ' ' + A.name + ' / ' + B.name;
     if (APART.has(key)) { if (joined(i, j)) fail(label + ' is listed as two men and joined'); continue; }
     if (v === 'auto') { autoN++; if (!joined(i, j)) split.push(label); }
-    else if (v === 'ask') { askN++; if (!SAME.has(key)) open.push(label); else if (!joined(i, j)) split.push(label + ' (listed)'); }
+    else if (v === 'ask') {
+      askN++;
+      if (!SAME.has(key)) {
+        open.push(label);
+        const say = (r) => r.name + ': ' + (r.pos || 'no position') + ', ' + (r.col || 'no college') + ', ' + (r.t.join(', ') || 'no clubs') + ', ' + (r.dec.join('s, ') || '?') + 's';
+        decide.push({ sport: A.sport, a: A.name, b: B.name, line: '[' + JSON.stringify(A.sport) + ', ' + JSON.stringify(A.name) + ', ' + JSON.stringify(B.name) + ']', evidence: [say(A), say(B)] });
+      } else if (!joined(i, j)) split.push(label + ' (listed)');
+    }
   }
   if (split.length) fail(split.length + ' records of one man are not joined: ' + split.slice(0, 12).join(' | '));
   else ok(autoN + ' same-name pairs and ' + askN + ' listed pairs are all joined');
-  if (open.length) fail(open.length + ' related names nobody has decided, add each to `same` or `apart` in scripts/sportegories-people.json: ' + open.slice(0, 12).join(' | '));
-  else ok('no related pair of names is left undecided');
+  /* AN UNDECIDED PAIR NO LONGER HOLDS THE REBUILD. This used to fail, which kept
+     yesterday's corpus on the site until a person decided, and nobody was told:
+     two such pairs held it red for two weeks each while stale actives piled up.
+     Now the pair simply stays two records (what it was before anybody asked), the
+     rest of the corpus ships, and the pair is listed with its evidence for a
+     person to decide. DECISIONS_OUT names a file the daily workflow turns into an
+     issue; the Rosters Agent asks the owner the exact question. */
+  if (open.length) {
+    console.log('  DECIDE ' + open.length + ' related names nobody has decided (left as two records until someone adds each to `same` or `apart` in scripts/sportegories-people.json): ' + open.slice(0, 12).join(' | '));
+    for (const d of decide) console.log('         ' + d.sport + ' ' + d.a + ' / ' + d.b + ' :: ' + d.evidence.join(' :: '));
+  } else ok('no related pair of names is left undecided');
+  if (process.env.DECISIONS_OUT) writeFileSync(process.env.DECISIONS_OUT, JSON.stringify(decide, null, 1) + '\n');
   // and the list itself has not gone stale: every `same` pair is still joined
   const byNm = new Map();
   SH.forEach((r, i) => { const k = r.sport + '|' + pkNorm(r.name); (byNm.get(k) || byNm.set(k, []).get(k)).push(i); });

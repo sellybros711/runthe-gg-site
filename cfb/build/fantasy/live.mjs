@@ -35,6 +35,8 @@ import { resultsSQL, kickoffsSQL } from './publish.mjs';
 const say = (...a) => process.stderr.write(a.join(' ') + '\n');
 const H = 3600e3;
 export const FINAL_AFTER_H = 4.5;
+/* A Playoff game is watched this long after its kickoff: a long game, then its box settling. */
+export const PLAYOFF_WATCH_H = 8;
 
 const ET = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -51,6 +53,20 @@ export function plan(pool, now) {
   const kicks = pool.games.map((g) => Date.parse(g.kick)).filter(Number.isFinite).sort((a, b) => a - b);
   if (!kicks.length) return { watch: false, why: 'no kickoffs' };
   const first = kicks[0], last = kicks[kicks.length - 1];
+  /* THE PLAYOFF IS WATCHED GAME BY GAME. Its first kickoff and its last are five weeks apart,
+     and "between the first and the last" would keep the loop awake, and dispatching itself, for
+     all of them. So each game is watched from just before it until its box score has settled,
+     and the weeks between are asleep. A round not yet on the board is a game still to come. */
+  if (pool.kind === 'playoff') {
+    if (kicks.some((k) => now >= k - 10 * 60e3 && now <= k + PLAYOFF_WATCH_H * H)) {
+      return { watch: true, why: 'a Playoff game on or settling' };
+    }
+    const next = kicks.find((k) => k > now);
+    const whole = !pool.expect_games || pool.games.length >= pool.expect_games;
+    if (next == null && whole && now > last + 30 * H) return { watch: false, done: true, why: 'long over' };
+    return { watch: false, soon: next != null && next - now < 3 * H,
+      why: next != null ? 'between Playoff games' : 'waiting for the next round to be set' };
+  }
   if (now < first - 10 * 60e3) {
     return { watch: false, soon: first - now < 3 * H, why: 'before the first kickoff' };
   }
@@ -90,13 +106,24 @@ export async function tick(pool, now) {
     const j = await summary(g.id);
     if (!j) continue;
     read++;
+    /* ADDED ACROSS GAMES, never overwritten. A week has one game a man, so this is that
+       game. In the Playoff a man plays every round his team is alive in, and his total is
+       all of them, each game's line kept beside the others. */
     for (const r of boxRows(j)) {
-      if (onBoard.has(r.id)) scores[r.id] = [r.pts, r.line];
+      if (!onBoard.has(r.id)) continue;
+      const had = scores[r.id];
+      scores[r.id] = had
+        ? [Math.round((had[0] + r.pts) * 10) / 10, [had[1], r.line].filter(Boolean).join(' · ')]
+        : [r.pts, r.line];
     }
   }
   const post = ours.filter((g) => g.live && g.live.state === 'post').length;
   const lastKick = Math.max(...ours.map((g) => Date.parse((g.live && g.live.kick) || g.kick)));
-  const final = post === ours.length && read === ours.length
+  /* THE PLAYOFF IS NOT FINAL UNTIL ITS LAST GAME IS ON THE BOARD. Its later rounds are added
+     as they are set (playoff.mjs --refresh), so "every game on the board is over" is true
+     between rounds too. `expect_games` is how many the week has when it is whole. */
+  const whole = !pool.expect_games || ours.length >= pool.expect_games;
+  const final = whole && post === ours.length && read === ours.length
     && now > lastKick + FINAL_AFTER_H * H;
   say(`  box: ${read} of ${started.length} started games read, `
     + `${Object.keys(scores).length} men scored; ${post} of ${ours.length} final`
@@ -118,7 +145,10 @@ const arg = (flag, fallback) => {
 if (process.argv[1] && process.argv[1].endsWith('live.mjs')) {
   const now = Date.now();
   const ptr = JSON.parse(fs.readFileSync(path.join(DATA, 'now.json'), 'utf8'));
-  const weeks = [readPool(ptr.season, ptr.week - 1), readPool(ptr.season, ptr.week)]
+  /* The week before is the pointer's `prev` (writePool), not week minus one: the Playoff
+     follows the last regular week but is not numbered after it. */
+  const prevWeek = ptr.prev != null ? ptr.prev : ptr.week - 1;
+  const weeks = [readPool(ptr.season, prevWeek), readPool(ptr.season, ptr.week)]
     .filter(Boolean);
   let watch = false, soon = false, sql = '';
   for (const pool of weeks) {

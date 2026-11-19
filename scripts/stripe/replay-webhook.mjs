@@ -80,7 +80,8 @@ function build() {
     '110_fantasy_live', '111_nfl_scores', '112_fantasy_entrants', '113_fantasy_submit_username',
     '114_fantasy_prizes', '115_fantasy_result_when_ready', '119_fantasy_swap',
     '120_fantasy_pro_pass', '121_baseball_pro', '123_hoops_pro', '103_runtour_bundle_redeem',
-    '65_delete_account', '124_premium_yearly', '125_arcade_cap_and_bonus_refund']) {
+    '65_delete_account', '124_premium_yearly', '125_arcade_cap_and_bonus_refund',
+    '142_hoops_pass', '181_shut_the_door_pro']) {
     sqlFile(repo('supabase/' + f + '.sql'));
   }
 }
@@ -152,6 +153,27 @@ globalThis.fetch = async function (url, init = {}) {
       if (path === 'stripe_events' && method === 'DELETE') {
         sql(`delete from public.stripe_events where id = ${lit(u.searchParams.get('id').replace(/^eq\./, ''))}`);
         return reply(204, '');
+      }
+      /* A RECURRING BUNDLE'S ROW (Diamond Pro, Shut The Door Pro, the pair): grantRecurring
+         reads the row it is about to write and upserts it, the two PostgREST calls below, run
+         as the SQL PostgREST would run. So the constraint, 124's lifetime trigger and every
+         default are the real ones. */
+      if (path === 'premium_unlocks' && method === 'GET') {
+        const q = u.searchParams;
+        const eq = (k) => (q.get(k) || '').replace(/^eq\./, '');
+        const out = sql(`select coalesce(json_agg(json_build_object('expires_at', expires_at, 'source', source, 'payload', payload)), '[]')
+                         from public.premium_unlocks where user_id = ${lit(eq('user_id'))}::uuid and product = ${lit(eq('product'))}`);
+        return reply(200, out);
+      }
+      if (path === 'premium_unlocks' && method === 'POST' && u.searchParams.get('on_conflict') === 'user_id,product') {
+        for (const r of body) {
+          sql(`insert into public.premium_unlocks (user_id, product, source, payload, expires_at, fulfilled_at, granted_at)
+               values (${lit(r.user_id)}::uuid, ${lit(r.product)}, ${lit(r.source)}, ${lit(r.payload)}::jsonb,
+                       ${lit(r.expires_at)}::timestamptz, ${lit(r.fulfilled_at)}::timestamptz, coalesce(${lit(r.granted_at)}::timestamptz, now()))
+               on conflict (user_id, product) do update set source = excluded.source, payload = excluded.payload,
+                 expires_at = excluded.expires_at, fulfilled_at = excluded.fulfilled_at`);
+        }
+        return reply(201, '');
       }
       if (path === 'subscriptions' && method === 'POST') {
         const r = body;
@@ -241,7 +263,13 @@ function checkInvariants(after) {
   const moved = JSON.parse(passSnap).filter((x) => !JSON.parse(pass).some((y) => y.u === x.u && y.p === x.p && y.g === x.g));
   ok('after ' + after + ': no plan event moved a Fantasy pass\'s own end', moved.length === 0, JSON.stringify(moved));
   ok('after ' + after + ': no row ends before its pass or its plan',
+    /* not a recurring bundle's row (Diamond Pro, Shut The Door Pro, the pair: source
+       'subscription:<bundle>'). Its end is its subscription's alone, written by grantRecurring,
+       and 124's trigger copies each end onto grant_until. A cancelled one ends "now" on the
+       webhook's clock, which is a moment before the database's now() when this reads it, so
+       the rule below would call every cancellation early. No pass or plan holds such a row. */
     sql(`select count(*) from public.premium_unlocks where expires_at is not null
+           and source not like 'subscription:%'
            and expires_at < greatest(grant_until, least(sub_until, now()))`) === '0');
   ok('after ' + after + ': the bonus row is there at most once per account',
     sql(`select count(*) from (select user_id from public.premium_unlocks where product = 'runtour_pack'
@@ -423,6 +451,29 @@ const arc = sql(`select to_json(s) from public.subscriptions s where user_id = '
 ok('an Arcade Card event writes the Arcade table', !!arc);
 ok('with its period end read off the item, never null', arc && JSON.parse(arc).current_period_end !== null);
 ok('and writes no yearly plan', sql(`select count(*) from public.premium_subscriptions where user_id = '${A}'`) === '0');
+
+console.log('\n-- Shut The Door Pro and the pair with Diamond Pro (supabase/181), against the real table');
+const D = 'c8000000-0000-0000-0000-000000000008';
+sql(`insert into auth.users(id) values ('${D}')`);
+subscription('sub_D', { user: D, bundle: 'door-pro', price: 'price_std', end: now + 365 * DAY, newApi: true });
+await send('checkout.session.completed', { id: 'cs_D', object: 'checkout.session', mode: 'subscription', payment_status: 'paid',
+  subscription: 'sub_D', customer: 'cus_sub_D', client_reference_id: D, metadata: { supabase_user_id: D, bundle: 'door-pro', plan: 'once' } });
+ok('the table takes std_premium, and premium_products() answers it', products(D).includes('std_premium') && !products(D).includes('rtd_premium'));
+ok('and the game\'s own gate honours it', sql(`select public.shutdoor_is_pro('${D}')`) === 't');
+ok('written as a recurring grant, never in premium_subscriptions',
+  row(D, 'std_premium').source === 'subscription:door-pro' && sql(`select count(*) from public.premium_subscriptions where user_id = '${D}'`) === '0');
+const PR = 'c9000000-0000-0000-0000-000000000009';
+sql(`insert into auth.users(id) values ('${PR}')`);
+sql(`insert into public.premium_unlocks (user_id, product, source, expires_at) values ('${PR}', 'rtd_premium', 'bundle:diamond-pro', null)`);
+subscription('sub_PR', { user: PR, bundle: 'diamond-door-pro', price: 'price_pair', end: now + 365 * DAY });
+await send('checkout.session.completed', { id: 'cs_PR', object: 'checkout.session', mode: 'subscription', payment_status: 'paid',
+  subscription: 'sub_PR', customer: 'cus_sub_PR', client_reference_id: PR, metadata: { supabase_user_id: PR, bundle: 'diamond-door-pro', plan: 'once' } });
+ok('the pair grants Shut The Door, and a lifetime Diamond Pro stays lifetime',
+  products(PR).includes('std_premium') && row(PR, 'rtd_premium').expires_at === null);
+stripe.subscriptions.sub_PR.status = 'canceled';
+await send('customer.subscription.deleted', stripe.subscriptions.sub_PR);
+ok('its cancellation ends Shut The Door Pro and leaves the lifetime row', !products(PR).includes('std_premium')
+  && products(PR).includes('rtd_premium') && sql(`select public.shutdoor_is_pro('${PR}')`) === 'f');
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (!KEEP) spawnSync('dropdb', ['--if-exists', '-f', DB]);

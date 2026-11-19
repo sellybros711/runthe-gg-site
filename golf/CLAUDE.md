@@ -53,7 +53,8 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - Three stars is two under par, or a `three` that is exactly par minus one. It must be makeable.
 - Moving `PACE` re-times every moving hole: re-solve all of them with `--write`.
 - Routes are recorded at full precision. Never round them.
-- A Hallows Night hole has at most two moving or wet pieces and par 3 (the signature 4).
+- A Hallows Night or Monster Castle hole has at most two moving or wet pieces and par 3 (the signature 4). Monster Castle's
+  count takes in every moving or wet piece the engine has.
 - Every hole stays under 34% wet or out in `fair.mjs`, and each tour's mean under 10%.
 - **A ball never comes to rest on a ferry.** A moving deck grips the ball (`DECK_GRIP`), so a ball that lands on it
   rides. The deck pulls away gently and eases into the dock at its landing speed (`f.e`), so the ball slides ashore;
@@ -147,6 +148,17 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - **One golfer in every mode.** A mode draws your golfer through `modeLook(look, kind)`: the equipped putter on
   every green and walk, and the career's age stamped on. An aura shows wherever the golfer is drawn (the
   `hvsw-glow` pulse, `host.aura()` on a canvas). `check-golfer3d.mjs` section 4 holds all of it.
+
+**The roster**
+
+- **Legend cards never change in a roster refresh** (the owner, 2026-10-27). Every card in `ROSTER` with
+  `era: "leg"` or `tier: "legend"` (the peaks, the Primes and the present-day vets) stays byte for byte.
+  The weekly refresh (`golf-rosters.yml`, `golf/roster/dg_refresh.py`) re-rates current cards only. Never pass
+  `--rerate-legends`. `golf/roster/check_refresh.py` fails a refresh that moves one. A legend is edited by hand,
+  only when the owner asks, in its own pull request.
+- **The weekly refresh goes live by itself** (the owner, 2026-11-10). `golf-rosters.yml` merges its own pull
+  request once every check in the job passes. A check that fails stops the job before it pushes, so a refresh
+  that moves a legend or a rating wildly never goes live. Never weaken the gate to get a refresh through.
 
 **Economy**
 

@@ -211,12 +211,15 @@ function settleCard(){
     var k = b.getAttribute('data-clip'), blob = k === 'hole' ? (full || putts[0].blob) : putts[+k].blob;
     give(blob, 'putt-putt-' + nm + (k === 'hole' ? '' : '-putt-' + (+k + 1)) + '.' + ext(), share, row, k === 'hole' && !one ? 'My hole' : 'My putt'); }; });
 }
+/* putt.js owns the link (RTT_PUTT.SHARE_URL, the full https:// form); this is only its stand-in if putt.js
+   is somehow not there, so a shared clip still carries a tappable link. */
+function shareUrl(){ var P = window.RTT_PUTT; return (P && P.SHARE_URL) || 'https://runthe.gg/golf/'; }
 function give(blob, name, share, row, what){
   var type = baseType();
   if (share){
     var f; try{ f = new File([blob], name, { type:type }); }catch(e){ f = null; }
     if (f){ row.setAttribute('data-busy', '');
-      try{ navigator.share({ files:[f], title:'Putt Putt Tour', text:what + ' on Putt Putt Tour. Play at runthe.gg' })
+      try{ navigator.share({ files:[f], title:'Putt Putt Tour', text:what + ' on Putt Putt Tour. Play at ' + shareUrl() })
         .catch(function(){}).then(function(){ row.removeAttribute('data-busy'); }); return; }catch(e){ row.removeAttribute('data-busy'); } }
   }
   try{ var u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove();

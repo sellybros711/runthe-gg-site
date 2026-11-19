@@ -16,7 +16,7 @@
    - Quiet when the tab is hidden: the context is suspended and resumed on return.
 
    window.STD_SFX: setOn(v) isOn() state() pitch(mph, ms, quick) pop(level, ms) crack(kind, ms)
-   miss(ms) thud(ms) snap(ms) ump(word) umpClips(list) umpState() roar(size) groan(size) cheer() bed(level) tick() chime(level)
+   miss(ms) thud(ms) snap(ms) ump(word) umpClips(list) umpPreview(url) umpState() umpLast() roar(size) groan(size) cheer() bed(level) tick() chime(level)
    tap() tab() sting(outcome) buzz(pattern) */
 (function () {
   'use strict';
@@ -321,12 +321,43 @@
     var V = window.STD_VOICES, lines = V && V.linesFor ? V.linesFor(word) : [];
     var ready = clips.filter(function (c) { return c.state === 'ready' && lines.indexOf(c.line) >= 0; });
     if (!ready.length) return;
-    var c = ready[Math.floor(Math.random() * ready.length)], t = at(0);
-    var s = ac.createBufferSource(); s.buffer = c.buf;
-    var g = ac.createGain(); g.gain.value = 0.9;
+    umpVoice(ready[Math.floor(Math.random() * ready.length)].buf, 'game');
+  }
+  /* THE ump chain: every clip the game plays, and the review sheet's "Hear it in the game", go
+     through here and nowhere else, so what the owner hears is what a player hears. The clip at
+     UMP_GAIN onto the sfx bus (the compressor, then the master), the crowd ducked under it. There
+     is no filter and no reverb on a call, and the crowd's bed is off (bed: off below), so the duck
+     has nothing to dip today; it rides along so a bed coming back is heard the same in both. */
+  var UMP_GAIN = 0.9, umpLast = null;
+  function umpVoice(buf, how) {
+    var t = at(0);
+    var s = ac.createBufferSource(); s.buffer = buf;
+    var g = ac.createGain(); g.gain.value = UMP_GAIN;
     s.connect(g); g.connect(sfx);
-    duck(t, 0.5, Math.min(2.5, c.buf.duration + 0.1));
+    duck(t, 0.5, Math.min(2.5, buf.duration + 0.1));
     s.start(t);
+    umpLast = { how: how, gain: UMP_GAIN, bus: 'sfx', comp: comp.threshold.value, master: master.gain.value, ms: Math.round(buf.duration * 1000) };
+    return s;
+  }
+  /* the review sheet's "Hear it in the game" (voices.js): a clip by its signed URL, fetched and
+     decoded once, played through umpVoice. Resolves 'played', 'off' (the sound is off in settings,
+     or the page has had no tap yet), or 'failed'. The game's own clips are not touched. */
+  var previews = {};
+  function umpPreview(url) {
+    if (!url) return Promise.resolve('failed');
+    if (!ctx()) return Promise.resolve('off');
+    var p = previews[url];
+    if (!p) {
+      p = previews[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error('fetch'); return r.arrayBuffer(); }).then(function (b) {
+        return new Promise(function (res, rej) { var q = ac.decodeAudioData(b, res, rej); if (q && q.then) q.then(res, rej); });
+      });
+      p.catch(function () { delete previews[url]; });
+    }
+    return p.then(function (buf) {
+      if (!ctx()) return 'off';
+      umpVoice(buf, 'preview');
+      return 'played';
+    }, function () { return 'failed'; });
   }
 
   function off() {}
@@ -342,8 +373,10 @@
        synthesized builders above stay for reference until the recordings land. */
     pitch: off, pop: off, crack: off, miss: off, thud: off, snap: off,
     /* the one sound on: the umpire's calls, in players' own approved recordings (2026-11-05) */
-    ump: run(umpPlay), umpClips: umpClips,
+    ump: run(umpPlay), umpClips: umpClips, umpPreview: umpPreview,
     umpState: function () { return clips.map(function (c) { return { line: c.line, state: c.state }; }); },
+    /* for the browser check: the last clip through the ump chain, and how it was routed */
+    umpLast: function () { return umpLast; },
     roar: off, groan: off, cheer: off, sting: off,
     tick: off, chime: off, tap: off, tab: off,
     bed: off,

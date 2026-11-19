@@ -25,7 +25,7 @@ const E = require('../engine.js'), C = require('../config.js');
 
 export const PLAYBOOK = {
   'sneak': { formation: 'uc12', routes: [], blocks: [{ who: 'TE', to: [5, -0.5] }], handoff: { to: 'QB', path: [[0, 1.5], [0, 4]] }, targets: [] },
-  'inside zone': { formation: 'iform', routes: [], blocks: [{ who: 'TE', to: [-1.5, -1] }], handoff: { to: 'RB', path: [[-1, -3], [-1.6, 0.5], [-1.8, 6]] }, targets: [] },
+  'inside zone': { formation: 'iform', routes: [], blocks: [{ who: 'TE', to: [-1.5, -1] }, { who: 'SLOT', to: [4.5, 1.2] }, { who: 'WR1', to: [-12.7, 2.5] }, { who: 'WR2', to: [12.7, 2.5] }], handoff: { to: 'RB', path: [[-1, -3], [-1.6, 0.5], [-1.8, 6]] }, targets: [] },
   'slant flat': { formation: 'gun2x2', routes: [{ who: 'WR1', pts: [[-13.5, 1.5], [-9.5, 5.5]] }, { who: 'SLOT', pts: [[-8.5, 1], [-12.5, 3]] }, { who: 'WR2', pts: [[13.5, 1.5], [9.5, 5.5]] }, { who: 'TE', pts: [[8.5, 1], [12.5, 3]] }], blocks: [{ who: 'RB', to: [-2, -4] }], handoff: null, targets: ['WR1', 'SLOT'] },
   'mesh': { formation: 'gun3x1', routes: [{ who: 'SLOT', pts: [[-9.5, 4], [4, 5.5]] }, { who: 'TE', pts: [[-6.2, 5], [9, 6.5]] }, { who: 'WR1', pts: [[-13.5, 12], [-13.5, 10]] }, { who: 'WR2', pts: [[13.5, 9], [16, 6]] }, { who: 'RB', pts: [[4, -3], [8, 1]] }], blocks: [], handoff: null, targets: ['TE', 'RB'] },
   'stick': { formation: 'gun3x1', routes: [{ who: 'TE', pts: [[-6.2, 6], [-6, 5]] }, { who: 'SLOT', pts: [[-9.5, 2], [-15, 3]] }, { who: 'WR1', pts: [[-13.5, 20]] }, { who: 'WR2', pts: [[13.5, 10], [11, 9]] }], blocks: [{ who: 'RB', to: [2, -4] }], handoff: null, targets: ['TE', 'SLOT'] },

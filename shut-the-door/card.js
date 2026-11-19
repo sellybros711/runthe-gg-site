@@ -141,11 +141,36 @@ function pill(ctx, text, right, y, px) {
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; spacing(ctx, 0, px);
 }
 
+/* a small label in capitals; returns the width it drew, measured in its own face and spacing */
 function label(ctx, text, x, y, px, color, width) {
   font(ctx, 600, px); spacing(ctx, .12, px);
   ctx.fillStyle = color || DIM;
-  ctx.fillText(width ? clip(ctx, String(text).toUpperCase(), width) : String(text).toUpperCase(), x, y);
+  var t = width ? clip(ctx, String(text).toUpperCase(), width) : String(text).toUpperCase();
+  ctx.fillText(t, x, y);
+  var w = ctx.measureText(t).width;
   spacing(ctx, 0, px);
+  return w;
+}
+/* how far the glyphs reach above and below the baseline, in the face that is set now. Placing
+   one line against another from these, never from a constant, keeps the card right whatever face
+   draws it (the card's offsets were tuned for Barlow Condensed and broke when Anton and Inter came
+   in, #871: the kicker under DOOR SHUT., PITCHED LIKE under the name). */
+function ink(ctx, text, px) {
+  var m = ctx.measureText(text);
+  var up = m.actualBoundingBoxAscent, down = m.actualBoundingBoxDescent;
+  return { up: up >= 0 ? up : px * .9, down: down >= 0 ? down : px * .22 };
+}
+/* the kicker ('final · <title>') set on top of the outcome: the outcome keeps its baseline and the
+   kicker stands a measured gap above the outcome's tallest glyph */
+function kicker(ctx, c, x, outBase, width, max, px, gap) {
+  var word = (C.OUTCOME_LABEL[c.outcome] || '').toUpperCase();
+  fit(ctx, word + '.', 900, max, width, true, 40);
+  var top = outBase - ink(ctx, word + '.', max).up;
+  font(ctx, 600, px); spacing(ctx, .12, px);
+  var t = clip(ctx, ['final', c.title].filter(Boolean).join(' · ').toUpperCase(), width);
+  var y = top - gap - ink(ctx, t, px).down;
+  spacing(ctx, 0, px);
+  label(ctx, t, x, y, px, DIM, width);
 }
 
 /* DOOR SHUT. in its colour, the full stop in signal, as large as the width allows */
@@ -168,7 +193,12 @@ function fact(ctx, x, y, w, h, big, sup, small, s) {
   var bx = x + 22 * s, by = y + 22 * s + px * .78;
   ctx.fillText(big, bx, by);
   if (sup) { var bw = ctx.measureText(big).width; font(ctx, 900, px * .46, true); ctx.fillText(sup, bx + bw + 3 * s, by - px * .42); }
-  label(ctx, small, bx, y + h - 20 * s, 21 * s, DIM);
+  /* the word under it in its tile's width: Inter at .12em runs wider than the condensed face this
+     was first set in, so it steps down to fit, then clips */
+  var lp = 21 * s, room = w - 44 * s, word = String(small).toUpperCase();
+  for (;;) { font(ctx, 600, lp); spacing(ctx, .12, lp); if (ctx.measureText(word).width <= room || lp <= 14 * s) break; lp -= .5 * s; }
+  spacing(ctx, 0, lp);
+  label(ctx, small, bx, y + h - 20 * s, lp, DIM, room);
 }
 
 function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; return ['th', 'st', 'nd', 'rd'][n % 10] || 'th'; }
@@ -248,7 +278,7 @@ function drawTall(ctx, c, marks) {
   brand(ctx, marks, P, 72, 84);
   if (c.label) pill(ctx, c.label, W - P, 88, 34);
   y = 274;
-  label(ctx, ['final', c.title].filter(Boolean).join(' · '), P, y, 30, DIM, iw);
+  kicker(ctx, c, P, y + 176, iw, 210, 30, 22);
   var op = outcome(ctx, c, P - 4, y + 176, iw, 210);
   y += 176 + 8 + Math.max(0, (210 - op) * .1);
   seam(ctx, P, y + 26, iw * .62, 1.9);
@@ -267,9 +297,9 @@ function drawTall(ctx, c, marks) {
     y += vh + 36;
   }
   if (c.pitchedLike && y < H - 190) {
-    label(ctx, 'pitched like', P, y + 20, 24, DIM);
+    var lw = label(ctx, 'pitched like', P, y + 20, 24, DIM) + 18;
     font(ctx, 900, 44, true); ctx.fillStyle = '#ffffff';
-    ctx.fillText(clip(ctx, String(c.pitchedLike).toUpperCase(), iw - 170), P + 160, y + 24);
+    ctx.fillText(clip(ctx, String(c.pitchedLike).toUpperCase(), iw - lw), P + lw, y + 24);
   }
   footer(ctx, W, H - 66, P, 1, marks);
 }
@@ -280,7 +310,7 @@ function drawWide(ctx, c, marks) {
   brand(ctx, marks, P, 46, 60);
   if (c.label) pill(ctx, c.label, W - P, 56, 26);
   y = 164;
-  label(ctx, ['final', c.title].filter(Boolean).join(' · '), P, y, 22, DIM, lw);
+  kicker(ctx, c, P, y + 118, lw, 150, 22, 16);
   outcome(ctx, c, P - 3, y + 118, lw, 150);
   seam(ctx, P, y + 150, lw * .62, 1.5);
   var fy = y + 182, fw = (lw - 16) / 2, fh = 120;

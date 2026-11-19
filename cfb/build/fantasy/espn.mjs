@@ -76,6 +76,11 @@ export async function scoreboardWeek(season, week) {
   return getJSON(`/scoreboard?groups=80&dates=${season}&seasontype=2&week=${week}&limit=300`);
 }
 
+/** The postseason: every bowl and every Playoff game, as one ESPN "week" (seasontype 3). */
+export async function scoreboardPost(season) {
+  return getJSON(`/scoreboard?groups=80&dates=${season}&seasontype=3&week=1&limit=300`);
+}
+
 export async function scoreboardDay(yyyymmdd) {
   return getJSON(`/scoreboard?groups=80&dates=${yyyymmdd}&limit=300`);
 }
@@ -84,8 +89,20 @@ export async function summary(eventId) {
   return getJSON(`/summary?event=${encodeURIComponent(eventId)}`);
 }
 
+/*
+ * A TEAM'S WHOLE ROSTER, WITH `limit=300`.
+ *
+ * Plain, ESPN stops at 100 athletes in alphabetical order, and FBS rosters run past it. The
+ * week 11 board was missing 176 men who had played for slate teams, nearly all with surnames
+ * from S on, and three teams' starting quarterbacks. The probe of 2026-11-12 (run
+ * 43285149270) read 100 plain ("Washington Jr." last) and 105 with `limit=300` ("Wright"
+ * last), and the same 105 with `limit=200&page=1`, so `limit` lifts the cap. The plain path is
+ * kept only as a fallback for a failed read, and the build logs a roster of exactly 100.
+ */
+export const ROSTER_CAP = 100;
 export async function roster(teamId) {
-  return getJSON(`/teams/${encodeURIComponent(teamId)}/roster`);
+  const rel = `/teams/${encodeURIComponent(teamId)}/roster`;
+  return (await getJSON(`${rel}?limit=300`)) || getJSON(rel);
 }
 
 /** The calendar of regular season weeks off a scoreboard payload: [{week, start, end}]. */
@@ -143,6 +160,9 @@ export function gameOf(ev) {
     spread: odds ? num(odds.spread) : null,
     total: odds ? num(odds.overUnder) : null,
     tv: (comp.broadcasts || []).flatMap((b) => b.names || []).slice(0, 2),
+    /* ESPN's headline for a game that has one: a bowl's name, and how a Playoff game is
+       told apart from the other bowls (playoff.mjs). */
+    note: (comp.notes || []).map((n) => n && n.headline).filter(Boolean).join(' | ') || null,
   };
 }
 

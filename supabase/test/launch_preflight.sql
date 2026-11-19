@@ -88,7 +88,7 @@ has_table as (
     'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
     'sportegories_rulings','stumpire_rulings',
-    'shutdoor_outings','shutdoor_streaks','putt_daily','ad_rewards'
+    'shutdoor_outings','shutdoor_streaks','putt_daily','ad_rewards','ps_dynasty_best'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -770,7 +770,24 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from proc where name = 'ad_reward_issue')
       and (select count(*) > 0 from proc where name = 'ad_reward_claim')
       and (select count(*) > 0 from proc
-            where name = 'arcade_spend_game' and body like '%arcade_game_cap%'))
+            where name = 'arcade_spend_game' and body like '%arcade_game_cap%')),
+  -- THE DYNASTY BOARD READS ITS OWN TABLE. Without it the board still works, and every
+  -- read scans the whole dynasty history: the Disk IO outage of 2026-11-12.
+  (68, '168_dynasty_board_table',
+      'the Dynasty board reads one row per dynasty, kept by a trigger',
+      'Nothing looks wrong. Every Dynasty board read scans every dynasty season, and enough of them run the database out of its Disk IO budget.',
+      (select count(*) > 0 from has_table where name = 'ps_dynasty_best')
+      and (select count(*) > 0 from proc where name = 'ps_dynasty_best_refresh')),
+  -- SHUT THE DOOR PRO. Two halves, and either missing is quiet: without the product the
+  -- webhook 500s on every paid checkout (Stripe retries, nobody gets Pro), and without the
+  -- gate (160 re-run after 181 puts PRO_LIVE back to false) a paid row opens nothing.
+  (69, '181_shut_the_door_pro',
+      'a Shut The Door Pro row is a product the webhook may grant, and the gate honours it',
+      'A paid Shut The Door Pro checkout is refused by the table and retried by Stripe, or it lands and the archive, the extra Survivor runs and Diamond stay locked. Run 181 (again).',
+      (select count(*) > 0 from con
+        where name = 'premium_unlocks_product_ck' and def like '%std_premium%')
+      and (select count(*) > 0 from proc
+            where name = 'shutdoor_is_pro' and body like '%PRO_LIVE constant boolean := true%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

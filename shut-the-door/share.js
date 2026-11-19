@@ -4,7 +4,7 @@
  *   door shut · better than 71% of closers
  *   pitched like Josh Hader
  *   🟩🟩🟨🟩🟧🟩
- *   runthe.gg/shut-the-door
+ *   https://runthe.gg/shut-the-door/
  *
  * Every word and number comes from the result and contract.js (the title, the
  * squares, ten to a line, the URL). Node: require('./share.js').text(...).
@@ -26,7 +26,7 @@
     if (r.pitchedLike && r.pitchedLike.name) lines.push('pitched like ' + r.pitchedLike.name);
     const sq = (r.strip || []).map((b) => C.SQUARE[b] || '');
     for (let i = 0; i < sq.length; i += C.SQUARES_PER_LINE) lines.push(sq.slice(i, i + C.SQUARES_PER_LINE).join(''));
-    lines.push(C.SHARE_URL);
+    lines.push(C.SHARE_LINK);
     return lines.join('\n');
   }
 

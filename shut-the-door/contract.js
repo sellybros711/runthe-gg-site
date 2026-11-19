@@ -523,6 +523,12 @@ const OUTING_KEY = 'std_outing_v1';
 
 const SHARE_TITLE = 'Shut The Door';
 const SHARE_URL = 'runthe.gg/shut-the-door';
+/* The share text's link line. SHARE_URL stays short for the card image (card.js
+   draws it). The text gets the full https:// form with the trailing slash, as
+   arcade/share.js does: messages apps only make "https://runthe.gg/..." a
+   tappable link, and the slash is the canonical page, so the preview unfurls
+   with no redirect hop. */
+const SHARE_LINK = 'https://' + SHARE_URL + '/';
 
 const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
@@ -530,7 +536,7 @@ const publicAPI = Object.freeze({
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
   UMPIRE, zoneDist, BALL_IN, absDist, touchDist, HBP, hbpReach, hbpReachAt, insideFt, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
-  SHARE_TITLE, SHARE_URL,
+  SHARE_TITLE, SHARE_URL, SHARE_LINK,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

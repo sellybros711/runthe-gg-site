@@ -31,6 +31,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { twoBoneIK, wpos } from './rig.js?v=1';
 import { P, FT } from './units.js?v=1';
+import { gloveHandWeights, GLOVE_HAND_W } from './people.js?v=64';
 
 const PART = { skin: 0, hair: 1, uniform: 2, trim: 3, shoes: 4, belt: 5, cap: 6, gloveL: 7, gloveR: 8, brim: 9, pants: 10 };
 const NPART = 11;
@@ -62,6 +63,7 @@ function rigid(geo, bone, part) {
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(new Uint16Array(n * 4).map((_, i) => (i % 4 === 0 ? bone : 0)), 4));
   geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(new Float32Array(n * 4).map((_, i) => (i % 4 === 0 ? 1 : 0)), 4));
   geo.setAttribute('part', new THREE.Float32BufferAttribute(new Float32Array(n).fill(part), 1));
+  geo.setAttribute('gloveHand', new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
   geo.deleteAttribute('uv');
   return geo;
 }
@@ -90,7 +92,14 @@ function buildTemplate(person) {
     g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(siA, 4));
     g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(swA, 4));
     g.setAttribute('part', new THREE.Float32BufferAttribute(new Float32Array(si.count).fill(part), 1));
-    g.setIndex(src.index ? new THREE.Uint32BufferAttribute(Uint32Array.from(src.index.array), 1) : null);
+    // each vertex's weight on the glove hand's bones, left and right (people.js gloveHandWeights): the
+    // hand under a glove is not drawn (figureMaterial), the bare one is
+    const hl = gloveHandWeights(src, names, 'l'), hr = gloveHandWeights(src, names, 'r'), gh = new Float32Array(si.count * 2);
+    for (let i = 0; i < si.count; i++) { gh[i * 2] = hl[i]; gh[i * 2 + 1] = hr[i]; }
+    g.setAttribute('gloveHand', new THREE.Float32BufferAttribute(gh, 2));
+    // (the whole body: the set's catcher draws his own without his glove hand, people.js gloveHandOff)
+    const ix = src.userData.fullIndex || src.index;
+    g.setIndex(ix ? new THREE.Uint32BufferAttribute(Uint32Array.from(ix.array), 1) : null);
     g.applyMatrix4(m.bindMatrix);              // into skeleton space
     parts.push(g);
   }
@@ -128,7 +137,9 @@ function buildTemplate(person) {
   brim.scale(1, 1, 1.25).translate(hc.x, hc.y + hs.y * 0.16, hc.z + hs.z * 0.18);
   for (const g of [crown, brim]) g.deleteAttribute('uv');
   parts.push(rigid(crown, index.head, PART.cap), rigid(brim, index.head, PART.brim));
-  // the gloves: a leather pad on each hand's palm side, fingers up (one is hidden per figure)
+  // the gloves: a leather pad on each hand's palm side, fingers up (one is hidden per figure). Each
+  // glove's frame and half sizes in skeleton space are kept (gloves) for lab/pipeline/check-mitt.mjs
+  const gloves = {};
   for (const s of ['l', 'r']) {
     const hb = box(`hand_${s}`, 0.3), c = hb.getCenter(V());
     const hand = world[index[`hand_${s}`]], mid = world[index[`middle_01_${s}`]];
@@ -137,9 +148,11 @@ function buildTemplate(person) {
     const out = V(s === 'l' ? 1 : -1, 0, 0);           // the A pose: the palm faces the body
     const side = V().crossVectors(along, out).normalize();
     // a fielder's glove is far bigger than the hand: about 28 cm long, 20 wide, a pocket in front of the palm
-    const g = new THREE.SphereGeometry(1, 14, 10);
-    g.scale(0.09, 0.135, 0.05);
-    g.applyMatrix4(new THREE.Matrix4().makeBasis(side, along, out).setPosition(c.clone().addScaledVector(along, 0.075).addScaledVector(out, -0.045)));
+    const g = new THREE.SphereGeometry(1, 14, 10), half = V(0.09, 0.135, 0.05);
+    g.scale(half.x, half.y, half.z);
+    const frame = new THREE.Matrix4().makeBasis(side, along, out).setPosition(c.clone().addScaledVector(along, 0.075).addScaledVector(out, -0.045));
+    g.applyMatrix4(frame);
+    gloves[s] = { frame, half };
     g.deleteAttribute('uv');
     parts.push(rigid(g, index[`hand_${s}`], s === 'l' ? PART.gloveL : PART.gloveR));
   }
@@ -158,7 +171,7 @@ function buildTemplate(person) {
     const hb = box(`hand_${s}`, 0.3), c = hb.getCenter(V());
     return c.applyMatrix4(world[index[`hand_${s}`]].clone().invert());
   };
-  return { geometry, lod, names, index, parents: sk.bones.map((b) => names.indexOf(b.parent && b.parent.name)), world, inverses: world.map((m) => m.clone().invert()), modelH, foot: Math.min(world[index.foot_l].elements[13], world[index.foot_r].elements[13]) - all.min.y, minY: all.min.y, pocketL: pocket('l'), pocketR: pocket('r') };
+  return { geometry, lod, names, index, parents: sk.bones.map((b) => names.indexOf(b.parent && b.parent.name)), world, inverses: world.map((m) => m.clone().invert()), modelH, foot: Math.min(world[index.foot_l].elements[13], world[index.foot_r].elements[13]) - all.min.y, minY: all.min.y, pocketL: pocket('l'), pocketR: pocket('r'), gloves };
 }
 
 /** A coarse copy of a skinned geometry by vertex clustering: every vertex snapped to a cell of `cell`
@@ -166,7 +179,7 @@ function buildTemplate(person) {
     mean place and normal with the first one's bones, and the triangles that collapse dropped. For a
     body a few dozen pixels tall, where a cell is under a pixel. Pure, made once at load. */
 function clusterLod(g, cell) {
-  const pos = g.attributes.position, nor = g.attributes.normal, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, pt = g.attributes.part;
+  const pos = g.attributes.position, nor = g.attributes.normal, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, pt = g.attributes.part, gh = g.attributes.gloveHand;
   const map = new Int32Array(pos.count), keys = new Map(), acc = [];
   for (let i = 0; i < pos.count; i++) {
     const k = Math.round(pos.getX(i) / cell) + ',' + Math.round(pos.getY(i) / cell) + ',' + Math.round(pos.getZ(i) / cell) + ',' + pt.getX(i);
@@ -175,12 +188,13 @@ function clusterLod(g, cell) {
     const a = acc[c]; a.n++; a.x += pos.getX(i); a.y += pos.getY(i); a.z += pos.getZ(i); a.nx += nor.getX(i); a.ny += nor.getY(i); a.nz += nor.getZ(i);
     map[i] = c;
   }
-  const n = acc.length, P = new Float32Array(n * 3), N = new Float32Array(n * 3), SI = new Uint16Array(n * 4), SW = new Float32Array(n * 4), PT = new Float32Array(n);
+  const n = acc.length, P = new Float32Array(n * 3), N = new Float32Array(n * 3), SI = new Uint16Array(n * 4), SW = new Float32Array(n * 4), PT = new Float32Array(n), GH = new Float32Array(n * 2);
   acc.forEach((a, c) => {
     P[c * 3] = a.x / a.n; P[c * 3 + 1] = a.y / a.n; P[c * 3 + 2] = a.z / a.n;
     const l = Math.hypot(a.nx, a.ny, a.nz) || 1; N[c * 3] = a.nx / l; N[c * 3 + 1] = a.ny / l; N[c * 3 + 2] = a.nz / l;
     for (let k = 0; k < 4; k++) { SI[c * 4 + k] = si.getComponent(a.i, k); SW[c * 4 + k] = sw.getComponent(a.i, k); }
     PT[c] = pt.getX(a.i);
+    GH[c * 2] = gh.getX(a.i); GH[c * 2 + 1] = gh.getY(a.i);
   });
   const idx = g.index.array, out = [], seen = new Set();
   for (let t = 0; t < idx.length; t += 3) {
@@ -196,6 +210,7 @@ function clusterLod(g, cell) {
   o.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
   o.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
   o.setAttribute('part', new THREE.Float32BufferAttribute(PT, 1));
+  o.setAttribute('gloveHand', new THREE.Float32BufferAttribute(GH, 2));
   o.setIndex(new THREE.Uint32BufferAttribute(Uint32Array.from(out), 1));
   o.computeBoundingSphere();
   return o;
@@ -211,18 +226,20 @@ function figureMaterial() {
     sh.uniforms.uKit = { value: kit };
     sh.uniforms.uHide = m.userData.hide;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float part;\nvarying float vPart;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPart = part;');
+      .replace('#include <common>', '#include <common>\nattribute float part;\nattribute vec2 gloveHand;\nvarying float vPart;\nvarying vec2 vGloveHand;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPart = part;\nvGloveHand = gloveHand;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\nuniform vec3 uKit[${NPART}];\nuniform vec2 uHide;\nvarying float vPart;`)
+      .replace('#include <common>', `#include <common>\nuniform vec3 uKit[${NPART}];\nuniform vec2 uHide;\nvarying float vPart;\nvarying vec2 vGloveHand;`)
       .replace('vec4 diffuseColor = vec4( diffuse, opacity );', `int pi = int(vPart + 0.5);
         if ((pi == ${PART.gloveL} && uHide.x > 0.5) || (pi == ${PART.gloveR} && uHide.y > 0.5)) discard;
+        // the glove replaces the hand it is on (people.js gloveHandOff: the same hand, cut here per pixel)
+        if ((vGloveHand.x >= ${GLOVE_HAND_W.toFixed(2)} && uHide.x < 0.5) || (vGloveHand.y >= ${GLOVE_HAND_W.toFixed(2)} && uHide.y < 0.5)) discard;
         vec3 kc = uKit[0];
         for (int k = 1; k < ${NPART}; k++) if (k == pi) kc = uKit[k];
         vec4 diffuseColor = vec4( kc, opacity );`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nif (pi == ${PART.skin}) roughnessFactor = 0.55; else if (pi == ${PART.shoes} || pi == ${PART.belt} || pi == ${PART.brim}) roughnessFactor = 0.45;`);
   };
-  m.customProgramCacheKey = () => 'std-figure-2';
+  m.customProgramCacheKey = () => 'std-figure-3';
   return m;
 }
 

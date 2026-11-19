@@ -21,6 +21,8 @@ const { server } = await startDev(PORT);
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let fails = 0;
 const ok = (c, m) => { console.log((c ? ' ok   ' : ' FAIL ') + m); if (!c) fails++; };
+/* The result card docks (2026-11-17): More opens the rest of it. */
+async function openCard(page) { if (await page.isVisible('#bMore') && (await page.getAttribute('#bMore', 'aria-expanded')) !== 'true') await page.click('#bMore'); }
 
 async function run(name, viewport, mobile) {
   console.log('\n' + name);
@@ -70,6 +72,9 @@ async function run(name, viewport, mobile) {
   /* ---------- the storyboard, in the game ---------- */
   await page.click('#hPlay');
   await page.waitForSelector('#board', { state: 'visible' });
+  ok((await L(() => window.__lastShot.play.steps.length)) === 4, 'a first visit opens on the starter play');
+  await page.click('#bClear');
+  ok((await L(() => window.__lastShot.play.steps.length)) === 0, 'Clear gives a blank clipboard');
   await drawPin();
   const beats = await L(() => window.__lastShot.play.steps.map(s => s.kind + s.beat));
   ok(JSON.stringify(beats) === JSON.stringify(['move1', 'screen2', 'move2', 'pass3', 'shoot3']), 'the storyboard keeps each step in its frame: ' + beats.join(' '));
@@ -94,6 +99,7 @@ async function run(name, viewport, mobile) {
   await page.click('#hBooks');
   await page.waitForSelector('#pbSignIn');
   ok(await page.isVisible('#pbSignIn'), 'signed out, My Playbooks offers sign in and keeps nothing');
+  { const sb = await page.locator('#pbSignIn').boundingBox(); ok(sb.height < 80, 'the sign in button is a button, not a full height block (' + Math.round(sb.height) + ' px)'); }
   ok(!(await page.isVisible('#pbNew')), 'and no playbook can be started');
 
   /* ---------- signed in ---------- */
@@ -111,6 +117,17 @@ async function run(name, viewport, mobile) {
   await page.waitForTimeout(450);
   const nm = await page.inputValue('#pbPlayName');
   ok(nm === 'Box Pin 2', 'the play names itself from what was drawn: ' + nm);
+  // Go at on a playbook play: a new one holds to 8.0, and the chip's value is stored with it
+  ok((await page.textContent('#goChip')) === 'Go at 8.0', 'a new playbook play holds till 8.0');
+  await page.click('#goMinus');
+  ok((await L(() => window.__lastShot.edit.entry.play.goAt)) === 7.5, 'Go at is stored on the playbook play');
+  // a shorter situation clock caps the chip
+  await page.click('#pbMore summary');
+  await page.fill('#pbClock', '6'); await page.dispatchEvent('#pbClock', 'change');
+  ok((await page.textContent('#goChip')) === 'Go at 6.0' && (await page.textContent('#goLab')) === 'Go at once', 'a 6.0 situation caps Go at to the clock: ' + await page.textContent('#goChip'));
+  await page.fill('#pbClock', '22'); await page.dispatchEvent('#pbClock', 'change');
+  await page.click('#pbMore summary');
+  ok((await page.textContent('#goChip')) === 'Go at 7.5', 'and the play keeps its own 7.5');
   await shot('3-editor');
 
   // Test it: every defense
@@ -121,16 +138,23 @@ async function run(name, viewport, mobile) {
   await page.click('#testClose');
 
   // a run against one scheme counts under that scheme
+  const slotRev = () => L(() => { const e = window.__lastShot.edit; const m = window.__mem['last_shot/b-' + e.book.id]; return m ? m.progress : null; });
+  await page.waitForTimeout(600);   // an edit's own save (350 ms debounce) lands first
+  const revBefore = await slotRev();
   await page.click('#pbMore summary');
   await page.selectOption('#pbAgainst', 'over');
   await page.click('#pbRunAgainst');
-  await page.waitForSelector('#bShare', { timeout: 40000 });
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
   const ran = await L(() => window.__lastShot.result.scheme);
   ok(ran === 'over', 'Run against Fight over runs against Fight over');
   const counted = await L(() => { const e = window.__lastShot.edit.entry; const k = Object.keys(e.stats)[0]; return e.stats[k].byScheme; });
   ok(counted && counted.over && counted.over.n === 1, 'the run counts under Fight over');
+  ok((await slotRev()) === revBefore, 'and the run alone writes nothing to the cloud');
+  await openCard(page);
   await page.click('#bBackBook');
   await page.waitForSelector('.prow');
+  await page.waitForFunction(r => { const m = Object.entries(window.__mem).find(([k]) => k.startsWith('last_shot/b-')); return m && m[1].progress > r; }, revBefore, { timeout: 5000 });
+  ok(true, 'back at the book, the counted run is written once');
   ok(/Switch \d+%/.test(await page.textContent('.prow small')), 'the playbook shows how the play tested');
 
   // a typed name never changes; a rule renames the rest

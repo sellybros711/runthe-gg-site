@@ -136,13 +136,65 @@ export function latestReports(rows, season, week) {
 }
 
 /**
+ * THE QUARTERBACKS WHO ARE NOT STARTING, read off each club's latest depth chart.
+ *
+ * The owner, 2026-11-12: Jameis Winston and Marcus Mariota were on the week 10 board, priced
+ * off the starts they made earlier in the season, while J.J. McCarthy had taken over the
+ * Giants and Jayden Daniels was back for Washington. A backup quarterback scores nothing on a
+ * normal Sunday, so he comes OFF THE BOARD the way a man on injured reserve does: there is no
+ * decision to make about him. Only quarterbacks, because a second running back or a third
+ * receiver plays real snaps and the price already reads that.
+ *
+ * `depth` is nflverse's `depth_charts_<season>.csv` (ESPN's charts, stamped `dt` many times a
+ * week). Each club is read at ITS OWN latest stamp, never at the file's, so a club whose chart
+ * has not moved is read as it stands rather than as empty. A club with no chart in the last
+ * eight days says nothing, and nobody of its is taken off: a stale chart is no answer, and the
+ * safe direction is the board as it was.
+ *
+ * KEYED ON `gsis_id`, which is the pool's `player_id`, and only for a man whose chart is HIS
+ * club's on the board: a quarterback traded since the board was built is read off the chart he
+ * is on now, and is only a backup if that chart says so.
+ */
+export function backupQBs(depth, pool, now = Date.now()) {
+  const fresh = now - 8 * 86400000;
+  const latest = new Map();
+  for (const r of depth) {
+    if (r.pos_abb !== 'QB' || !r.team || !r.dt) continue;
+    if (!latest.has(r.team) || r.dt > latest.get(r.team)) latest.set(r.team, r.dt);
+  }
+  const starter = new Map(), listed = new Map();
+  for (const r of depth) {
+    if (r.pos_abb !== 'QB' || r.dt !== latest.get(r.team)) continue;
+    if (Date.parse(r.dt) < fresh) continue;
+    const rank = Number(r.pos_rank);
+    if (!Number.isFinite(rank)) continue;
+    const cur = starter.get(r.team);
+    if (!cur || rank < cur.rank) starter.set(r.team, { id: r.gsis_id, rank });
+    if (r.gsis_id) listed.set(r.gsis_id, r.team);
+  }
+  /* A STARTER IS A STARTER ANYWHERE: a man traded since the board was built and QB1 on his
+     new club stays. Anybody else is a backup when the chart he is on, or failing that his
+     board club's chart, is fresh and has somebody else at the top. A man missing from his
+     club's chart altogether (Jacoby Brissett behind Carson Beck in week 10) is not starting
+     either, and the old rule let him through. */
+  const starters = new Set([...starter.values()].map((s) => s.id).filter(Boolean));
+  const out = new Set();
+  for (const m of pool) {
+    if (m.position !== 'QB' || starters.has(m.player_id)) continue;
+    const team = listed.get(m.player_id) || m.team;
+    if (starter.has(team)) out.add(m.player_id);
+  }
+  return out;
+}
+
+/**
  * One entry a man, for every man the page needs to know something about.
  *
  * @param ids the player ids on this week's board. Everybody else is left out: the file is
  *            fetched by every visitor and there is no reason to ship four thousand rows to
  *            describe four hundred men.
  */
-export function buildInjuries({ season, week, ids, injuries, players }) {
+export function buildInjuries({ season, week, ids, injuries, players, backups }) {
   const { last, reportWeek } = latestReports(injuries, season, week);
   const roster = new Map();
   for (const p of players) if (p.gsis_id) roster.set(p.gsis_id, p);
@@ -156,6 +208,13 @@ export function buildInjuries({ season, week, ids, injuries, players }) {
        injured reserve is not questionable, he is unavailable. */
     if (status && !ROSTER_OK.has(status)) {
       men[id] = { st: 'off', roster: status };
+      off++;
+      continue;
+    }
+    /* NOT HIS CLUB'S STARTER is the same answer for a quarterback. Coded `QB2` so the page
+       can say which it is: he is on a roster and healthy, and he still will not play. */
+    if (backups && backups.has(id)) {
+      men[id] = { st: 'off', roster: 'QB2' };
       off++;
       continue;
     }
@@ -312,8 +371,15 @@ if (process.argv[1] && process.argv[1].endsWith('injuries.mjs')) {
   const injuries = parseCSVObjects(
     await nflverseCSV('injuries', `injuries_${season}.csv`, fresh));
   const players = parseCSVObjects(await nflverseCSV('players', 'players.csv', fresh));
+  /* The depth chart is about seventy megabytes, nearly all of it defence and special teams,
+     so only the header and the quarterback rows are parsed. */
+  const dcText = await nflverseCSV('depth_charts', `depth_charts_${season}.csv`, fresh);
+  const dcLines = dcText.split('\n');
+  const depth = parseCSVObjects([dcLines[0], ...dcLines.slice(1).filter((l) => l.includes(',QB,'))]
+    .join('\n'));
+  const backups = backupQBs(depth, pool);
 
-  const out = applyRulings(buildInjuries({ season, week, ids, injuries, players }),
+  const out = applyRulings(buildInjuries({ season, week, ids, injuries, players, backups }),
     rulingsFor(path.join(DATA_DIR, 'fantasy_ruled_out.json'), season, week), pool);
   const byId = new Map(pool.map((m) => [m.player_id, m]));
   const line = (id) => {

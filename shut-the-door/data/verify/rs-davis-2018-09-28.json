@@ -1,0 +1,336 @@
+{
+ "id": "rs-davis-2018-09-28",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 531807,
+ "date": "2018-09-28",
+ "game": "Regular Season Game 1: Washington Nationals at Colorado Rockies",
+ "gameType": "R",
+ "pitcher": {
+  "id": 451584,
+  "name": "Wade Davis",
+  "throws": "R",
+  "team": "Colorado Rockies",
+  "seasonLine": "4.13 ERA, 43 SV, 65.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 68,
+   "batterId": 645302,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "451584": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Victor Robles strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Victor Robles strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Victor Robles",
+   "batSideListed": "R",
+   "seasonLine": ".288/.348/.525, 3 HR"
+  },
+  {
+   "atBat": 69,
+   "batterId": 607208,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "451584": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Trea Turner grounds out, pitcher Wade Davis to first baseman Ian Desmond.",
+   "feedEvent": "field_out",
+   "feedDescription": "Trea Turner grounds out, pitcher Wade Davis to first baseman Ian Desmond.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Trea Turner",
+   "batSideListed": "R",
+   "seasonLine": ".271/.344/.416, 19 HR"
+  },
+  {
+   "atBat": 70,
+   "batterId": 547180,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "451584": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Bryce Harper called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Bryce Harper called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Bryce Harper",
+   "batSideListed": "L",
+   "seasonLine": ".249/.393/.496, 34 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 11,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 543685,
+   "name": "Anthony Rendon",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665742,
+   "name": "Juan Soto",
+   "batSideListed": "L"
+  },
+  {
+   "id": 448602,
+   "name": "Mark Reynolds",
+   "batSideListed": "R"
+  },
+  {
+   "id": 593833,
+   "name": "Wander Suero",
+   "batSideListed": "R"
+  },
+  {
+   "id": 594694,
+   "name": "Wilmer Difo",
+   "batSideListed": "S"
+  },
+  {
+   "id": 600474,
+   "name": "Pedro Severino",
+   "batSideListed": "R"
+  },
+  {
+   "id": 645302,
+   "name": "Victor Robles",
+   "batSideListed": "R"
+  },
+  {
+   "id": 607208,
+   "name": "Trea Turner",
+   "batSideListed": "R"
+  },
+  {
+   "id": 547180,
+   "name": "Bryce Harper",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1106,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 522,
+     "usage": 0.472,
+     "velo": 93.8,
+     "pfxXin": -1.7,
+     "pfxZin": 15.4
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 320,
+     "usage": 0.2893,
+     "velo": 89.7,
+     "pfxXin": 5.4,
+     "pfxZin": 5.6
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 239,
+     "usage": 0.2161,
+     "velo": 83.3,
+     "pfxXin": 6.8,
+     "pfxZin": -10.4
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 24,
+     "usage": 0.0217,
+     "velo": 92.2,
+     "pfxXin": -11.6,
+     "pfxZin": 9.2
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 1,
+     "usage": 0.0009,
+     "velo": 87.2,
+     "pfxXin": -9.0,
+     "pfxZin": 4.6
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2018%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=451584"
+  },
+  "postseason": {
+   "pitches": 47,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 24,
+     "usage": 0.5106,
+     "velo": 94.8,
+     "pfxXin": -1.5,
+     "pfxZin": 15.4
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 15,
+     "usage": 0.3191,
+     "velo": 91.1,
+     "pfxXin": 5.1,
+     "pfxZin": 5.6
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 8,
+     "usage": 0.1702,
+     "velo": 85.4,
+     "pfxXin": 6.8,
+     "pfxZin": -8.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2018%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=451584"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 531807: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=531807",
+  "MLB Stats API schedule 2018-09-28 and live feed /api/v1.1/game/531807/feed/live",
+  "MLB Stats API people with 2018 season stats",
+  "Baseball Savant 451584 2018 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "top",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    645302,
+    607208,
+    547180,
+    543685,
+    665742,
+    448602,
+    594809,
+    594694,
+    600474
+   ],
+   "lineupNames": [
+    "Victor Robles",
+    "Trea Turner",
+    "Bryce Harper",
+    "Anthony Rendon",
+    "Juan Soto",
+    "Mark Reynolds",
+    "Adam Eaton",
+    "Wilmer Difo",
+    "Pedro Severino"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "WSH",
+   "COL"
+  ],
+  "innings": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    2,
+    0
+   ],
+   [
+    0,
+    3
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    null
+   ]
+  ],
+  "H": [
+   12,
+   8
+  ],
+  "E": [
+   0,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/531807/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 11,
+  "runs": 0,
+  "score": {
+   "us": 5,
+   "them": 2
+  }
+ }
+}

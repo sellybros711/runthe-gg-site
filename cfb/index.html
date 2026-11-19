@@ -807,6 +807,40 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.06em;text-transform:uppercase;color:#2a1a00;padding:7px 14px;border-radius:999px;
     background:radial-gradient(circle at 35% 20%,#ffe29a,#f5b83d 60%,#d4930f);
     box-shadow:0 3px 0 #a16207}
+  /* ---- ON A PHONE, COMMISH AND FANTASY SIT SIDE BY SIDE (the owner, 2026-11-17) ----
+     The football game's front page puts Start a Dynasty and Fantasy Challenge in one row of
+     two compact doors, and the owner asked for the same here: two full width cards stacked
+     pushed everything under them a screen down. PHONE ONLY: from 920px the page is two
+     columns and both doors already sit side by side (the desktop rules further down).
+     ONLY AS A PAIR. `:has(+ ...)` keys the row on the two doors being next to each other, so
+     either door alone (the Commish door is gated, the Fantasy door waits on its week) stays
+     full width and never leaves half a row empty.
+     THE COMMISH CARD FOLDS TO A TILE: the portrait, the name and one line (the season of the
+     term, or the pace). The meters, the sentence and the button are hidden, never removed,
+     so test_store still reads the sentence and a tap on the tile is the same link. */
+  @media (max-width:919px){
+    #s-intro>.ctas{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    #s-intro>.ctas>*{grid-column:1/-1}
+    #s-intro>.ctas>#b-hp-commish:has(+ #b-hp-fantasy){grid-column:1}
+    #s-intro>.ctas>#b-hp-commish + #b-hp-fantasy{grid-column:2}
+    #b-hp-commish:has(+ #b-hp-fantasy){align-items:center;justify-content:center;gap:6px;
+      padding:14px 8px 12px;border-radius:12px;text-align:center}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-cm-top{flex-direction:column;gap:6px}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-cm-pt{flex:0 0 40px;width:40px;height:40px}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-cm-pt svg{width:40px;height:40px}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-cm-txt{align-items:center;gap:3px}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-name{font-size:17px;line-height:1.05;text-align:center}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-cm-eye{font-size:9.5px}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-sub,
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-cm-bars,
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-cm-go{display:none}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-cm-foot{justify-content:center}
+    #b-hp-commish:has(+ #b-hp-fantasy) .hp-pace{font-size:10px;font-weight:700;letter-spacing:.05em;
+      text-transform:uppercase;text-align:center}
+    #b-hp-commish + #b-hp-fantasy{justify-content:center;padding:14px 8px 12px;border-radius:12px}
+    #b-hp-commish + #b-hp-fantasy .hp-name{font-size:17px;line-height:1.05;text-align:center}
+    #b-hp-commish + #b-hp-fantasy .hp-sub{font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+  }
   @media (max-width:340px){
     .hp-commish .hp-name{font-size:17px}
     .hp-commish .hp-sub{font-size:11px}
@@ -3911,6 +3945,14 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="rail" id="rail2"></div>
     <p class="railnote"></p>
 
+    <!-- THE WAY ON, LIFTED (the owner's approval, 2026-11-16, the Advisor's review). On a phone this
+         sat about 1,520px down an 844px screen, under the coach's take, the chemistry and the
+         schedule. The team is built and the season is the next thing, so the button comes right
+         after the team. The take and the schedule stay below for anybody who wants them. -->
+    <div style="margin:12px 0 14px">
+      <button class="btn" id="b-play">Play the season</button>
+    </div>
+
     <div class="panel schemepanel" id="q-panel">
       <div class="stripe"></div>
       <div class="eyebrow" id="q-scheme-eye">Coach's take</div>
@@ -3942,9 +3984,6 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="body" id="q-sched"></div>
     </details>
 
-    <div style="margin-top:16px">
-      <button class="btn" id="b-play">Play the season</button>
-    </div>
   </div>
 
   <!-- s-season -->
@@ -4238,6 +4277,28 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div id="o-place"></div>
 
+    <!-- THE WAY ON, LIFTED (the owner's approval, 2026-11-16, the Advisor's review). On a phone
+         Draft Again sat about 1,970px down an 844px screen, under the resume, the team and the
+         tabs. A run is over and the next one is the thing to offer, so the buttons come right
+         after the headline numbers and the placing. The detail stays below for anybody who wants it. -->
+    <!-- THE FANTASY CHALLENGE, OFFERED ONCE A RUN IS DONE (the owner's call, 2026-11-05). Only
+         while this week's entries are open, and only to somebody with no lineup in. An inline
+         card above the buttons, never a sheet. See fantasyPromoPaint(). -->
+    <div class="next-panel">
+      <div class="cfbpromo" id="o-fanpromo" hidden></div>
+      <div class="next-pair">
+        <button class="btn next-secondary" id="b-again">Draft again</button>
+        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
+      </div>
+      <button class="btn next-share" id="b-share">
+        <svg class="btn-ico" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share your season
+      </button>
+      <div class="next-footer">
+        <button class="btn-text next-foot" id="b-home2">Home</button>
+      </div>
+    </div>
+
     <div class="resume" id="o-resume"></div>
 
     <!-- THE TEAM YOU BUILT IS NOT A TAB. It is the thing the whole run was about,
@@ -4267,23 +4328,6 @@ or endorsed by the NCAA, the CFP or any school.
       <span class="dim" style="font-size:11px" id="o-gcount"></span>
     </div>
 
-    <!-- THE FANTASY CHALLENGE, OFFERED ONCE A RUN IS DONE (the owner's call, 2026-11-05). Only
-         while this week's entries are open, and only to somebody with no lineup in. An inline
-         card above the buttons, never a sheet. See fantasyPromoPaint(). -->
-    <div class="next-panel">
-      <div class="cfbpromo" id="o-fanpromo" hidden></div>
-      <div class="next-pair">
-        <button class="btn next-secondary" id="b-again">Draft again</button>
-        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
-      </div>
-      <button class="btn next-share" id="b-share">
-        <svg class="btn-ico" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        Share your season
-      </button>
-      <div class="next-footer">
-        <button class="btn-text next-foot" id="b-home2">Home</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -4369,7 +4413,7 @@ or endorsed by the NCAA, the CFP or any school.
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
 <script src="/assets/store.js?v=23"></script>
-<script src="/assets/cloudsave.js?v=3"></script>
+<script src="/assets/cloudsave.js?v=4"></script>
 <script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
@@ -6021,9 +6065,17 @@ function ensureCommishDoor(){
      lands cannot leave it below the row. */
   const three=ctas.querySelector('.cta3');
   if(three){
-    if(commishLead.nextSibling!==commishDoor||commishDoor.nextSibling!==three){
-      ctas.insertBefore(commishLead,three);
-      ctas.insertBefore(commishDoor,three);
+    /* THE ORDER IS lead-in, this door, the Fantasy door, the store card, the row of three.
+       The Fantasy door rides right after this one (ensureFantasyDoor), because on a phone the
+       two are one row; the store card goes just above the row of three (ensurePremiumCard).
+       So this door is moved only when the thing after it, past the Fantasy door, is not the
+       store card or the row: moving it on every call would split the phone's pair. */
+    const anchor=(premiumCard&&premiumCard.parentNode===ctas)?premiumCard:three;
+    let after=commishDoor.nextSibling;
+    if(after&&after===cfbFanDoor) after=after.nextSibling;
+    if(commishDoor.parentNode!==ctas||commishLead.nextSibling!==commishDoor||after!==anchor){
+      ctas.insertBefore(commishLead,anchor);
+      ctas.insertBefore(commishDoor,anchor);
     }
   }else{
     ctas.appendChild(commishLead); ctas.appendChild(commishDoor);
@@ -6055,6 +6107,23 @@ const CFB_CREST='<svg class="hp-ico" viewBox="0 0 32 32" aria-hidden="true">'
   +'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'
   +'<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'
   +'<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
+/* THE DOOR'S PHASE, off the pointer alone (the owner's call, 2026-11-16: the Playoff gets a
+ * contest, and the door stops selling a week that is not there).
+ *   week          a regular week, open or being played
+ *   waiting       the regular season is over and the bracket is not set (`next` from playoff.mjs)
+ *   playoff-open  the Playoff board is up and entries are open
+ *   playoff-live  the Playoff has kicked off
+ *   off           a day after the title game, until next season's first week */
+function cfbFanPhase(w,now=Date.now()){
+  const lock=Date.parse(w.locks_at);
+  if(w.kind==='playoff'){
+    const end=w.ends_at?Date.parse(w.ends_at):NaN;
+    if(end>0&&now>end+86400000) return 'off';
+    return lock>now?'playoff-open':'playoff-live';
+  }
+  if(w.next==='playoff'&&!(lock>now)) return 'waiting';
+  return 'week';
+}
 function cfbFanEntered(){
   if(!cfbFanWeek) return false;
   try{
@@ -6082,25 +6151,42 @@ function ensureFantasyDoor(){
   if(!cfbFanDoor){
     cfbFanDoor=document.createElement('a');
     cfbFanDoor.className='hp-cfbfan'; cfbFanDoor.id='b-hp-fantasy';
-    cfbFanDoor.href='/cfb/fantasy/';
+    cfbFanDoor.href='/cfb/fantasy/?from=home';
     cfbFanDoor.onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'home'}); };
   }
-  const inn=cfbFanEntered();
+  const phase=cfbFanPhase(cfbFanWeek);
+  /* Green only for a lineup in the contest the door is showing. Waiting for the bracket or out of
+     season, the record it would read is last week's, and green would say the wrong thing. */
+  const inn=(phase==='week'||phase==='playoff-open'||phase==='playoff-live')&&cfbFanEntered();
   cfbFanDoor.classList.toggle('in',inn);
   /* WHEN THE WEEK LOCKS, off the pointer's own locks_at, and a plain line once it has. */
   const ms=cfbFanWeek.locks_at?Date.parse(cfbFanWeek.locks_at)-Date.now():NaN;
   const h=Math.floor(ms/3600000), d=Math.floor(h/24);
   const left=!(ms>0)?null:d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
     :Math.max(1,Math.floor(ms/60000))+'m';
+  const sub=phase==='off'?'College Fantasy is back next season.'
+    :phase==='waiting'?'The Playoff Fantasy opens once the bracket\'s set.'
+    :phase==='playoff-open'?(inn?'Your Playoff lineup is in.'
+      :'The Playoff &middot; locks in '+left+' &middot; top score wins Pro')
+    :phase==='playoff-live'?(inn?'Your Playoff lineup is in. Every round counts.'
+      :'The Playoff is on. Entries are closed.')
+    :inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
+    :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
+    :'Six players from the week\'s biggest games. Top score wins Pro.';
   cfbFanDoor.innerHTML='<span class="hp-tag">Beta</span>'+CFB_CREST
     +'<span class="hp-name">Fantasy Challenge</span>'
-    +'<span class="hp-sub">'+(inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
-      :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
-      :'Six players from the week\'s biggest games. Top score wins Pro.')+'</span>'
+    +'<span class="hp-sub">'+sub+'</span>'
     +'<span class="hp-rack" aria-hidden="true"><i class="QB"></i><i class="RB"></i><i class="RB">'
     +'</i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
   const three=ctas.querySelector('.cta3');
-  if(three){ if(cfbFanDoor.nextSibling!==three) ctas.insertBefore(cfbFanDoor,three); }
+  /* RIGHT AFTER THE COMMISH DOOR WHEN THERE IS ONE. On a phone the two sit side by side as a
+     pair, which the stylesheet keys on them being next to each other (`#b-hp-commish +
+     #b-hp-fantasy`). "Just before the three-up row" was not enough: the store card goes there
+     too, and the two swapped places every time either redrew, splitting the pair. */
+  if(commishDoor&&commishDoor.parentNode===ctas){
+    if(commishDoor.nextSibling!==cfbFanDoor) ctas.insertBefore(cfbFanDoor,commishDoor.nextSibling);
+  }
+  else if(three){ if(cfbFanDoor.nextSibling!==three) ctas.insertBefore(cfbFanDoor,three); }
   else if(cfbFanDoor.parentNode!==ctas) ctas.appendChild(cfbFanDoor);
 }
 
@@ -6149,13 +6235,16 @@ function fantasyPromoPaint(){
          while the server was being asked. */
       if(!$('s-over').classList.contains('on')||!(lock>Date.now())) return;
       el.innerHTML='<div class="cfbpromo-top">'+
-        '<span class="cfbpromo-name">Fantasy Challenge</span><span class="cfbpromo-wk">Week '+n.week+'</span></div>'+
-        '<p>Six players from the week\'s biggest games. One lineup. Free to play.</p>'+
+        '<span class="cfbpromo-name">Fantasy Challenge</span><span class="cfbpromo-wk">'
+          +(n.kind==='playoff'?'Playoff':'Week '+n.week)+'</span></div>'+
+        (n.kind==='playoff'
+          ?'<p>Six players from the Playoff teams. They score every game their team plays. Free to play.</p>'
+          :'<p>Six players from the week\'s biggest games. One lineup. Free to play.</p>')+
         /* The prize in the words the door uses. The server grants it (cfb_fantasy_grant_pass,
            supabase/128_cfb_fantasy.sql), so a change there is a change here too. */
         '<div class="cfbpromo-prize"><span class="cfbpromo-pro">PRO</span><b>Top score this week wins Pro.</b></div>'+
         '<div class="cfbpromo-lock">Lineups lock '+cfbFanLock(lock)+'. That\'s the first kickoff.</div>'+
-        '<a class="cfbpromo-go" id="b-fanpromo" href="/cfb/fantasy/">Draft my lineup</a>'+
+        '<a class="cfbpromo-go" id="b-fanpromo" href="/cfb/fantasy/?from=results">Draft my lineup</a>'+
         '<button class="cfbpromo-later" type="button" id="b-fanpromo-x">Not this week</button>';
       $('b-fanpromo').onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'results'}); };
       $('b-fanpromo-x').onclick=()=>{
@@ -6170,8 +6259,19 @@ function fantasyPromoPaint(){
 /* THE LOCK DAY REMINDER, the football game's sheet for this competition: once per account
    per week, on the Eastern day the slate locks, before the first kickoff. The rule is in
    /assets/fantasy-promo.js. cloudsave.js is loaded for it, so the mark rides on the account. */
-if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
-  href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
+/* NOT FOR THE PLAYOFF. The shared sheet names its week "Week " and the number, and the Playoff is
+   week 100 (playoff.mjs). The door and the results card carry the Playoff instead. So the pointer
+   is read first and the sheet is set up only for a regular week; its own rules are untouched.
+   A pointer that cannot be read sets it up as before. A label in the shared file would bring it
+   back for the Playoff; that file is shared with the NFL game. */
+if(window.RTG_FANPROMO){
+  const fanPromoInit=()=>RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
+    href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
+  fetch('/cfb/data/fantasy/now.json',{cache:'no-cache'})
+    .then(r=>r.ok?r.json():null)
+    .then(n=>{ if(!(n&&n.kind==='playoff')) fanPromoInit(); })
+    .catch(fanPromoInit);
+}
 
 /* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
  *
@@ -10005,20 +10105,22 @@ function paintSquad(){
     ? st.qbPass.toFixed(1)+' pass'+(qbRun>=1?', '+qbRun.toFixed(1)+' rush':'')+' a game'
     : 'nobody throwing it';
   const passWhy=recKept>=101
-    ? 'your receivers score at '+recKept+'% of their own numbers'
-    : recKept>=99 ? 'your receivers keep all of their own numbers'
-    : 'your receivers score at '+recKept+'% of their own numbers';
+    ? 'your receivers get '+recKept+'% of their usual'
+    : recKept>=99 ? 'your receivers get all of their usual'
+    : 'your receivers get '+recKept+'% of their usual';
   $('q-meters').innerHTML=
-    '<p class="mhead">Each line is what that part of the roster does to the six names on '+
-      'it. Costing nothing is the good end.</p>'+
+    /* THE COACH TALKS LIKE THE OWNER (the Advisor's review, 2026-11-16: the old lines read like a
+       spreadsheet mid game). Every line still says where its safe range ends, off the engine. */
+    '<p class="mhead">How your six fit. Each line says what it costs you. Costing nothing is '+
+      'what you want.</p>'+
     meter('Passing game',passDet,costs.pass,passWhy)+
     meter('Run and pass',
       (st.rushShare*100).toFixed(0)+'% run, '+(100-st.rushShare*100).toFixed(0)+'% pass',
-      costs.balance,'anything from '+runLo+' to '+runHi+' on the ground is free')+
+      costs.balance,'running it '+runLo+' to '+runHi+' of the time is fine')+
     meter('Reliance',(st.topShare*100).toFixed(0)+'% through one player',
-      costs.concentration,'up to '+pcOf(SC.IDEAL_TOP_SHARE)+' through one man is free')+
+      costs.concentration,'up to '+pcOf(SC.IDEAL_TOP_SHARE)+' through one guy is fine')+
     meter('Depth','quietest two at '+(st.floorShare*100).toFixed(0)+'% of your average',
-      costs.floor,pcOf(SC.IDEAL_FLOOR_SHARE-SC.FLOOR_TOLERANCE)+' or better is free');
+      costs.floor,pcOf(SC.IDEAL_FLOOR_SHARE-SC.FLOOR_TOLERANCE)+' or better is fine');
 
   const strFiltered=schemeName?cr.strengths.filter(t=>!t.startsWith(schemeName)):cr.strengths;
   const notes=[...cr.weaknesses.slice(0,2).map(t=>['bad',t]),

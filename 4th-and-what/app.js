@@ -25,7 +25,8 @@
   'use strict';
   var C = window.FAW_CONFIG, E = window.FAW_ENGINE, B = window.FAW_BOOK, N = window.FAW_NAMES, R = window.FAW_ROUTES, F = window.FAW_FORMATIONS;
   var $ = function (id) { return document.getElementById(id); };
-  var VIEWS = ['home', 'daily', 'trivia', 'play', 'studio', 'replay', 'learn', 'books', 'test', 'print'];
+  var COACH = ['studio', 'learn', 'books', 'test', 'print'];
+  var VIEWS = ['home', 'daily', 'trivia', 'play', 'call', 'coach', 'studio', 'replay', 'learn', 'books', 'test', 'print'];
   /* the Studio has two modes: 'game' (Play's draw step: the field, the tools, Snap it) and 'build' */
   var mode = 'build';
   var hooks = {}, current = null;
@@ -123,12 +124,23 @@
     current = v;
     VIEWS.forEach(function (x) { var s = $('v' + x.charAt(0).toUpperCase() + x.slice(1)); if (s) s.hidden = x !== v; });
     /* Play's draw step and the breakdown belong to the Play tab */
-    var tabOf = (v === 'studio' && mode === 'game') || v === 'replay' ? 'play' : v;
-    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { if (t.dataset.view === tabOf) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    var tabOf = (v === 'studio' && mode === 'game') || v === 'replay' || v === 'call' ? 'play' : v;
+    /* the coach's tools live behind Coach (the launch plan, Phase 3): the top tab is Coach, the row under it names the tool */
+    var coach = COACH.indexOf(tabOf) >= 0 || tabOf === 'coach';
+    document.body.classList.toggle('coachmode', coach);
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs .tab'), function (t) { if (t.dataset.view === (coach ? 'coach' : tabOf)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    Array.prototype.forEach.call(document.querySelectorAll('.subtabs .tab'), function (t) { if (t.dataset.view === tabOf) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     var hash = v === 'studio' && mode === 'game' ? 'draw' : v;
     if (location.hash !== '#' + hash) history.replaceState(null, '', '#' + hash);
     (hooks[v] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
+    if (!(v === 'studio' && mode === 'game')) seen(v);
     window.scrollTo(0, 0);
+  }
+  /* the launch events (events.js): opening the daily and the coach's tools */
+  function seen(v) {
+    var E = window.FAW_EVENTS; if (!E) return;
+    if (v === 'daily') E.track('daily_open', {});
+    else if (v === 'coach' || COACH.indexOf(v) >= 0) E.track('coach_open', { tool: v === 'coach' ? 'hub' : v });
   }
   function on(v, fn) { (hooks[v] = hooks[v] || []).push(fn); }
   function fire(k) { (hooks[k] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } }); if (k === 'remote' && current) (hooks[current] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } }); }
@@ -184,14 +196,41 @@
 
   /* ---------- watch it in 3D ---------- */
   var live = null;
+  /* how close it was, from the engine's spot and the line to gain */
+  function marginText(r) {
+    if (r.outcome === 'touchdown') return 'Six.';
+    if (r.spotY == null || r.marker >= 100 || (r.outcome !== 'down' && r.outcome !== 'oob')) return r.win ? '' : (r.outcome === 'sack' ? 'Sacked.' : r.outcome === 'incomplete' ? 'Incomplete.' : r.outcome === 'interception' ? 'Picked off.' : '');
+    var d = r.spotY - r.marker, a = Math.abs(d);
+    if (a < 1) return r.win ? 'By inches.' : 'Inches short.';
+    var y = Math.round(a);
+    return r.win ? y + (y === 1 ? ' yard' : ' yards') + ' to spare.' : y + (y === 1 ? ' yard' : ' yards') + ' short.';
+  }
   function watch3d(res, done) {
     var w = $('watch'); w.hidden = false; $('cap').textContent = ''; $('bSkip').hidden = false; $('rCard').hidden = true;
     if (live) live.stop();
     window.FAW_LIVE.prepare(res.BX, res.Y0, res.level);
+    var FE = window.FAW_FEEL, stamp = $('stamp'), meas = $('measure');
+    stamp.hidden = true; meas.hidden = true; $('cLive').style.transform = '';
+    if (FE) FE.play('crowd');
     live = window.FAW_LIVE.show($('cLive'), res, {
+      zoom: true,
       caption: function (t) { $('cap').textContent = t; },
       pressure: function (p) { $('pressFill').style.width = Math.round(p * 100) + '%'; $('press').style.opacity = res.isRun ? '0' : '1'; },
-      done: function (r) { $('bSkip').hidden = true; if (done) done(r || res); }
+      snap: function () { if (FE) FE.play('snap'); },
+      progress: function (k) { if (FE) FE.crowdLevel(k); },
+      event: function (e) { if (FE) FE.event(e); },
+      measure: function () { meas.hidden = false; $('cap').textContent = 'Bring out the chains.'; if (FE) { FE.play('whistle'); setTimeout(function () { FE.play('chains'); }, 450); } },
+      final: function (r) {
+        meas.hidden = true;
+        var td = r.outcome === 'touchdown';
+        if (r.events.length) $('cap').textContent = r.events[r.events.length - 1].text;
+        $('stampBig').textContent = td ? 'Touchdown' : r.win ? 'First down' : r.outcome === 'interception' ? 'Picked' : 'Stopped';
+        $('stampSub').textContent = marginText(r);
+        stamp.className = 'stamp ' + (td ? 'td' : r.win ? 'win' : 'lose');
+        stamp.hidden = false;
+        if (FE) FE.result(r);
+      },
+      done: function (r) { $('bSkip').hidden = true; stamp.hidden = true; if (done) done(r || res); }
     });
   }
   $('bSkip').addEventListener('click', function () { live && live.skip(); });
@@ -204,7 +243,7 @@
     store: store, signedIn: signedIn, openStore: openStore, terms: terms, nameFor: nameFor, tagOf: tagOf, customOf: customOf,
     choices: choices, choiceOptions: choiceOptions, choice: choice,
     show: show, on: on, fire: fire, current: function () { return current; }, mode: function () { return mode; },
-    saveDialog: saveDialog, watch3d: watch3d
+    saveDialog: saveDialog, watch3d: watch3d, marginText: marginText
   };
   /* the views register themselves after this file; the first view is shown once they have */
   window.addEventListener('DOMContentLoaded', function () { fromHash(location.hash.slice(1) || 'home'); });

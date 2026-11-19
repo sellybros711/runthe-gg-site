@@ -1,7 +1,7 @@
 /* Premium bundles : Stripe Checkout (Cloudflare Pages Function)
  *
  * POST /api/stripe/checkout-bundle
- *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro"|"floor-pro"|"floor-pass",
+ *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro"|"door-pro"|"diamond-door-pro"|"floor-pro"|"floor-pass",
  *           plan?: "once"|"year", email?, return_path? }
  *   -> { url: "https://checkout.stripe.com/..." }
  *
@@ -12,6 +12,8 @@
  *   STRIPE_PRICE_PS_YEAR              price_...  (Perfect Season, $19.99 a year)
  *   STRIPE_PRICE_RTB_YEAR             price_...  (Run The Bundle, $34.99 a year)
  *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, $14.99 a year, RECURRING)
+ *   STRIPE_PRICE_STD_PRO              price_...  (Shut The Door Pro, $9.99 a year, RECURRING)
+ *   STRIPE_PRICE_RTD_STD_PRO          price_...  (Run The Diamond Pro + Shut The Door Pro, $19.99 a year, RECURRING)
  *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, $14.99 a year, RECURRING)
  *   STRIPE_PRICE_RTF_PASS             price_...  (Floor Pass, $9.99 a season; DARK until PASS_PAID_ENABLED)
  *   STRIPE_PRICE_RTF_COINS_1..5       price_...  (Run The Floor coin buckets; DARK until BUCKETS_ENABLED)

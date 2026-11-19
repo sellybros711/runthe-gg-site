@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { cleanBatch } from '../../functions/_faw/events.js';
 const require = createRequire(import.meta.url);
 let chromium;
 try { ({ chromium } = require('playwright')); }
@@ -53,7 +54,7 @@ async function run(name, viewport, scale) {
     const mem = {}; window.__mem = mem;
     window.RTG_SAVE = { API_VERSION: 1, idle: () => true, signedIn: () => true,
       all: g => Promise.resolve(Object.keys(mem).filter(k => k.startsWith(g + '/')).map(k => ({ slot: k.split('/')[1], progress: mem[k].progress, payload: JSON.parse(JSON.stringify(mem[k].payload)) }))),
-      queue: (g, sl, fn) => { const m = fn(); const k = g + '/' + sl; if (!m) return Promise.resolve(null); if (m.drop) { delete mem[k]; return Promise.resolve(null); }
+      queue: (g, sl, fn) => { (window.__q = window.__q || []).push(sl); const m = fn(); const k = g + '/' + sl; if (!m) return Promise.resolve(null); if (m.drop) { delete mem[k]; return Promise.resolve(null); }
         if (mem[k] && mem[k].progress > m.progress) return Promise.resolve({ ok: false, payload: mem[k].payload, progress: mem[k].progress });
         mem[k] = { progress: m.progress, payload: JSON.parse(JSON.stringify(m.payload)) }; return Promise.resolve({ ok: true }); },
       drop: (g, sl) => { delete mem[g + '/' + sl]; return Promise.resolve(null); } };
@@ -62,6 +63,11 @@ async function run(name, viewport, scale) {
     window.FAW_DAILY_API = { signedIn: () => true,
       submit: r => { window.__posts.push(r); return Promise.resolve({ taken: true, streak: 3, best: 5, players: 10, convertedAll: 4 }); },
       day: () => Promise.resolve({ players: 9, converted: 4 }), mine: () => Promise.resolve(null) };
+    window.__fawEvents = true;
+    window.__goPosts = [];
+    window.FAW_GO_API = { signedIn: () => true,
+      submit: (d, p) => { window.__goPosts.push({ d, p }); return Promise.resolve({ taken: true, rank: 2, players: 7, converted: p.converted, yards: p.yards, tds: p.tds }); },
+      board: () => Promise.resolve([{ rank: 1, username: 'reid', converted: 9, yards: 140, tds: 1, mine: false, players: 7 }, { rank: 2, username: 'you', converted: 1, yards: 5, tds: 0, mine: true, players: 7 }]) };
   });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
   const page = await ctx.newPage();
@@ -80,7 +86,11 @@ async function run(name, viewport, scale) {
     await page.mouse.up();
   }
   async function tapYd(p) { const a = await yd(p); await page.mouse.click(a[0], a[1]); }
-  const tab = async (v) => { await page.click('.tab[data-view="' + v + '"]'); await page.waitForTimeout(150); };
+  /* the coach's tools are behind Coach (Phase 3): open it first when the row is not showing */
+  const tab = async (v) => {
+    if (['studio', 'learn', 'books', 'test', 'print'].includes(v) && !(await page.isVisible('.subtabs .tab[data-view="' + v + '"]'))) await page.click('.tabs .tab[data-view="coach"]');
+    await page.click('.tab[data-view="' + v + '"]'); await page.waitForTimeout(150);
+  };
   const books = () => page.evaluate(() => window.FAW_APP.store.books());
 
   /* ---------- Play ---------- */
@@ -99,15 +109,24 @@ async function run(name, viewport, scale) {
   await page.waitForSelector('#hdBox:not([hidden])', { timeout: 10000 });
   const hd = await page.evaluate(() => { const t = window.FAW_DAILY.today(), b = document.getElementById('hDaily').textContent;
     return { num: document.getElementById('hdNum').textContent, go: document.getElementById('hdGo').textContent, down: window.FAW_DAILY.core.downText(t),
-      spoils: b.indexOf(window.FAW_DAILY.core.teamsText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.downText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.spotText(t)) >= 0 }; });
-  ok(/Daily #\d+/.test(hd.num) && hd.go === 'Play today' && !hd.spoils, 'the banner is the way in, and says nothing of the situation: ' + hd.num);
+      sit: document.getElementById('hdSit').textContent, meta: document.getElementById('hdMeta').textContent,
+      want: window.FAW_DAILY.core.downText(t) + ' at ' + window.FAW_DAILY.core.spotText(t), teams: window.FAW_DAILY.core.teamsText(t),
+      spoils: b.indexOf(window.FAW_DAILY.core.realText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.verdictText(t)) >= 0,
+      corner: (() => { const r = document.getElementById('hdBox').getBoundingClientRect(), o = document.getElementById('hDaily').getBoundingClientRect(); return r.right > o.right - 30 && r.bottom > o.bottom - 30 && r.left > o.left + o.width / 4; })() }; });
+  ok(/Daily #\d+/.test(hd.num) && hd.go === 'Play today' && hd.sit === hd.want && hd.meta.indexOf(hd.teams) === 0 && !hd.spoils && hd.corner,
+    'the banner\'s corner card says the situation, not what happened: ' + hd.num + ' · ' + hd.sit + ' · ' + hd.meta);
   await shot('d-home');
   await page.click('#hDaily');
   ok(await page.isVisible('#vDaily') && /^Daily #\d+/.test(await page.textContent('#dNum')) && (await page.textContent('#dDown')) === hd.down, 'a click on the banner opens the situation: ' + await page.textContent('#dNum'));
   await shot('d-intro');
   await page.click('#dGo');
+  /* the day's call (Phase 2): Call it with the day's look and the same hand for everybody */
+  const dcall = await page.evaluate(() => { const D = window.FAW_DAILY, K = window.FAW_CALLS, want = D.core.seedFor(D.day());
+    return { seed: K.seed(), want, hand: K.hand().map(h => h.concept + h.set + h.side).join(','), again: K.deal(window.FAW_APP.SC, want).map(h => h.concept + h.set + h.side).join(',') }; });
+  ok(await page.isVisible('#vCall') && dcall.seed === dcall.want && dcall.hand === dcall.again, 'Make the call: the day\'s look and the day\'s hand, the same for everybody');
+  await page.click('#cCards .ccard.own');
   const dsc = await page.evaluate(() => { const t = window.FAW_DAILY.today(), S = window.FAW_APP.SC; return { ok: S.down === 4 && S.ballOn === t.ballOn && S.distance === Math.min(t.togo, t.ballOn), empty: !window.FAW_STUDIO.play().routes.length }; });
-  ok(await page.isVisible('#sSnap') && dsc.ok && dsc.empty, 'Draw your call: the real down, distance and spot, on a clean board');
+  ok(await page.isVisible('#sSnap') && dsc.ok && dsc.empty, 'Draw your own: the real down, distance and spot, on a clean board');
   await page.click('.tool[data-tool="handoff"]');
   const drb = await page.evaluate(() => { const p = window.FAW_STUDIO.play(); return window.FAW_FORMATIONS.place(p.formation, p.moved).RB; });
   await dragYd(drb, [drb[0] + 1.5, drb[1] + 2.5], [drb[0] + 2.5, 0.5], [drb[0] + 2.5, 7]);
@@ -118,6 +137,7 @@ async function run(name, viewport, scale) {
     posts: window.__posts.length, seed: window.FAW_FLOW.last().seed, want: window.FAW_DAILY.core.seedFor(window.FAW_DAILY.day()) }));
   ok(/is in\./.test(dc.head) && dc.real.length > 10 && dc.posts === 1 && dc.seed === dc.want, 'the first snap is the day\'s, against the day\'s defense, posted once, with what really happened: ' + JSON.stringify(dc));
   ok(/converted today/.test(dc.stats) && /Streak 3/.test(dc.stats), 'and the day so far comes back: ' + dc.stats);
+  ok(await page.isVisible('#rDailyGo') && /^(Go For It|Resume run)$/.test(await page.textContent('#rDailyGo span')) && await page.isVisible('#rDailyDef'), "and the day's card points on: Go For It and Daily Defense");
   await shot('d-card');
   await page.click('#rAgain');
   await page.waitForTimeout(400); await page.click('#bSkip');
@@ -156,7 +176,14 @@ async function run(name, viewport, scale) {
   await page.click('.logo');
   /* ---------- Play, the video game: 4th and what, draw it, snap it, the card ---------- */
   await page.click('.mode.play');
-  ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home: 4th and what?');
+  ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tabs .tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home: 4th and what?');
+  /* the top bar (Phase 3): Play, Daily and Coach; the tools are behind Coach */
+  ok(await page.$$eval('.tabs .tab', t => t.map(x => x.dataset.view).join(',')) === 'play,daily,coach' && !(await page.isVisible('.subtabs')), 'the top bar is Play, Daily and Coach');
+  await page.click('.tabs .tab[data-view="coach"]');
+  ok(await page.isVisible('#vCoach') && await page.isVisible('.subtabs') && (await page.$$eval('#vCoach .ctile', t => t.length)) === 5, 'Coach: the five tools as tiles, and the row to them');
+  await page.click('#vCoach .ctile[data-go="books"]');
+  ok(await page.isVisible('#vBooks') && (await page.getAttribute('.tabs .tab[data-view="coach"]', 'aria-current')) === 'page' && (await page.getAttribute('.subtabs .tab[data-view="books"]', 'aria-current')) === 'page', 'a tool lights Coach and its own name in the row');
+  await page.click('.tabs .tab[data-view="play"]');
   ok(await page.$$eval('#pDists .dist', d => d.length) === 6 && /opponent's 40/.test(await page.textContent('#pSpot')), 'six distances, ball on the opponent 40');
   /* the level and the hash (the owner, 2026-11-01): High School on the left hash */
   await page.click('#pLevel button[data-level="hs"]'); await page.click('#pHash button[data-hash="left"]');
@@ -178,11 +205,20 @@ async function run(name, viewport, scale) {
   await page.click('#pDists .dist[data-d="5"]');
   ok(await page.isVisible('#vPlay') && (await page.getAttribute('#pDists .dist[data-d="5"]', 'aria-pressed')) === 'true' && (await page.textContent('#pToGo')) === '5 yds', 'a tile picks the distance and stays on the screen');
   await page.click('#pGo');
-  ok(await page.isVisible('#vStudio') && await page.isVisible('#sSnap') && !(await page.isVisible('.studiobar')) && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'draw it: the field, the tools and Snap it');
-  ok((await page.textContent('#sSit')) === '4th & 5 · Opp 40', 'the situation is on the draw screen');
-  await shot('0-draw');
-  await page.click('#sSnap');
+  /* Call it (the owner, 2026-11-13): the defense's look, three cards and your own */
+  const call = await page.evaluate(() => ({ n: document.querySelectorAll('#cCards .ccard').length, read: document.getElementById('cRead').textContent, sit: document.getElementById('cSit').textContent,
+    kinds: window.FAW_CALLS.hand().map(h => h.type).join(','), off: document.getElementById('cSnap').disabled }));
+  ok(await page.isVisible('#vCall') && call.n === 4 && call.kinds === 'run,quick,shot' && /^(Two|One|Nobody) deep · \d+ in the box$/.test(call.read) && call.sit === '4th & 5 · Opp 40' && call.off &&
+    (await page.getAttribute('.tabs .tab[data-view="play"]', 'aria-current')) === 'page', 'Call it: the look (' + call.read + '), a run, a quick pass, a shot and your own; Snap it waits for a pick');
+  await shot('0-call');
+  await page.click('#cCards .ccard:nth-child(2)');
+  const look = await page.evaluate(() => { const K = window.FAW_CALLS; return { seed: K.seed(), shell: window.FAW_ENGINE.look(window.FAW_APP.SC, K.hand()[1].play, K.seed()).shell }; });
+  ok(!(await page.isDisabled('#cSnap')) && (await page.getAttribute('#cCards .ccard:nth-child(2)', 'aria-pressed')) === 'true', 'a card picks the play');
+  await shot('0-picked');
+  await page.click('#cSnap');
   ok(await page.isVisible('#watch'), 'Snap it plays it in the stadium');
+  const played1 = await page.evaluate(() => { const r = window.FAW_FLOW.last(); return { seed: r.seed, shell: r.shell }; });
+  ok(played1.seed === look.seed && played1.shell === look.shell, 'the snap is the look the player read: ' + played1.shell);
   await page.waitForTimeout(500); await page.click('#bSkip');
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
   const card = await page.evaluate(() => ({ t: document.getElementById('rTitle').textContent, why: document.getElementById('rWhy').textContent }));
@@ -199,6 +235,18 @@ async function run(name, viewport, scale) {
   await page.waitForTimeout(400); await page.click('#bSkip');
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
   ok(true, 'Run it back snaps it again');
+  /* New play: a new look; Draw your own is the draw screen, against that look */
+  await page.click('#rNew');
+  const seed2 = await page.evaluate(() => window.FAW_CALLS.seed());
+  ok(await page.isVisible('#vCall') && seed2 !== look.seed, 'New play: a new look and a new hand');
+  await page.click('#cCards .ccard.own');
+  ok(await page.isVisible('#vStudio') && await page.isVisible('#sSnap') && !(await page.isVisible('.studiobar')) && (await page.getAttribute('.tabs .tab[data-view="play"]', 'aria-current')) === 'page', 'draw it: the field, the tools and Snap it');
+  ok((await page.textContent('#sSit')) === '4th & 5 · Opp 40' && /deep · \d+ in the box$/.test(await page.textContent('.gamebar .hint')), 'the situation and the look are on the draw screen');
+  await shot('0-draw');
+  await page.click('#sSnap');
+  await page.waitForTimeout(400); await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  ok(await page.evaluate(() => window.FAW_FLOW.last().seed) === seed2, 'the drawn play snaps against the look it was drawn against');
   await page.click('#rBreak');
   ok(await page.isVisible('#vReplay') && !(await page.isVisible('#watch')), 'See the breakdown opens the snap on turf');
   await page.waitForFunction(() => document.getElementById('gTime').value === '1000', null, { timeout: 30000 });
@@ -227,6 +275,57 @@ async function run(name, viewport, scale) {
   await page.waitForFunction(() => document.getElementById('gTime').value === '1000', null, { timeout: 30000 });
   const r2 = await page.evaluate(() => { const r = window.FAW_GAME.last(); return { call: r.callKey, Y0: r.Y0, res: document.getElementById('gStats').textContent }; });
   ok(r2.call === 'cover2' && r2.Y0 === 28 && !/Turnover on downs/.test(r2.res), 'a 3rd down snap from the own 28 against Cover 2 (' + r2.res.slice(6, 40) + ')');
+
+  /* ---------- Go For It (the owner, 2026-11-13): a run of 4th downs, three stops and done ---------- */
+  await page.click('.tabs .tab[data-view="play"]');
+  ok(/Go for it/i.test(await page.textContent('#goStart')), 'Play leads with Go For It');
+  const scBefore = await page.evaluate(() => JSON.stringify(window.FAW_APP.SC));
+  await page.click('#goStart');
+  const g0 = await page.evaluate(() => ({ sit: document.getElementById('cSit').textContent, chip: document.getElementById('cRun').textContent, seed: window.FAW_CALLS.seed(), runSeed: window.FAW_GO.run().seed }));
+  ok(await page.isVisible('#vCall') && g0.sit === '4th & 1 · Own 35' && /^0 converted · 0 yds · \u25CF{3}$/.test(g0.chip) && g0.seed === g0.runSeed, 'a run starts at 4th and 1 on your own 35, three stops to spare: ' + g0.chip);
+  for (let i = 0; i < 40; i++) {
+    await page.click('#cCards .ccard:nth-child(1)'); await page.click('#cSnap');
+    await page.waitForTimeout(300); if (await page.isVisible('#bSkip')) await page.click('#bSkip');
+    await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+    const gc = await page.evaluate(() => ({ go: !document.getElementById('rGo').hidden, playRow: getComputedStyle(document.querySelector('.rplay')).display, over: !document.getElementById('rGoAgain').hidden, run: window.FAW_GO.run(), best: localStorage.getItem('faw_go_best') }));
+    if (i === 0) ok(gc.go && gc.playRow === 'none', 'the card shows the run and hides Run it back and New play');
+    if (gc.over) { ok(gc.run.stops === 3 && (gc.run.n === 0 || JSON.parse(gc.best).n === gc.run.n), 'three stops end the run, and the best is kept: ' + gc.run.n + ' converted'); break; }
+    await page.click('#rGoOn');
+    ok(i > 0 || (await page.evaluate(() => window.FAW_CALLS.seed() === window.FAW_GO.run().seed)), 'Next down: the run\'s next seed is the look on the field');
+  }
+  await page.click('#rGoAgain');
+  ok(await page.evaluate(() => window.FAW_GO.run().n === 0 && window.FAW_GO.run().stops === 0), 'Go again starts a fresh run');
+  await page.click('#cBack');
+  ok(await page.evaluate((b) => !window.FAW_GO.active() && JSON.stringify(window.FAW_APP.SC) === b, scBefore), 'leaving the run puts practice back where it was');
+  /* Home leads with Go For It (the owner, 2026-11-16): its card starts or resumes a run */
+  await page.click('.logo');
+  const hg = await page.evaluate(() => ({ first: document.querySelector('#vHome .modes .mode').id, t: document.getElementById('hGoT').textContent }));
+  await page.click('#hGo');
+  ok(hg.first === 'hGo' && /^(Go For It|Resume run)$/.test(hg.t) && await page.isVisible('#vCall') && await page.evaluate(() => window.FAW_GO.active()), "Home's first card is Go For It, and it opens the run: " + hg.t);
+  await page.click('#cBack');
+  /* today's run (Phase 2): the day's seeds, posted once, the board on the card */
+  await page.click('#goDaily');
+  const td = await page.evaluate(() => { const G = window.FAW_GO, d = window.FAW_DAILY.day(); return { daily: G.run().daily === d, seed: window.FAW_CALLS.seed() === G.core.dailySeed(d, 0) }; });
+  ok(td.daily && td.seed, "Today's run: the day's first seed is the look on the field");
+  for (let i = 0; i < 60; i++) {
+    await page.click('#cCards .ccard:nth-child(2)'); await page.click('#cSnap');
+    await page.waitForTimeout(300); if (await page.isVisible('#bSkip')) await page.click('#bSkip');
+    await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+    if (await page.isVisible('#rGoAgain')) break;
+    const k = await page.evaluate(() => { const G = window.FAW_GO, r = G.run(); return r.seed === G.core.dailySeed(r.daily, r.log.length); });
+    if (!k) { ok(false, "every snap of today's run is the day's seed for its number"); break; }
+    await page.click('#rGoOn');
+  }
+  await page.waitForFunction(() => window.FAW_GO.posted() && !window.FAW_GO.posted().pending, null, { timeout: 5000 });
+  const tp = await page.evaluate(() => ({ posts: window.__goPosts, board: document.getElementById('rGoBoard').textContent, again: localStorage.getItem('faw_go_day_' + window.FAW_DAILY.day()) }));
+  const p0 = tp.posts[0] && tp.posts[0].p;
+  ok(tp.posts.length === 1 && p0.snaps === p0.log.length && p0.converted < p0.snaps && p0.tds <= p0.converted && /number 2 of 7/.test(tp.board) && /reid/.test(tp.board) && !!tp.again,
+    "the day's run is posted once, as the server wants it, and the board is on the card: " + tp.board.slice(0, 60));
+  await page.click('#bClose3d').catch(() => {}); await page.evaluate(() => { document.getElementById('watch').hidden = true; });
+  await page.click('.tabs .tab[data-view="play"]');
+  ok(/Today's run is in/.test(await page.textContent('#goDaily')) && /number 2 on the board/.test(await page.textContent('#goDailySub')), 'Play says today\'s run is in, with the rank');
+  const rec = await page.evaluate(() => ({ shown: !document.getElementById('pRecord').hidden, line: document.getElementById('prLine').textContent, n: document.querySelectorAll('#prMoments .moment').length, p: window.FAW_PROFILE.get() }));
+  ok(rec.shown && /^\d+ of \d+ converted \(\d+%\)/.test(rec.line) && rec.n === 8 && rec.p.snaps >= 3, 'your record is on Play after the snaps: ' + rec.line);
 
   /* ---------- the Studio ---------- */
   await tab('studio');
@@ -393,7 +492,35 @@ async function run(name, viewport, scale) {
   await page.waitForTimeout(400);
   bs = await books();
   ok(bs.length === 2, 'and imports back as a second copy');
+  /* your playbook as cards (Phase 3): the Yours card opens your plays; a snap counts in its stats */
+  await page.click('.tabs .tab[data-view="play"]'); await page.click('#pGo');
+  ok(/Your playbook/.test(await page.textContent('#cCards .ccard.own')), 'signed in with plays, the Yours card is your playbook');
+  await page.click('#cCards .ccard.own');
+  const nMine = await page.$$eval('#cMineList .cmine', b => b.length);
+  ok(await page.isVisible('#cMine') && nMine >= 2, 'it opens your plays: ' + nMine);
+  const statsBefore = await page.evaluate(() => JSON.stringify(window.FAW_APP.choices().filter(c => c.entry)[0].entry.stats || {}));
+  await page.click('#cMineList .cmine:first-child');
+  ok(!(await page.isVisible('#cMine')) && (await page.getAttribute('#cCards .ccard.own', 'aria-pressed')) === 'true' && !(await page.isDisabled('#cSnap')), 'a play from it is the pick');
+  const q0 = await page.evaluate(() => (window.__q || []).length);
+  await page.click('#cSnap'); await page.waitForTimeout(300); if (await page.isVisible('#bSkip')) await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  const statsAfter = await page.evaluate(() => JSON.stringify(window.FAW_APP.choices().filter(c => c.entry)[0].entry.stats || {}));
+  ok(statsAfter !== statsBefore, 'the snap counts in that play\'s stats');
+  /* a snap's stats are not an edit (2026-11-16): nothing goes to the cloud on the snap,
+     and a flush (a minute on, the page hidden, a run's end) sends the one book row, never the index */
+  const qs = await page.evaluate((n) => { const at = window.__q.slice(n); window.FAW_APP.store.flush(); return { snap: at, flush: window.__q.slice(n + at.length) }; }, q0);
+  const snapped = await page.evaluate(() => 'b-' + window.FAW_APP.choices().filter(c => c.entry)[0].book.id);
+  ok(qs.snap.length === 0 && qs.flush.length >= 1 && qs.flush.every(sl => /^b-/.test(sl)) && new Set(qs.flush).size === qs.flush.length && qs.flush.includes(snapped),
+    'a snap writes nothing at once; its flush is one row per book that changed, never the index: ' + JSON.stringify(qs));
+  await page.evaluate(() => { document.getElementById('watch').hidden = true; document.getElementById('rCard').hidden = true; });
 
+  /* the launch events (events.js, functions/_faw/events.js): what the page sends survives the collector untouched */
+  const sent = await page.evaluate(() => { window.FAW_EVENTS.flush(); return window.__fawSent; });
+  const evs = sent.flatMap(b => b.ev), names = new Set(evs.map(e => e.n));
+  const kept = sent.map(b => cleanBatch(b));
+  ok(sent.length > 0 && kept.every(k => k) && kept.reduce((a, k) => a + k.rows.length, 0) === evs.length && kept.every((k, i) => k.rows.every((r, j) => JSON.stringify(r.props) === JSON.stringify(sent[i].ev[j].p))),
+    'every launch event the page sends is one the collector keeps, props and all: ' + [...names].join(', '));
+  ok(['open', 'snap', 'run_start', 'run_end', 'coach_open'].every(n => names.has(n)) && evs.some(e => e.n === 'snap' && ['run', 'quick', 'shot'].includes(e.p.card)), 'opens, snaps (with the card), runs and the coach are all counted');
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await ctx.close();
 }

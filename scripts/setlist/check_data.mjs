@@ -1157,7 +1157,11 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
                             gameBare.indexOf('function renderLoading('));
   check(fn.length > 100, 'shareText is findable');
   check(/lines\.push\(`\$\{r\.total\} points`\);/.test(fn), 'the share says the score');
-  check(/runthe\.gg\/setlist/.test(fn), 'and where it came from');
+  /* Where it came from, as a link a messages app makes tappable: the full
+     https:// form, from the one constant the share text pushes last. */
+  check(/lines\.push\(SHARE_URL\);\s*return lines\.join/.test(fn), 'and where it came from, last');
+  check(/const SHARE_URL = 'https:\/\/runthe\.gg\/setlist\/';/.test(gameBare),
+    'as https://runthe.gg/setlist/, a tappable link');
   check(!/r\.headline/.test(fn), 'and not the headline');
   check(!/r\.breadth/.test(fn), 'nor the breadth tags');
   check(!/fmtClock\(r\.totalUsed\)/.test(fn), 'nor a two-hour show as mm:ss');

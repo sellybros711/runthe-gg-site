@@ -256,6 +256,11 @@
      row's own pitches. {data} or {error}. */
   const submitStats = (row) => act('shutdoor_post_stats', { p_day: row.day, p_stats: row.stats });
   const survivorStats = (row) => act('shutdoor_survivor_stats', { p_day: row.day, p_run: row.run, p_index: row.index, p_stats: row.stats });
+  /* Your history, a Pro perk (supabase/182_shut_the_door_history.sql): the caller's own dailies and
+     Survivor runs, newest first, {pro, items, more, oldest}; then one of them with its calls. Both null
+     signed out or on any failure, and empty for a player who is not Pro. */
+  const history = (before, days) => rpc('shutdoor_history', { p_before: before || null, p_days: days || 30 }, true);
+  const historyOuting = (day, run, index) => rpc('shutdoor_history_outing', { p_day: day, p_run: run == null ? null : run, p_index: index == null ? null : index }, true);
   async function survivorBoard(day, limit) {
     const r = await rpc('shutdoor_survivor_board', { p_day: day, p_limit: limit || 50 });
     return Array.isArray(r) ? r : null;
@@ -279,11 +284,12 @@
     const r = await rpc('shutdoor_ump_approved', {});
     return Array.isArray(r) ? r : null;
   }
-  /* the caller's own clips still waiting for review (RLS shows nothing else) */
+  /* the caller's own clips still waiting for review: pending, or shortlisted by a tester and
+     waiting for the owner (177; RLS shows nothing else, and before 177 no row is shortlisted) */
   async function umpMine() {
     if (!sb || !session) return null;
     try {
-      const r = await sb.from('shutdoor_ump_clips').select('id, line_id, created_at').eq('status', 'pending');
+      const r = await sb.from('shutdoor_ump_clips').select('id, line_id, created_at').in('status', ['pending', 'shortlisted']);
       return r && !r.error && Array.isArray(r.data) ? r.data : null;
     } catch (e) { return null; }
   }
@@ -303,7 +309,8 @@
       return { data: { id: ins.data.id } };
     } catch (e) { return { error: (e && e.message) || 'That did not send.' }; }
   }
-  /* {path: signed url} for the paths the caller may read (approved, or the owner). null on failure. */
+  /* {path: signed url} for the paths the caller may read (approved, the uploader's own pending, a
+     tester's pending, or the owner). null on failure. */
   async function umpUrls(paths, secs) {
     if (!sb || !paths || !paths.length) return null;
     try {
@@ -315,16 +322,28 @@
     } catch (e) { return null; }
   }
   const umpOwner = async () => (await rpc('shutdoor_ump_owner', {}, true)) === true;
+  /* who may review (supabase/176): 'owner', 'tester' or null. Before 176 runs, the owner still
+     gets 'owner' through 165's shutdoor_ump_owner(), and a tester gets null. */
+  async function umpRole() {
+    const r = await rpc('shutdoor_ump_reviewer', {}, true);
+    if (r === 'owner' || r === 'tester') return r;
+    return (await umpOwner()) ? 'owner' : null;
+  }
+  /* a reviewer's waiting counts (177): {pending, shortlisted}, or null (anyone else, or before 177) */
+  async function umpCounts() {
+    const r = await rpc('shutdoor_ump_counts', {}, true);
+    return r && typeof r === 'object' ? r : null;
+  }
   const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 100 });
   const umpReview = (id, status) => act('shutdoor_ump_review', { p_id: id, p_status: status });
 
   window.STD_AUTH = {
     API_VERSION: 1,
-    umpApproved, umpMine, umpSubmit, umpUrls, umpOwner, umpQueue, umpReview,
+    umpApproved, umpMine, umpSubmit, umpUrls, umpOwner, umpRole, umpCounts, umpQueue, umpReview,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,
     vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, submitStats, survivorStats, archiveSubmit,
-    plates, setPlate,
+    history, historyOuting, plates, setPlate,
   };
 })();

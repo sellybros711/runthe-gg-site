@@ -28,16 +28,34 @@ export function simulate(sc, play, seed, opt = {}) {
   if (bad.length) throw new Error('play cannot run: ' + bad.join(' '));
   const T = sc.tuning, rng = mulberry32(seed >>> 0);
   const rolled = rollDefense(rng(), T.zoneShare || 0);
+  /* GO AT (the owner, 2026-11-13). The coach picks when the play starts; until
+     then the handler holds the ball up top and everybody waits. The hold has
+     nothing to decide, so the sim starts at goAt and the page plays the hold
+     back fast. A play with no goAt goes at once, as every play did before. */
+  const goAt = goAtOf(sc, play);
   const st = {
-    clock: sc.clock, scheme: DEFENSES.includes(opt.scheme) ? opt.scheme : rolled, screened: {}, lastScreen: null,
+    clock: goAt, scheme: DEFENSES.includes(opt.scheme) ? opt.scheme : rolled, screened: {}, lastScreen: null,
     O: {}, X: [], ball: { holder: sc.handler, pos: null, flight: null }, k: -1, pass: null, shot: null,
     events: [], frames: [], end: null, bailPending: false, passes: []
   };
   for (const id of IDS) st.O[id] = { id, arch: sc.roster[id].arch, pos: { ...play.spots[id] }, path: [], vel: { x: 0, y: 0 }, segEnds: 0, screen: null, pending: null };
-  for (const [xid, man] of Object.entries(sc.matchups)) {
-    const x = { id: xid, man, pos: null, aim: null, vel: { x: 0, y: 0 }, holdT: 0, underT: 0 };
-    x.pos = targetFor(x, st, T); x.aim = { ...x.pos };
-    st.X.push(x);
+  for (const [xid, man] of Object.entries(sc.matchups)) st.X.push({ id: xid, man, pos: null, aim: null, vel: { x: 0, y: 0 }, holdT: 0, underT: 0 });
+  /* Placed once all five exist: a zone picks who takes the ball from the
+     whole shape, so placing them one by one left the ball unguarded at the
+     start (fixed 2026-11-13). Man to man reads only its own man. */
+  for (const x of st.X) { x.pos = targetFor(x, st, T); x.aim = { ...x.pos }; }
+  /* VARIETY (2026-11-17). The same play on the same defense ran the same
+     animation every time: 7 runs to see them all. Each player now gets small
+     quirks for the run, from a stream of their own off the seed (so the
+     defense roll, the passes, the shot and the answer draw exactly as before,
+     and a seed is still the same run): a cutter a few percent quicker or
+     slower (never the man dribbling: a drawn clock burn takes the time the
+     coach drew), a defender a touch slower or quicker to react and move. A
+     storyboard preview has none, so the clipboard never wobbles. */
+  {
+    const J = T.jitter || {}, vr = mulberry32((seed ^ 0x9e3779b9) >>> 0), q = a => opt.preview ? 1 : 1 + (vr() * 2 - 1) * (a || 0);
+    for (const id of IDS) st.O[id].vs = q(J.run);
+    for (const x of st.X) { x.vs = q(J.def); x.vl = q(J.lag); }
   }
   const cap = (text, extra) => st.events.push({ t: round1(st.clock), kind: 'caption', text, ...extra });
   if (isZone(st.scheme)) cap('They are in a ' + SCHEME_NAMES[st.scheme], { slow: true });
@@ -63,7 +81,8 @@ export function simulate(sc, play, seed, opt = {}) {
     for (const id of IDS) {
       const p = st.O[id];
       if (!p.path.length) { p.spd = 0; continue; }
-      advanceRunner(p, DT, st.ball.holder === id ? T.dribbleSpeed : T.runSpeed, T);
+      // the man with the ball keeps the pace the coach drew (a clock burn takes the time it took); cutters vary
+      advanceRunner(p, DT, st.ball.holder === id ? T.dribbleSpeed : T.runSpeed * (p.vs || 1), T);
       if (!p.path.length && p.pending) { p.screen = p.pending; p.pending = null; }
     }
     for (const id of IDS) if (!st.O[id].path.length) st.O[id].vel = { x: 0, y: 0 };
@@ -77,7 +96,7 @@ export function simulate(sc, play, seed, opt = {}) {
       // Fighting over the top: stuck on the screener's body until the hold runs out.
       const ls = st.lastScreen, scr = x.holdT > 0 && ls ? st.O[ls.screener] : null;
       if (scr) { const pin = pinBehind(x, scr.pos, T); aim = { x: aim.x * 0.3 + pin.x * 0.7, y: aim.y * 0.3 + pin.y * 0.7 }; hold = 0.5; }
-      advanceDefender(x, aim, DT, T.defSpeed, T.defLag, hold, T);
+      advanceDefender(x, aim, DT, T.defSpeed * (x.vs || 1), T.defLag * (x.vl || 1), hold, T);
     }
     separate(IDS.map(id => st.O[id]), st.X, T);
     animate(st, DT);
@@ -92,15 +111,20 @@ export function simulate(sc, play, seed, opt = {}) {
       continue;
     }
     if (!st.shot && !st.end && st.clock <= sc.bailoutAt + 1e-9) {
-      if (st.ball.holder) shoot(sc, st, T, rng, cap, st.ball.holder, true);
-      else st.bailPending = true;
+      /* A shooter already in his gather lets it go at his release, not now:
+         firing at the mark skipped the closeout and made a catch timed to
+         3.0 the best look on the floor (fixed 2026-11-13). */
+      if (st.ball.holder && !(st.release && st.release.who === st.ball.holder)) shoot(sc, st, T, rng, cap, st.ball.holder, true);
+      else if (!st.ball.holder) st.bailPending = true;
     }
     if (!st.shot && !st.end && st.clock <= 0) end(st, 'lose', 'clock', cap, 'Time');
     if (tick % FRAME_EVERY === 0 || st.end) frame(st);
   }
   frame(st);
   if (opt.preview) return { seed: seed >>> 0, preview: true, scheme: st.scheme, schemeName: SCHEME_NAMES[st.scheme], endClock: round1(st.clock), events: st.events, frames: st.frames };
-  return result(sc, play, st, seed);
+  const res = result(sc, play, st, seed);
+  res.startClock = sc.clock; res.goAt = goAt;
+  return res;
 }
 
 /* ---------- steps ----------
@@ -242,7 +266,7 @@ function tryThrow(sc, play, st, T, rng, cap, i) {
     if (!rec.path.length) return false;                       // waiting on a screen
     if (Q.parts.slice(r.part + 1).some(pt => !pt.waitFor.every(w => screenSet(st, w)))) return false;
     target = Q.route[Q.route.length - 1];
-    eta = (Q.len - along(st, k)) / T.runSpeed;
+    eta = (Q.len - along(st, k)) / (T.runSpeed * (rec.vs || 1));
   }
   const flight = dist(passer.pos, target) / T.passSpeed;
   if (eta > flight + 1e-9) return false;
@@ -339,15 +363,22 @@ function shoot(sc, st, T, rng, cap, who, bailout) {
   st.release = null;
   st.shotHelp = st.help ? st.help.x : null;
   p.path = []; p.pending = null;
-  cap(bailout ? 'Bail out' : q.open >= 6 ? 'Wide open' : q.open >= 4 ? 'Open look' : q.open >= 2 ? 'Hand in the face' : 'Contested', { slow: true, shot: true });
+  cap(bailout ? 'Bail out' : q.open >= 6 ? 'Wide open' : q.open >= 4 ? 'Open look' : q.open >= 2 ? 'Hand in the face' : 'Contested',
+    { slow: true, shot: true, p: Math.round(q.p * 100) / 100, open: Math.round(q.open * 10) / 10, zone: q.zone });
 }
 
 /* Their possession, if the make left them time. */
-export function answerOdds(sc, at, points) {
+/* When the play starts: the play's goAt, inside 1.0 and the clock. */
+export function goAtOf(sc, play) {
+  const g = Number(play && play.goAt);
+  return Number.isFinite(g) ? Math.round(Math.max(1, Math.min(sc.clock, g)) * 10) / 10 : sc.clock;
+}
+
+export function answerOdds(sc, at, points, anyScore) {
   const T = sc.tuning;
   if (at < sc.winWindow) return 0;
   let p = Math.min(T.answerMax, T.answerBase + T.answerPerSec * (at - sc.winWindow));
-  if (sc.us + points - sc.them >= 2) p *= T.answerNeedThree;
+  if (!anyScore && sc.us + points - sc.them >= 2) p *= T.answerNeedThree;
   return p;
 }
 
@@ -356,14 +387,41 @@ function finish(sc, st, T, rng, cap) {
   if (!s.made) { end(st, 'lose', 'miss', cap, 'No good'); return; }
   st.us = sc.us + s.q.points;
   cap(s.q.points === 3 ? 'Three. Good' : 'Good', { slow: true });
-  if (s.at < sc.winWindow) { end(st, 'win', 'make', cap); return; }
-  // Their ball. The more time left, the better their look.
   const lead = st.us - sc.them;
+  /* DOWN 2 AND DOWN 3 (2026-11-13). Still behind after the make: you lose,
+     whatever the clock (they foul and ice it). A tie at the horn goes to
+     overtime. Down 1 never lands here, so its draws are what they were. */
+  if (lead < 0) { end(st, 'lose', 'short', cap, 'Not enough'); return; }
+  if (s.at < sc.winWindow) {
+    if (lead > 0) end(st, 'win', 'make', cap);
+    else overtime(sc, st, T, rng, cap, 'end');
+    return;
+  }
+  // Their ball. The more time left, the better their look.
   const p = answerOdds(sc, s.at, s.q.points);
-  const scored = rng() < p;
-  st.answer = { p, scored, points: lead + 1 };
-  if (scored) { st.them = st.us + 1; end(st, 'lose', 'answer', cap, 'They answered'); }
+  /* One draw decides their trip. Below p they beat you. Up 2, their two only
+     ties: the share of scores that are twos (between p and the full odds)
+     goes to overtime. Above that they missed. */
+  const full = answerOdds(sc, s.at, s.q.points, true);
+  const u = rng();
+  const scored = u < p, tied = !scored && u < full;
+  /* when their shot goes up, for the page's cutaway (a draw after every other,
+     so it moves nothing before it) */
+  const left = Math.max(0, s.at - (s.q.zone === 'rim' ? 0.6 : 1.0));
+  const theirAt = round1(Math.max(0.3, Math.min(left - 1.5, 1.2 + rng() * Math.min(4, Math.max(0, left - 2.7)))));
+  const kind = scored ? (lead >= 2 ? 'three' : 'two') : tied ? 'two' : (lead >= 2 ? 'three' : 'two');
+  st.answer = { p, scored, tied, points: lead + 1, at: theirAt, startAt: round1(left), kind };
+  if (scored) { st.them = sc.them + (lead >= 2 ? 3 : 2); end(st, 'lose', 'answer', cap, 'They answered'); }
+  else if (tied) { st.them = sc.them + 2; cap('They tied it', { slow: true }); overtime(sc, st, T, rng, cap, 'answer'); }
+  else if (lead === 0) { cap('They missed', { slow: true }); overtime(sc, st, T, rng, cap, 'stop'); }
   else end(st, 'win', 'stop', cap, 'They missed');
+}
+
+/* Overtime is a coin you flip, a draw after every other one (tuning.overtimeWin). */
+function overtime(sc, st, T, rng, cap, after) {
+  const won = rng() < (T.overtimeWin ?? 0.5);
+  st.ot = { after, won };
+  end(st, won ? 'win' : 'lose', 'ot', cap, won ? 'Overtime. You win it' : 'Overtime. They win it');
 }
 
 /* One draw picks the defense: below zoneShare a zone, above it a man scheme.
@@ -504,7 +562,9 @@ function result(sc, play, st, seed) {
     shotAt: s ? s.at : null,
     shooter: s ? s.who : null,
     shot: s ? { zone: s.q.zone, points: s.q.points, open: r2(s.q.open), by: s.q.by, byArch: s.q.byArch, moving: s.q.moving, pullup: s.q.pullup, bailout: s.q.bailout, p: r2(s.q.p), made: s.made } : null,
-    answer: st.answer ? { p: r2(st.answer.p), scored: st.answer.scored } : null,
+    answer: st.answer ? { p: r2(st.answer.p), scored: st.answer.scored, tied: !!st.answer.tied, points: st.answer.points, at: st.answer.at, startAt: st.answer.startAt, kind: st.answer.kind } : null,
+    ot: st.ot ? { after: st.ot.after, won: st.ot.won } : null,
+    down: sc.them - sc.us,
     scheme: st.scheme, schemeName: SCHEME_NAMES[st.scheme],
     screen: st.lastScreen, screens: (st.uses || []).map(u => ({ screener: u.screener, cutter: u.cutter, name: u.name, t: u.t })),
     passes: st.passes,
@@ -559,5 +619,12 @@ export function reasonOf(sc, st) {
   if (how === 'miss') return lead + d + ' The ' + zoneWord(s.q.zone) + ' rimmed out.';
   if (how === 'make') return lead + d + ' The ' + zoneWord(s.q.zone) + ' went in with ' + when + ' left.';
   if (how === 'answer') return lead + d + ' It went in with ' + when + ' left. Too early. They scored at the other end.';
+  if (how === 'short') return lead + d + ' It went in, but a two was not enough. You needed a three.';
+  if (how === 'ot') {
+    const o = st.ot, tail = o.won ? ' You won it in overtime.' : ' They won it in overtime.';
+    if (o.after === 'end') return lead + d + ' It tied it with ' + when + ' left.' + tail;
+    if (o.after === 'answer') return lead + d + ' It went in with ' + when + ' left. They tied it at the other end.' + tail;
+    return lead + d + ' It tied it with ' + when + ' left. They missed at the other end.' + tail;
+  }
   return lead + d + ' It went in with ' + when + ' left. They missed at the other end.';
 }

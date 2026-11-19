@@ -35,7 +35,8 @@
  *   the catch    one roll on separation, distance, pressure and direction
  *   after it     the carrier runs until a free defender reaches him; contact
  *                is a roll to break it, then a fall forward
- *   runs         each blocker holds a defender for a window; unblocked
+ *   runs         blocked by count: the line and the drawn blocks take the
+ *                box, each block holds a defender for a window; unblocked
  *                defenders pursue; a tiny fumble roll at contact
  *   the field    everybody stays inside the sidelines and the end lines; a
  *                carrier downed in his own end zone is a safety
@@ -133,6 +134,9 @@
 
   /* The weights by distance band, shaded by the down: early downs blitz less
      and rarely bring everybody. 4th down plays the bands as they stand. */
+  /* box is the count in the box, or a function of the coverage that lines
+     the defense up for it and counts: the coverage is the first roll and
+     the blitz the second, the order the dice have always fallen in. */
   function rollCall(T, distance, box, rnd, down) {
     var w0 = distance <= 3 ? T.calls.short : distance <= 7 ? T.calls.medium : T.calls.long;
     var dm = T.calls.byDown && T.calls.byDown[down], w = w0;
@@ -141,6 +145,7 @@
     for (i = 0; i < 4; i++) sum += w[keys[i]];
     var r = rnd() * sum, cov = keys[3];
     for (i = 0; i < 4; i++) { r -= w[keys[i]]; if (r < 0) { cov = keys[i]; break; } }
+    if (typeof box === 'function') box = box(cov);
     var pb = w.blitz + Math.max(0, box - 6) * T.boxBlitz;
     var blitz = cov === 'cover0' ? true : rnd() < pb;
     return { coverage: cov, man: cov === 'cover0' || cov === 'cover1', blitz: blitz, rushers: 4 + (cov === 'cover0' ? 2 : blitz ? 1 : 0) };
@@ -185,7 +190,44 @@
   /* Who lines up where, what the defense calls, and every man's plan at the
      snap. run() and plans() both start here, so a scout card shows exactly
      the setup the sim plays. The only dice it rolls are the call's. */
-  function setup(scenario, play, opt, rnd) {
+  /* ---------- the shell: what the defense shows before the snap ---------- */
+
+  /* The shell a coverage shows: two high, one high or zero. */
+  var SHELL = { cover0: 'zero', cover1: 'one', cover2: 'two', cover3: 'one' };
+  /* A disguise shows another: two high rotates to one, one high spins to two,
+     zero shows one high and the safety walks down late. */
+  var FAKE = { two: 'one', one: 'two', zero: 'one' };
+  /* The shell shown on this snap. The disguise roll has its own stream off
+     the seed, so it never moves the dice the play itself rolls. plans()
+     passes no seed and shows the true shell. */
+  function shownShell(T, coverage, seed) {
+    var real = SHELL[coverage], sh = T.shell;
+    if (!sh || seed == null) return real;
+    var r = RNG.mulberry32(((seed >>> 0) ^ 0x5bd1e995) >>> 0)();
+    return r < sh.disguise ? FAKE[real] : real;
+  }
+  /* Lines the safeties and corners up for a shell and a coverage, on the
+     formation's own alignment (FM.defense). The safety rolled down in one
+     high goes to the side with more eligible men. Short yardage keeps the
+     corners as tight as the formation put them. */
+  function alignShell(T, Dal, Oal, shell, coverage, distance) {
+    var sh = T.shell; if (!sh) return Dal;
+    var strong = 0;
+    FM.ELIGIBLE.forEach(function (id) { if (Oal[id] && Math.abs(Oal[id][0]) > 1.5) strong += Oal[id][0] > 0 ? 1 : -1; });
+    var sg = strong >= 0 ? 1 : -1;
+    var spots = sh[shell].s, saf = Dal.filter(function (d) { return d.role === 's'; }).sort(function (a, b) { return a.at[0] - b.at[0]; });
+    if (saf.length === 1) saf[0].at = [0, shell === 'zero' ? spots[1][1] : sh.one.s[0][1]];
+    else if (shell === 'one') {
+      /* the safety on the strong side rolls down; the other plays the middle */
+      var down = sg > 0 ? saf[1] : saf[0], up = down === saf[0] ? saf[1] : saf[0];
+      down.at = [spots[1][0] * sg, spots[1][1]]; up.at = [spots[0][0], spots[0][1]];
+    } else { saf[0].at = spots[0].slice(); saf[1].at = spots[1].slice(); }
+    var cy = sh.cbY[coverage];
+    Dal.forEach(function (d) { if (d.role === 'cb' && /^CB/.test(d.id) && Math.abs(d.at[0]) > 7) d.at = [d.at[0], distance <= 2 ? Math.min(d.at[1], cy) : cy]; });
+    return Dal;
+  }
+
+  function setup(scenario, play, opt, rnd, seed) {
     /* the level (High School, College, the NFL) sets the tuning and the player types */
     var LV = CFG.level ? CFG.level(scenario.level) : null;
     var T = opt.tuning || (LV ? LV.tuning : CFG.TUNING), A = LV ? LV.archetypes : CFG.ARCHETYPES;
@@ -195,8 +237,7 @@
     var setDef = FM.BY_ID[play.formation] || FM.SETS[0];
     /* the defense aligns to the formation before any motion */
     var Oal = FM.place(setDef.id, play.moved);
-    var Dal = FM.defense(setDef.id, play.moved, distance);
-    var box = FM.boxCount(Dal);
+    var Dal = FM.defense(setDef.id, play.moved, distance), box = 0, shell = null;
     var mo = motionOf(play);
     /* O is where everybody is at the snap: the motion man at the end of his motion */
     var O = FM.place(setDef.id, play.moved);
@@ -211,7 +252,19 @@
 
     /* The call is always rolled, so the dice after it fall the same way. A
        forced call (Test it, against one defense) then replaces what it says. */
-    var call = rollCall(T, distance, box, rnd, S.down);
+    var call = rollCall(T, distance, function (cov) {
+      /* the defense lines up to show its coverage (a forced call shows its own) */
+      var real = opt.call && CALLS[opt.call] ? CALLS[opt.call].coverage : cov;
+      shell = shownShell(T, real, seed);
+      alignShell(T, Dal, Oal, shell, real, distance);
+      /* the look is what stands there: a short yardage defense has one safety,
+         and alignShell puts him in the middle, so a two deep shell shows one
+         deep (and a Cover 2 call is one that rotated). Only the label: the
+         alignment and the dice are the same. */
+      if (shell === 'two' && Dal.filter(function (d) { return d.role === 's'; }).length < 2) shell = 'one';
+      box = FM.boxCount(Dal);
+      return box;
+    }, rnd, S.down);
     if (opt.call && CALLS[opt.call]) {
       var fc = CALLS[opt.call];
       call = { coverage: fc.coverage, man: fc.coverage === 'cover0' || fc.coverage === 'cover1', blitz: fc.blitz,
@@ -427,7 +480,7 @@
       coverers.forEach(function (d) { if (d.plan === 'stand') { d.plan = 'zone'; d.mark = landmark(0, under(6)); } });
     }
 
-    return { T: T, S: S, distance: distance, Y0: Y0, BX: BX, marker: marker, setDef: setDef, O: O, Oal: Oal, Dal: Dal, box: box,
+    return { T: T, S: S, distance: distance, Y0: Y0, BX: BX, marker: marker, setDef: setDef, O: O, Oal: Oal, Dal: Dal, box: box, shell: shell,
       isRun: isRun, routes: routes, blocks: blocks, targets: targets, abs: abs, call: call, E: E, byId: byId, QB: QB,
       offense: offense, defense: defense, ballCarrierId: ballCarrierId, stayIns: stayIns, rushers: rushers, receivers: receivers,
       track: track, motion: motion, pa: pa };
@@ -451,12 +504,24 @@
     return plansOf(ctx);
   }
 
+  /* look(scenario, play, seed): the defense as it lines up before this
+     snap, and the shell it shows. Exactly what run() starts from with the
+     same seed, and nothing it decides after: not the call, not the blitz.
+     The shell depends only on the seed and the situation, so it is the
+     same whichever play is called; the men line up over that play's set. */
+  function look(scenario, play, seed) {
+    var ctx = setup(scenario, play, {}, RNG.mulberry32(seed >>> 0), seed >>> 0);
+    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    return { shell: ctx.shell, box: ctx.box,
+      defense: ctx.defense.map(function (d) { return { id: d.id, role: d.role, at: [r2(d.ax != null ? d.ax - ctx.BX : d.x - ctx.BX), r2((d.ay != null ? d.ay : d.y) - ctx.Y0)] }; }) };
+  }
+
   /* ---------- the run ---------- */
 
   function run(scenario, play, seed, opt) {
     opt = opt || {};
     var rnd = RNG.mulberry32(seed >>> 0);
-    var ctx = setup(scenario, play, opt, rnd);
+    var ctx = setup(scenario, play, opt, rnd, seed);
     var T = ctx.T, dt = T.dt, S = ctx.S, distance = ctx.distance, Y0 = ctx.Y0, BX = ctx.BX, marker = ctx.marker;
     var setDef = ctx.setDef, box = ctx.box, isRun = ctx.isRun, routes = ctx.routes, targets = ctx.targets, call = ctx.call;
     var E = ctx.E, byId = ctx.byId, QB = ctx.QB, offense = ctx.offense, defense = ctx.defense;
@@ -478,15 +543,65 @@
        snap against a straight rush rolls exactly what it did before. */
     if (call.blitz && T.pocket.free && rnd() < T.pocket.free) Tp = Math.min(Tp, T.pocket.freeAt + T.pocket.freeJit * rnd());
 
-    /* ---- run blocking: each lineman takes the nearest man in front of him ---- */
+    /* ---- run blocking: COUNT THE BOX (the owner, 2026-11-16: "make the read decide") ----
+       The box is the men the read counts (FM.boxCount's rule, where they
+       stand at the snap). A man with a block drawn has the defender nearest
+       the spot it was drawn to (within runBlock.claim yards), and the line
+       knows it. The five linemen take the down linemen first, each pair
+       nearest first, and an uncovered lineman climbs to the nearest box
+       defender nobody has. More men in the box than blockers leaves a free
+       hitter (a spare); a light box leaves none. The dice: one roll for each
+       block the line makes, and one more on each down lineman. */
     function engage(blk, def, w) { def.engaged = { by: blk, until: w }; blk.engaging = def; }
     if (isRun) {
-      var front = defense.filter(function (d) { return d.y - Y0 < 7 && Math.abs(d.x - BX) < 9; });
-      ['C', 'LG', 'RG', 'LT', 'RT'].forEach(function (id) {
-        var b = byId[id], best = null, bs = 1e9;
-        front.forEach(function (d) { if (d.engaged) return; var s = dist(b, d); if (s < bs) { bs = s; best = d; } });
-        if (best && bs < 6) engage(b, best, (T.runBlock.base + T.runBlock.jitter * (rnd() * 2 - 1)) * (0.7 + b.power * 0.5));
+      var inBox = defense.filter(function (d) { return Math.abs(d.x0 - BX) <= 5.6 && d.y0 - Y0 <= 7.5; }), claimed = [];
+      FM.ELIGIBLE.forEach(function (id) {
+        var e = byId[id]; if (e.plan !== 'block') return;
+        var at = ctx.abs(ctx.blocks[id]);
+        var best = null, bs = T.runBlock.claim;
+        defense.forEach(function (d) { if (claimed.indexOf(d) >= 0) return; var s = dist(at, d); if (s < bs) { bs = s; best = d; } });
+        if (best) { claimed.push(best); e.claim = best; }
       });
+      /* the defense's spare men: when the box has more than the five and the
+         drawn blocks can take, the men left over are the ones it fits to the
+         ball (aim: the first point of the carrier's path at the line, or
+         past it). They fill before the handoff once they read it. */
+      var cp = byId[ballCarrierId].path || [], aim = cp[cp.length - 1] || { x: BX, y: Y0 + 1 };
+      for (var ai = 0; ai < cp.length; ai++) if (cp[ai].y >= Y0 - 1) { aim = cp[ai]; break; }
+      /* a sneak is a wedge at the ball: it hits before the box can fit, so the line takes whoever is nearest */
+      var nSpare = ballCarrierId === 'QB' ? 0 : inBox.filter(function (d) { return claimed.indexOf(d) < 0; }).length - 5;
+      /* the first one a zone leaves is the backside end, the man on the end
+         of the line away from the run (he has the farthest to come); after
+         him, the backers nearest the ball */
+      var aimSide = aim.x >= BX ? 1 : -1, open = inBox.filter(function (d) { return claimed.indexOf(d) < 0; }), endMan = null;
+      open.forEach(function (d) { if (d.role === 'dl' && (d.x0 - BX) * aimSide < -3 && (!endMan || (d.x0 - BX) * aimSide < (endMan.x0 - BX) * aimSide)) endMan = d; });
+      open.sort(function (a, b) { return (b === endMan) - (a === endMan) || (a.role === 'dl') - (b.role === 'dl') || dist(a, aim) - dist(b, aim); })
+        .forEach(function (d, k) { if (k < nSpare) d.spare = true; });
+      var line = FM.LINEMEN.map(function (id) { return byId[id]; });
+      var pair = function (want) {
+        var pairs = [];
+        line.forEach(function (b) { if (b.engaging) return; inBox.forEach(function (d) { if (d.engaged || d.spare || claimed.indexOf(d) >= 0 || !want(d)) return; pairs.push([dist(b, d), b, d]); }); });
+        pairs.sort(function (p, q) { return p[0] - q[0]; });
+        /* a block on a down lineman loses at once lose of the time (penetration:
+           the NFL's stuffs); on a backer it holds climb as long */
+        pairs.forEach(function (pq) {
+          if (pq[1].engaging || pq[2].engaged) return;
+          var w = (T.runBlock.base + T.runBlock.jitter * (rnd() * 2 - 1)) * (0.7 + pq[1].power * 0.5);
+          if (pq[2].role !== 'dl') {
+            /* THE CLIMB holds climb as long. A backer off the ball (past
+               3.5 yards) has room to see it: per yard past that the block
+               holds deep less, and it whiffs on him whiff of the time per yard.
+               Short yardage backers stand closer, so it leaves them be. */
+            var off = Math.max(0, pq[2].y0 - Y0 - 3.5);
+            w *= T.runBlock.climb * Math.max(0.2, 1 - (T.runBlock.deep || 0) * off);
+            if (T.runBlock.whiff && off > 0 && rnd() < T.runBlock.whiff * off) w = T.runBlock.lostAt;
+          }
+          else if (T.runBlock.lose && rnd() < T.runBlock.lose) w = T.runBlock.lostAt;
+          engage(pq[1], pq[2], w);
+        });
+      };
+      pair(function (d) { return d.role === 'dl'; });
+      pair(function (d) { return d.role !== 'dl'; });
     }
 
     if (pa) say(Math.min(0.3, pa.fake * 0.5), 'fake', 'Play action.');
@@ -562,9 +677,29 @@
       var L2 = len(wx, wy);
       stepToward(e, e.x + wx / L2 * 3, e.y + wy / L2 * 3, e.top);
     }
+    /* PURSUIT ANGLES. A pursuer aims where he can meet the carrier: the
+       earliest t at which the carrier's spot, c + v t, is within his own
+       speed times t of him (|r + v t| = s t, a quadratic in t), no further
+       ahead than T.pursuit.cap seconds, and no further than chase times his
+       distance to the man (a stern chase stays a chase). With no meeting
+       point (he cannot get there) or the carrier near still, he leads him
+       as he always did. */
     function pursue(d, c, want) {
-      var D2 = dist(d, c), lead = Math.min(1, D2 / (d.top * 1.4));
-      stepToward(d, c.x + c.vx * lead, c.y + c.vy * lead, want || d.top);
+      var D2 = dist(d, c), sp = want || d.top, lead = Math.min(1, D2 / (d.top * 1.4)), P = T.pursuit;
+      if (P && P.cap > 0 && c.vx * c.vx + c.vy * c.vy > 1) {
+        var rx = c.x - d.x, ry = c.y - d.y, a = c.vx * c.vx + c.vy * c.vy - sp * sp, b = 2 * (rx * c.vx + ry * c.vy), q = rx * rx + ry * ry, tI = -1;
+        if (Math.abs(a) < 1e-9) { if (b < 0) tI = -q / b; }
+        else {
+          var disc = b * b - 4 * a * q;
+          if (disc >= 0) {
+            var sq = Math.sqrt(disc), t1 = (-b - sq) / (2 * a), t2 = (-b + sq) / (2 * a), lo = Math.min(t1, t2), hi = Math.max(t1, t2);
+            tI = lo > 0 ? lo : hi > 0 ? hi : -1;
+          }
+        }
+        /* a stern chase (the meeting point far off for how near he is) stays a chase */
+        if (tI > 0 && tI <= P.cap && (!P.chase || tI * sp <= P.chase * D2)) lead = tI;
+      }
+      stepToward(d, c.x + c.vx * lead, c.y + c.vy * lead, sp);
     }
     function nearestDefender(r) {
       var best = 1e9;
@@ -711,11 +846,22 @@
              Otherwise it was the coverage, the pressure, the distance or the throw. */
           var u = (roll - pc) / Math.max(1e-6, 1 - pc);
           var dropShare = Math.min(1, Math.max(0, T.catch.drop - (r.arch.hands || 0) * T.catch.dropHands) / Math.max(1e-6, 1 - pc));
+          /* the pick: a tight throw with a defender at the ball, a share of the miss after the drop */
+          var picker = null, pb2 = T.catch.intRange || 0;
+          if (T.catch.int && sep < T.catch.intSep) defense.forEach(function (d) { var s3 = dist(d, I.to); if (s3 < pb2) { pb2 = s3; picker = d; } });
+          var pInt = picker ? (T.catch.int + T.catch.intPressure * I.pressure) * (I.dist > 15 ? T.catch.intLong : 1) : 0;
+          var intShare = Math.min(1 - dropShare, pInt / Math.max(1e-6, 1 - pc));
+          if (u >= dropShare && u < dropShare + intShare) {
+            picker.x = I.to.x; picker.y = I.to.y; ball.holder = picker.id;
+            say(t, 'int', 'Picked off.');
+            finish(t, 'interception', 'int', null);
+          } else {
           var why = u < dropShare ? 'drop' : sep < T.catch.brokenSep ? 'tight' : I.pressure > 0.85 ? 'pressure' : I.dist > 28 ? 'long' : 'off';
           var missText = { drop: 'Dropped.', tight: 'Broken up.', pressure: 'Off target under pressure.', long: 'Just out of reach.' }[why] ||
             (u - dropShare < (1 - dropShare) / 2 ? 'Overthrown.' : 'Thrown behind him.');
           say(t, 'incomplete', missText);
           finish(t, 'incomplete', why, null); ball.drop = { x: I.to.x, y: I.to.y };
+          }
         }
       }
 
@@ -754,9 +900,10 @@
           if (isRun) {
             if (!e.engaging) {
               if (dist(e, e.blockTo) > 0.6) { stepToward(e, e.blockTo.x, e.blockTo.y, e.top * 0.9); }
+              /* his man (the one the line left him) first, else whoever comes to him */
               var best = null, bs = 2.6;
-              defense.forEach(function (d) { if (d.engaged) return; var s = dist(e, d); if (s < bs) { bs = s; best = d; } });
-              if (best) engage(e, best, t + (T.runBlock.base + T.runBlock.leadBonus + T.runBlock.jitter * (rnd() * 2 - 1)) * (0.7 + e.power * 0.5));
+              defense.forEach(function (d) { if (d.engaged) return; var s = dist(e, d) - (d === e.claim ? 1 : 0); if (s < bs) { bs = s; best = d; } });
+              if (best) engage(e, best, t + (T.runBlock.base + T.runBlock.leadBonus + T.runBlock.jitter * (rnd() * 2 - 1)) * (T.runBlock.hold[0] + e.power * T.runBlock.hold[1]));
             } else stepToward(e, e.engaging.x, e.engaging.y - 0.8, 3);
           } else stepToward(e, e.blockTo.x, e.blockTo.y, 4);
           return;
@@ -776,6 +923,8 @@
           d.engaged = null;
         }
         if (carrier && (caught || readRun(d))) { pursue(d, carrier); return; }
+        /* a spare man who has read it fills before the ball is handed off: he plays the man drawn to get it */
+        if (isRun && !carrier && d.spare && readRun(d)) { pursue(d, byId[ballCarrierId]); return; }
         /* the ball is in the air. A defender in front of the receiver, near the
            catch, plays the spot; anybody behind him keeps playing his coverage,
            so what decides the catch is the separation the route won. */
@@ -887,7 +1036,7 @@
               dd.missed = T.tackle.missed; continue;
             }
             var crowd = 0; defense.forEach(function (o2) { if (o2 !== dd && !o2.engaged && dist(o2, carrier) < 2.5) crowd++; });
-            var pBreak = Math.max(0.02, T.tackle.broken + (isRun ? T.tackle.runBroken : 0) + (carrier.arch.elusive || 0) - crowd * T.tackle.crowd);
+            var pBreak = Math.max(0.02, T.tackle.broken + (isRun && (T.tackle.runNear == null || carrier.y - Y0 < T.tackle.runNear) ? T.tackle.runBroken : 0) + (carrier.arch.elusive || 0) - crowd * T.tackle.crowd);
             if (rnd() < pBreak) { dd.missed = T.tackle.missed; say(t, 'broken', 'Breaks a tackle.'); continue; }
             if (isRun && rnd() < T.tackle.fumble) { say(t, 'fumble', 'Fumble.'); finish(t, 'fumble', 'fumble', carrier.y); break; }
             var sp2 = len(carrier.vx, carrier.vy), fwd = sp2 > 0.5 ? clamp(carrier.vy / sp2, 0.2, 1) : 0.4;
@@ -951,7 +1100,7 @@
     if (win && outcome !== 'touchdown') shown = Math.max(distance, shown);
     if (!win && outcome === 'down' && shown >= distance) shown = distance - 1;
     var down = S.down;
-    var title = outcome === 'touchdown' ? 'TOUCHDOWN' : outcome === 'safety' ? 'SAFETY' : win ? 'FIRST DOWN'
+    var title = outcome === 'touchdown' ? 'TOUCHDOWN' : outcome === 'safety' ? 'SAFETY' : outcome === 'interception' ? 'INTERCEPTED' : win ? 'FIRST DOWN'
       : down === 4 ? 'TURNOVER ON DOWNS' : outcome === 'fumble' ? 'FUMBLE' : 'SHORT OF THE STICKS';
     var reason = reasonOf();
     function reasonOf() {
@@ -969,6 +1118,7 @@
       if (outcome === 'sack') return 'Sacked. The pocket held ' + (Math.round(Tp * 10) / 10) + ' seconds and there was no checkdown.';
       if (outcome === 'throwaway') return 'Threw it away. The pocket went and there was no checkdown.';
       if (outcome === 'fumble') return 'Fumbled at ' + spotName(spotY) + '. Ball game.';
+      if (outcome === 'interception') return 'Picked off. ' + (throwInfo && throwInfo.pressure > 0.85 ? 'He threw it with a man in his face, into tight coverage.' : 'The throw went into tight coverage.');
       if (outcome === 'incomplete') {
         if (cause === 'tight') return 'Incomplete. The throw went into tight coverage.';
         if (cause === 'long') return 'Incomplete. A ' + Math.round(throwInfo.dist) + ' yard throw, just out of reach.';
@@ -983,7 +1133,9 @@
       var short = marker - (spotY || Y0);
       if (cause === 'oob') return 'Pushed out ' + (short < 1 ? 'inches' : Math.round(short) + ' ' + yardsWord(Math.round(short))) + ' short.';
       if (short < 0.6) return 'Stopped inches short. ' + need;
-      if (gained < 0) return 'Dropped for a loss of ' + Math.round(-gained) + '. ' + need;
+      /* a loss that rounds to nothing is no loss: "a loss of 0" read as a bug */
+      if (gained <= -0.5) return 'Dropped for a loss of ' + Math.round(-gained) + '. ' + need;
+      if (gained < 0.5) return 'Stopped at the line. ' + need;
       return 'Tackled ' + Math.round(short) + ' ' + yardsWord(Math.round(short)) + ' short. ' + need;
     }
     if (outcome === 'down') say(tEnd, 'spot', win ? 'First down.' : (marker - spotY < 1 ? 'Tackled a yard short.' : 'Short of the sticks.'));
@@ -1017,7 +1169,7 @@
     }
 
     return {
-      seed: seed >>> 0, distance: distance, callKey: callKey(call), down: downName(distance, Y0, down), downNum: down, ballOn: S.ballOn, goal: S.goal,
+      seed: seed >>> 0, distance: distance, callKey: callKey(call), shell: ctx.shell, disguised: ctx.shell !== SHELL[call.coverage], down: downName(distance, Y0, down), downNum: down, ballOn: S.ballOn, goal: S.goal,
       situation: situationName(down, distance, S.ballOn), next: next, Y0: Y0, BX: BX, marker: marker, box: box, level: scenario.level || 'nfl',
       formation: setDef.id, isRun: isRun, call: call, callName: callName(call), callLine: callLine(call),
       pocket: Math.round(Tp * 100) / 100, outcome: outcome, win: win, title: title,
@@ -1029,7 +1181,7 @@
     };
   }
 
-  var API = { run: run, plans: plans, situationName: situationName, situation: situation, rollCall: rollCall, CALLS: CALLS, CALL_KEYS: CALL_KEYS, callKey: callKey, spotName: spotName, downName: downName, routeName: routeName, callName: callName, chance: chance, FIELD_W: FIELD_W };
+  var API = { run: run, plans: plans, look: look, SHELL: SHELL, situationName: situationName, situation: situation, rollCall: rollCall, CALLS: CALLS, CALL_KEYS: CALL_KEYS, callKey: callKey, spotName: spotName, downName: downName, routeName: routeName, callName: callName, chance: chance, FIELD_W: FIELD_W };
   if (isNode) module.exports = API;
   else root.FAW_ENGINE = API;
 })(typeof window !== 'undefined' ? window : this);
