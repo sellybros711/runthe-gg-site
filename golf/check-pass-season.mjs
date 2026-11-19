@@ -1,4 +1,4 @@
-/* Season 2 of the Tour Pass (Hallows & Harvest), and every season after it.
+/* Season 2 of the Tour Pass (Hallows & Harvest), Season 3 (Frost & Fireworks), and every season after them.
  *
  *   (nohup python3 -m http.server 8099 &)
  *   node golf/check-pass-season.mjs
@@ -13,14 +13,15 @@
  *   VALUE      every pack, shard and spin Season 1 paid is still paid, at the same tier, and no tier
  *              pays fewer coins. The one exception is a Pro pack a season names in `swap` (owner, Oct
  *              2026): it is traded for that tier's exclusive, so the tier must carry one, and it keeps
- *              its spin and shard. Season 2 swaps exactly tiers 10, 45, 48 and 53.
+ *              its spin and shard. Seasons 2 and 3 swap exactly tiers 10, 45, 48 and 53.
  *   EXCLUSIVE  every item on a season's track is on that track only: price 0, in no pack pool, in no
  *              drop, on no other season, carrying no stat boost, and never offered for coins.
  *   DRAWN      every item actually renders. A hat id with no sprite silently falls back to the plain
  *              cap, which is a reward that looks like nothing.
- *   CALENDAR   October sells the Spooky pack, November the Harvest pack, and the Tour Pass's seasonal
- *              packs follow the month. A seasonal credit that outlives its window becomes a Tour pack
- *              instead of a pack nobody can open.
+ *   CALENDAR   October sells the Spooky pack, November the Harvest pack, December the Winter pack, and
+ *              the Tour Pass's seasonal packs follow the month. In a month with no seasonal pack (January,
+ *              in Season 3) the pass's own packs are Tour packs and a saved seasonal credit opens as the
+ *              plain Seasonal Pack, at Tour odds, so nothing is ever a pack nobody can open.
  *   SEASONAL PACKS copy the Summer pack's price, odds and pity exactly (the ladder is not re-tuned).
  *
  * The date is moved with Playwright's clock, so passSeason() and dropLive() read it exactly as they read a
@@ -51,7 +52,7 @@ window.__P = {
   season(){ return passSeason(); },
   swap(n){ return ((PASS_SEASONS[n]||{}).swap||{}); },
   tables(){ var out={};
-    [1,2,3].forEach(function(n){ var L={free:[],prem:[]};
+    [1,2,3,4].forEach(function(n){ var L={free:[],prem:[]};
       for(var t=1;t<=PASS_TIERS;t++){ L.free.push(passTierReward(t,'free',n)); L.prem.push(passTierReward(t,'prem',n)); }
       out[n]=L; });
     out.base={free:[],prem:[]};
@@ -67,7 +68,7 @@ window.__P = {
     var drawn=false;
     if(cat==='hw') drawn=!!PXG_HATS[id]; else if(cat==='ew') drawn=!!PXG_EYEWEAR[id];
     else if(cat==='club') drawn=!!(PXG_CLUBS[id]&&PXG_CLUB_PAL[id]&&CLUBS_BY[id]); else if(cat==='top') drawn=!!(PXG_TOPS[id]&&PXG_TOP_PAL[id]);
-    else if(cat==='cleats') drawn=!!(PXG_CLEATS[id]&&PXG_CLEATS_PAL[id]);
+    else if(cat==='cleats') drawn=!!(PXG_CLEATS[id]&&PXG_CLEATS_PAL[id]); else if(cat==='leg') drawn=!!(PXG_LEGS[id]&&PXG_LEG_PAL[id]);
     else if(cat==='ball') drawn=!!(PXG_BALL[id]&&PXG_BALL_PAL[id]); else if(cat==='pat') drawn=!!PXPAT_BY[id];
     else if(cat==='fx') drawn=!!PXFX_BY[id]; else if(cat==='body') drawn=!!BODY_SKINS[id]; else if(cat==='plate') drawn=!!PLATE_STYLE[id]; else if(cat==='cardbg') drawn=!!CARDBG_ART[id];
     var inPool=packPool().some(function(e){ return e.cat===cat && e.id===id; });
@@ -85,7 +86,8 @@ window.__P = {
   tile(cat,id,store){ S.overlay=store?'shop':null; var o=(cosmeticItems(cat)||[]).find(function(x){ return x.id===id; })||{id:id,name:id};
     var h=cosTileHTML(cat,o); S.overlay=null; return h; },
   packs(){ var out={}; ['summer','spooky','harvest','winter','tour'].forEach(function(k){ var p=PACK_TYPES[k]; out[k]=p?{price:p.price,odds:p.odds,pityEpic:p.pityEpic,pityLeg:p.pityLeg,bias:p.dropBias||0,drop:p.dropId||null,art:!!PACK_PAL_OVR[k]}:null; }); return out; },
-  calendar(){ return {live:packTierList(), passTier:passPackTier(), opensAs:packType('seasonal').id, drop:(liveThemedDrop()||{}).id||null,
+  calendar(){ return {live:packTierList(), passTier:passPackTier(), opensAs:packType('seasonal').id, drop:(liveThemedDrop()||{}).id||null, theme:passThemeNow(), season:passSeason().n,
+    winterInPool:packPool().some(function(e){ return e.cat==='hw'&&e.id==='elf'; }),
     harvestInPool:packPool().some(function(e){ return e.cat==='hw'&&e.id==='turkey'; }),
     spookyInPool:packPool().some(function(e){ return e.cat==='hw'&&e.id==='witch'; })}; },
   drops(){ return DROPS.filter(function(d){ return d.id==='spooky'||d.id==='harvest'; }).map(function(d){
@@ -106,7 +108,7 @@ window.__P = {
     var d=document.createElement('div'); document.body.appendChild(d); S.overlay='tourpass'; overlayTourPass(d);
     var pitch=d.querySelector('.tp-cta'), t=pitch?pitch.innerText:''; d.remove(); S.overlay=null; _walletCache.passActive=had; return t; },
   launch(){ var d=document.createElement('div'); document.body.appendChild(d); overlaySeasonLaunch(d); var t=d.innerText.replace(/\\s+/g,' '); var n=d.querySelectorAll('.sl-th').length; d.remove(); return {txt:t, thumbs:n}; },
-  launchGate(){ try{ localStorage.removeItem('bag_s2_launch_seen'); }catch(e){} return {owed:seasonLaunchOwed(), pending:s1LaunchPending(), key:seasonLaunchKey(passSeason().n)}; },
+  launchGate(){ try{ localStorage.removeItem('bag_s2_launch_seen'); localStorage.removeItem('bag_s3_launch_seen'); }catch(e){} return {owed:seasonLaunchOwed(), pending:s1LaunchPending(), key:seasonLaunchKey(passSeason().n)}; },
   /* ---- overtime, stamps, holiday XP, Pass challenges ---- */
   setXp(xp){ var s=passState(); s.xp=xp; passSave(s); return {x:passTierX(xp), t:passTierAt(xp), claim:passClaimable()}; },
   xpAt(t){ return passXpForTierX(t); },
@@ -199,6 +201,8 @@ const b = await chromium.launch();
 try {
   const page = await b.newPage();
   const errs = []; page.on('pageerror', e => errs.push(e.message));
+  // no live Supabase: its client, loading a moment after the rig signs in, signed the rig back out about one run in three
+  await page.route(/supabase|googlesyndication|google-analytics|googletagmanager|jsdelivr/, r => r.abort());
   await page.addInitScript(() => { try { localStorage.setItem('bag_tour_done', 'true'); } catch (e) {} });
   // Noon Eastern on Oct 10: inside Season 2 and inside the Spooky Season drop.
   await page.clock.setSystemTime(new Date('2026-10-10T16:00:00Z'));
@@ -211,13 +215,18 @@ try {
   const ssn = await E('season');
   ok('Oct 10 2026 is Season 2', ssn.n === 2, ssn);
 
-  head('value: Season 2 is never a worse pass than Season 1');
   const T = await E('tables');
-  const SW = await E('swap', 2);
-  ok('Season 2 swaps exactly Pro tiers 10, 45, 48 and 53 (owner)', JSON.stringify(SW) === JSON.stringify({ prem: [10, 45, 48, 53] }), SW);
   const sum = (L, k) => L.reduce((a, r) => a + (k === 'coins' ? (r.coins || 0) : 0), 0);
+  // the swapped tiers, and what each pays in place of its pack (owner)
+  const SWAPPED = { 2: '10:club/broomstick,45:top/shacket,48:cleats/hayride+spin,53:club/pitchfork',
+                    3: '10:club/icicle,45:top/skijacket,48:cleats/snowboots+spin,53:club/iceaxe' };
+  const CAP = { 2: ['pumpkinhead', 'wisp', 'the Pumpkin Head skin and the Will-o\'-Wisp Aura'], 3: ['snowgolfer', 'aurora', 'the Snowman skin and the Northern Lights Aura'] };
+  for (const N of [2, 3]) {
+  head(`value: Season ${N} is never a worse pass than Season 1`);
+  const SW = await E('swap', N);
+  ok(`Season ${N} swaps exactly Pro tiers 10, 45, 48 and 53 (owner)`, JSON.stringify(SW) === JSON.stringify({ prem: [10, 45, 48, 53] }), SW);
   for (const lane of ['free', 'prem']) {
-    const s1 = T[1][lane], s2 = T[2][lane];
+    const s1 = T[1][lane], s2 = T[N][lane];
     ok(`${lane}: Season 1 is the base table exactly as shipped`, JSON.stringify(s1) === JSON.stringify(T.base[lane]));
     const moved = [];
     for (let i = 0; i < s1.length; i++) {
@@ -232,24 +241,28 @@ try {
     ok(`${lane}: every pack, shard and spin is where Season 1 put it (or swapped for an exclusive), and no tier pays fewer coins`, !moved.length, moved);
     if (lane === 'prem') {
       const sw = (SW.prem || []).map(t => t + ':' + (s2[t - 1].cos ? s2[t - 1].cos.cat + '/' + s2[t - 1].cos.id : 'none') + (s2[t - 1].pack ? '+pack' : '') + (s2[t - 1].spin ? '+spin' : ''));
-      ok('prem: each swapped tier pays its exclusive instead of the pack, and 48 keeps its spin', sw.join(',') === '10:club/broomstick,45:top/shacket,48:cleats/hayride+spin,53:club/pitchfork', sw);
+      ok('prem: each swapped tier pays its exclusive instead of the pack, and 48 keeps its spin', sw.join(',') === SWAPPED[N], sw);
     }
     const added = s2.map((z, i) => (!s1[i].pack && z.pack) ? (i + 1) + ':' + z.pack.tier : null).filter(Boolean);
     if (lane === 'free') ok('free: the two tiers Season 1 spent on cosmetics pay a seasonal pack instead', added.join(',') === '15:seasonal,35:seasonal', added);
     else ok('prem: no pack is added on the Pro lane', !added.length, added);
     const c1 = sum(s1, 'coins'), c2 = sum(s2, 'coins');
-    ok(`${lane}: Season 2 coins ${c2.toLocaleString()} >= Season 1 ${c1.toLocaleString()}`, c2 >= c1);
-    const s1cos = new Set(s1.filter(r => r.cos).map(r => r.cos.cat + '|' + r.cos.id));
-    const repeat = s2.filter(r => r.cos && s1cos.has(r.cos.cat + '|' + r.cos.id)).map(r => r.cos.id);
-    ok(`${lane}: no Season 1 cosmetic comes back in Season 2`, !repeat.length, repeat);
-    ok(`${lane}: a season nobody has authored pays no cosmetics at all`, !T[3][lane].some(r => r.cos));
+    ok(`${lane}: Season ${N} coins ${c2.toLocaleString()} >= Season 1 ${c1.toLocaleString()}`, c2 >= c1);
+    for (let M = 1; M < N; M++) {
+      const prev = new Set(T[M][lane].filter(r => r.cos).map(r => r.cos.cat + '|' + r.cos.id));
+      const repeat = s2.filter(r => r.cos && prev.has(r.cos.cat + '|' + r.cos.id)).map(r => r.cos.id);
+      ok(`${lane}: no Season ${M} cosmetic comes back in Season ${N}`, !repeat.length, repeat);
+    }
+    if (N === 3) ok(`${lane}: a season nobody has authored (Season 4) pays no cosmetics at all`, !T[4][lane].some(r => r.cos));
   }
-  ok('free: Season 2 gives no season items away on the free lane', !T[2].free.some(r => r.cos), T[2].free.filter(r => r.cos).map(r => r.cos.id));
-  const n2 = T[2].free.filter(r => r.cos).length + T[2].prem.filter(r => r.cos).length;
+  ok(`free: Season ${N} gives no season items away on the free lane`, !T[N].free.some(r => r.cos), T[N].free.filter(r => r.cos).map(r => r.cos.id));
+  const n2 = T[N].free.filter(r => r.cos).length + T[N].prem.filter(r => r.cos).length + T[N].prem.filter(r => r.cos2).length;
   const n1 = T[1].free.filter(r => r.cos).length + T[1].prem.filter(r => r.cos).length;
-  ok(`Season 2 has more cosmetics than Season 1 (${n2} against ${n1})`, n2 > n1);
-  ok('the Pro capstone at tier 60 is a cosmetic', !!T[2].prem[59].cos, T[2].prem[59].cos);
-  ok('and it is two: the Pumpkin Head skin and the Will-o\'-Wisp Aura', T[2].prem[59].cos && T[2].prem[59].cos.id === 'pumpkinhead' && T[2].prem[59].cos2 && T[2].prem[59].cos2.id === 'wisp', [T[2].prem[59].cos, T[2].prem[59].cos2]);
+  ok(`Season ${N} has more cosmetics than Season 1 (${n2} against ${n1})`, n2 > n1);
+  if (N === 3) ok('Season 3 has as many exclusives as Season 2 (owner: 22)', n2 === 22, n2);
+  ok('the Pro capstone at tier 60 is a cosmetic', !!T[N].prem[59].cos, T[N].prem[59].cos);
+  ok(`and it is two: ${CAP[N][2]}`, T[N].prem[59].cos && T[N].prem[59].cos.id === CAP[N][0] && T[N].prem[59].cos2 && T[N].prem[59].cos2.id === CAP[N][1], [T[N].prem[59].cos, T[N].prem[59].cos2]);
+  }
 
   head('exclusive: every pass item is on one track and nowhere else');
   const items = await E('items');
@@ -260,7 +273,7 @@ try {
     const a = await E('audit', it.cat, it.id);
     const good = a.listed && a.drawn && a.base === 0 && a.price === 0 && !a.packOnly && !a.inPool && !a.inDrop && !a.reward && !a.boost;
     ok(`S${it.season} ${it.lane} T${it.tier} ${it.cat}:${it.id}`, good, good ? undefined : a);
-    if (it.season === 2) {
+    if (it.season >= 2) {
       const w = await E('worn', it.cat, it.id);
       if (w !== null) ok(`  and it changes the golfer it is put on`, w === true);
       if (it.cat === 'cardbg') { const c = await E('bg', it.id); ok(`  and the backdrop renders (${c} colours)`, c > 40); }
@@ -273,6 +286,7 @@ try {
   ok('...with no price on it', !/data-kind="cos"/.test(tWisp));
   const tCrown = await E('tile', 'fx', 'passcrown', true);
   ok('a past season\'s exclusive is gone from the store', tCrown === '');
+  ok('and nothing of Season 3 shows before it starts (no teaser)', (await E('tile', 'fx', 'aurora', true)) === '' && (await E('tile', 'hw', 'earmuffs', true)) === '');
   const tCandy = await E('tile', 'pat', 'candycorn', false);
   ok('the closet shows the same locked tile, not a buy', /Season 2 Tour Pass · Pro tier 3/.test(tCandy));
 
@@ -310,6 +324,28 @@ try {
   await page.clock.setSystemTime(new Date('2026-12-02T16:00:00Z'));
   C = await E('calendar');
   ok('the Winter pack takes over, so the season never runs without a seasonal pack', C.live.includes('winter') && !C.live.includes('harvest') && C.opensAs === 'winter', C);
+  ok('Dec 2 is still Season 2, in its harvest dress', C.season === 2 && C.theme === 'harvest', C);
+
+  head('Season 3 on the calendar: December, then January');
+  await page.clock.setSystemTime(new Date('2026-12-04T16:00:00Z'));
+  C = await E('calendar');
+  ok('Dec 4 is Season 3, dressed for the holidays', C.season === 3 && C.theme === 'holiday', C);
+  ok('the pass\'s packs are seasonal credits, and they open as Winter packs', C.passTier === 'seasonal' && C.opensAs === 'winter' && C.winterInPool, C);
+  await page.clock.setSystemTime(new Date('2026-12-31T16:00:00Z'));
+  C = await E('calendar');
+  ok('Dec 31 is the last holiday day, and the Winter pack is still on sale', C.theme === 'holiday' && C.live.includes('winter'), C);
+  await page.clock.setSystemTime(new Date('2027-01-10T16:00:00Z'));
+  C = await E('calendar');
+  ok('January is still Season 3, in its frost dress', C.season === 3 && C.theme === 'frost', C);
+  ok('no seasonal pack is on sale in January, and Winter items are out of packs', !C.live.some(k => ['summer', 'spooky', 'harvest', 'winter'].includes(k)) && !C.winterInPool, C.live);
+  ok('so the pass hands out Tour packs, and a saved seasonal credit opens as the plain Seasonal Pack (owner: accepted)', C.passTier === 'tour' && C.opensAs === 'seasonal', C);
+  await page.clock.setSystemTime(new Date('2027-02-01T16:00:00Z'));
+  C = await E('calendar');
+  ok('Feb 1 is Season 3\'s last day, still in frost', C.season === 3 && C.theme === 'frost', C);
+  await page.clock.setSystemTime(new Date('2027-02-02T16:00:00Z'));
+  C = await E('calendar');
+  ok('Feb 2 is Season 4, which nobody has dressed yet', C.season === 4 && C.theme === null, C);
+  await page.clock.setSystemTime(new Date('2026-12-02T16:00:00Z'));
 
   head('seasonal credits are one pool that follows the store');
   const R = await E('pool', 2);
@@ -332,6 +368,22 @@ try {
   ok('...and lists what is new about the track, from the live constants', /NEW THIS SEASON/i.test(L.txt) && /tier 90/.test(L.txt) && /tier 30/.test(L.txt) && /Halloween and Thanksgiving/.test(L.txt), L.txt.slice(L.txt.search(/NEW THIS SEASON/i), L.txt.search(/NEW THIS SEASON/i) + 400));
   const G = await E('launchGate');
   ok('it is owed once, under its own flag', G.owed && G.key === 'bag_s2_launch_seen', G);
+
+  head('...and on Dec 4 they read the Season 3 table');
+  await page.clock.setSystemTime(new Date('2026-12-10T16:00:00Z'));
+  const sales3 = await E('sales');
+  ok('the Go Pro pitch names the Season 3 capstone', /Northern Lights Aura/.test(sales3) && /Go\s*Pro/i.test(sales3), sales3.replace(/\s+/g, ' ').slice(0, 260));
+  ok('...and not Season 2\'s', !/Will-o'-Wisp|Pumpkin Head/.test(sales3));
+  const L3 = await E('launch');
+  ok('the launch popup says Season 3 and shows the exclusives', /season 3 is here/i.test(L3.txt) && L3.thumbs >= 6 && /Snowman/.test(L3.txt), L3.txt.slice(0, 300));
+  ok('...and its Double XP weekends are Christmas and New Year', /Christmas and New Year/.test(L3.txt), L3.txt.slice(L3.txt.search(/NEW THIS SEASON/i), L3.txt.search(/NEW THIS SEASON/i) + 400));
+  const G3 = await E('launchGate');
+  ok('it is owed once, under its own flag', G3.owed && G3.key === 'bag_s3_launch_seen', G3);
+  await E('signIn');   // the wallet as it reads in Season 3: the pass bought this season
+  const CL3 = await E('claimAll');
+  ok(`all ${CL3.n} Season 3 rewards claim, and every cosmetic lands in the closet`, CL3.cos.length === 22 && CL3.cos.every(c => c.owned), CL3.cos.filter(c => !c.owned));
+  await page.clock.setSystemTime(new Date('2026-10-10T16:00:00Z'));
+  await E('signIn');
 
   head('claiming the whole track');
   const CL = await E('claimAll');
@@ -440,7 +492,19 @@ try {
   await at('2026-11-30T16:00:00Z');
   ok('the Monday after is ordinary', (await E('event')).now === null);
   await at('2026-12-10T16:00:00Z');
-  ok('Season 3 has no events until somebody writes them', (await E('event')).now === null && (await E('season')).n === 3);
+  ok('an ordinary December day in Season 3', (await E('event')).now === null && (await E('season')).n === 3);
+  await at('2026-12-23T16:00:00Z');
+  ok('the day before Christmas Weekend, the track says it is coming', (await E('event')).soon === 'christmas' && /starts tomorrow/.test((await E('event')).line));
+  for (const [d, id] of [['2026-12-24', 'christmas'], ['2026-12-27', 'christmas'], ['2026-12-31', 'newyear'], ['2027-01-03', 'newyear']]) {
+    await at(d + 'T16:00:00Z'); EV = await E('event');
+    ok(`${d} is double Pass XP (${id})`, EV.now === id && EV.mult === 2, EV);
+  }
+  await at('2026-12-28T16:00:00Z');
+  ok('the Monday between them is ordinary', (await E('event')).now === null);
+  await at('2027-01-04T16:00:00Z');
+  ok('and so is the Monday after New Year', (await E('event')).now === null && (await E('addXp', 100, false)) === 100);
+  await at('2027-02-06T16:00:00Z');
+  ok('Season 4 has no events until somebody writes them', (await E('event')).now === null && (await E('season')).n === 4);
 
   head('Pass challenges: three a week, Pass XP only');
   await at('2026-10-10T16:00:00Z');
@@ -473,6 +537,15 @@ try {
   ok('and Thursday is an ordinary week', (await E('chal')).theme === null);
   await at('2026-11-26T16:00:00Z');
   ok('Thanksgiving Week is themed too', (await E('chal')).theme === 'Thanksgiving Week');
+  await at('2026-12-24T16:00:00Z');
+  CH = await E('chal');
+  ok('Christmas Week is a themed set in Season 3', CH.theme === 'Christmas Week' && CH.set.length === 3 && CH.set.every(c => c.xp === 450), CH.set.map(c => c.label));
+  await at('2026-12-30T16:00:00Z');
+  ok('...to Wednesday Dec 30', (await E('chal')).theme === 'Christmas Week');
+  await at('2026-12-31T16:00:00Z');
+  ok('New Year Week takes over on Thursday Dec 31', (await E('chal')).theme === 'New Year Week');
+  await at('2027-01-07T16:00:00Z');
+  ok('and Jan 7 is an ordinary week', (await E('chal')).theme === null);
   await at('2026-10-04T16:00:00Z');
   await E('chalReset'); await E('hit', 'dailyPlays', 2);
   const s1w = await E('chal');

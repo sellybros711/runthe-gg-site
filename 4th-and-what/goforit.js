@@ -65,7 +65,7 @@
   /* is a better than b: more in a row, then more yards */
   function better(a, b) { return !b || a.n > b.n || (a.n === b.n && a.yards > b.yards); }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
-  function tallyText(s) { return s.n + ' converted · ' + s.yards + ' yds' + (s.tds ? ' · ' + plural(s.tds, 'TD', 'TDs') : ''); }
+  function tallyText(s) { return s.n + ' converted · ' + plural(s.yards, 'yd', 'yds') + (s.tds ? ' · ' + plural(s.tds, 'TD', 'TDs') : ''); }
   function stopsLeft(s) { return Math.max(0, STOPS - (s.stops || 0)); }
   function overText(s) {
     if (!s.n) return 'Not one converted. Shake it off.';
@@ -87,7 +87,7 @@
   var A = root.FAW_APP, E = root.FAW_ENGINE, RNG = root.FAW_RNG;
   var $ = function (id) { return document.getElementById(id); };
   var KEY = 'faw_go_run', BEST = 'faw_go_best', SEEN = 'faw_go_seen';
-  var st = null, active = false, stash = null, wasBest = false, posted = null;
+  var st = null, active = false, stash = null, wasBest = false, posted = null, lastHit = null, lastCost = 1, prevBest = null;
   var D = root.FAW_DAILY;
   function today() { return D && D.day ? D.day() : new Date().toISOString().slice(0, 10); }
   function dayKey(d) { return 'faw_go_day_' + d; }
@@ -133,10 +133,12 @@
   function seed() { return active && st && !st.over ? st.seed : null; }
   function snapped(res) {
     if (!active || !st || st.over) return;
+    var before = st.stops || 0;
     st = after(st, res, st.daily ? dailySeed(st.daily, st.log.length + 1) : RNG.freshSeed());
+    lastCost = Math.max(1, (st.stops || 0) - before);
     save(SEEN, 1);
     if (st.over) {
-      var b = load(BEST); wasBest = better(st, b) && st.n > 0;
+      var b = load(BEST); prevBest = b; wasBest = better(st, b) && st.n > 0;
       if (wasBest) save(BEST, { n: st.n, yards: st.yards, tds: st.tds, at: new Date().toISOString().slice(0, 10) });
       save(KEY, null);
       if (root.FAW_EVENTS) root.FAW_EVENTS.track('run_end', { daily: !!st.daily, converted: st.n, yards: st.yards });
@@ -178,9 +180,22 @@
     /* a run's end sends any playbook stats its snaps kept (book.js putStats) */
     if (st.over && A.store && A.store.flush) A.store.flush();
     $('rGoTally').textContent = tallyText(st);
+    /* THE HIT (2026-11-19): the climb, the stops, the end. Once a snap: the card can be
+       shown again for the same snap, and a replay never plays it twice */
+    var fresh = res && res.seed !== lastHit; lastHit = res && res.seed;
+    var F = root.FAW_FEEL, best = load(BEST), bb = $('rGoBest');
+    hit(bb, false);
+    if (fresh && res.win && !st.over) {
+      if (F) F.play('ladder', st.n);
+      hit($('rGoTally'), 'pop');
+      /* passing your best mid run: once a run, and only when there was a best to pass */
+      if (best && !st.beat && better(st, best)) { st.beat = true; save(KEY, st); flash(bb, 'New best', F); }
+    }
+    pips(fresh && !res.win && res.outcome !== 'touchdown');
     if (st.over) {
       $('rGoHead').textContent = 'Run over';
-      $('rGoNext').textContent = overText(st) + (wasBest ? ' New best.' : '');
+      $('rGoNext').textContent = overText(st) + (wasBest ? '' : nearText(st, prevBest));
+      if (fresh && wasBest && st.n > 0) flash(bb, 'New best', F, true);
     } else {
       var left = stopsLeft(st);
       $('rGoHead').textContent = res.outcome === 'touchdown' ? 'Touchdown. New drive.' : res.win ? 'Moving the chains' : (res.outcome === 'interception' ? 'Picked. That costs two. ' : 'Stopped. ') + plural(left, 'stop', 'stops') + ' left.';
@@ -190,6 +205,28 @@
     $('rGoOn').hidden = st.over; $('rGoAgain').hidden = !st.over; $('rGoShare').hidden = !st.over;
     if (st.over && st.daily) $('rGoHead').textContent = "Today's run is in";
     renderBoard();
+  }
+  /* the hit's pieces: a class that replays its animation, the badge, the pips, the near miss */
+  function hit(e, cls) { if (!e) return; if (cls === false) { e.hidden = true; e.classList.remove('burst'); return; } e.classList.remove(cls); void e.offsetWidth; e.classList.add(cls); }
+  function flash(e, text, F, big) {
+    if (!e) return; e.textContent = text; e.hidden = false; hit(e, big ? 'burst' : 'pop');
+    if (F) { F.play('best'); F.buzz([30, 40, 30, 40, 60]); }
+  }
+  function pips(lost) {
+    var box = $('rGoPips'); if (!box) return; box.textContent = '';
+    var left = stopsLeft(st), had = Math.min(STOPS, left + (lost ? (lastCost || 1) : 0));
+    for (var i = 0; i < STOPS; i++) {
+      var p = document.createElement('i');
+      p.className = i < left ? 'on' : i < had ? 'lost' : 'off';
+      box.appendChild(p);
+    }
+    if (lost && root.FAW_FEEL) setTimeout(function () { root.FAW_FEEL.play('pip'); }, 260);
+  }
+  /* how close the run came to your best, from the numbers, never typed */
+  function nearText(s, b) {
+    if (!b || !b.n) return '';
+    var d = b.n - s.n;
+    return d > 0 ? ' Your best is ' + b.n + '. ' + plural(d, 'down', 'downs') + ' short.' : d === 0 ? ' That ties your best on downs.' : '';
   }
   /* the Play screen's Go For It panel: start, resume, and your best */
   function renderPlay() {
@@ -203,7 +240,8 @@
     var dk = load(dayKey(today()));
     $('goDaily').querySelector('span').textContent = dk ? "Today's run is in" : "Today's run";
     $('goDailySub').textContent = dk ? dk.n + ' converted · ' + dk.yards + ' yds' + (dk.rank ? ' · number ' + dk.rank + ' on the board' : '') + '. Back tomorrow.' : 'Same downs for everybody. One shot at the board.';
-    var chip = $('cRun'); if (chip) { chip.hidden = !active || !st; if (active && st) chip.textContent = tallyText(st) + ' · ' + '\u25CF'.repeat(stopsLeft(st)) + '\u25CB'.repeat(STOPS - stopsLeft(st)); }
+    var chip = $('cRun'); if (chip) { chip.hidden = !active || !st; if (active && st) chip.textContent = tallyText(st) + ' · ' + '\u25CF'.repeat(stopsLeft(st)) + '\u25CB'.repeat(STOPS - stopsLeft(st)) + (stopsLeft(st) === 1 ? ' · Last stop' : '');
+      chip.classList.toggle('last', !!(active && st && !st.over && stopsLeft(st) === 1)); }
   }
   /* the stops in words, from STOPS (the numbers rule: never typed) */
   function stopsWord() { return ['No', 'One', 'Two', 'Three', 'Four', 'Five'][STOPS] || String(STOPS); }

@@ -225,6 +225,9 @@
     var line = A.marginText(r) || gained + '.', why = r.reason;
     /* the line already says it: no "Incomplete. Incomplete." */
     if (why.indexOf(line) === 0) why = why.slice(line.length).trim();
+    /* nor the title again: "Picked off" over "Picked off. The throw went into tight coverage." */
+    var tt = $('rTitle').textContent + '.';
+    if (why.toLowerCase().indexOf(tt.toLowerCase()) === 0) why = why.slice(tt.length).trim();
     /* nor at the end: a touchdown read "Six. Nobody laid a hand on him. Six." */
     if (why.length > line.length && why.slice(-line.length) === line) why = why.slice(0, -line.length).trim();
     $('rLine').textContent = line;

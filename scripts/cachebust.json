@@ -73,20 +73,20 @@
       "sha": "62b4e1dcee456ae1"
     },
     "feel.js": {
-      "v": "2",
-      "sha": "3188bbe2a7c8e1f3"
+      "v": "3",
+      "sha": "3f7a1df68892f1b4"
     },
     "play.js": {
       "v": "4",
       "sha": "9d4b93c2caea60e2"
     },
     "app.js": {
-      "v": "12",
-      "sha": "62358330f9582c7c"
+      "v": "13",
+      "sha": "a4afa84a9824af52"
     },
     "home.js": {
-      "v": "4",
-      "sha": "21a913ee097847a7"
+      "v": "5",
+      "sha": "02c26b377d40b35d"
     },
     "studio.js": {
       "v": "6",
@@ -101,8 +101,8 @@
       "sha": "42acc78a2a9a5a7b"
     },
     "flow.js": {
-      "v": "18",
-      "sha": "c5e8527b6d7fa6d3"
+      "v": "19",
+      "sha": "28bf3467ed43ae0e"
     },
     "daily.js": {
       "v": "9",
@@ -113,12 +113,12 @@
       "sha": "b218a340a3641fdb"
     },
     "calls.js": {
-      "v": "11",
-      "sha": "e4231098f54ded78"
+      "v": "12",
+      "sha": "88f7eeda88e47821"
     },
     "goforit.js": {
-      "v": "7",
-      "sha": "5583cbf3462e9d73"
+      "v": "8",
+      "sha": "ff161f6ccf0c7b8f"
     },
     "profile.js": {
       "v": "1",
@@ -2949,8 +2949,8 @@
       "sha": "3be4d90ce0bc4423"
     },
     "golfer3d.js": {
-      "v": "45",
-      "sha": "d4da62821c62ff61"
+      "v": "46",
+      "sha": "ac62cf28b58a2adb"
     },
     "tracer3d.js": {
       "v": "2",
@@ -3201,8 +3201,8 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "22",
-      "sha": "941abb485761fa63"
+      "v": "23",
+      "sha": "1f90d2cdca5bc360"
     },
     "venues.js": {
       "v": "2",
@@ -3491,16 +3491,16 @@
   },
   "setlist/stage.js": {
     "pxhd.js": {
-      "v": "3",
-      "sha": "fd43453e1997ba7e"
+      "v": "4",
+      "sha": "2a6ef3a7c3df048d"
     },
     "rooms.js": {
       "v": "4",
       "sha": "c5def90922ef7838"
     },
     "world.js": {
-      "v": "6",
-      "sha": "fd5ec0121ffff17a"
+      "v": "7",
+      "sha": "18312fe783f2d35a"
     }
   },
   "shut-the-door/3d/boot.js": {
@@ -3545,8 +3545,8 @@
   },
   "setlist/world.js": {
     "pxhd.js": {
-      "v": "3",
-      "sha": "fd43453e1997ba7e"
+      "v": "4",
+      "sha": "2a6ef3a7c3df048d"
     },
     "outfits.js": {
       "v": "1",
