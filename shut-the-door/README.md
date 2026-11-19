@@ -800,7 +800,10 @@ pool through twelve sampled pairs, up 1 from nobody on, calls green 19%, yellow 
 red 22% (the dailies' mean is 18/27/35/20), and holds 64% to 80%.
 
 **Where they live.** Not in git: they are too big for the site's repo. `.github/workflows/shut-the-door-matchups.yml`
-builds them on six runners from the data workflow's cached chunks, uploads each to the public
+fetches the library's chunks once (its own job, saved to the cache for the shards and the next
+run: a cache is visible only to its own branch and the default branch), builds the pairs on twelve
+runners with two Node processes each (a runner core is about 2.5 times slower than a session's, about
+30 s a pair), uploads each to the public
 bucket `shutdoor-matchups/<build>/<P>/<Q>.json.gz` (supabase/183 makes it), reads each back against
 its sha (`pipeline/upload_matchups.mjs`), and commits `data/matchups.json`. A challenge keeps the
 build and sha it was made on, so a later build takes a new build id and never moves a challenge
