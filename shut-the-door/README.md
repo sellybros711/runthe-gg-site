@@ -772,11 +772,13 @@ season, so `build_packs.py` finds an empty cell even widened, as Familia 2015 di
 | 40 | `std-2018-davis-wsh` | Rockies | 2018-09-28, WSH at COL | top 9, 0 out, empty, up 5-2 | door shut |
 | 41 | `std-2020-nlwc2-kintzler` | Marlins | 2020 NL Wild Card Series G2, MIA at CHC | bottom 9, 0 out, empty, up 2-0 | door shut |
 | 42 | `std-2019-nlwc-hudson` | Nationals | 2019 NL Wild Card Game, MIL at WSH | top 9, 0 out, empty, up 4-3 | door shut |
+| 43 | `std-2025-pagan-mil` | Reds | 2025-09-26, CIN at MIL | bottom 9, 0 out, empty, up 3-1 | door shut |
 
-Twelve ship. The Reds' (`std-2025-pagan-mil`, Emilio Pagan 2025-09-26 at Milwaukee, up 3-1 in the
-bottom of the 9th) was built and is held back until a 3D fix to the slow roller's pull up: it was the
-one pack over `check-gait`'s rate guard (the owner, 2026-11-18). Its verify file and candidate stay,
-and its data and pack come back with a later migration at ord 42, from a day of its own.
+Twelve shipped first (supabase/179, from 2026-11-25). The Reds' (`std-2025-pagan-mil`) was held back
+for a 3D fix to the slow roller's pull up (the owner, 2026-11-18: the one pack over `check-gait`'s
+rate guard). With the fix in (2026-11-19, `3d/inplay-plan.js timedCharge`) it joins at the end of
+the rotation, ord 42 on the server (supabase/184), from a day of its own, 2026-11-26 (`modes.js
+POOL.GROW`).
 
 They go on the end of the rotation, and the schedule is extended, never reshuffled: every listed
 day keeps its entry (`build_schedule.mjs`). The vote and Survivor take them from a day of their own,

@@ -36,8 +36,12 @@ const put = [...sql161.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m =>
 // then 179: 12 of the 13 clubs' situations at the end, each from its first day (modes.js POOL.FROM)
 const sql179 = readFileSync(join(ROOT, 'supabase', '179_shut_the_door_thirteen_clubs.sql'), 'utf8');
 const put179 = [...sql179.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+), date '(\d{4}-\d\d-\d\d)'\)/gm)].map(m => [m[1], +m[2], m[3]]);
+// then 184: the Reds' situation at the end, from a day of its own (modes.js POOL.GROW's last)
+const sql184 = readFileSync(join(ROOT, 'supabase', '184_shut_the_door_reds.sql'), 'utf8');
+const put184 = [...sql184.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+), date '(\d{4}-\d\d-\d\d)'\)/gm)].map(m => [m[1], +m[2], m[3]]);
+const REDS = M.POOL.GROW[M.POOL.GROW.length - 1];
 const rows = [...sql.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m => [m[1], +m[2]])
-  .filter(r => !gone.has(r[0])).concat(put).concat(put179.map(r => [r[0], r[1]])).sort((a, b) => a[1] - b[1]);
+  .filter(r => !gone.has(r[0])).concat(put).concat(put179.map(r => [r[0], r[1]])).concat(put184.map(r => [r[0], r[1]])).sort((a, b) => a[1] - b[1]);
 check('the server\'s situations are the schedule\'s rotation, in order',
   JSON.stringify(rows.map(r => r[0])) === JSON.stringify(sched.rotation) && rows.every((r, i) => r[1] === i),
   `${rows.length} rows against ${sched.rotation.length}`);
@@ -48,9 +52,16 @@ check('the server\'s vote epoch (163) is modes.js\'s', ep === M.VOTE.EPOCH, `${e
 // the fixed pack is for the days before the vote, all of them served from the first thirty (POOL.BASE)
 check('the server\'s fixed rotation length is the thirty the days before the vote were served from', sql.includes(`% ${M.POOL.BASE}) + ${M.POOL.BASE}) % ${M.POOL.BASE}`)
   && M.POOL.BASE === 30 && M.addDays(M.VOTE.EPOCH, -1) < M.POOL.FROM);
-check('179 adds every situation past the thirty, and only those, each from POOL.FROM',
-  put179.length === sched.rotation.length - M.POOL.BASE && put179.every((r, i) => r[0] === sched.rotation[M.POOL.BASE + i] && r[2] === M.POOL.FROM),
-  `${put179.length} rows against ${sched.rotation.length - M.POOL.BASE}`);
+check('179 adds the 12 past the thirty, each from POOL.FROM, the first growth',
+  put179.length === 12 && M.POOL.GROW[0][0] === M.POOL.BASE + 12 && M.POOL.GROW[0][1] === M.POOL.FROM
+  && put179.every((r, i) => r[0] === sched.rotation[M.POOL.BASE + i] && r[2] === M.POOL.FROM),
+  `${put179.length} rows`);
+check('184 adds the Reds, the rotation\'s last, from POOL.GROW\'s last day, after POOL.FROM',
+  put184.length === 1 && REDS[0] === sched.rotation.length && put184[0][0] === 'std-2025-pagan-mil'
+  && put184[0][0] === sched.rotation[REDS[0] - 1] && put184[0][1] === REDS[0] - 1 && put184[0][2] === REDS[1] && REDS[1] > M.POOL.FROM,
+  JSON.stringify(put184));
+check('184\'s guard and its first day are POOL.GROW\'s last', [...sql184.matchAll(/day >= date '(\d{4}-\d\d-\d\d)'/g)].every(m => m[1] === REDS[1])
+  && /day >= date '/.test(sql184));
 check('179\'s guard and its first day are POOL.FROM', [...sql179.matchAll(/day >= date '(\d{4}-\d\d-\d\d)'/g)].every(m => m[1] === M.POOL.FROM)
   && /day >= date '/.test(sql179));
 check('the vote begins after daily #1', M.VOTE.EPOCH > C.EPOCH);
@@ -71,8 +82,14 @@ check('163\'s server test checks 60 days', expect163.length === 60);
 check('every one of its ' + before.length + ' days before POOL.FROM is still modes.js\'s candidates, day by day', before.length >= 14 && agree(before), firstOff(before));
 const expect = expectOf('shut_the_door_thirteen_clubs_test.sql');
 check('179\'s server test checks the same 60 days', expect.length === 60 && expect.every((r, i) => r[0] === expect163[i][0]));
-check('and they are modes.js\'s candidates, day by day', agree(expect), firstOff(expect));
+// (179's test was drawn before the Reds: its days before their first day still hold, unchanged)
+const before184 = expect.filter(([d]) => d < REDS[1]);
+check('and its days before the Reds\' first day are modes.js\'s candidates, day by day', before184.length >= 21 && agree(before184), firstOff(before184));
 check('179\'s test keeps 163\'s days before POOL.FROM', expect.filter(([d]) => d < M.POOL.FROM).every((r, i) => r.join() === before[i].join()));
+const expect184 = expectOf('shut_the_door_reds_test.sql');
+check('184\'s server test checks the same 60 days', expect184.length === 60 && expect184.every((r, i) => r[0] === expect163[i][0]));
+check('and they are modes.js\'s candidates, day by day', agree(expect184), firstOff(expect184));
+check('184\'s test keeps 179\'s days before the Reds\' first day', expect184.filter(([d]) => d < REDS[1]).every((r, i) => r.join() === before184[i].join()));
 
 /* the 12 join on their own day: every day before it is what the thirty alone give, the vote and Survivor */
 {
@@ -88,7 +105,24 @@ check('179\'s test keeps 163\'s days before POOL.FROM', expect.filter(([d]) => d
   const offered = new Set(days.filter(d => d >= M.POOL.FROM).flatMap(d => M.candidates(sched, d)));
   const added = sched.rotation.slice(M.POOL.BASE);
   check('from POOL.FROM each of the 12 is offered within 120 days', added.every(id => offered.has(id)), JSON.stringify(added.filter(id => !offered.has(id))));
-  check('from POOL.FROM a Survivor cycle is every one of the ' + sched.rotation.length, new Set(Array.from({ length: sched.rotation.length }, (_, i) => M.survivorAt(sched, M.POOL.FROM, 0, i).pack)).size === sched.rotation.length);
+  const n42 = M.poolOn(sched, M.POOL.FROM).length;
+  check('from POOL.FROM a Survivor cycle is every one of the ' + n42, n42 === 42 && new Set(Array.from({ length: n42 }, (_, i) => M.survivorAt(sched, M.POOL.FROM, 0, i).pack)).size === n42);
+}
+
+/* the Reds join on a day of their own: every day before it is what the 42 give (and the thirty before POOL.FROM) */
+{
+  const fortyTwo = Object.assign({}, sched, { rotation: sched.rotation.slice(0, REDS[0] - 1) });
+  const days = []; for (let d = M.VOTE.EPOCH; d < M.addDays(REDS[1], 120); d = M.addDays(d, 1)) days.push(d);
+  const pre = days.filter(d => d < REDS[1]);
+  check('before the Reds\' day the vote is what it was, day by day', pre.every(d => M.candidates(sched, d).join() === M.candidates(fortyTwo, d).join()));
+  check('before the Reds\' day Survivor is what it was: run 0 and run 1, two cycles',
+    pre.every(d => [0, 1].every(r => Array.from({ length: 90 }, (_, i) => i).every(i => {
+      const x = M.survivorAt(sched, d, r, i), y = M.survivorAt(fortyTwo, d, r, i); return x.pack === y.pack && x.seed === y.seed;
+    }))));
+  check('the day before the Reds\' day offers no Reds', !M.candidates(sched, M.addDays(REDS[1], -1)).includes('std-2025-pagan-mil'));
+  check('from their day the Reds are offered within 120 days', days.filter(d => d >= REDS[1]).some(d => M.candidates(sched, d).includes('std-2025-pagan-mil')));
+  check('from their day a Survivor cycle is every one of the ' + sched.rotation.length, M.poolOn(sched, REDS[1]).length === sched.rotation.length
+    && new Set(Array.from({ length: sched.rotation.length }, (_, i) => M.survivorAt(sched, REDS[1], 0, i).pack)).size === sched.rotation.length);
 }
 
 /* the rule itself, over a year of vote days, with every vote going a random way */
@@ -183,8 +217,8 @@ for (const day of ['2026-11-20', M.addDays(M.POOL.FROM, 3)]) {
     JSON.stringify(Object.keys(teams).filter((id) => !want[id])));
   check('plate.js keys every pack with a team by its closer\'s club', sorted(PC) === sorted(want), sorted(want));
   check('plate.js keys every pack in a throwback era by that era\'s plate', sorted(PT) === sorted(wantTb), sorted(wantTb));
-  // the server's lists: 162's rows, the two proxy spots 167 added and the 12 clubs 179 added; 178's throwbacks
-  const sql = ['162_shut_the_door_plates.sql', '167_shut_the_door_pack_clubs_proxy.sql', '179_shut_the_door_thirteen_clubs.sql']
+  // the server's lists: 162's rows, the two proxy spots 167 added, the 12 clubs 179 added and the Reds 184 added; 178's throwbacks
+  const sql = ['162_shut_the_door_plates.sql', '167_shut_the_door_pack_clubs_proxy.sql', '179_shut_the_door_thirteen_clubs.sql', '184_shut_the_door_reds.sql']
     .map((f) => readFileSync(join(HERE, '..', '..', 'supabase', f), 'utf8')).join('\n');
   const rows = {};
   for (const m of sql.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)'\)/g)) rows[m[1]] = m[2];
@@ -212,12 +246,12 @@ for (const day of ['2026-11-20', M.addDays(M.POOL.FROM, 3)]) {
   check('a team no club fits unlocks nothing', PL.keysFor('', 2020).length === 0 && PL.keysFor('Brooklyn Robins', 1920).length === 0);
   check('a club with a situation opens on a save', PL.status('dodgers') === 'save' && PL.status('astrosbrick') === 'save');
   check('a throwback with no situation yet says so', PL.status('expos') === 'soon' && PL.status('indians') === 'soon');
-  // the plates' "No situation yet" list (status 'soon') holds no club of today's (2026-11-18, supabase/179)
-  // the Reds' situation (std-2025-pagan-mil) waits on a 3D fix (the owner, 2026-11-18): the one club still waiting
+  // the plates' "No situation yet" list (status 'soon') holds no club of today's (2026-11-18, supabase/179;
+  // the Reds' with supabase/184)
   const soon = PL.current30().filter((k) => PL.status(k) !== 'save');
-  check('every one of today\'s clubs but the Reds has a situation: only the Reds say "No situation yet"', JSON.stringify(soon) === '["reds"]', JSON.stringify(soon));
+  check('every one of today\'s 30 clubs has a situation: none says "No situation yet"', soon.length === 0, JSON.stringify(soon));
   check('and its situation is a pack of that club\'s, keyed by today\'s name, never a throwback',
-    PL.current30().filter((k) => k !== 'reds').every((k) => Object.keys(PC).some((id) => PC[id] === k && want[id] === k)));
+    PL.current30().every((k) => Object.keys(PC).some((id) => PC[id] === k && want[id] === k)));
   {
     const P = fresh();
     const got = P.earn('std-2005-nlcs5-lidge');

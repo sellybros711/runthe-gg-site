@@ -2,8 +2,8 @@
  * Shared by the game (stage.js) and the lab (lab/scene.js).
  */
 import * as THREE from 'three';
-import { buildField } from './field.js?v=22';
-import { buildStands } from './stands.js?v=31';
+import { buildField } from './field.js?v=23';
+import { buildStands } from './stands.js?v=32';
 import { P, FT, smooth } from './units.js?v=1';
 import { crowdLight } from './crowd.js?v=7';
 
