@@ -144,17 +144,42 @@
     $('tAsk').hidden = !!k;
     if (k && k.rates) reveal(k); else $('tRes').hidden = true;
   }
-  /* a call's picture: the deep zones shaded (two halves, three thirds, one middle), man as dashed
-     lines to the receivers, the rush as red arrows, five X's. Decoration: the engine decides. */
+  /* A CALL'S PICTURE (2026-11-19; redrawn the same day, the owner: "why do all the defenses look
+     the same"). Each call is drawn from its real shape: who is deep (none, one, two halves, three
+     thirds, shaded blue), man coverage as gold lines to the receivers, zones underneath as teal
+     spots, and the rush as red arrows across the line. Decoration only: the engine decides. */
+  var SHAPE = {
+    cover0: { deep: [], man: [[14, 52], [40, 50], [132, 50], [158, 52]], zone: [], rush: [62, 86, 110] },
+    cover1: { deep: [[86, 12]], man: [[14, 52], [40, 50], [132, 50], [158, 52]], zone: [], rush: [], lb: [[62, 40], [110, 40]] },
+    cover1b: { deep: [[86, 12]], man: [[14, 52], [40, 50], [132, 50], [158, 52]], zone: [], rush: [62, 110] },
+    cover2: { deep: [[44, 12], [128, 12]], man: [], zone: [[18, 46], [52, 40], [86, 40], [120, 40], [154, 46]], rush: [] },
+    cover2b: { deep: [[44, 12], [128, 12]], man: [], zone: [[18, 46], [52, 40], [120, 40], [154, 46]], rush: [86] },
+    cover3: { deep: [[24, 14], [86, 10], [148, 14]], man: [], zone: [[30, 42], [66, 40], [106, 40], [142, 42]], rush: [] },
+    cover3b: { deep: [[24, 14], [86, 10], [148, 14]], man: [], zone: [[30, 42], [66, 40], [142, 42]], rush: [106] }
+  };
+  var RECV = [14, 40, 132, 158];
   function callArt(c) {
-    var deep = c.indexOf('cover2') === 0 ? 2 : c.indexOf('cover3') === 0 ? 3 : c.indexOf('cover1') === 0 ? 1 : 0;
-    var man = c === 'cover0' || c.indexOf('cover1') === 0, rush = c === 'cover0' ? 3 : /b$/.test(c) ? 2 : 0;
-    var z = '', i, w;
-    if (deep) { w = deep === 1 ? 92 : 164 / deep; for (i = 0; i < deep; i++) { var x0 = deep === 1 ? 40 : 4 + i * w; z += '<path d="M' + x0 + ' 40 Q' + (x0 + w / 2) + ' 4 ' + (x0 + w) + ' 40Z" fill="rgba(73,163,255,.22)" stroke="#49a3ff" stroke-width="1.5"/>'; } }
-    var m = man ? '<g stroke="#ffe36b" stroke-width="1.6" stroke-dasharray="3 3"><path d="M22 56 L18 74"/><path d="M150 56 L156 74"/><path d="M64 58 L60 74"/><path d="M110 58 L114 74"/></g>' : '';
-    var r = ''; for (i = 0; i < rush; i++) { var x = 66 + i * 20; r += '<path d="M' + x + ' 58 L' + (x + 3) + ' 72" stroke="#ff6b5a" stroke-width="2.4"/><path d="M' + (x - 1) + ' 71 l4 5 3 -6z" fill="#ff6b5a"/>'; }
-    var xs = ''; [22, 64, 86, 110, 150].forEach(function (x, k) { var y = 50 + (k % 2) * 4; xs += '<path d="M' + (x - 4) + ' ' + y + ' l8 8 m0 -8 l-8 8" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>'; });
-    return '<svg class="tart" viewBox="0 0 172 82" aria-hidden="true"><line x1="0" y1="78" x2="172" y2="78" stroke="#4aa3ff" stroke-width="2"/>' + z + m + r + xs + '</svg>';
+    var S = SHAPE[c] || SHAPE.cover2, o = '', i;
+    var X = function (x, y, col) { return '<path d="M' + (x - 4) + ' ' + (y - 4) + ' l8 8 m0 -8 l-8 8" stroke="' + (col || '#fff') + '" stroke-width="2.4" stroke-linecap="round"/>'; };
+    /* the deep field: one middle, two halves or three thirds */
+    var n = S.deep.length;
+    if (n === 1) o += '<path d="M44 30 Q86 -6 128 30Z" fill="rgba(73,163,255,.28)" stroke="#49a3ff" stroke-width="1.5"/>';
+    else if (n) { var w = 168 / n; for (i = 0; i < n; i++) o += '<path d="M' + (2 + i * w) + ' 30 Q' + (2 + i * w + w / 2) + ' -6 ' + (2 + (i + 1) * w) + ' 30Z" fill="rgba(73,163,255,.28)" stroke="#49a3ff" stroke-width="1.5"/>'; }
+    else o += '<text x="86" y="22" text-anchor="middle" font-family="Inter, sans-serif" font-weight="900" font-size="10" letter-spacing="1.5" fill="#ff8a7a">NOBODY DEEP</text>';
+    S.zone.forEach(function (z) { o += '<ellipse cx="' + z[0] + '" cy="' + (z[1] + 2) + '" rx="13" ry="7" fill="rgba(25,198,167,.22)" stroke="#19c6a7" stroke-width="1.2"/>'; });
+    /* man: a gold line from each defender to his receiver */
+    S.man.forEach(function (m, k) { o += '<path d="M' + m[0] + ' ' + (m[1] + 4) + ' L' + RECV[k] + ' 64" stroke="#ffd75e" stroke-width="2" stroke-linecap="round"/>'; });
+    /* the line of scrimmage and the receivers */
+    o += '<line x1="0" y1="62" x2="172" y2="62" stroke="#4aa3ff" stroke-width="2"/>';
+    RECV.forEach(function (x) { o += '<circle cx="' + x + '" cy="70" r="5" fill="none" stroke="#e9f2ea" stroke-width="2"/>'; });
+    /* the defenders */
+    S.deep.forEach(function (d) { o += X(d[0], d[1]); });
+    S.zone.forEach(function (z) { o += X(z[0], z[1]); });
+    S.man.forEach(function (m) { o += X(m[0], m[1]); });
+    (S.lb || []).forEach(function (l) { o += X(l[0], l[1]); });
+    /* the rush: big red arrows through the line */
+    S.rush.forEach(function (x) { o += X(x, 40, '#ff6b5a') + '<path d="M' + x + ' 46 L' + x + ' 70" stroke="#ff6b5a" stroke-width="3" stroke-linecap="round"/><path d="M' + (x - 5) + ' 67 L' + x + ' 76 L' + (x + 5) + ' 67Z" fill="#ff6b5a"/>'; });
+    return '<svg class="tart" viewBox="0 0 172 82" aria-hidden="true">' + o + '</svg>';
   }
   function lock(c) {
     if (busy || kept()) return;
