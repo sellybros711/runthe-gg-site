@@ -3002,6 +3002,64 @@ function sampleGamma(mean, sd, rng) {
 
 const key = (p) => `${p.player_id}|${p.season}`;
 
+/*
+ * A MAN CAN HAVE MORE THAN ONE SCHOOL. The data stores a transfer's or a junior college
+ * man's schools as one string joined by "; ", final school first: Dede Westbrook is
+ * "Oklahoma; Blinn College", Cam Newton "Auburn; Blinn College; Florida". The college
+ * link used to compare that whole string, so Westbrook and Mark Andrews ("Oklahoma") had
+ * no link, and neither did 12,906 of the 35,496 pairs in the pool that share a school
+ * (36%). Everything that reads `college` as a school goes through collegesOf.
+ *
+ * A junior college counts (the owner's call, 2026-11-19): two Blinn College men really
+ * were teammates there. When a pair shares a four-year school as well, the label names the
+ * four-year school. isJuniorCollege decides which is which and is only ever used for that
+ * choice of words, never to deny a link.
+ */
+const collegeCache = new Map();
+function collegesOf(p) {
+  const raw = p && p.college;
+  if (!raw) return [];
+  let list = collegeCache.get(raw);
+  if (!list) {
+    list = [...new Set(String(raw).split(';').map((s) => s.trim()).filter(Boolean))];
+    collegeCache.set(raw, list);
+  }
+  return list;
+}
+const JUCO_RE = /\b(CC|JC|J\.C\.|Comm\.?|Community|Junior)\b/i;
+/* The junior colleges in the data whose names do not say so. Kept by hand. Missing one
+   only changes which school a label names, never whether a link exists. */
+const JUCO_NAMES = new Set([
+  'Allan Hancock College', 'American River', 'Arizona Western', 'Bakersfield College',
+  'Blinn College', 'Butte College', 'Cabrillo College', 'Cerritos College', 'Chabot College',
+  'Citrus College', 'City College (SF)', 'College of DuPage', 'College of Eastern Utah',
+  'College of the Canyons', 'College of the Sequoias', 'Dixie College (UT)', 'El Camino',
+  'Fresno City College', 'Gavilan College', 'Georgia Military', 'Grossmont', 'Kilgore', 'LAHC',
+  'Laney College', 'Long Beach City College', 'Merced College', 'Moorpark College',
+  'Mount San Jacinto College', 'Mt. San Antonio', 'Navarro', 'Northeast Oklahoma', 'Pearl River',
+  'Pierce College', 'Reedley', 'Ricks College', 'Sacramento City', 'San Diego Mesa College',
+  'San Mateo', 'Santa Monica', 'Santa Rosa', 'Shasta College', 'Snow', 'Taft College', 'Ventura',
+  'West Los Angeles College', 'William Rainey Harper College',
+]);
+function isJuniorCollege(school) {
+  return JUCO_RE.test(school) || JUCO_NAMES.has(school);
+}
+/* The one school to name out of those two lists share: a four-year school before a junior
+   college, then the order of the first list (final school first). Null when none. */
+function pickSchool(shared) {
+  if (!shared.length) return null;
+  return shared.find((s) => !isJuniorCollege(s)) || shared[0];
+}
+function sharedCollege(a, b) {
+  const bs = collegesOf(b);
+  if (!bs.length) return null;
+  return pickSchool(collegesOf(a).filter((s) => bs.indexOf(s) >= 0));
+}
+/* The schools for a screen: "Oklahoma · Blinn College", never the stored "; ". */
+function collegeDisplay(p) {
+  return collegesOf(p).join(' · ');
+}
+
 /**
  * Every link that exists for one pair, strongest first. Only the strongest is
  * ever used (the GDD's "no stacking within a pair").
@@ -3072,11 +3130,12 @@ function pairLinks(a, b, ctx, opts) {
     });
   }
 
-  if (a.college && b.college && a.college === b.college) {
+  const school = sharedCollege(a, b);
+  if (school) {
     out.push({
       type: 'college', value: V.college,
-      label: `Both went to ${a.college}`,
-      short: a.college,
+      label: `Both went to ${school}`,
+      short: school,
     });
   }
   if (a.draft_year && a.draft_year === b.draft_year) {
@@ -4904,13 +4963,16 @@ function coachLinks(roster, ctx, coach) {
         short: 'Coached him already' });
       continue;   // one link per man, and the stronger one wins
     }
-    if (p.college && schools.indexOf(p.college) >= 0) {
+    /* Each of the man's schools against the coach's, and the label names the one that
+       matched, never the stored "; " string. See collegesOf. */
+    const school = pickSchool(collegesOf(p).filter((s) => schools.indexOf(s) >= 0));
+    if (school) {
       /* NAMES THE MAN, not just the school. "Belichick was the head coach at North Carolina"
          is true and says nothing about your roster, which is the only reason the line is
          there. */
       out.push({ type: 'coach_college', value: V.college, a: coach.name, b: p.name,
-        label: `${lastWord(coach.name)} was a head coach at ${p.college}, where ${p.name} played`,
-        short: `Both at ${p.college}` });
+        label: `${lastWord(coach.name)} was a head coach at ${school}, where ${p.name} played`,
+        short: `Both at ${school}` });
     }
   }
   return out;
@@ -6272,7 +6334,7 @@ const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   DUAL_POSITIONS, positionsOf, fillsSlot, positionLabel,
   hashSeed, createSeededRNG, sampleGamma,
-  pairLinks, resolveChemistry,
+  pairLinks, resolveChemistry, collegesOf, collegeDisplay, isJuniorCollege,
   buildDivisionMap, generateSchedule, generatePlayoffs,
   DEFENSE_SLOTS, DEFENSE_POSITIONS, defenseStructure, detectDefenseScheme,
   DEFENSE_SCHEME_NAMES: Object.fromEntries(DEFENSE_SCHEMES.map(s => [s.key, s.name])),
