@@ -90,6 +90,13 @@ export function clubNamed(name) {
 /** The hitters' club for a scenario: the title's other club, else the series table. null when neither
     says (the caller then uses a neutral kit with no words). */
 export function battingClub(facts) {
+  // a custom challenge (CONTRACT.md 18): the lineup pack's own club, as that pack's daily names it
+  // (its series row, else the matchup's lineupTeam), even when it is the pitcher's club too
+  const mu = facts.matchup;
+  if (mu && mu.lineup) {
+    const r = SERIES[mu.lineup], c = r ? clubNamed(r.club) : clubNamed(mu.lineupTeam);
+    return c ? { ...c, as: (r && r.as) || null } : null;
+  }
   const pitch = clubNamed(facts.pitcher && facts.pitcher.team);
   const m = /^(.*?)\s+at\s+(.*?)(?:,|$)/i.exec(facts.title || '');
   if (m && pitch) {

@@ -12,7 +12,7 @@ import { FT } from './units.js?v=1';
 import { BACKSTOP_FT } from './field.js?v=23';
 import { assetUrl } from './load.js?v=12';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { buildCrowd } from './crowd.js?v=7';
+import { buildCrowd } from './crowd.js?v=9';
 
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
