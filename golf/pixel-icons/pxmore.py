@@ -100,6 +100,31 @@ def build(P):
     P['leaf'] = outline(g.rows())
     em('leaf', '#d8843a')
 
+    # ---- a Christmas tree (Season 3): three tiers of fir, a star on top, baubles, a trunk
+    g = G()
+    for (y0, y1, w0, w1) in ((3, 7, 1, 4), (6, 11, 2, 6), (10, 15, 3, 8)):
+        for y in range(y0, y1 + 1):
+            w = w0 + (w1 - w0) * (y - y0) / max(1, y1 - y0)
+            for x in range(18):
+                if abs(x + .5 - 9) <= w:
+                    g.put(x, y, 'd' if x + .5 - 9 > w - 1.2 else 'm')
+    for (x, y, c) in ((8, 6, 'r'), (10, 9, 'y'), (6, 11, 'r'), (11, 13, 'r'), (8, 14, 'y'), (13, 15, 'y'), (5, 15, 'r')):
+        g.put(x, y, c)
+    trunk = G().rect(8, 16, 9, 17, 'b')
+    star = G().put(9, 0, 'y').rect(8, 1, 10, 1, 'y').put(9, 2, 'y')
+    P['xmastree'] = lay(g, trunk, star)
+    em('xmastree', '#2f8a3a')
+
+    # ---- a firework (Season 3): rays bursting out from a bright centre, sparks at their tips
+    g = G()
+    for k in range(12):
+        a = k * math.pi / 6
+        for d in (2.5, 3.5, 4.5, 5.5, 6.5):
+            g.put(int(round(9 + math.cos(a) * d - .5)), int(round(9 + math.sin(a) * d - .5)), 'm' if d < 6 else 'y')
+    g.rect(8, 8, 9, 9, 'h')
+    P['firework'] = outline(g.rows())
+    em('firework', '#e0405a')
+
     # ---- a heart
     half = ['',
             '',
