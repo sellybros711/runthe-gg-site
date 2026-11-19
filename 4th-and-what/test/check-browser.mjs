@@ -137,6 +137,7 @@ async function run(name, viewport, scale) {
     posts: window.__posts.length, seed: window.FAW_FLOW.last().seed, want: window.FAW_DAILY.core.seedFor(window.FAW_DAILY.day()) }));
   ok(/is in\./.test(dc.head) && dc.real.length > 10 && dc.posts === 1 && dc.seed === dc.want, 'the first snap is the day\'s, against the day\'s defense, posted once, with what really happened: ' + JSON.stringify(dc));
   ok(/converted today/.test(dc.stats) && /Streak 3/.test(dc.stats), 'and the day so far comes back: ' + dc.stats);
+  ok(await page.isVisible('#rDailyVs') && /^(You beat the real call\.|Same as the real thing\.|They made it\. You didn't\.|Nobody made it\.)$/.test(await page.textContent('#rDailyVs')), "the day's snap against the real call: " + await page.textContent('#rDailyVs'));
   ok(await page.isVisible('#rDailyGo') && /^(Go For It|Resume run)$/.test(await page.textContent('#rDailyGo span')) && await page.isVisible('#rDailyDef'), "and the day's card points on: Go For It and Daily Defense");
   await shot('d-card');
   await page.click('#rAgain');

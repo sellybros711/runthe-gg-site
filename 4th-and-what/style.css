@@ -888,7 +888,16 @@ html:has(#vPlay:not([hidden])), html:has(#vStudio:not([hidden])), html:has(#vPla
 .prmoments { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
 .moment { padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; color: #5d6f84; border: 1px dashed #2a4a66; }
 .moment.got { color: #141000; background: linear-gradient(#ffd84a, var(--gold)); border: 1px solid #ffe27a; }
-.rescard .rmoment { margin: -4px 0 10px; color: var(--gold); font: italic 900 18px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
+.rescard .rmoment { margin: -4px 0 10px; color: var(--gold); font: italic 900 18px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
+.rescard .rmoment .mhead { width: 100%; font-size: 13px; letter-spacing: .14em; color: #f5d68a; }
+.rescard .rmoment .mbadge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 8px; border-radius: 999px; color: #1b1300; background: linear-gradient(#ffe18a, var(--gold)); box-shadow: 0 0 14px rgba(245, 183, 42, .55); animation: faw-pop .55s cubic-bezier(.2, 1.6, .4, 1) both; }
+.rescard .rmoment .mbadge::before { content: '\2605'; font-style: normal; }
+/* the Daily's head to head (2026-11-19) */
+.rescard .rdvs { margin: 2px 0 6px !important; font: italic 900 22px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
+.rescard .rdvs.beat { color: #1b1300; background: linear-gradient(#ffe18a, var(--gold)); border-radius: 10px; padding: 6px 10px; box-shadow: 0 0 18px rgba(245, 183, 42, .6); }
+.rescard .rdvs.same { color: #7ff0c8; } .rescard .rdvs.lost { color: #ff8a7a; } .rescard .rdvs.none { color: #cfd9e4; }
+.rescard .rdvs.pop, .rescard .rdstats.pop { animation: faw-pop .55s cubic-bezier(.2, 1.6, .4, 1); }
+@media (prefers-reduced-motion: reduce) { .rescard .rmoment .mbadge, .rescard .rdvs.pop, .rescard .rdstats.pop { animation: none; } }
 
 /* ---------- today's run and its board (goforit.js, supabase/169) ---------- */
 .godaily { margin-top: 8px; padding: 10px 26px; border-radius: 999px; cursor: pointer; color: #8fe7ff; background: rgba(25, 198, 167, .12); border: 2px solid var(--teal);

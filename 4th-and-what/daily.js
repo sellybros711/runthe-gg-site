@@ -117,6 +117,9 @@
     return String(p.desc || '').replace(/^\([^)]*\)\s*/, '').replace(/^\((Shotgun|No Huddle|No Huddle, Shotgun|Shotgun, No Huddle)\)\s*/i, '')
       .replace(/\s*\[[^\]]*\]/g, '').trim();
   }
+  /* you against the real call: which of four */
+  var VS = { beat: 'You beat the real call.', same: 'Same as the real thing.', lost: "They made it. You didn't.", none: 'Nobody made it.' };
+  function vsKind(win, conv) { return win ? (conv ? 'same' : 'beat') : (conv ? 'lost' : 'none'); }
   function verdictText(p) {
     if (p.td) return 'They scored.';
     if (p.conv) return 'They converted. ' + (p.yards >= 0 ? 'Gained ' + p.yards + '.' : '');
@@ -296,7 +299,7 @@
     lastFirst = first;
     renderHome();
   }
-  var lastFirst = false;
+  var lastFirst = false, lastVs = null;
   /* the card's daily block: what really happened, the day so far */
   function card(res) {
     var box = $('rDaily'); if (!box) return;
@@ -308,6 +311,21 @@
     $('rReal').textContent = realText(today);
     $('rVerdict').textContent = verdictText(today);
     $('rDown').textContent = 'Daily #' + number + ' · ' + downText(today) + ' · ' + spotText(today);
+    /* THE HEAD TO HEAD (2026-11-19): the day's snap against the real call, once, on the
+       day's own snap. Beating the real thing gets the fanfare; the streak pops. */
+    var vs = $('rDailyVs');
+    if (vs) {
+      vs.hidden = !lastFirst; vs.className = 'rdvs';
+      if (lastFirst) {
+        var k2 = vsKind(res.win, !!(today.conv || today.td));
+        vs.textContent = VS[k2]; vs.classList.add(k2);
+        if (lastVs !== res.seed) {
+          lastVs = res.seed; void vs.offsetWidth; vs.classList.add('pop');
+          var st2 = $('rDayStats'); if (st2) { st2.classList.remove('pop'); void st2.offsetWidth; st2.classList.add('pop'); }
+          if (k2 === 'beat' && root.FAW_FEEL) setTimeout(function () { root.FAW_FEEL.play('best'); }, 300);
+        }
+      }
+    }
     var G = root.FAW_GO, gr = G && G.run(), gb = $('rDailyGo');
     if (gb) gb.querySelector('span').textContent = gr && !gr.over && !gr.daily ? 'Resume run' : 'Go For It';
     renderStats();
