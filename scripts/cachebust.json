@@ -2949,8 +2949,8 @@
       "sha": "3be4d90ce0bc4423"
     },
     "golfer3d.js": {
-      "v": "45",
-      "sha": "d4da62821c62ff61"
+      "v": "46",
+      "sha": "ac62cf28b58a2adb"
     },
     "tracer3d.js": {
       "v": "2",
@@ -3201,8 +3201,8 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "22",
-      "sha": "941abb485761fa63"
+      "v": "23",
+      "sha": "1f90d2cdca5bc360"
     },
     "venues.js": {
       "v": "2",
@@ -3499,16 +3499,16 @@
   },
   "setlist/stage.js": {
     "pxhd.js": {
-      "v": "3",
-      "sha": "fd43453e1997ba7e"
+      "v": "4",
+      "sha": "2a6ef3a7c3df048d"
     },
     "rooms.js": {
       "v": "4",
       "sha": "c5def90922ef7838"
     },
     "world.js": {
-      "v": "6",
-      "sha": "fd5ec0121ffff17a"
+      "v": "7",
+      "sha": "18312fe783f2d35a"
     }
   },
   "shut-the-door/3d/boot.js": {
@@ -3553,8 +3553,8 @@
   },
   "setlist/world.js": {
     "pxhd.js": {
-      "v": "3",
-      "sha": "fd43453e1997ba7e"
+      "v": "4",
+      "sha": "2a6ef3a7c3df048d"
     },
     "outfits.js": {
       "v": "1",
