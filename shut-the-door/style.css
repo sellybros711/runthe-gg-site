@@ -869,14 +869,17 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .tiles3 .tl b { display: block; font-family: var(--sans); font-weight: 700; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 .tiles3 .tl span { display: block; max-width: 100%; font-size: 12.5px; line-height: 1.25; color: var(--dim); white-space: normal; text-wrap: balance; overflow-wrap: break-word; }
 /* the unlock row (pro-card.js unlock()): small, the Diamond plate's ice in both themes (the gem's colour,
-   as the Pro card's), one still shine. The button is the title; its ::before stretches the tap over the row */
+   as the Pro card's), one still shine. The button is the title; its ::before stretches the tap over the row.
+   iOS Safari once drew the gem up and to the left, clipped to a sliver by the row's rounded overflow (the
+   owner, 2026-11-19). So nothing here can move or clip it: the shine is a background layer, not an overlay;
+   the row has no overflow clip, no isolation and no filter; the gem is a fixed 34 by 35 box holding an svg
+   with its pixel size written on it, no filter and no transform. */
 .menu-pro { margin: 0 0 12px; }
-.mu-pro { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; min-height: 60px; padding: 9px 14px 9px 12px; border-radius: 16px; color: #0b1a2e;
-  background: radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, .9), transparent 55%), linear-gradient(140deg, #f4fbff 0%, #bfe6ff 48%, #d9d2ff 75%, #a8d6f6 100%);
+.mu-pro { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; min-height: 60px; padding: 9px 14px 9px 12px; border-radius: 16px; color: #0b1a2e;
+  background: linear-gradient(112deg, transparent 34%, rgba(255, 255, 255, .55) 44%, transparent 52%), radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, .9), transparent 55%), linear-gradient(140deg, #f4fbff 0%, #bfe6ff 48%, #d9d2ff 75%, #a8d6f6 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 10px 24px -14px rgba(43, 89, 255, .6), 0 0 0 1px rgba(143, 201, 242, .9); }
-.mu-pro::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
-  background: linear-gradient(112deg, transparent 34%, rgba(255, 255, 255, .55) 44%, transparent 52%); }
-.mu-pro .plate.mu-gem { width: 34px; height: 35px; flex: 0 0 34px; filter: drop-shadow(0 4px 8px rgba(43, 89, 255, .35)); }
+.mu-gi { position: relative; display: block; flex: 0 0 34px; width: 34px; height: 35px; align-self: center; }
+.mu-gi .plate.mu-gem { position: absolute; left: 0; top: 0; display: block; width: 34px; height: 35px; max-width: none; overflow: hidden; filter: none; transform: none; }
 .mu-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .mu-go { position: static; align-self: flex-start; border: 0; padding: 0; margin: 0; background: none; color: #0b1a2e; text-align: left;
   font: 700 16px/1.15 var(--sans); text-transform: none; letter-spacing: 0; cursor: pointer; }
@@ -886,7 +889,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .mu-go:disabled { cursor: default; opacity: .8; }
 .mu-t small { font-size: 12.5px; font-weight: 600; color: #2d4361; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mu-pro .chev { border-color: #2b59ff; }
-.mu-pro:active { transform: translateY(1px); }
+.mu-pro:active { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 0 0 1px rgba(43, 89, 255, .7); }
 .mu-pro .au-err { flex: 0 0 100%; margin: 6px 0 0; font-size: 13px; color: #b4232a; }
 .mu-pro .au-err:empty { display: none; }
 .prose h3, .sh-body h3 { font-family: var(--sans); font-weight: 700; font-size: 16px; text-transform: none; margin: 18px 0 4px; }

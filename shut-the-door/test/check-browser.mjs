@@ -76,8 +76,9 @@
  *      has you against them, the standings, no percentile, no board, the share; a guest's sign-in posts
  *      it once and puts you on the standings; My challenges lists it
  *
- *  26. the menu's unlock row (pro-card.js unlock()), 390x844 dark and light and 1440x900 dark (STD_UNLOCK=1
- *      alone): the last item in the menu sheet under account, and at the foot of the desk's drawer, for
+ *  26. the menu's unlock row (pro-card.js unlock()), 390x844 dark and light, 375x667 dark and 1440x900 dark
+ *      (STD_UNLOCK=1 alone): the gem fully inside the row and centred on it; the last item in the menu
+ *      sheet under account, and at the foot of the desk's drawer, for
  *      anybody who is not Pro; "Unlock the full game" over the catalog's price; nothing opens by itself;
  *      the whole row is the store's buy button (signed out, sign in; signed in, the checkout's post for
  *      Pro); none for Pro; the sheet's three tiles each read on at most two lines
@@ -259,6 +260,7 @@ const UNITS = [
   ['25 custom challenges, 1440x900 dark', 90, () => challengesWalk(1440, 900, 'dark')],
   ['26 the unlock row, 390x844 dark', 25, () => unlockWalk(390, 844, 'dark')],
   ['26 the unlock row, 390x844 light', 25, () => unlockWalk(390, 844, 'light')],
+  ['26 the unlock row, 375x667 dark', 25, () => unlockWalk(375, 667, 'dark')],
   ['26 the unlock row, 1440x900 dark', 25, () => unlockWalk(1440, 900, 'dark')],
 ];
 const MINE = new Set(), DONE = [];
@@ -3746,10 +3748,15 @@ async function unlockWalk(w, h, theme) {
     if (!r || !b) return null;
     r.scrollIntoView({ block: 'nearest' });
     const R = r.getBoundingClientRect(), hit = document.elementFromPoint(R.right - 24, R.top + R.height / 2);
+    /* the gem's own box (the svg and its wrapper) fully inside the row's box, centred on its height */
+    const G = r.querySelector('svg.plate').getBoundingClientRect(), GI = (r.querySelector('.mu-gi') || r.querySelector('svg.plate')).getBoundingClientRect();
+    const inside = (x) => x.width >= 30 && x.height >= 30 && x.left >= R.left && x.right <= R.right && x.top >= R.top && x.bottom <= R.bottom;
+    const gemBox = { l: Math.round(G.left - R.left), t: Math.round(G.top - R.top), w: Math.round(G.width), h: Math.round(G.height), mid: Math.round((G.top + G.bottom) / 2 - (R.top + R.bottom) / 2) };
     const prev = slot.previousElementSibling;
     return { t: b.textContent, sub: (r.querySelector('small') || {}).textContent, gem: !!r.querySelector('svg.plate'), h: Math.round(R.height), l: Math.round(R.left), rt: Math.round(R.right),
       last: !slot.nextElementSibling, after: prev ? (prev.id || prev.className) : null, account: !!(prev && prev.querySelector('button:last-child[data-open="auth"]')),
-      whole: !!(hit && hit.closest('[data-pro-buy]') === b), named: b.getAttribute('data-pro-buy') };
+      whole: !!(hit && hit.closest('[data-pro-buy]') === b), named: b.getAttribute('data-pro-buy'),
+      gemIn: inside(G) && inside(GI) && Math.abs(gemBox.mid) <= 2, gemBox };
   }, SLOT);
 
   /* signed out, not Pro */
@@ -3770,6 +3777,7 @@ async function unlockWalk(w, h, theme) {
   const R = await row(page);
   ok(R && R.t === 'Unlock the full game' && R.sub === 'Shut The Door Pro · ' + price + ' a year' && R.gem && R.named === '',
     '26 ' + tag + ': "Unlock the full game", the small Diamond gem, and the catalog\'s price under it (' + JSON.stringify(R) + ')');
+  ok(R && R.gemIn, '26 ' + tag + ': the gem sits fully inside the row, centred on its height (' + JSON.stringify(R && R.gemBox) + ')');
   ok(R && R.last && (desk ? R.after === 'h-menu' : R.account), '26 ' + tag + ': the last item, ' + (desk ? 'under the drawer\'s menu' : 'under account'));
   ok(R && R.h >= 38 && R.whole && (desk || (R.l >= 16 && R.rt <= w - 16)) && await noSideScroll(page), '26 ' + tag + ': the whole row is the tap, at least 38 px, inside the gutter, no sideways scroll');
   if (!desk) await page.evaluate(() => { const s = document.querySelector('#sheet-menu .sh-in'); s.scrollTop = s.scrollHeight; });
@@ -3833,7 +3841,7 @@ try {
   /* STD_CHAL=1: only custom challenges (25) at both sizes, light and dark */
   if (process.env.STD_CHAL === '1') { for (const t of ['light', 'dark']) { await challengesWalk(390, 844, t); await challengesWalk(1440, 900, t); } throw 'quick'; }
   /* STD_UNLOCK=1: only the menu's unlock row (26), the phone sheet in both themes and the desk's drawer */
-  if (process.env.STD_UNLOCK === '1') { await unlockWalk(390, 844, 'dark'); await unlockWalk(390, 844, 'light'); await unlockWalk(1440, 900, 'dark'); throw 'quick'; }
+  if (process.env.STD_UNLOCK === '1') { await unlockWalk(390, 844, 'dark'); await unlockWalk(390, 844, 'light'); await unlockWalk(375, 667, 'dark'); await unlockWalk(1440, 900, 'dark'); throw 'quick'; }
     /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
   if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
