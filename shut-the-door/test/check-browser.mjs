@@ -1961,7 +1961,77 @@ async function sizeSweep() {
       `16 ${w}x${h}: CHALLENGE fits its button (label ${m.label} px in ${m.room} of room at ${m.fs}, scrollWidth ${m.sw}, ${m.h} px tall)` +
       (m.inter ? '' : ' (not measured in Inter)') + (m.lines !== 1 ? ' (on ' + m.lines + ' lines)' : ''));
   }
+  await meterPanelFits(page, !!inter);
   await ctx.close();
+}
+/* THE METER PANEL INSIDE ITS EDGES (the owner, 2026-11-19: at 1010x1020 the 2 pitch desk dock's
+   RELEASE ON TIME ran past the panel and off the screen, its value on two lines). A real meter is
+   started, then at each size, with the pack's own arsenal and as a 2 pitch dock (the side by side
+   steps), the panel is shown as it stands after the release with every word each step can hold
+   (meter-ui.js zoneOf for power, relWord of meter.js wordOf for the release) and the longest chip.
+   Each must hold: the panel inside the viewport with the same margin right and below (and left on an
+   upright phone), every step inside the panel's padding, every word and value on one line, whole
+   (never ellipsized) and inside its step. The panel is put back as it was and the meter cancelled. */
+const PANEL = [[390, 844], [844, 390], [980, 900], [1010, 1020], [1440, 900], [1920, 1080]];
+async function meterPanelFits(page, inter) {
+  await page.keyboard.press('1');
+  await page.click('#m-aim .cell[data-cell="12"]');
+  await page.waitForFunction(() => !document.getElementById('m-throw').disabled, null, { timeout: 10000 }).catch(() => {});
+  await page.click('#m-throw');
+  const up = await page.waitForSelector('#m-meter.relm:not([hidden])', { timeout: 10000 }).then(() => true).catch(() => false);
+  ok(up, '16 the meter panel comes up for the panel check');
+  if (!up) return;
+  for (const [w, h] of PANEL) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(400);
+    for (const two of [false, true]) {
+      const m = await page.evaluate(async (two) => {
+        if (document.fonts) await document.fonts.load('700 15px Inter').catch(() => {});
+        const el = document.getElementById('m-meter'), ar = document.getElementById('m-arsenal');
+        const steps = [...el.querySelectorAll('.rm-step')], word = el.querySelector('.rm-word');
+        const keep = { n: ar.dataset.n, el: el.className, word: word.textContent, steps: steps.map((s) => [s.className, s.hidden, s.querySelector('span').textContent]) };
+        if (two) ar.dataset.n = '2';
+        const POW = ['soft', 'normal', 'max', 'perfect'], REL = ['perfect', 'sharp', 'on time', 'early', 'late'];
+        const R = (x) => x.getBoundingClientRect(), bad = [];
+        const one = (x) => { const g = document.createRange(); g.selectNodeContents(x); return g.getClientRects().length <= 1; };
+        let gaps = null, n = 0;
+        for (const pw of POW) for (const rl of REL) {
+          el.className = 'relm two is-done ' + (rl === 'perfect' ? 'is-best' : 'is-good');
+          word.textContent = 'perfect release';
+          steps[0].hidden = false;
+          steps[0].className = 'rm-step rm-s-pow' + (pw === 'perfect' ? ' perfect' : ''); steps[0].querySelector('span').textContent = pw;
+          steps[1].className = 'rm-step rm-s-rel ' + (rl === 'perfect' ? 'perfect' : 'on'); steps[1].querySelector('span').textContent = rl;
+          const p = R(el), cs = getComputedStyle(el), pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight);
+          const g = { l: p.left, r: innerWidth - p.right, b: innerHeight - p.bottom, t: p.top };
+          gaps = gaps || g;
+          const tag = pw + '/' + rl;
+          if (g.l < 8 || g.r < 8 || g.b < 8 || g.t < 0) bad.push(tag + ': the panel off the screen or on its edge');
+          if (Math.abs(g.r - g.b) > 1) bad.push(tag + ': margin right ' + g.r.toFixed(1) + ' and below ' + g.b.toFixed(1));
+          if (word.scrollWidth > word.clientWidth + 0.5 || !one(word) || R(word).right > p.right - pr + 0.5) bad.push(tag + ': the chip clipped');
+          for (const s of steps) {
+            const r = R(s);
+            if (r.left < p.left + pl - 0.5 || r.right > p.right - pr + 0.5 || r.bottom > p.bottom - 4 || r.top < p.top) bad.push(tag + ': ' + s.className.split(' ')[1] + ' past the panel\'s padding');
+            for (const t of s.querySelectorAll('b, span')) {
+              const q = R(t);
+              if (t.scrollWidth > t.clientWidth + 0.5 || !one(t) || q.left < r.left + 1 || q.right > r.right - 1 || q.top < r.top || q.bottom > r.bottom)
+                bad.push(tag + ': "' + t.textContent + '" clipped, wrapped or past its step (' + Math.round(q.left) + ' to ' + Math.round(q.right) + ' in ' + Math.round(r.left) + ' to ' + Math.round(r.right) + ')');
+            }
+          }
+          n++;
+        }
+        const cols = getComputedStyle(el.querySelector('.rm-steps')).gridTemplateColumns.split(' ').length;
+        ar.dataset.n = keep.n; el.className = keep.el; word.textContent = keep.word;
+        steps.forEach((s, k) => { s.className = keep.steps[k][0]; s.hidden = keep.steps[k][1]; s.querySelector('span').textContent = keep.steps[k][2]; });
+        const upright = !matchMedia('(orientation: landscape), (min-width: 700px) and (min-height: 600px)').matches;
+        if (upright && gaps && Math.abs(gaps.l - gaps.r) > 1) bad.push('margin left ' + gaps.l.toFixed(1) + ' and right ' + gaps.r.toFixed(1));
+        return { bad: [...new Set(bad)], n, cols, gap: gaps ? Math.round(gaps.r) : null };
+      }, two);
+      ok(inter && m.bad.length === 0 && m.n === 20, `16 ${w}x${h}${two ? ', a 2 pitch dock' : ''}: the meter panel inside the screen (margin ${m.gap} px), its ${m.cols === 2 ? 'two steps side by side' : 'steps'} inside it, all ${m.n} word pairs whole on one line` +
+        (inter ? '' : ' (not measured in Inter)') + (m.bad.length ? ' (' + m.bad.slice(0, 4).join('; ') + ')' : ''));
+    }
+  }
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#m-meter', { state: 'hidden', timeout: 5000 }).catch(() => {});
 }
 
 /* 17. THE MODES AROUND THE DAILY (the owner, 2026-10-30), through the mock's switches. */
@@ -4017,6 +4087,8 @@ try {
   if (process.env.STD_UNLOCK === '1') { await unlockWalk(390, 844, 'dark'); await unlockWalk(390, 844, 'light'); await unlockWalk(375, 667, 'dark'); await unlockWalk(1440, 900, 'dark'); throw 'quick'; }
     /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667, and its end screen */
   if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); await voicesDone(390, 844, 'dark'); await voicesDone(1440, 900, 'light'); await reviewFilters(390, 844, 'dark', 'owner'); await reviewFilters(1440, 900, 'light', 'tester'); throw 'quick'; }
+  /* STD_SIZES=1: only every window size (16), the meter panel's edges with it */
+  if (process.env.STD_SIZES === '1') { await sizeSweep(); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await run(390, 844, 'light'); await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await run(390, 844, 'light'); await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
