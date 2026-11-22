@@ -6259,18 +6259,15 @@ function fantasyPromoPaint(){
 /* THE LOCK DAY REMINDER, the football game's sheet for this competition: once per account
    per week, on the Eastern day the slate locks, before the first kickoff. The rule is in
    /assets/fantasy-promo.js. cloudsave.js is loaded for it, so the mark rides on the account. */
-/* NOT FOR THE PLAYOFF. The shared sheet names its week "Week " and the number, and the Playoff is
-   week 100 (playoff.mjs). The door and the results card carry the Playoff instead. So the pointer
-   is read first and the sheet is set up only for a regular week; its own rules are untouched.
-   A pointer that cannot be read sets it up as before. A label in the shared file would bring it
-   back for the Playoff; that file is shared with the NFL game. */
+/* THE PLAYOFF TOO, NAMED AS THE PLAYOFF. The Playoff is server week PLAYOFF_WEEK (100,
+   playoff.mjs), and the shared sheet named every week "Week " and its number, so until the
+   shared file took a label (site PR 1038) this page set the sheet up only for a regular week.
+   Now it hands the sheet its name for the week: from 100 it is "The Playoff", never
+   "Week 100", which is the rule the Fantasy page and the door already keep. */
 if(window.RTG_FANPROMO){
-  const fanPromoInit=()=>RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
-    href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
-  fetch('/cfb/data/fantasy/now.json',{cache:'no-cache'})
-    .then(r=>r.ok?r.json():null)
-    .then(n=>{ if(!(n&&n.kind==='playoff')) fanPromoInit(); })
-    .catch(fanPromoInit);
+  RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
+    href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState,
+    label:(w)=>Number(w&&w.week)>=100?'The Playoff':'Week '+w.week });
 }
 
 /* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
