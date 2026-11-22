@@ -67,7 +67,7 @@ The button then reads "Saved · Open", which opens the play; a run saves once. S
 
 ## The Ladder
 
-Home's second card. 24 levels in four chapters (Down 1, Down 2, Zones, Down 3), each a situation
+Line 3 of home's practice plan. 24 levels in four chapters (Down 1, Down 2, Zones, Down 3), each a situation
 with its own clock, score, starting set and sometimes a defense the scout already told you about
 ("Scout: 2-3 zone", shown on the tile and above the clipboard, and the X's set up that way). A
 level opens once the one before it is won; 1-1 is always open. Three stars a level: win, win with
@@ -82,7 +82,7 @@ on page hide. A stale write is merged and sent again. Signed out it stays local.
 
 ## The Daily Last Shot
 
-Home's first card: "Daily Last Shot #N", today's title ("Down 2. 14 seconds. Horns."), the clock
+Line 2 of home's practice plan, an index card beside Play: "Daily Last Shot #N", today's title ("Down 2. 14 seconds. Horns."), the clock
 to the next one (midnight Eastern). One situation a day for everybody (`daily.js`), on the Arcade
 Lab's daily service as the external game `last-shot` (flag `arcade_last_shot`):
 `/api/arcade/last-shot/today|start|run|leaderboard`. The clipboard has the day's spots, clock and
@@ -118,8 +118,9 @@ gate works for every tester game is `platform/platform-tester-gate.md`.
 
 ## My Playbooks
 
-Home has two parts: **Play** (the game, first and biggest) and **My Playbooks** (needs a Run The Games
-account). A playbook play is drawn as a **storyboard**: Next frame opens a frame where everyone
+Home is a practice plan on the clipboard, four numbered lines in a fixed order for every player:
+**Play** (line 1, the biggest, Start here for a new player), the Daily, the Ladder, and **My Playbooks**
+(needs a Run The Games account). How it works is a sticky note on the sheet. A playbook play is drawn as a **storyboard**: Next frame opens a frame where everyone
 ended, earlier frames show faintly, Play frame runs just that frame. Frames are presentation only:
 the sim never reads them. Plays are named from the coach's terminology, tested against every
 defense (switch, fight over, go under, and the 2-3, 1-3-1, 3-2 and match-up zones), and printed as
