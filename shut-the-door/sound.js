@@ -16,7 +16,7 @@
    - Quiet when the tab is hidden: the context is suspended and resumed on return.
 
    window.STD_SFX: setOn(v) isOn() state() pitch(mph, ms, quick) pop(level, ms) crack(kind, ms)
-   miss(ms) thud(ms) snap(ms) ump(word) umpClips(list) umpPreview(url) umpState() umpLast() roar(size) groan(size) cheer() bed(level) tick() chime(level)
+   miss(ms) thud(ms) snap(ms) ump(word) umpClips(list) umpUse(voice) umpVoiceNow() umpPreview(url) umpState() umpLast() roar(size) groan(size) cheer() bed(level) tick() chime(level)
    tap() tab() sting(outcome) buzz(pattern) */
 (function () {
   'use strict';
@@ -291,17 +291,24 @@
      voices.js hands over a few signed URLs a line once the mound is up. Each is fetched once and
      decoded as soon as there is a context (the first tap). A call plays a random decoded clip for
      its line straight onto the sfx bus, ducking the crowd; a line with no decoded clip stays
-     silent. Nothing waits: a pitch never schedules around a clip. */
-  var clips = [], fetching = false;
+     silent. Nothing waits: a pitch never schedules around a clip.
+     ONE VOICE AN OUTING (the owner, 2026-11-19): every clip carries its voice (voices.js voiceOf),
+     and umpUse(voice) names the outing's one voice. A call plays only that voice's clips: a line it
+     lacks, or no voice at all, falls to the game's own ump (silent while the built-in sounds are
+     off), never another player's clip. */
+  var clips = [], fetching = false, voiceNow = null;
   function umpClips(list) {
     (list || []).forEach(function (c) {
-      if (c && c.line && c.url && !clips.some(function (x) { return x.url === c.url; })) clips.push({ line: c.line, url: c.url, bytes: null, buf: null, state: 'new' });
+      if (c && c.line && c.url && c.voice && !clips.some(function (x) { return x.url === c.url; })) clips.push({ line: c.line, url: c.url, voice: c.voice, bytes: null, buf: null, state: 'new' });
     });
     umpFetch();
   }
+  function umpUse(voice) { voiceNow = voice || null; umpFetch(); }
   function umpFetch() {
     if (!on || fetching || typeof fetch !== 'function') return;
-    var next = clips.filter(function (c) { return c.state === 'new'; })[0];
+    /* the outing's voice first: another outing's clips wait */
+    var fresh = clips.filter(function (c) { return c.state === 'new'; });
+    var next = fresh.filter(function (c) { return c.voice === voiceNow; })[0] || fresh[0];
     if (!next) return umpDecode();
     fetching = true; next.state = 'fetching';
     fetch(next.url).then(function (r) { return r.ok ? r.arrayBuffer() : null; }).then(function (b) {
@@ -319,7 +326,8 @@
   }
   function umpPlay(word) {
     var V = window.STD_VOICES, lines = V && V.linesFor ? V.linesFor(word) : [];
-    var ready = clips.filter(function (c) { return c.state === 'ready' && lines.indexOf(c.line) >= 0; });
+    if (!voiceNow) return;
+    var ready = clips.filter(function (c) { return c.state === 'ready' && c.voice === voiceNow && lines.indexOf(c.line) >= 0; });
     if (!ready.length) return;
     umpVoice(ready[Math.floor(Math.random() * ready.length)].buf, 'game');
   }
@@ -373,8 +381,9 @@
        synthesized builders above stay for reference until the recordings land. */
     pitch: off, pop: off, crack: off, miss: off, thud: off, snap: off,
     /* the one sound on: the umpire's calls, in players' own approved recordings (2026-11-05) */
-    ump: run(umpPlay), umpClips: umpClips, umpPreview: umpPreview,
-    umpState: function () { return clips.map(function (c) { return { line: c.line, state: c.state }; }); },
+    ump: run(umpPlay), umpClips: umpClips, umpUse: umpUse, umpPreview: umpPreview,
+    umpVoiceNow: function () { return voiceNow; },
+    umpState: function () { return clips.map(function (c) { return { line: c.line, voice: c.voice, state: c.state }; }); },
     /* for the browser check: the last clip through the ump chain, and how it was routed */
     umpLast: function () { return umpLast; },
     roar: off, groan: off, cheer: off, sting: off,

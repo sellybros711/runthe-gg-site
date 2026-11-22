@@ -19,8 +19,10 @@
  *   supabase/176); its button shows only when the server says so, and every call behind it checks
  *   again. A tester's Approve is a shortlist; only the owner puts a call in the game (177). A
  *   reject deletes the audio for good (175), so it asks first, inside the sheet.
- * - The game preloads a few approved clips once the mound is up, after a beat, and only while the
- *   sound is on. A call never waits for a clip: a line with none stays silent.
+ * - One voice an outing (the owner, 2026-11-19): at each outing's start one player's live clips are
+ *   picked (pickVoice) and only theirs play; a line they lack gets the game's own ump, never another
+ *   player's clip. A few of that voice's clips are preloaded once the mound is up, after a beat, and
+ *   only while the sound is on. A call never waits for a clip: a line with none stays silent.
  *
  * The pure parts (the script, the consent, the checks, the call map, the preload plan) are exported
  * for node (test/voices.mjs). */
@@ -79,11 +81,13 @@ function recorderMime(supported) {
 }
 function cleanCredit(s) { return String(s || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, CREDIT_MAX); }
 function linesFor(word) { return CALLS[word] || []; }
-/* which approved clips to fetch: up to PER_LINE a line, chosen at random */
-function plan(list, perLine, rand) {
+/* which approved clips to fetch: up to PER_LINE a line, chosen at random; with a voice, only its clips */
+function plan(list, perLine, rand, voice) {
   rand = rand || Math.random; perLine = perLine || PER_LINE;
   var by = {}, out = [];
-  (list || []).forEach(function (c) { if (c && c.path && lineOf(c.line)) (by[c.line] = by[c.line] || []).push(c); });
+  (list || []).forEach(function (c) {
+    if (c && c.path && lineOf(c.line) && (voice == null || voiceOf(c) === voice)) (by[c.line] = by[c.line] || []).push(c);
+  });
   Object.keys(by).forEach(function (k) {
     var a = by[k].slice();
     for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rand() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
@@ -120,6 +124,91 @@ function nextOpen(sent, i) {
   for (var d = 1; d <= LINES.length; d++) { var k = (i + d) % LINES.length; if (!sent[LINES[k].id]) return k; }
   return -1;
 }
+/* the record sheet's way through the script (the owner, 2026-11-19: a tester on line 12 thought it was
+   stuck). After a send: the next line not sent yet after this one, never wrapping; -1 is the end
+   screen (the last line sent, or every line after it already sent). Skip: the next line; on the last
+   line it is Finish, -1. A skip never sends anything. */
+function afterSend(sent, i) {
+  for (var k = i + 1; k < LINES.length; k++) if (!sent[LINES[k].id]) return k;
+  return -1;
+}
+function afterSkip(i) { return i + 1 < LINES.length ? i + 1 : -1; }
+
+/* ONE VOICE AN OUTING (the owner, 2026-11-19: never one person's "Strike!" then another's "Ball!").
+   A clip's voice is its uploader, read off its storage path (<user id>/<clip id>.<ext>, the only
+   folder 165's upload policy lets them write), an opaque key that is never shown. At an outing's
+   start one voice is picked among the live clips: one that covers every line on the script if any
+   does, else one with the most lines, ties broken by a draw seeded with the outing's id (so a resumed
+   outing keeps its voice while the live set holds). A line the voice lacks gets the game's own ump
+   (sound.js), never another voice's clip. */
+function voiceOf(c) { var m = /^([^/]+)\/[^/]+$/.exec(String(c && c.path || '')); return m ? m[1] : null; }
+function seeded(key) {
+  var h = 2166136261;
+  key = String(key);
+  for (var i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return function () { h = (h + 0x6d2b79f5) >>> 0; var t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+/* the voices in a live list: {voice: {line: true}} for the clips on the script with a file */
+function voicesIn(list) {
+  var by = {};
+  (list || []).forEach(function (c) {
+    var v = voiceOf(c);
+    if (v && lineOf(c && c.line)) (by[v] = by[v] || {})[c.line] = true;
+  });
+  return by;
+}
+/* the voice for an outing, or null when nothing is live. key: the outing's id (a seeded tie break),
+   or a function to draw with */
+function pickVoice(list, key) {
+  var by = voicesIn(list), names = Object.keys(by).sort();
+  if (!names.length) return null;
+  var n = function (v) { return Object.keys(by[v]).length; };
+  var full = names.filter(function (v) { return n(v) === LINES.length; });
+  var top = 0; names.forEach(function (v) { top = Math.max(top, n(v)); });
+  var pool = full.length ? full : names.filter(function (v) { return n(v) === top; });
+  var rand = typeof key === 'function' ? key : key != null ? seeded(key) : Math.random;
+  return pool[Math.min(pool.length - 1, Math.floor(rand() * pool.length))];
+}
+
+/* THE REVIEW SHEET'S FILTERS (the owner, 2026-11-19): Person and Call, together, on every tab. A
+   person is the queue row's username (the queue names every row's uploader, a rejected one too, whose
+   file and path are gone); a row with no username falls back to its voice (the path's folder), and
+   one with neither is "No username". With a person picked their rows read in script order, with how
+   many of the 12 lines they have live (one game plays one person's whole set). */
+function personOf(x) {
+  if (x && x.username) return 'u:' + x.username;
+  var v = voiceOf(x);
+  return v ? 'v:' + v : 'none';
+}
+function personLabel(key) {
+  if (key.indexOf('u:') === 0) return '@' + key.slice(2);
+  if (key.indexOf('v:') === 0) return 'No username (' + key.slice(2, 8) + ')';
+  return 'No username';
+}
+/* [{key, label, n}] for the rows, by name */
+function people(rows) {
+  var by = {};
+  (rows || []).forEach(function (x) { var k = personOf(x); by[k] = (by[k] || 0) + 1; });
+  return Object.keys(by).map(function (k) { return { key: k, label: personLabel(k), n: by[k] }; })
+    .sort(function (a, b) { return a.label.toLowerCase() < b.label.toLowerCase() ? -1 : a.label.toLowerCase() > b.label.toLowerCase() ? 1 : 0; });
+}
+function lineIndex(id) { for (var i = 0; i < LINES.length; i++) if (LINES[i].id === id) return i; return LINES.length; }
+/* person and line: 'all' or a key; with a person, script order (then oldest first) */
+function filterRows(rows, person, line) {
+  var out = (rows || []).filter(function (x) {
+    return (person === 'all' || personOf(x) === person) && (line === 'all' || (x && x.line) === line);
+  });
+  if (person !== 'all') out = out.slice().sort(function (a, b) {
+    return lineIndex(a.line) - lineIndex(b.line) || String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+  });
+  return out;
+}
+/* the lines a person has live: {line: true}, from the Live list's rows */
+function liveLinesOf(liveRows, person) {
+  var out = {};
+  (liveRows || []).forEach(function (x) { if (x && personOf(x) === person && lineOf(x.line)) out[x.line] = true; });
+  return out;
+}
 
 var api = {
   API_VERSION: 1,
@@ -127,6 +216,8 @@ var api = {
   CREDIT_MAX: CREDIT_MAX, PENDING_MAX: PENDING_MAX, CALLS: CALLS,
   lineOf: lineOf, baseMime: baseMime, check: check, recorderMime: recorderMime, cleanCredit: cleanCredit,
   linesFor: linesFor, plan: plan, micError: micError, MIC_SAY: MIC_SAY, peaks: peaks, nextOpen: nextOpen,
+  afterSend: afterSend, afterSkip: afterSkip, voiceOf: voiceOf, voicesIn: voicesIn, pickVoice: pickVoice,
+  personOf: personOf, personLabel: personLabel, people: people, filterRows: filterRows, liveLinesOf: liveLinesOf,
 };
 if (NODE) { module.exports = api; return; }
 
@@ -146,7 +237,8 @@ function signedIn() { try { return !!(A().state && A().state().signedIn); } catc
    is no mic. The consent is ticked once a session (sessionStorage) and its exact text and version
    still go on every row, as 165 checks. The sheet only ever opens from a button. */
 
-var R = { i: 0, take: null, rec: null, consent: false, credit: '', busy: false, msg: '', mic: '', sent: {}, pending: null, src: '' };
+/* done: the end screen is up. n: the calls sent since the page loaded (a redo counts again) */
+var R = { i: 0, take: null, rec: null, consent: false, credit: '', busy: false, msg: '', mic: '', sent: {}, pending: null, src: '', done: false, n: 0 };
 var CONSENT_KEY = 'std_vo_consent';
 var BARS = 28;
 try { R.consent = sessionStorage.getItem(CONSENT_KEY) === String(CONSENT_V); } catch (e) {}
@@ -284,17 +376,50 @@ function send() {
       R.busy = false;
       if (!r || r.error) { R.msg = r && r.error ? sentence(r.error) : 'That didn\'t send. Try again.'; return render(); }
       R.sent[line.id] = true;
+      R.n++;
       if (R.pending != null) R.pending++;
       if (EVS() && EVS().voiceSent) EVS().voiceSent(line.id, t.upload ? 'upload' : 'record');
       dropTake();
-      var next = nextOpen(R.sent, R.i);
-      R.msg = next < 0 ? 'Sent. That\'s every line. Every call gets a listen.' : 'Sent. Every call gets a listen.';
-      if (next >= 0) R.i = next;
+      var next = afterSend(R.sent, R.i);
+      if (next < 0) { R.msg = ''; return finish(); }
+      R.msg = 'Sent. Every call gets a listen.';
+      R.i = next;
       render(true);
     });
 }
 function sentence(s) { s = String(s || '').trim(); s = s.charAt(0).toUpperCase() + s.slice(1); return /[.!?]$/.test(s) ? s : s + '.'; }
 function go(d) { stopRec(false); stopPlay(); dropTake(); R.msg = ''; R.i = Math.max(0, Math.min(LINES.length - 1, R.i + d)); render(); }
+/* Skip moves on and sends nothing; on the last line it is Finish, the end screen */
+function skip() { var k = afterSkip(R.i); if (k < 0) finish(); else go(k - R.i); }
+function finish() {
+  stopRec(false); stopPlay(); dropTake();
+  R.done = true; R.msg = '';
+  render();
+  var h = $('vo-done-h'); if (h) try { h.focus({ preventScroll: true }); } catch (e) {}
+}
+/* the end screen's two ways out: home (ui.js sets onHome: from the mound it waits for a play, as the
+   home button does) or back to line 1 to redo one */
+function again() { R.done = false; R.i = 0; R.msg = ''; render(); var b = $('vo-rec'); if (b) try { b.focus({ preventScroll: true }); } catch (e) {} }
+function home() { close(); if (api.onHome) api.onHome(); }
+var CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function renderDone(body) {
+  var dots = '';
+  for (var k = 0; k < LINES.length; k++) dots += '<i class="' + (R.sent[LINES[k].id] ? 'sent' : '') + '"></i>';
+  var n = R.n;
+  body.innerHTML =
+    '<div class="vo-done" id="vo-done">' +
+      '<span class="vo-badge vo-ok-badge">' + CHECK_SVG + '</span>' +
+      '<h3 class="vo-done-h" id="vo-done-h" tabindex="-1">All done!</h3>' +
+      '<div class="vo-dots" aria-hidden="true">' + dots + '</div>' +
+      '<p class="vo-done-n" id="vo-done-n">' + (n ? 'You sent ' + n + (n === 1 ? ' call' : ' calls') + ' this session.' : 'No calls sent this session.') + '</p>' +
+      (R.pending ? '<p class="quiet vo-done-p" id="vo-pending">' + (R.pending === 1 ? '1 call waits' : R.pending + ' calls wait') + ' for review.</p>' : '') +
+      '<p class="quiet vo-done-p">Every call gets a listen.</p>' +
+      '<button class="btn vo-send vo-home" type="button" id="vo-home">Back to home</button>' +
+      '<button class="btn ghost vo-again" type="button" id="vo-again">Record a line again</button>' +
+    '</div>';
+  $('vo-home').addEventListener('click', home);
+  $('vo-again').addEventListener('click', again);
+}
 
 /* playback: the take's own shape lights up as it plays. The length is the take's (a webm from
    Chrome reports an endless duration) */
@@ -330,7 +455,8 @@ function render(keepMsg) {
     $('vo-signin').addEventListener('click', function () { close(); if (MN()) MN().show('auth'); });
     return;
   }
-  var line = LINES[R.i], t = R.take, recOn = !!R.rec, st = recOn ? 'rec' : t ? 'take' : 'idle';
+  if (R.done) return renderDone(body);
+  var line = LINES[R.i], t = R.take, recOn = !!R.rec, st = recOn ? 'rec' : t ? 'take' : 'idle', last = R.i === LINES.length - 1;
   var dots = '';
   for (var k = 0; k < LINES.length; k++) dots += '<i class="' + (k === R.i ? 'now' : '') + (R.sent[LINES[k].id] ? ' sent' : '') + '"></i>';
   var bars = '';
@@ -339,7 +465,9 @@ function render(keepMsg) {
     '<div class="vo-top">' +
       '<button class="vo-nav" type="button" id="vo-prev"' + (R.i === 0 ? ' disabled' : '') + '><i class="vo-chev back" aria-hidden="true"></i>Back</button>' +
       '<p class="vo-n" id="vo-n">Line ' + (R.i + 1) + ' of ' + LINES.length + (R.sent[line.id] ? ' · sent' : '') + '</p>' +
-      '<button class="vo-nav" type="button" id="vo-next"' + (R.i === LINES.length - 1 ? ' disabled' : '') + '>Skip<i class="vo-chev" aria-hidden="true"></i></button>' +
+      (last
+        ? '<button class="vo-nav vo-fin" type="button" id="vo-finish">Finish<i class="vo-chev" aria-hidden="true"></i></button>'
+        : '<button class="vo-nav" type="button" id="vo-next">Skip<i class="vo-chev" aria-hidden="true"></i></button>') +
     '</div>' +
     '<div class="vo-dots" aria-hidden="true">' + dots + '</div>' +
     '<div class="vo-card"><p class="vo-line" id="vo-line">' + esc(line.text) + '</p>' +
@@ -379,7 +507,7 @@ function render(keepMsg) {
   if (/^Sent/.test(R.msg)) $('vo-msg').classList.add('ok');
   drawBars($('vo-bars'), t ? t.lv : [], t ? BARS : null);
   $('vo-prev').addEventListener('click', function () { go(-1); });
-  $('vo-next').addEventListener('click', function () { go(1); });
+  $(last ? 'vo-finish' : 'vo-next').addEventListener('click', skip);
   if (st !== 'take') {
     $('vo-rec').addEventListener('click', function () { if (R.rec) stopRec(true); else startRec(); });
     $('vo-file').addEventListener('change', function (e) { stopRec(false); fromFile(e.target.files && e.target.files[0]); e.target.value = ''; });
@@ -397,6 +525,8 @@ function render(keepMsg) {
 /* source: home, result or settings, for voice_open (events.js) */
 function open(source) {
   R.msg = ''; R.busy = false; R.pending = null; R.mic = '';
+  /* finished last time: open on line 1 again */
+  if (R.done) { R.done = false; R.i = 0; }
   if (typeof source !== 'string') source = 'settings';
   render();
   if (MN()) MN().open('sheet-voices', function () { stopRec(false); stopPlay(); dropTake(); });
@@ -415,7 +545,9 @@ function close() { if (MN() && MN().current() === 'sheet-voices') MN().close(); 
 
 /* role: 'owner' or 'tester' (settingsRows asks). confirm: the id of the row whose Reject is asking
    "Delete it for good?" (one at a time). heard: {id: what "Hear it in the game" said} */
-var Q = { tab: 'pending', role: null, rows: null, urls: {}, msg: '', ok: '', confirm: null, heard: {} };
+/* person, line: the filters ('all' or a key), kept across the tabs. live: the Live list's rows, for
+   how many lines a person has live (null until read) */
+var Q = { tab: 'pending', role: null, rows: null, urls: {}, msg: '', ok: '', confirm: null, heard: {}, person: 'all', line: 'all', live: null };
 var TABS = [['pending', 'Waiting'], ['shortlisted', 'Shortlisted'], ['approved', 'Live'], ['rejected', 'Rejected']];
 var HEARD = { played: 'Played in the game\'s ump mix.', off: 'The sound is off. Turn it on in settings.', failed: 'That clip didn\'t play. Try again.' };
 /* what each tab offers, by role: [action, label, class]. 'hear' plays it through the game's chain */
@@ -467,11 +599,14 @@ function renderQueue() {
   }).join('') + '</div>';
   var lead = LEAD[role][Q.tab];
   if (lead) h += '<p class="quiet vr-lead" id="vr-lead">' + esc(lead) + '</p>';
+  h += filtersHtml();
   if (Q.ok) h += '<p class="au-err ok vr-ok" role="status">' + esc(Q.ok) + '</p>';
+  var shown = Q.rows ? filterRows(Q.rows, Q.person, Q.line) : null;
   if (Q.rows == null) h += '<p class="quiet">Loading.</p>';
   else if (!Q.rows.length) h += '<p class="quiet" id="vr-empty">' + esc(Q.msg || 'Nothing here.') + '</p>';
+  else if (!shown.length) h += '<p class="quiet" id="vr-empty">Nothing here for this filter.</p>';
   else {
-    h += '<ul class="vr-list">' + Q.rows.map(function (x) {
+    h += '<ul class="vr-list" id="vr-list">' + shown.map(function (x) {
       var ln = lineOf(x.line), who = [x.credit ? 'Credit: ' + x.credit : '', x.username ? '@' + x.username : ''].filter(Boolean).join(' · ');
       var url = Q.urls[x.path];
       var by = deciders(x), acts = x.path ? actions(x.status, role) : [];
@@ -499,6 +634,35 @@ function renderQueue() {
   }
   body.innerHTML = h;
 }
+/* Person and Call over the list, and with a person picked, their set: N of 12 lines live, a dot a line */
+function filtersHtml() {
+  var ps = people(Q.rows || []), total = (Q.rows || []).length;
+  if (Q.person !== 'all' && !ps.some(function (p) { return p.key === Q.person; })) ps.push({ key: Q.person, label: personLabel(Q.person), n: 0 });
+  var opt = function (v, label, on) { return '<option value="' + esc(v) + '"' + (on ? ' selected' : '') + '>' + esc(label) + '</option>'; };
+  var h = '<div class="vr-filters">' +
+    '<label class="vr-f"><span>Person</span><select id="vr-person" data-vr-f="person"' + (Q.rows ? '' : ' disabled') + '>' +
+      opt('all', 'All (' + total + ')', Q.person === 'all') +
+      ps.map(function (p) { return opt(p.key, p.label + ' (' + p.n + ')', Q.person === p.key); }).join('') + '</select></label>' +
+    '<label class="vr-f"><span>Call</span><select id="vr-line" data-vr-f="line"' + (Q.rows ? '' : ' disabled') + '>' +
+      opt('all', 'All', Q.line === 'all') +
+      LINES.map(function (l) { return opt(l.id, l.text, Q.line === l.id); }).join('') + '</select></label>' +
+  '</div>';
+  if (Q.person !== 'all') {
+    var live = Q.live ? liveLinesOf(Q.live, Q.person) : null, n = live ? Object.keys(live).length : null;
+    var dots = '';
+    for (var k = 0; k < LINES.length; k++) dots += '<i class="' + (live && live[LINES[k].id] ? 'sent' : '') + '"></i>';
+    h += '<div class="vr-set" id="vr-set"><div class="vr-set-h"><b>' + esc(personLabel(Q.person)) + '</b>' +
+      '<span id="vr-set-n">' + (n == null ? 'Checking the live set.' : n + ' of ' + LINES.length + ' lines live') + '</span></div>' +
+      '<div class="vo-dots" aria-hidden="true">' + dots + '</div>' +
+      '<p class="quiet">' + (n === LINES.length ? 'A full set. A game can use this voice for every call.' : 'In script order.') + '</p></div>';
+  }
+  return h;
+}
+function loadLive() {
+  var a = A();
+  if (!a.umpQueue) return;
+  a.umpQueue('approved').then(function (r) { Q.live = r && Array.isArray(r.data) ? r.data : []; renderQueue(); });
+}
 function hear(id, b) {
   var x = (Q.rows || []).filter(function (r) { return r.id === id; })[0], S = window.STD_SFX;
   var url = x && Q.urls[x.path];
@@ -512,6 +676,14 @@ function wireQueue() {
   var body = $('vr-body');
   if (!body || body.dataset.wired) return;
   body.dataset.wired = '1';
+  body.addEventListener('change', function (e) {
+    var f = e.target.closest && e.target.closest('[data-vr-f]');
+    if (!f) return;
+    Q[f.getAttribute('data-vr-f')] = f.value;
+    Q.confirm = null;
+    renderQueue();
+    var again = $(f.id); if (again) try { again.focus({ preventScroll: true }); } catch (x) {}
+  });
   body.addEventListener('click', function (e) {
     var tb = e.target.closest('[data-vr-tab]');
     if (tb) { Q.tab = tb.getAttribute('data-vr-tab'); Q.ok = ''; return loadQueue(); }
@@ -536,6 +708,8 @@ function wireQueue() {
       Q.ok = now === 'shortlisted' && Q.tab === 'approved' ? 'Taken out. It waits on the shortlist.' : DONE[now] || '';
       renderQueue();
       countRow();
+      /* a call in or out of the game moves the live count */
+      if (now === 'approved' || st === 'approved' || Q.tab === 'approved') loadLive();
     });
   });
 }
@@ -548,9 +722,10 @@ function openReview() {
   wireQueue();
   /* the owner opens on the shortlist when calls wait there */
   Q.tab = Q.role === 'owner' && Q.count > 0 ? 'shortlisted' : 'pending';
-  Q.ok = '';
+  Q.ok = ''; Q.person = 'all'; Q.line = 'all'; Q.live = null;
   if (MN()) MN().open('sheet-ump-review');
   loadQueue();
+  loadLive();
 }
 
 /* the settings row's sub-line: for the owner, a quiet count of the shortlist ("3 shortlisted for you.") */
@@ -586,27 +761,52 @@ function settingsRows(box) {
 }
 
 /* ---- the game's clips ------------------------------------------------------ */
-/* once a page, a beat after the mound is up, and only with the sound on: the approved list, a few a
-   line, signed URLs for those, handed to sound.js, which fetches and decodes them off the pitch */
-var pre = { done: false, busy: false };
-function preload() {
-  if (pre.done || pre.busy) return;
+/* At each outing's start (ui.js, the mound up, with the outing's id): the live list once a page, a beat
+   after the first mound, and only with the sound on. Then one voice for this outing (pickVoice, seeded
+   by its id, so a resumed outing and a reload keep it), sound.js told to play only that voice, and a
+   few of that voice's clips a line signed and handed over. Another voice's clips are never fetched for
+   it. A Survivor spot, an archive day, a challenge and practice are each their own outing, so each
+   may get a different voice. */
+/* urls: signed for 6 hours, kept for 5 (urlsAt) */
+var pre = { list: null, busy: false, key: null, voice: null, urls: {}, urlsAt: 0 };
+function preload(key) {
   var S = window.STD_SFX, a = A();
-  if (!S || !S.umpClips || !S.isOn() || !a.umpApproved || !a.umpUrls) return;
+  if (!S || !S.umpClips) return;
+  key = key == null ? 'page' : String(key);
+  /* a new outing: no voice until it is picked, so the last outing's never answers this one's call */
+  if (key !== pre.key) { pre.key = key; pre.voice = null; if (S.umpUse) S.umpUse(null); }
+  if (!S.isOn() || !a.umpApproved || !a.umpUrls) return;
+  if (pre.list) return useVoice(key);
+  if (pre.busy) return;
   pre.busy = true;
   setTimeout(function () {
     a.umpApproved().then(function (list) {
-      if (!Array.isArray(list)) { pre.busy = false; return; }
-      pre.done = true;
-      var pick = plan(list);
-      if (!pick.length) return;
-      return a.umpUrls(pick.map(function (c) { return c.path; }), 6 * 3600).then(function (m) {
-        pre.busy = false;
-        if (!m) { pre.done = false; return; }
-        S.umpClips(pick.filter(function (c) { return m[c.path]; }).map(function (c) { return { line: c.line, url: m[c.path] }; }));
-      });
+      pre.busy = false;
+      if (!Array.isArray(list)) return;
+      pre.list = list;
+      useVoice(pre.key);
     }).catch(function () { pre.busy = false; });
   }, 1200);
+}
+function useVoice(key) {
+  var S = window.STD_SFX, a = A();
+  if (key !== pre.key || pre.voice) return;
+  var v = pickVoice(pre.list, key);
+  if (!v) return;
+  pre.voice = v;
+  if (S.umpUse) S.umpUse(v);
+  if (Date.now() - pre.urlsAt > 5 * 3600 * 1000) { pre.urls = {}; pre.urlsAt = Date.now(); }
+  var pick = plan(pre.list, PER_LINE, seeded(key + '/clips'), v);
+  var need = pick.filter(function (c) { return !pre.urls[c.path]; }).map(function (c) { return c.path; });
+  var hand = function () {
+    if (key !== pre.key) return;
+    S.umpClips(pick.filter(function (c) { return pre.urls[c.path]; }).map(function (c) { return { line: c.line, url: pre.urls[c.path], voice: v }; }));
+  };
+  if (!need.length) return hand();
+  a.umpUrls(need, 6 * 3600).then(function (m) {
+    if (m) for (var p in m) pre.urls[p] = m[p];
+    hand();
+  });
 }
 
 api.open = open;
