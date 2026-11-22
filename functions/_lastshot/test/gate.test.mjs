@@ -44,9 +44,9 @@ test('the drift check sees a stale, a missing and a stray file', () => {
     for (const [f, text] of Object.entries(staticFiles())) { fs.mkdirSync(path.dirname(path.join(tmp, f)), { recursive: true }); fs.writeFileSync(path.join(tmp, f), text); }
     assert.deepEqual(staticProblems(tmp), []);
     fs.appendFileSync(path.join(tmp, 'm/sim.js'), '//');
-    fs.rmSync(path.join(tmp, 'm/court.js'));
+    fs.rmSync(path.join(tmp, 'm/court2d.js'));
     fs.writeFileSync(path.join(tmp, 'm/gate.js'), 'x');
-    assert.deepEqual(staticProblems(tmp).sort(), ['last-shot/m/court.js is missing', 'last-shot/m/gate.js is not a file the build writes', 'last-shot/m/sim.js is stale']);
+    assert.deepEqual(staticProblems(tmp).sort(), ['last-shot/m/court2d.js is missing', 'last-shot/m/gate.js is not a file the build writes', 'last-shot/m/sim.js is stale']);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 
