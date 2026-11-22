@@ -10,7 +10,7 @@
  * 'shut-the-door-vote-' + D + '-' + id, the first two. The first is A. A pack that was played was
  * offered, so nothing played in the last WINDOW days comes back. With 30 packs and two offered a
  * day, at least 30 - 2 x 13 = 4 are eligible each day, so the pairs vary (from POOL.FROM, 42, at
- * least 16).
+ * least 16; from the Reds' day, 43, at least 17).
  *
  * The server (supabase/160_shut_the_door_vote_survivor.sql, shutdoor_vote_candidates) runs the
  * same rule over the same list, and locks the winner once the day begins: more votes wins, and
@@ -42,9 +42,18 @@
      whole rotation. BASE is the 30 of 2026-10-30. FROM is the first day the 12 clubs' situations of
      2026-11-18 can be offered (its candidates are stored the day before). The same day is in
      shutdoor_packs.from_day (supabase/179); test/modes.mjs reads both. Move FROM only to a day whose
-     candidates the server has not stored yet. */
-  const POOL = Object.freeze({ BASE: 30, FROM: '2026-11-25' });
-  function poolOn(sch, day) { return day >= POOL.FROM ? sch.rotation : sch.rotation.slice(0, POOL.BASE); }
+     candidates the server has not stored yet.
+     GROW: each growth since, [the rotation's length from that day, that day]. The 12 are the first (42
+     from FROM). The Reds' situation (std-2025-pagan-mil, held back for a 3D fix, 2026-11-18) is the
+     next, at the rotation's end, from a day of its own (supabase/184, shutdoor_packs.from_day). A day
+     takes the longest growth that has begun by it, so every day before a growth draws exactly as it
+     did. Add a growth only on a day whose candidates the server has not stored yet. */
+  const POOL = Object.freeze({ BASE: 30, FROM: '2026-11-25', GROW: Object.freeze([[42, '2026-11-25'], [43, '2026-11-26']]) });
+  function poolOn(sch, day) {
+    let n = POOL.BASE;
+    for (const [len, from] of POOL.GROW) if (day >= from) n = len;
+    return sch.rotation.slice(0, n);
+  }
 
   const addDays = (day, n) => new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) + n * 86400000)
     .toISOString().slice(0, 10);

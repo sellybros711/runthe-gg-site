@@ -1070,6 +1070,14 @@ function planGround(ctx) {
     best = r ? { n: nn, ...r } : { n: nn, s: near.s, b: near.b };
   }
   if (!best) best = { n: 1, s: 1.5, b: at(1.5) };
+  // (an error on a ball he only just reaches, a slow roller he charges: at the first moment he can get to it
+  // he gets there at a flat out sprint with no room left to pull up, so the plan stopped him dead in a quarter
+  // of a second, 95 to 118 ft/s^2 (three times what legs can brake, check-gait.mjs brake) before it went off
+  // his glove. An infielder times a slow roller: he takes it a beat later, the first moment from there he can
+  // be at the spot from rest to rest at his own push (Track.arrive's own run, a pull up at that push), as it
+  // rolls in to him. It goes off his glove all the same: the engine's error, the same ball and the same
+  // runners, later by that beat (2026-11-19, the Reds' pack, std-2025-pagan-mil))
+  if (kind === 'ground_play' && ctx.label === 'error' && !ctx.moves.some((m) => m.to === -1)) best = timedCharge(best, F[best.n], SPEED(best.n), at, g);
   const n = best.n, sp = SPEED(n);
   // he gets to the spot a beat before the ball and fields it in front of him
   const standFor = (bb) => lerp(F[n], bb, Math.max(0, (dist(F[n], bb) - 1.5) / Math.max(1e-3, dist(F[n], bb))));
@@ -1094,6 +1102,43 @@ function planGround(ctx) {
     return;
   }
   holdThenThrow(ctx, n, best.s, stand, false);
+}
+
+/** A ground ball he fields at best (planGround): the first moment from best.s on at which he can be at his spot
+    (1.5 ft short of the ball, as planGround stands him) a beat before it (0.12 s), from rest to rest at his own
+    top speed and push (runTime, as Track.arrive times it), so the run that takes him there pulls up at his
+    push and not in one stride, while the ball still rolls in to him. Only for a run the plan stops dead (its pull
+    up harder than DEAD_STOP). best itself when he already can; best
+    when the ball never gives him the room while it comes in (in the next TIMED_S). */
+// (ft/s^2: a sprint to standing in a stride, lab/pipeline/check-gait.mjs BRAKE)
+const TIMED_S = 1.5, DEAD_STOP = 90;
+function timedCharge(best, from, sp, at, g) {
+  const room = (s) => {
+    const b = at(s), d = dist(from, b), stand = Math.max(0, d - 1.5);
+    return Math.max(sp.react + 0.2, s - 0.12) - sp.react > runTime(stand, sp.v, sp.a, true, true) + 1e-6;
+  };
+  if (room(best.s)) return best;
+  // (and only a run the plan would stop dead: his run to best as planned, its pull up harder than DEAD_STOP (kept as
+  // planned by drawRuns, being over HARD_BRAKE). A milder one is no dead stop, and moving it only moved the plays
+  // after it: a pickup's feet a frame later, over check-jolt.mjs's skate)
+  {
+    const b = at(best.s), d = dist(from, b), stand = lerp(from, b, Math.max(0, (d - 1.5) / Math.max(1e-3, d)));
+    const tr = new Track(from, { v: sp.v, a: sp.a });
+    tr.arrive(sp.react, stand, Math.max(sp.react + 0.2, best.s - 0.12), { toRest: true });
+    tr.stopAtEnd();
+    const g = tr.legs.length ? tr.legs[tr.legs.length - 1].g : null;
+    if (!g || !(g.be > 0) || g.total / g.T / (1 - g.al / 2 - g.be / 2) / (g.be * g.T) <= DEAD_STOP) return best;
+  }
+  // (only while it still rolls in to him: past the nearest it comes to where he started, a later moment had
+  // him back off to take it deeper, a step and more behind where he could have met it)
+  let near = dist(from, at(best.s));
+  for (let s = best.s + 1 / 60; s < best.s + TIMED_S; s += 1 / 60) {
+    const d = dist(from, at(s));
+    if (g.speed(s) < 1 || d > near - 1e-3) break;
+    near = d;
+    if (room(s)) return { ...best, s, b: at(s) };
+  }
+  return best;
 }
 
 /** The ball fielded by n at time s at point at: the throws for every putout in turn, or a late one. */

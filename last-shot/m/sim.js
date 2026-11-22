@@ -5,13 +5,13 @@
  *
  * The rng is drawn in one order: the screen scheme first, then each risky
  * pass, then the shot, then their answer. */
-import { mulberry32 } from './rng.js?b=d720f93be5';
-import { SCHEMES, ZONES, DEFENSES, SCHEME_NAMES, isZone } from './scenario.js?b=d720f93be5';
-import { COURT, dist, segDist, toRim, zoneOf } from './court-geo.js?b=d720f93be5';
-import { advanceRunner, advanceDefender, speedOf, separate, pinBehind, turnFace } from './motion.js?b=d720f93be5';
-import { targetFor, screens, defenderOf, useScreen } from './defense.js?b=d720f93be5';
-import { shotQuality, openWord } from './shot.js?b=d720f93be5';
-import { IDS, problems, planOf } from './playbook.js?b=d720f93be5';
+import { mulberry32 } from './rng.js?b=ddf83eb21b';
+import { SCHEMES, ZONES, DEFENSES, SCHEME_NAMES, isZone } from './scenario.js?b=ddf83eb21b';
+import { COURT, dist, segDist, toRim, zoneOf } from './court-geo.js?b=ddf83eb21b';
+import { advanceRunner, advanceDefender, speedOf, separate, pinBehind, turnFace } from './motion.js?b=ddf83eb21b';
+import { targetFor, screens, defenderOf, useScreen } from './defense.js?b=ddf83eb21b';
+import { shotQuality, openWord } from './shot.js?b=ddf83eb21b';
+import { IDS, problems, planOf } from './playbook.js?b=ddf83eb21b';
 
 export const DT = 1 / 60;
 const FRAME_EVERY = 2;
@@ -476,7 +476,7 @@ function animate(st, dt) {
   }
 }
 
-/* Pose codes, read by court.js.
+/* Pose codes, read by court2d.js.
    Offense: 0 stand, 1 run, 2 dribble on the move, 3 dribble standing,
             4 shooting, 5 screen set, 6 hands up for the pass, 7 the pass
             just thrown, 8 holding the ball (the catch).

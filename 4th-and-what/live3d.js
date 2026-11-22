@@ -41,7 +41,10 @@ const views = new WeakMap();
 
 let can = null;
 function ok() {
-  if (can === null) { try { const c = document.createElement('canvas'); can = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { can = false; } }
+  /* a very weak phone (2 cores or fewer, or 2 GB or less) keeps the pixel
+     stadium, which it already plays smoothly */
+  const weak = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 2;
+  if (can === null) { try { const c = document.createElement('canvas'); can = !weak && !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { can = false; } }
   return can;
 }
 /* an older phone (few cores) draws at one pixel per pixel */
@@ -251,11 +254,13 @@ function show(canvas, res, ui) {
   const onResize = () => { size(); v.r.render(W.S, v.cam); };
   window.addEventListener('resize', onResize);
   W.confetti.visible = false; W.gain.material.color.set('#ffd628');
-  /* the payoff, on the result: a conversion lights the line to gain and throws
-     confetti from the ball; the picture keeps moving under the stamp */
+  /* the payoff, on the result: a conversion turns the line to gain green and
+     throws confetti from the ball (the picture keeps moving under the stamp);
+     a stop turns it red, the spot short of it plain to see */
   let party = 0;
   const celebrate = (r) => {
-    if (!r || !r.win) return;
+    if (!r) return;
+    if (!r.win) { W.gain.material.color.set('#ff4a3d'); v.r.render(W.S, v.cam); return; }
     W.gain.material.color.set(r.outcome === 'touchdown' ? '#19c6a7' : '#3cff8f');
     if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { v.r.render(W.S, v.cam); return; }
     const td = r.outcome === 'touchdown', p = W.confetti.geometry.attributes.position, a = p.array, vel = W.cvel, b = W.ball.position;

@@ -69,30 +69,54 @@ window.GA_ID='G-L29P5MRWKE';
     </p>
   </div>
 <script>
-/* A TESTER'S PASS (2026-11-19). A tester page (behind the site's tester list)
-   answers this 404 until the browser holds the signed tester cookie, which
-   /api/stumpire/me sets for a tester. That used to happen only on the Arcade
-   page, so a tester who opened a shared link cold saw this page. When the
-   visitor is signed in, ask once for the pass and, if it came, load the page
-   again. Anybody else gets a 404 from that call and this page stays as it is.
-   Once per path a tab, so it can never loop. Names no page. */
+/* A TESTER'S PASS (2026-11-19, refresh added 2026-11-22). A tester page
+   (behind the site's tester list) answers this 404 until the browser holds
+   the signed tester cookie, which /api/stumpire/me sets for a tester and
+   which lasts 12 hours. Only the Arcade page used to ask for it, so a tester
+   who opened a shared link cold saw this page. When the visitor is signed
+   in, ask once for the pass and, if it came, load the page again. Anybody
+   else gets a 404 from that call and this page stays as it is.
+   The stored sign in expires within the hour unless a page refreshes it, so
+   when it has, this loads the site's own sign in script (the Arcade's), lets
+   it refresh, then asks. Only for a visitor with a stored sign in, once per
+   path a tab, so it can never loop. Names no page. */
 (function () {
   try {
     var path = location.pathname, flag = 'rtg_pass_tried';
     if (sessionStorage.getItem(flag) === path) return;
-    var tok = null, now = Date.now() / 1000;
+    var tok = null, stale = false, now = Date.now() / 1000;
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
       if (!k || k.indexOf('sb-') !== 0 || !/auth/.test(k)) continue;
       var s = JSON.parse(localStorage.getItem(k) || 'null');
       s = s && (s.currentSession || s);
-      if (s && s.access_token && (!s.expires_at || s.expires_at > now + 30)) { tok = s.access_token; break; }
+      if (!s) continue;
+      if (s.access_token && (!s.expires_at || s.expires_at > now + 30)) { tok = s.access_token; break; }
+      if (s.refresh_token) stale = true;
     }
-    if (!tok) return;
+    var ask = function (t) {
+      sessionStorage.setItem(flag, path);
+      fetch('/api/stumpire/me', { headers: { Authorization: 'Bearer ' + t }, credentials: 'same-origin' })
+        .then(function (r) { if (r.status === 200) location.reload(); })
+        .catch(function () {});
+    };
+    if (tok) { ask(tok); return; }
+    if (!stale) return;
     sessionStorage.setItem(flag, path);
-    fetch('/api/stumpire/me', { headers: { Authorization: 'Bearer ' + tok }, credentials: 'same-origin' })
-      .then(function (r) { if (r.status === 200) location.reload(); })
-      .catch(function () {});
+    var load = function (src, then) { var e = document.createElement('script'); e.src = src; e.onload = then; document.head.appendChild(e); };
+    load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js', function () {
+      load('/arcade/auth.js?v=4', function () {
+        var A = window.RTG_AUTH, done = false;
+        if (!A || !A.onChange || !A.boot) return;
+        A.onChange(function (st) {
+          if (done || !st || !st.resolved) return;
+          done = true;
+          var t = st.signedIn && A.token && A.token();
+          if (t) ask(t);
+        });
+        A.boot();   /* the Arcade page starts it the same way */
+      });
+    });
   } catch (e) {}
 })();
 </script>

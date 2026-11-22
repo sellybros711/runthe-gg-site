@@ -9,7 +9,7 @@
  *
  * Measured 2026-11-13 (150 seeds a defense) and held by test/starters.test.mjs.
  * Steps carry beat 1: one storyboard frame. */
-import { SCENARIO } from './scenario.js?b=d720f93be5';
+import { SCENARIO } from './scenario.js?b=ddf83eb21b';
 
 const P = (x, y) => ({ x, y });
 const one = steps => steps.map(s => ({ ...s, beat: 1 }));

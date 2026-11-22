@@ -18,9 +18,9 @@
  * the play on the clipboard, the play that was filed (for Beat my play on a
  * second visit) and whether start was posted, so a reload does not count as
  * a restart. A new day drops it. Read through cleanPlay, never trusted. */
-import { MIN_FRAMES } from './daily.js?b=d720f93be5';
-import { cleanPlay, starText, streakLine } from './ladder-ui.js?b=d720f93be5';
-import { adder, verdictBlock, checklist, factsOfDetail, scoreOfRun } from './cards.js?b=d720f93be5';
+import { MIN_FRAMES } from './daily.js?b=ddf83eb21b';
+import { cleanPlay, starText, streakLine } from './ladder-ui.js?b=ddf83eb21b';
+import { adder, verdictBlock, checklist, factsOfDetail, scoreOfRun } from './cards.js?b=ddf83eb21b';
 
 export const GAME_ID = 'last-shot';
 export const DAY_KEY = 'last_shot_daily';

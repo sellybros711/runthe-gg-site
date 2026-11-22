@@ -76,6 +76,13 @@
  *      has you against them, the standings, no percentile, no board, the share; a guest's sign-in posts
  *      it once and puts you on the standings; My challenges lists it
  *
+ *  26. the menu's unlock row (pro-card.js unlock()), 390x844 dark and light, 375x667 dark and 1440x900 dark
+ *      (STD_UNLOCK=1 alone): the gem fully inside the row and centred on it; the last item in the menu
+ *      sheet under account, and at the foot of the desk's drawer, for
+ *      anybody who is not Pro; "Unlock the full game" over the catalog's price; nothing opens by itself;
+ *      the whole row is the store's buy button (signed out, sign in; signed in, the checkout's post for
+ *      Pro); none for Pro; the sheet's three tiles each read on at most two lines
+ *
  *  22. your history (Pro, history-ui.js), through the mock: the stats sheet's row is a plain locked row
  *      that names the perk for a player who is not Pro (nothing to tap, no buy button) and a button for
  *      Pro; nothing opens by itself; the list (newest first, every row a 38 px tap and up, no sideways
@@ -241,6 +248,10 @@ const UNITS = [
   ['18 two halves, 1440x900', 78, () => halves(1440, 900, true)],
   ['19 the voice of the ump, 390x844', 42, () => voicesWalk(390, 844)],
   ['19 the voice of the ump, 375x667', 46, () => voicesWalk(375, 667)],
+  ['19 the record sheet\'s end, 390x844 dark', 30, () => voicesDone(390, 844, 'dark')],
+  ['19 the record sheet\'s end, 1440x900 light', 30, () => voicesDone(1440, 900, 'light')],
+  ['19 the review filters, 390x844 dark', 25, () => reviewFilters(390, 844, 'dark', 'owner')],
+  ['19 the review filters, 1440x900 light', 25, () => reviewFilters(1440, 900, 'light', 'tester')],
   ['21 the live minimap, 390x844 light', 60, () => liveMinimap(390, 844, 'light')],
   ['21 the live minimap, 1440x900 dark', 60, () => liveMinimap(1440, 900, 'dark')],
   ['22 your history, 390x844 light', 30, () => historyWalk(390, 844, 'light')],
@@ -251,6 +262,10 @@ const UNITS = [
   ['23 the desk home, 1920x1080 light', 40, () => deskHome(1920, 1080, 'light')],
   ['25 custom challenges, 390x844 light', 90, () => challengesWalk(390, 844, 'light')],
   ['25 custom challenges, 1440x900 dark', 90, () => challengesWalk(1440, 900, 'dark')],
+  ['26 the unlock row, 390x844 dark', 25, () => unlockWalk(390, 844, 'dark')],
+  ['26 the unlock row, 390x844 light', 25, () => unlockWalk(390, 844, 'light')],
+  ['26 the unlock row, 375x667 dark', 25, () => unlockWalk(375, 667, 'dark')],
+  ['26 the unlock row, 1440x900 dark', 25, () => unlockWalk(1440, 900, 'dark')],
 ];
 const MINE = new Set(), DONE = [];
 const SHARD = (() => { const v = argVal('--shard'); if (!v) return { i: 0, n: 1 }; const [i, n] = v.split('/').map(Number); if (!(n >= 1 && i >= 0 && i < n && Number.isInteger(i) && Number.isInteger(n))) throw new Error('--shard I/N: I from 0 to N-1'); return { i, n }; })();
@@ -1946,7 +1961,77 @@ async function sizeSweep() {
       `16 ${w}x${h}: CHALLENGE fits its button (label ${m.label} px in ${m.room} of room at ${m.fs}, scrollWidth ${m.sw}, ${m.h} px tall)` +
       (m.inter ? '' : ' (not measured in Inter)') + (m.lines !== 1 ? ' (on ' + m.lines + ' lines)' : ''));
   }
+  await meterPanelFits(page, !!inter);
   await ctx.close();
+}
+/* THE METER PANEL INSIDE ITS EDGES (the owner, 2026-11-19: at 1010x1020 the 2 pitch desk dock's
+   RELEASE ON TIME ran past the panel and off the screen, its value on two lines). A real meter is
+   started, then at each size, with the pack's own arsenal and as a 2 pitch dock (the side by side
+   steps), the panel is shown as it stands after the release with every word each step can hold
+   (meter-ui.js zoneOf for power, relWord of meter.js wordOf for the release) and the longest chip.
+   Each must hold: the panel inside the viewport with the same margin right and below (and left on an
+   upright phone), every step inside the panel's padding, every word and value on one line, whole
+   (never ellipsized) and inside its step. The panel is put back as it was and the meter cancelled. */
+const PANEL = [[390, 844], [844, 390], [980, 900], [1010, 1020], [1440, 900], [1920, 1080]];
+async function meterPanelFits(page, inter) {
+  await page.keyboard.press('1');
+  await page.click('#m-aim .cell[data-cell="12"]');
+  await page.waitForFunction(() => !document.getElementById('m-throw').disabled, null, { timeout: 10000 }).catch(() => {});
+  await page.click('#m-throw');
+  const up = await page.waitForSelector('#m-meter.relm:not([hidden])', { timeout: 10000 }).then(() => true).catch(() => false);
+  ok(up, '16 the meter panel comes up for the panel check');
+  if (!up) return;
+  for (const [w, h] of PANEL) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(400);
+    for (const two of [false, true]) {
+      const m = await page.evaluate(async (two) => {
+        if (document.fonts) await document.fonts.load('700 15px Inter').catch(() => {});
+        const el = document.getElementById('m-meter'), ar = document.getElementById('m-arsenal');
+        const steps = [...el.querySelectorAll('.rm-step')], word = el.querySelector('.rm-word');
+        const keep = { n: ar.dataset.n, el: el.className, word: word.textContent, steps: steps.map((s) => [s.className, s.hidden, s.querySelector('span').textContent]) };
+        if (two) ar.dataset.n = '2';
+        const POW = ['soft', 'normal', 'max', 'perfect'], REL = ['perfect', 'sharp', 'on time', 'early', 'late'];
+        const R = (x) => x.getBoundingClientRect(), bad = [];
+        const one = (x) => { const g = document.createRange(); g.selectNodeContents(x); return g.getClientRects().length <= 1; };
+        let gaps = null, n = 0;
+        for (const pw of POW) for (const rl of REL) {
+          el.className = 'relm two is-done ' + (rl === 'perfect' ? 'is-best' : 'is-good');
+          word.textContent = 'perfect release';
+          steps[0].hidden = false;
+          steps[0].className = 'rm-step rm-s-pow' + (pw === 'perfect' ? ' perfect' : ''); steps[0].querySelector('span').textContent = pw;
+          steps[1].className = 'rm-step rm-s-rel ' + (rl === 'perfect' ? 'perfect' : 'on'); steps[1].querySelector('span').textContent = rl;
+          const p = R(el), cs = getComputedStyle(el), pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight);
+          const g = { l: p.left, r: innerWidth - p.right, b: innerHeight - p.bottom, t: p.top };
+          gaps = gaps || g;
+          const tag = pw + '/' + rl;
+          if (g.l < 8 || g.r < 8 || g.b < 8 || g.t < 0) bad.push(tag + ': the panel off the screen or on its edge');
+          if (Math.abs(g.r - g.b) > 1) bad.push(tag + ': margin right ' + g.r.toFixed(1) + ' and below ' + g.b.toFixed(1));
+          if (word.scrollWidth > word.clientWidth + 0.5 || !one(word) || R(word).right > p.right - pr + 0.5) bad.push(tag + ': the chip clipped');
+          for (const s of steps) {
+            const r = R(s);
+            if (r.left < p.left + pl - 0.5 || r.right > p.right - pr + 0.5 || r.bottom > p.bottom - 4 || r.top < p.top) bad.push(tag + ': ' + s.className.split(' ')[1] + ' past the panel\'s padding');
+            for (const t of s.querySelectorAll('b, span')) {
+              const q = R(t);
+              if (t.scrollWidth > t.clientWidth + 0.5 || !one(t) || q.left < r.left + 1 || q.right > r.right - 1 || q.top < r.top || q.bottom > r.bottom)
+                bad.push(tag + ': "' + t.textContent + '" clipped, wrapped or past its step (' + Math.round(q.left) + ' to ' + Math.round(q.right) + ' in ' + Math.round(r.left) + ' to ' + Math.round(r.right) + ')');
+            }
+          }
+          n++;
+        }
+        const cols = getComputedStyle(el.querySelector('.rm-steps')).gridTemplateColumns.split(' ').length;
+        ar.dataset.n = keep.n; el.className = keep.el; word.textContent = keep.word;
+        steps.forEach((s, k) => { s.className = keep.steps[k][0]; s.hidden = keep.steps[k][1]; s.querySelector('span').textContent = keep.steps[k][2]; });
+        const upright = !matchMedia('(orientation: landscape), (min-width: 700px) and (min-height: 600px)').matches;
+        if (upright && gaps && Math.abs(gaps.l - gaps.r) > 1) bad.push('margin left ' + gaps.l.toFixed(1) + ' and right ' + gaps.r.toFixed(1));
+        return { bad: [...new Set(bad)], n, cols, gap: gaps ? Math.round(gaps.r) : null };
+      }, two);
+      ok(inter && m.bad.length === 0 && m.n === 20, `16 ${w}x${h}${two ? ', a 2 pitch dock' : ''}: the meter panel inside the screen (margin ${m.gap} px), its ${m.cols === 2 ? 'two steps side by side' : 'steps'} inside it, all ${m.n} word pairs whole on one line` +
+        (inter ? '' : ' (not measured in Inter)') + (m.bad.length ? ' (' + m.bad.slice(0, 4).join('; ') + ')' : ''));
+    }
+  }
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#m-meter', { state: 'hidden', timeout: 5000 }).catch(() => {});
 }
 
 /* 17. THE MODES AROUND THE DAILY (the owner, 2026-10-30), through the mock's switches. */
@@ -2117,13 +2202,13 @@ async function modes(w, h, full) {
     '17 the picker: plain, Diamond and 30 clubs, then 9 throwbacks, each with its plate (' + pkr.cur.length + ' + ' + pkr.tb.length + ')');
   ok(dia && dia.locked && dia.pro && dia.small === 'Pro only.', '17 not Pro: Diamond is locked, tagged Pro, and says "Pro only." (' + JSON.stringify(dia) + ')');
   /* since 2026-11-18 (supabase 179) every one of today's 30 has a situation: only the throwbacks no pack is in say
-     "No situation yet", and the Orioles say how to open theirs. The Reds' waits on a 3D fix (the owner,
-     2026-11-18), so the Reds are the one club of today's that still says it */
+     "No situation yet", and the Orioles say how to open theirs. The Reds' joined with supabase/184
+     (2026-11-19), so no club of today's says it */
   const ori = pkr.cur.find((x) => x.k === 'orioles');
-  ok(soon.some((x) => x.k === 'expos') && soon.every((x) => x.k === 'reds' || pkr.tb.some((t) => t.k === x.k)) && !soon.some((x) => x.k === 'astrosbrick'),
-    '17 only a throwback with no situation, and the Reds, say "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
-  ok(ori && ori.locked && ori.small === 'Shut the door as the Orioles closer to unlock.' && JSON.stringify(soon.filter((x) => pkr.cur.some((c) => c.k === x.k)).map((x) => x.k)) === '["reds"]',
-    '17 every one of today\'s clubs but the Reds has a situation: the Orioles say "' + (ori && ori.small) + '"');
+  ok(soon.some((x) => x.k === 'expos') && soon.every((x) => pkr.tb.some((t) => t.k === x.k)) && !soon.some((x) => x.k === 'astrosbrick'),
+    '17 only a throwback with no situation says "No situation yet. Coming soon." (' + soon.length + ' of them), never a line it cannot meet');
+  ok(ori && ori.locked && ori.small === 'Shut the door as the Orioles closer to unlock.' && !soon.some((x) => pkr.cur.some((c) => c.k === x.k)),
+    '17 every one of today\'s 30 clubs has a situation: the Orioles say "' + (ori && ori.small) + '"');
   ok(pkr.cur.concat(pkr.tb).every((x) => x.h >= 38), '17 every plate tile is at least 38 px tall');
   ok(await noSideScroll(page), '17 the picker leaves no sideways scroll');
   await page.evaluate(() => document.querySelector('#pk-grid .plk[data-plate="diamond"]').click());   // aria-disabled: a real tap still lands
@@ -3560,6 +3645,175 @@ async function voicesWalk(w, h) {
   await testerWalk(w, h);
   await ownerShortlistWalk(w, h);
 }
+/* the record sheet's end screen (the owner, 2026-11-19: a tester on line 12 thought it was stuck).
+   Shut until its row is tapped (the desk's ump row on a desk). On line 12 Skip is Finish. Twelve taps
+   of Skip and Finish reach "All done!" and send nothing: umpSubmit is called zero times. Record a line
+   again goes to line 1. Sending the last line reaches it too, with the count sent and the count waiting.
+   Back to home shuts the sheet and leaves the home up, from the home and from the result */
+async function voicesDone(w, h, theme) {
+  console.log(`\nthe record sheet's end, ${w}x${h} ${theme}`);
+  step('19 the record sheet\'s end', 150);
+  const tag = '19 end ' + w + 'x' + h + ' ' + theme + ': ';
+  const desk = w >= 980;
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1', { meterOff: true, theme });
+  await page.evaluate(() => {
+    window.__calls = 0;
+    const f = window.STD_AUTH.umpSubmit;
+    window.STD_AUTH.umpSubmit = (c) => { window.__calls++; return f(c); };
+  });
+  ok(await nothingOpen(page), tag + 'nothing open by itself');
+  const openRow = async (sel) => { await page.click(sel); await page.waitForSelector('#sheet-voices.on #vo-rec', { timeout: 3000 }); };
+  const toLast = async () => { for (let i = 0; i < 11; i++) await page.click('#vo-next'); };
+  const inView = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth; };
+  await openRow(desk ? '#d-ump-go' : '#h-voice');
+  await toLast();
+  const last = await page.evaluate(() => {
+    const f = document.getElementById('vo-finish');
+    return { n: document.getElementById('vo-n').textContent, fin: f && f.textContent, dis: f && f.disabled, next: !!document.getElementById('vo-next'), h: f ? Math.round(f.getBoundingClientRect().height) : 0, line: document.getElementById('vo-line').textContent };
+  });
+  ok(last.n === 'Line 12 of 12' && last.fin === 'Finish' && !last.dis && !last.next && last.h >= 38, tag + 'line 12 ("' + last.line + '"): Skip is Finish, ' + last.h + ' px, never a dead button');
+  await page.click('#vo-finish');
+  await page.waitForSelector('#vo-done', { timeout: 3000 });
+  await page.waitForTimeout(250);
+  const done = await page.evaluate((inV) => {
+    const inView = new Function('return ' + inV)();
+    return { calls: window.__calls, h: document.getElementById('vo-done-h').textContent, n: document.getElementById('vo-done-n').textContent,
+      text: document.getElementById('vo-done').textContent, rec: !!document.getElementById('vo-rec'),
+      home: document.getElementById('vo-home').textContent, again: document.getElementById('vo-again').textContent,
+      hh: Math.round(document.getElementById('vo-home').getBoundingClientRect().height), ah: Math.round(document.getElementById('vo-again').getBoundingClientRect().height),
+      seen: inView('vo-home') && inView('vo-again') && inView('vo-done-h'), side: document.documentElement.scrollWidth <= innerWidth + 1,
+      focus: document.activeElement && document.activeElement.id, sent: document.querySelectorAll('#vo-done .vo-dots i.sent').length };
+  }, inView.toString());
+  ok(done.calls === 0 && done.sent === 0, tag + 'twelve taps of Skip and Finish send nothing: umpSubmit called ' + done.calls + ' times');
+  ok(done.h === 'All done!' && done.n === 'No calls sent this session.' && /Every call gets a listen\./.test(done.text) && !done.rec && done.focus === 'vo-done-h',
+    tag + 'the end screen: "' + done.h + '", "' + done.n + '", every call gets a listen, the recorder gone');
+  ok(done.home === 'Back to home' && done.again === 'Record a line again' && done.hh >= 38 && done.ah >= 38 && done.seen && done.side,
+    tag + 'Back to home (' + done.hh + ' px) and Record a line again (' + done.ah + ' px) on screen, no sideways scroll');
+  await page.click('#vo-again');
+  await page.waitForSelector('#vo-rec', { timeout: 3000 });
+  const back = await page.evaluate(() => ({ n: document.getElementById('vo-n').textContent, line: document.getElementById('vo-line').textContent, prev: document.getElementById('vo-prev').disabled, open: !document.getElementById('sheet-voices').hidden }));
+  ok(back.n === 'Line 1 of 12' && back.line === 'Strike!' && back.prev && back.open, tag + 'Record a line again: line 1, "' + back.line + '", the sheet still open');
+  /* the last line's send */
+  await toLast();
+  await page.setInputFiles('#vo-file', { name: 'call.wav', mimeType: 'audio/wav', buffer: tinyWav(900) });
+  await page.waitForSelector('#vo-play', { timeout: 5000 });
+  if (!(await page.evaluate(() => document.getElementById('vo-consent').checked))) await page.check('#vo-consent');
+  await page.click('#vo-send');
+  await page.waitForSelector('#vo-done', { timeout: 5000 });
+  await page.waitForTimeout(250);
+  const sent = await page.evaluate(() => ({ calls: window.__calls, n: document.getElementById('vo-done-n').textContent, p: (document.getElementById('vo-pending') || {}).textContent || '',
+    dots: [...document.querySelectorAll('#vo-done .vo-dots i')].map((i) => i.classList.contains('sent') ? 1 : 0).join('') }));
+  ok(sent.calls === 1 && sent.n === 'You sent 1 call this session.' && /^\d+ calls? waits? for review\.$/.test(sent.p) && sent.dots === '000000000001',
+    tag + 'sending the last line reaches it: "' + sent.n + '", "' + sent.p + '", the 12th dot green');
+  await page.click('#vo-home');
+  await page.waitForSelector('#sheet-voices', { state: 'hidden', timeout: 3000 });
+  const home1 = await page.evaluate(() => ({ screen: document.body.dataset.screen || 's-home', main: !document.getElementById('h-main').hidden }));
+  ok(home1.screen === 's-home' && home1.main && (await nothingOpen(page)), tag + 'Back to home shuts the sheet, the home up');
+  /* from the result: Back to home leaves it for the home. Today's daily through the calls, then back to
+     the page (a load the page may already have begun, so the goto waits for whichever lands, as 19's walk) */
+  await page.evaluate(async () => {
+    const A = window.STD_API, S = window.STD_UI.state;
+    let st = await A.startOuting(S.scn.id, null, { mode: 'daily' });
+    for (let i = 0; st.status === 'live' && i < 90; i++) st = (await A.throwPitch(st.outingId, { type: S.scn.pitcher.arsenal[0].type, cell: 12 })).state;
+  });
+  await page.waitForTimeout(500);
+  await page.goto(BASE + '?mockEnd=door_shut&mockAuth=1', { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.waitForSelector('#d-see', { timeout: 60000 });
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on', { timeout: 10000 });
+  await openRow('#r-voice');
+  ok(await page.evaluate(() => document.getElementById('vo-n').textContent === 'Line 1 of 12'), tag + 'opened again after the end: line 1');
+  await toLast();
+  await page.click('#vo-finish');
+  await page.waitForSelector('#vo-done', { timeout: 3000 });
+  await page.click('#vo-home');
+  await page.waitForSelector('#sheet-voices', { state: 'hidden', timeout: 3000 });
+  await page.waitForFunction(() => document.body.dataset.screen === 's-home', null, { timeout: 3000 }).catch(() => {});
+  const home2 = await page.evaluate(() => ({ screen: document.body.dataset.screen, main: !document.getElementById('h-main').hidden }));
+  ok(home2.screen === 's-home' && home2.main && (await nothingOpen(page)), tag + 'from the result, Back to home goes to the home (' + home2.screen + ')');
+  ok(errors.length === 0, tag + 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+/* the review sheet's Person and Call filters (the owner, 2026-11-19), through the mock's three FICTIONAL
+   contributors (?mockVoices=1): both filters on every tab, together, kept across the tabs; a person's
+   rows in script order with how many of the 12 lines they have live; the role's own buttons kept */
+async function reviewFilters(w, h, theme, role) {
+  console.log(`\nthe review filters, ${w}x${h} ${theme}, ${role}`);
+  step('19 the review filters', 120);
+  const tag = '19 filters ' + w + 'x' + h + ' ' + role + ': ';
+  const { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockVoices=1&' + (role === 'owner' ? 'mockOwner=1' : 'mockTester=1'), { meterOff: true, theme });
+  await menuRow(page, 'settings');
+  await page.waitForSelector('#set-ump-review:not([hidden])', { timeout: 3000 });
+  await page.click('#set-ump-review');
+  await page.waitForSelector('#sheet-ump-review.on #vr-list .vr-row', { timeout: 3000 });
+  const read = () => page.evaluate(() => {
+    const opts = (id) => [...document.getElementById(id).options].map((o) => o.textContent);
+    const box = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return { h: Math.round(r.height), in: r.left >= 0 && r.right <= innerWidth }; };
+    const set = document.getElementById('vr-set');
+    return { person: opts('vr-person'), line: opts('vr-line'), pv: document.getElementById('vr-person').value, lv: document.getElementById('vr-line').value,
+      rows: [...document.querySelectorAll('#vr-body .vr-row')].map((r) => r.querySelector('.vr-h b').textContent),
+      who: [...document.querySelectorAll('#vr-body .vr-row .vr-h small:first-of-type')].map((r) => (/@(\w+)/.exec(r.textContent) || [])[1]),
+      acts: [...(document.querySelector('#vr-body .vr-row .vr-act') || { querySelectorAll: () => [] }).querySelectorAll('button')].map((b) => b.textContent).join(),
+      set: set ? set.querySelector('#vr-set-n').textContent : null, setText: set ? set.textContent : '', live: set ? set.querySelectorAll('.vo-dots i.sent').length : null,
+      empty: (document.getElementById('vr-empty') || {}).textContent || '', ps: box('vr-person'), ls: box('vr-line'), side: document.documentElement.scrollWidth <= innerWidth + 1 };
+  });
+  const pick = async (id, v) => { await page.selectOption('#' + id, v); await page.waitForTimeout(80); };
+  const tab = async (t) => { await page.click('#vr-body [data-vr-tab="' + t + '"]'); await page.waitForFunction((t) => document.querySelector('#vr-body [data-vr-tab="' + t + '"]').getAttribute('aria-selected') === 'true' && !/Loading\./.test(document.getElementById('vr-body').textContent), t, { timeout: 3000 }); await page.waitForTimeout(80); };
+  /* the owner's sheet opens on the shortlist while calls wait there (177); start from Waiting */
+  if (role === 'owner') ok(await page.evaluate(() => document.querySelector('#vr-body [data-vr-tab="shortlisted"]').getAttribute('aria-selected') === 'true'), tag + 'the owner opens on Shortlisted, as before');
+  await tab('pending');
+  let r = await read();
+  ok(r.pv === 'all' && r.lv === 'all' && JSON.stringify(r.person) === JSON.stringify(['All (9)', '@blue_ump (3)', '@mound_mike (2)', '@rookie_rae (4)']) && r.rows.length === 9,
+    tag + 'Waiting opens on All and All, each person with their count: ' + r.person.join(', '));
+  ok(r.line.length === 13 && r.line[0] === 'All' && r.line[1] === 'Strike!' && r.line[12] === 'That\'s a strike!', tag + 'Call: All, then the 12 lines in script order');
+  ok(r.ps.h >= 38 && r.ls.h >= 38 && r.ps.in && r.ls.in && r.side, tag + 'the two dropdowns side by side, ' + r.ps.h + ' px, inside the screen, no sideways scroll');
+  await pick('vr-person', 'u:rookie_rae');
+  r = await read();
+  ok(r.rows.join('|') === 'Strike!|Out!|Safe!|That\'s a strike!' && r.who.every((x) => x === 'rookie_rae'), tag + 'a person: their calls in script order (' + r.rows.join(', ') + ')');
+  ok(r.set === '0 of 12 lines live' && r.live === 0, tag + 'and how many lines they have live: "' + r.set + '"');
+  await pick('vr-line', 'strike');
+  r = await read();
+  ok(r.rows.join() === 'Strike!' && r.who.join() === 'rookie_rae', tag + 'Person and Call together: one row');
+  await pick('vr-person', 'all');
+  r = await read();
+  ok(r.pv === 'all' && r.lv === 'strike' && r.rows.length === 1 && r.rows[0] === 'Strike!', tag + 'a call alone: every "Strike!" waiting, from anyone (' + r.who.join(', ') + ')');
+  await pick('vr-line', 'foul');
+  r = await read();
+  ok(r.rows.join() === 'Foul ball!,Foul ball!' && r.who.sort().join() === 'blue_ump,mound_mike', tag + 'and "Foul ball!" from two people: ' + r.who.join(', '));
+  await pick('vr-line', 'all');
+  await pick('vr-person', 'u:mound_mike');
+  await page.waitForFunction(() => /of 12 lines live/.test((document.getElementById('vr-set-n') || {}).textContent || ''), null, { timeout: 3000 });
+  r = await read();
+  ok(r.set === '12 of 12 lines live' && r.live === 12 && /A full set\./.test(r.setText) && r.rows.join() === 'Ball!,Foul ball!', tag + 'mound_mike: "' + r.set + '", a full set, his two waiting in script order');
+  await tab('approved');
+  r = await read();
+  ok(r.pv === 'u:mound_mike' && r.rows.length === 12 && r.rows[0] === 'Strike!' && r.rows[11] === 'That\'s a strike!', tag + 'the filter holds on Live: his 12 live calls in script order');
+  ok(r.acts === (role === 'owner' ? 'Take it out,Reject' : ''), tag + 'Live keeps the role\'s buttons: "' + r.acts + '"');
+  await pick('vr-person', 'u:blue_ump');
+  r = await read();
+  ok(r.set === '7 of 12 lines live' && r.rows.length === 7, tag + 'blue_ump on Live: "' + r.set + '"');
+  await tab('shortlisted');
+  r = await read();
+  ok(r.rows.join() === 'Steee-rike!' && r.acts === (role === 'owner' ? 'Put in the game,Reject' : 'Reject'), tag + 'Shortlisted, blue_ump: ' + r.rows.join() + ', buttons ' + r.acts);
+  await tab('rejected');
+  r = await read();
+  ok(r.pv === 'u:blue_ump' && r.rows.length === 0 && r.empty === 'Nothing here for this filter.' && r.person.includes('@blue_ump (0)'), tag + 'Rejected, blue_ump kept with nothing here: "' + r.empty + '", still picked');
+  await pick('vr-person', 'u:rookie_rae');
+  r = await read();
+  ok(r.rows.join() === 'Ball four, take your base!' && /Audio deleted\./.test(await page.evaluate(() => document.querySelector('#vr-body .vr-row').textContent)), tag + 'Rejected: a person with no file left still filters by name');
+  await tab('pending');
+  await pick('vr-person', 'u:rookie_rae');
+  r = await read();
+  ok(r.acts === (role === 'owner' ? 'Put in the game,Reject' : 'Shortlist,Reject'), tag + 'Waiting keeps the role\'s buttons: ' + r.acts);
+  if (role === 'owner') {
+    await page.click('#vr-body .vr-row [data-vr="approved"]');
+    await page.waitForFunction(() => /^1 of 12 lines live$/.test((document.getElementById('vr-set-n') || {}).textContent || ''), null, { timeout: 3000 }).catch(() => {});
+    r = await read();
+    ok(r.set === '1 of 12 lines live' && r.rows.join('|') === 'Out!|Safe!|That\'s a strike!', tag + 'put one in the game under the filter: the live count moves ("' + r.set + '"), the filter holds');
+  }
+  ok(errors.length === 0, tag + 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
 /* in the open review sheet, on the Waiting tab with at least one row: Reject, Cancel, Reject, Yes */
 async function rejectWalk(page) {
   await page.evaluate(() => {
@@ -3707,6 +3961,112 @@ async function ownerShortlistWalk(w, h) {
   await ctx.close();
 }
 
+/* THE UNLOCK ROW (the owner, 2026-11-19): a small Diamond row, "Unlock the full game" over the name and the
+   catalog's price, the last item in the menu sheet (under account) and at the foot of the desk's drawer, for
+   anybody who is not Pro. Nothing opens it or opens from it by itself. Its whole row is the store's buy button
+   (pro.js data-pro-buy): signed out it asks to sign in, signed in it posts the checkout for Pro and keeps its
+   two lines through "opening checkout...". A Pro member never sees it. The menu sheet's three tiles read on at
+   most two lines each, the number over its label. STD_UNLOCK_SHOTS=dir saves the stills. */
+async function unlockWalk(w, h, theme) {
+  const tag = w + 'x' + h + ' ' + theme, desk = w >= 980, SLOT = desk ? '#d-pro' : '#menu-pro';
+  console.log('\nthe unlock row, ' + tag);
+  step(tag + ' 26 the unlock row', 200);
+  const price = '$' + (+(/'door-pro':\s*(\d+)/.exec(fs.readFileSync(path.join(ROOT, 'shut-the-door', 'pro.js'), 'utf8')) || [0, 0])[1] / 100).toFixed(2);
+  const still = async (page, name) => {
+    const dir = process.env.STD_UNLOCK_SHOTS || SHOTS;
+    if (!dir) return;
+    fs.mkdirSync(dir, { recursive: true });
+    await page.waitForTimeout(350);
+    const f = path.join(dir, 'unlock-' + name + '-' + w + 'x' + h + '-' + theme + '.png');
+    await page.screenshot({ path: f });
+    console.log('       still: ' + f);
+  };
+  const openMenu = async (page) => {
+    if (desk) { await page.click('#d-menu-b'); await page.waitForSelector('body.d-menu-on'); }
+    else { await page.click('#b-menu'); await page.waitForSelector('#sheet-menu.on'); }
+    await page.waitForTimeout(400);
+  };
+  const row = (page) => page.evaluate((q) => {
+    const slot = document.querySelector(q), r = slot && slot.querySelector('.mu-pro'), b = r && r.querySelector('[data-pro-buy]');
+    if (!r || !b) return null;
+    r.scrollIntoView({ block: 'nearest' });
+    const R = r.getBoundingClientRect(), hit = document.elementFromPoint(R.right - 24, R.top + R.height / 2);
+    /* the gem's own box (the svg and its wrapper) fully inside the row's box, centred on its height */
+    const G = r.querySelector('svg.plate').getBoundingClientRect(), GI = (r.querySelector('.mu-gi') || r.querySelector('svg.plate')).getBoundingClientRect();
+    const inside = (x) => x.width >= 30 && x.height >= 30 && x.left >= R.left && x.right <= R.right && x.top >= R.top && x.bottom <= R.bottom;
+    const gemBox = { l: Math.round(G.left - R.left), t: Math.round(G.top - R.top), w: Math.round(G.width), h: Math.round(G.height), mid: Math.round((G.top + G.bottom) / 2 - (R.top + R.bottom) / 2) };
+    const prev = slot.previousElementSibling;
+    return { t: b.textContent, sub: (r.querySelector('small') || {}).textContent, gem: !!r.querySelector('svg.plate'), h: Math.round(R.height), l: Math.round(R.left), rt: Math.round(R.right),
+      last: !slot.nextElementSibling, after: prev ? (prev.id || prev.className) : null, account: !!(prev && prev.querySelector('button:last-child[data-open="auth"]')),
+      whole: !!(hit && hit.closest('[data-pro-buy]') === b), named: b.getAttribute('data-pro-buy'),
+      gemIn: inside(G) && inside(GI) && Math.abs(gemBox.mid) <= 2, gemBox };
+  }, SLOT);
+
+  /* signed out, not Pro */
+  let { ctx, page, errors } = await modesPage(w, h, '?mockBoard=full', { theme });
+  await page.waitForSelector(SLOT + ':not([hidden]) .mu-pro [data-pro-buy]', { state: 'attached', timeout: 30000 });
+  await page.waitForTimeout(1500);
+  ok(await nothingOpen(page) && !(await page.evaluate(() => document.body.classList.contains('d-menu-on'))), '26 ' + tag + ': the row waits in the closed ' + (desk ? 'drawer' : 'menu sheet') + ', nothing opens by itself');
+  if (!desk) {
+    await openMenu(page);
+    const tiles = await page.evaluate(() => [...document.querySelectorAll('#menu-tiles .tl')].map((t) => { const b = t.querySelector('b'), s = t.querySelector('span'), lh = parseFloat(getComputedStyle(s).lineHeight);
+      return { l: s.textContent, lines: Math.round(s.getBoundingClientRect().height / lh), over: b.getBoundingClientRect().bottom <= s.getBoundingClientRect().top + 1, fits: s.scrollWidth <= t.clientWidth }; }));
+    ok(tiles.length === 3 && tiles.every((x) => x.lines <= 2 && x.over && x.fits) && tiles[0].l === 'doors shut in a row',
+      '26 ' + tag + ': the menu tiles read cleanly, each number over its label on at most two lines (' + JSON.stringify(tiles) + ')');
+    await page.evaluate(() => window.STD_MENUS.close(true));
+    await page.waitForTimeout(300);
+  }
+  await openMenu(page);
+  const R = await row(page);
+  ok(R && R.t === 'Unlock the full game' && R.sub === 'Shut The Door Pro · ' + price + ' a year' && R.gem && R.named === '',
+    '26 ' + tag + ': "Unlock the full game", the small Diamond gem, and the catalog\'s price under it (' + JSON.stringify(R) + ')');
+  ok(R && R.gemIn, '26 ' + tag + ': the gem sits fully inside the row, centred on its height (' + JSON.stringify(R && R.gemBox) + ')');
+  ok(R && R.last && (desk ? R.after === 'h-menu' : R.account), '26 ' + tag + ': the last item, ' + (desk ? 'under the drawer\'s menu' : 'under account'));
+  ok(R && R.h >= 38 && R.whole && (desk || (R.l >= 16 && R.rt <= w - 16)) && await noSideScroll(page), '26 ' + tag + ': the whole row is the tap, at least 38 px, inside the gutter, no sideways scroll');
+  if (!desk) await page.evaluate(() => { const s = document.querySelector('#sheet-menu .sh-in'); s.scrollTop = s.scrollHeight; });
+  await still(page, desk ? 'drawer' : 'sheet');
+  /* the tap anywhere on the row: signed out, sign in first */
+  await page.evaluate((q) => document.querySelector(q + ' .mu-pro').scrollIntoView({ block: 'nearest' }), SLOT);
+  const box = await page.locator(SLOT + ' .mu-pro').boundingBox();
+  await page.mouse.click(box.x + box.width - 24, box.y + box.height / 2);
+  await page.waitForTimeout(250);
+  ok(await page.evaluate(() => window.STD_MENUS.current() === 'sheet-auth' && !document.body.classList.contains('d-menu-on')),
+    '26 ' + tag + ': signed out, a tap on the row opens sign in' + (desk ? ' and the drawer goes' : '') + ', never a checkout');
+  ok(errors.length === 0, '26 ' + tag + ' signed out: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* signed in, not Pro: the tap posts the store's checkout for Pro (answered here as not on sale, so the page stays) */
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1', { theme }));
+  const posts = [];
+  await page.route('**/api/stripe/checkout-bundle', (route) => { posts.push(JSON.parse(route.request().postData() || '{}')); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"error":"stripe_not_configured"}' }); });
+  await page.waitForSelector(SLOT + ':not([hidden]) .mu-pro [data-pro-buy]', { state: 'attached', timeout: 30000 });
+  await page.waitForTimeout(800);
+  ok(await nothingOpen(page) && posts.length === 0, '26 ' + tag + ' signed in: nothing opens and no checkout starts by itself');
+  /* the mock account carries no session token (mock-api.js), and pro.js asks for one before it posts */
+  await page.evaluate(() => { window.STD_AUTH.token = () => 'mock-token'; });
+  await openMenu(page);
+  await page.click(SLOT + ' [data-pro-buy]');
+  await page.waitForFunction((q) => { const e = document.querySelector(q + ' [data-pro-err]'); return e && e.textContent.length > 0; }, SLOT, { timeout: 5000 });
+  const after = await page.evaluate((q) => { const r = document.querySelector(q + ' .mu-pro'); return { t: r.querySelector('[data-pro-buy]').textContent, sub: !!r.querySelector('small'), err: r.querySelector('[data-pro-err]').textContent }; }, SLOT);
+  ok(posts.length === 1 && posts[0].bundle === 'door-pro' && posts[0].return_path === '/shut-the-door/',
+    '26 ' + tag + ' signed in: a tap posts the store\'s checkout for Pro (' + JSON.stringify(posts) + ')');
+  ok(after.t === 'Unlock the full game' && after.sub && /isn't on sale yet/.test(after.err), '26 ' + tag + ' signed in: the row keeps its two lines and says the store\'s answer (' + JSON.stringify(after) + ')');
+  ok(errors.length === 0, '26 ' + tag + ' signed in: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* Pro: no row, anywhere */
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockAuth=1&mockEnt=pro', { theme }));
+  await page.waitForFunction(() => window.STD_PLATE && window.STD_PLATE.unlocked().includes('diamond'), null, { timeout: 30000 });
+  await page.evaluate(() => window.STD_MODES_UI.entitlements());
+  await page.waitForTimeout(800);
+  await openMenu(page);
+  const pro = await page.evaluate(() => ({ phone: document.getElementById('menu-pro').hidden && !document.querySelector('#sheet-menu [data-pro-buy]'),
+    drawer: !document.getElementById('d-drawer') || (document.getElementById('d-pro').hidden && !document.querySelector('#d-drawer [data-pro-buy]')) }));
+  ok(pro.phone && pro.drawer, '26 ' + tag + ': a Pro member sees no unlock row (' + JSON.stringify(pro) + ')');
+  ok(errors.length === 0, '26 ' + tag + ' Pro: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   /* STD_CLIPS=1: only the clips (19) at both sizes, for a local pass on them */
@@ -3723,8 +4083,12 @@ try {
   if (process.env.STD_DESK === '1') { await deskHome(1440, 900, 'dark'); await deskHome(1920, 1080, 'light'); throw 'quick'; }
   /* STD_CHAL=1: only custom challenges (25) at both sizes, light and dark */
   if (process.env.STD_CHAL === '1') { for (const t of ['light', 'dark']) { await challengesWalk(390, 844, t); await challengesWalk(1440, 900, t); } throw 'quick'; }
-  /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667 */
-  if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); throw 'quick'; }
+  /* STD_UNLOCK=1: only the menu's unlock row (26), the phone sheet in both themes and the desk's drawer */
+  if (process.env.STD_UNLOCK === '1') { await unlockWalk(390, 844, 'dark'); await unlockWalk(390, 844, 'light'); await unlockWalk(375, 667, 'dark'); await unlockWalk(1440, 900, 'dark'); throw 'quick'; }
+    /* STD_VOICE=1: only the voice of the ump (19) at 390x844 and 375x667, and its end screen */
+  if (process.env.STD_VOICE === '1') { await voicesWalk(390, 844); await voicesWalk(375, 667); await voicesDone(390, 844, 'dark'); await voicesDone(1440, 900, 'light'); await reviewFilters(390, 844, 'dark', 'owner'); await reviewFilters(1440, 900, 'light', 'tester'); throw 'quick'; }
+  /* STD_SIZES=1: only every window size (16), the meter panel's edges with it */
+  if (process.env.STD_SIZES === '1') { await sizeSweep(); throw 'quick'; }
   /* STD_FIRST=1: stop after the first full run (390x844 light: steps 1 to 11) and 1b, for a local pass on the daily's steps */
   if (process.env.STD_FIRST === '1') { await run(390, 844, 'light'); await bootStuck(390, 844); throw 'quick'; }
   if (MODES) { await run(390, 844, 'light'); await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }

@@ -9,10 +9,10 @@
  * read from the link. A link that does not decode is "That link didn't
  * work." and a way home, never a crash. The page clears the hash when the
  * player leaves, so a reload does not trap them in it. */
-import { encode, decode, resultOf, challengeScenario, MAX_LINK } from './challenge.js?b=d720f93be5';
-import { SCHEME_NAMES, isZone } from './scenario.js?b=d720f93be5';
-import { adder, summaryOf } from './cards.js?b=d720f93be5';
-import { track } from './analytics.js?b=d720f93be5';
+import { encode, decode, resultOf, challengeScenario, MAX_LINK } from './challenge.js?b=ddf83eb21b';
+import { SCHEME_NAMES, isZone } from './scenario.js?b=ddf83eb21b';
+import { adder, summaryOf } from './cards.js?b=ddf83eb21b';
+import { track } from './analytics.js?b=ddf83eb21b';
 
 const SET_NAMES = { box: 'Box', horns: 'Horns', high14: '1-4 high', out41: 'Spread' };
 export const BEAT_TEXT = 'I drew this one. Beat it.';

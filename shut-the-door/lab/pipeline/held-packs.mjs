@@ -38,12 +38,23 @@ export const CHANCE = 2;
 export const packId = (f) => String(f).replace(/\.json$/, '');
 export const isFirstThirty = (f) => OLD.has(packId(f));
 
-/** inplayCases' cases in the held order: the first thirty's as main had them (so their case numbers, and
-    a stride's picks of them, are main's), then the later packs' in theirs. */
-export const heldOrder = (cases) => [...cases.filter((c) => isFirstThirty(c.pack)), ...cases.filter((c) => !isFirstThirty(c.pack))];
+/** The packs that came in together on 2026-11-18 (supabase/179), the second wave. */
+export const THE_TWELVE = [
+  'std-2015-melancon-chc', 'std-2016-britton-tor', 'std-2018-davis-wsh', 'std-2019-nlwc-hudson', 'std-2019-rogers-det',
+  'std-2020-alwc1-colome', 'std-2020-nlwc2-kintzler', 'std-2024-alwc2-vest', 'std-2024-helsley-sf', 'std-2025-alcs1-munoz',
+  'std-2025-alcs7-hoffman', 'std-2025-smith-det',
+];
+const WAVE2 = new Set(THE_TWELVE);
+/** inplayCases' cases in the held order: by the wave each pack came in with, the first thirty, then the twelve,
+    then any later pack (the Reds', 2026-11-19), each wave's in file name order. A pack added later goes
+    after every case already held, so the every 20th case of the earlier waves (check-jolt) is the same play
+    it was when their ceilings were measured. */
+const wave = (f) => (isFirstThirty(f) ? 0 : WAVE2.has(packId(f)) ? 1 : 2);
+export const heldOrder = (cases) => [0, 1, 2].flatMap((w) => cases.filter((c) => wave(c.pack) === w));
 
 const FILE = fileURLToPath(new URL('./pack-ceilings.json', import.meta.url));
-/** { check: { plays: { pack: n }, ceiling: { pack: { metric: n } } } } */
+/** { check: { plays: { pack: n }, ceiling: { pack: { metric: n } }, guard: { metric: { pack, plays, of } } } }:
+    guard, the rate guard's bar, each metric's worst old pack as main measured it (2026-11-18) */
 export const PACK_CEILINGS = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : {};
 
 /**
@@ -76,9 +87,14 @@ export function holdByPack({ check, count, plays, metrics, skip = () => false })
   // metric (a run over its ceiling has already failed above, and a run at or under it is at or under its
   // rate), with room for chance: at most the worst rate times his plays, rounded up, plus CHANCE plays (the
   // owner, 2026-11-18). A metric none of the first thirty ever had: one play is allowed, and listed
+  // (the worst of the first thirty as main measured them, 2026-11-18: rec.guard, kept as it was when their own
+  // ceilings came down with the slow roller's fix, 2026-11-19. A pack's ceilings only come down, and a guard
+  // that came down with them would hold a later pack to a bar the old packs never met when it came in.
+  // Without rec.guard, the first thirty's ceilings as they are)
   const worst = {}, worstOf = {};
   for (const m of metrics) {
     worst[m] = 0; worstOf[m] = null;
+    if (rec.guard) { const q = rec.guard[m]; if (q) { worst[m] = q.plays / q.of; worstOf[m] = q.pack; } continue; }
     for (const p of FIRST_THIRTY) {
       const n = rec.plays[p] || 0, c = (rec.ceiling[p] && rec.ceiling[p][m]) || 0;
       if (n && c / n > worst[m]) { worst[m] = c / n; worstOf[m] = p; }

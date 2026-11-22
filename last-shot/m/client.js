@@ -32,26 +32,26 @@
  * ACCOUNT PLUG POINTS still out of scope:
  *   TODO(results): save a free play or ladder possession through a gated API,
  *     the way the daily's run is filed (daily-ui.js). */
-import { SCENARIO as SC, isZone } from './scenario.js?b=d720f93be5';
-import { simulate } from './sim.js?b=d720f93be5';
-import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js?b=d720f93be5';
-import { STARTERS, starterById, starterPlay } from './starters.js?b=d720f93be5';
-import { drawPlay } from './diagram.js?b=d720f93be5';
-import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js?b=d720f93be5';
+import { SCENARIO as SC, isZone } from './scenario.js?b=ddf83eb21b';
+import { simulate } from './sim.js?b=ddf83eb21b';
+import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js?b=ddf83eb21b';
+import { STARTERS, starterById, starterPlay } from './starters.js?b=ddf83eb21b';
+import { drawPlay } from './diagram.js?b=ddf83eb21b';
+import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js?b=ddf83eb21b';
 import { loadLadder, saveLadder, renderLadder, isOpen, nextOf, starsIn, maxStars, clockLine, scoutLine, starText, cleanPlay as cleanStored,
-  keepPlay, markDay, streakOf, startLadderSync, flushLadder, ladderWrites } from './ladder-ui.js?b=d720f93be5';
-import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js?b=d720f93be5';
-import { challengeOpt, beats } from './challenge.js?b=d720f93be5';
-import * as D from './daily-ui.js?b=d720f93be5';
-import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sitLine, scoutOf, renderChallenge, renderBadLink } from './beat-ui.js?b=d720f93be5';
-import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js?b=d720f93be5';
-import { createBoard } from './board.js?b=d720f93be5';
-import { mountBooks } from './book-ui.js?b=d720f93be5';
-import { createCourt, between, warm } from './court.js?b=d720f93be5';
-import { shareText, dailyShareText } from './share.js?b=d720f93be5';
-import { freshSeed } from './rng.js?b=d720f93be5';
-import { createSound } from './sound.js?b=d720f93be5';
-import { track, trackOpen, flushNow } from './analytics.js?b=d720f93be5';
+  keepPlay, markDay, streakOf, startLadderSync, flushLadder, ladderWrites } from './ladder-ui.js?b=ddf83eb21b';
+import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js?b=ddf83eb21b';
+import { challengeOpt, beats } from './challenge.js?b=ddf83eb21b';
+import * as D from './daily-ui.js?b=ddf83eb21b';
+import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sitLine, scoutOf, renderChallenge, renderBadLink } from './beat-ui.js?b=ddf83eb21b';
+import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js?b=ddf83eb21b';
+import { createBoard } from './board.js?b=ddf83eb21b';
+import { mountBooks } from './book-ui.js?b=ddf83eb21b';
+import { createRunView, between, warm } from './run-view.js?b=ddf83eb21b';
+import { shareText, dailyShareText } from './share.js?b=ddf83eb21b';
+import { freshSeed } from './rng.js?b=ddf83eb21b';
+import { createSound } from './sound.js?b=ddf83eb21b';
+import { track, trackOpen, flushNow } from './analytics.js?b=ddf83eb21b';
 
 const $ = id => document.getElementById(id);
 const KEY = 'last_shot_play_v1', SPEED_KEY = 'last_shot_speed';
@@ -171,7 +171,7 @@ speedSync(); muteSync();
    bars step aside and the court takes the stage (play.html, .app.running). */
 const APP = document.querySelector('.app');
 function clipTools(on) { APP.classList.toggle('running', !on); }
-const court = createCourt($('court'));
+const court = createRunView($('court'));
 
 document.querySelectorAll('.tool').forEach(b => b.addEventListener('click', () => {
   const t = board.setTool(b.dataset.tool);
@@ -355,7 +355,7 @@ function playFrame() {
   if (!pv.play.steps.length) return;
   const res = simulate(pv.sc, pv.play, freshSeed(), { preview: true });
   $('board').hidden = true; $('court').hidden = false;
-  clipTools(false); court.camStart(res.frames);
+  clipTools(false); court.camStart(res.frames, { res, play: pv.play });
   const F = res.frames, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let g = F[0].t, i = 0, prev = performance.now(), hold = reduce ? 0 : 0.3, after = 0.5;
   const token = live = { preview: true, res };
@@ -455,7 +455,7 @@ function run(seed, opt, pl) {
   countRunStart(res);
   if (mode === 'edit' && edit) books.countRun(edit, res);
   $('board').hidden = true; $('court').hidden = false;
-  clipTools(false); court.camStart(res.frames);
+  clipTools(false); court.camStart(res.frames, { res, play: runPlay });
   $('sheet').classList.remove('on', 'peek'); $('vGame').classList.remove('lres'); clearStars(); $('hint').textContent = '';
   banner(null); cutUi(null); $('clock').classList.remove('zero'); punch(null);
   const reduce = reduced();
@@ -556,7 +556,7 @@ function run(seed, opt, pl) {
       if (live.phase === 'cut' && c.w >= T3) toEnd();
     } else {
       if (!fr.h) live.spin += dt * 9;
-      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true, focus: shotFrom });
+      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true, focus: shotFrom, hold: live.phase === 'hold' });
     }
     if (live.phase === 'play' || live.phase === 'after') {
       while (live.shown < res.events.length && (res.events[live.shown].t >= live.g || live.phase === 'after')) {
@@ -1262,7 +1262,7 @@ loadToday();
 window.addEventListener('hashchange', () => { if (readHash(location.hash)) fromHash(); });
 board.reset();
 $('hint').textContent = defaultHint();
-/* Trace the players in the background while the coach draws (court.js). */
+/* Build the court's floor in the background while the coach draws (run-view.js). */
 warm();
 /* The ladder's account copy, once the sign in has said who this is: a merge
    that brings stars or plays in shows at once. The write interval can be

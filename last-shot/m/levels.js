@@ -13,8 +13,8 @@
  * keeps the same rule: that is what makes 4.0 left hard.
  *
  * Every level is checked winnable by test/levels.test.mjs. */
-import { SCENARIO } from './scenario.js?b=d720f93be5';
-import { scenarioFor } from './playbook.js?b=d720f93be5';
+import { SCENARIO } from './scenario.js?b=ddf83eb21b';
+import { scenarioFor } from './playbook.js?b=ddf83eb21b';
 
 export const LOOK = 0.5;
 export const CLUTCH = 3.0;

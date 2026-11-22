@@ -15,11 +15,11 @@
  *
  * Score: a win is 1000, plus 100 a star, plus the shot's make chance in
  * percent (the look, which also breaks ties). A loss is the look alone. */
-import { SCENARIO } from './scenario.js?b=d720f93be5';
-import { simulate } from './sim.js?b=d720f93be5';
-import { problems, scenarioFor, IDS } from './playbook.js?b=d720f93be5';
-import { SETS, starsOf } from './levels.js?b=d720f93be5';
-import { SCHEME_NAMES } from './scenario.js?b=d720f93be5';
+import { SCENARIO } from './scenario.js?b=ddf83eb21b';
+import { simulate } from './sim.js?b=ddf83eb21b';
+import { problems, scenarioFor, IDS } from './playbook.js?b=ddf83eb21b';
+import { SETS, starsOf } from './levels.js?b=ddf83eb21b';
+import { SCHEME_NAMES } from './scenario.js?b=ddf83eb21b';
 
 export const DAILY_VERSION = 1;
 /* A run cannot be filed faster than this, in sim frames at 60 Hz (the Lab's
