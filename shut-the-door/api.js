@@ -86,7 +86,7 @@
   const CHALLENGE_KEY = 'std_challenges_v1'; // custom challenges played here: {codes: {code: {calls, result, submitted, by}}}
   /* data/matchups.json (matchups.js --index): the pitchers, the lineups and every built pair's sha.
      A rebuilt index bumps this (the edit, the bump and the record, in one commit). */
-  const MATCHUPS_V = 1;
+  const MATCHUPS_V = 2;
   const SITE = 'https://runthe.gg/shut-the-door/';
   const SERVER_WAIT_MS = 4000;              // the page never waits longer than this on the account
   const BASE = 'data/';
