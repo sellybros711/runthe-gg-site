@@ -31,6 +31,15 @@ node scripts/qa/run.mjs --game hoops --tier full     one game, every check
 find out whether `main` fails the same way, and root-cause it before calling it anything. "Flaky" is
 not a cause.
 
+## Scheduled workflows (CI health)
+
+`ci-health.yml` reads every scheduled workflow four times a day and keeps one issue, "CI health:
+scheduled jobs failing", open while any is red (`scripts/qa/ci-health.mjs`, owners in
+`.github/ci-owners.json`). On every run, read that issue first. For each red job: confirm the cause
+from its log, file or update its note in `qa/issues/`, and hand it to the owning agent's chat the
+same day. Only a question that needs the owner's decision goes to the owner, worded exactly. Nothing
+stays red for a day without an owner working on it.
+
 ## What you hand back
 
 - One note per distinct issue in the vault's `qa/issues/`, from `_templates/qa-report.md`, or an
