@@ -60,7 +60,9 @@ async function run(name, viewport, mobile) {
 
   // home: Play, then the Ladder with its stars, then My Playbooks
   const hp = await page.locator('#hPlay').boundingBox(), hl = await page.locator('#hLadder').boundingBox(), hb = await page.locator('#hBooks').boundingBox();
-  ok(hp.y < hl.y && hl.y < hb.y, 'home has the Ladder between Play and My Playbooks');
+  /* reading order: a line above, or on the same line (desktop puts the Ladder and My Playbooks in one row) and to the left */
+  const before = (a, b) => a.y < b.y - 4 || (Math.abs(a.y - b.y) <= 4 && a.x < b.x);
+  ok(before(hp, hl) && before(hl, hb), 'home has the Ladder between Play and My Playbooks');
   ok((await page.textContent('#hLadderStars')) === '0 of 72 stars', 'the Ladder card counts the stars: ' + await page.textContent('#hLadderStars'));
   ok((await L(() => document.querySelectorAll('.sheet.on, .fsheet.on').length)) === 0, 'no guide opens by itself');
   await shot('1-home');

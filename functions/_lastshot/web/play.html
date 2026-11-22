@@ -65,12 +65,6 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
 /* the screens: home, the clipboard (game or a playbook play), the playbooks */
 .view{flex:1;min-height:0;display:flex;flex-direction:column}
 .scroll{overflow:auto;-webkit-overflow-scrolling:touch;padding:6px 14px 24px}
-.home{display:flex;flex-direction:column;gap:12px;padding:10px 14px 20px;overflow:auto}
-.hcard{display:block;width:100%;text-align:left;border:1px solid var(--edge);background:var(--card);border-radius:18px;padding:16px;box-shadow:0 8px 20px -14px rgba(0,0,0,.35)}
-.hcard b{display:block;font-family:'Russo One','Outfit',sans-serif;font-size:22px;font-weight:400}
-.hcard span{display:block;color:var(--dim);font-size:14px;margin-top:4px}
-#hHow{flex:none;align-self:flex-start}
-.hcard.game{background:#1d2129;color:#fff;border-color:#1d2129}.hcard.game span{color:#c9ced8}.hcard.game b{color:#ffd23f}
 .frames{display:flex;gap:6px;padding:4px 10px 2px;overflow-x:auto;align-items:stretch}
 .fr{flex:none;min-width:56px;min-height:44px;border-radius:10px;border:2px solid var(--edge);background:var(--board);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--dim)}
 .fr b{font-family:'Outfit',sans-serif;font-size:16px;color:var(--marker)}
@@ -176,12 +170,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 #bPlays.pulse{animation:glow 1.5s ease-in-out infinite}
 @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,210,63,.7)}50%{box-shadow:0 0 0 8px rgba(255,210,63,0)}}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,176,125,.55)}50%{box-shadow:0 0 0 9px rgba(34,176,125,0);transform:scale(1.03)}}
-.hcard.game.big{padding:26px 18px}.hcard.game.big b{font-size:44px;line-height:1}.hcard.game.big span{font-size:16px;margin-top:8px}
-.hcard.small{padding:12px 16px}.hcard.small b{font-size:17px}.hcard.small span{font-size:13px}
-/* the ladder (Phase 2): the home card, the screen of levels, the level bar, the stars card */
-.hcard.ladder{background:linear-gradient(180deg,#fff7e6 0%,#fff 100%);border-color:#f0d9a8}
-.hcard.ladder b{color:#8a5a00}
-.hcard.ladder .lstar{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--ink);margin-top:4px}
+/* the ladder (Phase 2): the screen of levels, the level bar, the stars card */
 .lad{padding:6px 14px 28px}
 .lhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .lhead h2{margin:4px 0;font-family:'Russo One','Outfit',sans-serif;font-weight:400;font-size:26px}
@@ -237,19 +226,8 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:inherit}
 .confetti i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:fall 1.9s ease-in both}
 @keyframes fall{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx,0),420px) rotate(540deg)}}
-/* the Daily (Phase 2): the home card, the day bar with Take your shot and its confirm, the card's board */
-.hcard.daily{background:linear-gradient(180deg,#22324d 0%,#1d2129 100%);color:#fff;border-color:#22324d;position:relative}
-.hcard.daily .dtop{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.hcard.daily b{font-size:20px;color:#fff}
-.hcard.daily .dcount{flex:none;display:inline;margin:0;font-size:12px;font-weight:700;color:#9fb0c8;font-variant-numeric:tabular-nums}
-.hcard.game.first{outline:3px solid #ffd23f;outline-offset:2px}
-.hcard.game.first b::after{content:'Start here';margin-left:8px;font-size:12px;font-weight:800;color:#1b1b1b;background:#ffd23f;border-radius:999px;padding:2px 8px;vertical-align:middle}
+/* the Daily (Phase 2): the day bar with Take your shot and its confirm, the card's board */
 .btn.solo{flex:0 0 auto;align-self:flex-start;min-height:44px}
-.hcard.daily #hDailyTitle{color:#ffd23f;font-weight:800;font-size:16px}
-.hcard.daily .dstreak{display:table;margin-top:8px;font-size:13px;font-weight:800;color:#1d2129;background:#ffd23f;border-radius:999px;padding:2px 10px}
-.hcard.daily .dsq{font-size:20px;letter-spacing:2px;margin-top:6px;color:#fff}
-.hcard.daily .dgo{display:inline-block;margin-top:10px;background:var(--go);color:#fff;font-weight:800;font-size:15px;border-radius:999px;padding:7px 18px}
-.hcard.daily.done .dgo{background:#fff;color:#1d2129}
 .daybar{display:flex;flex-direction:column;gap:5px;margin:0 10px 4px;padding:6px 10px;border-radius:12px;background:#1d2129;color:#fff}
 .daybar .lrow{display:flex;align-items:center;gap:8px;min-width:0}
 .daybar .lid{font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#1d2129;background:#ffd23f;border-radius:8px;padding:2px 7px}
@@ -317,7 +295,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
    was. The marker font falls back to a heavy system face when fonts are blocked. */
 :root{--mk:'Permanent Marker','Marker Felt','Segoe Print','Bradley Hand',system-ui,sans-serif;--wet:#1b7a55;--paper:#fdfcf7;--rulel:rgba(34,50,77,.10);--board1:#b98450;--board2:#9c6a3a}
 .mk,.cboard .verdict,.cboard .btn.go,.sbook b,.sbook .sot,.app:not(.running) .hint{font-family:var(--mk);font-weight:800;font-synthesis:none}
-.app:not(.running) .stage,.tray,.cboard{background-color:var(--board1);
+.app:not(.running) .stage,.tray,.cboard,.hboard{background-color:var(--board1);
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .14 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
    repeating-linear-gradient(92deg,rgba(255,255,255,.04) 0 2px,rgba(0,0,0,.03) 2px 5px,transparent 5px 11px),
    linear-gradient(180deg,var(--board1),var(--board2));
@@ -331,6 +309,104 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
   border:5px solid #b4b9c0;border-bottom:0;box-shadow:inset 0 1px 0 #fff,0 -1px 0 #8a9098}
 .clip .rivet{position:absolute;bottom:8px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#a3a9b1 60%,#6f757d)}
 .clip .rivet.l{left:16px}.clip .rivet.r{right:16px}
+/* HOME IS THE PRACTICE PLAN (2026-11-22, as the owner approved it): a sheet on the clipboard,
+   numbered 1 to 4 in marker. Play is line 1 for everyone. The Daily is an index card taped on.
+   The hardboard, the .clip and var(--mk) are the result card's own (above). Desktop hangs the
+   board on the gym wall (body.athome, set by show() in client.js while home is up). */
+#vHome{flex:1;min-height:0;overflow:auto;padding:14px 6px 8px;display:flex;flex-direction:column}
+#vHome .hboard{position:relative;flex:1 0 auto;border-radius:20px;padding:22px 8px 8px;display:flex;flex-direction:column}
+#vHome .hboard>.clip{top:-12px}
+#vHome .plan{position:relative;flex:1 0 auto;border-radius:3px;padding:18px 10px 12px 40px;
+  background-color:var(--paper);background-image:linear-gradient(90deg,transparent 0 29px,rgba(224,83,61,.38) 29px 30px,transparent 30px),repeating-linear-gradient(180deg,transparent 0 23px,var(--rulel) 23px 24px);
+  box-shadow:0 2px 0 rgba(0,0,0,.12),0 4px 10px rgba(0,0,0,.18)}
+#vHome .phead{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin:0 0 6px -30px;padding-bottom:4px;border-bottom:2px solid var(--marker);min-height:30px}
+#vHome .phead span{font:700 10px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;color:var(--marker)}
+#vHome .pgrid{display:flex;flex-direction:column}
+#vHome .entry{position:relative;display:block;width:100%;min-height:44px;text-align:left;background:none;border:0;border-radius:0;margin:0;padding:8px 2px 10px 0;color:var(--ink);touch-action:manipulation}
+#vHome .entry + .entry{border-top:1.5px dashed rgba(34,50,77,.28)}
+#vHome .num{position:absolute;left:-36px;top:9px;width:24px;height:24px;border-radius:50%;border:2px solid var(--marker);display:grid;place-items:center;font-family:var(--mk);font-weight:800;font-synthesis:none;font-size:13px;line-height:1;color:var(--marker);transform:rotate(-6deg)}
+#vHome .entry .t{display:block;font-family:var(--mk);font-weight:800;font-synthesis:none;font-size:23px;line-height:1.1;color:var(--marker)}
+#vHome .entry .d{display:block;font-size:14px;line-height:1.35;font-weight:600;color:#3d4350;margin-top:3px}
+/* Play: line 1, the biggest marker on the sheet. Start here only for a new player (.first) */
+#vHome .play .t{display:inline-block;font-size:56px;line-height:1;color:var(--wet);transform:rotate(-2deg);position:relative;padding-bottom:4px}
+#vHome .play .t::after{content:'';position:absolute;left:-2px;right:-4px;bottom:-6px;height:10px;background:no-repeat center/100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 C 40 2, 90 10, 140 5 S 190 4, 198 7' fill='none' stroke='%231b7a55' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E")}
+#vHome .play .d{font-size:17px;color:var(--ink);margin-top:10px}
+#vHome .start{display:none;vertical-align:10px;margin-left:12px;font:800 13px/1 'Outfit',sans-serif;color:#1b1b1b;padding:5px 9px;transform:rotate(3deg);
+  background:linear-gradient(100deg,rgba(255,210,63,0) 0 3%,rgba(255,210,63,.95) 6% 94%,rgba(255,210,63,0) 97%)}
+#vHome .play.first .start{display:inline-block}
+#vHome .doodle{display:none}
+/* the Daily: an index card taped on. Play or Result sits on its bottom row */
+#vHome .daily{margin:6px -2px 8px -4px;padding:12px 12px 11px;background:#fff;border-radius:2px;transform:rotate(-1deg);
+  box-shadow:0 1px 0 rgba(0,0,0,.08),0 6px 12px -6px rgba(0,0,0,.35);
+  background-image:linear-gradient(180deg,transparent 0 37px,rgba(224,83,61,.5) 37px 38px,transparent 38px),repeating-linear-gradient(180deg,transparent 0 22px,rgba(80,120,190,.16) 22px 23px);background-position:0 0,0 15px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:center}
+#vHome .entry.daily + .entry,#vHome .entry + .entry.daily{border-top:0}
+#vHome .daily::before{content:'';position:absolute;top:-10px;left:50%;width:80px;height:20px;transform:translateX(-50%) rotate(2deg);background:rgba(240,232,200,.8);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+#vHome .daily .num{left:-34px}
+#vHome .daily .t{grid-column:1/-1;font-size:19px;line-height:24px;color:var(--ink);margin-bottom:8px}
+#vHome .dline{grid-column:1/-1;display:block;font:800 15px/1.25 'Outfit',sans-serif;color:var(--ink)}
+#vHome .dsq{font-size:17px;letter-spacing:2px;margin-left:4px;vertical-align:-1px}
+#vHome .dfoot{grid-column:1;grid-row:3;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:6px}
+#vHome .dcount{font-size:12px;font-weight:700;color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+#vHome .dstreak{font:800 12.5px/1 'DM Sans',sans-serif;color:#1d2129;padding:5px 7px;border-radius:0;white-space:nowrap;transform:rotate(-1deg);
+  background:linear-gradient(100deg,rgba(255,210,63,0) 0 2%,rgba(255,210,63,.95) 5% 95%,rgba(255,210,63,0) 98%)}
+#vHome .dgo{grid-column:2;grid-row:3;align-self:end;min-height:46px;min-width:76px;display:grid;place-items:center;padding:0 14px;background:var(--go);color:#fff;font-family:var(--mk);font-weight:800;font-synthesis:none;font-size:17px;
+  box-shadow:0 3px 0 #0e5c40;border-radius:255px 14px 225px 14px/14px 225px 14px 255px;text-shadow:0 1px 0 rgba(0,0,0,.2)}
+#vHome .done .dgo{background:transparent;color:var(--marker);border:2.5px solid var(--marker);box-shadow:none;text-shadow:none;border-radius:14px 225px 14px 255px/255px 14px 225px 14px}
+#vHome .lower{border-top:1.5px dashed rgba(34,50,77,.28)}
+#vHome .lstar{display:block;font:800 15px/1.2 'Outfit',sans-serif;color:var(--ink);margin-top:3px}
+/* How it works: a sticky note on the sheet's top corner (phone) or beside the row (desktop) */
+#vHome .sticky{position:absolute;right:6px;top:2px;z-index:4;min-width:96px;min-height:48px;border:0;border-radius:0;padding:8px 10px 8px;text-align:left;background:#ffe877;transform:rotate(3deg);
+  box-shadow:0 8px 12px -7px rgba(0,0,0,.5);font-family:var(--mk);font-weight:800;font-synthesis:none;font-size:15px;line-height:1.05;color:var(--marker);touch-action:manipulation}
+#vHome .sticky::after{content:'';position:absolute;left:0;right:0;top:0;height:10px;background:rgba(0,0,0,.05)}
+/* a phone below 700 tall: the plan tightens so all four lines show before a scroll */
+@media (max-height:700px){
+  #vHome{padding-top:12px}#vHome .hboard{padding-top:18px}#vHome .plan{padding-top:12px;background-size:auto,auto 22px}
+  #vHome .phead{min-height:24px;margin-bottom:2px}
+  #vHome .entry{padding:6px 2px 8px 0}#vHome .num{top:7px}
+  #vHome .daily{padding:10px 10px 9px;margin:4px -2px 6px -4px}#vHome .daily .t{font-size:18px;margin-bottom:6px}
+  #vHome .entry .t{font-size:21px}#vHome .entry .d{font-size:13.5px;line-height:1.3}
+  #vHome .play .t{font-size:42px}#vHome .play .d{font-size:14.5px;margin-top:6px;line-height:1.3}
+}
+/* DESKTOP: the clipboard on the gym wall, capped and centred, two rows */
+@media (min-width:900px){
+  body.athome{background-color:#23262d;
+    background-image:radial-gradient(ellipse 70% 60% at 50% 38%,rgba(255,230,190,.10),rgba(0,0,0,0) 70%),
+      linear-gradient(180deg,rgba(0,0,0,0) 0 62%,#a8622a 62% 64.5%,#1d2129 64.5% 66%,rgba(0,0,0,0) 66%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='112'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='.22' stroke-width='3'%3E%3Cpath d='M0 1.5H240M0 57.5H240M1.5 0V56M121.5 0V56M61.5 56V112M181.5 56V112'/%3E%3C/g%3E%3C/svg%3E"),
+      linear-gradient(180deg,#2a2e36,#1b1e24)}
+  body.athome .app{left:24px;right:24px}
+  body.athome .top{margin:16px 0 0;padding:8px 14px 8px 8px}body.athome .top h1{font-size:28px}body.athome .top .sub{font-size:14px}
+  #vHome{padding:30px 0 20px}
+  #vHome .hboard{flex:1 1 auto;max-height:860px;border-radius:26px;padding:34px 18px 18px}
+  #vHome .hboard>.clip{top:-16px;width:180px;height:46px}#vHome .hboard>.clip .plate{height:32px}#vHome .hboard>.clip .lever{left:40px;right:40px;height:24px}
+  #vHome .plan{display:flex;flex-direction:column;padding:24px 26px 22px 64px;background-image:linear-gradient(90deg,transparent 0 45px,rgba(224,83,61,.38) 45px 46px,transparent 46px),repeating-linear-gradient(180deg,transparent 0 27px,var(--rulel) 27px 28px)}
+  #vHome .phead{margin:0 0 14px -38px}#vHome .phead span{font-size:11px}
+  #vHome .pgrid{flex:1;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);grid-template-areas:"play daily" "lower lower";grid-template-rows:1fr auto;gap:18px 34px}
+  #vHome .entry + .entry{border-top:0}
+  #vHome .num{position:relative;left:auto;top:auto;display:inline-grid;vertical-align:middle;margin:0 12px 0 0;width:30px;height:30px;font-size:16px}
+  #vHome .play{grid-area:play;padding:12px 0 6px;min-height:250px;display:flex;flex-direction:column;justify-content:center}
+  #vHome .play .t{font-size:124px;line-height:.95}
+  #vHome .start{font-size:16px;padding:7px 12px;vertical-align:40px;margin-left:18px}
+  #vHome .play .d{font-size:23px;line-height:1.35;margin-top:26px;max-width:24ch}
+  #vHome .playhead{display:flex;align-items:center}
+  #vHome .doodle{display:block;position:absolute;right:0;top:56%;transform:translateY(-50%);width:200px;height:142px;opacity:.7;pointer-events:none}
+  #vHome .daily{grid-area:daily;align-self:center;margin:0;padding:24px 22px 22px;transform:rotate(1.4deg);
+    background-image:linear-gradient(180deg,transparent 0 64px,rgba(224,83,61,.5) 64px 65px,transparent 65px),repeating-linear-gradient(180deg,transparent 0 32px,rgba(80,120,190,.16) 32px 33px);background-position:0 0,0 31px}
+  #vHome .daily .num{position:absolute;left:-46px;top:28px;margin:0}
+  #vHome .daily .t{font-size:32px;line-height:40px;margin-bottom:18px}
+  #vHome .dline{font-size:23px;line-height:1.3}
+  #vHome .dsq{display:block;margin:6px 0 0;font-size:24px}
+  #vHome .dfoot{margin-top:18px;flex-direction:column;align-items:flex-start;gap:8px}#vHome .dcount{font-size:14px}#vHome .dstreak{font-size:14px;padding:6px 9px}
+  #vHome .dgo{min-height:56px;min-width:120px;font-size:23px}
+  #vHome .lower{grid-area:lower;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 170px;gap:34px;align-items:start;padding-top:8px}
+  #vHome .lower .entry{padding:10px 0 4px;min-height:118px}
+  #vHome .lower .entry:nth-child(2){padding-left:26px;border-left:1.5px dashed rgba(34,50,77,.28)}
+  #vHome .lower .entry .t{font-size:34px}#vHome .lower .entry .d{font-size:17px;margin-top:6px}#vHome .lstar{font-size:20px;margin-top:6px}
+  #vHome .sticky{position:relative;right:auto;top:auto;align-self:start;margin-top:4px;width:170px;min-height:124px;padding:22px 16px;font-size:24px;transform:rotate(3.5deg);box-shadow:0 14px 18px -10px rgba(0,0,0,.5)}
+  #vHome .sticky::after{height:18px}
+}
+@media (min-width:900px) and (max-width:1100px){#vHome .lower{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 140px}#vHome .sticky{width:140px}#vHome .play .t{font-size:84px}}
 /* C. the board: a hardboard frame round the sheet the play is drawn on */
 .app:not(.running) .stage{margin:12px 6px 0;border-radius:18px 18px 6px 6px}
 .app:not(.running) #board{top:16px;left:8px;width:calc(100% - 16px);height:calc(100% - 24px);border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06),0 2px 6px rgba(0,0,0,.25)}
@@ -425,11 +501,21 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
     <div class="ttl"><h1>Last Shot</h1><div class="sub"><span class="tag">TESTERS ONLY</span><em id="tagline">Draw it up. Win it.</em></div></div>
   </div>
   <div class="view home" id="vHome">
-    <button class="hcard daily" id="hDaily"><span class="dtop"><b id="hDailyName">Daily Last Shot</b><span class="dcount" id="hDailyCount"></span></span><span id="hDailyTitle">Loading today's shot.</span><span class="dsq" id="hDailySq" hidden></span><span class="dstreak" id="hDailyStreak" hidden></span><span class="dgo" id="hDailyGo" hidden>Play</span></button>
-    <button class="hcard game big" id="hPlay"><b>Play</b><span>Down 1. 22 seconds. Your ball. Draw it up and run it.</span></button>
-    <button class="hcard ladder" id="hLadder"><b>Ladder</b><span class="lstar" id="hLadderStars"></span><span id="hLadderSub"></span></button>
-    <button class="hcard small" id="hBooks"><b>My Playbooks</b><span>Save your plays. Name them your way. Test them against every defense. Print them for the team.</span></button>
-    <button class="btn alt" id="hHow">How it works</button>
+    <div class="hboard">
+      <div class="clip" aria-hidden="true"><div class="lever"></div><div class="plate"><i class="rivet l"></i><i class="rivet r"></i></div></div>
+      <div class="plan">
+        <div class="phead"><span>PRACTICE PLAN · LAST SHOT</span></div>
+        <div class="pgrid">
+          <button class="entry play" id="hPlay"><span class="playhead"><span class="num" aria-hidden="true">1</span><span class="t">Play</span><span class="start">Start here</span></span><span class="d">Down 1. 22 seconds. Your ball. Draw it up and run it.</span><svg class="doodle" viewBox="0 0 170 120" aria-hidden="true"><g fill="none" stroke="#22324d" stroke-width="3" stroke-linecap="round" opacity=".55"><circle cx="34" cy="94" r="13"/><path d="M47 88 C 80 70, 100 60, 128 34" stroke-dasharray="7 7"/><path d="M118 32 L130 32 L128 44"/><circle cx="140" cy="26" r="12"/></g><g stroke="#E0533D" stroke-width="3.5" stroke-linecap="round" opacity=".6"><path d="M72 40 l14 14 M86 40 l-14 14"/></g></svg></button>
+          <button class="entry daily" id="hDaily"><span class="num" aria-hidden="true">2</span><span class="t" id="hDailyName">Daily Last Shot</span><span class="dline"><span id="hDailyTitle">Loading today's shot.</span><span class="dsq" id="hDailySq" hidden></span></span><span class="dfoot"><span class="dstreak" id="hDailyStreak" hidden></span><span class="dcount" id="hDailyCount"></span></span><span class="dgo" id="hDailyGo" hidden>Play</span></button>
+          <div class="lower">
+            <button class="entry" id="hLadder"><span class="num" aria-hidden="true">3</span><span class="t">Ladder</span><span class="lstar" id="hLadderStars"></span><span class="d" id="hLadderSub"></span></button>
+            <button class="entry" id="hBooks"><span class="num" aria-hidden="true">4</span><span class="t">My Playbooks</span><span class="d">Save your plays. Name them your way. Test them against every defense. Print them for the team.</span></button>
+            <button class="sticky" id="hHow">How it works</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="view" id="vGame" hidden>
   <div class="editbar" id="editBar" hidden></div>
