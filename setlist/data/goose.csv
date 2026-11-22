@@ -2610,7 +2610,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1608529980,2020-12-11,2020,620 Loft & Garden in Rockefeller Center,New York,NY,2,11,All I Need,414,false,,889,1,80,0,72,false,false,,",",false,jam|peak,"Slow, melodic version. With Mississippi Half-Step Uptown Toodeloo ending.",,,Groove
 1608529980,2020-12-11,2020,620 Loft & Garden in Rockefeller Center,New York,NY,2,12,The Empress Of Organos,604,false,Vasudo,903,1,2,0,58,false,false,,",",false,closer|jam,,,,Groove
 1608529980,2020-12-11,2020,620 Loft & Garden in Rockefeller Center,New York,NY,2,13,Hot Tea,408,false,Vasudo,604,0,71,0,58,false,false,,>,true,closer,,,,Groove
-1608529980,2020-12-11,2020,620 Loft & Garden in Rockefeller Center,New York,NY,2,14,You and Whose Army,613,true,Radiohead,176,0,1,0,,false,false,,>,true,ballad,Radiohead. FTP.,,,Ballad
+1608529980,2020-12-11,2020,620 Loft & Garden in Rockefeller Center,New York,NY,2,14,You and Whose Army,613,true,Radiohead,176,0,1,0,,false,false,,>,true,closer|ballad,Radiohead. FTP.,,,Ballad
 1608529980,2020-12-11,2020,620 Loft & Garden in Rockefeller Center,New York,NY,2,15,Hot Tea,408,false,Vasudo,269,0,72,0,58,false,false,,,false,closer,,,,Groove
 1608529980,2020-12-11,2020,620 Loft & Garden in Rockefeller Center,New York,NY,E,16,(Your Love Keeps Lifting Me) Higher and Higher,487,true,Jackie Wilson,327,140,3,50,,false,false,,,false,encore,Jackie Wilson.,,,Anthem
 1618127002,2021-04-09,2021,Spirit of the Suwannee Music Park,Live Oak,FL,1,1,Lead the Way,406,false,,635,5,60,0,44,false,false,,",",false,opener,,,,Easy
@@ -3020,7 +3020,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,6,Echo of a Rose,463,false,Vasudo,395,3,43,0,65,false,false,,",",false,jam,,,,Groove
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,7,Same Old Shenanigans,541,false,,864,4,13,0,45,false,false,,",",false,closer,,,,Easy
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,8,The Old Man's Boat,710,false,,1156,6,2,0,40,true,false,Typical groove fest that settles down before incredible interplay between Rick and Peter. Driving bass and pulsating drumming and percussion pick jam back up. Peter then starts sirens and comes in hot before letting Ben close out with some very cool soloing.,>,true,,,,,Groove
-1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,9,You and Whose Army,613,true,Radiohead,190,32,2,20,,false,false,,",",false,ballad,Radiohead.,,,Ballad
+1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,9,You and Whose Army,613,true,Radiohead,190,32,2,20,,false,false,,",",false,closer|ballad,Radiohead.,,,Ballad
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,10,Arrow,438,false,,801,2,18,0,62,false,false,,->,true,opener|closer|jam,Unfinished.,,,Rocker
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,11,Tomorrow Never Knows,573,true,The Beatles,466,50,3,35,40,false,false,,>,true,closer|jam|encore,The Beatles.,,,Space
 1643255989,2021-11-07,2021,The Eastern,Atlanta,GA,2,12,Doobie Song,461,false,,433,21,12,20,,false,false,,,false,closer|encore,,,,Groove
@@ -7931,7 +7931,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1780327779,2026-11-19,2026,Citizens Live at The Wylie,Pittsburgh,PA,2,8,Good2B,1017,false,,,1,16,0,44,false,false,,->,true,opener|jam|peak,,,,Groove
 1780327779,2026-11-19,2026,Citizens Live at The Wylie,Pittsburgh,PA,2,9,MEDIA,947,false,Swimmer,,9,25,10,40,false,false,,->,true,opener,,,,Rocker
 1780327779,2026-11-19,2026,Citizens Live at The Wylie,Pittsburgh,PA,2,10,Spirit Of The Dark Horse,557,false,,,8,44,10,41,false,false,,->,true,,,,,Rocker
-1780327779,2026-11-19,2026,Citizens Live at The Wylie,Pittsburgh,PA,2,11,MEDIA,947,false,Swimmer,,0,26,0,40,false,false,,>,true,opener,,,,Rocker
+1780327779,2026-11-19,2026,Citizens Live at The Wylie,Pittsburgh,PA,2,11,MEDIA,947,false,Swimmer,,0,26,0,40,false,false,,>,true,opener,With Caravan tease from Rick.,,Caravan,Rocker
 1780327779,2026-11-19,2026,Citizens Live at The Wylie,Pittsburgh,PA,2,12,Rosewood Heart,412,false,,,5,72,0,60,false,false,,->,true,jam|peak,,,,Easy
 1780327779,2026-11-19,2026,Citizens Live at The Wylie,Pittsburgh,PA,2,13,Hollywood Nights,488,true,Bob Seger & The Silver Bullet Band,,17,19,10,,false,false,,,false,closer,Bob Seger & The Silver Bullet Band.,,,Rocker
 1780327779,2026-11-19,2026,Citizens Live at The Wylie,Pittsburgh,PA,E,14,Doobie Song,461,false,,,11,27,10,,false,false,,>,true,closer|encore,,,,Groove
@@ -7949,3 +7949,16 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1780327780,2026-11-20,2026,Citizens Live at The Wylie,Pittsburgh,PA,2,11,Thatch,809,false,,,0,79,0,69,false,false,,,false,opener|closer|jam|peak,,,,Rocker
 1780327780,2026-11-20,2026,Citizens Live at The Wylie,Pittsburgh,PA,E,12,726,432,false,,,6,44,0,38,false,false,,>,true,ballad|encore,,,,Ballad
 1780327780,2026-11-20,2026,Citizens Live at The Wylie,Pittsburgh,PA,E,13,Tumble,418,false,Vasudo,,4,144,0,71,false,false,,,false,closer|jam|peak,,,,Groove
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,1,1,Arrow,438,false,,,4,104,0,62,false,false,,->,true,opener|closer|jam,,"You And Whose Army was played for the first time since November 7, 2021 (395 shows).",,Rocker
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,1,2,Royal,987,false,,,3,22,0,38,false,false,,",",false,opener,,,,Rocker
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,1,3,Same Old Shenanigans,541,false,,,6,73,0,45,false,false,,",",false,closer,,,,Easy
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,1,4,Your Direction,647,false,Vasudo,,3,27,0,36,false,false,,->,true,ballad,,,,Ballad
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,1,5,Arrow,438,false,,,0,105,0,62,false,false,,>,true,opener|closer|jam,Unfinished.,,,Rocker
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,1,6,Travelers,574,false,,,40,33,20,41,false,false,,>,true,,With Mikaela Davis on harp.,,,Easy
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,1,7,Elmeg The Wise,466,false,St. John's Revival,,24,28,20,40,false,false,,,false,closer|jam|encore,With Mikaela Davis on harp.,,,Anthem
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,2,8,Hot Tea,408,false,Vasudo,,4,173,0,58,false,false,,",",false,closer,,,,Groove
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,2,9,Pancakes,723,false,Great Blue,,5,80,0,62,false,false,,->,true,opener|closer|jam,Unfinished. With Axel F teases from Rick.,,Axel F,Groove
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,2,10,Peach,990,true,Future Islands,,16,8,10,,false,false,,>,true,,Future Islands.,,,Groove
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,2,11,Hungersite,740,false,,,3,96,0,62,false,false,,",",false,opener|jam|peak,,,,Anthem
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,2,12,You and Whose Army,613,true,Radiohead,,394,3,50,,false,false,,,false,closer|ballad,Radiohead.,,,Ballad
+1780327781,2026-11-21,2026,Blue Cross Arena,Rochester,NY,E,13,Madhuvan,512,false,,,12,190,10,75,false,false,,,false,opener|closer|jam,,,,Rocker
