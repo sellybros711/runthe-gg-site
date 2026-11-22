@@ -7,6 +7,10 @@
  *           and the button. ui.js paints it in place of home() while STD_DESK.on()
  *   pair()  Shut The Door Pro and Run The Diamond Pro together, in the archive tab under the store's own
  *           Get Pro, while the past dailies are locked (menus.js)
+ *   unlock(where)  one small row, the last item in the menu sheet and at the foot of the desk's drawer
+ *           (the owner, 2026-11-19): the small gem, "Unlock the full game", the name and the price under it.
+ *           The button is the title alone, so pro.js's "opening checkout..." swaps only its text; a stretched
+ *           ::before makes the whole row the tap. ui.js paints it with the card, so a Pro member never sees it
  *
  * The headlines are the plain product names (the owner, 2026-11-18). The Diamond plate is the picture:
  * it is the one thing on the list a player sees by somebody else's name.
@@ -34,11 +38,9 @@ function you() {
   return '<div class="pc-you">' + gem(L, 'pc-yg') + '<span class="pc-yn"><b>' + esc(name) + '</b><small>with the Diamond plate</small></span><i class="pc-chip">pro</i></div>';
 }
 var TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-var FLAG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 3.5L16 11H5"/></svg>';
 /* what Pro opens, as the gate has it (shutdoor_is_pro): Survivor without the one a day, the archive,
-   your history, no video break. Custom challenges are coming, so they say soon. */
-var LIST = ['Unlimited Survivor runs every day', 'Every past daily', 'Your history', 'No video ads'];
-function soon() { return '<li class="soon"><i>' + FLAG + '</i>Custom challenges<em>soon</em></li>'; }
+   your history, custom challenges (challenge-ui.js), no video break. */
+var LIST = ['Unlimited Survivor runs every day', 'Every past daily', 'Your history', 'Custom challenges', 'No video ads'];
 
 function home() {
   var p = P();
@@ -47,7 +49,7 @@ function home() {
   return '<section class="pc-card pro-offer" aria-labelledby="pc-h">' +
     '<div class="pc-top">' + gem('', 'pc-big') + '<div><i class="pc-chip">pro</i><h2 class="pc-h" id="pc-h">Shut The Door <em>Pro</em></h2><p class="pc-sub">Become a member.</p></div></div>' +
     you() +
-    '<ul class="pc-list">' + LIST.map(function (t) { return '<li><i>' + TICK + '</i>' + esc(t) + '</li>'; }).join('') + soon() + '</ul>' +
+    '<ul class="pc-list">' + LIST.map(function (t) { return '<li><i>' + TICK + '</i>' + esc(t) + '</li>'; }).join('') + '</ul>' +
     '<div class="pc-buy"><p class="pc-price"><b>' + esc(p.money(p.PRICES[p.BUNDLE])) + '</b><span>a year</span></p>' +
     '<button class="btn pc-go" type="button" data-pro-buy>' + (signed ? 'get pro' : 'sign in to get pro') + '</button></div>' +
     '<p class="au-err" data-pro-err role="alert"></p></section>';
@@ -74,7 +76,7 @@ function pair() {
     '<div class="pc-duo">' + gem('', 'pc-mid') + '<span aria-hidden="true">+</span><img src="/baseball/icon-192.png?v=3" alt="" width="52" height="52" loading="lazy"></div>' +
     '<i class="pc-chip">both games · pro</i>' +
     '<h2 class="pc-h" id="pc-ph">Run The Diamond + <em>Shut The Door package</em></h2>' +
-    '<div class="pc-two"><div><b>Shut The Door Pro</b><span>Unlimited Survivor runs every day. Every past daily. No video ads.</span><em>soon: custom challenges</em></div>' +
+    '<div class="pc-two"><div><b>Shut The Door Pro</b><span>Unlimited Survivor runs every day. Every past daily. Custom challenges. No video ads.</span></div>' +
     '<div><b>Run The Diamond Pro</b><span>All six modes, as often as you like. Your batting order. Two Pro parks.</span></div></div>' +
     you() +
     '<div class="pc-buy"><p class="pc-price"><b>' + esc(p.money(both)) + '</b><span>a year for both</span></p>' +
@@ -83,5 +85,21 @@ function pair() {
     '<p class="au-err" data-pro-err role="alert"></p></section>';
 }
 
-window.STD_PRO_CARD = { API_VERSION: 1, home: home, bar: bar, pair: pair };
+function unlock(where) {
+  var p = P();
+  if (!p) return '';
+  var id = 'mu-s-' + String(where || 'menu').replace(/[^a-z0-9-]/gi, '');
+  /* the gem in its own fixed box, with its pixel size written on the svg: iOS Safari drew the bare svg
+     (a flex item sized by CSS alone, with a filter on the svg root and its viewBox off the origin) up and
+     to the left of the row, and the row's rounded clip cut it to a sliver (the owner, 2026-11-19). The
+     shadow is on the box, never on the svg. */
+  var g = gem('', 'mu-gem').replace('<svg ', '<svg width="34" height="35" ');
+  return '<div class="mu-pro pro-offer" data-pro-where="' + esc(where || 'menu') + '"><span class="mu-gi" aria-hidden="true">' + g + '</span>' +
+    '<span class="mu-t"><button class="mu-go" type="button" data-pro-buy aria-describedby="' + id + '">Unlock the full game</button>' +
+    '<small id="' + id + '">Shut The Door Pro · ' + esc(p.money(p.PRICES[p.BUNDLE])) + ' a year</small></span>' +
+    '<i class="chev" aria-hidden="true"></i>' +
+    '<p class="au-err" data-pro-err role="alert"></p></div>';
+}
+
+window.STD_PRO_CARD = { API_VERSION: 1, home: home, bar: bar, pair: pair, unlock: unlock };
 })();

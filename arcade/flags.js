@@ -31,10 +31,15 @@
 
   var FLAGS = {
     // Run games open on household names and get harder as the run goes on:
-    // Career Path, Alma Mater, Number Game, Odd One Out, High Low.
-    ramp:      { since: null, pct: 0, daily: true },
-    // Multiple-choice options from the same league, a similar era, and the
-    // same position or region: Career Path, Alma Mater, Odd One Out.
+    // Career Path, Alma Mater, Odd One Out, High Low. (Number Game reads it
+    // too, but 'current' deals that game first, most famous first.) The
+    // owner's yes on 2026-11-19: the card games ended by the second answer in
+    // 31 to 72% of runs. On from the day after it ships, so the board in play
+    // does not move.
+    ramp:      { since: '2026-11-21', pct: 0, daily: true },
+    // The wrong choices in Career Path and Alma Mater come from the same
+    // league, era and position. Held off by the owner on 2026-11-19: it makes
+    // the four-choice help harder, which works against the free tries.
     decoys:    { since: null, pct: 0, daily: true },
     // Sportegories daily board: broad categories any fan can answer, the
     // "played for X and three other franchises" kind retired, at least four

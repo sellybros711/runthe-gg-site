@@ -43,7 +43,7 @@
 <script src="/arcade/gamemarks.js?v=4"></script>
 <!-- pure localStorage and synchronous, so it can load before the tiles and
      their order can be set before the first paint -->
-<script src="/arcade/tokens.js?v=15"></script>
+<script src="/arcade/tokens.js?v=16"></script>
 <script src="/arcade/metrics.js?v=3"></script>
 <style>
   :root{
@@ -791,7 +791,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
-<script src="/assets/rtg-ads.js?v=4"></script>
+<script src="/assets/rtg-ads.js?v=5"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -1212,7 +1212,7 @@ window.GA_ID='G-L29P5MRWKE';
           <ul class="cp-perks">
             <li><i>&#10003;</i> Unlimited plays, every day</li>
             <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
-            <li><i>&#10003;</i> Six members-only games</li>
+            <li><i>&#10003;</i> <span data-members-only>Eight</span> members-only games</li>
             <li><i>&#10003;</i> The full archive of past days</li>
           </ul>
           <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
@@ -1334,7 +1334,7 @@ window.GA_ID='G-L29P5MRWKE';
 
 </div>
 
-<script src="/arcade/favteam.js"></script>
+<script src="/arcade/favteam.js?v=1"></script>
 <script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1400,7 +1400,7 @@ window.GA_ID='G-L29P5MRWKE';
   });
 })();
 </script>
-<script src="/arcade/card.js?v=23"></script>
+<script src="/arcade/card.js?v=24"></script>
 <script src="/arcade/referral.js?v=12"></script>
 <script src="/arcade/nav.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
@@ -1984,6 +1984,78 @@ window.GA_ID='G-L29P5MRWKE';
     RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); });
   }
   if(document.readyState === 'complete') go(); else window.addEventListener('load', go);
+})();
+
+/* THE FIRST VIEW (the owner's rule, 2026-10-29; the hub, 2026-11-19). With the bottom banner up, no
+   game sits under it when the hub opens. The banner stands on the floating nav, so wherever a phone's
+   height puts it, it crossed a game (Alma Mater at 390x844, under an empty box while Google served
+   nothing). So the row of games the banner would cross starts just below it, out of sight until the
+   player scrolls, and the room that leaves above the banner is shared out between the header and
+   the rows above, so the first view reads as one evenly spaced page with no hole in it.
+   - It keys on the banner being up (body.rtg-sticky-on) and its filled height, never on the ad
+     arriving, so nothing moves when it fills. The gap under the banner is under the banner.
+   - The first row of games is never pushed off the first view: if the banner would cross it (a
+     320px tall screen), the page is left as it is.
+   - It is measured at scroll 0 with the height the hub opened at, so a phone's address bar folding
+     away while scrolling moves nothing. It runs again when the games are re-sorted (a sign in), the
+     width changes or the banner goes. The X gives the hub back exactly as it was. */
+(function(){
+  var MARK = 'data-rtg-fit', H = 0, W = 0, timer = 0;
+  function items(){
+    return [].slice.call(document.querySelectorAll('#puzzles .tiles > .tsec, #puzzles .tiles > .tile')).filter(function(e){
+      return e.offsetWidth && e.offsetHeight && getComputedStyle(e).display !== 'none';
+    });
+  }
+  function reset(){
+    [].slice.call(document.querySelectorAll('[' + MARK + ']')).forEach(function(e){ e.style.marginTop = ''; e.removeAttribute(MARK); });
+  }
+  function add(row, px){
+    if(px <= 0) return;
+    row.els.forEach(function(e){
+      e.style.marginTop = ((parseFloat(getComputedStyle(e).marginTop) || 0) + px) + 'px';
+      e.setAttribute(MARK, '');
+    });
+  }
+  function fit(){
+    try{
+      reset();
+      var s = document.querySelector('[data-ad-zone="sticky"] .rtg-sticky-in');
+      if(!s || !document.body.classList.contains('rtg-sticky-on')) return;
+      if(!H || innerWidth !== W){ H = innerHeight; W = innerWidth; }
+      /* the banner's filled height: its 22px top line, the 50px ad, its bottom padding */
+      var lift = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rtg-sticky-lift')) || 0;
+      /* a pixel each way, so a row that ends or starts on the banner's edge is never under it */
+      var bot = Math.ceil(H - lift) + 1, top = bot - 2 - (72 + (parseFloat(getComputedStyle(s).paddingBottom) || 4));
+      var sy = scrollY, rows = [];
+      items().forEach(function(e){
+        var r = e.getBoundingClientRect(), t = Math.round(r.top + sy), b = Math.round(r.bottom + sy), row = null;
+        for(var i = 0; i < rows.length; i++) if(Math.abs(rows[i].t - t) < 3){ row = rows[i]; break; }
+        if(!row){ row = {t:t, b:b, els:[], sec:true}; rows.push(row); }
+        row.b = Math.max(row.b, b); row.els.push(e);
+        if(!e.classList.contains('tsec')) row.sec = false;
+      });
+      rows.sort(function(a, c){ return a.t - c.t; });
+      var k = -1;
+      for(var i = 0; i < rows.length; i++) if(rows[i].b > top){ k = i; break; }
+      if(k < 0 || rows[k].t >= bot) return;
+      /* a section's title goes with the games under it */
+      while(k > 0 && rows[k - 1].sec) k--;
+      if(k === 0 || (k === 1 && rows[0].sec)) return;
+      var room = top - 8 - rows[k - 1].b, per = room > 0 ? Math.min(40, Math.floor(room / k)) : 0;
+      for(i = 0; i < k; i++) add(rows[i], per);
+      add(rows[k], bot - rows[k].t - per * k);
+    }catch(e){}
+  }
+  function soon(){ clearTimeout(timer); timer = setTimeout(function(){ if(scrollY < 10 || !document.body.classList.contains('rtg-sticky-on')) fit(); }, 120); }
+  addEventListener('rtg-sticky', soon);
+  addEventListener('resize', function(){ if(innerWidth !== W){ H = 0; soon(); } });
+  function watch(){
+    var t = document.querySelector('#puzzles .tiles');
+    if(t && window.MutationObserver) new MutationObserver(soon).observe(t, {subtree:true, childList:true, attributes:true, attributeFilter:['class', 'hidden']});
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(soon);
+    soon();
+  }
+  if(document.readyState === 'complete') watch(); else addEventListener('load', watch);
 })();
 </script>
 </body>

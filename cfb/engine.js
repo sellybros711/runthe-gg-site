@@ -1916,6 +1916,37 @@ function sampleGamma(mean, sd, rng) {
 
 const pkey = (p) => `${p.player_id}|${p.season}`;
 
+/* A TRANSFER PLAYED AT EVERY SCHOOL HE PLAYED AT. A row is one season at one school, so
+   comparing a.school with b.school missed every transfer: Jalen Hurts's Oklahoma season
+   shared nothing with an Alabama man, though he was at Alabama for three years. The NFL
+   game had the same miss on its joined college field (an owner report, 2026-11-19).
+   ctx.schools maps a player_id to every school the data has him at (schoolsByPlayer);
+   without it this is the old one-row comparison. The label names the school they share,
+   the row's own school first when both share several. */
+function schoolsOf(p, ctx) {
+  const list = ctx && ctx.schools && ctx.schools[p.player_id];
+  return list && list.length ? list : (p.school ? [p.school] : []);
+}
+
+function sharedSchool(a, b, ctx) {
+  const sa = schoolsOf(a, ctx), sb = schoolsOf(b, ctx);
+  if (!sa.length || !sb.length) return null;
+  for (const s of [a.school, b.school]) if (s && sa.includes(s) && sb.includes(s)) return s;
+  return sa.find(s => sb.includes(s)) || null;
+}
+
+/** player_id to every school the data has him at, in season order. */
+function schoolsByPlayer(players) {
+  const out = {};
+  const rows = (players || []).slice().sort((x, y) => (x.season || 0) - (y.season || 0));
+  for (const p of rows) {
+    if (!p || !p.school || p.player_id == null) continue;
+    const l = (out[p.player_id] ??= []);
+    if (!l.includes(p.school)) l.push(p.school);
+  }
+  return out;
+}
+
 function pairLinks(a, b, ctx) {
   const out = [];
   const V = CHEMISTRY.VALUES;
@@ -1935,12 +1966,15 @@ function pairLinks(a, b, ctx) {
       label: `Teammates on the ${a.season} ${a.school}`,
       short: 'Teammates',
     });
-  } else if (a.school && a.school === b.school) {
-    out.push({
-      type: 'program', value: V.program,
-      label: `Both played at ${a.school}`,
-      short: `Both ${a.school}`,
-    });
+  } else {
+    const shared = sharedSchool(a, b, ctx);
+    if (shared) {
+      out.push({
+        type: 'program', value: V.program,
+        label: `Both played at ${shared}`,
+        short: `Both ${shared}`,
+      });
+    }
   }
 
   const fam = (ctx.curated?.family || []).find(
@@ -2850,7 +2884,7 @@ const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
   CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY, positionsOf, canFillSlot, findQB,
   hashSeed, createSeededRNG, sampleGamma,
-  pairLinks, resolveChemistry,
+  pairLinks, resolveChemistry, schoolsByPlayer,
   generateSchedule, generatePlayoffs, generateBowlOpponent,
   resolveGame, resolveHeadToHead, playRun, playBowlGame, prepareData, toFootballScore,
   playoffOpponent, playoffRoundNames, PLAYOFF_ROUND_NAMES,

@@ -6618,6 +6618,12 @@ window.GA_ID='G-L29P5MRWKE';
      screens keep the slim banner. After the container rules so it wins at every width. */
   [data-ad-zone="results"] ins.adsbygoogle{width:300px;height:250px}
   [data-ad-zone] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* A 320PX PHONE (QA, 2026-11-16): the column is the screen less the wrap's padding (292px at 320),
+     so a 320x50 hung 14px past the screen and the page scrolled sideways. Below 348px the zone takes
+     the screen's own width, so the 320x50 fits a 320px phone. On a narrower screen no slim banner
+     fits, so the unit is not shown and never asked for (an ad is never clipped). */
+  @media (max-width:347px){ [data-ad-zone="menu"],[data-ad-zone="results"]{width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)} }
+  @container (max-width:319px){ [data-ad-zone="menu"] ins.adsbygoogle,[data-ad-zone="results"] ins.adsbygoogle{display:none} }
   /* The gameplay screens stay clear for the same reason the pinned strip does. */
   body.rtp-hide-ads .rtp-ad-inline{display:none}
 
@@ -8818,7 +8824,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=101"></script>
+<script src="engine.js?v=102"></script>
 <script src="run.js?v=104"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -8837,7 +8843,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=40"></script>
-<script src="achievements.js?v=16"></script>
+<script src="achievements.js?v=17"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
@@ -8864,8 +8870,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
      the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
 <script src="/assets/rewarded.js?v=1"></script>
-<script src="/assets/rtg-ads.js?v=4"></script>
-<script src="/assets/fantasy-promo.js?v=1"></script>
+<script src="/assets/rtg-ads.js?v=5"></script>
+<script src="/assets/fantasy-promo.js?v=2"></script>
 <!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
 <!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
@@ -8994,7 +9000,7 @@ function loadDefensePool(){
   defLoading=Promise.all([
     fetch('data/defender_seasons.json?v=1')
       .then(r=>{ if(!r.ok) throw new Error('defender_seasons'); return r.json(); }),
-    fetch('data/coach_colleges.json?v=1')
+    fetch('data/coach_colleges.json?v=2')
       .then(r=>r.ok?r.json():{}).catch(()=>({})),
   ])
     .then(([rows,colleges])=>{
@@ -11005,7 +11011,7 @@ function sheet(p){
     '<div class="kv"><span class="dim">Fantasy points per game</span><b>'+p.fppg.toFixed(1)+' FPPG</b></div>'+
     '<div class="kv"><span class="dim">Swing week to week</span><b>'+p.ppr_ppg_sd.toFixed(1)+'</b></div>'+
     '<div class="kv"><span class="dim">Games that year</span><b>'+p.games_played+'</b></div>'+
-    (p.college?'<div class="kv"><span class="dim">College</span><b>'+esc(p.college)+'</b></div>':'')+
+    (p.college?'<div class="kv"><span class="dim">College</span><b>'+esc(E.collegeDisplay?E.collegeDisplay(p):p.college)+'</b></div>':'')+
     (links.length?'<div class="eyebrow" style="margin-top:13px">Chemistry</div>'+
       links.map(l=>linkRow(l,p.name)).join(''):'')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';

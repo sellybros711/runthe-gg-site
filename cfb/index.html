@@ -3244,6 +3244,12 @@ window.GA_ID='G-L29P5MRWKE';
   @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
   @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* A 320PX PHONE (QA, 2026-11-16): the column is the screen less the wrap's padding (292px at 320),
+     so a 320x50 hung 14px past the screen and the page scrolled sideways. Below 348px the zone takes
+     the screen's own width, so the 320x50 fits a 320px phone. On a narrower screen no slim banner
+     fits, so the unit is not shown and never asked for (an ad is never clipped). */
+  @media (max-width:347px){ [data-ad-zone="menu"],[data-ad-zone="results"]{width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)} }
+  @container (max-width:319px){ [data-ad-zone="menu"] ins.adsbygoogle,[data-ad-zone="results"] ins.adsbygoogle{display:none} }
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{display:block}
     .rtp-ad-rail{display:none !important}
@@ -4378,7 +4384,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=35"></script>
+<script src="engine.js?v=36"></script>
 <script src="run.js?v=15"></script>
 <script src="achievements.js?v=12"></script>
 <script src="auth.js?v=10"></script>
@@ -4408,10 +4414,10 @@ or endorsed by the NCAA, the CFP or any school.
      contradicts, and the one that is wrong is whichever was edited second. -->
 <script src="/assets/store.js?v=23"></script>
 <script src="/assets/cloudsave.js?v=4"></script>
-<script src="/assets/fantasy-promo.js?v=1"></script>
+<script src="/assets/fantasy-promo.js?v=2"></script>
 <!-- The release newsletter checkbox on the account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
-<script src="/assets/rtg-ads.js?v=4"></script>
+<script src="/assets/rtg-ads.js?v=5"></script>
 <!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
      hands its drives here and keeps its own body as the fallback. -->
 <script src="/assets/fieldcast.js?v=5"></script>
@@ -8952,7 +8958,7 @@ async function boot(){
       .then(v=>{ if(v&&typeof v==='object'&&Object.keys(v).length>=400) REAL_RANKS=v; })
       .catch(()=>{});
     DATA=R.indexData(pl,tm);
-    CTX={battery:bat,coaches:co,curated:cu};
+    CTX={battery:bat,coaches:co,curated:cu,schools:E.schoolsByPlayer?E.schoolsByPlayer(pl):undefined};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');

@@ -51,6 +51,23 @@ if (client.join('|') !== server.join('|')) {
        'Change both, or the hub offers a game the server refuses.');
 }
 
+// ---- the Card's pitch -------------------------------------------------------
+// The hub's static "<n> members-only games" must say the number tokens.js
+// plays (all games minus the free ones). It said six for weeks while there
+// were eight. card.js counts it at runtime, so it must not hard-code a word.
+{
+  const all = /var GAMES = \[([^\]]*)\]/.exec(tokens);
+  const n = all ? all[1].split(',').filter((s) => s.trim()).length - client.length : -1;
+  const W = ['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  const hub = readFileSync(root + 'arcade/index.html', 'utf8');
+  const m = /<span data-members-only>(\w+)<\/span> members-only games/.exec(hub);
+  if (!m) fail('arcade/index.html: the Card pitch has no <span data-members-only> count');
+  if (m[1].toLowerCase() !== W[n]) fail('arcade/index.html says ' + m[1] + ' members-only games; tokens.js has ' + n);
+  const card = readFileSync(root + 'arcade/card.js', 'utf8');
+  if (/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven) members-only games/i.test(card))
+    fail('arcade/card.js hard-codes a members-only count; use membersOnly()');
+}
+
 console.log('free games ok: ' + client.join(', ') + ' (tokens.js = supabase/' + from + ')');
 
 function fail(msg) { console.error(msg); process.exit(1); }

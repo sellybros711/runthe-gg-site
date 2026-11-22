@@ -946,7 +946,15 @@ const GYMS = loadGyms(), KFILES = kindFiles(), PAGE = fs.readFileSync(new URL('.
     const hi = K.hello, okLine = typeof hi === 'string' && hi.length >= 12 && hi.length <= 90 && /\.$/.test(hi) && !hi.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212);
     claim(okLine && /^[a-z]+$/.test(K.unit || '') && (!live || K.calm === true), `gymkinds/${f}: its own entry line ("${hi}"), its own unit (${K.unit})` + (live ? ', and a calm room' : '')); }
   { const TRAIL = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
-    claim(!/One tile a step|Tap a piece to change it|' moves'/.test(TRAIL) && /GK\.hello/.test(TRAIL) && /GK\.unit/.test(TRAIL), 'the frame has no entry line or counter word of its own: each kind says how it is played (hello) and names what the panel counts (unit)'); }
+    claim(!/One tile a step|Tap a piece to change it|' moves'/.test(TRAIL) && /GK\.hello/.test(TRAIL) && /GK\.unit/.test(TRAIL), 'the frame has no entry line or counter word of its own: each kind says how it is played (hello) and names what the panel counts (unit)');
+    /* A GYM TAKES HIM ONLY AT ITS DOOR (QA, 2026-11-19, on Loch Ness's walk into hole 18: the door test had no far bound,
+       so walking up the screen anywhere in line with a door, 78 ft past it, put him in the room, and again after every
+       Leave). The walk enters a gym in one place, atGymDoor; here it is held on a door's own geometry (the door 0.8 ft in
+       front of the room's wall, which stops him 0.25 ft past it), and section 6 walks every gym trail's path through it. */
+    { const win = {}; win.window = win; const ctx = { window:win }; vm.createContext(ctx); vm.runInContext(TRAIL, ctx, { filename:'trail.js' });
+      const D = win.RTT_PUTT_TRAIL.atGymDoor, G = { ax:0, ay:50 }, one = (TRAIL.match(/gymEnter\(/g) || []).length === 2 && /else if \(atGymDoor\(GY, g\.x, g\.y, g\.vy\)\) gymEnter\(tsec\);/.test(TRAIL);
+      const inAt = [[0, 50.39], [0, 50], [0, 49.75], [0.9, 50], [-0.9, 49.8]].filter(q => !D(G, q[0], q[1], -10)), away = [[0, 50, 0.5], [0, 50, -0.2], [0, 48.4, -10], [0, 40, -10], [0, 22, -10], [0, -1, -10], [1, 50, -10], [-1, 50, -10], [0, 50.5, -10]].filter(q => D(G, q[0], q[1], q[2]));
+      claim(typeof D === 'function' && one && !inAt.length && !away.length, `a gym takes him only at its door, walking into it: atGymDoor is the walk's one way in, true from 0.4 ft short of the door to the room's wall and false past the room, up the land in line with it, beside it, or walking any other way` + (inAt.length || away.length ? ' (' + JSON.stringify({ inAt, away }) + ')' : '')); } }
   claim(GYMS.MASTER.badges === 22 && GYMS.MASTER.wired === false, 'all 22 badges unlock the Puzzle Master, recorded and not yet wired (its art waits for the owner)'); }
 /* ============================================================== 5c. THE TRICK SHOT ROOMS, PROVEN */
 /* THE CLUBHOUSE'S GYMS ARE TRICK SHOT ROOMS (gymkinds/trickshot.js): a putting puzzle with the real ball. Numbered bottles
@@ -1384,8 +1392,28 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
           o.over = P.things.filter(t => t.k !== 'gym' && t.k !== 'bridge' && (t.h || 0) > 0.2).filter(t => { const rx = t.w ? t.w / 2 : (t.cr || t.r || 0.5), ry = t.d ? t.d / 2 : (t.r || 0.5);
             const dx = Math.max(G.x0 - t.x, 0, t.x - G.x0 - G.w); if (dx >= rx + m) return false;
             return t.y * SE - t.h * CE < rb + m * SE && (t.y + ry) * SE > rt - m * SE; }).map(t => t.k); }
-        o.civ = !!P.civ && FL.near(G0, P.civ.x, P.civ.y + 1.4, 1.2); o.vault = P.items.some(t => t.k === 'vault'); o.leftNames = window.RTT_PUTT._trailLeft ? window.RTT_PUTT._trailLeft(f + 1) : null; }
+        o.civ = !!P.civ && FL.near(G0, P.civ.x, P.civ.y + 1.4, 1.2); o.vault = P.items.some(t => t.k === 'vault'); o.leftNames = window.RTT_PUTT._trailLeft ? window.RTT_PUTT._trailLeft(f + 1) : null;
+        /* ONLY AT ITS DOOR: the trail's own path walked from its start to the arch at walking pace, anywhere across its
+           width (PW, 2.2 ft either side), never meets the walk's door test (atGymDoor, the one way in); up the spur from the
+           path to the door and on into the wall, it does, and only within a step of the door */
+        { const D = window.RTT_PUTT_TRAIL.atGymDoor, V = 10; let path = 0, far = 0, spur = 0;
+          for (let i = 0; i < P.path.length - 1; i++){ const a = P.path[i], c = P.path[i + 1], L = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1e-9, tx = (c[0] - a[0]) / L, ty = (c[1] - a[1]) / L;
+            for (let u = 0; u < L; u += 0.1) for (let w = -2.2; w <= 2.21; w += 0.55){ const x = a[0] + tx * u - ty * w, y = a[1] + ty * u + tx * w; if (D(G, x, y, ty * V)){ path++; far = Math.max(far, Math.hypot(x - G.ax, y - G.ay)); } } }
+          const s0 = G.spur[0], legs = [[s0, [G.ax, G.ay]], [[G.ax, G.ay], [G.ax, G.ay - 0.25]]];
+          for (const [a, c] of legs){ const L = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1e-9, ty = (c[1] - a[1]) / L; for (let u = 0; u <= L; u += 0.05){ const x = a[0] + (c[0] - a[0]) * u / L, y = a[1] + (c[1] - a[1]) * u / L; if (D(G, x, y, ty * V)){ spur++; far = Math.max(far, Math.hypot(x - G.ax, y - G.ay)); } } }
+          o.door = { path, spur, far:+far.toFixed(2) }; } }
       out.all = got.sort().join() === want;
+      /* the walk QA found (2026-11-19): Loch Ness's gatekeeper trail, whose arch is 0.75 ft off the line of its door, walked
+         for real along its own path at walking pace. He was taken into the room 78 ft past the door, and never got to 18. */
+      { const ln = out.trails.find(o => o.id === 'ln2' && o.has), T = () => window.RTT_PUTT._trail(); if (ln){ window.RTT_PUTT._walkTo(ln.f); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(300);
+        const t = T(), P = t.plan(), G = P.gym, pa = P.path, SE = Math.sin(42 * Math.PI / 180), cum = [0]; for (let i = 1; i < pa.length; i++) cum.push(cum[i - 1] + Math.hypot(pa[i][0] - pa[i - 1][0], pa[i][1] - pa[i - 1][1]));
+        const SL = cum[cum.length - 1], atS = s => { for (let i = 0; i < pa.length - 1; i++) if (cum[i + 1] >= s){ const u = (s - cum[i]) / ((cum[i + 1] - cum[i]) || 1); return [pa[i][0] + (pa[i + 1][0] - pa[i][0]) * u, pa[i][1] + (pa[i + 1][1] - pa[i][1]) * u]; } return pa[pa.length - 1]; };
+        let s = 0, pulled = null, line = 1e9; const t0 = performance.now();
+        while (performance.now() - t0 < 45000 && T() === t){ if (t.gym().in){ pulled = t.pos().map(v => +v.toFixed(1)); break; }
+          const q = t.pos(); for (let i = 0; i < pa.length; i++) if (cum[i] > s && cum[i] < s + 6 && Math.hypot(pa[i][0] - q[0], pa[i][1] - q[1]) < 2.5) s = cum[i];
+          if (q[1] < G.ay - 2) line = Math.min(line, Math.abs(q[0] - G.ax));
+          const a = s >= SL - 3 ? [P.arch.x, -2] : atS(s + 3), dx = a[0] - q[0], dy = (a[1] - q[1]) * SE, m = Math.hypot(dx, dy) || 1; t.stick(dx / m, dy / m); await sleep(30); }
+        if (T() === t) t.stick(0, 0); out.lnWalk = { pulled, reached:T() !== t, inLine:+line.toFixed(2) }; } }
       // play the first gym
       const paid = []; let hk = null, hc = null; const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail();
       const packs = [], hook = () => { const h = S().host; if (h !== hk){ if (hk){ hk.coins = hc; delete hk.pack; } hk = h; hc = h.coins; h.coins = n => { paid.push(n); }; h.pack = (tier) => { packs.push(tier); return 1; }; } };
@@ -1424,6 +1452,8 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     claim(gyr.trails.every(o => o.clear > 2.2 + 1.2 && o.gateOff < 9.5 && o.inside === 0), `each gym is clear of the walk, its gate a few steps off the path, and nothing else stands in it (${JSON.stringify(gyr.trails.map(o => [o.clear, o.gateOff, o.inside]))})`);
     claim(gyr.trails.every(o => !o.over.length), `nothing tall stands over a gym's room on screen: no tree, landmark, rock or lamp within its walls' rect plus a margin (${JSON.stringify(gyr.trails.filter(o => o.over.length).map(o => [o.id, o.over]))})`);
     claim(gyr.trails.every(o => o.gateReach && o.archReach && o.civ && o.vault), `each gym's gate and civilian can be walked to and its trail is still walkable to the arch, its vault on the list (${JSON.stringify(gyr.trails.map(o => [o.gateReach, o.archReach, o.civ, o.vault]))})`);
+    claim(gyr.trails.every(o => o.door && o.door.path === 0 && o.door.spur > 0 && o.door.far <= 1.6), `a gym takes him only at its door: walked along every gym trail's own path, start to arch and anywhere across it, he is never taken in, and walked up the spur he is, within a step of the door (${JSON.stringify(gyr.trails.filter(o => !o.door || o.door.path || !o.door.spur || o.door.far > 1.6).map(o => [o.id, o.door]))})`);
+    claim(gyr.lnWalk && !gyr.lnWalk.pulled && gyr.lnWalk.reached && gyr.lnWalk.inLine < 0.95, `walked for real along Loch Ness's gatekeeper trail, up the land in line with its gym's door, he reaches hole 18 and is never taken into the room (${JSON.stringify(gyr.lnWalk)})`);
     claim(gyr.trails.every(o => !o.leftNames || o.leftNames.indexOf('a gym') >= 0) && gyr.leftAfter && gyr.leftAfter.indexOf('a gym') < 0, `skipping a gym's trail warns that its gym is left, and not once it is solved (${JSON.stringify(gyr.leftAfter)})`);
     claim(gyr.entered && gyr.startOk && gyr.reset, `walked into at its gate he moves a tile a step, and the lever puts every piece back (${JSON.stringify([gyr.entered, gyr.startOk, gyr.reset])})`);
     claim(gyr.plain && gyr.civSays, `after two resets the civilian's plainer line comes, in the gym's docked panel and at the gate (${JSON.stringify([gyr.plain, gyr.civSays])})`);
@@ -1665,6 +1695,25 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         if (!a.spec.space) continue; out.push({ f, cross:!!a.host, landed:!!b2.host, landedGate:!!b2.gate }); }
       return out; });
     claim(sg.length >= 5 && sg.every(o => !o.cross && o.landed && !o.landedGate), `a space world's greeter waits on the landed walk, where no gate holds them, and not on the crossing that ends at the launch pad (${JSON.stringify(sg)})`);
+    /* EVERY LANDING LETS HIM OUT (QA, 2026-11-19: the Big Top's walk opened with him inside the circus train, 12 ft long
+       and parked 6.5 ft from the start, and he could not move; the ship in the Oz poppies did the same). On every landed
+       walk, at a phone's and a desktop's size, the spot run() stands him on (atS(2)) is clear of every collider by run()'s
+       own rule, he has a first step of a foot and a half that way up the walk, and the hole's end of the walk floods
+       from where he stands. Plans only, so it is quick. */
+    { const land = []; for (const [vw, vh] of [[390, 844], [1440, 900]]){ await pg.setViewportSize({ width:vw, height:vh });
+        land.push(...await pg.evaluate(v => { const TR = window.RTT_PUTT._trailPlan, out = [], R = 0.55;
+          for (let f = 18; f < window.RTT_PUTT.LEVELS.length; f += 18){ const P = TR(f, 'main', true); if (!P || !P.spec || !P.spec.landed) continue;
+            const hit = (x, y) => x < P.b[0] + 2.5 || x > P.b[2] - 2.5 || y > P.b[3] - 2 || (P.poolAt(x, y) || {}).k === 'water' || P.seaAt(x, y) ||
+              P.cols.some(c => c.w ? Math.abs(x - c.x) < c.w / 2 + R && Math.abs(y - c.y) < c.d / 2 + R : Math.hypot(x - c.x, y - c.y) < c.r + R);
+            const g0 = P.atS(2), tn = P.tanS(4), a0 = Math.atan2(tn[1], tn[0]);
+            let step = false; for (let da = 0; da <= Math.PI / 2 + 1e-9 && !step; da += Math.PI / 16) for (const sg2 of [1, -1]){ const a = a0 + sg2 * da;
+              let ok = true; for (let d = 0.25; d <= 1.5 && ok; d += 0.25) if (hit(g0[0] + Math.cos(a) * d, g0[1] + Math.sin(a) * d)) ok = false; if (ok){ step = true; break; } }
+            const end = P.path[P.path.length - 1], G = P._fl.flood(false);
+            out.push({ v, f, th:P.spec.theme, free:!hit(g0[0], g0[1]), step, end:P._fl.near(G, end[0], Math.max(end[1], 1), 2) }); }
+          return out; }, vw + 'x' + vh)); }
+      await pg.setViewportSize({ width:390, height:844 });
+      const bad = land.filter(o => !o.free || !o.step || !o.end);
+      claim(land.length >= 40 && !bad.length, `every landed walk (${land.length / 2} of them, at 390 x 844 and 1440 x 900) stands him clear of every collider, gives him a first step up the walk, and floods to the hole's end` + (bad.length ? ': ' + JSON.stringify(bad) : '')); }
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.

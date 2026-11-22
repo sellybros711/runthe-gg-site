@@ -478,6 +478,18 @@ if ('crossword'.includes(only) || !only) {
     R.ok(!g.wide, vp.join('x') + ': and the page does not scroll sideways');
     await m.ctx.close();
   }
+
+  // ...and on the first screen, before any tap, on a 390x844 phone and on a
+  // desktop: the bottom row (9 Across on 2026-11-20) used to be under the
+  // deck, and the desktop board ran 73px off the bottom at 1440x900.
+  for (const [vp, mobile] of [[[390, 844], true], [[1440, 900], false], [[1280, 720], false]]) {
+    const m = await open('crossword', { mobile, vp: { width: vp[0], height: vp[1] } });
+    await sleep(600);
+    const g = await m.p.evaluate(() => { const b = document.getElementById('board').getBoundingClientRect(), bar = document.querySelector('.playbar').getBoundingClientRect();
+      return { bot: Math.round(b.bottom), w: Math.round(b.width), floor: innerWidth >= 1000 ? innerHeight : Math.round(bar.top), sy: Math.round(scrollY) }; });
+    R.ok(g.sy === 0 && g.w > 250 && g.bot <= g.floor, vp.join('x') + ': the whole grid is on the first screen, nothing scrolled', JSON.stringify(g));
+    await m.ctx.close();
+  }
 }
 
 /* ------------------------------------------------------------------- sweep */

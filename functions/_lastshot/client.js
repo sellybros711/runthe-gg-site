@@ -44,10 +44,10 @@ import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js';
 import { challengeOpt, beats } from './challenge.js';
 import * as D from './daily-ui.js';
 import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sitLine, scoutOf, renderChallenge, renderBadLink } from './beat-ui.js';
-import { adder, verdictBlock, checklist, factsOf, summaryOf, scoreLineOf } from './cards.js';
+import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js';
 import { createBoard } from './board.js';
 import { mountBooks } from './book-ui.js';
-import { createCourt, between, warm } from './court.js';
+import { createRunView, between, warm } from './run-view.js';
 import { shareText, dailyShareText } from './share.js';
 import { freshSeed } from './rng.js';
 import { createSound } from './sound.js';
@@ -105,7 +105,7 @@ const ui = {
   hint(t) {
     $('hint').textContent = t || '';
     clearTimeout(hintTimer);
-    if (t) hintTimer = setTimeout(() => { $('hint').textContent = defaultHint(); }, 2600);
+    hintTimer = t ? setTimeout(() => { hintTimer = null; $('hint').textContent = defaultHint(); }, 2600) : null;
   },
   changed(p, f) {
     $('bRun').disabled = problems(SCX(), p).length > 0;
@@ -171,7 +171,7 @@ speedSync(); muteSync();
    bars step aside and the court takes the stage (play.html, .app.running). */
 const APP = document.querySelector('.app');
 function clipTools(on) { APP.classList.toggle('running', !on); }
-const court = createCourt($('court'));
+const court = createRunView($('court'));
 
 document.querySelectorAll('.tool').forEach(b => b.addEventListener('click', () => {
   const t = board.setTool(b.dataset.tool);
@@ -246,7 +246,7 @@ function loadStarter(id) {
   if (live) backToBoard();
   savePlay(p); board.reset();
   track('plays_load', { starter: id });
-  ui.hint(s.name + ' is up. Undo brings yours back.');
+  ui.hint(starterStash.prev.steps && starterStash.prev.steps.length ? s.name + ' is up. Undo brings yours back.' : s.name + ' is up.');
 }
 /* Undo, straight after a starter went on (nothing changed since): the old
    play comes back. Anything else is the board's own Undo. */
@@ -355,7 +355,7 @@ function playFrame() {
   if (!pv.play.steps.length) return;
   const res = simulate(pv.sc, pv.play, freshSeed(), { preview: true });
   $('board').hidden = true; $('court').hidden = false;
-  clipTools(false); court.camStart(res.frames);
+  clipTools(false); court.camStart(res.frames, { res, play: pv.play });
   const F = res.frames, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let g = F[0].t, i = 0, prev = performance.now(), hold = reduce ? 0 : 0.3, after = 0.5;
   const token = live = { preview: true, res };
@@ -455,14 +455,16 @@ function run(seed, opt, pl) {
   countRunStart(res);
   if (mode === 'edit' && edit) books.countRun(edit, res);
   $('board').hidden = true; $('court').hidden = false;
-  clipTools(false); court.camStart(res.frames);
+  clipTools(false); court.camStart(res.frames, { res, play: runPlay });
   $('sheet').classList.remove('on', 'peek'); $('vGame').classList.remove('lres'); clearStars(); $('hint').textContent = '';
-  banner(null); cutUi(null);
+  banner(null); cutUi(null); $('clock').classList.remove('zero'); punch(null);
   const reduce = reduced();
   const F = res.frames, last = F[F.length - 1];
   const slows = reduce ? [] : slowWindows(res);
   const rateAt = g => slows.reduce((r, w) => g <= w.a && g >= w.b ? Math.min(r, w.rate) : r, 1);
   const shotEnds = !!res.shot && last.sk != null;
+  /* where the shot went up from: the ball on the first frame of the shot (the shot cam frames it with the rim) */
+  const shotF = res.shot ? F.find(f => f.sk != null && f.b) : null, shotFrom = shotF ? { x: shotF.b[0], y: shotF.b[1] } : null;
   const start = res.startClock != null ? res.startClock : S.clock, go = F[0].t;
   const holdGame = Math.max(0, start - go), holdWall = holdWallOf(holdGame);
   const actT = firstActionT(F);
@@ -474,10 +476,13 @@ function run(seed, opt, pl) {
   setScore(S.us, S.them, start);
   let prev = performance.now();
 
+  /* THE BUZZER (2026-11-19). The clock runs out to 0.0 (BLEED seconds, inside
+     the wait the end already had, so a retry is no slower), turns red, and
+     the horn goes at zero, not with time still showing. */
   function toEnd() {
     live.phase = 'end'; live.w = 0;
+    live.bleed = { from: Math.max(0, live.clock || 0), t: reduce ? BLEED : 0, horn: false };
     $('clock').classList.remove('them'); $('stage').classList.remove('slow');
-    sound.buzzer();
     /* OVERTIME gets its own beat: the word, then how it went (phase 'ot'). */
     if (ot) { live.phase = 'ot'; cutUi(null); banner('OVERTIME'); buzz(30); return; }
     endJuice();
@@ -535,7 +540,7 @@ function run(seed, opt, pl) {
       if (live.i >= F.length - 1) {
         live.phase = 'after'; live.after = { t: 0, made: res.shot ? res.shot.made : false, seed: res.seed };
         $('stage').classList.remove('slow');
-        if (res.shot && !res.shot.made) sound.rim();
+        if (res.shot && !res.shot.made) { sound.rim(); punch('miss'); }
       }
     } else if (live.phase === 'after' || ((live.phase === 'end' || live.phase === 'ot') && !live.cut)) {
       // the first beat at the rim at speed, then the rest is dead time
@@ -551,7 +556,7 @@ function run(seed, opt, pl) {
       if (live.phase === 'cut' && c.w >= T3) toEnd();
     } else {
       if (!fr.h) live.spin += dt * 9;
-      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true });
+      court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin, cam: true, focus: shotFrom, hold: live.phase === 'hold' });
     }
     if (live.phase === 'play' || live.phase === 'after') {
       while (live.shown < res.events.length && (res.events[live.shown].t >= live.g || live.phase === 'after')) {
@@ -563,13 +568,20 @@ function run(seed, opt, pl) {
         if (!e.quiet) caption(e);
         if (/Good$/.test(e.text)) {
           live.made = true;
-          live.us = S.us + res.shot.points; flip('sUs'); sound.swish();
+          live.us = S.us + res.shot.points; flip('sUs'); sound.swish(); punch('make');
           if (res.how === 'make' && res.outcome === 'win') { live.winner = true; banner('GAME WINNER'); sound.crowd(); buzz([40, 50, 40, 50, 140]); }
           else if (ot && res.ot.after === 'end') { banner('TIED IT'); buzz(30); }
         }
         if (e.text === 'They answered') live.them = res.them;
       }
     }
+    if (live.bleed) {
+      const B = live.bleed;
+      B.t = Math.min(BLEED, B.t + raw);
+      clock = B.from * (1 - B.t / BLEED);
+      if (B.t >= BLEED && !B.horn) { B.horn = true; clock = 0; $('clock').classList.add('zero'); sound.buzzer(); }
+    }
+    live.clock = clock;
     pumpCaptions(now);
     setScore(live.us, live.them, Math.max(0, clock));
     if (live.phase === 'after') {
@@ -586,7 +598,7 @@ function run(seed, opt, pl) {
       }
     } else if (live.phase === 'end') {
       live.w += raw;
-      const wait = (live.winner ? 1.3 : ot ? 1.1 : 0.5) / (speed > 1 ? 1.5 : 1);
+      const wait = Math.max(BLEED + 0.1, (live.winner ? 1.3 : ot ? 1.1 : 0.5) / (speed > 1 ? 1.5 : 1));
       if (live.w >= wait) { lastTiming = performance.now() - live.tap; showResult(res); return; }
     }
     requestAnimationFrame(tick);
@@ -594,6 +606,16 @@ function run(seed, opt, pl) {
   requestAnimationFrame(tick);
 }
 
+const BLEED = 0.35;   // seconds for the clock to run out at the end
+/* The make and the miss land on the whole stage: a flash of light on a make,
+   a knock on a miss (both off with reduced motion; the sound still plays). */
+function punch(kind) {
+  const st = $('stage');
+  st.classList.remove('make', 'miss');
+  if (!kind || reduced()) return;
+  void st.offsetWidth; st.classList.add(kind);
+  if (kind === 'miss') buzz(25);
+}
 /* The big word over the court (GAME WINNER), or none. */
 function banner(text) {
   const el = $('big');
@@ -641,7 +663,9 @@ function pop(text, final, shot) {
 /* ---------- the result ---------- */
 function showResult(res) {
   banner(null); cutUi(null);
-  setScore(res.us, res.them, res.shotAt != null ? res.shotAt : 0);
+  /* the clock stays where the horn left it: out (it used to jump back up to
+     the time the shot went up, which the card already says in words) */
+  setScore(res.us, res.them, 0);
   countResult(res);
   if (mode === 'level' && lvl) { showLevelResult(res); return; }
   if (mode === 'daily' && dly && dly.scoring) { const sc = dly.scoring; dly.scoring = null; showDailyCard(sc.result, res); return; }
@@ -655,8 +679,7 @@ function showResult(res) {
   /* a daily practice says so, and its defense is the practice roll's, not today's */
   const practice = mode === 'daily';
   if (practice) add('p', 'practag', 'Practice · not scored');
-  add('h2', 'verdict ' + (win ? 'win' : 'lose'), win ? 'WINNER' : 'LOSE');
-  add('div', 'finalscore', scoreLineOf(res.us, res.them, res.how === 'ot'));
+  verdictHead(add, win ? 'win' : 'lose', win ? 'WINNER' : 'LOSE', win, scoreOfRun(res));
   add('p', 'reason', res.reason);
   add('p', 'facts xtra', when + (practice ? ' Practice defense: ' : isZone(res.scheme) ? ' Their defense: ' : ' Their call on screens: ') + res.schemeName + '.');
   const row = add('div', 'row');
@@ -735,7 +758,7 @@ function showLevelResult(res) {
   c.dataset.stars = String(n);
   const add = adder(c);
   add('p', 'lvlname', L.id + ' · ' + L.title);
-  verdictBlock(add, win, scoreLineOf(res.us, res.them, res.how === 'ot'), n, reduce);
+  verdictBlock(add, win, scoreOfRun(res), n, reduce);
   if (better && n > 0) add('p', 'newbest', prev ? 'New best. Up from ' + prev + '.' : 'New best.');
   checklist(add, n, factsOf(res)).classList.add('xtra');
   add('p', 'reason', res.reason);
@@ -746,7 +769,7 @@ function showLevelResult(res) {
   const next = nextOf(L.id), canNext = !!next && isOpen(ladder, next.id);
   const goNext = () => btn('Next level', n >= 1 ? 'go' : 'alt', () => openLevel(next), 'bNextLvl');
   if (canNext && n >= 1) goNext();
-  btn('Try again', canNext && n >= 1 ? 'alt' : 'go', () => run(freshSeed()), 'bReplay');
+  btn('Run it again', canNext && n >= 1 ? 'alt' : 'go', () => run(freshSeed()), 'bReplay');
   if (canNext && n < 1) goNext();
   const row2 = add('div', 'row xtra');
   saveButton(row2, runOf(res));
@@ -812,6 +835,7 @@ function backToBoard() {
 let lastOpt = {};
 const VIEWS = ['vHome', 'vGame', 'vBooks', 'vLadder', 'vBeat'];
 function show(v) {
+  if (v === 'vGame') { clearTimeout(hintTimer); hintTimer = null; $('hint').textContent = ''; }
   closeSheets();   // a sheet never stays open over the next screen
   for (const id of VIEWS) $(id).hidden = id !== v;
   $('back').dataset.to = v === 'vHome' ? 'arcade' : v === 'vGame' && mode === 'edit' ? 'book' : v === 'vGame' && mode === 'level' ? 'ladder'
@@ -1129,7 +1153,7 @@ function showBeatResult(res) {
   const n = starsOf(res);
   if (watching) {
     add('p', 'lvlname', 'Their play');
-    verdictBlock(add, res.outcome === 'win', scoreLineOf(res.us, res.them, res.how === 'ot'), n, reduce);
+    verdictBlock(add, res.outcome === 'win', scoreOfRun(res), n, reduce);
     add('p', 'dscore', summaryOf(res));
     add('p', 'reason', res.reason);
     add('p', 'facts xtra', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
@@ -1144,11 +1168,10 @@ function showBeatResult(res) {
   const mine = scoreOf(res), won = beats(mine, chal.theirs.score);
   c.dataset.beat = won ? 'yes' : 'no';
   add('p', 'lvlname', 'Beat my play');
-  add('h2', 'verdict ' + (won ? 'win' : 'lose'), won ? 'You beat it' : 'They still have it').id = 'beatVerdict';
+  verdictHead(add, won ? 'win' : 'lose', won ? 'You beat it' : 'They still have it', res.outcome === 'win', scoreOfRun(res)).id = 'beatVerdict';
   const vs = add('div', 'vs');
   add('p', 'vsme', 'You: ' + summaryOf(res), vs).id = 'beatMine';
   add('p', 'vsthem', 'Them: ' + summaryOf(chal.theirs.res), vs).id = 'beatThem';
-  add('div', 'finalscore', scoreLineOf(res.us, res.them, res.how === 'ot'));
   add('p', 'reason', res.reason);
   add('p', 'facts xtra', (isZone(res.scheme) ? 'Their defense: ' : 'Their call on screens: ') + res.schemeName + '.');
   const row = add('div', 'row');
@@ -1239,7 +1262,7 @@ loadToday();
 window.addEventListener('hashchange', () => { if (readHash(location.hash)) fromHash(); });
 board.reset();
 $('hint').textContent = defaultHint();
-/* Trace the players in the background while the coach draws (court.js). */
+/* Build the court's floor in the background while the coach draws (run-view.js). */
 warm();
 /* The ladder's account copy, once the sign in has said who this is: a merge
    that brings stars or plays in shows at once. The write interval can be

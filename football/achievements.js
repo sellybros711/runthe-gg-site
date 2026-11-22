@@ -75,6 +75,11 @@
   const has = (v) => v !== null && v !== undefined;
   const num = (v) => (has(v) ? Number(v) : null);
   const isTrue = (v) => v === true || v === 1 || v === 't' || v === 'true';
+  /* A transfer's schools are one string joined by "; " ("Oklahoma; Blinn College"). Every
+     test about a college reads each school, the same split as the engine's collegesOf, so
+     Dede Westbrook counts for Oklahoma. */
+  const schoolsOf = (p) => (p && p.college)
+    ? [...new Set(String(p.college).split(';').map((s) => s.trim()).filter(Boolean))] : [];
   const uniq = (a) => Array.from(new Set(a));
 
   /* A local calendar day for a timestamp, as YYYY-MM-DD. Local and not UTC on purpose: a
@@ -351,7 +356,7 @@
       for (const p of x.roster) {
         seasonsDrafted.add(Number(p.season));
         if (p.franchise) clubsDrafted.add(p.franchise);
-        if (p.college) collegesDrafted.add(p.college);
+        for (const s of schoolsOf(p)) collegesDrafted.add(s);
         for (const a of (p.awards || [])) awardsDrafted.add(a);
       }
     }
@@ -1693,7 +1698,7 @@
       'Field a dynasty roster with three men out of the same college.', 'gold', 'Dynasty',
       dynRoster((men) => {
         const by = Object.create(null);
-        for (const p of men) if (p.college) by[p.college] = (by[p.college] || 0) + 1;
+        for (const p of men) for (const s of schoolsOf(p)) by[s] = (by[s] || 0) + 1;
         return Object.values(by).some((n) => n >= 3);
       })));
     add(A('dyn_mvp', 'An MVP in the building',

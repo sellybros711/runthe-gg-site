@@ -60,7 +60,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
-<script src="/assets/rtg-ads.js?v=4"></script>
+<script src="/assets/rtg-ads.js?v=5"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -2747,6 +2747,12 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
   @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* A 320PX PHONE (QA, 2026-11-16): the column is the screen less the wrap's padding (292px at 320),
+     so a 320x50 hung 14px past the screen and the page scrolled sideways. Below 348px the zone takes
+     the screen's own width, so the 320x50 fits a 320px phone. On a narrower screen no slim banner
+     fits, so the unit is not shown and never asked for (an ad is never clipped). */
+  @media (max-width:347px){ [data-ad-zone="menu"],[data-ad-zone="results"]{width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)} }
+  @container (max-width:319px){ [data-ad-zone="menu"] ins.adsbygoogle,[data-ad-zone="results"] ins.adsbygoogle{display:none} }
   </style>
   <div class="menu-ad" data-ad-zone="menu">
     <span class="ad-label">Advertisement</span>
@@ -5657,7 +5663,7 @@ function paintPair(){
       rtd.map(r=>'<li>'+ic(r[0],r[1])+r[2]+'</li>').join('')+'</ul></div>'+
     '<div class="pp-c std">'+ICO_GEM+'<b>Shut The Door</b><ul>'+
       std.map(r=>'<li>'+ic('#2b59ff',r[0])+r[1]+'</li>').join('')+
-      '<li class="soon">'+ic('#2b59ff','<path d="M5 21V4h11l-1.5 3.5L16 11H5"/>')+'Custom challenges, soon</li></ul></div></div>'+
+      '<li>'+ic('#2b59ff','<path d="M5 21V4h11l-1.5 3.5L16 11H5"/>')+'Custom challenges</li></ul></div></div>'+
     '<div class="pro-price"><b>'+PAIR_PRICE+'</b><span><strong>a year for both</strong>'+PRO_PRICE+' for this game alone.'+
       (add>0?' The second game costs '+usd(add)+'.':'')+'</span></div>'+
     '<button class="btn gold" id="b-hp-pair">'+(signed?'Get both for '+PAIR_PRICE+PRO_TERM:'Sign in to get both')+'</button>'+
@@ -5765,6 +5771,7 @@ function proSheet(m,fresh){
     '<div class="pro-cta"><button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE+PRO_TERM:'Sign in to get Pro')+'</button>'+
       (stdOwned?'':'<button class="btn ghost" id="b-pro-pair" style="width:100%;margin-top:8px">'+
         (signed?'Add Shut The Door Pro: both for '+PAIR_PRICE+PRO_TERM:'Sign in to get both games for '+PAIR_PRICE+PRO_TERM)+'</button>')+
+      (stdOwned?'':'<p class="pro-note">Shut The Door Pro adds custom challenges. Build a spot and send it to friends.</p>')+
       '<p class="pro-err" id="pro-err" hidden></p>'+
       '<button type="button" class="pro-later" data-close-pro>Not now</button></div>';
   wirePro(box);

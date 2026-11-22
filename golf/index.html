@@ -99,7 +99,7 @@
 <script defer src="putt/gymkinds/lantern.js?v=1"></script>
 <script defer src="putt/gymkinds/ringer.js?v=1"></script>
 <script defer src="putt/gymkinds/spade.js?v=1"></script>
-<script defer src="putt/trail.js?v=73"></script>
+<script defer src="putt/trail.js?v=75"></script>
 <script defer src="putt/mapland.js?v=28"></script>
 <!-- Share clips of a hole's putts from the card after it (reads putt.js, never changes it). -->
 <script defer src="putt/clips.js?v=3"></script>
@@ -10785,7 +10785,11 @@ function passClaimable(){ if(!sbSignedIn()) return 0; const s=passState(), t=pas
 // prem lane on passProActive(), so the moment the wallet shows pass_active every reached tier's Pro
 // reward becomes claimable (dedup via the claimed arrays).
 function mergeTourPass(local, server){
-  if(!server) return local; if(!local) return server;
+  if(!server && !local) return local;
+  // one side alone still comes out in the merged shape (proS and the rest), so a copy always merges to the same
+  // thing. It used to come back as-is when this device had no track yet, and rebuilt when start-up had already
+  // made one, so whether a pull that changed nothing pushed the bundle back was a race (check-cloud-push).
+  if(!server) server=local; if(!local) local=server;
   if((server.season||0) > (local.season||0)) return server;
   if((local.season||0) > (server.season||0)) return local;
   const uni=(a,b)=>{ const s=new Set(); (a||[]).forEach(x=>s.add(x)); (b||[]).forEach(x=>s.add(x)); return [...s]; };

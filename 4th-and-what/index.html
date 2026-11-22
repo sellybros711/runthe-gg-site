@@ -58,7 +58,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=34">
+<link rel="stylesheet" href="style.css?v=36">
 </head>
 <body>
 <header class="topbar">
@@ -104,10 +104,32 @@ document.documentElement.setAttribute('data-theme', 'dark');
     <div class="modes">
       <!-- GO FOR IT LEADS (the Advisor's review, approved by the owner 2026-11-16): the main mode
            since 2026-11-13, so Home names it first. Starts a run, or resumes one (goforit.js) -->
-      <button type="button" class="mode go" id="hGo"><b id="hGoT">Go For It</b><span id="hGoSub">Convert 4th down after 4th down. How far can you go?</span></button>
-      <button type="button" class="mode play" data-go="play"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></button>
-      <button type="button" class="mode book" data-go="books"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></button>
-      <button type="button" class="mode trivia" data-go="trivia"><b>Daily Defense</b><span>One play a day. Pick the defense that stops it.</span></button>
+      <button type="button" class="mode go" id="hGo" aria-describedby="hGoSub">
+        <span class="mboard" aria-hidden="true">
+          <span class="dmark"><b>4TH</b><i>&amp; ?</i></span>
+          <svg viewBox="0 0 358 150" preserveAspectRatio="xMidYMid meet">
+            <line x1="0" y1="104" x2="358" y2="104" stroke="#4aa3ff" stroke-width="2.5"/>
+            <line x1="0" y1="70" x2="358" y2="70" stroke="#f5b72a" stroke-width="2.5"/>
+            <g stroke="#e9f2ea" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M40 110 L40 46 L70 36"/><path d="M318 110 L318 60 L282 44"/><path d="M110 112 L150 84 L210 80"/><path d="M250 112 L250 30"/></g>
+            <g fill="#e9f2ea"><path d="M70 36 l-9 -1 5 8z"/><path d="M282 44 l9 -2 -4 8z"/><path d="M210 80 l-8 -4 0 8z"/><path d="M250 30 l-4 8 8 0z"/></g>
+            <g font-family="Inter, sans-serif" font-weight="900" font-size="13" fill="#fff" text-anchor="middle"><circle cx="40" cy="114" r="10" fill="#2f7cf6"/><text x="40" y="119">X</text><circle cx="110" cy="116" r="10" fill="#a259ff"/><text x="110" y="121">H</text><circle cx="250" cy="116" r="10" fill="#f5b72a"/><text x="250" y="121" fill="#111">Y</text><circle cx="318" cy="114" r="10" fill="#ef4444"/><text x="318" y="119">Z</text><circle cx="179" cy="132" r="9" fill="#4a7cf6"/></g>
+            <g stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"><path d="M150 56 l10 10 m0 -10 l-10 10"/><path d="M196 56 l10 10 m0 -10 l-10 10"/><path d="M60 64 l10 10 m0 -10 l-10 10"/><path d="M290 64 l10 10 m0 -10 l-10 10"/><path d="M174 20 l10 10 m0 -10 l-10 10"/></g>
+          </svg>
+        </span>
+        <span class="mfoot"><span class="mtext"><b id="hGoT">Go For It</b><span id="hGoSub">Convert 4th down after 4th down. How far can you go?</span></span><span class="mgo" aria-hidden="true">&#9654;</span></span>
+      </button>
+      <button type="button" class="mode play" data-go="play" aria-label="Draw a play. Draw any play you want, from any distance you want, and see if you can convert.">
+        <span class="mboard" aria-hidden="true"><svg viewBox="0 0 110 74" preserveAspectRatio="xMidYMid meet"><g stroke="#ffe36b" stroke-width="3" fill="none" stroke-linecap="round"><path d="M20 62 C24 40 30 30 46 26"/><path d="M60 62 L60 30 L84 20"/></g><path d="M80 52 l14 -14 4 4 -14 14 -6 2z" fill="#f4f1e6"/></svg></span>
+        <span class="mfoot"><span class="mtext"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></span></span>
+      </button>
+      <button type="button" class="mode book" data-go="books" aria-label="Playbook Builder. Build a useable playbook and track the success of your plays.">
+        <span class="mboard" aria-hidden="true"><span class="wrist"><i>12</i><i>14</i><i>21</i><i>33</i><i>45</i><i>52</i></span></span>
+        <span class="mfoot"><span class="mtext"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></span></span>
+      </button>
+      <button type="button" class="mode trivia" data-go="trivia" aria-label="Daily Defense. One play a day. Pick the defense that stops it.">
+        <span class="mboard" aria-hidden="true"><svg viewBox="0 0 110 74" preserveAspectRatio="xMidYMid meet"><path d="M6 32 Q55 2 104 32" stroke="#ff8a7a" stroke-width="2" fill="rgba(255,138,122,.12)" stroke-dasharray="4 3"/><g stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M20 50 l7 7 m0 -7 l-7 7"/><path d="M48 50 l7 7 m0 -7 l-7 7"/><path d="M76 50 l7 7 m0 -7 l-7 7"/><path d="M30 18 l7 7 m0 -7 l-7 7"/><path d="M70 18 l7 7 m0 -7 l-7 7"/></g></svg></span>
+        <span class="mfoot"><span class="mtext"><b>Daily Defense</b><span>One play a day. Pick the defense that stops it.</span></span></span>
+      </button>
     </div>
     <footer class="legal">
       <img src="/assets/wm-runthegg.png?v=1" alt="RunThe.GG" width="1200" height="171" loading="lazy">
@@ -512,6 +534,8 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <div class="watch" id="watch" hidden>
   <div class="stage" id="stage">
     <canvas id="cLive" aria-label="The play in the stadium"></canvas>
+    <canvas id="cLive3d" hidden aria-label="The play in the stadium"></canvas>
+    <div class="bug" id="bug" hidden aria-hidden="true"><b id="bugDown"></b><span id="bugCall"></span></div>
     <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
     <div class="cap" id="cap" aria-live="polite"></div>
     <div class="measure" id="measure" hidden aria-hidden="true"><i></i><span>Measurement</span><i></i></div>
@@ -528,6 +552,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
       <div class="rsnaps" id="rSnaps" hidden></div>
       <div class="rdaily" id="rDaily" hidden>
         <p class="rdhead" id="rDailyHead"></p>
+        <p class="rdvs" id="rDailyVs" hidden></p>
         <p class="rdreal"><b>What really happened:</b> <span id="rReal"></span> <span id="rVerdict"></span></p>
         <p class="rdstats" id="rDayStats" hidden></p>
         <!-- what next (the Advisor's review, 2026-11-16: the Daily ended on Run it back) -->
@@ -539,8 +564,18 @@ document.documentElement.setAttribute('data-theme', 'dark');
       <div class="rgo" id="rGo" hidden>
         <p class="rgohead" id="rGoHead"></p>
         <p class="rgobest" id="rGoBest" hidden>New best</p>
-        <p class="rgotally" id="rGoTally"></p>
-        <p class="rgopips" id="rGoPips" aria-hidden="true"></p>
+        <!-- THE RUN AS A SCOREBOARD (2026-11-19, the owner: "whatever you think looks best") -->
+        <div class="sboard" id="rGoScore" aria-hidden="true">
+          <div class="sbtop"><span>Go For It</span><span id="rGoBestLbl"></span></div>
+          <div class="sbcells">
+            <div><i>Converted</i><b class="led" id="rGoN">0</b></div>
+            <div><i>Yards</i><b class="led w" id="rGoY">0</b></div>
+            <div><i>TD</i><b class="led w" id="rGoT">0</b></div>
+            <div><i>Stops left</i><p class="rgopips" id="rGoPips"></p></div>
+          </div>
+          <div class="sbladder" id="rGoLadder"></div>
+        </div>
+        <p class="rgotally sr" id="rGoTally"></p>
         <p class="rgonext" id="rGoNext"></p>
         <button type="button" class="playnow rgobtn" id="rGoOn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Next down</button>
         <button type="button" class="playnow rgobtn" id="rGoAgain" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Go again</button>
@@ -590,7 +625,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="config.js?v=13"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=14"></script>
+<script src="engine.js?v=15"></script>
 <script src="names.js?v=4"></script>
 <script src="routes.js?v=4"></script>
 <script src="book.js?v=4"></script>
@@ -602,19 +637,20 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="stage.js?v=2"></script>
 <script src="events.js?v=2"></script>
 <script src="share.js?v=2"></script>
-<script src="feel.js?v=3"></script>
-<script src="play.js?v=4"></script>
-<script src="app.js?v=13"></script>
+<script src="feel.js?v=4"></script>
+<script src="play.js?v=5"></script>
+<script type="module" src="live3d.js?v=4"></script>
+<script src="app.js?v=14"></script>
 <script src="home.js?v=5"></script>
-<script src="studio.js?v=6"></script>
+<script src="studio.js?v=7"></script>
 <script src="game.js?v=6"></script>
-<script src="clip.js?v=1"></script>
+<script src="clip.js?v=2"></script>
 <script src="flow.js?v=19"></script>
-<script src="daily.js?v=9"></script>
-<script src="trivia.js?v=4"></script>
+<script src="daily.js?v=10"></script>
+<script src="trivia.js?v=6"></script>
 <script src="calls.js?v=12"></script>
-<script src="goforit.js?v=8"></script>
-<script src="profile.js?v=1"></script>
+<script src="goforit.js?v=9"></script>
+<script src="profile.js?v=2"></script>
 <script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=2"></script>

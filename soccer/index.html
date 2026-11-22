@@ -3235,6 +3235,12 @@
   @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
   @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* A 320PX PHONE (QA, 2026-11-16): the column is the screen less the wrap's padding (292px at 320),
+     so a 320x50 hung 14px past the screen and the page scrolled sideways. Below 348px the zone takes
+     the screen's own width, so the 320x50 fits a 320px phone. On a narrower screen no slim banner
+     fits, so the unit is not shown and never asked for (an ad is never clipped). */
+  @media (max-width:347px){ [data-ad-zone="menu"],[data-ad-zone="results"]{width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)} }
+  @container (max-width:319px){ [data-ad-zone="menu"] ins.adsbygoogle,[data-ad-zone="results"] ins.adsbygoogle{display:none} }
   /* THE TOURNAMENT AD: in the flow under the match cards, the mid-size 300x250. Empty, it takes no space. */
   .stage-ad{text-align:center}
   .stage-ad:has(ins[data-ad-status="filled"]){margin:150px auto 0}
@@ -3270,7 +3276,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
      crossorigin="anonymous"></script>
-<script src="/assets/rtg-ads.js?v=4"></script>
+<script src="/assets/rtg-ads.js?v=5"></script>
 <!-- Supabase JS (auth: email/password + Google OAuth, session persistence) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->

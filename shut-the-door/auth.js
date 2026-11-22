@@ -271,6 +271,29 @@
     p_pitches: row.pitches, p_score: row.score, p_percentile: row.percentile,
   });
 
+  /* ---------------- custom challenges (supabase/183_shut_the_door_challenges.sql) ---------------- */
+
+  /* Make one (Pro): {data: {code, seed, rules, createdAt}} or {error: the server's words}. */
+  const challengeCreate = (c) => act('shutdoor_challenge_create', { p_spec: c.spec, p_build: c.build, p_sha: c.sha, p_rules: c.rules });
+  /* One by its code, signed out too: {code, spec, build, sha, seed, rules, createdAt, creator, mine,
+     players, results [{username, score, outcome, pitches, creator, mine}], myResult}. null when there
+     is none or no answer. */
+  const challengeGet = (code) => rpc('shutdoor_challenge_get', { p_code: code });
+  /* The caller's one counted try: {data: {taken, result: the challenge as challengeGet answers}} or {error}. */
+  const challengeSubmit = (row) => act('shutdoor_challenge_submit', {
+    p_code: row.code, p_calls: row.calls, p_outcome: row.outcome, p_pitches: row.pitches, p_score: row.score, p_strip: row.strip,
+  });
+  /* The caller's challenges, made and played: [{code, spec, createdAt, made, players, best, myScore}]. */
+  async function myChallenges(limit) {
+    const r = await rpc('shutdoor_my_challenges', { p_limit: limit || 50 }, true);
+    return Array.isArray(r) ? r : null;
+  }
+  /* Where a matchup pack is kept (matchups.js builds them, the data workflow puts them there):
+     public, gzipped, checked against its sha before it plays. */
+  const MATCHUP_BUCKET = 'shutdoor-matchups';
+  const matchupUrl = (build, pitcher, lineup) =>
+    url() + '/storage/v1/object/public/' + MATCHUP_BUCKET + '/' + build + '/' + pitcher + '/' + lineup + '.json.gz';
+
   /* The plate (supabase/162_shut_the_door_plates.sql): {plate, unlocked, initials}, the unlocks read
      from the caller's stored saves. setPlate('') goes back to the neutral plate. */
   const plates = () => rpc('shutdoor_my_plates', {}, true);
@@ -334,7 +357,8 @@
     const r = await rpc('shutdoor_ump_counts', {}, true);
     return r && typeof r === 'object' ? r : null;
   }
-  const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 100 });
+  /* the whole list, to the server's cap (177: 500), so the review sheet's Person and Call filters see every row */
+  const umpQueue = (status) => act('shutdoor_ump_queue', { p_status: status || 'pending', p_limit: 500 });
   const umpReview = (id, status) => act('shutdoor_ump_review', { p_id: id, p_status: status });
 
   window.STD_AUTH = {
@@ -345,5 +369,6 @@
     submit, board, myStats, myDay,
     vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, submitStats, survivorStats, archiveSubmit,
     history, historyOuting, plates, setPlate,
+    challengeCreate, challengeGet, challengeSubmit, myChallenges, matchupUrl,
   };
 })();

@@ -29,7 +29,11 @@ async function device(label){
   await p.goto(HOST + '/golf/', { waitUntil:'domcontentloaded' });
   await p.waitForFunction(() => typeof cloudPushNow === 'function' && typeof finishDailyRound === 'function', null, { timeout:30000 });
   await p.evaluate(() => { window.sbSignedIn = () => true; sbUser = { id:'u-cloud' }; sbUsername = 'cloudcheck';
-    sb = { rpc:(fn, a) => window.__srv(fn, JSON.stringify(a || {})).then(s => JSON.parse(s)), auth:{ signOut:() => Promise.resolve({}) } }; });
+    sb = { rpc:(fn, a) => window.__srv(fn, JSON.stringify(a || {})).then(s => JSON.parse(s)), auth:{ signOut:() => Promise.resolve({}) } };
+    S.overlay = null; S.screen = 'title'; render(); });
+  // the game pulls on sign-in, once the signed-in page has started (its coin wallet and Tour Pass track made for this
+  // account). Pulling in the middle of start-up made whether a later open pushed a race of the check's own making.
+  await p.clock.runFor(5000);
   return p;
 }
 const run = async (p, ms) => { await p.clock.runFor(ms); await p.evaluate(() => new Promise(r => setTimeout(r, 0))); };
