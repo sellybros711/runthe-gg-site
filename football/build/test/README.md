@@ -6,6 +6,7 @@ node football/build/test/test_game_scripts.mjs
 node football/build/test/test_drives.mjs
 node football/build/test/test_credits.mjs
 node football/build/test/test_defense.mjs
+node football/build/test/test_chemistry.mjs
 
 (nohup node cfb/build/test/gzip_server.mjs &)
 node football/build/test/test_bracket.mjs
@@ -13,8 +14,9 @@ BROWSER=1 node football/build/test/test_defense.mjs
 BROWSER=1 node football/build/test/test_credits.mjs
 ```
 
-The first five need no database, no browser and no network. They read
-`data/display_calibration.json` and play games through the real engine. The last three
+The first six need no database, no browser and no network. They read
+`data/display_calibration.json` and play games through the real engine, except
+`test_chemistry.mjs`, which reads the player data and asks the engine for links. The last three
 drive the page in Chromium and need a server, which is why they are listed apart.
 `test_defense.mjs` and `test_credits.mjs` appear in both lists on purpose: their arithmetic
 halves run anywhere, and `BROWSER=1` adds a rendered half on top.
@@ -27,6 +29,7 @@ halves run anywhere, and `BROWSER=1` adds a rendered half on top.
 | `test_credits.mjs` | That the name on a playoff touchdown is a name the roster earned: credit follows what a man actually is and how he played, a defense's takeaways fit the men who made them, and none of it touches the stream the season is played out of. |
 | `test_bracket.mjs` | That the postseason field is a real fourteen team bracket at every seeding, and that what it draws about your own run agrees with what the run recorded. |
 | `test_defense.mjs` | That the defense draft is the same game from the other side: a $30M defender buys what a $30M receiver buys, the draft moves the scoreboard as much, a defensive season is as winnable, every scheme can be drafted for on purpose, and the formation on the field fits in its box at every width. |
+| `test_chemistry.mjs` | That the college link reads every school a man went to: Mark Andrews and Dede Westbrook ("Oklahoma; Blinn College") link and the label names Oklahoma, a four-year school is named before a junior college, and the coach link and the profile read each school too. |
 
 ## Names on the plays, and why only in the postseason
 

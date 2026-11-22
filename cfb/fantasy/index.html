@@ -3,11 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- UNLISTED AND NOINDEXED WHILE IT IS BEING BUILT, which is the same posture the wrestling
-     game and Run The Floor are in and is written up in CLAUDE.md under each of them. It is
-     not a lock: anybody with the URL is in, and the tester gate below is a feature flag
-     served to every visitor. Say that plainly rather than implying the link is private. -->
-<meta name="robots" content="noindex, nofollow">
+<!-- OPEN TO SEARCH (the owner, 2026-11-10): the page is live, linked from its game and the home
+     page, and carries ads, so it is indexed and in the sitemap like every other live page. -->
+<link rel="canonical" href="https://runthe.gg/cfb/fantasy/">
 <title>College Fantasy | RunThe.GG</title>
 <!-- THE LINK PREVIEW. A share of this page used to unfurl as the site's generic card, so the one
      link a player sends from here said nothing about the week. The card is drawn by
@@ -586,6 +584,12 @@
      entry screen's button says the board and opens the board. A single default would make
      one of the two a control that takes you somewhere else. */
   .tabs{display:flex;gap:8px;margin:14px 0 4px}
+  /* Past weeks: one chip a week the server has a competition for (the NFL page's, 2026-11-17). */
+  .pwk{display:flex;flex-wrap:wrap;gap:6px}
+  .pwk button{padding:6px 12px;border-radius:999px;border:1px solid var(--line);
+    background:transparent;color:var(--dim);font:inherit;font-size:13px;cursor:pointer}
+  .pwk button.on{background:var(--panel-2);border-color:var(--line-2);color:var(--ink)}
+  .pwk button[hidden]{display:none}
   .tabs button{flex:1 1 0;padding:9px 10px;border-radius:999px;border:1px solid var(--line);
     font-family:var(--fn);font-size:11.5px;font-weight:800;letter-spacing:.08em;
     text-transform:uppercase;color:var(--dim-2);background:none}
@@ -666,6 +670,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <script src="/assets/rtg-ads.js?v=3"></script>
+<!-- GA4: same property as the rest of runthe.gg, gated by the consent defaults above. The page had
+     the consent and no tag, so College Fantasy sent no event at all (Advisor's review 2026-11-16). -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+  gtag('js',new Date());gtag('set',{game_name:'College Fantasy'}); gtag('config',id);
+  var s=document.createElement('script');s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -700,13 +714,13 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     <div class="card hero">
       <span class="hero-cup" data-crest="hc" aria-hidden="true"></span>
       <div class="eyebrow" id="home-week"></div>
-      <h1 class="display hero-h">One lineup.<br><em>One week.</em></h1>
+      <h1 class="display hero-h" id="home-h">One lineup.<br><em>One week.</em></h1>
       <!-- The lineup the reader is about to build, in the chips the board will deal. -->
       <div class="rack" aria-hidden="true"><span class="QB">QB</span><span class="RB">RB</span><span class="RB">RB</span><span class="WR">WR</span><span class="WR">WR</span><span class="TE">TE</span></div>
       <ol class="steps">
-        <li><b>1</b><span><strong>Draft six</strong>QB, two RB, two WR, TE from the week's biggest games. Stay under the cap.</span></li>
+        <li><b>1</b><span id="step-1"><strong>Draft six</strong>QB, two RB, two WR, TE from the week's biggest games. Stay under the cap.</span></li>
         <li><b>2</b><span><strong>Three tries</strong>Draft up to three lineups and submit the one you like best. Pro gets five.</span></li>
-        <li><b>3</b><span><strong>Win the week</strong>Half PPR. Hurt or benched? Swap him before his game. Top score wins 30 days of Pro.</span></li>
+        <li><b>3</b><span id="step-3"><strong>Win the week</strong>Half PPR. Hurt or benched? Swap him before his game. Top score wins 30 days of Pro.</span></li>
       </ol>
       <div class="tiles">
         <div class="t-lock"><span class="eyebrow">Locks</span><b id="home-lock">-</b></div>
@@ -716,6 +730,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       <div class="stack">
         <button class="btn" id="b-draft">Start drafting</button>
         <button class="btn blue" id="b-review" hidden>See your lineups</button>
+        <button class="btn quiet" id="b-past" hidden>Past weeks</button>
       </div>
       <p class="note" id="home-note"></p>
       <!-- LAST WEEK'S RESULT, on the screen a player lands on. Without it the loop does not
@@ -750,7 +765,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     <div class="slots" id="d-slots"></div>
     <div class="men" id="d-men"></div>
     <p class="note" id="d-note"></p>
-    <div class="stack"><button class="btn quiet" id="b-abandon">Start this draft again</button></div>
+    <div class="stack"><button class="btn quiet" id="b-draft-back">Back</button></div>
   </section>
 
   <section id="s-review" class="screen">
@@ -845,6 +860,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       <div class="tabs">
         <button id="lv-tab-games" class="on">The games</button>
         <button id="lv-tab-board">The board</button>
+        <button id="lv-tab-past">Past weeks</button>
       </div>
       <div id="lv-pane-games">
         <div class="gms" id="lv-games" style="margin-top:10px"></div>
@@ -858,6 +874,15 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
         <p class="note" id="lv-boardsay"></p>
         <p class="note" id="lv-boardhow" hidden>Tap a name to see the lineup. First place when the week ends wins 30 days of Pro.</p>
       </div>
+      <!-- A FINISHED WEEK IS A RECORD, not a live board. It gets no poll, no move marks and
+           no live projection: the week is over and nothing on it is going to change. The
+           chips are the weeks the server has a competition for, asked once a visit. -->
+      <div id="lv-pane-past" hidden>
+        <div class="pwk" id="pw-weeks" style="margin-top:12px"></div>
+        <div class="eyebrow" id="pw-lab" style="margin-top:12px"></div>
+        <div class="board" id="pw-board" style="margin-top:6px"></div>
+        <p class="note" id="pw-say"></p>
+      </div>
       <div class="stack">
         <button class="btn quiet" id="b-live-back">Back</button>
         <a class="btn quiet" href="/cfb/">Back to the game</a>
@@ -865,6 +890,23 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     </div>
   </section>
 </div>
+
+<style>
+  /* About and the legal links: plain text a reader (and a search engine) can read without the game. */
+  .fx-about{max-width:600px;margin:40px auto 0;padding:0 18px;font-size:14px;line-height:1.55;opacity:.82}
+  .fx-about h2{font-size:15px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px}
+  .fx-about p{margin:0 0 10px}
+  .fx-legal{text-align:center;font-size:12.5px;margin:18px auto 0;padding:0 18px;opacity:.75}
+  .fx-legal a{color:inherit}
+  .fx-legal span{margin:0 6px;opacity:.6}
+</style>
+<section class="fx-about" aria-labelledby="fx-about-h">
+  <h2 id="fx-about-h">About College Fantasy</h2>
+  <p>College Fantasy is a free weekly college football fantasy contest from RunThe.GG. Every week you draft one lineup of real players from the week's biggest games: a quarterback, two running backs, two wide receivers and a tight end.</p>
+  <p>Each player has a price, and your lineup has to stay under the cap, so you can't just take every star. The best lineups find value. Draft a few lineups if you like, then submit the one you trust most. If a player is hurt or benched, swap him before his game.</p>
+  <p>Your players score half PPR on what they really do on Saturday. Yards, touchdowns and catches all count. The live board follows every game and shows where you stand as the scores come in. The top score of the week wins Pro. Sign in with a free account to enter.</p>
+</section>
+<footer class="fx-legal"><p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a href="/about.html" target="_blank" rel="noopener">About</a><span>&middot;</span><a href="/contact.html" target="_blank" rel="noopener">Contact</a><span>&middot;</span><a href="/cfb/" target="_blank" rel="noopener">Perfect College Season</a><span>&middot;</span><a href="/" target="_blank" rel="noopener">More games</a></p></footer>
 
 <!-- THE FANTASY AD (Ads Agent, 2026-10-30, the same spot as the NFL Fantasy Challenge,
      unit college-fantasy). One unit under whichever screen is open, so it is at the bottom of every
@@ -1255,9 +1297,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var bits = [ROSTER_SAY[e.roster] || INJ_SAY[e.st] || 'Listed on the injury report.'];
     if (e.d) bits.push(String(e.d).replace(/\.$/, '') + '.');
     $('inj-line').textContent = bits.join(' ');
-    var src = e.by === 'site' ? 'Ruled out for week ' + POOL.week + ' by RunThe.GG.'
+    var src = e.by === 'site' ? 'Ruled out for ' + wkLow(POOL.week) + ' by RunThe.GG.'
       : (e.st === 'missed' || e.roster ? 'Read off the box scores.' : 'Read off ESPN\'s roster.');
-    $('inj-when').textContent = src + ' Any player can be swapped before his game.';
+    $('inj-when').textContent = src + ' Any player can be swapped ' + swapWhen() + '.';
     $('inj-sheet').hidden = false;
   }
   $('inj-close').onclick = function(){ $('inj-sheet').hidden = true; };
@@ -1286,6 +1328,19 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      first thing that spends it is a draft, and there is no draft before a pool. */
   var CAP = D.CAP_MUSD;
   var BY_ID = {};
+  /* THE PLAYOFF IS A WEEK OF ITS OWN (playoff.mjs builds it as week 100), and it reads as the
+     Playoff everywhere a week is named. The week before it is the pointer's `prev`, carried
+     onto the board at boot, because the Playoff is not numbered after the last regular week. */
+  var PLAYOFF_WEEK = 100;
+  function isPlayoff(w){ return w >= PLAYOFF_WEEK; }
+  function wkCap(w){ return isPlayoff(w) ? 'The Playoff' : 'Week ' + w; }
+  function wkLow(w){ return isPlayoff(w) ? 'the Playoff' : 'week ' + w; }
+  function seasonWk(s, w){ return isPlayoff(w) ? s + ' Playoff' : s + ' week ' + w; }
+  function prevOf(){ return POOL && POOL.prev != null ? POOL.prev : POOL.week - 1; }
+  /* A PLAYOFF SWAP CLOSES AT A MAN'S FIRST PLAYOFF GAME (the owner's call, 2026-11-16). His
+     kick on the board is that game, so the server and this page already agree; the words say it. */
+  function swapWhen(){ return isPlayoff(POOL.week) ? 'before his first Playoff game' : 'before his game'; }
+  function thisWk(){ return isPlayoff(POOL.week) ? 'the Playoff' : 'this week'; }
   var state = null;         /* { season, week, chances:[], pick, submitted } */
   var cur = -1;             /* which chance is being drafted */
 
@@ -1676,6 +1731,36 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     if (ev.target === $('cf-sheet')) closeConfirm();
   });
 
+
+  /* A SHEET GOES WHERE THE READER IS LOOKING. `inset:0` on a fixed box is the LAYOUT
+     viewport, and under a pinch zoom the screen shows only part of that, so a sheet laid out
+     against the whole of it can open somewhere the reader cannot see. While one is open its
+     scrim is pinned to the VISUAL viewport instead, and kept there as the reader pans or
+     zooms. No zoom (scale 1) leaves the inline style empty, so the stylesheet's `inset:0` is
+     the whole story on an ordinary visit and nothing here can move it. */
+  function fitSheets(){
+    var vv = window.visualViewport;
+    var open = document.querySelectorAll('.isheet:not([hidden])');
+    for (var i = 0; i < open.length; i++) {
+      var s = open[i].style;
+      if (!vv || Math.abs(vv.scale - 1) < 0.01) {
+        s.top = s.left = s.width = s.height = s.right = s.bottom = '';
+        continue;
+      }
+      s.right = s.bottom = 'auto';
+      s.top = vv.offsetTop + 'px'; s.left = vv.offsetLeft + 'px';
+      s.width = vv.width + 'px'; s.height = vv.height + 'px';
+    }
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fitSheets);
+    window.visualViewport.addEventListener('scroll', fitSheets);
+  }
+  /* Every sheet is opened by clearing `hidden`, from a dozen places, so the opening is
+     watched rather than each opener remembering to call this. */
+  new MutationObserver(fitSheets).observe(document.body,
+    { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+
   $('d-men').addEventListener('click', function(ev){
     var b = ev.target.closest && ev.target.closest('.man');
     if (!b || !b.dataset.id || busy) return;
@@ -1705,6 +1790,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var c = state.chances[cur];
     c.ids.push(man.player_id);
     save();
+    if (c.ids.length === D.SLOTS.length) ga('fantasy_draft_done', { draw: cur + 1 });
     JUST = c.ids.length - 1;
     if (REDUCE){ paintDraft(); return; }
     busy = true;
@@ -1727,14 +1813,18 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     }, 170);
   }
 
-  $('b-abandon').onclick = function(){
+  /* BACK, AND THE DRAFT IS KEPT EXACTLY AS IT IS. There used to be "Start this draft
+     again" here, which dealt a fresh board from a new seed on every press: unlimited
+     rerolls of the wheel, which is the one thing a stored seed exists to stop. The owner
+     took it out (2026-10-27). Every pick is already saved, so coming back to the draft
+     resumes the same board where it was left, and the only way to a different board is to
+     finish this one and use the next of the week's chances. */
+  $('b-draft-back').onclick = function(){
     clearTimers();
     busy = false;
-    JUST = -1;
-    moneyFrom = CAP;
-    state.chances[cur] = { seed: D.newSeed(), ids: [] };
-    save();
-    paintDraft();
+    closeConfirm();
+    paintHome();
+    show('s-home');
   };
 
   /* ---- the review screen ---- */
@@ -1818,6 +1908,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     state.pick = Number(b.dataset.i);
     save();
     clearRefused();
+    ga('fantasy_lineup_saved', { draw: state.pick + 1 });
     toReview();
   });
 
@@ -1909,6 +2000,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       if (res === true){
         state.submitted = state.pick;
         save();
+        ga('fantasy_entered', { draws: state.chances.length });
         /*
          * A SUBMIT LANDS ON THE BOARD, not on your own six.
          *
@@ -1973,7 +2065,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var done = !!res;
     $('b-in-back').hidden = !lookingBack;
     var proj = D.projected(c);
-    $('in-week').textContent = POOL.season + ' week ' + POOL.week
+    $('in-week').textContent = seasonWk(POOL.season, POOL.week)
       + (done && !res.final ? ' · still being played' : '');
     $('in-head').textContent = done ? 'How it went' : 'You are in';
     $('in-lab').textContent = done ? 'Half PPR' : 'Projected';
@@ -2057,14 +2149,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       ? res.played + ' of ' + res.games + ' games are in. This will move.'
       : 'The games are still being played. This will move.';
     $('in-say').textContent = done
-      ? (res.final ? 'Week ' + POOL.week + ' is done. This is what your six scored.'
+      ? (res.final ? wkCap(POOL.week) + ' is done. This is what your six scored.'
         : inSoFar)
-      : (locked() ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
+      : (locked() ? wkCap(POOL.week) + ' has kicked off. Your lineup is in.'
         : 'Your lineup is in. Entries close ' + lockWhen() + '.');
     /* SAID PLAINLY RATHER THAN IMPLIED, and what it says changed the day the entry became
        a row. It read "saved in this browser only" for as long as that was true. */
     $('in-note').textContent = serverEntry()
-      ? 'Entered on your account. One entry a week, and it is final.'
+      ? 'Entered on your account. ' + (isPlayoff(POOL.week) ? 'One entry for the Playoff, and it\'s final.' : 'One entry a week, and it is final.')
       : 'Saved in this browser. It is not on your account, so it will not count.';
     show('s-in');
   }
@@ -2146,8 +2238,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
         + '<button type="button" data-swap="' + esc(m.player_id) + '">Swap</button></div>';
     }).join('');
     if (rest.length){
-      html += '<div class="swapany"><p>Know something we do not? Swap anyone before his '
-        + 'game, for a player at his price or a little below.</p><div class="swb">'
+      html += '<div class="swapany"><p>Know something we do not? Swap anyone ' + swapWhen()
+        + ', for a player at his price or a little below.</p><div class="swb">'
         + rest.map(function(m){
           return '<button type="button" data-swap="' + esc(m.player_id) + '">Swap '
             + esc(m.name) + '</button>';
@@ -2240,6 +2332,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
          longer exists. */
       if (r.ok){
         applySwap(s.out, s.pick);
+        ga('fantasy_swap', {});
         if (SWAP === s){ $('sw-sheet').hidden = true; SWAP = null; }
         if ($('s-in').classList.contains('on')) paintIn(LAST_IN.res, LAST_IN.lookingBack);
         return;
@@ -2456,7 +2549,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     for (i=0;i<all.length;i++) html += gameRowHTML(all[i]);
     /* Nothing at all is a week whose pool this page could not read, which is a state the
        loading screen already covers. Said rather than left blank anyway. */
-    box.innerHTML = html || '<p class="note">This week\'s games could not be read.</p>';
+    box.innerHTML = html || '<p class="note">' + (isPlayoff(POOL.week) ? 'The Playoff games' : 'This week\'s games') + ' could not be read.</p>';
   }
 
   var BOARD_SEEN = null;    /* key -> { place, score } as last drawn, or null before one */
@@ -2641,7 +2734,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      * phone changed cell tower. It only says so when there is no board there to leave. */
     if (!data){
       if (!BOARD_SEEN) $('lv-boardsay').textContent = 'The board could not be reached. '
-        + 'The games above are this week\'s schedule.';
+        + (isPlayoff(POOL.week) ? 'The games above are the Playoff so far. Later rounds land as they\'re set.' : 'The games above are this week\'s schedule.');
       return;
     }
     if (!rows || !rows.length){
@@ -2661,7 +2754,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       var ents = (data.entrants && data.entrants.length) ? data.entrants : null;
       var n0 = data.week ? data.week.entries : null;
       BOARD_SEEN = null;
-      $('lv-boardlab').textContent = 'This week'
+      $('lv-boardlab').textContent = (isPlayoff(POOL.week) ? 'The Playoff' : 'This week')
         + (n0 ? ' · ' + n0 + (n0 === 1 ? ' entry' : ' entries') : '');
       if (ents){
         var eh = '', j, e;
@@ -2678,14 +2771,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       $('lv-board').innerHTML = '';
       $('lv-boardsay').textContent = (n0 && !(data.week && data.week.open))
         ? 'The board opens at the first kickoff.'
-        : 'Nobody has entered this week. Being first is the prize.';
+        : 'Nobody has entered ' + thisWk() + ' yet. Being first is the prize.';
       return;
     }
     $('lv-boardsay').textContent = '';
 
     var me = data.me && data.me.place ? data.me : null;
     var n = me ? me.entries : (data.week ? data.week.entries : null);
-    $('lv-boardlab').textContent = 'This week'
+    $('lv-boardlab').textContent = (isPlayoff(POOL.week) ? 'The Playoff' : 'This week')
       + (n ? ' · ' + n + (n === 1 ? ' entry' : ' entries') : '');
 
     var html = '', mine = false, i, r;
@@ -3065,12 +3158,15 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      every rectangle is zero and every row appears to have travelled the height of the
      page. */
   function lvTab(which){
-    var games = which !== 'board';
-    $('lv-tab-games').classList.toggle('on', games);
-    $('lv-tab-board').classList.toggle('on', !games);
-    $('lv-pane-games').hidden = !games;
-    $('lv-pane-board').hidden = games;
+    if (which !== 'board' && which !== 'past') which = 'games';
+    $('lv-tab-games').classList.toggle('on', which === 'games');
+    $('lv-tab-board').classList.toggle('on', which === 'board');
+    $('lv-tab-past').classList.toggle('on', which === 'past');
+    $('lv-pane-games').hidden = which !== 'games';
+    $('lv-pane-board').hidden = which !== 'board';
+    $('lv-pane-past').hidden = which !== 'past';
     window.scrollTo(0,0);
+    if (which === 'past') openPast();
     if ($('s-live').classList.contains('on')) fantasyAds('s-live');
   }
   function boardShowing(){
@@ -3078,9 +3174,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   }
   $('lv-tab-games').onclick = function(){ lvTab('games'); };
   $('lv-tab-board').onclick = function(){ lvTab('board'); };
+  $('lv-tab-past').onclick = function(){ lvTab('past'); };
 
   function openLive(tab){
-    $('lv-week').textContent = POOL.season + ' week ' + POOL.week;
+    $('lv-week').textContent = seasonWk(POOL.season, POOL.week);
     /* THREE STATES, AND THE THIRD ONE ARRIVED WITH THE ENTRANTS LIST. This screen could not
        be reached before the first kickoff until 112 gave it something to say, so the "not
        being played" sentence was only ever read after the week had finished. Read before it
@@ -3088,8 +3185,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     $('lv-say').textContent = liveOpen()
       ? 'Every game on the slate, and where everybody is, while it happens.'
       : (!locked()
-        ? 'Week ' + POOL.week + ' has not kicked off yet.'
-        : 'Week ' + POOL.week + ' is not being played right now. This is how it finished.');
+        ? wkCap(POOL.week) + ' has not kicked off yet.'
+        : wkCap(POOL.week) + ' is not being played right now. This is how it finished.');
     $('lv-live').hidden = true;
     /*
      * `BOARD_SEEN` IS DELIBERATELY NOT RESET HERE, AND IT WAS, FOR A PASS.
@@ -3105,7 +3202,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      * question asked in a different place.
      */
     clearBoardTimers();
-    lvTab(tab === 'board' ? 'board' : 'games');
+    lvTab(tab === 'board' || tab === 'past' ? tab : 'games');
+    ga('fantasy_live_opened', { tab: tab === 'board' || tab === 'past' ? tab : 'games' });
     paintScores(null);
     show('s-live');
     /* AFTER `show`, WHICH CANCELS TIMERS. The draft screen's reveal learnt this the same
@@ -3114,6 +3212,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   }
 
   $('b-live').onclick = function(){ openLive('games'); };
+  $('b-past').onclick = function(){ openLive('past'); };
   $('b-in-board').onclick = function(){ openLive('board'); };
   $('b-live-back').onclick = function(){
     /* BACK TO WHERE THEY CAME FROM, which is their own entry if they have one and the home
@@ -3123,7 +3222,206 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     else { paintHome(); show('s-home'); }
   };
 
+  /* ---- past weeks ----
+   *
+   * PORTED FROM THE NFL PAGE (the owner, 2026-11-17: "see previous weeks the same way"). The one
+   * difference is where a week's board is: the college build writes cfb/data/fantasy/pool_*.json
+   * and keeps every one, so a past lineup is named off its own week's board here too. There is no
+   * results file in college football: resultsFor shapes the server's answer as one, and the NFL
+   * code below reads it the same way.
+   *
+   * A FINISHED WEEK, READ BACK. The live board only ever shows `POOL.week`, so the moment
+   * the Tuesday build rolls the board over, the standings of the week just played have no
+   * door at all. Reported the first Thursday it happened.
+   *
+   * WHICH WEEKS IS ASKED OF THE SERVER, not counted from 1. A week the site never opened a
+   * competition for (2026 weeks 1 and 2) answers `week: null`, and a chip for it would be a
+   * control that opens nothing. Asked once a visit, in parallel, and kept.
+   *
+   * THE SIX MEN ARE NAMED OFF THAT WEEK'S OWN POOL. This week's board cannot name last
+   * week's men: a man on a bye, cut or traded is simply not in it, which is `lastWeekCard`'s
+   * argument. The points come off that week's results file, and off the server's results
+   * table when the file is not written yet.
+   *
+   * NO POLL, NO MOVE MARKS, NO LIVE PROJECTION. Nothing on a finished week is going to move.
+   */
+  /* The last week before this one: the pointer's `prev` when it has one (the Playoff is not
+     numbered after the last regular week), else this week minus one. */
+  function pastTop(){ return POOL && POOL.prev != null ? POOL.prev : POOL.week - 1; }
+  var PAST = { weeks: null, asking: false, cur: 0, gen: 0, pools: {} };
+  function pastPool(season, wk){
+    var k = season + '|' + wk;
+    if (PAST.pools[k] !== undefined) return Promise.resolve(PAST.pools[k]);
+    return fetch('/cfb/data/fantasy/pool_' + season + '_w' + wk + '.json')
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; })
+      .then(function(j){ PAST.pools[k] = j; return j; });
+  }
+  function openPast(){
+    if (PAST.weeks){ drawPastChips(); return; }
+    var top = pastTop();
+    if (top < 1){ PAST.weeks = []; drawPastChips(); return; }
+    if (PAST.asking) return;
+    PAST.asking = true;
+    $('pw-weeks').innerHTML = '';
+    $('pw-lab').textContent = '';
+    $('pw-board').innerHTML = '';
+    $('pw-say').textContent = 'Looking for past weeks.';
+    var asks = [];
+    for (var w = top; w >= 1; w--) asks.push(F.board(POOL.season, w, 50));
+    Promise.all(asks).then(function(all){
+      PAST.asking = false;
+      /* NULL IS "COULD NOT ASK", and is not remembered: the next open asks again rather
+         than telling somebody for the rest of the visit that there are no past weeks. */
+      if (all.some(function(d){ return d == null; }) && !all.some(function(d){ return d; })){
+        $('pw-say').textContent = 'Past weeks could not be reached. Try again in a moment.';
+        return;
+      }
+      var weeks = [], data = {};
+      for (var i=0;i<all.length;i++){
+        var d = all[i], wk = top - i;
+        if (d && d.week && Number(d.week.entries) > 0){ weeks.push(wk); data[wk] = d; }
+      }
+      PAST.weeks = weeks;
+      PAST.data = data;
+      drawPastChips();
+    });
+  }
+  function drawPastChips(){
+    var weeks = PAST.weeks || [];
+    if (!weeks.length){
+      $('pw-weeks').innerHTML = '';
+      $('pw-lab').textContent = '';
+      $('pw-board').innerHTML = '';
+      $('pw-say').textContent = 'No past weeks yet. Week ' + POOL.week + ' is the first.';
+      return;
+    }
+    if (weeks.indexOf(PAST.cur) < 0) PAST.cur = weeks[0];
+    var h = '';
+    for (var i=0;i<weeks.length;i++){
+      h += '<button type="button" data-w="' + weeks[i] + '"'
+        + (weeks[i] === PAST.cur ? ' class="on"' : '') + '>Week ' + weeks[i] + '</button>';
+    }
+    $('pw-weeks').innerHTML = h;
+    paintPast(PAST.cur);
+  }
+  $('pw-weeks').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('button[data-w]');
+    if (!b) return;
+    PAST.cur = Number(b.getAttribute('data-w'));
+    drawPastChips();
+  });
+  function paintPast(wk){
+    var gen = ++PAST.gen, season = POOL.season;
+    var d = PAST.data && PAST.data[wk];
+    $('pw-lab').textContent = 'Week ' + wk;
+    $('pw-say').textContent = '';
+    Promise.all([pastPool(season, wk), resultsFor(season, wk)]).then(function(got){
+      var pool = got[0], file = got[1];
+      /* No file yet is a week the Tuesday build has not scored on disk. The server's own
+         table holds the same points, so the lineups still read. */
+      if (file && file.scores) return [pool, file];
+      return (F.results ? F.results(season, wk) : Promise.resolve(null)).then(function(rows){
+        var sc = {};
+        for (var i=0;rows && i<rows.length;i++){
+          sc[rows[i].player_id] = [Number(rows[i].half_ppr), rows[i].line || ''];
+        }
+        return [pool, rows ? { scores: sc } : null];
+      });
+    }).then(function(got){
+      if (gen !== PAST.gen) return;
+      paintPastBoard(wk, d, got[0], got[1]);
+    });
+  }
+  function pastRosterHTML(ids, pool, file){
+    var by = {}, men = [], i;
+    for (i=0;pool && i<pool.pool.length;i++) by[pool.pool[i].player_id] = pool.pool[i];
+    for (i=0;i<ids.length;i++) men.push(by[ids[i]] || { player_id: ids[i], name: 'Unknown', position: '' });
+    men.sort(function(a,b){ return (POS_ORDER[a.position] == null ? 9 : POS_ORDER[a.position])
+      - (POS_ORDER[b.position] == null ? 9 : POS_ORDER[b.position]); });
+    var html = '';
+    for (i=0;i<men.length;i++){
+      var m = men[i];
+      /* NO POINTS AT ALL IS "COULD NOT READ THEM", not six men who did not play, so it
+         draws a dash rather than a column of zeros that reads as a fact. */
+      var row = file && file.scores && file.scores[m.player_id];
+      var pts = row ? Number(row[0]).toFixed(1) : (file ? '0.0' : '-');
+      var line = row ? (row[1] || '') : (file ? 'did not play' : '');
+      html += '<div class="bm"><span class="bmp ' + esc(m.position || '') + '">' + esc(m.position || '') + '</span>'
+        + '<span class="bmn"><span class="bmnn">' + esc(m.name) + (m.team ? club(m.team) : '') + '</span>'
+        + (line ? '<s class="bml">' + esc(line) + '</s>' : '') + '</span>'
+        + '<span class="bmst">Final</span>'
+        + '<span class="bmpts"><b>' + pts + '</b></span></div>';
+    }
+    return html;
+  }
+  function paintPastBoard(wk, d, pool, file){
+    var rows = d && d.rows;
+    if (!rows || !rows.length){
+      $('pw-board').innerHTML = '';
+      $('pw-say').textContent = 'Nobody entered week ' + wk + '.';
+      return;
+    }
+    var n = d.week ? Number(d.week.entries) : rows.length;
+    var done = d.week && d.week.scored_at;
+    $('pw-lab').textContent = 'Week ' + wk + ' · ' + n + (n === 1 ? ' entry' : ' entries')
+      + (done ? ' · Final' : '');
+    var html = '', mine = false, i, r;
+    for (i=0;i<rows.length;i++){
+      r = rows[i];
+      if (r.is_me) mine = true;
+      var key = 'pw' + wk + '-' + String(r.entry_no == null ? 'p' + r.place : r.entry_no);
+      var win = done && Number(r.place) === 1;
+      html += boardRowHTML(key, r.place, r.display_name || 'Somebody',
+        Number(r.score).toFixed(1), ((r.is_me ? 'me' : '') + (win ? ' lead' : '')).trim(),
+        { lead: win, roster: Array.isArray(r.picks) && r.picks.length
+          ? pastRosterHTML(r.picks, pool, file) : '' });
+    }
+    var me = d.me && d.me.place ? d.me : null;
+    if (!mine && me){
+      var ml = Array.isArray(me.lines) ? me.lines : [];
+      html += '<div class="brow gap">...</div>';
+      html += boardRowHTML('pw' + wk + '-you', me.place, 'You', Number(me.score).toFixed(1), 'me',
+        { roster: ml.length ? pastRosterHTML(ml.map(function(l){ return l.player_id; }), pool, file) : '' });
+    }
+    $('pw-board').innerHTML = html;
+    $('pw-say').textContent = 'Tap a name to see the lineup.';
+  }
+  $('pw-board').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('.bhd');
+    if (!b || b.disabled) return;
+    var row = b.parentNode, k = row.getAttribute('data-k');
+    var open = !row.classList.contains('open');
+    row.classList.toggle('open', open);
+    b.setAttribute('aria-expanded', String(open));
+    if (open) BOARD_OPEN[k] = 1; else delete BOARD_OPEN[k];
+  });
+
   /* ---- home ---- */
+  /* GOOGLE ANALYTICS, the same six events the NFL Fantasy page sends (site PR 1020), so the two
+     competitions read side by side under their own game_name. `from` is where the player came in
+     (?from=results, ?from=home), so the results card and the door can be credited with the
+     entries they send. Never anything about the player. */
+  var FROM = (function(){
+    try { var f = new URLSearchParams(location.search).get('from') || '';
+      return /^[a-z]{2,16}$/.test(f) ? f : ''; } catch (e) { return ''; } })();
+  /* THE TIER EVERY EVENT CARRIES (platform-measuring: guests are counted). WHO is the account
+     the page was let in with (go(), below); a guest is stopped at the gate and still counted. */
+  var WHO = null;
+  function tierNow(){
+    if (!WHO || !WHO.signedIn) return 'guest';
+    return (typeof PRO !== 'undefined' && PRO) ? 'pro' : 'free';
+  }
+  function ga(ev, p){
+    try {
+      if (typeof gtag !== 'function') return;
+      var o = p || {}; if (FROM) o.from = FROM;
+      if (typeof POOL !== 'undefined' && POOL && POOL.week) o.week = POOL.week;
+      o.tier = tierNow();
+      gtag('event', ev, o);
+    } catch (e) {}
+  }
+
   function startChance(){
     var i = -1;
     for (var k=0;k<state.chances.length;k++){
@@ -3133,6 +3431,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       if (state.chances.length >= chancesAllowed()){ toReview(); return; }
       state.chances.push({ seed: D.newSeed(), ids: [] });
       i = state.chances.length - 1;
+      ga('fantasy_draw_used', { draw: i + 1, of: chancesAllowed() });
     }
     cur = i;
     save();
@@ -3150,6 +3449,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   }
 
   function paintHome(){
+    $('b-past').hidden = pastTop() < 1;
     var done = state.chances.filter(function(c){
       return (c.ids||[]).length >= D.SLOTS.length; }).length;
     /* BETA LEADS THE EYEBROW, because this is the first line of the mode and a reader who
@@ -3157,19 +3457,34 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        door says it too: one word, both surfaces, the way the two how-to surfaces on the
        arcade pages have to agree. A middot list rather than a sentence, which is what this
        repo already reaches for when three facts share a line. */
-    $('home-week').textContent = 'Beta · ' + POOL.season + ' week ' + POOL.week
+    $('home-week').textContent = 'Beta · ' + seasonWk(POOL.season, POOL.week)
       + ' · ' + slate().length + ' games';
+    /* THE PLAYOFF'S OWN PITCH. The team count is read off the board, never written here. */
+    if (isPlayoff(POOL.week)){
+      var nTeams = (POOL.teams && POOL.teams.length) || 0;
+      $('home-h').innerHTML = 'One lineup.<br><em>The whole Playoff.</em>';
+      $('step-1').innerHTML = '<strong>Draft six</strong>QB, two RB, two WR, TE from the '
+        + (nTeams ? nTeams + ' ' : '') + 'Playoff teams. Stay under the cap.';
+      $('step-3').innerHTML = '<strong>Win the Playoff</strong>Half PPR. Your guys score in every '
+        + 'game their team plays, so go deep. Hurt? Swap him before his first Playoff game. '
+        + 'Top score wins 30 days of Pro.';
+    }
     $('home-lock').textContent = locked() ? 'Locked' : untilLock();
     $('home-cap').textContent = money(CAP);
     $('home-drafts').textContent = done + ' of ' + chancesAllowed();
     $('b-draft').hidden = locked() || state.chances.length >= chancesAllowed()
       && done >= chancesAllowed();
-    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + chancesAllowed() : 'Start drafting';
+    /* A DRAFT LEFT HALFWAY IS KEPT (Back, not a reroll: the NFL page's rule, 2026-10-27), so the
+       button says it picks up where it was left. */
+    var going = state.chances.some(function(c){
+      var n = (c.ids||[]).length; return n > 0 && n < D.SLOTS.length; });
+    $('b-draft').textContent = going ? 'Keep drafting'
+      : done ? 'Draft ' + (done+1) + ' of ' + chancesAllowed() : 'Start drafting';
     $('b-review').hidden = !done;
     /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
        and finds one gone with nothing to say why. */
     $('home-note').textContent = locked()
-      ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
+      ? wkCap(POOL.week) + ' has kicked off. Nothing more can be submitted.'
       : reopenedLine()
         + 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
     lastWeekCard();
@@ -3192,7 +3507,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
    */
   var LAST = null;
   function lastWeekCard(){
-    var wk = POOL.week - 1;
+    var wk = prevOf();
     if (wk < 1) return;
     var prev = loadWeek(POOL.season, wk);
     if (!prev || prev.submitted == null) return;
@@ -3218,7 +3533,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   function drawLast(){
     if (!LAST) return;
     var d = Math.round((LAST.got - LAST.proj) * 10) / 10;
-    $('last-say').textContent = 'Week ' + LAST.week + (LAST.final ? '' : ', still playing');
+    $('last-say').textContent = wkCap(LAST.week) + (LAST.final ? '' : ', still playing');
     $('last-sub').textContent = 'Projected ' + LAST.proj.toFixed(1) + '. '
       + (d === 0 ? 'Exactly that.' : (d > 0 ? '+' : '') + d.toFixed(1)
         + (d > 0 ? ' better.' : ' short.'));
@@ -3279,7 +3594,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     F.myResult(POOL.season, POOL.week).then(function(r){
       if (r == null){ PRZ_ASKED = false; return; }
       if (r && r.entered) return take(POOL.week, r);
-      var prev = POOL.week - 1;
+      var prev = prevOf();
       if (prev < 1) return;
       return F.myResult(POOL.season, prev).then(function(r2){
         if (r2 == null){ PRZ_ASKED = false; return; }
@@ -3295,8 +3610,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     if (!PRZ) return;
     var place = Number(PRZ.r.place), won = passWon(PRZ.r);
     $('prize-say').textContent = won
-      ? 'You won week ' + PRZ.week
-      : 'Week ' + PRZ.week + ' is settled';
+      ? 'You won ' + wkLow(PRZ.week)
+      : wkCap(PRZ.week) + ' is settled';
     $('prize-sub').textContent = won
       ? (PRZ.r.pass_until ? 'Pro is yours until ' + passDay(PRZ.r.pass_until) : 'Your win is in here')
       : 'Where you finished, out of ' + PRZ.r.entries;
@@ -3319,7 +3634,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   function showPrize(){
     if (!PRZ) return;
     var r = PRZ.r, place = Number(r.place), entries = Number(r.entries);
-    $('prz-eye').textContent = 'Week ' + PRZ.week + ' is settled';
+    $('prz-eye').textContent = wkCap(PRZ.week) + ' is settled';
     $('prz-place').textContent = ordinal(place);
     $('prz-place').classList.toggle('pod', place <= 3);
     $('prz-of').textContent = 'of ' + entries + (entries === 1 ? ' entry' : ' entries');
@@ -3339,12 +3654,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        missing. The win itself is real and stays on their profile. */
     var won = passWon(r);
     if (place === 1 && !won && entries < 2)
-      say = 'You were the only entry this week, so there is no prize. The win still counts.';
+      say = 'You were the only entry in ' + thisWk() + ', so there is no prize. The win still counts.';
     else if (place === 1) say = 'You won the week. Nobody drafted better.';
     else if (place === 2) say = 'So close. One spot off the top.';
     else if (place === 3) say = 'Top three. That is a podium finish.';
     else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field. That is a good week.';
-    else say = 'Not your week. Every week starts from zero.';
+    else say = isPlayoff(PRZ.week) ? 'Not your Playoff. Next season starts from zero.' : 'Not your week. Every week starts from zero.';
 
     /* THE PROJECTION IS THE ONE OTHER THING THIS READER CAN BE PROUD OF, and it is theirs
        alone rather than a comparison with anybody. Said only when it is true, and decided on
@@ -3649,7 +3964,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
            visit that has not moved, fresh bytes on the one that has. */
         return fetch('/cfb/data/fantasy/' + now.file, { cache: 'no-cache' }).then(function(r){
           if(!r.ok) throw new Error('pool'); return r.json();
-        });
+        }).then(function(p){ if (now.prev != null) p.prev = now.prev; return p; });
       })
       .then(function(p){
         POOL = p;
@@ -3703,6 +4018,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     var go = function(who){
       if (went) return;
       went = true;
+      WHO = who;
+      ga('fantasy_opened', {});
       if (gate(who)) begin();
     };
     A.onChange(function(who){ if (who && who.ready) go(who); });

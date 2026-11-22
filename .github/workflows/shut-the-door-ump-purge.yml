@@ -1,0 +1,47 @@
+name: Shut The Door ump purge
+
+# Deletes every umpire call file that no clip row names (supabase/175, shut-the-door/ump-purge.mjs).
+# A clip row goes when its account is deleted (the user_id cascade), and a rejected clip drops its
+# path, so its file has nobody left to keep it. SQL cannot remove a file from Supabase storage (a
+# delete from storage.objects leaves it in the backing store), so this removes them through the
+# Storage API with the service role, then checks the database lists none of them any more.
+#
+# Hourly, at 37 past. A red run means a voice is still on disk: GitHub emails the owner, and the
+# next hour tries again, because the list is worked out fresh each time.
+#
+# Secrets: SUPABASE_URL and SUPABASE_SERVICE_ROLE (the newsletter's two). Logs counts, never paths.
+# Run it by hand (Run workflow) after the one-off backfill, supabase/shut_the_door_ump_backfill.sql.
+
+on:
+  schedule:
+    - cron: '37 * * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Who started this run (the clock sends "clock").'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shut-the-door-ump-purge
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: The purge's own checks, offline
+        run: node shut-the-door/ump-purge.mjs --self-test
+      - name: Delete the files no row names
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+        run: node shut-the-door/ump-purge.mjs

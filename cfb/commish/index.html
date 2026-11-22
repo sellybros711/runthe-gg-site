@@ -9,6 +9,21 @@
      the way the note in CLAUDE.md describes for the others. -->
 <meta name="robots" content="noindex,nofollow">
 <title>Commish Simulator | College Football: Perfect Season</title>
+<!-- THE LINK PREVIEW (the owner's approval, 2026-11-16, the Advisor's review). Marketing posts this
+     URL, and a shared link showed nothing but the address. Noindex stays: a preview is what a
+     friend sees in a chat, not what a search engine lists. The image is cfb/commish/og.png. -->
+<meta name="description" content="You're the commissioner of college football. Rule on the docket, keep the room happy, and see how long they keep you.">
+<meta property="og:title" content="Commish Simulator: you run college football">
+<meta property="og:description" content="Rule on the docket. Keep the room happy. See how long they keep you.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/cfb/commish/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://runthe.gg/cfb/commish/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Commish Simulator. You run college football. Rule on the docket, keep the room happy, see how long they keep you. A gold trophy on a shield.">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/cfb/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2209,6 +2224,28 @@
     padding-left:10px;border-left:2px solid var(--gold-dim,var(--line-2))}
   .foot{margin-top:22px;text-align:center;font-size:11.5px;color:var(--dim-2);line-height:1.6}
 </style>
+<!-- GA4, the site's one property (Advisor's review 2026-11-16: Commissioner Mode sent no event at
+     all). Consent Mode defaults first, the same as every other page on runthe.gg: in Europe, the
+     UK and Switzerland analytics waits for the consent banner. No ads on this page, so ad storage
+     is only ever denied. Every event carries game_name and nothing about the player. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+  gtag('js',new Date());gtag('set',{game_name:'Commissioner Mode'}); gtag('config',id);
+  var s=document.createElement('script');s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+/* One call for every Commish event, so a failed or missing gtag never stops a ruling. */
+/* `tier` on every event (platform-measuring: guests are counted): guest, free or pro, from the
+   page's own account state through window.cfbCommishTier, which the page sets once it has one. */
+function cfbCommishEvent(ev,p){ try{ if(typeof gtag==='function'){ var o=p||{};
+  o.tier=typeof window.cfbCommishTier==='function'?window.cfbCommishTier():'guest';
+  gtag('event',ev,o); } }catch(e){} }
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -2799,7 +2836,7 @@
 <!-- THE BUNDLE STORE, shared with The Perfect Season. The door below draws it for anybody
      who has not bought, so it has to be there before gate() runs. -->
 <script src="/assets/store.js?v=23"></script>
-<script src="/cfb/engine.js?v=35"></script>
+<script src="/cfb/engine.js?v=36"></script>
 <script src="access.js?v=7"></script>
 <script src="portrait.js?v=1"></script>
 <!-- THE FULL TEAM LIST AND FLAG. This page draws the same store the other two do, and
@@ -2956,6 +2993,8 @@ const isTesterNow=()=>{
  * there is no second input that can disagree with it. `test_devswitch.mjs` asserts the
  * absence, for a tester too, so putting it back means deleting a guard on purpose. */
 const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
+/* The tier every analytics event carries (cfbCommishEvent, in the head). */
+window.cfbCommishTier=()=>!authState.signedIn?'guest':(ownsCfb()?'pro':'free');
 const isPro=()=>allowed()&&ownsCfb();
 
 /* ── ONE SEASON A DAY, FOR AN ACCOUNT THAT HAS NOT BOUGHT ─────────────────────────
@@ -3032,6 +3071,8 @@ function seasonWall(){
       office();
       return;
     }
+    /* The day's free season is spent: the wall, and the Pro offer on it. */
+    cfbCommishEvent('commish_wall',{});
     paintWait(st||null);
   });
 }
@@ -3314,6 +3355,7 @@ function renewTerm(years){
   world.term=(world.term||1)+1;
   world.startYear=world.year;
   world.termSeasons=Math.max(1,years|0);
+  cfbCommishEvent('commish_term_renewed',{term:world.term,years:world.termSeasons});
   world.outcome=null;
   /* THE SHELF GUARD IS RELEASED WITH THE CONTRACT. logTerm refuses to file a term twice
      and it keys on this flag, so a renewal that did not clear it would leave every term
@@ -3387,6 +3429,7 @@ function scenApply(w,scen){
 }
 
 function newTerm(year,scen){
+  cfbCommishEvent('commish_term_start',{});
   /* THE OLD TERM IS DROPPED RATHER THAN OVERWRITTEN, and that is what makes the progress
      rule in 103 safe. A fresh term is progress 1 and the one it replaces is whatever it got
      to, so a write would be REFUSED as moving the save backwards and the next sign in on
@@ -5055,6 +5098,7 @@ return p;
  screen has painted, guarded by a sequence so a slow answer for one term cannot land on
  the next one's ending, and silent when the backend is not there. */
 function recordTerm(world,p){
+cfbCommishEvent('commish_term_done',{doctrine:String((p&&p.id)||'')});
 const box=$('y-docsplit');
 if(box){ box.hidden=true; box.innerHTML=''; }
 const P=window.PS_CFB_SPLITS, DOC=window.PS_CFB_DOCTRINE, R=window.PS_CFB_REPORT;
@@ -7105,6 +7149,7 @@ function paintSplit(el,split,optionId,labels){
    handler because the handler is already long and because the sequence guard is the whole
    point: the number on the screen has to belong to the item on the screen. */
 function recordRuling(item,optionId){
+  cfbCommishEvent('commish_ruling',{item:String((item&&item.id)||'')});
   const el=$('r-split');
   if(el){ el.hidden=true; el.innerHTML=''; }
   const P=window.PS_CFB_SPLITS;
@@ -8825,6 +8870,7 @@ function playSeason(year){
     const sim=seasonAt({through:S.WEEKS,titles:true,bracket:true});
     if(!sim) return;
     lastSeason=sim;
+    cfbCommishEvent('commish_season_played',{term:world.term||1,season:Math.max(1,world.year-world.startYear+1)});
     /* THE VIEWING FIGURES GO ON THE WORLD HERE, which is the only place a season is known to
        be finished. The media rights item reads them back to price the next deal, so without
        this call the negotiation is the same whether the player protected every rivalry or
@@ -9978,7 +10024,8 @@ let gatePaint=0;
   await loadStates();
   load();
   const A=window.PS_CFB_AUTH;
-  if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }
+  if(!A){ authState={ready:false,waiting:false,signedIn:false}; cfbCommishEvent('commish_opened',{}); gate(); return; }
+  let openedSent=false;
   A.onChange((st)=>{
     const moved=st.userId!==authState.userId;
     /* The shelf belongs to an account, so a different one (or none) has to be asked again
@@ -9987,6 +10034,9 @@ let gatePaint=0;
     if(moved||!st.signedIn){ cloudPulled=null; cloudMarkSent=null; cloudMarkQueued=null; }
     authState=st;
     if(moved||!st.signedIn) premiumSet=null;
+    /* OPENED, once, as soon as the page knows who is playing, so a guest stopped at the gate counts. */
+    /* Ready, or given up waiting (no accounts reachable): either way the page is in use. */
+    if((st.ready||st.waiting===false)&&!openedSent){ openedSent=true; cfbCommishEvent('commish_opened',{}); }
     /* THE TERM AND THE CAREER THE ACCOUNT IS HOLDING, which is the one thing on this page
        that can arrive from another device. Not awaited: it redraws the door itself if what
        comes back is further on, and does nothing at all otherwise. */

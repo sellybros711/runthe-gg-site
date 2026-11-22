@@ -1,0 +1,77 @@
+name: CI health
+# Is every scheduled workflow still doing its job? The owner's rule (2026-11-16), after a data job
+# failed silently for 13 days and another for 53: a scheduled workflow that goes red is flagged the
+# same day, triaged, and handed to the agent that owns it.
+#
+# Four times a day this reads the recent scheduled runs of every workflow with a schedule, through
+# scripts/qa/ci-health.mjs: which is red and since when, the failing step and the error lines from
+# its log, and the owner from .github/ci-owners.json. A failure in the runner's own setup is re-run
+# once. Anything red opens ONE issue, "CI health: scheduled jobs failing" (GitHub emails the owner).
+# While it stays red the body is updated quietly, a job that turns red since the last run gets a
+# comment (a second email, naming it and its owner), and the issue closes when everything is green.
+# The QA Agent reads the issue on its scheduled run and hands each failure to the owning agent.
+on:
+  schedule:
+    - cron: '41 1,7,13,19 * * *'   # every six hours, so a red job is flagged the same day
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write      # to re-run a run whose runner failed before the job began
+  issues: write
+concurrency:
+  group: ci-health
+  cancel-in-progress: true
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: The rules, on made-up runs
+        run: node scripts/qa/ci-health.mjs --self-test
+      - name: Read every scheduled workflow
+        id: health
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/qa/ci-health.mjs --rerun --out ci-health.md --json ci-health.json
+      - name: Report
+        if: always()
+        run: if [ -f ci-health.md ]; then cat ci-health.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Open, update or close the issue
+        if: always() && steps.health.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.health.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="CI health: scheduled jobs failing"
+          if [ ! -f ci-health.md ]; then
+            echo "::error::ci-health could not ask GitHub; see the step above."
+            exit 1
+          fi
+          NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+          { echo "Latest check: $RUN_URL"; echo; head -c 60000 ci-health.md; } > body.md
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "Every scheduled workflow is green again: $RUN_URL" && gh issue close "$NUM"; fi
+            exit 0
+          fi
+          if [ -z "$NUM" ]; then
+            gh issue create --title "$TITLE" --body-file body.md
+            exit 0
+          fi
+          # A job that turned red since the last check gets a comment, so it is not lost in a
+          # quiet body edit. The list of red files is the marker line the script writes.
+          # File names hold no spaces, so the list ends at the first one (before the comment's -->).
+          red_of() { grep -o 'ci-health red: [^ ]*' | head -1 | sed 's/^ci-health red: //' | tr ',' '\n' | sed '/^$/d' | sort; }
+          gh issue view "$NUM" --json body --jq .body | red_of > before.txt
+          red_of < ci-health.md > now.txt
+          NEW=$(comm -13 before.txt now.txt | tr '\n' ' ')
+          gh issue edit "$NUM" --body-file body.md
+          if [ -n "$NEW" ]; then
+            OWNERS=$(for f in $NEW; do node -e 'const o=require("./.github/ci-owners.json").workflows[process.argv[1]];console.log(process.argv[1]+" ("+((o&&o.owner)||"no owner")+")")' "$f"; done | paste -sd ';' | sed 's/;/; /g')
+            gh issue comment "$NUM" --body "Newly red: $OWNERS. Details in the issue body. Run: $RUN_URL"
+          fi

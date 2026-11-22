@@ -99,7 +99,9 @@ async function run(name, viewport, mobile) {
   const checks = await page.locator('.checks li').evaluateAll(ls => ls.map(l => l.className + ':' + l.querySelector('b').textContent));
   ok(checks.join('|') === 'met:Win|met:Win with an open look|met:And let it go with ' + CLUTCH.toFixed(1) + ' or less', 'the checklist: ' + checks.join('|'));
   ok((await page.textContent('.newbest')) === 'New best.' && await page.isVisible('.perfecttag'), 'New best, and the three star party');
-  ok(await page.isVisible('#bNextLvl') && await page.isVisible('#bReplay') && await page.isVisible('#bLadder'), 'Next level, Try again and Back to Ladder');
+  ok(await page.isVisible('#bNextLvl') && await page.isVisible('#bReplay') && await page.isHidden('#bLadder'), 'the card docks: Next level and Try again, the rest behind More');
+  await page.click('#bMore');
+  ok(await page.isVisible('#bLadder') && await page.isVisible('.checks'), 'More opens Back to Ladder and the checklist');
   ok(!DASHES.test(await page.textContent('#card')), 'no dashes on the card');
   await shot('4-three-stars');
   ok((await L(() => JSON.parse(localStorage.getItem('last_shot_ladder')).best['1-1'])) === 3, 'the best is stored');
@@ -245,9 +247,145 @@ async function run(name, viewport, mobile) {
   await ctx.close();
 }
 
+/* THE ACCOUNT'S COPY (2026-11-17): the ladder in the shared cloud saves,
+   game last_shot, slot ladder. The cloud is in memory (sessionStorage, so it
+   outlives a reload and a cleared localStorage), the sign in a stand in, and
+   the write interval 1.5 s instead of 30. */
+async function cloud(name, viewport, mobile) {
+  console.log('\nthe account\'s copy, ' + name);
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, hasTouch: mobile, isMobile: mobile });
+  await ctx.route(/\/arcade\/auth\.js/, r => r.fulfill({ contentType: 'text/javascript', body:
+    'window.RTG_AUTH={API_VERSION:1,boot:function(){return true},state:function(){return{resolved:true,signedIn:sessionStorage.getItem("__in")==="1",userId:"check"}},onChange:function(f){f(this.state());return function(){}},token:function(){return sessionStorage.getItem("__in")==="1"?"tok":null}};' }));
+  await ctx.addInitScript(() => {
+    window.__lastShotSyncMs = Number(sessionStorage.getItem('__syncMs')) || 1500;
+    const read = () => { try { return JSON.parse(sessionStorage.getItem('__cloud') || '{}'); } catch (e) { return {}; } };
+    const write = m => sessionStorage.setItem('__cloud', JSON.stringify(m));
+    window.RTG_SAVE = { API_VERSION: 1, idle: () => true, signedIn: () => sessionStorage.getItem('__in') === '1',
+      all: g => Promise.resolve(sessionStorage.getItem('__in') === '1' ? Object.entries(read()).filter(([k]) => k.startsWith(g + '/')).map(([k, v]) => ({ slot: k.split('/')[1], progress: v.progress, payload: v.payload })) : null),
+      queue: (g, sl, fn) => { const m = fn(); if (!m) return Promise.resolve(null); const mem = read(), k = g + '/' + sl;
+        sessionStorage.setItem('__writes', String(Number(sessionStorage.getItem('__writes') || 0) + 1));
+        if (mem[k] && mem[k].progress > m.progress) return Promise.resolve({ ok: false, payload: mem[k].payload, progress: mem[k].progress });
+        mem[k] = { progress: m.progress, payload: JSON.parse(JSON.stringify(m.payload)) }; write(mem); return Promise.resolve({ ok: true, progress: m.progress, payload: m.payload }); },
+      drop: () => Promise.resolve(null) };
+  });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  const L = (fn, a) => page.evaluate(fn, a);
+  const boot = async () => { await page.reload(); await page.waitForFunction(() => window.__lastShot && window.__lastShot.view && window.__lastShot.ladderSynced); await L(() => window.__lastShot.ladderSynced()); await page.waitForTimeout(100); };
+  const writes = () => L(() => Number(sessionStorage.getItem('__writes') || 0));
+  const stored = () => L(() => { const c = JSON.parse(sessionStorage.getItem('__cloud') || '{}')['last_shot/ladder']; return c || null; });
+  const setCloud = (payload, progress) => L(([p, n]) => { const m = JSON.parse(sessionStorage.getItem('__cloud') || '{}'); m['last_shot/ladder'] = { progress: n, payload: p }; sessionStorage.setItem('__cloud', JSON.stringify(m)); }, [payload, progress]);
+  const old = Date.now() - 86400000, ref = refPlay('1-1'), ref2 = { ...refPlay('1-1'), goAt: 7, steps: refPlay('1-1').steps.slice(1) };
+
+  await page.goto(BASE + '/last-shot');
+  await L(() => { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem('__in', '1'); });
+
+  // a cleared browser gets its stars and plays back after sign in
+  await setCloud({ v: 1, best: { '1-1': 3, '1-2': 2 }, plays: { '1-1': ref }, at: { '1-1': old }, days: ['2026-11-15'], rev: 4 }, 4);
+  await boot();
+  ok((await page.textContent('#hLadderStars')) === '5 of 72 stars', 'a cleared browser restores its stars after sign in: ' + await page.textContent('#hLadderStars'));
+  const back = await L(() => JSON.parse(localStorage.getItem('last_shot_ladder')));
+  ok(back.best['1-1'] === 3 && back.plays['1-1'].steps.length === 4 && back.days.join() === '2026-11-15', 'the plays and the filed days come back with them');
+  await page.click('#hLadder');
+  await page.click('[data-level="1-1"]');
+  await page.waitForSelector('#board', { state: 'visible' });
+  ok((await L(() => window.__lastShot.play.steps.length)) === 4 && (await page.textContent('#lvlStars')) === '★★★', 'and 1-1 opens on its kept play');
+
+  // two copies merge: the best stars per level, the newer play per level
+  const mine = { v: 1, best: { '1-1': 1, '1-2': 3, '1-3': 2 }, plays: { '1-1': ref2, '1-2': ref2 }, at: { '1-1': Date.now(), '1-2': old - 5000 }, days: ['2026-11-16'], rev: 1 };
+  await L(d => localStorage.setItem('last_shot_ladder', JSON.stringify(d)), mine);
+  await setCloud({ v: 1, best: { '1-1': 3, '1-2': 2, '1-4': 1 }, plays: { '1-1': ref, '1-2': ref }, at: { '1-1': old, '1-2': old }, days: ['2026-11-15'], rev: 6 }, 6);
+  await boot();
+  const m = await L(() => JSON.parse(localStorage.getItem('last_shot_ladder')));
+  ok(JSON.stringify(m.best) === JSON.stringify({ '1-1': 3, '1-2': 3, '1-3': 2, '1-4': 1 }), 'two copies merge to the best stars: ' + JSON.stringify(m.best));
+  const same = (a, b) => JSON.stringify([a.steps, a.goAt]) === JSON.stringify([b.steps, b.goAt]);
+  ok(same(m.plays['1-1'], mine.plays['1-1']) && same(m.plays['1-2'], ref) && !same(ref, ref2), 'the newer play wins each level (this browser\'s 1-1, the account\'s 1-2)');
+  ok(m.days.join() === '2026-11-15,2026-11-16', 'the filed days are the union');
+  ok((await page.textContent('#hLadderStars')) === '9 of 72 stars', 'the home card shows the merge: ' + await page.textContent('#hLadderStars'));
+  const up = await stored();
+  ok(!!up && up.progress > 6 && JSON.stringify(up.payload.best) === JSON.stringify(m.best), 'the merge goes up to the account (progress ' + (up && up.progress) + ')');
+
+  // one write per burst of runs: nothing during it, one on page hide (the
+  // 30 s interval here is 60 s, longer than the burst)
+  await L(() => { sessionStorage.setItem('__syncMs', '60000'); localStorage.setItem('last_shot_speed', '2'); });
+  await boot();
+  await page.click('#hLadder');
+  await page.click('[data-level="1-1"]');
+  await page.waitForSelector('#board', { state: 'visible' });
+  const w0 = await writes();
+  await L(p => window.__lastShot.setPlay(p), ref);
+  const s3 = await L(() => { for (let s = 1; s < 600; s++) if (window.__lastShot.simulate(s).stars === 3) return s; return null; });
+  for (let i = 0; i < 3; i++) { await L(s => window.__lastShot.run(s), s3); await page.waitForSelector('#sheet.on', { timeout: 40000 }); await L(([p, i]) => { const q = JSON.parse(JSON.stringify(p)); q.goAt = 5 + i * 0.5; window.__lastShot.setPlay(q); }, [ref, i]); }
+  ok((await writes()) === w0, 'a burst of three runs writes nothing as it happens (' + ((await writes()) - w0) + ')');
+  await L(() => window.dispatchEvent(new Event('pagehide')));
+  await page.waitForTimeout(100);
+  ok((await writes()) === w0 + 1 && (await stored()).payload.plays['1-1'].goAt === 6, 'page hide writes the burst once, its last play with it (' + ((await writes()) - w0) + ')');
+  // and the interval: changes inside it are one write when it ends
+  await L(() => { sessionStorage.setItem('__syncMs', '1500'); localStorage.setItem('last_shot_speed', '1'); });
+  await boot();
+  await page.click('#hLadder');
+  await page.click('[data-level="1-1"]');
+  await page.waitForSelector('#board', { state: 'visible' });
+  const w1 = await writes();
+  for (let i = 0; i < 5; i++) await L(([p, i]) => { const q = JSON.parse(JSON.stringify(p)); q.goAt = 7 - i * 0.5; window.__lastShot.setPlay(q); }, [ref, i]);
+  ok((await writes()) === w1, 'five changes write nothing at once');
+  await page.waitForTimeout(2200);
+  const w2 = await writes();
+  ok(w2 === w1 + 1 && (await stored()).payload.plays['1-1'].goAt === 5, 'then one write when the interval ends (' + (w2 - w1) + ')');
+  await L(() => document.dispatchEvent(new Event('visibilitychange')));
+  await L(() => window.dispatchEvent(new Event('pagehide')));
+  ok((await writes()) === w2, 'page hide with nothing new writes nothing');
+  await L(p => { const q = JSON.parse(JSON.stringify(p)); q.goAt = 4; window.__lastShot.setPlay(q); }, ref);
+  await L(() => window.dispatchEvent(new Event('pagehide')));
+  await page.waitForTimeout(100);
+  ok((await writes()) === w2 + 1 && (await stored()).payload.plays['1-1'].goAt === 4, 'a change then page hide writes at once');
+
+  // a stale write is refused, merged and sent again
+  await setCloud({ v: 1, best: { '1-1': 3, '1-5': 2 }, plays: {}, at: {}, days: [], rev: 900 }, 900);
+  await L(p => { const q = JSON.parse(JSON.stringify(p)); q.goAt = 3; window.__lastShot.setPlay(q); }, ref);
+  await L(() => window.__lastShot.flushLadder());
+  await page.waitForTimeout(100);
+  const st = await stored();
+  ok(st.progress > 900 && st.payload.best['1-5'] === 2 && st.payload.plays['1-1'].goAt === 3, 'a stale write merges what the account holds and goes again (progress ' + st.progress + ')');
+  ok((await L(() => window.__lastShot.ladder.best['1-5'])) === 2, 'and the page has the account\'s stars');
+
+  // garbage in the account's copy never breaks the page
+  for (const junk of ['junk', 7, null, [], { best: 'x', plays: { '1-1': { spots: 3 } }, at: 'y', days: [5, '2026-13-45', 'x'], rev: -3 }]) {
+    await setCloud(junk, 999);
+    await boot();
+    const st2 = await L(() => ({ best: window.__lastShot.ladder.best, n: Object.keys(window.__lastShot.ladder.plays).length, days: window.__lastShot.ladder.days }));
+    ok(st2.best['1-1'] === 3 && st2.n >= 1 && st2.days.every(d => /^\d{4}-\d\d-\d\d$/.test(d)), 'garbage in the cloud: ' + JSON.stringify(junk).slice(0, 40) + ' leaves this browser\'s ladder alone');
+  }
+  // garbage in this browser, with the cloud good: the account's copy stands
+  await setCloud({ v: 1, best: { '1-1': 2 }, plays: {}, at: {}, days: [], rev: 2000 }, 2000);
+  await L(() => localStorage.setItem('last_shot_ladder', '{not json'));
+  await boot();
+  ok((await L(() => window.__lastShot.ladder.best['1-1'])) === 2, 'garbage in this browser: the account\'s copy restores it');
+
+  // signed out: local only, as before
+  await L(() => { sessionStorage.setItem('__in', '0'); sessionStorage.setItem('__writes', '0'); });
+  const before = JSON.stringify(await stored());
+  await boot();
+  await page.click('#hLadder');
+  await page.click('[data-level="1-1"]');
+  await page.waitForSelector('#board', { state: 'visible' });
+  await L(p => window.__lastShot.setPlay(p), ref2);
+  await L(() => window.dispatchEvent(new Event('pagehide')));
+  await page.waitForTimeout(1800);
+  ok((await writes()) === 0 && JSON.stringify(await stored()) === before, 'signed out: nothing goes to the account');
+  ok((await L(() => JSON.parse(localStorage.getItem('last_shot_ladder')).plays['1-1'].goAt)) === 7, 'and the play is kept on this browser');
+
+  ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   await run('phone', { width: 390, height: 844 }, true);
   await run('desktop', { width: 1440, height: 900 }, false);
+  await cloud('phone', { width: 390, height: 844 }, true);
 } finally {
   await browser.close(); server.close();
 }

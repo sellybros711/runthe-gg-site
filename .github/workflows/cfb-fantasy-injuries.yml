@@ -85,12 +85,20 @@ jobs:
             console.log(`${f}: ${Object.keys(j.men).length} men, ${JSON.stringify(j.counts)}`);
           '
 
+      # THE PLAYOFF'S LATER ROUNDS, added to its board as ESPN sets them (playoff.mjs). Never a
+      # price, only the games and their kickoffs, so the live job scores every round. Nothing
+      # happens until there is a Playoff board.
+      - name: The Playoff's later rounds
+        if: steps.week.outputs.go == 'yes'
+        run: node cfb/build/fantasy/playoff.mjs --refresh --write
+
       - name: Commit it, but only if it moved
         if: steps.week.outputs.go == 'yes'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add cfb/data/fantasy/injuries_*.json
+          git add cfb/data/fantasy/now.json cfb/data/fantasy/pool_*_w100.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "the report has not moved"
             exit 0

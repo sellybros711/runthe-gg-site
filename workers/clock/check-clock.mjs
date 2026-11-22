@@ -84,6 +84,48 @@ for (const f of ['fantasy-pool', 'fantasy-watchdog', 'fantasy-live', 'clock-hear
   ok(`${f}.yml declares the source input (GitHub refuses an undeclared one)`, /\n      source:\n/.test(y));
 }
 
+console.log('\nCOLLEGE FANTASY: THE MONDAY BUILD, ITS WATCHDOG, AND THE COLLEGE KICKOFFS');
+for (const [day, utc] of [['2026-10-26', '15:05'], ['2026-11-02', '16:05'], ['2026-11-23', '16:05']]) {
+  const builds = walk(day + 'T00:00:00Z', day + 'T23:59:00Z').filter((d) => d.workflow === 'cfb-fantasy-pool.yml');
+  ok(`${day}: one college build, at 11:05 Eastern (${utc} UTC), written and guarded`,
+    builds.length === 1 && iso(builds[0].t) === `${day}T${utc}Z`
+    && builds[0].inputs.write === 'true' && builds[0].inputs.catchup === 'true',
+    builds.map((b) => iso(b.t)).join(', '));
+}
+ok('one college build a week, and only on a Monday',
+  week.filter((d) => d.workflow === 'cfb-fantasy-pool.yml').length === 1
+  && week.filter((d) => d.workflow === 'cfb-fantasy-pool.yml').every((d) => eastern(d.t).dow === 1));
+{
+  const cdogs = week.filter((d) => d.workflow === 'cfb-fantasy-watchdog.yml').map((d) => eastern(d.t));
+  ok('the college watchdog: Monday noon to 11pm hourly, 12', cdogs.filter((e) => e.dow === 1).length === 12);
+  ok('  Tuesday and Wednesday every two hours, 12 each',
+    cdogs.filter((e) => e.dow === 2).length === 12 && cdogs.filter((e) => e.dow === 3).length === 12);
+  ok('  Thursday every two hours to 2pm, 8', cdogs.filter((e) => e.dow === 4).length === 8);
+  ok('  never before Monday noon, never Friday to Sunday',
+    cdogs.every((e) => e.dow >= 1 && e.dow <= 4 && !(e.dow === 1 && e.h < 12)));
+  ok('  always at a quarter past', cdogs.every((e) => e.m === 15));
+}
+{
+  const ck = ['2026-11-20T00:30:00.000Z', '2026-11-21T17:00:00.000Z', '2026-11-22T00:30:00.000Z'];
+  const span = [];
+  for (let t = Date.parse('2026-11-19T00:00:00Z'); t < Date.parse('2026-11-23T00:00:00Z'); t += STEP) {
+    for (const d of due(t, [], ck)) if (d.workflow === 'cfb-fantasy-live.yml') span.push(t);
+  }
+  ok('the college live scorer is woken 20 minutes before every college kickoff',
+    ck.every((k) => span.includes(Date.parse(k) - 20 * 60000)));
+  ok('  and once more 10 minutes after each, and at no other time', span.length === ck.length * 2,
+    `${span.length} wakes for ${ck.length} kickoffs`);
+  ok('a college kickoff never wakes the NFL scorer, nor an NFL one the college',
+    due(Date.parse(ck[0]) - 20 * 60000, [], ck).every((d) => d.workflow !== 'fantasy-live.yml')
+    && walk('2026-11-25T00:00:00Z', '2026-12-02T12:00:00Z', wk12).every((d) => d.workflow !== 'cfb-fantasy-live.yml'));
+  ok('no college kickoffs, no college wakes', walk('2026-11-16T05:00:00Z', '2026-11-23T05:00:00Z')
+    .every((d) => d.workflow !== 'cfb-fantasy-live.yml'));
+}
+for (const f of ['cfb-fantasy-pool', 'cfb-fantasy-watchdog', 'cfb-fantasy-live']) {
+  const y = fs.readFileSync(path.join(ROOT, '.github/workflows', f + '.yml'), 'utf8');
+  ok(`${f}.yml declares the source input`, /\n      source:\n/.test(y));
+}
+
 console.log('\nTHE WORKER CALLS GITHUB THE WAY GITHUB WANTS');
 {
   const calls = [];
@@ -105,6 +147,32 @@ console.log('\nTHE WORKER CALLS GITHUB THE WAY GITHUB WANTS');
   calls.length = 0;
   const none = await tick({ GH_TOKEN: 'x' }, Date.parse('2026-11-17T03:00:00Z'));
   ok('a quiet tick starts nothing', none.length === 0 && !calls.some((c) => c.url.includes('/dispatches')));
+
+  /* The college pointer's kickoffs, read off the live site and handed to the decision. */
+  const kick = '2026-11-21T17:00:00.000Z';
+  globalThis.fetch = async (url, opts = {}) => {
+    calls.push({ url: String(url), opts });
+    if (String(url).includes('nfl_schedule.json')) return new Response(JSON.stringify({ games: [] }), { status: 200 });
+    if (String(url) === 'https://runthe.gg/cfb/data/fantasy/now.json') {
+      return new Response(JSON.stringify({ season: 2026, week: 12, kicks: [kick] }), { status: 200 });
+    }
+    return new Response(null, { status: 204 });
+  };
+  calls.length = 0;
+  const cfb = await tick({ GH_TOKEN: 'x' }, Date.parse(kick) - 20 * 60000);
+  const cd = calls.find((c) => c.url.includes('/dispatches'));
+  ok('20 minutes before a college kickoff the Worker starts the college scorer',
+    cfb.length === 1 && /cfb-fantasy-live\.yml.*204/.test(cfb[0])
+    && !!cd && cd.url.endsWith('/workflows/cfb-fantasy-live.yml/dispatches')
+    && JSON.parse(cd.opts.body).inputs.source === 'clock', cfb.join(' | '));
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('nfl_schedule.json')) return new Response(JSON.stringify({ games: [] }), { status: 200 });
+    if (String(url).includes('/cfb/')) return new Response('down', { status: 503 });
+    return new Response(null, { status: 204 });
+  };
+  const down = await tick({ GH_TOKEN: 'x' }, Date.parse('2026-11-23T16:05:00Z'));
+  ok('the college pointer down: the wall clock jobs still start', down.length === 1
+    && /cfb-fantasy-pool\.yml.*204/.test(down[0]), down.join(' | '));
 }
 
 console.log(fails ? `\n${fails} FAILED` : '\nall ok');

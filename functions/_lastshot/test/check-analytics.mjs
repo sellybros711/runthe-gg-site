@@ -38,6 +38,8 @@ const { server, events: devEvents } = await startDev(PORT);
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let fails = 0;
 const ok = (c, m) => { console.log((c ? ' ok   ' : ' FAIL ') + m); if (!c) fails++; };
+/* The result card docks (2026-11-17): More opens the rest of it. */
+async function openCard(page) { if (await page.isVisible('#bMore') && (await page.getAttribute('#bMore', 'aria-expanded')) !== 'true') await page.click('#bMore'); }
 
 /* The day, and a play that is legal on its set (check-daily.mjs's). */
 const TODAY = dateKey(Date.now()), SEED = seedFor(TODAY, 'last-shot'), CFG = dailyConfig(SEED), DSC = dailyScenario(CFG);
@@ -132,6 +134,9 @@ const A = await context();
   o = last(evs(), 'open');
   ok(!!o && o.p.first === false && o.s !== s1, 'a reload sends open, first: false, in a new session');
   ok(/^[A-Za-z0-9-]{8,40}$/.test(o.s), 'the session id: ' + o.s);
+  { const ds = [...new Set(posts.filter(p => p.body && p.body.ev).map(p => p.body.d))];
+    ok(ds.length === 1 && /^[A-Za-z0-9-]{8,40}$/.test(ds[0]) && ds[0] === await L(() => localStorage.getItem('last_shot_device')),
+      'every post carries the one device id this browser keeps, across a reload: ' + ds.join(',')); }
   const s2 = o.s;
 
   // a free Run It: run n:1, then result
@@ -149,6 +154,7 @@ const A = await context();
 
   // Share and Save on the free card
   from = evs().length;
+  await openCard(page);
   await page.click('#bShare');
   await page.click('#bSavePlay');
   await page.waitForFunction(() => document.getElementById('bSavePlay').textContent === 'Saved · Open', null, { timeout: 8000 });
@@ -275,6 +281,7 @@ const A = await context();
   ok(br.length === 1 && br[0].p.mode === 'beat' && br[0].p.n === 1, 'my run: run, mode beat, n: 1');
   ok(got.some(e => e.n === 'result' && e.p.mode === 'beat'), 'and its result, mode beat');
   ok(got.some(e => e.n === 'share' && e.p.kind === 'beat'), 'Beat my play sends share, kind beat');
+  await openCard(page);
   await page.click('#bWatchAgain');
   await page.waitForSelector('#sheet.on', { timeout: 60000 });
   await flush();

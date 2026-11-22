@@ -237,7 +237,7 @@ function renderStats(m) {
     return '<li><span class="rd">#' + esc(r.number) + '</span><span class="ro">' + esc(C.OUTCOME_LABEL[r.outcome] || '') + '</span><span class="rs">' +
       (r.strip || []).map(function (b) { return '<i class="sq ' + esc(b) + '"></i>'; }).join('') + '</span></li>';
   }).join('');
-  $('stats-body').innerHTML =
+  $('stats-body').innerHTML = '<div class="st-hist" id="st-hist"></div>' +
     '<p class="src-tag ' + m.src + '">' + (m.src === 'account' ? 'your account' : 'this device') + '</p>' +
     '<div class="tiles">' + tile(n, 'played') + tile(shut, 'doors shut') + tile(n ? Math.round(shut / n * 100) + '%' : null, 'shut rate') +
     tile(m.streak, 'streak') + tile(m.best, 'best streak') + tile(m.avgPercentile, 'avg percentile') + '</div>' +
@@ -247,6 +247,19 @@ function renderStats(m) {
       : '<p class="quiet">no pitches graded yet.</p>') +
     (recent ? '<h3>recent</h3><ul class="recent">' + recent + '</ul>' : '') +
     (m.src === 'account' ? '<p class="quiet">kept on your account, on every device.</p>' : '<p class="quiet">kept on this device. sign in to keep it on your account.</p>');
+  renderHistRow();
+}
+/* YOUR HISTORY (Pro, history-ui.js): one row at the top of the stats sheet. Pro opens its screen; anyone
+   else reads a plain locked row that names the perk, with nothing to buy here. The gate is the
+   entitlements' pro (shutdoor_is_pro), false for everyone until Pro is live */
+function renderHistRow() {
+  var el = $('st-hist'), HU = window.STD_HISTORY_UI;
+  if (!el) return;
+  if (!HU) { el.innerHTML = ''; return; }
+  var pro = !!(ctx.ent && ctx.ent.pro && ctx.onHistory);
+  el.innerHTML = HU.rowHTML(pro);
+  var b = $('st-hist-go');
+  if (b && pro) b.addEventListener('click', function () { closeSheet(true); ctx.onHistory(); });
 }
 function showStats() {
   var A = window.STD_AUTH, st = {};
@@ -266,14 +279,15 @@ function showStats() {
 function renderPast(scn) {
   var n = scn ? scn.number : 1, tiles = '';
   /* THE ARCHIVE (Pro, CONTRACT.md 17): every past daily, played on its own spot and seed, never on the
-     board. Only when entitlements() says archive, which is false for everyone until Pro exists, so
-     today every player sees the locked tiles below. No price and no buy button here. */
+     board. Only when entitlements() says archive (shutdoor_is_pro, supabase/181). Everybody else sees
+     the locked tiles below and the store's Get Pro block (pro.js); Pro sees Manage billing under it. */
+  var PRO = window.STD_PRO;
   if (ctx.ent && ctx.ent.archive && ctx.archiveDays && ctx.onArchive) {
     var days = ctx.archiveDays(ctx.today);
     $('past-body').innerHTML = (days.length
       ? '<p>pick a day. it plays on that day\'s spot and luck. it never goes on the leaderboard.</p><div class="arc-list">' +
         days.map(function (d) { return '<button type="button" data-day="' + esc(d.day) + '"><b>#' + esc(d.number) + '</b><span>' + esc(shortDay(d.day)) + '</span></button>'; }).join('') + '</div>'
-      : '<p>nothing before #' + esc(n) + ' yet.</p>') + calendar(days, true);
+      : '<p>nothing before #' + esc(n) + ' yet.</p>') + calendar(days, true) + (PRO ? PRO.billing() : '');
     $('past-body').querySelectorAll('.arc-list [data-day]').forEach(function (b) {
       b.addEventListener('click', function () { ctx.onArchive(b.getAttribute('data-day')); });
     });
@@ -283,8 +297,11 @@ function renderPast(scn) {
   for (var i = n - 1; i >= Math.max(1, n - 12); i--) tiles += '<div class="past-t"><b>#' + i + '</b><span class="lock" aria-hidden="true"></span></div>';
   var past = ctx.archiveDays ? ctx.archiveDays(ctx.today) : null;
   $('past-body').innerHTML =
-    '<p>past dailies open later. today\'s is #' + esc(n) + '.</p>' +
+    '<p>' + (PRO ? 'past dailies are for pro.' : 'past dailies open later.') + ' today\'s is #' + esc(n) + '.</p>' +
     (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>') +
+    (PRO ? PRO.offer('archive') : '') +
+    /* under it, both games on one bill (pro-card.js): a card in the tab the player opened, never a popup */
+    (window.STD_PRO_CARD ? window.STD_PRO_CARD.pair() : '') +
     (past ? calendar(past, false) : '');
   if (past) wireCal(past, false);
 }
@@ -434,27 +451,39 @@ function renderAuth() {
   });
 }
 
-/* THE PLATE PICKER (the owner, 2026-11-03): the neutral plate, then every club a save can unlock.
-   A locked one says how to get it. A pick goes to the account, which checks the unlock. */
+/* THE PLATE PICKER (the owner, 2026-11-03; every club, the throwbacks and Diamond, 2026-11-17): the
+   neutral plate and Diamond, today's 30 clubs, then the throwbacks. A locked one says how to get it:
+   a save as that club's closer, "No situation yet" when no pack has one (it opens by itself when a
+   pack adds one), or Pro for Diamond, with Get Pro under the grid. A pick goes to the account, which checks the unlock. */
 function platePicker(st) {
   var PL = window.STD_PLATE;
   if (!PL) return '';
   var ini = PL.initials(st.name, st.initials), have = PL.unlocked(), cur = PL.current();
   var tile = function (k) {
-    var open = !k || have.indexOf(k) >= 0, nm = k ? PL.nameOf(k) : 'plain';
-    return '<button type="button" class="plk' + (open ? '' : ' locked') + '" data-plate="' + esc(k || '') + '" aria-pressed="' + (k === cur || (!k && !cur)) + '"' +
-      (open ? '' : ' aria-disabled="true"') + ' aria-label="' + esc(open ? nm + ' plate' : 'shut the door as the ' + nm + ' closer to unlock') + '">' +
+    var open = !k || have.indexOf(k) >= 0, how = PL.status(k), tb = k && PL.throwback(k);
+    var nm = !k ? 'Plain' : tb ? tb.name : PL.nameOf(k);
+    var line = open ? '' : how === 'pro' ? 'Pro only.' : how === 'soon' ? 'No situation yet. Coming soon.' :
+      'Shut the door as ' + (tb ? 'a ' + tb.era + ' ' + tb.name : 'the ' + nm) + ' closer to unlock.';
+    return '<button type="button" class="plk' + (open ? '' : ' locked') + (how === 'pro' ? ' gem' : '') + '" data-plate="' + esc(k || '') + '" aria-pressed="' + (k === cur || (!k && !cur)) + '"' +
+      (open ? '' : ' aria-disabled="true"') + ' aria-label="' + esc(PL.nameOf(k) || nm) + ' plate' + (line ? '. ' + esc(line) : '') + '">' +
+      (how === 'pro' ? '<i class="plk-pro">Pro</i>' : '') +
       PL.svg(k, ini, { locked: !open }) + '<span>' + esc(nm) + '</span>' +
-      (open ? '' : '<small>shut the door as the ' + esc(nm) + ' closer to unlock</small>') + '</button>';
+      (tb ? '<em class="plk-era">' + esc(tb.era) + '</em>' : '') +
+      (line ? '<small>' + esc(line) + '</small>' : '') + '</button>';
   };
-  return '<div class="plk-h"><b>your plate</b><span>' + esc(have.length) + ' of ' + esc(PL.earnable().length) + ' clubs</span></div>' +
-    '<div class="plk-grid" id="pk-grid">' + [null].concat(PL.earnable()).map(tile).join('') + '</div>' +
+  var mine = have.filter(function (k) { return PL.all().indexOf(k) >= 0; }).length;
+  return '<div class="plk-h"><b>Your plate</b><span id="pk-count">' + esc(mine) + ' of ' + esc(PL.all().length) + '</span></div>' +
+    '<div class="plk-grid" id="pk-grid">' + [null, PL.DIAMOND].concat(PL.current30()).map(tile).join('') + '</div>' +
+    /* Diamond is Pro's (supabase/178): while it is locked, the store's Get Pro block (pro.js) under the grid */
+    (window.STD_PRO && have.indexOf(PL.DIAMOND) < 0 ? window.STD_PRO.offer('plate') : '') +
+    '<div class="plk-h plk-tb"><b>Throwbacks</b></div>' +
+    '<div class="plk-grid" id="pk-grid-tb">' + PL.throwbacks().map(tile).join('') + '</div>' +
     '<p class="au-err" id="pk-err" role="alert"></p>';
 }
 function wirePicker(st) {
   var A = window.STD_AUTH, PL = window.STD_PLATE, g = $('pk-grid');
   if (!g || !PL) return;
-  g.addEventListener('click', function (e) {
+  var pick = function (e) {
     var b = e.target.closest('.plk');
     if (!b || b.classList.contains('locked')) return;
     var k = b.getAttribute('data-plate') || null;
@@ -465,7 +494,9 @@ function wirePicker(st) {
       renderAuth();
       if (ctx.onPlate) ctx.onPlate();
     });
-  });
+  };
+  g.addEventListener('click', pick);
+  if ($('pk-grid-tb')) $('pk-grid-tb').addEventListener('click', pick);
 }
 
 /* the menu's three tiles: the streak, the best, the last percentile */
@@ -477,7 +508,7 @@ function renderMenuTiles() {
     tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
 }
 
-var ctx = { onPlate: null, hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null };
+var ctx = { onPlate: null, hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null, onHistory: null };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   open: openSheet,
@@ -487,6 +518,7 @@ var api = {
   streakOf: streakOf,
   PRINCIPLE: PRINCIPLE,
   renderAuth: renderAuth,
+  renderHistRow: renderHistRow,
   /* the past dailies live on the home's archive tab (ui.js setTab) */
   renderPast: function () { renderPast(ctx.scn); },
   show: function (which) {
@@ -495,6 +527,7 @@ var api = {
     else if (which === '101') { render101(); openSheet('sheet-101'); }
     else if (which === 'past') { if (ctx.onPast) ctx.onPast(); }
     else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
+    else if (which === 'voice') { if (window.STD_VOICES) window.STD_VOICES.open('home'); }
     else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }
     else if (which === 'menu') { renderMenuTiles(); openSheet('sheet-menu'); }
     else if (which === 'board') { closeSheet(true); if (ctx.board) ctx.board(); }

@@ -62,7 +62,11 @@
   }
   function layout() {
     if (!V) V = T.view($('hField'), {});
-    V.set({ BX: SC.ballX, Y0: 50, marker: 57, behind: 9, ahead: window.innerWidth < 700 ? 26 : 17, across: T.across() });
+    /* a phone's banner is tall and the day's card sits over its bottom right, so the line of
+       scrimmage goes up to the middle: the routes fill the turf behind the logo and the men
+       stand clear of the card (it read as an empty green panel at 375 wide) */
+    var phone = window.innerWidth < 700;
+    V.set({ BX: SC.ballX, Y0: 50, marker: 57, behind: phone ? 19 : 9, ahead: phone ? 17 : 17, across: T.across() });
     V.layout();
   }
   function frame(now) {

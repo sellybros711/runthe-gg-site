@@ -3,9 +3,13 @@
  * screen and half court at the bottom: the coach's view of a clipboard. */
 import { COURT } from './court-geo.js';
 
-export function fitView(cssW, cssH, pad = 10) {
-  const s = Math.min((cssW - pad * 2) / COURT.W, (cssH - pad * 2) / COURT.H);
-  const ox = (cssW - COURT.W * s) / 2, oy = (cssH - COURT.H * s) / 2;
+/* showH: how many feet down from the baseline the view must show (the whole
+   half court unless asked for less). The clipboard asks only for the part a
+   play uses, so on a short phone the players and labels are drawn larger. */
+export function fitView(cssW, cssH, pad = 10, showH = COURT.H) {
+  const sh = Math.max(1, Math.min(COURT.H, showH));
+  const s = Math.min((cssW - pad * 2) / COURT.W, (cssH - pad * 2) / sh);
+  const ox = (cssW - COURT.W * s) / 2, oy = (cssH - sh * s) / 2;
   return {
     s, ox, oy, w: cssW, h: cssH,
     px: p => ({ x: ox + p.x * s, y: oy + p.y * s }),

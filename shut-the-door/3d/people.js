@@ -7,15 +7,15 @@
  */
 import * as THREE from 'three';
 import * as M from './materials.js?v=8';
-import { battingClub, clubNamed } from './clubs.js?v=3';
-import { capFor, frontFor } from './uniforms.js?v=2';
+import { battingClub, clubNamed } from './clubs.js?v=9';
+import { capFor, frontFor, wornHome } from './uniforms.js?v=4';
 import * as G from './gear3d.js?v=4';
 import * as HG from './headgear.js?v=5';
 import { measureHead, wear, wornShade } from './headgear.js?v=5';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld, aimBone } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=12';
-import { STANCE_X } from './inplay-plan.js?v=33';
+import { STANCE_X } from './inplay-plan.js?v=34';
 import { stanceOff } from './stance.js?v=1';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
@@ -112,16 +112,23 @@ export function kitFor(facts, side) {
   const cols = side === 'us' ? ours : (club ? [club.pri, club.sec] : FALLBACK);
   let [trim, other] = darkFirst(cols);
   const home = side === 'us' ? usHome : !usHome;
+  // a custom challenge (facts.matchup): each side is its own pack's side, so its sourced cap and front
+  // number are that pack's, and only in the jersey that game was played in (uniforms.js HOME_SIDE)
+  const mu = facts.matchup;
+  const key = mu ? (side === 'us' ? mu.pitcher : mu.lineup) : facts.scenarioId;
+  const worn = !mu || wornHome(key, side) === home;
+  // one club on both sides (a challenge only): its home whites and road greys tell them apart, in its own colours
+  const same = !!(mu && side !== 'us' && club && clubNamed(facts.pitcher.team) && clubNamed(facts.pitcher.team).nick === club.nick);
   // the two sides never look alike: where the hitters' trim would match the closer's, the club's other
   // colour trims them, if it shows on the base (the nameplate is large type, so 1.8 to 1 will do)
   const ourTrim = darkFirst(ours)[0];
-  if (side !== 'us' && alike(trim, ourTrim) && !alike(other, ourTrim) && contrast(other, home ? WHITE : GREY) >= 1.8) [trim, other] = [other, trim];
+  if (side !== 'us' && !same && alike(trim, ourTrim) && !alike(other, ourTrim) && contrast(other, home ? WHITE : GREY) >= 1.8) [trim, other] = [other, trim];
   const C = (x) => new THREE.Color(x);
   const words = club && club.nick ? (club.as || club.nick).toUpperCase() : null;
   // (only with the words: a side with no club named wears a neutral kit, with nothing on the chest)
-  const fr = words ? frontFor(facts.scenarioId, side) : null;
+  const fr = words && worn ? frontFor(key, side) : null;
   const front = fr ? { at: fr.at, color: C(fr.color || trim), outline: fr.outline ? C(fr.outline) : null } : null;
-  return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim), cap: C(capFor(facts.scenarioId, side) || trim),
+  return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim), cap: C((worn && capFor(key, side)) || trim),
     undershirt: C(trim), belt: C('#111111'), glove: C(lum(other) > 0.85 ? '#f2f2f2' : other), gloveAccent: C(trim), home, words, front };
 }
 
@@ -182,6 +189,42 @@ export function dress(p, kit, numberText, weave) {
     else if (part === 'belt') o.material = M.plain('belt', kit.belt, { roughness: 0.35, sheen: 0, clearcoat: 0.4 });
     o.material.name = part;
     o.material.userData.dressed = true;
+  }
+}
+
+/** The bones a glove covers on hand s ('l' | 'r'): the hand and every finger and thumb joint. */
+export const gloveBone = (name, s) => new RegExp(`^(hand|(thumb|index|middle|ring|pinky)_0[123])_${s}$`).test(name);
+/** A vertex is the glove hand's when the bones the glove covers carry at least this share of it. */
+export const GLOVE_HAND_W = 0.5;
+
+/** Each vertex's weight on the bones the glove on hand s covers (gloveBone), from a skinned
+    geometry's skinIndex and skinWeight and the skeleton's bone names. */
+export function gloveHandWeights(geo, names, s) {
+  const on = names.map((n) => gloveBone(n, s)), si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight;
+  const w = new Float32Array(si.count);
+  for (let i = 0; i < si.count; i++) for (let k = 0; k < 4; k++) if (on[si.getComponent(i, k)]) w[i] += sw.getComponent(i, k);
+  return w;
+}
+
+/** The person's hand s is not drawn: every triangle with a vertex of the glove hand (GLOVE_HAND_W)
+    leaves the index of each skinned mesh it is in. The whole index is kept (geometry.userData.fullIndex:
+    fielders.js builds its body from it, where a left handed fielder's left hand is bare), and the
+    same parsed body set up again (a new scenario) takes the same cut. */
+export function gloveHandOff(p, s) {
+  for (const m of p.meshes) {
+    if (!m.isSkinnedMesh || !m.geometry.index) continue;
+    const g = m.geometry, key = `gloveIndex_${s}`;
+    if (!g.userData.fullIndex) g.userData.fullIndex = g.index;
+    if (!g.userData[key]) {
+      const w = gloveHandWeights(g, m.skeleton.bones.map((b) => b.name), s), full = g.userData.fullIndex.array, keep = [];
+      for (let t = 0; t < full.length; t += 3) {
+        const a = full[t], b = full[t + 1], c = full[t + 2];
+        if (w[a] >= GLOVE_HAND_W || w[b] >= GLOVE_HAND_W || w[c] >= GLOVE_HAND_W) continue;
+        keep.push(a, b, c);
+      }
+      g.userData[key] = keep.length === full.length ? g.userData.fullIndex : new THREE.BufferAttribute(new Uint32Array(keep), 1);
+    }
+    if (g.index !== g.userData[key]) g.setIndex(g.userData[key]);
   }
 }
 
@@ -1534,6 +1577,11 @@ export class People {
     attach(hand, mitt, m);
     c.mitt = mitt;
     c.mittBindQ = mitt.quaternion.clone();
+    // the mitt replaces the hand: the glove hand's skin is not drawn (gloveHandOff). The hand and its
+    // fingers are thicker than the mitt's pocket, the clips curl the fingers, and the mitt takes the
+    // part of the glove's facing the wrist does not (catcherReach), so the bare fingers came out
+    // through the face of the mitt (the owner's phone, 2026-11-17)
+    gloveHandOff(c, 'l');
     face(c, P(0.1 + 0.4 * this.aimX(), -2.85, 0));
     // a catcher's crouch, as a big league catcher sets with the bases empty: hips down at his heels,
     // knees wide, up on the balls of his feet, his trunk over his knees (the owner, 2026-10-30: the

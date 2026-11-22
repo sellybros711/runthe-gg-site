@@ -99,5 +99,10 @@ test('the bail-out mark does not hand a catch a free look', () => {
   const rs = runs(SC, pop, 200);
   const open = rs.reduce((a, r) => a + r.shot.open, 0) / rs.length;
   assert.ok(open < 4.5, 'average room at release ' + open.toFixed(1));
-  assert.ok(rs.every(r => r.shotAt < 3.0), 'he lets it go after the mark, on his own time');
+  // with variety (2026-11-17) a slower cutter can be late and heave; the shots
+  // that are his own still get the closeout, never a free look
+  const own = rs.filter(r => !r.shot.bailout);
+  assert.ok(own.length > 100, 'most are his own shot: ' + own.length);
+  const ownOpen = own.reduce((a, r) => a + r.shot.open, 0) / own.length;
+  assert.ok(ownOpen < 4.5, 'room on his own shots ' + ownOpen.toFixed(1));
 });

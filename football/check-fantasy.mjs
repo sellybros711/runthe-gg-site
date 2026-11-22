@@ -984,7 +984,10 @@ console.log('\nEVERY CLUB THE BOARD CAN NAME HAS A COLOUR THAT READS');
     const code = CLUBS.PUBLISHED[c] ? c : { LA: 'LAR' }[c];
     return code && CLUBS.color(c).toLowerCase() !== CLUBS.PUBLISHED[code][0].toLowerCase();
   });
-  ok('  and most of them had to be lifted to get there', lifted.length >= 25,
+  /* MOST, AS A SHARE OF THE CLUBS ON THIS BOARD. It was a count of 25, which is most of 32
+     and more than a bye week can have: week 11 of 2026 had 26 clubs and 24 lifted, and the
+     Tuesday build refused to open the week over it. */
+  ok('  and most of them had to be lifted to get there', lifted.length >= Math.ceil(codes.size * 0.75),
     `${lifted.length} of ${codes.size} moved off the published primary`);
 
   /*

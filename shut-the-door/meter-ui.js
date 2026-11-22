@@ -112,7 +112,7 @@ function create(el) {
   el.innerHTML =
     '<div class="rm-cue" aria-hidden="true"><i class="rm-tap"></i><span class="rm-cue-t"><b></b><span class="rm-sub"><small></small><span class="rm-key">or press <kbd>space</kbd></span></span></span></div>' +
     '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span></div>' +
-    '<div class="rm-steps"><div class="rm-step rm-s-pow"><b>power</b><span></span></div><div class="rm-step rm-s-rel"><b>release</b><span></span></div></div>' +
+    '<div class="rm-steps"><div class="rm-step rm-s-pow"><i class="rm-sx"><b>power</b><span></span></i></div><div class="rm-step rm-s-rel"><i class="rm-sx"><b>release</b><span></span></i></div></div>' +
     '<button class="rm-back" type="button" aria-label="Re-aim. Stops the meter."><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>re-aim</button>';
   var q = function (s, root) { return (root || el).querySelector(s); };
   var cueB = q('.rm-cue-t b'), cueS = q('.rm-cue-t small');

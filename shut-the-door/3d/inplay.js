@@ -18,12 +18,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=33';
-import { SHADE } from './shade-data.js?v=5';
-import { Crew } from './fielders.js?v=14';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=44';
+import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=34';
+import { SHADE } from './shade-data.js?v=12';
+import { Crew } from './fielders.js?v=21';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=50';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=59';
+import { kitFor } from './people.js?v=66';
 import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 
@@ -586,6 +586,10 @@ export class InPlay {
       if (a.kind === 'set') spec.crouch = Math.max(spec.crouch, 0.35 * bump(s, t - 0.15, t + 0.05, t + 0.6, t + 0.9) * (1 - moving));
       if (a.kind === 'field' || a.kind === 'pickup') {
         const k = bump(s, t - 0.38, t - 0.06, t + 0.12, t + 0.45);
+        // (his own bobble picked up, the error's chase: he comes round from the ball to the infield over twice as
+        // long. In the third of a second the rest of a take eases out over, the turn back was up to two radians, a
+        // spin in place on planted feet that slid one over check-jolt.mjs's skate (skate fielder pickup, 2026-11-19))
+        const ia = acts.indexOf(a), kT = a.kind === 'pickup' && ia > 0 && acts[ia - 1].kind === 'bobble' ? bump(s, t - 0.38, t - 0.06, t + 0.12, t + 0.8) : k;
         // (the fit comes in on its own weight, from before his reach starts: set only with the reach, it
         // came in part way at once and jumped him toward the ball, lab/pipeline/check-jolt.mjs)
         const bp = a.ball || ball;
@@ -608,7 +612,7 @@ export class InPlay {
             const st1 = tr.at(t + 0.12), th = plan.segs.find((sg) => sg.kind === 'throw' && sg.from === n && sg.t0 > t - 1e-6 && sg.t0 < t + 1.5);
             a.turnRef = angDiff(th ? heading(st1, th.b) : faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3)));
           }
-          faceYaw = turnNear(faceYaw, bh, k, a.turnRef);
+          faceYaw = turnNear(faceYaw, bh, Math.max(k, kT), a.turnRef);
           // at range, on the move: a ball well off to one side is a backhand (his throwing hand's side, the glove
           // across his body) or a forehand (his glove side), his trunk turned to it and his feet wider
           // (decided once, at the act, from the way he came to the ball: the angle from his body to the ball
@@ -626,7 +630,7 @@ export class InPlay {
             if (Math.sign(side) === gsd) handW *= 1 - 0.6 * kk;   // (a backhand is one hand)
           }
           f.reaching = true;
-        }
+        } else if (kT > 0 && a.turnRef != null) faceYaw = turnNear(faceYaw, heading(st, plan.ballAt(t - 0.3)), kT, a.turnRef);
       }
       if (a.kind === 'catch' || a.kind === 'drop') {
         const k = ramp(s, t - 0.5, t - 0.05) * (1 - ramp(s, t + 0.25, t + 0.7));

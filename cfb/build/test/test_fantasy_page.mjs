@@ -84,7 +84,14 @@ export async function run(ROOT, POOL) {
             if (server.swap) return json(400, { code: 'P0001', message: server.swap });
             if (entry) entry.picks = entry.picks.map((id) => (id === body.p_out ? body.p_in : id));
             return json(204, null);
-          case 'cfb_fantasy_board': return json(200, server.board || {
+          case 'cfb_fantasy_board':
+            /* Past weeks: a board a week (`server.boards`), and a week with none answers as
+               the server does for a week it never opened. */
+            if (server.boards && body.p_week !== POOL.week) {
+              return json(200, server.boards[body.p_week]
+                || { week: null, rows: [], me: null, games: [], entrants: [] });
+            }
+            return json(200, server.board || {
             week: { locks_at: POOL.locks_at, scored_at: null, checked_at: null,
               results_at: null, games_final: 0, games_total: POOL.games.length,
               open: Date.now() >= LOCK, entries: entry ? 1 : 0 },
@@ -121,6 +128,7 @@ export async function run(ROOT, POOL) {
       if (/^\/cfb\/data\/fantasy\/injuries_/.test(rel)) {
         return injuries ? json(200, injuries) : r.fulfill({ status: 404, body: 'no' });
       }
+      if (server.pools && server.pools[rel.split('/').pop()]) return json(200, server.pools[rel.split('/').pop()]);
       if (/^\/cfb\/data\/fantasy\/pool_/.test(rel)) return r.fulfill({ status: 404, body: 'no' });
       const f = path.join(ROOT, rel);
       if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) return r.abort();
@@ -294,7 +302,7 @@ export async function run(ROOT, POOL) {
       try { await page.waitForSelector('#b-hp-fantasy', { timeout: 30000 }); } catch (e) { drawn = false; }
       ok('the college front page draws the Fantasy door', drawn);
       if (drawn) {
-        ok('  and it goes to the college mode', (await page.getAttribute('#b-hp-fantasy', 'href')) === '/cfb/fantasy/');
+        ok('  and it goes to the college mode', (await page.getAttribute('#b-hp-fantasy', 'href')) === '/cfb/fantasy/?from=home');
         ok('  red until a lineup is in', !(await page.$eval('#b-hp-fantasy', (e) => e.classList.contains('in'))));
       }
       ok('  and the front page threw nothing', !boom.length, boom.join(' | '));
@@ -369,6 +377,79 @@ export async function run(ROOT, POOL) {
         ok('  not the day before', !(await look(page)).up);
         await page.close();
       }
+    }
+    /* PAST WEEKS, THE NFL PAGE'S WAY (the owner, 2026-11-17). A finished week read back: the
+       weeks the server has a competition for as chips, its final board, and each lineup named
+       off that week's own board file and scored off the server's results. */
+    console.log('\n10. past weeks');
+    {
+      const past = POOL.week - 1;
+      const ids = POOL.pool.slice(0, 6).map((m) => m.player_id);
+      const pastBoard = { week: { scored_at: '2026-10-05T12:00:00Z', entries: 2, open: true },
+        rows: [
+          { place: 1, entry_no: 1, display_name: 'champ', score: 88.5, picks: ids, is_me: false },
+          { place: 2, entry_no: 2, display_name: 'tester', score: 70.1, picks: ids, is_me: true }],
+        me: null, games: [], entrants: [] };
+      const { page, boom } = await openPage('/cfb/fantasy/', { server: {
+        boards: { [past]: pastBoard },
+        pools: { [`pool_${POOL.season}_w${past}.json`]: { ...POOL, week: past } },
+        results: ids.map((id, i) => ({ player_id: id, half_ppr: 10 + i, line: 'a line' })) } });
+      await waitScreen(page, 's-home');
+      ok('the home screen offers past weeks', await page.isVisible('#b-past'));
+      await page.click('#b-past');
+      await page.waitForSelector('#pw-weeks button', { timeout: 15000 }).catch(() => {});
+      ok('  it opens the live screen on the past weeks tab', await page.evaluate(() =>
+        document.getElementById('s-live').classList.contains('on')
+        && !document.getElementById('lv-pane-past').hidden
+        && document.getElementById('lv-tab-past').classList.contains('on')));
+      const chips = await page.$$eval('#pw-weeks button', (bs) => bs.map((b) => b.textContent));
+      ok(`  one chip, for week ${past}, and none for a week with no competition`,
+        chips.length === 1 && chips[0] === 'Week ' + past, chips.join(','));
+      await page.waitForSelector('#pw-board .brow', { timeout: 15000 }).catch(() => {});
+      const lab = await page.textContent('#pw-lab');
+      ok('  the week is labelled with its entries, and final', /2 entries · Final/.test(lab), lab);
+      ok('  both entries are on its board', (await page.$$('#pw-board .brow')).length === 2);
+      await page.click('#pw-board .brow .bhd');
+      await page.waitForTimeout(400);
+      const open = await page.evaluate(() => {
+        const r = document.querySelector('#pw-board .brow.open');
+        return r ? r.textContent : '';
+      });
+      ok('  a tap shows the lineup, named off that week\'s board', open.includes(POOL.pool[0].name), open.slice(0, 80));
+      ok('  and scored off the server\'s results', /10\.0/.test(open));
+      ok('  nothing threw', !boom.length, boom[0]);
+      if (process.env.SHOTS) {
+        await page.screenshot({ path: process.env.SHOTS + '/past-weeks-390.png', fullPage: true });
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.waitForTimeout(400);
+        await page.screenshot({ path: process.env.SHOTS + '/past-weeks-1440.png' });
+      }
+      await page.close();
+    }
+    /* LEAVING A DRAFT KEEPS IT (the NFL page's rule, 2026-10-27, brought here 2026-11-17). Back,
+       never "Start this draft again": that dealt a fresh board on every press, an unlimited
+       reroll of the wheel the stored seed exists to stop. */
+    console.log('\n11. leaving a draft keeps it');
+    {
+      const { page, boom } = await openPage('/cfb/fantasy/', { at: LOCK - 36 * 3600e3 });
+      await waitScreen(page, 's-home');
+      await page.click('#b-draft');
+      await waitScreen(page, 's-draft');
+      ok('the draft screen has Back, and no reroll', await page.isVisible('#b-draft-back')
+        && !(await page.$('#b-abandon')));
+      await signOne(page);
+      const board = await page.$$eval('#d-men .man', (b) => b.map((x) => x.dataset.id).join(','));
+      await page.click('#b-draft-back');
+      await waitScreen(page, 's-home');
+      ok('  Back goes home, and the button says Keep drafting',
+        (await page.textContent('#b-draft')).trim() === 'Keep drafting');
+      await page.click('#b-draft');
+      await waitScreen(page, 's-draft');
+      ok('  coming back resumes the same draft: the pick is still in',
+        (await page.locator('#d-slots .slot.done').count()) === 1);
+      ok('  on the same board', (await page.$$eval('#d-men .man', (b) => b.map((x) => x.dataset.id).join(','))) === board);
+      ok('  nothing threw', !boom.length, boom[0]);
+      await page.close();
     }
   } catch (e) {
     ok('the walk finished', false, String(e && e.stack || e).slice(0, 400));

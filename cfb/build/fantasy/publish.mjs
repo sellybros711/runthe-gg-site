@@ -82,10 +82,18 @@ export function poolSQL(pool) {
  */
 export function kickoffsSQL(pool, games) {
   const byTeam = new Map();
+  /* A TEAM'S EARLIEST GAME. A week has one game a team, so this is that game. The Playoff
+     has up to four, and a swap closes at the first (the owner's call, 2026-11-16), so a later
+     round must never move a man's kick forward and reopen him. */
+  const keep = (abbr, kick) => {
+    if (!abbr) return;
+    const had = byTeam.get(abbr);
+    if (!had || Date.parse(kick) < Date.parse(had)) byTeam.set(abbr, kick);
+  };
   for (const g of games) {
     if (!g.kick) continue;
-    byTeam.set(g.home.abbr, g.kick);
-    byTeam.set(g.away.abbr, g.kick);
+    keep(g.home.abbr, g.kick);
+    keep(g.away.abbr, g.kick);
   }
   const rows = pool.pool.filter((m) => byTeam.has(m.team) && byTeam.get(m.team) !== m.kick);
   if (!rows.length) return '';

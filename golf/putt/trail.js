@@ -586,7 +586,7 @@ function plan(spec){
      starting path on your way to the next hole"). A landing walk (spec.landed, putt.js) is the new world's own: it sets off
      from the ship standing on its pad behind the start, and goes to the hole the usual way. It carries no chest and no
      golden ball, so a world's eighteen are still the eighteen walks into its holes. */
-  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5);
+  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5), ln0 = P.things.length, lu0 = used.length;
     // Oz: the ship came down hard in the poppies, so it lies on its side where it landed, with no pad under it
     if (spec.theme === 'oz') place('ozCrash', lx, L + 5, 3, 5, { w:10, d:6 });
     // Wonderland: down the rabbit hole, through the hall and out of the little door, so the walk sets off from the hall's end
@@ -613,7 +613,18 @@ function plan(spec){
     else if (spec.vehicle === 'voyage') place('tiJollyBoat', lx, L + 5, 3, 2.6, { w:6, d:2.6, beach:true });
     // the sea route (Cyclops Isle on): the Greek ship run up on the sand where it came ashore
     else if (spec.vehicle === 'sea') place('seaShip', lx, L + 5, 3, 7, { w:6, d:12, beach:true });
-    else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); } used.push({ x:lx, y:L + 5, r:5.5 }); }
+    else { place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); }
+    /* AND IT STANDS CLEAR OF HIM (QA, 2026-11-19: the circus train, 12 ft long, was parked 6.5 ft from the start, so the
+       Big Top's walk opened with him inside it and he could not move; the ship in the Oz poppies did the same). Whatever
+       came in, by its own size: while any piece of it, grown by the golfer's own radius (run()'s 0.55 ft) and a little,
+       covers the spot he stands on (atS(2), as run() puts him), it rolls on away from the start half a foot at a time.
+       A vehicle already clear is not moved, so its picture is the one it always had. check-putt holds every landing. */
+    var lv = P.things.slice(ln0), lsd = lx > start.x ? 1 : -1, lsh = 0, lg = atS(2);
+    var lHits = function(dx){ for (var li = 0; li < lv.length; li++){ var lt = lv[li], hw = (lt.w ? lt.w / 2 : lt.r) + 0.6, hd = (lt.w ? lt.d / 2 : lt.r) + 0.6;
+        if (Math.abs(lg[0] - lt.x - dx) < hw && Math.abs(lg[1] - lt.y) < hd) return true; } return false; };
+    while (lsh < 24 && lHits(lsd * lsh)) lsh += 0.5;
+    if (lsh){ lv.forEach(function(t){ t.x += lsd * lsh; }); for (var lu = lu0; lu < used.length; lu++) used[lu].x += lsd * lsh; lx += lsd * lsh; }
+    used.push({ x:lx, y:L + 5, r:5.5 }); }
   if (SPACE && spec.space === 'voyage'){ place('ndBoat', archX, -4.5, 3, 4, { w:7, d:2.6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the river boat at the quay, bound down the Seine to the sea and the Hispaniola
   else if (SPACE && spec.space === 'seine'){ place('ndSteamer', archX, -4.5, 3, 6, { w:12, d:4 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the night boat at the Thames pier, bound across the Channel for Paris
   else if (SPACE && spec.space === 'fog'){ place('btTrain', archX, -4.5, 3, 4.6, { w:12, d:3.6 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }   // the circus train again, its lamps lit, bound through the night for London
@@ -1227,6 +1238,12 @@ BUILD.pen = function(B, t){ ringFence(B, t, t.th); };
    in it); its walls and the gate are this one build, a row of tiles a solid, in the world's wall colours: a fort's stone
    or a ship's planks. The kind's pieces, the lever and the vault chest move, so run() draws them. */
 var GYM_DECK = 0.45, GYM_WALL = 0.95;
+/* AT THE DOOR, WALKING INTO IT: the only place a gym takes him. The door (ax, ay) stands 0.8 ft in front of the room's
+   front wall (gymFit), and the room is one solid block to the walk (blocked(), 0.55 ft round him), so the nearest he can
+   stand to it is 0.25 ft past the door. The band is 0.95 ft either side of the door's x, from 0.4 ft short of it to
+   1.5 ft past it: every way up the spur to the door is in it, and nothing behind the room or further up the land is.
+   (With no far bound, walking up the screen anywhere in line with a door, 80 ft past it, put him in the room.) */
+function atGymDoor(G, x, y, vy){ var dy = y - G.ay; return Math.abs(x - G.ax) < 0.95 && dy < 0.4 && dy > -1.5 && vy < -0.3; }
 var GYM_PAL = { pirate:{ deck:['#c3935f', '#b38353', '#6e4a2c'] } };
 function gymPal(th){ return GYM_PAL[baseTh(th)] || GYM_PAL.pirate; }
 // what the gym's kind sets into its floor at a point of the room (gyms.js KINDS README, floor()), or null for deck
@@ -2471,7 +2488,7 @@ function run(box, P, pic, api){
     if (moved > 0.5) hint.classList.add('gone');
     // the gym's gate: walked into from the path, he is in, a tile at a time (and once out, he has to step away first)
     if (gym && !gym.in && !paused){ if (gym.lock){ if (Math.hypot(g.x - GY.ax, g.y - GY.ay) > 1.8) gym.lock = false; }
-      else if (Math.abs(g.x - GY.ax) < 0.95 && g.y - GY.ay < 0.4 && g.vy < -0.3) gymEnter(tsec); }
+      else if (atGymDoor(GY, g.x, g.y, g.vy)) gymEnter(tsec); }
     // the civilian by the gate says their piece as he walks up: the plainer one once he has pulled the lever twice
     if (gym && civIt && !gym.in){ var dcv = Math.hypot(civIt.x - g.x, civIt.y - g.y); if (dcv < 3.6 && !gym.nearCiv){ gym.nearCiv = true; say(GL.clue(gym.G, gym.resets), 7000, civIt); } else if (dcv > 5.5) gym.nearCiv = false; }
     // lava sends him back to the last safe ground
@@ -6675,5 +6692,5 @@ function folkFn(id, f){ var F = FOLK3D[id], ax = f * 0.6, ay = 0.8, k = F.k || 1
 var FOLK_P = { spec:{ fine:true }, seed:1 };
 function folkPic(id, f){ var F = FOLK3D[id]; if (!F) return null; f = f < 0 ? -1 : 1; var k = F.k || 1;
   return propSprite('folkpic:' + id + ':' + f, FOLK_P, folkFn(id, f), 2 * F.r * k + 0.4, 2 * F.r * k + 0.4, F.h * k); }
-window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT, folkPic:folkPic };
+window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, atGymDoor:atGymDoor, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT, folkPic:folkPic };
 })();

@@ -78,3 +78,32 @@ test('GET /last-shot/report: admins only, the targets marked met or not', async 
   assert.match(renderReport(null, rangeOf({}, NOW)), /could not be read/);
   assert.equal(TARGETS[0].show(2147483.6), 'never');
 });
+
+test('guests: the device rides along; let in only once the launch turns it on', async () => {
+  const db = memoryDb({ t: 'tester' });
+  const body = { s: S, d: 'dev-abcd1234', ev: [{ n: 'open', t: 1, p: { first: true } }] };
+  await roundGate({ method: 'POST', sub: 'e', uid: 't', body, nowMs: NOW }, db);
+  assert.deepEqual(db.events.map(e => [e.user_id, e.device_id]), [['t', 'dev-abcd1234']], 'a tester row carries the account and the device');
+  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: null, body, nowMs: NOW }, db), null, 'a guest is refused while the game is tester only');
+  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: 'stranger', body, nowMs: NOW }, db), null, 'so is a signed in non tester');
+  const open = { method: 'POST', sub: 'e', body, nowMs: NOW, publicEvents: true };
+  assert.equal((await roundGate({ ...open, uid: null }, db)).status, 204, 'after the launch a guest is let in');
+  assert.deepEqual(db.events.slice(-1).map(e => [e.user_id, e.device_id]), [[null, 'dev-abcd1234']]);
+  assert.equal(await roundGate({ ...open, uid: null, body: { ...body, d: 'bad id!' } }, db), null, 'a guest needs a good device id');
+  assert.equal((await roundGate({ ...open, uid: 'stranger' }, db)).status, 204, 'and a signed in player counts by the account');
+  assert.equal(await roundGate({ method: 'GET', sub: 'report', uid: null, query: {}, nowMs: NOW, publicEvents: true }, db), null, 'the report stays admins only');
+});
+
+test('until 175 has run, a tester\'s rows still land in 170\'s table', async () => {
+  const { supabaseDb } = await import('../db-supabase.js');
+  const real = globalThis.fetch, calls = [];
+  globalThis.fetch = async (u, o) => { calls.push(String(u).replace('https://db.test/rest/v1/', '')); return new Response('', { status: String(u).includes('rpc/') ? 404 : 201 }); };
+  try {
+    const db = supabaseDb({ SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE: 'k' });
+    await db.insertEvents('t', 'dev-abcd1234', [{ name: 'open', session_id: S, client_ms: 1, props: {} }]);
+    assert.deepEqual(calls, ['rpc/last_shot_events_add', 'game_events']);
+    calls.length = 0;
+    await assert.rejects(db.insertEvents(null, 'dev-abcd1234', [{ name: 'open', session_id: S, client_ms: 1, props: {} }]));
+    assert.deepEqual(calls, ['rpc/last_shot_events_add'], 'a guest row needs 175; it is not forced into 170');
+  } finally { globalThis.fetch = real; }
+});
