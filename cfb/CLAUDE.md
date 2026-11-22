@@ -107,7 +107,7 @@ run against a scratch Postgres; the order of files each needs is in the matching
   covers every day of December and January.
 - **The pointer carries `prev`, `kind`, `ends_at` and `next`.** The previous week is `prev`, never
   week minus one. The door reads its phase off them: week, waiting, playoff open, playoff live, off.
-- **The shared lock day sheet is not set up for the Playoff**: it would say "Week 100".
+- **The shared lock day sheet runs for the Playoff with `label`**: from week 100 it reads "The Playoff", never "Week 100".
 
 **On the clock** (`workers/clock`, shared with the NFL game)
 
