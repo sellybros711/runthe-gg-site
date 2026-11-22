@@ -1,0 +1,73 @@
+/* LAB: the game's own tokens and pixel kit, cut down to what the two prototypes use. */
+:root{
+  --bg:#0E0B1C; --card:#19142E; --card2:#211B3B; --card3:#2A2349;
+  --ink:#F6F2EA; --mut:#B8AFCB; --dim:#8C83A2;
+  --line:rgba(246,242,234,.08); --line2:rgba(246,242,234,.15);
+  --teal:#37C5D5; --violet:#A982F3; --gold:#F2B632; --coral:#F06A5F; --green:#48D17A;
+  --tealT:#37C5D5; --pinkT:#FF6FC1;
+  --paper:#F7F1E3; --paper-ink:#1B1726; --paper-mut:#7A6E5C;
+  --hero:'Shrikhand', 'Cooper Black', Georgia, serif;
+  --hand:'Permanent Marker', 'Marker Felt', cursive;
+  --ui:'Anton', Impact, sans-serif;
+  --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --sweep:var(--coral) 0%, #FF6FC1 25%, var(--violet) 50%, var(--teal) 75%, var(--green) 100%;
+  --px:#05030C;
+  /* Each destination's colour, the same as the game's tab bar. */
+  --c-home:#1F9AAA; --c-tour:#E0742E; --c-songs:#D13F86; --c-board:#C9940F; --c-you:#7553D0;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0; overflow-x:clip;}
+body{font-family:var(--body); color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased;}
+a{color:inherit; text-decoration:none;}
+button{font-family:inherit; color:inherit; cursor:pointer;}
+:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+.muted{color:var(--mut);}
+
+/* The lab banner: says what this page is, and links to the other one. */
+.labbar{position:fixed; left:8px; top:8px; z-index:90; display:flex; gap:6px; align-items:center;
+  font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;
+  background:#FFE58A; color:#1B1726; border:2px solid var(--px); padding:4px 8px; box-shadow:2px 2px 0 var(--px);}
+.labbar a{text-decoration:underline;}
+
+/* A pixel-kit button: square corners, a hard edge and a drop. */
+.pxbtn{display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 18px;
+  font-family:var(--body); font-weight:900; font-size:16px; border:3px solid var(--px); border-radius:2px;
+  box-shadow:3px 3px 0 var(--px); background:var(--teal); color:#0B1418;}
+.pxbtn:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--px);}
+.pxbtn.ink{background:#1B1726; color:#F6F2EA; box-shadow:3px 3px 0 #FF6FC1;}
+
+/* ── the wardrobe ── */
+.wardrobe{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+@media (min-width:760px){ .wardrobe{grid-template-columns:repeat(4,minmax(0,1fr));} }
+.wr-player{background:#120E24; border:3px solid var(--px); border-radius:2px; box-shadow:3px 3px 0 var(--px);
+  padding:0 0 10px; overflow:hidden;}
+.wr-stage{height:120px; display:flex; align-items:flex-end; justify-content:center;
+  background:linear-gradient(#221a40 0 70%, #8a5e3e 70% 74%, #a8744c 74% 78%, #8a5e3e 78% 100%);
+  border-bottom:3px solid var(--px); position:relative;}
+.wr-stage:before{content:''; position:absolute; left:50%; top:0; width:90px; height:100%; transform:translateX(-50%);
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,236,190,.35), transparent 70%); pointer-events:none;}
+.wr-cv{width:102px; height:132px; image-rendering:pixelated; position:relative; margin-bottom:-6px;}
+.wr-meta{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:8px 10px 6px;}
+.wr-role{font-family:var(--ui); font-size:17px; letter-spacing:1.2px; text-transform:uppercase;}
+.wr-now{font-size:11.5px; font-weight:800; color:var(--mut); text-align:right;}
+.wr-chips{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px; padding:0 8px;}
+.wr-chip{height:34px; padding:0; border:2px solid #2E2850; border-radius:2px; background:#1B1636;
+  display:flex; flex-direction:column; overflow:hidden;}
+.wr-chip i{flex:1; display:block;}
+.wr-chip.locked{opacity:.5; filter:saturate(.4);}
+.wr-chip.on{border-color:var(--teal); box-shadow:0 0 0 2px var(--teal); opacity:1; filter:none;}
+.wr-say{font-size:12.5px; font-weight:700; color:var(--mut); margin:10px 2px 0; min-height:2.6em;}
+
+/* Last night's setlist, on paper, in Sharpie. */
+.paper{background:var(--paper); color:var(--paper-ink); border-radius:2px; padding:14px 16px;
+  box-shadow:4px 4px 0 rgba(0,0,0,.35); position:relative;
+  background-image:repeating-linear-gradient(transparent 0 27px, rgba(27,23,38,.08) 27px 28px);}
+.paper:before{content:''; position:absolute; left:50%; top:-8px; width:64px; height:16px; transform:translateX(-50%) rotate(-2deg);
+  background:rgba(255,236,170,.8);}
+.pp-k{font-size:10.5px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--paper-mut);}
+.pp-h{font-weight:900; font-size:16px; margin:2px 0 2px;}
+.pp-p{font-size:12.5px; color:var(--paper-mut); font-weight:600; margin-bottom:8px;}
+.sl-set{display:grid; grid-template-columns:44px minmax(0,1fr); gap:8px; margin-top:8px;}
+.sl-k{font-size:10.5px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; color:var(--paper-mut); padding-top:4px;}
+.sl-v{font-family:var(--hand); font-size:15px; line-height:1.45;}
+.sl-seg{color:#7A3FE0;}

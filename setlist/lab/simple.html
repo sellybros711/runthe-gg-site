@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Segue lab: simple front screen</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/segue-icon_32.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Permanent+Marker&family=Shrikhand&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="lab.css?v=1" />
+<style>
+  /* LAYOUT A: THE GAME FIRST. One column on a phone, in the order a player needs it: what this is in one
+     line, the two ways to play, when the band plays next, then the band itself, in the wardrobe. No
+     stage picture at the top: the band is on screen where you dress them. */
+  .shell{max-width:1120px; margin:0 auto; padding:58px 16px calc(96px + env(safe-area-inset-bottom,0));}
+  .top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand img{width:34px; height:34px; border-radius:8px;}
+  .brand b{font-family:var(--hero); font-size:24px; font-weight:400;}
+  .acct{font-size:13px; font-weight:800; border:2px solid var(--line2); border-radius:99px; padding:8px 14px; background:none;}
+
+  .intro h1{font-family:var(--hero); font-weight:400; font-size:clamp(26px, 7.4vw, 44px); line-height:1.05; margin:0;
+    background:linear-gradient(90deg, var(--sweep)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .intro p{margin:8px 0 0; font-size:15px; font-weight:600; color:var(--mut); line-height:1.4; max-width:34em;}
+
+  .grid{display:grid; grid-template-columns:minmax(0,1fr); gap:22px; margin-top:20px;}
+  @media (min-width:960px){ .grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); align-items:start;} }
+  .col{display:grid; grid-template-columns:minmax(0,1fr); gap:22px; min-width:0;}
+
+  /* The two ways to play, side by side, the same size: neither is the small print of the other. */
+  .modes{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+  .mode{border:3px solid var(--px); border-radius:2px; box-shadow:4px 4px 0 var(--px); padding:14px 13px 14px;
+    display:flex; flex-direction:column; gap:6px; min-height:196px;}
+  .mode.free{background:var(--paper); color:var(--paper-ink);}
+  .mode.daily{background:#14102A; border-color:var(--teal); box-shadow:4px 4px 0 var(--px), inset 0 4px 0 var(--teal);}
+  .md-k{font-size:10.5px; font-weight:900; letter-spacing:2px; text-transform:uppercase; opacity:.75;}
+  .daily .md-k{color:var(--teal); opacity:1;}
+  .md-t{font-family:var(--ui); font-size:28px; line-height:1; letter-spacing:.3px;}
+  .md-p{font-size:13px; font-weight:600; line-height:1.35; opacity:.8; flex:1;}
+  .mode .pxbtn{width:100%; padding:0 8px; font-size:14px; white-space:nowrap;}
+
+  .share{margin:-8px 0 0; font-size:13px; font-weight:700; color:var(--mut);}
+  .next{display:flex; align-items:center; gap:14px; background:#140B05; border:3px solid #3A2A18; border-radius:2px; padding:11px 14px;}
+  .nx-k{font-size:10.5px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:#FFB347;}
+  .nx-v{font-family:var(--hero); font-size:24px; color:#FFB347; line-height:1; text-shadow:0 0 8px rgba(255,138,40,.45);}
+  .nx-p{font-size:13px; font-weight:700; color:#F5D9A8; border-left:2px dashed #3A2A18; padding-left:14px;}
+
+  .sec h2{font-family:var(--ui); font-weight:400; font-size:20px; letter-spacing:1.6px; text-transform:uppercase; margin:0 0 4px;}
+  .sec .lede{font-size:13px; font-weight:600; color:var(--mut); margin:0 0 12px;}
+
+  .rooms{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 8px;}
+  .rooms img{flex:0 0 auto; width:120px; aspect-ratio:8/5; border:3px solid var(--px); border-radius:2px; image-rendering:pixelated; object-fit:cover;}
+  .rooms img.locked{filter:grayscale(1) brightness(.45) contrast(1.3);}
+
+  .stats{margin:0; font-size:12.5px; font-weight:600; color:var(--dim); line-height:1.45;}
+  .stats a{color:var(--mut); text-decoration:underline;}
+  details.how{border:2px solid var(--line2); border-radius:2px; padding:0 14px;}
+  details.how summary{min-height:48px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;
+    font-size:12px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--mut); list-style:none;}
+  details.how summary::-webkit-details-marker{display:none;}
+  details.how ol{margin:0 0 14px; padding-left:20px; font-size:14px; font-weight:600; line-height:1.5; color:var(--mut);}
+
+  /* The game's tab bar, its colours and tiles exactly. */
+  .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:50; background:var(--bg); border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom,0);}
+  .tabbar-in{max-width:520px; margin:0 auto; display:flex;}
+  .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; min-height:58px; padding:7px 2px 6px;
+    background:none; border:0; color:var(--dim); font-size:10.5px; font-weight:800;}
+  .tab .ti{display:grid; place-items:center; width:38px; height:28px; border-radius:3px; color:var(--tc);
+    background:color-mix(in srgb, var(--tc) 15%, transparent); border:2px solid transparent;}
+  .tab svg{width:21px; height:21px;}
+  .tab.on{color:var(--ink);}
+  .tab.on .ti{color:#fff; background:var(--tc); border-color:color-mix(in srgb, var(--tc) 55%, #000);
+    box-shadow:2px 2px 0 color-mix(in srgb, var(--tc) 40%, #000);}
+</style>
+</head>
+<body>
+<div class="labbar">Lab · Layout A · <a href="world.html">see layout B</a></div>
+<div class="shell">
+  <header class="top">
+    <div class="brand"><img src="/assets/segue-icon_192.png" alt=""><b>Segue</b></div>
+    <button class="acct" type="button">Sign in</button>
+  </header>
+
+  <section class="intro">
+    <h1>Build the Goose show that never happened.</h1>
+    <p>Build a Goose setlist anytime, anywhere. Share it with your friends.</p>
+  </section>
+
+  <div class="grid">
+    <div class="col">
+      <div class="modes">
+        <section class="mode free">
+          <span class="md-k">Free play</span>
+          <span class="md-t">Build a setlist</span>
+          <span class="md-p">Random nights, as many as you like.</span>
+          <a class="pxbtn ink" href="/setlist/">Build your show</a>
+        </section>
+        <section class="mode daily">
+          <span class="md-k" id="dailyK">Daily</span>
+          <span class="md-t">Today's shows</span>
+          <span class="md-p">Same shows for everyone. One try.</span>
+          <a class="pxbtn" href="/setlist/">Build your show</a>
+        </section>
+      </div>
+      <p class="share">Every show you build makes a card to send your friends. No account needed.</p>
+      <div class="next" id="next"><div><div class="nx-k">Next show</div><div class="nx-v">soon</div></div><div class="nx-p">Loading the tour...</div></div>
+
+      <section class="sec">
+        <h2>Your band</h2>
+        <p class="lede">Tap an outfit to dress them. They wear it on stage.</p>
+        <div id="band"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="paper" id="last"><div class="pp-k">Last show</div><div class="pp-h">Loading...</div></section>
+      <section class="sec">
+        <h2>Where your show is played</h2>
+        <p class="lede">Earn new rooms by playing. One is drawn each show.</p>
+        <div class="rooms" id="rooms"></div>
+      </section>
+      <p class="stats">Sign up and Segue keeps your stats: every setlist you've built, and the real shows you were at. <a href="/setlist/">Sign up</a></p>
+      <details class="how">
+        <summary>How it works <span aria-hidden="true">+</span></summary>
+        <ol>
+          <li>The wheel picks a real night. Not you.</li>
+          <li>Take one song. It costs every second it ran.</li>
+          <li>Fill 75, 70 and 10 minutes. Then the crowd decides.</li>
+        </ol>
+      </details>
+    </div>
+  </div>
+</div>
+
+<nav class="tabbar" aria-label="Sections"><div class="tabbar-in">
+  <button class="tab on" style="--tc:var(--c-home)"><i class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.7V20h13V9.7"/></svg></i>Home</button>
+  <button class="tab" style="--tc:var(--c-tour)"><i class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.2" width="17" height="15" rx="2.2"/><path d="M3.5 9.7h17M8 3.5v3.2M16 3.5v3.2"/></svg></i>Tour</button>
+  <button class="tab" style="--tc:var(--c-songs)"><i class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5V6l10-2v11.5"/><circle cx="6.5" cy="17.5" r="2.6"/><circle cx="16.5" cy="15.5" r="2.6"/></svg></i>Songs</button>
+  <button class="tab" style="--tc:var(--c-board)"><i class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h11V8a5.5 5.5 0 0 1-11 0V4.5z"/><path d="M6.5 6H4v1.2A2.9 2.9 0 0 0 6.9 10.1M17.5 6H20v1.2a2.9 2.9 0 0 1-2.9 2.9"/><path d="M12 13.4V17M9.2 20h5.6M10.6 17h2.8"/></svg></i>Board</button>
+  <button class="tab" style="--tc:var(--c-you)"><i class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.8 19.6a6.2 6.2 0 0 1 12.4 0"/></svg></i>You</button>
+</div></nav>
+
+<script type="module">
+import { latest, esc, daysUntil, shortDate, wardrobeHTML, mountWardrobe, setlistHTML } from './lab.js?v=1';
+import { VENUE_LIST } from '../venues.js?v=2';
+
+const band = document.getElementById('band');
+band.innerHTML = wardrobeHTML();
+mountWardrobe(band);
+
+const today = new Date();
+document.getElementById('dailyK').textContent = `Daily · ${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()}`;
+
+document.getElementById('rooms').innerHTML = VENUE_LIST.map(v =>
+  `<img src="/setlist/venues/${v.id}.png?v=4" alt="" width="160" height="100" loading="lazy" class="${v.free ? '' : 'locked'}">`).join('');
+
+const L = await latest();
+if (L){
+  const up = (L.upcoming || []).find(u => daysUntil(u.date) >= 0);
+  if (up){
+    const d = daysUntil(up.date);
+    document.getElementById('next').innerHTML = `<div><div class="nx-k">Next show</div><div class="nx-v">${d === 0 ? 'Tonight' : d + (d === 1 ? ' day' : ' days')}</div></div>
+      <div class="nx-p">${esc(shortDate(up.date))} · ${esc(up.venue)}, ${esc(up.city)}${up.state ? ', ' + esc(up.state) : ''}</div>`;
+  }
+  const l = L.last;
+  document.getElementById('last').innerHTML = `<div class="pp-k">Last show</div>
+    <div class="pp-h">${esc(new Date(l.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))}</div>
+    <div class="pp-p">${esc(l.venue)}, ${esc(l.city)}${l.state ? ', ' + esc(l.state) : ''}</div>${setlistHTML(l)}`;
+}
+</script>
+</body>
+</html>
