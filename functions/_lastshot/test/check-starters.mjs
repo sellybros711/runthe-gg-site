@@ -10,7 +10,7 @@
  *                     named from the terminology, with its situation and the run counted,
  *                     then Saved · Open lands on the play
  *   home              a new browser: Play (big, Start here), Daily, Ladder, then My
- *                     Playbooks smaller; after its first run the Daily goes back on top
+ *                     Playbooks smaller; after its first run Play stays first, without Start here
  *   a run             the frames strip hides while it plays; the card says Run it again
  *
  *   node functions/_lastshot/test/check-starters.mjs   (SHOTS=dir for screenshots) */
@@ -75,7 +75,9 @@ async function run(name, viewport, mobile) {
   /* ---------- home ---------- */
   const box = id => page.locator('#' + id).boundingBox();
   const [hd, hp, hl, hb] = [await box('hDaily'), await box('hPlay'), await box('hLadder'), await box('hBooks')];
-  ok(hp.y < hd.y && hd.y < hl.y && hl.y < hb.y, 'a new browser: home reads Play, Daily, Ladder, then My Playbooks');
+  /* reading order: a line above, or on the same line (desktop puts the Ladder and My Playbooks in one row) and to the left */
+  const before = (a, b) => a.y < b.y - 4 || (Math.abs(a.y - b.y) <= 4 && a.x < b.x);
+  ok(before(hp, hd) && before(hd, hl) && before(hl, hb), 'a new browser: home reads Play, Daily, Ladder, then My Playbooks');
   ok(await L(() => document.getElementById('hPlay').classList.contains('first')), 'Play is marked Start here');
   ok(hp.height > hb.height && hp.height >= hl.height, 'Play is the big card and My Playbooks is smaller (' + Math.round(hp.height) + ' vs ' + Math.round(hb.height) + ')');
   ok((await L(() => document.querySelectorAll('.sheet.on, .fsheet.on').length)) === 0, 'no sheet opens by itself');
@@ -97,7 +99,7 @@ async function run(name, viewport, mobile) {
   ok(!(await L(() => document.getElementById('framesRow').hidden)), 'back on the clipboard, the strip is back');
   await L(() => window.__lastShot.home());
   const [hd2, hp2] = [await box('hDaily'), await box('hPlay')];
-  ok(hd2.y < hp2.y && !(await L(() => document.getElementById('hPlay').classList.contains('first'))), 'after a first run the Daily is back on top, no Start here');
+  ok(hp2.y < hd2.y && !(await L(() => document.getElementById('hPlay').classList.contains('first'))), 'after a first run Play stays first, no Start here');
   await page.click('#hPlay');
   await page.waitForSelector('#board', { state: 'visible' });
 

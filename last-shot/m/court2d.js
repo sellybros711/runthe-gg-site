@@ -34,9 +34,9 @@
  * how far each is covered at every frame are worked out once, in camStart.
  *
  * Nothing here decides anything; it only draws a frame. */
-import { fitView, sizeCanvas, courtLines } from './view.js?b=ddf83eb21b';
-import { COURT } from './court-geo.js?b=ddf83eb21b';
-import { IDS, spotsAfter } from './playbook.js?b=ddf83eb21b';
+import { fitView, sizeCanvas, courtLines } from './view.js?b=e8ab3a738b';
+import { COURT } from './court-geo.js?b=e8ab3a738b';
+import { IDS, spotsAfter } from './playbook.js?b=e8ab3a738b';
 
 export const HOME = { c1: '#1f4e79', c2: '#ffd23f', c3: '#163a5c', lit: '#2f6aa0' };
 export const AWAY = { c1: '#d9473a', c2: '#f4efe4', c3: '#a8342a', lit: '#ef6a5c' };

@@ -25,10 +25,10 @@
  * key no longer matches the play is stale and is left off.
  *
  * ES module, served to the browser from last-shot/m/ like the rest of Last Shot. */
-import { drawFrame, drawPlay, aspectOf } from './diagram.js?b=ddf83eb21b';
-import { framesOf, scenarioFor, situationKey, playKey } from './playbook.js?b=ddf83eb21b';
-import { captionOf } from './names.js?b=ddf83eb21b';
-import { SCHEME_NAMES } from './scenario.js?b=ddf83eb21b';
+import { drawFrame, drawPlay, aspectOf } from './diagram.js?b=e8ab3a738b';
+import { framesOf, scenarioFor, situationKey, playKey } from './playbook.js?b=e8ab3a738b';
+import { captionOf } from './names.js?b=e8ab3a738b';
+import { SCHEME_NAMES } from './scenario.js?b=e8ab3a738b';
 
 /* The page plumbing both coaching games share: /assets/playbook.js (window.RTG_PLAYBOOK), loaded
    by web/play.html. Paper sizes, which plays print and their numbers, printing and downloading are

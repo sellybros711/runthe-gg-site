@@ -41,12 +41,17 @@ const cfbSeasons = rd('cfb/data/cfb_team_seasons.json');
 /* ---- where he was a head coach in college ---- */
 const schoolOf = {};
 for (const t of cfbSeasons) schoolOf[t.team_season_id] = t.school;
+/* THE TWO GAMES NAME A FEW SCHOOLS DIFFERENTLY. The college game says "Ole Miss" and the NFL
+   player data says "Mississippi", so Lane Kiffin's Ole Miss years linked to nobody. A coach's
+   school is written the way the player data writes it. Every posting this file writes should
+   match a school some player row carries; the log line below counts the ones that do not. */
+const PLAYER_NAME = { 'Ole Miss': 'Mississippi' };
 const colleges = {};                        // coach -> Set of school names
 for (const id in cfbCoaches) {
   const hc = cfbCoaches[id] && cfbCoaches[id].hc;
   const school = schoolOf[id];
   if (!hc || !school) continue;
-  (colleges[hc] ??= new Set()).add(school);
+  (colleges[hc] ??= new Set()).add(PLAYER_NAME[school] || school);
 }
 
 /* Only coaches the football game can actually hire are worth carrying. */
@@ -64,3 +69,15 @@ fs.writeFileSync(dest, JSON.stringify(out, null, 0));
 const posts = Object.values(out).reduce((t, v) => t + v.length, 0);
 console.log(`coach_colleges.json: ${Object.keys(out).length} coaches, ${posts} college postings`);
 console.log(`  ${(fs.statSync(dest).size / 1024).toFixed(1)} KB`);
+
+/* A school no player row carries can never link. Each player's schools are split on ";", the
+   same as the engine's collegesOf. */
+const playerSchools = new Set();
+for (const f of ['player_seasons.json', 'defender_seasons.json']) {
+  let rows = [];
+  try { rows = rd('football/data/' + f); } catch (_) { continue; }
+  for (const p of rows) for (const s of String(p.college || '').split(';')) if (s.trim()) playerSchools.add(s.trim());
+}
+const unmatched = [];
+for (const name in out) for (const s of out[name]) if (!playerSchools.has(s)) unmatched.push(`${name}: ${s}`);
+console.log(unmatched.length ? `  matches no player's school: ${unmatched.join(', ')}` : "  every posting matches a player's school");

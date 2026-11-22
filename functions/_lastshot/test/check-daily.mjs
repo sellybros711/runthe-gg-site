@@ -111,7 +111,7 @@ async function run(name, viewport, mobile, uid, days) {
 
   const posts0 = fake.posts.length;
   await page.goto(BASE + '/last-shot/');
-  // a returning browser (it has run a play): the Daily leads home. A new one leads with Play (check-starters).
+  // a returning browser (it has run a play): Play still leads home, the Daily under it or beside it (the owner's call, 2026-11-22). A new one: check-starters.
   await L(days => { try { localStorage.clear(); } catch (e) {} localStorage.setItem('last_shot_ran', '1');
     if (days) localStorage.setItem('last_shot_ladder', JSON.stringify({ v: 1, best: {}, plays: {}, days })); }, days || null);
   await boot();
@@ -122,10 +122,10 @@ async function run(name, viewport, mobile, uid, days) {
   else ok(await page.isHidden('#hDailyStreak'), 'a first visit shows no streak');
   ok(!/gem/i.test(await page.textContent('#vHome')), 'no gems on home');
 
-  // home: the Daily card on top, today's number and title, the countdown
+  // home: Play first, then the Daily card: today's number and title, the countdown
   ok((await L(() => window.__lastShot.dayState)) === 'ok', 'today loaded');
   const hd = await page.locator('#hDaily').boundingBox(), hp = await page.locator('#hPlay').boundingBox();
-  ok(hd.y < hp.y, 'the Daily card is at the top of home');
+  ok(hp.y < hd.y, 'Play is first on home for a returning player too, then the Daily');
   ok((await page.textContent('#hDailyName')) === 'Daily Last Shot #' + NUM && (await page.textContent('#hDailyTitle')) === CFG.title, 'the card: Daily Last Shot #' + NUM + ', ' + CFG.title);
   ok((await page.textContent('#hDailyGo')) === 'Play' && await page.isHidden('#hDailySq'), 'Play, and no squares before playing');
   ok(/^Next one in \d{1,2}:\d\d:\d\d$/.test(await page.textContent('#hDailyCount')), 'the countdown: ' + await page.textContent('#hDailyCount'));

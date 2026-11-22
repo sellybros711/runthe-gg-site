@@ -16,14 +16,14 @@
  *   mountBooks({ sc, show, openPlay, goHome, runAgainst, currentPlay, redraw })
  *     -> { open, back, showBook, playChanged, countRun, fillEditBar,
  *          signedState, saveRun, openSaved (Save this play on a result card) } */
-import * as B from './book.js?b=ddf83eb21b';
-import * as N from './names.js?b=ddf83eb21b';
-import { DEFENSES, DEFENSE_NAMES, RUNS, testKey } from './testit.js?b=ddf83eb21b';
-import { simulate } from './sim.js?b=ddf83eb21b';
-import { IDS, emptyPlay, scenarioFor, situationKey, playKey, cleanSituation, CLOCK_MIN, CLOCK_MAX } from './playbook.js?b=ddf83eb21b';
-import { hashStr } from './rng.js?b=ddf83eb21b';
-import { drawPlay } from './diagram.js?b=ddf83eb21b';
-import * as X from './export.js?b=ddf83eb21b';
+import * as B from './book.js?b=e8ab3a738b';
+import * as N from './names.js?b=e8ab3a738b';
+import { DEFENSES, DEFENSE_NAMES, RUNS, testKey } from './testit.js?b=e8ab3a738b';
+import { simulate } from './sim.js?b=e8ab3a738b';
+import { IDS, emptyPlay, scenarioFor, situationKey, playKey, cleanSituation, CLOCK_MIN, CLOCK_MAX } from './playbook.js?b=e8ab3a738b';
+import { hashStr } from './rng.js?b=e8ab3a738b';
+import { drawPlay } from './diagram.js?b=e8ab3a738b';
+import * as X from './export.js?b=e8ab3a738b';
 
 const $ = id => document.getElementById(id);
 function el(tag, attrs, kids) {

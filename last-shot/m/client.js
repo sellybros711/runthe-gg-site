@@ -32,26 +32,26 @@
  * ACCOUNT PLUG POINTS still out of scope:
  *   TODO(results): save a free play or ladder possession through a gated API,
  *     the way the daily's run is filed (daily-ui.js). */
-import { SCENARIO as SC, isZone } from './scenario.js?b=ddf83eb21b';
-import { simulate } from './sim.js?b=ddf83eb21b';
-import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js?b=ddf83eb21b';
-import { STARTERS, starterById, starterPlay } from './starters.js?b=ddf83eb21b';
-import { drawPlay } from './diagram.js?b=ddf83eb21b';
-import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js?b=ddf83eb21b';
+import { SCENARIO as SC, isZone } from './scenario.js?b=e8ab3a738b';
+import { simulate } from './sim.js?b=e8ab3a738b';
+import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js?b=e8ab3a738b';
+import { STARTERS, starterById, starterPlay } from './starters.js?b=e8ab3a738b';
+import { drawPlay } from './diagram.js?b=e8ab3a738b';
+import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js?b=e8ab3a738b';
 import { loadLadder, saveLadder, renderLadder, isOpen, nextOf, starsIn, maxStars, clockLine, scoutLine, starText, cleanPlay as cleanStored,
-  keepPlay, markDay, streakOf, startLadderSync, flushLadder, ladderWrites } from './ladder-ui.js?b=ddf83eb21b';
-import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js?b=ddf83eb21b';
-import { challengeOpt, beats } from './challenge.js?b=ddf83eb21b';
-import * as D from './daily-ui.js?b=ddf83eb21b';
-import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sitLine, scoutOf, renderChallenge, renderBadLink } from './beat-ui.js?b=ddf83eb21b';
-import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js?b=ddf83eb21b';
-import { createBoard } from './board.js?b=ddf83eb21b';
-import { mountBooks } from './book-ui.js?b=ddf83eb21b';
-import { createRunView, between, warm } from './run-view.js?b=ddf83eb21b';
-import { shareText, dailyShareText } from './share.js?b=ddf83eb21b';
-import { freshSeed } from './rng.js?b=ddf83eb21b';
-import { createSound } from './sound.js?b=ddf83eb21b';
-import { track, trackOpen, flushNow } from './analytics.js?b=ddf83eb21b';
+  keepPlay, markDay, streakOf, startLadderSync, flushLadder, ladderWrites } from './ladder-ui.js?b=e8ab3a738b';
+import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js?b=e8ab3a738b';
+import { challengeOpt, beats } from './challenge.js?b=e8ab3a738b';
+import * as D from './daily-ui.js?b=e8ab3a738b';
+import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sitLine, scoutOf, renderChallenge, renderBadLink } from './beat-ui.js?b=e8ab3a738b';
+import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js?b=e8ab3a738b';
+import { createBoard } from './board.js?b=e8ab3a738b';
+import { mountBooks } from './book-ui.js?b=e8ab3a738b';
+import { createRunView, between, warm } from './run-view.js?b=e8ab3a738b';
+import { shareText, dailyShareText } from './share.js?b=e8ab3a738b';
+import { freshSeed } from './rng.js?b=e8ab3a738b';
+import { createSound } from './sound.js?b=e8ab3a738b';
+import { track, trackOpen, flushNow } from './analytics.js?b=e8ab3a738b';
 
 const $ = id => document.getElementById(id);
 const KEY = 'last_shot_play_v1', SPEED_KEY = 'last_shot_speed';
@@ -838,6 +838,7 @@ function show(v) {
   if (v === 'vGame') { clearTimeout(hintTimer); hintTimer = null; $('hint').textContent = ''; }
   closeSheets();   // a sheet never stays open over the next screen
   for (const id of VIEWS) $(id).hidden = id !== v;
+  document.body.classList.toggle('athome', v === 'vHome');   // the gym wall behind home's clipboard (desktop)
   $('back').dataset.to = v === 'vHome' ? 'arcade' : v === 'vGame' && mode === 'edit' ? 'book' : v === 'vGame' && mode === 'level' ? 'ladder'
     : v === 'vGame' && mode === 'beat' ? 'beat' : v === 'vBooks' ? 'books' : 'home';
   /* the hash (#beat= or #daily) holds only while its screen is up, so a
@@ -887,16 +888,12 @@ function bars() {
   $('bRun').textContent = mode === 'daily' ? 'Practice' : 'Run It';
 }
 
-/* Home's Ladder card: the stars so far. The Daily card: today, or what you
-   filed, and the clock to the next one. */
+/* Home is the practice plan, and its order is fixed: Play is line 1 for
+   everyone, new or returning (the owner's call, 2026-11-22). A browser that
+   has never run a play gets Start here on it. The Ladder line: the stars so
+   far. The Daily card: today, or what you filed, and the clock to the next one. */
 function homeSync() {
-  {
-    const fresh = !lsGet(RAN_KEY), d = $('hDaily'), p = $('hPlay');
-    // a.compareDocumentPosition(b) says where b is: FOLLOWING means b comes after a
-    if (fresh && d.compareDocumentPosition(p) & Node.DOCUMENT_POSITION_FOLLOWING) d.parentNode.insertBefore(p, d);
-    if (!fresh && p.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING) p.parentNode.insertBefore(d, p);
-    p.classList.toggle('first', fresh);
-  }
+  $('hPlay').classList.toggle('first', !lsGet(RAN_KEY));
   $('hLadderStars').textContent = starsIn(ladder) + ' of ' + maxStars() + ' stars';
   $('hLadderSub').textContent = LEVELS.length + ' late game spots. Win one to open the next.';
   D.homeCard({ today: day, error: dayState === 'error', off: dayState === 'off', streak: streakNow() });

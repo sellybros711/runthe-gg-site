@@ -15,7 +15,7 @@
  *
  * BODIES do not overlap: separate() pushes defenders out of every other body,
  * so a set screen is a wall a defender has to go around. */
-import { clampToCourt } from './court-geo.js?b=ddf83eb21b';
+import { clampToCourt } from './court-geo.js?b=e8ab3a738b';
 
 /* Movement tuning with defaults, so an older scenario object still runs.
    Every key can be set in scenario.js tuning. */

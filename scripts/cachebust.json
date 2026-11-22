@@ -81,8 +81,8 @@
       "sha": "f47af376ff4c615f"
     },
     "live3d.js": {
-      "v": "3",
-      "sha": "2a93c593202fd54c"
+      "v": "4",
+      "sha": "d983532b968af066"
     },
     "app.js": {
       "v": "14",
@@ -2149,8 +2149,8 @@
       "sha": "49864a18a2451053"
     },
     "/arcade/sportegories-data.js": {
-      "v": "70",
-      "sha": "9bcbfe938d940f0a"
+      "v": "71",
+      "sha": "802aec15347f9e7a"
     },
     "/arcade/type.js": {
       "v": "6",
@@ -2415,8 +2415,8 @@
       "sha": "733a0836581de9eb"
     },
     "/cfb/engine.js": {
-      "v": "35",
-      "sha": "6790ff818f8387df"
+      "v": "36",
+      "sha": "24d34bfe4cbd5e31"
     },
     "access.js": {
       "v": "7",
@@ -2571,8 +2571,8 @@
   },
   "cfb/index.html": {
     "engine.js": {
-      "v": "35",
-      "sha": "6790ff818f8387df"
+      "v": "36",
+      "sha": "24d34bfe4cbd5e31"
     },
     "run.js": {
       "v": "15",
@@ -2611,8 +2611,8 @@
       "sha": "9f0e387d6587c96d"
     },
     "/assets/fantasy-promo.js": {
-      "v": "1",
-      "sha": "17fcaf4e2246434c"
+      "v": "2",
+      "sha": "3cf6a835b15091d7"
     },
     "/assets/newsletter.js": {
       "v": "2",
@@ -2671,8 +2671,8 @@
   },
   "football/index.html": {
     "engine.js": {
-      "v": "101",
-      "sha": "acb77b5add408631"
+      "v": "102",
+      "sha": "f42f3c6833f06f11"
     },
     "run.js": {
       "v": "104",
@@ -2695,8 +2695,8 @@
       "sha": "204906d7b9a5bb27"
     },
     "achievements.js": {
-      "v": "16",
-      "sha": "7ed2ed93bde14ccb"
+      "v": "17",
+      "sha": "36e670bc56549374"
     },
     "crest.js": {
       "v": "11",
@@ -2719,8 +2719,8 @@
       "sha": "cc149708e8a0216e"
     },
     "/assets/fantasy-promo.js": {
-      "v": "1",
-      "sha": "17fcaf4e2246434c"
+      "v": "2",
+      "sha": "3cf6a835b15091d7"
     },
     "/assets/newsletter.js": {
       "v": "2",
@@ -2743,8 +2743,8 @@
       "sha": "71a1c259bf762e41"
     },
     "data/coach_colleges.json": {
-      "v": "1",
-      "sha": "21c57e68b8502972"
+      "v": "2",
+      "sha": "bbe54d7813279e2d"
     }
   },
   "fumble/index.html": {
@@ -3193,8 +3193,8 @@
   },
   "mythiball/proto3d/index.html": {
     "../sprites/cast.js": {
-      "v": "1",
-      "sha": "cc95a7621fa29203"
+      "v": "2",
+      "sha": "f487c7bb17d6b4e3"
     },
     "main.js": {
       "v": "3",

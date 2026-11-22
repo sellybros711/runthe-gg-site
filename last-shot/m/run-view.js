@@ -16,7 +16,7 @@
  * the frames with the ball up, fr.sk set, and the after-ball, opts.after) to
  * a 3D renderer on a canvas of its own, then set RUN_VIEW to it. client.js,
  * the timing, the captions and the card do not change. */
-import { createCourt2d, warm as warm2d } from './court2d.js?b=ddf83eb21b';
+import { createCourt2d, warm as warm2d } from './court2d.js?b=e8ab3a738b';
 
 const RENDERERS = { board: { create: createCourt2d, warm: warm2d } };
 export const RUN_VIEW = 'board';
