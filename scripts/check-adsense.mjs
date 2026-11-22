@@ -274,13 +274,39 @@ const STICKY_SCREENS = {
     const rel = path.relative(ROOT, file);
     if (rel === 'assets/rtg-ads.js') continue;
     const src = fs.readFileSync(file, 'utf8');
-    if (!/RTG_ADS\.(sticky|rails)\(/.test(src)) continue;
+    if (!/RTG_ADS\.(sticky|rails|rows)\(/.test(src)) continue;
     if (rel.endsWith('.html') && !/<script src="\/assets\/rtg-ads\.js\?v=\d+"><\/script>/.test(src)) problems.push(`${rel}: calls RTG_ADS but does not load /assets/rtg-ads.js`);
     const list = src.match(/const (?:STICKY_ON|STICKY_SCR)=\[([^\]]*)\]/);
     if (STICKY_SCREENS[rel]) {
       const got = list ? [...list[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort().join(',') : '';
       if (got !== [...STICKY_SCREENS[rel]].sort().join(',')) problems.push(`${rel}: the bottom banner's screens are [${got}], check-adsense holds [${STICKY_SCREENS[rel].join(', ')}]. It goes on home, leaderboard and results screens only`);
     } else if (list) problems.push(`${rel}: has a bottom banner screen list that check-adsense does not hold. Add it to STICKY_SCREENS`);
+  }
+}
+
+/* THE LEADERBOARD ROW AD (assets/rtg-ads.js RTG_ADS.rows, the owner's call 2026-11-19). A 300x250
+ * between the rows of a long board, rolled out one game at a time: a page not in ROW_AD_PAGES that
+ * asks for one fails (and so does every tester only or unreleased game, which is never on it). A
+ * page that carries it keeps its unit in a ROW_SLOT table and drops it when the board closes. The
+ * library keeps the owner's numbers: none under 80 rows, three at most, a fixed 300x250 with 40px
+ * of clear space above and below, nothing while the desktop rails are up. */
+const ROW_AD_PAGES = new Set(['football/index.html']);
+{
+  const lib = fs.readFileSync(path.join(ROOT, 'assets/rtg-ads.js'), 'utf8');
+  if (!/var ROW_CLEAR = (\d+)/.test(lib) || +lib.match(/var ROW_CLEAR = (\d+)/)[1] < 40) problems.push('assets/rtg-ads.js: the row ad needs 40px of clear space above and below (ROW_CLEAR)');
+  if (!/ROW_MAX = 3\b/.test(lib)) problems.push('assets/rtg-ads.js: the row ad is capped at three a board (ROW_MAX = 3)');
+  if (!/if \(!\(n >= 80\)\) return \[\];/.test(lib)) problems.push('assets/rtg-ads.js: a board under 80 rows carries no row ad (rowRanks)');
+  if (!/\.rtg-rowad ins\.adsbygoogle\{display:block;width:300px;height:250px\}/.test(lib)) problems.push('assets/rtg-ads.js: the row ad is a fixed 300x250');
+  if (!/if \(railsUp\(\)\) return;/.test(lib)) problems.push('assets/rtg-ads.js: the row ad stays off while the desktop rails are up');
+  for (const file of walkCode(ROOT)) {
+    const rel = path.relative(ROOT, file);
+    if (rel === 'assets/rtg-ads.js') continue;
+    const src = fs.readFileSync(file, 'utf8');
+    const asks = [...src.matchAll(/RTG_ADS\.rows\(([^)]{0,12})/g)].filter((m) => !/^false\b/.test(m[1]));
+    if (!asks.length) continue;
+    if (!ROW_AD_PAGES.has(rel)) { problems.push(`${rel}: asks for a leaderboard row ad, which check-adsense keeps to ${[...ROW_AD_PAGES].join(', ')}. Add the page to ROW_AD_PAGES with the owner's go-ahead`); continue; }
+    if (!/const ROW_SLOT=\{row:'\d+'\}/.test(src)) problems.push(`${rel}: keeps its row ad unit outside a ROW_SLOT table`);
+    if (!/RTG_ADS\.rows\(false\)/.test(src)) problems.push(`${rel}: never drops the row ad (RTG_ADS.rows(false)) when the board closes`);
   }
 }
 
