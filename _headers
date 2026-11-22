@@ -8,7 +8,7 @@
 #
 # The page and the modules are separate files, cached independently. When a
 # release renames an export, a browser holding a CACHED index.html alongside a
-# FRESH scoring.js fails to link the module — and an ES module that fails to
+# FRESH scoring.js fails to link the module, and an ES module that fails to
 # link does not run at all, so the page renders its header and nothing else.
 # That is not a visible error, it is a blank screen.
 #
@@ -40,19 +40,32 @@
   Cache-Control: public, max-age=31536000
 
 # Run The Arcade. Its pages are served at /arcade/ and /arcade/<game>/ (no
-# ".html" in the URL, so the /*.html rule above never matches them), and its
-# shared modules (tokens.js, card.js, board.js, calendar.js, pregame.js, …) are
-# edited in place rather than ?v=-bumped. So revalidate everything under
-# /arcade/ on every load: a push to main then reaches every browser immediately
-# (ETag → 304 when unchanged, so it stays cheap). Big static assets keep a hard
-# cache below.
+# ".html" in the URL, so the /*.html rule above never matches them), so those
+# are revalidated on every load: a push to main reaches every phone on the next
+# visit.
+#
+# Its scripts are held for a year. Every tag that loads one carries a ?v=
+# version, check-cachebust fails CI when a script changes without a bump, and
+# check-arcade-cache fails on an arcade script tag with no version. So a given
+# script URL's bytes never change. A game page loads 34 to 50 scripts; before
+# this, every visit asked again for every one of them. The stylesheet stays on
+# revalidate: check-cachebust does not record stylesheets, so a year's cache
+# could keep an edit from reaching a phone.
+#
+# There is deliberately no /arcade/* rule. Cloudflare joins a header set by two
+# matching rules, so the old "/arcade/* no-cache" turned every rule below it
+# into "no-cache, public, max-age=...", and no-cache won: the assets' week
+# never applied. check-arcade-cache holds this block's shape.
 /arcade/
   Cache-Control: no-cache
-/arcade/*
+/arcade/*/
+  Cache-Control: no-cache
+/arcade/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/arcade/*.css
   Cache-Control: no-cache
 
-# Fonts/images/audio under the arcade rarely change and are large — let them
-# cache hard (override the broad no-cache above for these extensions).
+# The arcade's icons and share images rarely change: a week.
 /arcade/assets/*
   Cache-Control: public, max-age=604800
 
