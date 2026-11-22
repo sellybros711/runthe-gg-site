@@ -232,7 +232,7 @@
   $('tWatch').addEventListener('click', function () {
     var k = kept(); if (!k) return;
     var res = E.run(sc, item.play, seedsFor(day)[0], { call: k.pick });
-    A.watch3d(res, function () {});
+    A.watch3d(res, function () {}, { play: item.play, kind: 'drawn' });
   });
   $('tBack').addEventListener('click', function () { A.show('home'); });
   A.on('trivia', render);

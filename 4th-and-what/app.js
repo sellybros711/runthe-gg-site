@@ -208,7 +208,13 @@
     var y = Math.round(a);
     return r.win ? y + (y === 1 ? ' yard' : ' yards') + ' to spare.' : y + (y === 1 ? ' yard' : ' yards') + ' short.';
   }
-  function watch3d(res, done) {
+  /* the Coach view's choice, kept on the device for each kind of snap: on for a
+     drawn play, off for a card, until the player says otherwise */
+  function coachPref(kind) { try { var o = JSON.parse(localStorage.getItem('faw_coach') || '{}'); if (o[kind] != null) return !!o[kind]; } catch (e) {} return kind !== 'cards'; }
+  function coachKeep(kind, on) { try { var o = JSON.parse(localStorage.getItem('faw_coach') || '{}'); o[kind] = !!on; localStorage.setItem('faw_coach', JSON.stringify(o)); } catch (e) {} }
+  /* watch3d(res, done, o): o.play is what was snapped (its reads), o.kind 'drawn' or 'cards' */
+  function watch3d(res, done, o) {
+    o = o || {};
     var w = $('watch'); w.hidden = false; $('cap').textContent = ''; $('bSkip').hidden = false; $('rCard').hidden = true;
     if (live) live.stop();
     window.FAW_LIVE.prepare(res.BX, res.Y0, res.level);
@@ -219,7 +225,12 @@
     var D3 = window.FAW_LIVE3D, use3 = !!(D3 && D3.ok());
     $('cLive').hidden = use3; $('cLive3d').hidden = !use3;
     $('bug').hidden = !use3; $('bugDown').textContent = res.situation || ''; $('bugCall').textContent = levelShort(res.level);
+    var kind = o.kind || 'drawn', cb = $('bCoach'), chip = $('coachRead');
+    cb.hidden = !use3; chip.hidden = !use3; chip.textContent = '';
+    cb.setAttribute('aria-pressed', String(coachPref(kind)));
+    cb.onclick = function () { var on = cb.getAttribute('aria-pressed') !== 'true'; cb.setAttribute('aria-pressed', String(on)); coachKeep(kind, on); if (live && live.coach) live.coach(on); };
     var ui = {
+      coach: use3 ? { on: coachPref(kind), play: o.play || null, say: function (t) { chip.textContent = t; } } : null,
       zoom: !use3,
       caption: function (t) { $('cap').textContent = t; },
       pressure: function (p) { $('pressFill').style.width = Math.round(p * 100) + '%'; $('press').style.opacity = res.isRun ? '0' : '1'; },
@@ -239,7 +250,7 @@
       },
       done: function (r) { $('bSkip').hidden = true; stamp.hidden = true; if (done) done(r || res); }
     };
-    if (use3) { try { live = D3.show($('cLive3d'), res, ui); return; } catch (e) { $('cLive').hidden = false; $('cLive3d').hidden = true; $('bug').hidden = true; ui.zoom = true; } }
+    if (use3) { try { live = D3.show($('cLive3d'), res, ui); return; } catch (e) { $('cLive').hidden = false; $('cLive3d').hidden = true; $('bug').hidden = true; cb.hidden = true; chip.hidden = true; ui.zoom = true; ui.coach = null; } }
     live = window.FAW_LIVE.show($('cLive'), res, ui);
   }
   $('bSkip').addEventListener('click', function () { live && live.skip(); });

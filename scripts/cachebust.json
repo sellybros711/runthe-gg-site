@@ -81,12 +81,12 @@
       "sha": "f47af376ff4c615f"
     },
     "live3d.js": {
-      "v": "4",
-      "sha": "d983532b968af066"
+      "v": "5",
+      "sha": "f78bd85d89c0c2ed"
     },
     "app.js": {
-      "v": "14",
-      "sha": "4a07c5add3b9755e"
+      "v": "15",
+      "sha": "8c270354c7121b48"
     },
     "home.js": {
       "v": "5",
@@ -97,24 +97,24 @@
       "sha": "61b6cb89f034f1c8"
     },
     "game.js": {
-      "v": "6",
-      "sha": "fefdb546b27fe98a"
+      "v": "7",
+      "sha": "3bb5ced2b05a8c67"
     },
     "clip.js": {
       "v": "2",
       "sha": "ee57c2208849675b"
     },
     "flow.js": {
-      "v": "19",
-      "sha": "28bf3467ed43ae0e"
+      "v": "20",
+      "sha": "6a7752978cea52fd"
     },
     "daily.js": {
       "v": "10",
       "sha": "917c5bc2e8ddc2d4"
     },
     "trivia.js": {
-      "v": "6",
-      "sha": "198d1e95ea61edf7"
+      "v": "7",
+      "sha": "baef9753b7b44131"
     },
     "calls.js": {
       "v": "12",

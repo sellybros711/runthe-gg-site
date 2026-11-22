@@ -152,6 +152,131 @@ function applyPose(m, t, k) {
 }
 
 
+/* ---------- the coach layer (stage 3) ----------
+ * The owner, 2026-11-19: "fun game And educational coaching tool". Over the
+ * snap, on the turf: each route in its clipboard colour, solid where he has
+ * run and dashed ahead (the frames know the whole play, so the route is the one
+ * he really runs), an arrow at its end; a run's path in green. The reads float
+ * over the receivers as gold numbers, the one the QB is on now lit, a covered
+ * one dimmed, the one he throws to turned teal. After the snap (never before:
+ * the look is the shell, never the call) the coverage fades in: each zone
+ * shaded where it sits (deep ones blue, short ones teal) and a line from each
+ * man defender to his man. The chip says which read he is on. */
+const RCOL = { WR1: '#3d8bff', WR2: '#ef4b3f', SLOT: '#b06cff', TE: '#f5c542', RB: '#2ec4a6', QB: '#5b8cff' };
+const RLAB = { WR1: 'X', WR2: 'Z', SLOT: 'H', TE: 'Y', RB: 'RB', QB: 'QB' };
+const RUNC = '#36d399';
+const ORD = ['1st', '2nd', '3rd'];
+const ribbonMat = (col) => new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
+  uniforms: { col: { value: new THREE.Color(col) }, prog: { value: 0 }, op: { value: 1 } },
+  vertexShader: 'attribute float dist; varying float vD; void main() { vD = dist; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: 'uniform vec3 col; uniform float prog; uniform float op; varying float vD; void main() { float a = 0.95; if (vD > prog) { if (mod(vD, 1.3) > 0.75) discard; a = 0.5; } gl_FragColor = vec4(col, a * op);\n#include <colorspace_fragment>\n}'
+});
+/* a flat strip along a path of world points, with the distance along it per vertex */
+function ribbon(pts, w) {
+  const pos = [], dist = [], idx = []; let d = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    let dx = b[0] - a[0], dz = b[1] - a[1]; const L2 = Math.hypot(dx, dz) || 1; dx /= L2; dz /= L2;
+    if (i) d += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    pos.push(pts[i][0] - dz * w / 2, 0.04, pts[i][1] + dx * w / 2, pts[i][0] + dz * w / 2, 0.04, pts[i][1] - dx * w / 2);
+    dist.push(d, d);
+    if (i) { const k = i * 2; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('dist', new THREE.Float32BufferAttribute(dist, 1)); g.setIndex(idx);
+  return { g, len: d };
+}
+function badgeTex(text, fill, ink) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.beginPath(); g.arc(64, 64, 54, 0, 7); g.fillStyle = fill; g.fill(); g.lineWidth = 8; g.strokeStyle = 'rgba(6,12,22,.85)'; g.stroke();
+  g.fillStyle = ink; g.font = '900 ' + (text.length > 1 ? 52 : 74) + 'px "Barlow Condensed", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 64, 68);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function makeCoach(W, res, opt) {
+  const G = new THREE.Group(), frames = res.frames, ids = res.ids, idx = {}, tEnd = frames[frames.length - 1].t;
+  ids.forEach((e, i) => { idx[e.id] = i; });
+  const targets = !res.isRun && opt.play && opt.play.targets ? opt.play.targets.filter((id) => idx[id] != null).slice(0, 3) : [];
+  const ev = res.events || [], thr = ev.find((e) => e.kind === 'throw'), to = res.throwInfo && res.throwInfo.to;
+  const routes = [];
+  const pathOf = (j, t1) => { const out = [], ts = []; let last = null; for (const f of frames) { if (f.t > t1) break; const p = f.p[j]; if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) > 0.35) { out.push([wx(p[0]), wz(p[1])]); ts.push(f.t); last = p; } } return { out, ts }; };
+  const carrierId = res.isRun ? (ids.find((e, j) => e.side === 'O' && frames.some((f) => f.p[j][2] === 'carry')) || {}).id : null;
+  ids.forEach((e, j) => {
+    if (e.side !== 'O' || e.role === 'ol') return;
+    const isCarrier = e.id === carrierId;
+    if (res.isRun ? !isCarrier : (!RCOL[e.id] || e.id === 'QB')) return;
+    const t1 = res.isRun || e.id === to ? tEnd : thr ? thr.t + 0.7 : tEnd;
+    const { out, ts } = pathOf(j, t1);
+    let travel = 0; for (let i = 1; i < out.length; i++) travel += Math.hypot(out[i][0] - out[i - 1][0], out[i][1] - out[i - 1][1]);
+    if (out.length < 2 || travel < 2.5) return; /* a man who stays in to block has no route */
+    const col = res.isRun ? RUNC : RCOL[e.id], R = ribbon(out, 0.34), mat = ribbonMat(col), m = new THREE.Mesh(R.g, mat); m.renderOrder = 2; G.add(m);
+    /* the arrow at its end */
+    const a = out[out.length - 1], b = out[out.length - 2], ang = Math.atan2(a[0] - b[0], a[1] - b[1]);
+    const tri = new THREE.Shape(); tri.moveTo(0, 0.75); tri.lineTo(-0.5, -0.25); tri.lineTo(0.5, -0.25); tri.closePath();
+    const arrow = new THREE.Mesh(new THREE.ShapeGeometry(tri), new THREE.MeshBasicMaterial({ color: col, transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+    arrow.rotation.set(-Math.PI / 2, 0, ang + Math.PI); arrow.position.set(a[0], 0.045, a[1]); arrow.renderOrder = 2; G.add(arrow);
+    /* how far along he is at time t */
+    const cum = [0]; for (let i = 1; i < out.length; i++) cum.push(cum[i - 1] + Math.hypot(out[i][0] - out[i - 1][0], out[i][1] - out[i - 1][1]));
+    routes.push({ mat, arrow, ts, cum, len: R.len });
+  });
+  /* the coverage, from the defense's plan */
+  const cover = [], tethers = [];
+  (res.plans || []).forEach((q) => {
+    if (q.plan === 'zone' && q.mark) {
+      const r = (q.width || 9) / 2, z = new THREE.Mesh(new THREE.CircleGeometry(r, 40), new THREE.MeshBasicMaterial({ color: q.deep ? '#3d9bff' : '#19c6a7', transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+      z.rotation.x = -Math.PI / 2; z.scale.set(1, q.deep ? 0.75 : 0.6, 1); z.position.set(wx(res.BX + q.mark[0]), 0.035, wz(res.Y0 + q.mark[1])); z.renderOrder = 1; z.userData.peak = q.deep ? 0.27 : 0.2; G.add(z); cover.push(z);
+      const ringG = new THREE.RingGeometry(r - 0.12, r, 48), ring = new THREE.Mesh(ringG, new THREE.MeshBasicMaterial({ color: q.deep ? '#7cc0ff' : '#5fe3c6', transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+      ring.rotation.x = -Math.PI / 2; ring.scale.copy(z.scale); ring.position.copy(z.position); ring.position.y = 0.037; ring.renderOrder = 1; ring.userData.peak = 0.55; G.add(ring); cover.push(ring);
+    } else if (q.plan === 'man' && q.man && idx[q.man] != null && idx[q.id] != null) {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
+      const l = new THREE.Line(g, new THREE.LineDashedMaterial({ color: '#ffffff', dashSize: 0.6, gapSize: 0.45, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+      l.frustumCulled = false; l.userData.peak = 0.75; l.userData.a = idx[q.id]; l.userData.b = idx[q.man]; G.add(l); tethers.push(l);
+    }
+  });
+  /* the reads, over the receivers' heads */
+  const tex = {}, T = (k, txt, fill, ink) => tex[k] || (tex[k] = badgeTex(txt, fill, ink));
+  const reads = targets.map((id, n) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T('w' + n, String(n + 1), '#f5b72a', '#0b1626'), depthTest: false, transparent: true, toneMapped: false })); sp.renderOrder = 5; sp.scale.set(1.1, 1.1, 1); G.add(sp); return { id, j: idx[id], sp, n }; });
+  W.S.add(G);
+  let on = !!opt.on, lastRead = -2;
+  G.visible = on;
+  function update(tt, men) {
+    if (!on) return;
+    const t = Math.max(0, tt);
+    routes.forEach((r) => {
+      let k = 0; while (k < r.ts.length - 1 && r.ts[k + 1] <= t) k++;
+      const u = k < r.ts.length - 1 ? Math.min(1, (t - r.ts[k]) / ((r.ts[k + 1] - r.ts[k]) || 1)) : 0;
+      r.mat.uniforms.prog.value = tt < 0 ? 0 : r.cum[k] + (r.cum[Math.min(k + 1, r.cum.length - 1)] - r.cum[k]) * u;
+    });
+    /* the coverage shows once the defense is playing it */
+    const f = tt <= 0 ? 0 : Math.min(1, tt / 0.8);
+    cover.forEach((m) => { m.material.opacity = m.userData.peak * f; });
+    tethers.forEach((l) => {
+      const A = men[l.userData.a].G.position, B = men[l.userData.b].G.position, p = l.geometry.attributes.position;
+      p.setXYZ(0, A.x, 0.06, A.z); p.setXYZ(1, B.x, 0.06, B.z); p.needsUpdate = true; l.computeLineDistances(); l.material.opacity = l.userData.peak * f;
+    });
+    /* which read his eyes are on: the progressions and the checkdown, from the events */
+    let eye = 0, gone = false;
+    ev.forEach((e) => { if (e.t > t || tt < 0) return; if (e.kind === 'progress') eye++; if (e.kind === 'checkdown') eye = targets.length - 1; if (e.kind === 'throw') gone = true; });
+    reads.forEach((r) => {
+      const m = men[r.j]; const P = m.G.position; r.sp.position.set(P.x, 3.25, P.z);
+      const thrownTo = gone && r.id === to, live = !gone && r.n === eye && tt >= 0, passed = !gone && r.n < eye;
+      r.sp.material.map = thrownTo ? T('t' + r.n, String(r.n + 1), '#19c6a7', '#04120d') : passed ? T('p' + r.n, String(r.n + 1), '#46505e', '#c9d2dc') : T('w' + r.n, String(r.n + 1), '#f5b72a', '#0b1626');
+      const pulse = live ? 1.25 + 0.12 * Math.sin(performance.now() / 120) : thrownTo ? 1.3 : 1;
+      r.sp.scale.set(1.1 * pulse, 1.1 * pulse, 1); r.sp.material.opacity = gone && !thrownTo ? 0.45 : 1;
+    });
+    const read = res.isRun || !targets.length ? -1 : gone ? 99 : tt < 0 ? -1 : eye;
+    if (read !== lastRead) {
+      lastRead = read;
+      if (opt.say) opt.say(read === -1 ? '' : read === 99 ? (to ? 'Ball to ' + (RLAB[to] || to) + '.' : '') : ORD[read] + ' read · ' + (RLAB[targets[read]] || targets[read]));
+    }
+  }
+  return {
+    update, get on() { return on; },
+    set(v) { on = !!v; G.visible = on; lastRead = -2; if (!on && opt.say) opt.say(''); },
+    dispose() { W.S.remove(G); G.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); Object.values(tex).forEach((t) => t.dispose()); }
+  };
+}
+
 /* ---------- the stadium ---------- */
 function build() {
   if (world) return world;
@@ -279,6 +404,9 @@ function show(canvas, res, ui) {
   const C = { x: res.BX, y: res.Y0 + 1, d: 28, h: 19 };
   let lastT = null, lastDraw = null;
 
+  /* the coach layer for this snap (ui.coach: { on, play, say }); the last one is cleared */
+  if (W.coach) { W.coach.dispose(); W.coach = null; }
+  const coach = ui.coach ? (W.coach = makeCoach(W, res, ui.coach)) : null;
   function draw(tt) {
     const pre = tt < 0, F = L.frameOf(res, Math.max(0, tt)), now = performance.now(), dts = lastT == null ? 0 : Math.min(0.05, (now - lastT) / 1000); lastT = now;
     /* each man: where the engine has him, which way he faces, and his pose,
@@ -330,6 +458,7 @@ function show(canvas, res, ui) {
     const wantD = slow ? 22 : out ? 25 : 28, wantH = slow ? 13 : out ? 16 : 19;
     C.x += (tx - C.x) * k; C.y += (ty - C.y) * k; C.d += (wantD - C.d) * k; C.h += (wantH - C.h) * k;
     v.cam.position.set(wx(C.x), C.h, wz(C.y - C.d)); v.cam.lookAt(wx(C.x), 0, wz(C.y + 9));
+    if (coach) coach.update(tt, W.men);
     if (ui.pressure) ui.pressure(pre || res.isRun ? 0 : F.a.pressure);
     v.r.render(W.S, v.cam);
   }
@@ -367,7 +496,12 @@ function show(canvas, res, ui) {
   };
   const ui2 = Object.assign({}, ui, { final: ui.final ? (r, skipped) => { celebrate(r); ui.final(r, skipped); } : undefined, done: (r) => { if (!ui.final) celebrate(r || res); ui.done(r); } });
   const h = L.run(res, ui2, draw);
-  return { skip: h.skip, stop: () => { window.removeEventListener('resize', onResize); if (party) cancelAnimationFrame(party); W.confetti.visible = false; h.stop(); } };
+  return {
+    skip: h.skip,
+    stop: () => { window.removeEventListener('resize', onResize); if (party) cancelAnimationFrame(party); W.confetti.visible = false; h.stop(); },
+    /* the Coach view toggle: on or off mid-snap, and the picture redrawn at once */
+    coach: (want) => { if (!coach) return false; if (want != null) { coach.set(want); v.r.render(W.S, v.cam); } return coach.on; }
+  };
 }
 
 /* build the stadium ahead of time, while Call it is up */

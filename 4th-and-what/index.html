@@ -58,7 +58,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=36">
+<link rel="stylesheet" href="style.css?v=37">
 </head>
 <body>
 <header class="topbar">
@@ -536,6 +536,8 @@ document.documentElement.setAttribute('data-theme', 'dark');
     <canvas id="cLive" aria-label="The play in the stadium"></canvas>
     <canvas id="cLive3d" hidden aria-label="The play in the stadium"></canvas>
     <div class="bug" id="bug" hidden aria-hidden="true"><b id="bugDown"></b><span id="bugCall"></span></div>
+    <button type="button" class="coachbtn" id="bCoach" hidden aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="18" r="2"/><path d="M20 6l-4 .5 3 3z"/></svg>Coach view</button>
+    <div class="coachread" id="coachRead" hidden aria-live="polite"></div>
     <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
     <div class="cap" id="cap" aria-live="polite"></div>
     <div class="measure" id="measure" hidden aria-hidden="true"><i></i><span>Measurement</span><i></i></div>
@@ -639,15 +641,15 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="share.js?v=2"></script>
 <script src="feel.js?v=4"></script>
 <script src="play.js?v=5"></script>
-<script type="module" src="live3d.js?v=4"></script>
-<script src="app.js?v=14"></script>
+<script type="module" src="live3d.js?v=5"></script>
+<script src="app.js?v=15"></script>
 <script src="home.js?v=5"></script>
 <script src="studio.js?v=7"></script>
-<script src="game.js?v=6"></script>
+<script src="game.js?v=7"></script>
 <script src="clip.js?v=2"></script>
-<script src="flow.js?v=19"></script>
+<script src="flow.js?v=20"></script>
 <script src="daily.js?v=10"></script>
-<script src="trivia.js?v=6"></script>
+<script src="trivia.js?v=7"></script>
 <script src="calls.js?v=12"></script>
 <script src="goforit.js?v=9"></script>
 <script src="profile.js?v=2"></script>
