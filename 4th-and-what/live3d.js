@@ -104,6 +104,54 @@ function numberTexture(n, fg, bg) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
+/* ---------- the poses (stage 2) ----------
+ * Where each joint wants to be, in radians, for each pose the engine sends
+ * (engine.js poseOf: idle, run, carry, block, throw, catch, dive, down) and
+ * the two before the snap (a two point stance, a three point stance).
+ *   pitch  the whole man tipping forward from the hips (minus is forward)
+ *   drop   the hips lowered, in yards
+ *   lean   the torso leaning forward (minus), twist turning it (plus turns to his left)
+ *   lh lk  left hip and knee (hip plus swings the thigh forward, knee minus bends it)
+ *   ls lz le lez   left shoulder forward, shoulder out to the side, elbow, elbow in the arm's plane
+ * The r names are the right side. s is the stride's swing (-1 to 1) and w how
+ * hard he is running (0 to 1), both from his speed on screen. */
+const J0 = { pitch: 0, drop: 0, lean: 0, twist: 0, lh: 0, lk: 0, rh: 0, rk: 0, ls: 0, lz: 0, le: 0, lez: 0, rs: 0, rz: 0, re: 0, rez: 0 };
+const pose = (o) => Object.assign({}, J0, o);
+function stride(s, c, w, o) {
+  /* a running stride: the thighs swing against each other, the knee bends most
+     as the leg comes through, the arms pump against the legs */
+  const k = (q) => -0.25 - w * (0.55 + 0.55 * q);
+  return pose(Object.assign({ lean: -0.08 - 0.28 * w, drop: -0.05 * w * Math.abs(c),
+    lh: 0.15 * w + 0.85 * w * s, lk: k(-c), rh: 0.15 * w - 0.85 * w * s, rk: k(c),
+    ls: -0.8 * w * s + 0.1, lz: -0.12, le: 0.5 + 0.9 * w, rs: 0.8 * w * s + 0.1, rz: 0.12, re: 0.5 + 0.9 * w }, o || {}));
+}
+const POSE = {
+  idle: () => pose({ lean: -0.05, lh: 0.05, lk: -0.12, rh: 0.05, rk: -0.12, ls: 0.12, lz: -0.14, le: 0.35, rs: 0.12, rz: 0.14, re: 0.35 }),
+  stance: () => pose({ drop: -0.2, lean: -0.75, lh: 0.9, lk: -1.1, rh: 0.5, rk: -0.8, ls: 0.95, lz: -0.06, le: 0.2, rs: 0.95, rz: 0.06, re: 0.2 }),
+  qb: () => pose({ drop: -0.08, lean: -0.3, lh: 0.4, lk: -0.55, rh: 0.3, rk: -0.5, ls: 0.95, lz: 0.22, le: 0.75, rs: 0.95, rz: -0.22, re: 0.75 }),
+  stance3: () => pose({ drop: -0.38, lean: -1.12, lh: 1.25, lk: -1.75, rh: 0.85, rk: -1.4, ls: 0.6, lz: -0.1, le: 0.9, rs: 1.35, rz: 0.05, re: 0.05 }),
+  run: (s, c, w) => stride(s, c, w),
+  carry: (s, c, w) => stride(s, c, w, { rs: 0.45, rz: 0.12, re: 2.0 }),
+  block: (s, c, w, fr) => pose({ drop: -0.24, lean: -0.48, lh: fr ? 0.75 : 0.55, lk: fr ? -1.05 : -0.85, rh: fr ? 0.5 : 0.7, rk: fr ? -0.8 : -1.0,
+    ls: 1.75, lz: 0.18, le: 0.3, rs: 1.75, rz: -0.18, re: 0.3 }),
+  throw: (s, c, w, fr) => fr
+    ? pose({ lean: -0.38, twist: 0.5, lh: 0.55, lk: -0.45, rh: -0.45, rk: -0.7, ls: 0.25, lz: -0.45, le: 1.1, rs: 1.7, rz: 0.35, re: 0.15 })
+    : pose({ lean: -0.08, twist: -0.65, lh: 0.4, lk: -0.3, rh: -0.25, rk: -0.35, ls: 1.15, lz: 0.05, le: 0.2, rs: -0.15, rz: 1.45, re: 0, rez: 1.55 }),
+  catch: (s, c, w) => stride(s, c, w * 0.6, { lean: 0.02, ls: 2.65, lz: -0.12, le: 0.2, rs: 2.65, rz: 0.12, re: 0.2 }),
+  dive: () => pose({ pitch: -1.05, drop: -0.32, lean: -0.15, lh: -0.25, lk: -0.35, rh: 0.1, rk: -0.6, ls: 2.9, lz: -0.2, le: 0.1, rs: 2.9, rz: 0.2, re: 0.1 }),
+  down: () => pose({ pitch: -1.5, drop: -0.66, lean: 0, lh: -0.05, lk: -0.25, rh: 0.15, rk: -0.5, ls: 2.7, lz: -0.55, le: 0.4, rs: 2.4, rz: 0.6, re: 0.6 })
+};
+function applyPose(m, t, k) {
+  const j = m.j;
+  for (const n in t) j[n] += (t[n] - j[n]) * k;
+  m.root.rotation.x = j.pitch; m.root.position.y = 0.95 + j.drop;
+  m.torso.rotation.set(j.lean, j.twist, 0, 'YXZ');
+  m.L.hip.rotation.x = j.lh; m.L.knee.rotation.x = j.lk; m.R.hip.rotation.x = j.rh; m.R.knee.rotation.x = j.rk;
+  m.LA.sh.rotation.set(j.ls, 0, j.lz, 'ZXY'); m.LA.el.rotation.set(j.le, 0, -j.lez);
+  m.RA.sh.rotation.set(j.rs, 0, j.rz, 'ZXY'); m.RA.el.rotation.set(j.re, 0, j.rez);
+}
+
+
 /* ---------- the stadium ---------- */
 function build() {
   if (world) return world;
@@ -133,37 +181,53 @@ function build() {
   /* the lines for the snap: blue at the line of scrimmage, yellow at the line to gain */
   const band = (col) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(FIELD_W, 0.32), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.92, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); m.rotation.x = -Math.PI / 2; m.position.set(0, 0.02, 0); S.add(m); return m; };
   const los = band('#3d9bff'), gain = band('#ffd628');
-  /* the players, made once: eleven a side */
+  /* the players, made once: eleven a side. Each is a small rig (stage 2): hips
+     that tip the whole man, a torso that leans and turns, thighs and shins with
+     knees, upper arms and forearms with elbows. The pose sets where each joint
+     wants to be (POSE, below) and the joints ease toward it every frame. */
   const blob = blobTexture(), men = [];
   const geo = {
-    leg: new THREE.CapsuleGeometry(0.17, 0.55, 4, 8), shoe: new THREE.BoxGeometry(0.24, 0.12, 0.38), torso: new THREE.CapsuleGeometry(0.36, 0.5, 6, 12),
-    pads: new THREE.SphereGeometry(0.5, 16, 10), arm: new THREE.CapsuleGeometry(0.11, 0.48, 4, 8), helmet: new THREE.SphereGeometry(0.3, 20, 14),
-    stripe: new THREE.BoxGeometry(0.06, 0.05, 0.62), mask: new THREE.TorusGeometry(0.2, 0.025, 6, 16, Math.PI), num: new THREE.PlaneGeometry(0.55, 0.55),
-    shadow: new THREE.PlaneGeometry(1.8, 1.8)
+    thigh: new THREE.CapsuleGeometry(0.17, 0.28, 4, 8), shin: new THREE.CapsuleGeometry(0.14, 0.3, 4, 8), shoe: new THREE.BoxGeometry(0.24, 0.12, 0.38),
+    torso: new THREE.CapsuleGeometry(0.36, 0.5, 6, 12), pads: new THREE.SphereGeometry(0.5, 16, 10),
+    upper: new THREE.CapsuleGeometry(0.12, 0.2, 4, 8), fore: new THREE.CapsuleGeometry(0.1, 0.2, 4, 8), glove: new THREE.SphereGeometry(0.1, 8, 6),
+    helmet: new THREE.SphereGeometry(0.3, 20, 14), stripe: new THREE.BoxGeometry(0.06, 0.05, 0.62), mask: new THREE.TorusGeometry(0.2, 0.025, 6, 16, Math.PI),
+    num: new THREE.PlaneGeometry(0.55, 0.55), shadow: new THREE.PlaneGeometry(1.8, 1.8)
   };
   const mats = {};
   ['O', 'D'].forEach((k) => { const T = TEAM[k]; mats[k] = {
     jersey: new THREE.MeshLambertMaterial({ color: T.jersey }), pants: new THREE.MeshLambertMaterial({ color: T.pants }), shoe: new THREE.MeshLambertMaterial({ color: '#111' }),
+    glove: new THREE.MeshLambertMaterial({ color: k === 'O' ? '#f5f1e6' : '#0b2a55' }),
     helmet: new THREE.MeshStandardMaterial({ color: T.helmet, roughness: 0.25, metalness: 0.35 }), trim: new THREE.MeshLambertMaterial({ color: T.trim }), mask: new THREE.MeshLambertMaterial({ color: T.mask }) }; });
   const shadowMat = new THREE.MeshBasicMaterial({ map: blob, transparent: true, depthWrite: false });
+  const mesh = (g, m, x, y, z, parent) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); parent.add(o); return o; };
+  const pivot = (x, y, z, parent) => { const p = new THREE.Group(); p.position.set(x, y, z); parent.add(p); return p; };
   for (let i = 0; i < 22; i++) {
-    const side = i < 11 ? 'O' : 'D', M = mats[side], G = new THREE.Group(), body = new THREE.Group(); G.add(body);
-    const part = (g, m, x, y, z) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); body.add(o); return o; };
-    /* legs and arms hang from a pivot so they can swing */
-    const limb = (g, m, x, y, len) => { const p = new THREE.Group(); p.position.set(x, y, 0); const o = new THREE.Mesh(g, m); o.position.y = -len; p.add(o); body.add(p); return p; };
-    const legL = limb(geo.leg, M.pants, -0.2, 0.95, 0.45), legR = limb(geo.leg, M.pants, 0.2, 0.95, 0.45);
-    const shoeL = new THREE.Mesh(geo.shoe, M.shoe); shoeL.position.set(0, -0.89, -0.06); legL.add(shoeL);
-    const shoeR = new THREE.Mesh(geo.shoe, M.shoe); shoeR.position.set(0, -0.89, -0.06); legR.add(shoeR);
-    part(geo.torso, M.jersey, 0, 1.38, 0);
-    const pads = part(geo.pads, M.jersey, 0, 1.72, 0); pads.scale.set(1.25, 0.45, 0.9);
-    const armL = limb(geo.arm, M.jersey, -0.55, 1.68, 0.3), armR = limb(geo.arm, M.jersey, 0.55, 1.68, 0.3);
-    const helm = part(geo.helmet, M.helmet, 0, 2.12, 0); helm.scale.set(1, 1.05, 1.12);
-    part(geo.stripe, M.trim, 0, 2.42, 0);
-    const mask = part(geo.mask, M.mask, 0, 2.02, -0.3); mask.rotation.x = Math.PI / 2;
-    const num = new THREE.Mesh(geo.num, new THREE.MeshLambertMaterial({ color: '#fff' })); num.position.set(0, 1.42, 0.37); body.add(num);
+    const side = i < 11 ? 'O' : 'D', M = mats[side], G = new THREE.Group();
+    /* the hips: 0.95 up, so the feet touch the turf when he stands */
+    const root = pivot(0, 0.95, 0, G), torso = pivot(0, 0, 0, root);
+    const leg = (x) => {
+      const hip = pivot(x, 0, 0, root); mesh(geo.thigh, M.pants, 0, -0.24, 0, hip);
+      const knee = pivot(0, -0.48, 0, hip); mesh(geo.shin, M.pants, 0, -0.22, 0, knee); mesh(geo.shoe, M.shoe, 0, -0.43, -0.06, knee);
+      return { hip, knee };
+    };
+    const arm = (x) => {
+      const sh = pivot(x, 0.73, 0, torso); mesh(geo.upper, M.jersey, 0, -0.18, 0, sh);
+      const el = pivot(0, -0.36, 0, sh); mesh(geo.fore, M.jersey, 0, -0.17, 0, el); mesh(geo.glove, M.glove, 0, -0.36, 0, el);
+      const hand = pivot(0, -0.36, -0.05, el);
+      return { sh, el, hand };
+    };
+    const L = leg(-0.2), R = leg(0.2), LA = arm(-0.55), RA = arm(0.55);
+    mesh(geo.torso, M.jersey, 0, 0.43, 0, torso);
+    mesh(geo.pads, M.jersey, 0, 0.77, 0, torso).scale.set(1.25, 0.45, 0.9);
+    mesh(geo.helmet, M.helmet, 0, 1.17, 0, torso).scale.set(1, 1.05, 1.12);
+    mesh(geo.stripe, M.trim, 0, 1.47, 0, torso);
+    mesh(geo.mask, M.mask, 0, 1.07, -0.3, torso).rotation.x = Math.PI / 2;
+    const num = mesh(geo.num, new THREE.MeshLambertMaterial({ color: '#fff' }), 0, 0.47, 0.37, torso);
+    /* where a carried ball sits: tucked high under the right arm */
+    const tuck = pivot(0.3, 0.5, -0.28, torso);
     const sh = new THREE.Mesh(geo.shadow, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.03; G.add(sh);
     S.add(G);
-    men.push({ G, body, legL, legR, armL, armR, num, side, phase: Math.random() * 6, last: null, numFor: null });
+    men.push({ G, root, torso, L, R, LA, RA, tuck, num, side, j: Object.assign({}, POSE.idle()), phase: Math.random() * 6, last: null, numFor: null });
   }
   const ball = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 10), new THREE.MeshStandardMaterial({ color: '#7a3b12', roughness: 0.55 })); ball.scale.set(1, 1, 1.75); S.add(ball);
   const ballShadow = new THREE.Mesh(geo.shadow, shadowMat); ballShadow.rotation.x = -Math.PI / 2; ballShadow.scale.set(0.35, 0.35, 1); ballShadow.position.y = 0.03; S.add(ballShadow);
@@ -217,27 +281,45 @@ function show(canvas, res, ui) {
 
   function draw(tt) {
     const pre = tt < 0, F = L.frameOf(res, Math.max(0, tt)), now = performance.now(), dts = lastT == null ? 0 : Math.min(0.05, (now - lastT) / 1000); lastT = now;
+    /* each man: where the engine has him, which way he faces, and his pose,
+       eased toward from the last frame (quick, slower going to the ground) */
+    const kdt = lastDraw == null ? 1 : Math.min(0.25, (now - lastDraw) / 1000);
+    const holder = { j: -1, d: 1.6 };
     ids.forEach((e, j) => {
       const m = W.men[j]; if (!m) return;
       const pa = F.a.p[j], pb = F.b.p[j];
-      let x = pa[0] + (pb[0] - pa[0]) * F.u, y = pa[1] + (pb[1] - pa[1]) * F.u, head = pa[4], pose = pa[2];
-      if (pre) { x = frames[0].p[j][0]; y = frames[0].p[j][1]; head = e.side === 'O' ? 0 : 180; pose = e.role === 'ol' || e.role === 'dl' ? 'stance3' : 'stance'; }
+      let x = pa[0] + (pb[0] - pa[0]) * F.u, y = pa[1] + (pb[1] - pa[1]) * F.u, head = pa[4], pose = pa[2], fr = pa[3];
+      if (pre) { x = frames[0].p[j][0]; y = frames[0].p[j][1]; head = e.side === 'O' ? 0 : 180; pose = e.role === 'ol' || e.role === 'dl' ? 'stance3' : e.id === 'QB' ? 'qb' : 'stance'; fr = 0; }
       m.G.position.set(wx(x), 0, wz(y)); m.G.rotation.y = -head * Math.PI / 180;
-      /* the swing comes from how fast he is moving */
       const sp = m.last && dts ? Math.min(10, Math.hypot(x - m.last[0], y - m.last[1]) / dts) : 0; m.last = [x, y];
-      m.phase += sp * dts * 1.6;
-      const sw = Math.min(1, sp / 6), s = Math.sin(m.phase);
-      const down = pose === 'down' || pose === 'dive', crouch = /stance/.test(pose), block = pose === 'block';
-      m.legL.rotation.x = s * 0.9 * sw; m.legR.rotation.x = -s * 0.9 * sw;
-      m.armL.rotation.x = block ? -1.3 : pose === 'catch' ? -2.6 : -s * 0.8 * sw; m.armR.rotation.x = block ? -1.3 : pose === 'catch' || pose === 'throw' ? -2.6 : s * 0.8 * sw;
-      m.body.rotation.x = down ? -1.45 : crouch ? -0.45 : block ? -0.35 : -0.12 * sw;
-      m.body.position.y = down ? 0.35 : crouch ? -0.2 : 0;
+      m.speed = m.speed == null ? sp : m.speed + (sp - m.speed) * Math.min(1, dts * 8);
+      m.phase += m.speed * dts * 1.6;
+      const w = Math.min(1, m.speed / 7), s = Math.sin(m.phase), c = Math.cos(m.phase);
+      const P = POSE[pose] || POSE.idle;
+      const target = (pose === 'idle' && w > 0.15 ? POSE.run : P)(s, c, w, fr);
+      applyPose(m, target, 1 - Math.exp(-kdt * (pose === 'down' || pose === 'dive' ? 7 : 13)));
+      m.pose = pose;
+      if (F.a.held && !pre && e.side === 'O') { const d = Math.hypot(x - (F.a.ball[0] + (F.b.ball[0] - F.a.ball[0]) * F.u), y - (F.a.ball[1] + (F.b.ball[1] - F.a.ball[1]) * F.u)); if (d < holder.d) { holder.d = d; holder.j = j; } }
     });
     /* the ball */
     const ba = F.a.ball, bb = F.b.ball;
     let bx = ba[0] + (bb[0] - ba[0]) * F.u, by = ba[1] + (bb[1] - ba[1]) * F.u, bz = ba[2] + (bb[2] - ba[2]) * F.u;
-    if (pre) { bx = frames[0].ball[0]; by = frames[0].ball[1]; bz = 0.15; }
-    W.ball.position.set(wx(bx), Math.max(0.12, bz), wz(by)); W.ball.rotation.y += F.a.held || pre ? 0 : 0.5;
+    if (pre) { bx = res.BX; by = res.Y0 - 0.25; bz = 0.15; } /* on the line, under the center */
+    /* a held ball sits in his hands: tucked when he carries it, cocked in the
+       throwing hand at the windup, in front of his chest otherwise; in the air it
+       points along its flight and spirals */
+    const hm = holder.j >= 0 ? W.men[holder.j] : null;
+    if (hm) {
+      hm.G.updateMatrixWorld(true);
+      const at = hm.pose === 'throw' ? hm.RA.hand : hm.pose === 'carry' || hm.pose === 'down' ? hm.tuck : hm.RA.hand;
+      at.getWorldPosition(W.ball.position);
+      W.ball.quaternion.copy(hm.G.quaternion);
+    } else {
+      const was = W.ball.position.clone();
+      W.ball.position.set(wx(bx), Math.max(0.12, bz), wz(by));
+      if (!pre && W.ball.position.distanceToSquared(was) > 1e-4) { W.ball.lookAt(W.ball.position.clone().multiplyScalar(2).sub(was)); W.spin = (W.spin || 0) + 0.45; W.ball.rotateZ(W.spin); }
+      else if (pre) W.ball.rotation.set(0, 0, 0);
+    }
     W.ballShadow.position.set(wx(bx), 0.03, wz(by)); W.ballShadow.visible = bz > 0.3 && !F.a.held;
     /* the broadcast camera: behind the offense, on the ball, leaning in when the play slows */
     /* the snap's own wide look first (the whole formation), then on the ball,
@@ -291,4 +373,25 @@ function show(canvas, res, ui) {
 /* build the stadium ahead of time, while Call it is up */
 function prepare() { try { build(); } catch (e) {} }
 
-window.FAW_LIVE3D = { ok, show, prepare };
+/* for review (build/sheet3d.mjs): one man in every pose in a row, seen from
+   three quarters, rendered once into the canvas. Not used by the game. */
+function sheet(canvas, names) {
+  const W = build(), r = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping;
+  const list = names || ['stance3', 'stance', 'qb', 'idle', 'run', 'carry', 'block', 'throw:0', 'throw:1', 'catch', 'dive', 'down'];
+  W.men.forEach((m, i) => {
+    const n = list[i]; m.G.visible = !!n; if (!n) return;
+    const key = n.split(':')[0], fr = +(n.split(':')[1] || 0);
+    setNumber(m, 10 + i, m.side);
+    m.G.position.set((i - (list.length - 1) / 2) * 2.1, 0, wz(50)); m.G.rotation.y = 1.15;
+    applyPose(m, POSE[key](0.9, 0.4, 1, fr), 1);
+  });
+  W.gain.visible = false; W.los.position.z = wz(48); W.confetti.visible = false; W.ball.position.set(0, -5, 0); W.ballShadow.visible = false;
+  r.setSize(canvas.width, canvas.height, false);
+  const cam = new THREE.PerspectiveCamera(24, canvas.width / canvas.height, 0.5, 400);
+  cam.position.set(0, 2.4, wz(50) + 15.5); cam.lookAt(0, 1.0, wz(50));
+  r.render(W.S, cam);
+  return list;
+}
+
+window.FAW_LIVE3D = { ok, show, prepare, sheet };
