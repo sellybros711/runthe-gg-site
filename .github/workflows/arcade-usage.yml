@@ -60,11 +60,12 @@ jobs:
              where puzzle_date >= current_date - $DAYS;"
 
           echo "── 1b. Guests and accounts ──"
-          # A guest's run is posted under an anonymous auth user (flag
-          # guestboard, 132). Counted apart, so the board filling up with
-          # guests is not read as more accounts. A guest who later signs up
-          # has their rows moved onto the account and counts as an account.
-          Q "select case when u.is_anonymous then 'guest' else 'account' end as who,
+          # A guest's run is filed under an id no account holds (flag
+          # guestboard, 185, /api/arcade-guest), so a row with no auth user
+          # behind it is a guest's. Counted apart, so the board filling up with
+          # guests is not read as more accounts. A guest who later signs up has
+          # their rows moved onto the account and counts as an account.
+          Q "select case when u.id is null then 'guest' else 'account' end as who,
                count(*) as runs, count(distinct g.user_id) as players,
                count(distinct (g.user_id, g.puzzle_date)) as player_days
              from grid_runs g left join auth.users u on u.id = g.user_id

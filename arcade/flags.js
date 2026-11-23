@@ -75,7 +75,8 @@
     // safe here.
     // On for everybody from 2026-11-19, the owner's call: guests' runs on the
     // four free games' boards, so the boards show everyone who played.
-    // Without the dashboard switch or 132 it keeps the run local, quietly.
+    // Through /api/arcade-guest and 185, never a Supabase anonymous sign-in.
+    // Without the Function or 185 it keeps the run local, quietly.
     guestboard: { since: null, pct: 100, daily: false },
     // Sportegories: a Challenge button on any answer marked wrong or not
     // verified. The server looks it up live and rules, and a won challenge is
