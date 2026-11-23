@@ -1,0 +1,42 @@
+name: Run The Pitch checks
+
+# What a finished game reads from the database, and that no poll runs while the
+# tab is hidden (the page half of the site's save rule, platform-database-saves
+# in the knowledge base). Runs only when the game or its engine changes.
+#
+# Locally: node soccer/check-db-reads.mjs
+
+on:
+  pull_request:
+    paths:
+      - 'soccer/**'
+      - 'gameLogic.js'
+      - 'data/players_all.json'
+      - '.github/workflows/soccer-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'soccer/**'
+      - 'gameLogic.js'
+      - 'data/players_all.json'
+      - '.github/workflows/soccer-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: soccer-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: Database reads and hidden tab polls
+        run: node soccer/check-db-reads.mjs
