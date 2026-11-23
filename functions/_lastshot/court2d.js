@@ -2,8 +2,9 @@
  * "the hybrid, start the 2D board": a modern, anti-aliased top-down court
  * that reads as a game and as a coaching tool at once. It replaced the pixel
  * art run view (Run The Floor's traced rig), which the owner found "a very
- * retro look". Phase 2 hands the release to finish span to a 3D shot cam
- * (run-view.js says how); this file draws the whole run until then.
+ * retro look". Phase 2 (2026-11-22) hands the release to finish span to the
+ * 3D shot cam on a capable device (shotcam.js); this file still draws the
+ * play, the answer cutaway, and the whole run anywhere the 3D does not go.
  *
  * WHAT IS ON IT
  *   the floor      light maple boards running toward the basket (the owner's
@@ -230,7 +231,7 @@ function project(r, x, y) {
 }
 /* The frame at or just before game time T (frames run from the most time
    left to the least). */
-function frameAt(F, T) {
+export function frameAt(F, T) {
   let lo = 0, hi = F.length - 1;
   if (T >= F[0].t) return 0;
   if (T <= F[hi].t) return hi;
@@ -297,6 +298,34 @@ export function planRun(run) {
     since: (() => { const p = (res.passes || []).filter(q => q.to === res.shooter && !q.lost).pop(); return p ? p.at : res.shotAt + 1.5; })()
   } : null;
   return { res, F, routes, passes, uses, shot, winner: res.how === 'make' && res.outcome === 'win' };
+}
+
+/* After the last frame the ball plays out from the rim: a make drops
+   through and bounces under the basket, a miss kicks off the rim one way
+   or the other (the seed picks which, so a replay looks the same). Shared
+   with the 3D shot cam (shotcam3d.js), so both views send it the same way.
+   out: { x, y, z } in feet, z the board's height (it starts at the floor). */
+export function ballAfter(fr, after, out) {
+  out.x = fr.b[0]; out.y = fr.b[1]; out.z = fr.b[2] || 0;
+  if (!after) return out;
+  const t = after.t;
+  if (after.made) {
+    if (t < 0.22) { out.x = RIM.x; out.y = RIM.y; out.z = 3 * (1 - t / 0.22); return out; }
+    const u = t - 0.22;
+    out.x = RIM.x; out.y = RIM.y + Math.min(1.6, u * 3.2); out.z = bounce(u, 3.2); return out;
+  }
+  const side = (after.seed % 3) - 1, ang = Math.PI / 2 + side * 0.75 + ((after.seed >> 3) % 7 - 3) * 0.08;
+  const reach = Math.min(1, t / 1.1) * 8;
+  out.x = RIM.x + Math.cos(ang) * reach; out.y = RIM.y + Math.sin(ang) * reach; out.z = bounce(t, 4.5);
+  return out;
+}
+export function bounce(t, h0) {
+  let h = h0, start = 0, dur = Math.sqrt(2 * h / 32) * 2;
+  for (let n = 0; n < 5; n++) {
+    if (t < start + dur) { const u = (t - start) / dur; return 4 * h * u * (1 - u); }
+    start += dur; h *= 0.45; dur = Math.sqrt(2 * h / 32) * 2;
+  }
+  return 0;
 }
 
 /* ---------- the court ---------- */
@@ -595,31 +624,7 @@ export function createCourt2d(cv) {
     feet();
   }
 
-  /* After the last frame the ball plays out from the rim: a make drops
-     through and bounces under the basket, a miss kicks off the rim one way
-     or the other (the seed picks which, so a replay looks the same). */
-  function ballAt(fr, after, out) {
-    out.x = fr.b[0]; out.y = fr.b[1]; out.z = fr.b[2] || 0;
-    if (!after) return out;
-    const t = after.t;
-    if (after.made) {
-      if (t < 0.22) { out.x = RIM.x; out.y = RIM.y; out.z = 3 * (1 - t / 0.22); return out; }
-      const u = t - 0.22;
-      out.x = RIM.x; out.y = RIM.y + Math.min(1.6, u * 3.2); out.z = bounce(u, 3.2); return out;
-    }
-    const side = (after.seed % 3) - 1, ang = Math.PI / 2 + side * 0.75 + ((after.seed >> 3) % 7 - 3) * 0.08;
-    const reach = Math.min(1, t / 1.1) * 8;
-    out.x = RIM.x + Math.cos(ang) * reach; out.y = RIM.y + Math.sin(ang) * reach; out.z = bounce(t, 4.5);
-    return out;
-  }
-  function bounce(t, h0) {
-    let h = h0, start = 0, dur = Math.sqrt(2 * h / 32) * 2;
-    for (let n = 0; n < 5; n++) {
-      if (t < start + dur) { const u = (t - start) / dur; return 4 * h * u * (1 - u); }
-      start += dur; h *= 0.45; dur = Math.sqrt(2 * h / 32) * 2;
-    }
-    return 0;
-  }
+  const ballAt = (fr, after, out) => ballAfter(fr, after, out);
 
   /* Chips last, in CSS pixels, kept on the stage, clear of the caption at
      the foot and the readout at the top, and clear of each other. */

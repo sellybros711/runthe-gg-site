@@ -10,16 +10,23 @@
  * and warm() builds what it can before the first Run It.
  *
  * THE SWITCH. RUN_VIEW names the renderer; client.js asks for nothing else.
- * Phase 1 (2026-11-19) is the tactics board (court2d.js) for the whole run.
- * PHASE 2, THE 3D SHOT CAM, plugs in here: register a renderer that keeps
- * the board for the play and hands the release to finish span (inShotSpan:
- * the frames with the ball up, fr.sk set, and the after-ball, opts.after) to
- * a 3D renderer on a canvas of its own, then set RUN_VIEW to it. client.js,
- * the timing, the captions and the card do not change. */
+ *   board    Phase 1 (2026-11-19): the tactics board (court2d.js), the whole run.
+ *   hybrid   Phase 2 (2026-11-22), the one in play: the board for the play,
+ *            then the release to finish span (inShotSpan: the frames with the
+ *            ball up, fr.sk set, and the after-ball, opts.after) on the 3D shot
+ *            cam (shotcam.js, its scene shotcam3d.js, its players figures3d.js)
+ *            on a canvas of its own. A device that fails its gate, reduced
+ *            motion, a slow first half second or a scene not loaded by the
+ *            release all keep the board for the run.
+ * client.js, the timing, the captions and the card do not change. */
 import { createCourt2d, warm as warm2d } from './court2d.js';
+import { createShotCam, warm as warmShotCam } from './shotcam.js';
 
-const RENDERERS = { board: { create: createCourt2d, warm: warm2d } };
-export const RUN_VIEW = 'board';
+const RENDERERS = {
+  board: { create: createCourt2d, warm: warm2d },
+  hybrid: { create: cv => createShotCam(cv, inShotSpan), warm: warmShotCam }
+};
+export const RUN_VIEW = 'hybrid';
 
 export function createRunView(cv, kind = RUN_VIEW) { return (RENDERERS[kind] || RENDERERS.board).create(cv); }
 export function warm(kind = RUN_VIEW) { const r = RENDERERS[kind] || RENDERERS.board; if (r.warm) r.warm(); }
