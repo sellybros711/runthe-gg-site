@@ -45,7 +45,7 @@ async function open(how = {}) {
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
   page.on('pageerror', e => errs.push(String(e)));
   page.on('request', r => { if (THREE.test(r.url())) three.push(r.url()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   if (how.opts) await page.addInitScript(o => { window.__shotCamOpts = o; }, how.opts);
   if (how.noGl) await page.addInitScript(() => {
     const get = HTMLCanvasElement.prototype.getContext;

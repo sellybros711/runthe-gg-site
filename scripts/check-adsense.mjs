@@ -25,11 +25,12 @@ import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 /* last-shot/ is generated (functions/_lastshot/build/pages.mjs writes it from
- * functions/_lastshot/web/play.html) and launched without ads: its ad state is
- * ADS in functions/_lastshot/check-posture.mjs, which says what turns on with it.
- * It is skipped here exactly as it was while a Function served it from functions/.
- * Its sitemap entry is still asked both questions below, against the file. */
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'supabase', 'functions', 'last-shot']);
+ * functions/_lastshot/web/play.html and the modules beside it) and carries ads
+ * since its launch (2026-11-23, ADS in functions/_lastshot/check-posture.mjs).
+ * It is checked here like any ad-carrying page, against the built files Pages
+ * serves: last-shot/index.html as a page, last-shot/m/ads.js for its units.
+ * functions/ stays skipped, so each unit is counted once, in the built copy. */
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'supabase', 'functions']);
 
 const PUB = 'pagead2.googlesyndication.com';
 const MIN_WORDS = 250;

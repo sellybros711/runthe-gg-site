@@ -102,7 +102,7 @@ async function run(name, viewport, mobile, uid, days) {
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::|status of (400|409|429)/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   const shot = async f => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
   const L = (fn, a) => page.evaluate(fn, a);
   const boot = async () => { await page.reload(); await page.waitForFunction(() => window.__lastShot && window.__lastShot.dayState !== 'loading'); };
@@ -307,7 +307,7 @@ async function otherDevice() {
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::|status of (400|409|429)/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   // a missed day ends the streak: two days, then a gap through yesterday
   await page.goto(BASE + '/last-shot/');
   await page.evaluate(d => { localStorage.clear(); localStorage.setItem('last_shot_ladder', JSON.stringify({ v: 1, best: {}, plays: {}, days: d })); }, [dayAt(-4), dayAt(-3), dayAt(-2)]);

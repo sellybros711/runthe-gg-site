@@ -98,7 +98,7 @@ async function context({ on = true, throwing = false } = {}) {
     posts.push({ method: q.method(), type: q.headers()['content-type'] || '', raw: q.postData() || '', body });
     return r.fulfill({ status: 204, body: '' });
   });
-  await ctx.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|supabase\.co/, r => r.abort());
+  await ctx.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com|supabase\.co/, r => r.abort());
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));

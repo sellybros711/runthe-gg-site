@@ -30,7 +30,7 @@
  * A cut "uses" a screen when its route passes within useReach feet of where
  * the screen is set, the screen was drawn earlier, and the screener has not
  * been given anything else to do in between. */
-import { COURT, dist, toRim, isThree } from './court-geo.js?b=04a290ad7e';
+import { COURT, dist, toRim, isThree } from './court-geo.js?b=f3ede3a5eb';
 
 export const IDS = Object.freeze(['O1', 'O2', 'O3', 'O4', 'O5']);
 

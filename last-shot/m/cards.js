@@ -6,7 +6,7 @@
  * the server's filed detail (no sim result on a second visit) exactly as the
  * level card builds them from a fresh run:
  *   { win, ot, p (the make chance or null), shotAt, bailout } */
-import { STAR_RULES, LOOK, CLUTCH, starsOf } from './levels.js?b=04a290ad7e';
+import { STAR_RULES, LOOK, CLUTCH, starsOf } from './levels.js?b=f3ede3a5eb';
 
 export const pct = p => Math.round(p * 100) + '%';
 

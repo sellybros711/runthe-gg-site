@@ -19,8 +19,8 @@
  *            motion, a slow first half second or a scene not loaded by the
  *            release all keep the board for the run.
  * client.js, the timing, the captions and the card do not change. */
-import { createCourt2d, warm as warm2d } from './court2d.js?b=04a290ad7e';
-import { createShotCam, warm as warmShotCam } from './shotcam.js?b=04a290ad7e';
+import { createCourt2d, warm as warm2d } from './court2d.js?b=f3ede3a5eb';
+import { createShotCam, warm as warmShotCam } from './shotcam.js?b=f3ede3a5eb';
 
 const RENDERERS = {
   board: { create: createCourt2d, warm: warm2d },

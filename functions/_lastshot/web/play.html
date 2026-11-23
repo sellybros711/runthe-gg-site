@@ -28,6 +28,17 @@
 "image":"https://runthe.gg/assets/last-shot-og_1200x630.png",
 "publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
 </script>
+<!-- Consent Mode defaults first (Europe denies all four until the certified CMP answers), then the
+     AdSense tag, then the shared bottom banner and rails (Ads Agent, 2026-11-23, the owner: "ads on at
+     launch"). functions/_lastshot/ads.js says where each unit goes. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=5"></script>
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Outfit:wght@600;800&family=Russo+One&family=Permanent+Marker&display=swap">
@@ -155,9 +166,14 @@ canvas.shot3d{pointer-events:none;background:#06070a}
 .actions #bPlays{flex:.7}
 .btn.save{flex:1 0 100%;white-space:nowrap}.btn.save[data-state="saved"]{border-color:var(--green);color:var(--green)}
 @media (min-width:900px){.app{max-width:1100px}.view.wide{display:grid;grid-template-columns:minmax(380px,1fr) 1fr;gap:0}.xform{columns:2;column-gap:24px}}
-/* THE BOTTOM BANNER (/assets/rtg-ads.js), once the ad tag is on at launch: the app ends above it, so
-   the court shrinks to fit and Run It is never under it. --sticky-ad-h is 0 until it fills. */
+/* THE BOTTOM BANNER (/assets/rtg-ads.js, on since launch): the app ends above it, so the court
+   shrinks to fit and Run It, the result card and Take your shot are never under it. The full screen
+   sheets (My Playbooks, Test it, How it works) end above it too, and the toast rides on it.
+   --sticky-ad-h is 0 until it fills, so an empty banner moves nothing. */
 body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
+body.rtg-sticky-on .fsheet{bottom:var(--sticky-ad-h,0px)}
+body.rtg-sticky-on .toast{bottom:calc(24px + var(--sticky-ad-h,0px))}
+#howSheet .legal{font-size:13px;color:var(--dim);margin:4px 0 0}#howSheet .legal a{color:inherit;font-weight:700;display:inline-block;min-width:44px;min-height:44px;line-height:44px;text-align:center}
 /* the feel (Phase 1): Go at, speed and sound, the readout, GAME WINNER, the answer cutaway */
 .gorow{display:flex;align-items:center;gap:8px;padding:2px 10px 0}
 .golab{flex:1;font-size:13px;font-weight:700;color:var(--dim)}
@@ -613,6 +629,8 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
   <p>The Daily is one spot a day for everybody. Practice all you want. Then take your one scored shot.</p>
   <p>The Ladder is a run of late game spots. Win one to open the next. Stars grade the play: the win, an open look, a late shot.</p>
   <p>My Playbooks keeps your plays on your account. Test it runs a play against every defense.</p>
+  <p>Last Shot is free. Ads pay for it. The banner sits under the court, never on it. Tap its X to close it for the visit. On a big screen two more ads stand beside the game.</p>
+  <p class="legal"><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/">RunThe.GG</a></p>
   <div class="row"><button class="btn alt" id="howClose">Close</button></div>
 </div></div>
 <!-- Who is signed in, and the account's saves: the arcade's sign in, as the
@@ -624,8 +642,8 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 <!-- The playbook plumbing shared with 4th and What (store, file, print frame). -->
 <script src="/assets/playbook.js?v=2"></script>
 <script type="module" src="/last-shot/m/client.js?b=__BUILD__"></script>
-<!-- The ads (Ads Agent, 2026-10-30): ready, and inert until the launch commit adds the ad tag.
-     functions/_lastshot/ads.js says what turns on. -->
+<!-- The ads (Ads Agent): the bottom banner and the desktop rails. functions/_lastshot/ads.js
+     says where each one goes. -->
 <script defer src="/last-shot/m/ads.js?b=__BUILD__"></script>
 </body>
 </html>

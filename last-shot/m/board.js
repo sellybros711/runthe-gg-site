@@ -16,10 +16,10 @@
  * opens a new frame with everyone where the last one left them, and the
  * frames before it show faintly. A new step joins the frame on show. Frames
  * are presentation only: the sim never reads them (playbook.js). */
-import { fitView, sizeCanvas, courtLines } from './view.js?b=04a290ad7e';
-import { COURT, dist } from './court-geo.js?b=04a290ad7e';
-import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf, beatOf, framesOf, stepsBefore, stepsThrough, addToFrame } from './playbook.js?b=04a290ad7e';
-import { startSpots, targetFor } from './defense.js?b=04a290ad7e';
+import { fitView, sizeCanvas, courtLines } from './view.js?b=f3ede3a5eb';
+import { COURT, dist } from './court-geo.js?b=f3ede3a5eb';
+import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf, beatOf, framesOf, stepsBefore, stepsThrough, addToFrame } from './playbook.js?b=f3ede3a5eb';
+import { startSpots, targetFor } from './defense.js?b=f3ede3a5eb';
 
 const HIT = 3.4;          // feet: how close a tap must land to a player
 const MIN_ROUTE = 2.5;    // feet: shorter than this is a tap, not a route

@@ -27,11 +27,11 @@
  * instead), one mirrored pass of the moving things only. Every texture is
  * built once a page, while the coach draws (warm), and every shader is
  * compiled then too, so the first cut does not hitch. */
-import { COURT } from './court-geo.js?b=04a290ad7e';
-import { courtLines } from './view.js?b=04a290ad7e';
-import { IDS } from './playbook.js?b=04a290ad7e';
-import { ballAfter } from './court2d.js?b=04a290ad7e';
-import { figureKit, AWAY_NUMBERS, RELEASE } from './figures3d.js?b=04a290ad7e';
+import { COURT } from './court-geo.js?b=f3ede3a5eb';
+import { courtLines } from './view.js?b=f3ede3a5eb';
+import { IDS } from './playbook.js?b=f3ede3a5eb';
+import { ballAfter } from './court2d.js?b=f3ede3a5eb';
+import { figureKit, AWAY_NUMBERS, RELEASE } from './figures3d.js?b=f3ede3a5eb';
 
 const RIM = COURT.RIM, RIM_H = 10, SHIFT = 0.3;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

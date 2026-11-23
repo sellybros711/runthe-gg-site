@@ -42,7 +42,7 @@ async function run(name, viewport, mobile) {
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('dialog', d => d.accept(d.type() === 'prompt' ? 'Elevator' : undefined));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   const shot = async f => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
   const L = fn => page.evaluate(fn);
 
@@ -207,7 +207,7 @@ async function realCloud() {
   console.log('\nthe real cloud saves module');
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|supabase\.co/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com|supabase\.co/, r => r.abort());
   await page.goto(BASE + '/last-shot/');
   await page.waitForFunction(() => !!window.RTG_SAVE && !!window.RTG_AUTH);
   ok(await page.evaluate(() => window.RTG_SAVE.signedIn() === false), 'signed out, the cloud saves have no token');

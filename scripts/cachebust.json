@@ -2766,6 +2766,10 @@
     }
   },
   "functions/_lastshot/web/play.html": {
+    "/assets/rtg-ads.js": {
+      "v": "5",
+      "sha": "5db35f8b2981e3a6"
+    },
     "/arcade/auth.js": {
       "v": "4",
       "sha": "c71a149f3b8da69e"
@@ -3178,6 +3182,10 @@
     }
   },
   "last-shot/index.html": {
+    "/assets/rtg-ads.js": {
+      "v": "5",
+      "sha": "5db35f8b2981e3a6"
+    },
     "/arcade/auth.js": {
       "v": "4",
       "sha": "c71a149f3b8da69e"

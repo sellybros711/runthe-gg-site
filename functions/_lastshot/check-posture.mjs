@@ -16,8 +16,12 @@
  *   LINKED    the home page links it and scripts/newsletter/games.json lists
  *             it (the two go together: scripts/check-home-games.mjs). FALSE
  *             today: the home page card is its own change, after the launch.
- *   ADS       the ad tag on the page (ads.js says what turns on). FALSE today:
- *             the launch went out without ads.
+ *   ADS       the ad tag on the page, behind its Consent Mode defaults
+ *             (Europe's first), the shared banner and rails
+ *             (/assets/rtg-ads.js, driven by ads.js), the app and the sheets
+ *             ending above the banner, and ads.js carrying the three units
+ *             scripts/ad-units.json records for it. TRUE since 2026-11-23
+ *             (the owner: "ads on at launch").
  *
  * WHATEVER THE STATE, these hold:
  *   source never served    _redirects 404s /functions/*, where the code lives
@@ -58,7 +62,7 @@ const exists = p => fs.existsSync(path.join(ROOT, p));
 /* THE DECLARATIONS. LINKED without INDEXED is refused outright. */
 const INDEXED = true;
 const LINKED = false;
-const ADS = false;
+const ADS = true;
 
 const PAGE_URL = 'https://runthe.gg/last-shot/';
 const AD = 'pagead2.googlesyndication.com';
@@ -104,10 +108,43 @@ if (INDEXED) {
   if (!PUBLIC_EVENTS) problems.push('gate.js PUBLIC_EVENTS is off, so a guest\'s events are dropped and the report counts only accounts.');
 }
 
-/* ADS. */
+/* ADS. shut-the-door/check-posture.mjs asks the same of its page. */
 const hasAd = page.includes(AD);
 if (!ADS && hasAd) problems.push(SRC + ' carries the AdSense tag while ADS is false.');
 if (ADS && !hasAd) problems.push(SRC + ' carries no AdSense tag while ADS is true.');
+const ADS_SRC = 'functions/_lastshot/ads.js';
+const adsJs = read(ADS_SRC);
+const UNITS = { 'last-shot-sticky': /STICKY_SLOT = \{ sticky: '(\d+)' \}/, 'last-shot-rail-left': /RAIL_SLOTS = \{ left: '(\d+)'/, 'last-shot-rail-right': /RAIL_SLOTS = \{[^}]*right: '(\d+)'/ };
+const reg = JSON.parse(read('scripts/ad-units.json')).units;
+if (!/<script defer src="\/last-shot\/m\/ads\.js\?b=__BUILD__"><\/script>/.test(page)) problems.push(SRC + ' does not load /last-shot/m/ads.js.');
+for (const [name, re] of Object.entries(UNITS)) {
+  const slot = (adsJs.match(re) || [])[1] || '';
+  const real = slot && !/^0+$/.test(slot);
+  const u = reg[name];
+  if (ADS) {
+    if (!real) problems.push(ADS_SRC + ' has no real id for ' + name + ' while ADS is true.');
+    else if (!u || u.slot !== slot) problems.push(ADS_SRC + ' carries ' + slot + ' for ' + name + ', and scripts/ad-units.json says ' + (u ? u.slot : 'nothing') + '.');
+    else if (u.status !== 'live' || JSON.stringify(u.where) !== '["last-shot/m/ads.js"]') problems.push('scripts/ad-units.json: ' + name + ' should be live, where ["last-shot/m/ads.js"].');
+  } else {
+    if (real) problems.push(ADS_SRC + ' carries a real id for ' + name + ' while ADS is false.');
+    if (u && u.status === 'live') problems.push('scripts/ad-units.json marks ' + name + ' live while ADS is false.');
+  }
+}
+if (hasAd) {
+  const consent = page.indexOf("consent','default'");
+  const europe = page.search(/gtag\('consent','default',\{[^}]*region:\[/);
+  if (consent === -1) problems.push(SRC + ' loads the ad tag with no Consent Mode defaults.');
+  else if (page.indexOf(AD) < consent) problems.push(SRC + ' loads the AdSense tag before its Consent Mode defaults.');
+  if (europe === -1) problems.push(SRC + ' has no Europe Consent Mode default.');
+  else if (page.indexOf(AD) < europe) problems.push(SRC + ' loads the AdSense tag before the Europe consent default.');
+  if ((page.match(/gtag\('consent','default'/g) || []).length !== 2) problems.push(SRC + ' should carry exactly one set of consent defaults (Europe, then the rest of the world).');
+  if (!/<script src="\/assets\/rtg-ads\.js\?v=\d+"><\/script>/.test(page)) problems.push(SRC + ' does not load /assets/rtg-ads.js, so ads.js has no banner or rails to drive.');
+  /* The banner covers nothing: the app, the full screen sheets and the toast end above it. */
+  for (const sel of ['.app', '.fsheet']) if (!page.includes('body.rtg-sticky-on ' + sel + '{bottom:var(--sticky-ad-h,0px)}')) problems.push(SRC + ' does not end ' + sel + ' above the bottom banner (body.rtg-sticky-on ' + sel + '{bottom:var(--sticky-ad-h,0px)}).');
+  if (!/body\.rtg-sticky-on \.toast\{bottom:calc\(24px \+ var\(--sticky-ad-h,0px\)\)\}/.test(page)) problems.push(SRC + ' does not lift the toast above the bottom banner.');
+  if (/data-ad-slot=/.test(page)) problems.push(SRC + ' writes an ad unit into its markup. Last Shot builds its units in ads.js through /assets/rtg-ads.js only.');
+  if (/adBreak|adConfig/.test(page + adsJs)) problems.push('Last Shot calls the H5 games ad break. Anything between plays changes play: the owner decides it first.');
+}
 
 /* The sitemap. */
 const sitemap = read('sitemap.xml');

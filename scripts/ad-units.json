@@ -514,6 +514,30 @@
         "arcade/"
       ],
       "size": "300x250 between a long leaderboard's rows: one in the middle of 80 to 149 rows, then after rank 50, 100 and 150 with 30 rows below each, three at most, asked for when near the screen, never while the desktop rails are up. The All-time tab of the shared board"
+    },
+    "last-shot-sticky": {
+      "slot": "2020128758",
+      "status": "live",
+      "where": [
+        "last-shot/m/ads.js"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Every screen, play included (the owner, 2026-10-30); the app ends above it"
+    },
+    "last-shot-rail-left": {
+      "slot": "6615473173",
+      "status": "live",
+      "where": [
+        "last-shot/m/ads.js"
+      ],
+      "size": "160x600, desktop, pinned to the window beside the column, only where the window leaves 150px beside it (about 1720px wide and up). Every screen"
+    },
+    "last-shot-rail-right": {
+      "slot": "6587553014",
+      "status": "live",
+      "where": [
+        "last-shot/m/ads.js"
+      ],
+      "size": "160x600, desktop, pinned to the window beside the column, only where the window leaves 150px beside it (about 1720px wide and up). Every screen"
     }
   },
   "retired": {

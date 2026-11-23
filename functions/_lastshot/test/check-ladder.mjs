@@ -46,7 +46,7 @@ async function run(name, viewport, mobile) {
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   const shot = async f => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
   const L = (fn, a) => page.evaluate(fn, a);
   const boot = async () => { await page.reload(); await page.waitForFunction(() => window.__lastShot && window.__lastShot.view); };
@@ -274,7 +274,7 @@ async function cloud(name, viewport, mobile) {
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   const L = (fn, a) => page.evaluate(fn, a);
   const boot = async () => { await page.reload(); await page.waitForFunction(() => window.__lastShot && window.__lastShot.view && window.__lastShot.ladderSynced); await L(() => window.__lastShot.ladderSynced()); await page.waitForTimeout(100); };
   const writes = () => L(() => Number(sessionStorage.getItem('__writes') || 0));

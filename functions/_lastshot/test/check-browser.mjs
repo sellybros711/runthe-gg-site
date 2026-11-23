@@ -48,7 +48,7 @@ async function feel(name, viewport, mobile) {
   const errs = [];
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
   page.on('pageerror', e => errs.push(String(e)));
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   const snap = async f => { if (SHOTS) await page.screenshot({ path: SHOTS + '/' + name + '-' + f + '.png' }); };
   setWho('dev');
   await page.goto(base + '/last-shot/');
@@ -190,8 +190,11 @@ async function feel(name, viewport, mobile) {
 
 /* THE LAUNCH FIXES (2026-11-17): the court takes the stage while a play
    runs, the card docks under the ball, every control is at least 44 by 44,
-   the sheets close on Escape and on a screen change, reduced motion holds. */
+   the sheets close on Escape and on a screen change, reduced motion holds.
+   The ads ([data-ad-zone], the bottom banner and its X) are /assets/rtg-ads.js's, the same on
+   every game, and not the game's controls. */
 const TARGETS = () => [...document.querySelectorAll('button, a[href], summary, [role=button], select, input:not([type=hidden])')]
+  .filter(e => !e.closest('[data-ad-zone]'))
   .filter(e => e.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && e.getClientRects().length)
   .map(e => { const r = e.getBoundingClientRect(); return { id: e.id || e.className || e.tagName, w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10 }; })
   .filter(t => t.w < 44 || t.h < 44);
@@ -203,7 +206,7 @@ async function launch(name, viewport, mobile) {
     const errs = [];
     page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
     page.on('pageerror', e => errs.push(String(e)));
-    await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+    await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
     setWho('dev');
     await page.goto(base + '/last-shot/');
     await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
@@ -307,7 +310,7 @@ try {
   const errs = [];
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
   /* the sign in's CDN and the fonts: not reachable from a check, and not under test here */
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   page.on('pageerror', e => errs.push(String(e)));
   setWho('dev');
   const res = await page.goto(base + '/last-shot/');

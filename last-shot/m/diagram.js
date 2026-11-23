@@ -32,10 +32,10 @@
  *                small frame stays readable (the court still fits the box)
  *
  * ES module, served to the browser from last-shot/m/ like the rest of Last Shot. */
-import { COURT, dist } from './court-geo.js?b=04a290ad7e';
-import { courtLines } from './view.js?b=04a290ad7e';
-import { IDS, spotsAfter, holderAfter, framesOf, stepsBefore } from './playbook.js?b=04a290ad7e';
-import { startSpots } from './defense.js?b=04a290ad7e';
+import { COURT, dist } from './court-geo.js?b=f3ede3a5eb';
+import { courtLines } from './view.js?b=f3ede3a5eb';
+import { IDS, spotsAfter, holderAfter, framesOf, stepsBefore } from './playbook.js?b=f3ede3a5eb';
+import { startSpots } from './defense.js?b=f3ede3a5eb';
 
 const FONT = '"DM Sans", Inter, Arial, sans-serif';
 const HEAD = 'Outfit, "DM Sans", Arial, sans-serif';

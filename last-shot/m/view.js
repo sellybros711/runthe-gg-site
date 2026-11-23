@@ -1,7 +1,7 @@
 /* Feet to pixels, shared by the clipboard and the court so a play lands on
  * the floor exactly where it was drawn. The baseline is at the top of the
  * screen and half court at the bottom: the coach's view of a clipboard. */
-import { COURT } from './court-geo.js?b=04a290ad7e';
+import { COURT } from './court-geo.js?b=f3ede3a5eb';
 
 /* showH: how many feet down from the baseline the view must show (the whole
    half court unless asked for less). The clipboard asks only for the part a
