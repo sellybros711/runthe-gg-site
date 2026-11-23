@@ -21,8 +21,8 @@ Escape closes the sheet on top (Plays, Test it, How it works), and any screen ch
 
 ## The run view (the tactics board)
 
-The run is drawn by `court2d.js` (2026-11-19, Phase 1 of the owner's "hybrid": the board now, a 3D
-shot cam later). A crisp top-down court: light maple boards toward the basket, the lane painted
+The play is drawn by `court2d.js` (2026-11-19, Phase 1 of the owner's "hybrid"; Phase 2, the 3D
+shot cam, takes the release to the finish on a capable device, see below). A crisp top-down court: light maple boards toward the basket, the lane painted
 navy, number discs with shoulders, a facing pointer and a stride bob on soft shadows (home navy and
 gold, away red), short motion trails, the ball with a height shadow, swish rings on a make and
 confetti on a winner. Over it, the coaching layer, every piece read off the sim:
@@ -44,11 +44,53 @@ while the coach draws (`warm()`); lines, routes and glows are paths (a glow is a
 under a thin one, never a shadow blur); discs, the ball and chips are sprites made once. Nothing
 from Run The Floor's rig (`/hoops/baller.js`) is loaded any more; hoops still has it.
 
-**The seam for Phase 2.** `run-view.js` is the one switch: `RUN_VIEW` names the renderer, and every
+**The run view switch.** `run-view.js` is the one switch: `RUN_VIEW` names the renderer, and every
 renderer gives `draw`, `drawAnswer`, `camStart(frames, { res, play })`, `redraw` and `view`.
-The 3D shot cam is a renderer registered there that keeps the board for the play and takes the span
-`inShotSpan` names (the ball up, `fr.sk`, and the after-ball, `opts.after`) on a canvas of its own.
-`client.js` (timing, captions, the bleed, the banner, the card) does not change.
+`client.js` (timing, captions, the bleed, the banner, the card) does not change. `RUN_VIEW` is
+`hybrid` since Phase 2; `board` is the tactics board alone.
+
+## The 3D shot cam (Phase 2)
+
+The hybrid (`shotcam.js`, 2026-11-22) keeps the board for the play. At the release (the first frame
+with `fr.sk` set, `inShotSpan`) a slanted wipe with a SHOT CAM tag cuts to a 3D camera on a canvas of
+its own, laid over the court: over the shooter's shoulder, then a push in on the rim as the ball
+flies, the make or the miss, and on a made winner a pull back wide with confetti. The answer
+cutaway and anything after the span go back to the board. The scene is `shotcam3d.js`: a dim arena
+with a pool of light, the glossy maple floor (the moving things drawn again mirrored under it), the
+navy lane, the hoop with a net that stretches on a make and sways on a miss, the coach's routes,
+passes, screen bars and the open space ring drawn on the floor as a telestrator (`planRun`, the
+board's own read), and the read chip (`HAND UP · 40%`). The camera fits the shooter, the ball (and
+its peak), the rim and the board into the frame at any aspect, aims under the rim so the hoop sits
+above the GAME WINNER banner, and keeps the chip in the band between the banner and the caption.
+
+**Nothing is invented.** Every body stands, faces and strides where the sim's frame has him. The
+ball is the sim's own shot path and height (`fr.b[2]`, the arc over the line from the hands, riding
+up that line to the rim), then plays out by `ballAfter` in `court2d.js`, the same path the board
+draws. Make, miss, the rim rattle, the winner and the answer are all the result's.
+
+**The players** are stylized figures built from primitives in `figures3d.js` (torso and jersey with
+the number front and back, shorts, head, arms, legs), home navy and gold, away red, with procedural
+poses: the shooter's jumper (release, follow through, landing; the gather and the rise happen
+before the release, on the board), the contesting defender's close out with the hand up, the sim's
+run, slide, screen and catch codes, and an idle sway. **A real model replaces that one file**:
+`build()` would clone a rigged GLB and `pose()` drive its bones from the same inputs. Nothing else
+knows about limbs.
+
+**When it runs.** The gate (asked once a page): WebGL2 on a real GPU (SwiftShader, llvmpipe and
+other software renderers count as weak), `navigator.deviceMemory` at least 4 where it is reported,
+`hardwareConcurrency` at least 4, and never with prefers-reduced-motion (asked again every run).
+Otherwise the board draws the whole run. three.js is Shut The Door's vendored copy, imported by URL
+(`/shut-the-door/3d/vendor/three-0.170.0/three.module.min.js`, about 690 KB, 170 KB gzipped, kept a
+year by `_headers`), never a module of this bundle. `warm()` waits till the stage is on screen (the
+clipboard), then in idle time fetches it, builds the scene a piece at a time, compiles every shader
+and draws once, so the first cut does not hitch. Not ready by the release: the board keeps that
+run. **The watchdog**: under 40 fps over the first half second after the cut, the run drops back to
+the board (after two such runs the page stops trying); a lost context or a throw does the same.
+Timing is the board's to the frame: the 3D only draws the frames `client.js` already asks for.
+
+`window.__shotCam` says what happened (state, why, runs shown, dropped, the measured fps, the chip's
+box). `window.__shotCamOpts = { software: true }` lets a software renderer through, for headless
+checks; `{ off: true }` keeps the board.
 
 ## Start from a play, and Save this play
 
@@ -182,6 +224,7 @@ node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's re
 node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
 node functions/_lastshot/test/check-starters.mjs  Plays (the starters, replace, undo, a level's scout) and Save this play
 node functions/_lastshot/test/check-analytics.mjs the round's events: every name, the beacon on hide, inert under automation
+node functions/_lastshot/test/check-shotcam.mjs   the 3D shot cam: the cut in the span only, the timing, the fallbacks, the watchdog
 ```
 
 The seed for any result is behind **Seed** on the result screen. The same seed and the same play

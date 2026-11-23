@@ -32,26 +32,26 @@
  * ACCOUNT PLUG POINTS still out of scope:
  *   TODO(results): save a free play or ladder possession through a gated API,
  *     the way the daily's run is filed (daily-ui.js). */
-import { SCENARIO as SC, isZone } from './scenario.js?b=e8ab3a738b';
-import { simulate } from './sim.js?b=e8ab3a738b';
-import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js?b=e8ab3a738b';
-import { STARTERS, starterById, starterPlay } from './starters.js?b=e8ab3a738b';
-import { drawPlay } from './diagram.js?b=e8ab3a738b';
-import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js?b=e8ab3a738b';
+import { SCENARIO as SC, isZone } from './scenario.js?b=04a290ad7e';
+import { simulate } from './sim.js?b=04a290ad7e';
+import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js?b=04a290ad7e';
+import { STARTERS, starterById, starterPlay } from './starters.js?b=04a290ad7e';
+import { drawPlay } from './diagram.js?b=04a290ad7e';
+import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js?b=04a290ad7e';
 import { loadLadder, saveLadder, renderLadder, isOpen, nextOf, starsIn, maxStars, clockLine, scoutLine, starText, cleanPlay as cleanStored,
-  keepPlay, markDay, streakOf, startLadderSync, flushLadder, ladderWrites } from './ladder-ui.js?b=e8ab3a738b';
-import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js?b=e8ab3a738b';
-import { challengeOpt, beats } from './challenge.js?b=e8ab3a738b';
-import * as D from './daily-ui.js?b=e8ab3a738b';
-import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sitLine, scoutOf, renderChallenge, renderBadLink } from './beat-ui.js?b=e8ab3a738b';
-import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js?b=e8ab3a738b';
-import { createBoard } from './board.js?b=e8ab3a738b';
-import { mountBooks } from './book-ui.js?b=e8ab3a738b';
-import { createRunView, between, warm } from './run-view.js?b=e8ab3a738b';
-import { shareText, dailyShareText } from './share.js?b=e8ab3a738b';
-import { freshSeed } from './rng.js?b=e8ab3a738b';
-import { createSound } from './sound.js?b=e8ab3a738b';
-import { track, trackOpen, flushNow } from './analytics.js?b=e8ab3a738b';
+  keepPlay, markDay, streakOf, startLadderSync, flushLadder, ladderWrites } from './ladder-ui.js?b=04a290ad7e';
+import { dailyScenario, scoreOf, cleanPlay as filePlay } from './daily.js?b=04a290ad7e';
+import { challengeOpt, beats } from './challenge.js?b=04a290ad7e';
+import * as D from './daily-ui.js?b=04a290ad7e';
+import { readHash, clearHash, openChallenge, beatLink, shareBeat, theirLine, sitLine, scoutOf, renderChallenge, renderBadLink } from './beat-ui.js?b=04a290ad7e';
+import { adder, verdictBlock, verdictHead, checklist, factsOf, summaryOf, scoreOfRun } from './cards.js?b=04a290ad7e';
+import { createBoard } from './board.js?b=04a290ad7e';
+import { mountBooks } from './book-ui.js?b=04a290ad7e';
+import { createRunView, between, warm } from './run-view.js?b=04a290ad7e';
+import { shareText, dailyShareText } from './share.js?b=04a290ad7e';
+import { freshSeed } from './rng.js?b=04a290ad7e';
+import { createSound } from './sound.js?b=04a290ad7e';
+import { track, trackOpen, flushNow } from './analytics.js?b=04a290ad7e';
 
 const $ = id => document.getElementById(id);
 const KEY = 'last_shot_play_v1', SPEED_KEY = 'last_shot_speed';

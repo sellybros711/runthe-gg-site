@@ -28,8 +28,8 @@
  * word twice running is said once. A series that names a set takes the set's
  * place too: "Horns plus a pick and roll is Horns Twist" reads Horns Twist.
  */
-import { planOf, labelsOf, holderAfter, spotsAfter, shooterOf, IDS } from './playbook.js?b=e8ab3a738b';
-import { COURT, dist, toRim, zoneOf } from './court-geo.js?b=e8ab3a738b';
+import { planOf, labelsOf, holderAfter, spotsAfter, shooterOf, IDS } from './playbook.js?b=04a290ad7e';
+import { COURT, dist, toRim, zoneOf } from './court-geo.js?b=04a290ad7e';
 
 export const ACTIONS = Object.freeze(['pin-down', 'down screen', 'flare screen', 'back screen', 'UCLA screen', 'cross screen',
   'stagger', 'pick and roll', 'pick and pop', 'ball screen', 'handoff']);

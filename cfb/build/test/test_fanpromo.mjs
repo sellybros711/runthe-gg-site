@@ -245,6 +245,17 @@ const PLAYOFF = (lockIn, endIn) => ({ season: SEASON, week: 100, kind: 'playoff'
   ok('  and the results card offers it, labelled the Playoff', r.shown && /Playoff/.test(r.text) && !/Week 100/.test(r.text),
     r.text.slice(0, 80));
   ok('  in the Playoff\'s words', /every game their team plays/.test(r.text));
+  /* The lock day sheet (assets/fantasy-promo.js) is set up for the Playoff too, and names it
+     through `label`. open() draws it whatever its day rule says. */
+  const eye = await h.page.evaluate(async () => {
+    window.RTG_FANPROMO_TEST = true;
+    if (!window.RTG_FANPROMO) return 'no sheet';
+    await window.RTG_FANPROMO.open();
+    for (let i = 0; i < 50 && !document.querySelector('#fpromo .fp-eye'); i++) await new Promise((r) => setTimeout(r, 100));
+    const e = document.querySelector('#fpromo .fp-eye');
+    return e ? e.textContent : 'not drawn';
+  });
+  ok('  and the lock day sheet names it the Playoff, never Week 100', /The Playoff/.test(eye) && !/Week 100/.test(eye), eye);
   await h.page.close();
 }
 {

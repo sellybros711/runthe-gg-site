@@ -11,10 +11,10 @@
  * DEFENSES is the list Test it walks: the three man schemes and the four
  * zones (2-3, 1-3-1, 3-2, match-up). Each is one key the sim understands and
  * one row here. */
-import { simulate } from './sim.js?b=e8ab3a738b';
-import { DEFENSES as ALL, SCHEME_NAMES } from './scenario.js?b=e8ab3a738b';
-import { playKey, situationKey } from './playbook.js?b=e8ab3a738b';
-import { hashStr } from './rng.js?b=e8ab3a738b';
+import { simulate } from './sim.js?b=04a290ad7e';
+import { DEFENSES as ALL, SCHEME_NAMES } from './scenario.js?b=04a290ad7e';
+import { playKey, situationKey } from './playbook.js?b=04a290ad7e';
+import { hashStr } from './rng.js?b=04a290ad7e';
 
 export const DEFENSES = ALL;
 export const DEFENSE_NAMES = SCHEME_NAMES;

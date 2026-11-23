@@ -1,0 +1,26 @@
+name: Save check
+# A save sends only what changed, and the server skips a write that changes nothing (the rule
+# after the 2026-11-12 Disk IO outage; knowledge base platform/platform-database-saves.md).
+# Every database function that rewrites a jsonb column has to be classified in
+# scripts/save-writes.json, and a repeated save has to skip an unchanged write. Runnable locally:
+#   node scripts/check-saves.mjs
+# No secrets, no network, no database.
+on:
+  pull_request:
+    paths:
+      - 'supabase/**.sql'
+      - 'scripts/save-writes.json'
+      - 'scripts/check-saves.mjs'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/check-saves.mjs --self-test
+      - run: node scripts/check-saves.mjs

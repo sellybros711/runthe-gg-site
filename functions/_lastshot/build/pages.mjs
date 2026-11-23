@@ -31,7 +31,7 @@ export const STATIC_DIR = path.join(REPO, 'last-shot');
 
 /* What the browser may load. Server files (gate, db, pages) are not here. */
 export const MODULE_FILES = ['scenario.js', 'starters.js', 'rng.js', 'court-geo.js', 'motion.js', 'defense.js', 'shot.js', 'playbook.js', 'names.js', 'book.js', 'testit.js', 'diagram.js', 'export.js', 'book-ui.js',
-  'sim.js', 'levels.js', 'ladder-ui.js', 'daily.js', 'challenge.js', 'cards.js', 'daily-ui.js', 'beat-ui.js', 'view.js', 'board.js', 'court2d.js', 'run-view.js', 'share.js', 'sound.js', 'analytics.js', 'client.js', 'ads.js'];
+  'sim.js', 'levels.js', 'ladder-ui.js', 'daily.js', 'challenge.js', 'cards.js', 'daily-ui.js', 'beat-ui.js', 'view.js', 'board.js', 'court2d.js', 'figures3d.js', 'shotcam3d.js', 'shotcam.js', 'run-view.js', 'share.js', 'sound.js', 'analytics.js', 'client.js', 'ads.js'];
 
 export const stamp = (src, build) =>
   src.replace(/(\bfrom\s*|\bimport\s*\(\s*)(['"])(\.\/[A-Za-z0-9_-]+\.js)\2/g, (m, a, q, p) => a + q + p + '?b=' + build + q);

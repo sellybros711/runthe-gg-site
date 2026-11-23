@@ -55,6 +55,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .score .clock{font-family:'Russo One',monospace;font-size:28px;color:#ffd23f;min-width:84px;text-align:center;text-shadow:0 0 10px rgba(255,210,63,.35)}
 .stage{position:relative;flex:1;min-height:0}
 canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;outline:none}
+/* The 3D shot cam's canvas, over the court from the release (shotcam.js), and its tag. */
+canvas.shot3d{pointer-events:none;background:#06070a}
+.shotcam{position:absolute;left:10px;top:10px;font:800 12px/1 'Outfit',system-ui,sans-serif;letter-spacing:.1em;color:#111;background:#ffd23f;padding:6px 9px;border-radius:6px;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.35);animation:tagIn .3s ease-out both}
+@keyframes tagIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
 .pop{position:absolute;left:50%;top:84%;transform:translate(-50%,-50%) scale(.85);font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;line-height:1.1;opacity:0;pointer-events:none;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;color:#fff;background:rgba(29,33,41,.92);padding:7px 16px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .pop.final{font-size:28px;background:#1d2129;color:#ffd23f}
 .pop.on{animation:pop 1s ease-out forwards}

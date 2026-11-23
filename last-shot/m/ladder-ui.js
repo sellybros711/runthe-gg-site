@@ -25,9 +25,9 @@
  * UNLOCKS. 1-1 is always open. Every other level opens once the level before
  * it, in LEVELS order, is won (one star or more). So a chapter's first level
  * opens with the last level of the chapter before it. */
-import { LEVELS, CHAPTERS } from './levels.js?b=e8ab3a738b';
-import { SCHEME_NAMES, isZone } from './scenario.js?b=e8ab3a738b';
-import { IDS } from './playbook.js?b=e8ab3a738b';
+import { LEVELS, CHAPTERS } from './levels.js?b=04a290ad7e';
+import { SCHEME_NAMES, isZone } from './scenario.js?b=04a290ad7e';
+import { IDS } from './playbook.js?b=04a290ad7e';
 
 export const LADDER_KEY = 'last_shot_ladder';
 const KINDS = ['move', 'screen', 'pass', 'shoot'];
