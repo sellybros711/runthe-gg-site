@@ -199,9 +199,12 @@
   /* how close it was, from the engine's spot and the line to gain */
   function marginText(r) {
     if (r.outcome === 'touchdown') return 'Six.';
-    if (r.spotY == null || r.marker >= 100 || (r.outcome !== 'down' && r.outcome !== 'oob')) return r.win ? '' : (r.outcome === 'sack' ? 'Sacked.' : r.outcome === 'incomplete' ? 'Incomplete.' : r.outcome === 'interception' ? 'Picked off.' : '');
+    if (r.spotY == null || r.marker >= 100 || (r.outcome !== 'down' && r.outcome !== 'oob')) return r.win ? '' : (r.outcome === 'sack' ? 'Sacked.' : r.outcome === 'incomplete' ? 'Incomplete.' : r.outcome === 'interception' ? 'Turnover.' : '');
     var d = r.spotY - r.marker, a = Math.abs(d);
-    if (a < 1) return r.win ? 'By inches.' : 'Inches short.';
+    /* short of the sticks, inches means what the engine's reason means (under 0.6), so the
+       card never says "Inches short" over "Tackled 1 yard short" */
+    if (r.win ? a < 1 : a < 0.6) return r.win ? 'By inches.' : 'Inches short.';
+    if (!r.win && a < 1) return '1 yard short.';
     var y = Math.round(a);
     return r.win ? y + (y === 1 ? ' yard' : ' yards') + ' to spare.' : y + (y === 1 ? ' yard' : ' yards') + ' short.';
   }
@@ -212,8 +215,12 @@
     var FE = window.FAW_FEEL, stamp = $('stamp'), meas = $('measure');
     stamp.hidden = true; meas.hidden = true; $('cLive').style.transform = '';
     if (FE) FE.play('crowd');
-    live = window.FAW_LIVE.show($('cLive'), res, {
-      zoom: true,
+    /* the 3D stadium (live3d.js) where the browser can draw it, else the pixel one */
+    var D3 = window.FAW_LIVE3D, use3 = !!(D3 && D3.ok());
+    $('cLive').hidden = use3; $('cLive3d').hidden = !use3;
+    $('bug').hidden = !use3; $('bugDown').textContent = res.situation || ''; $('bugCall').textContent = levelShort(res.level);
+    var ui = {
+      zoom: !use3,
       caption: function (t) { $('cap').textContent = t; },
       pressure: function (p) { $('pressFill').style.width = Math.round(p * 100) + '%'; $('press').style.opacity = res.isRun ? '0' : '1'; },
       snap: function () { if (FE) FE.play('snap'); },
@@ -231,7 +238,9 @@
         if (FE) FE.result(r);
       },
       done: function (r) { $('bSkip').hidden = true; stamp.hidden = true; if (done) done(r || res); }
-    });
+    };
+    if (use3) { try { live = D3.show($('cLive3d'), res, ui); return; } catch (e) { $('cLive').hidden = false; $('cLive3d').hidden = true; $('bug').hidden = true; ui.zoom = true; } }
+    live = window.FAW_LIVE.show($('cLive'), res, ui);
   }
   $('bSkip').addEventListener('click', function () { live && live.skip(); });
   $('bClose3d').addEventListener('click', function () { if (live) live.stop(); $('watch').hidden = true; });

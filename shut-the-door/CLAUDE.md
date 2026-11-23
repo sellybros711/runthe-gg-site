@@ -111,6 +111,12 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
   A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`, `ABS_TOUCH_FROM`, `DRAWN_TOUCH_FROM`, `HBP_REACH_FROM`, `STANCE_FROM`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
+- **Custom challenges** (2026-11-18, CONTRACT.md 18): Pro makes one, anyone plays it free, one
+  counted try a player. Never a daily, Survivor or the archive, never on their boards, no
+  percentile. A matchup pack is built by the packs' own model (`pipeline/build_matchups.py`,
+  `matchups.js`), lives in the `shutdoor-matchups` bucket, never in git, and a challenge keeps the
+  build and sha it was made on. A daily pack carries no `tableLead`, `bi`, `balls` or `strikes`,
+  so it plays as before (`test/challenge.mjs`).
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a
   third out are the ones that count (rules 3, CONTRACT.md 5e), and the half-ending rows are the real
   plays from Savant's play text (`pipeline/third_outs.py`), never a rule.

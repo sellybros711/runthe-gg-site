@@ -80,7 +80,24 @@
     whistle: function () { tone(2900, 0.45, 0.12, 'sine', 2700, 28); },
     chains: function () { for (var i = 0; i < 6; i++) setTimeout(function () { noise(0.05, 4200, 4, 0.18, 'bandpass', 0.002); }, i * 70 + Math.random() * 30); },
     roar: function (big) { noise(big ? 2.6 : 1.6, 1100, 0.5, big ? 0.55 : 0.4, 'bandpass', 0.25, 1600); if (big) noise(2.2, 2400, 0.7, 0.2, 'bandpass', 0.3); },
-    groan: function () { noise(1.4, 700, 0.6, 0.3, 'bandpass', 0.2, 260); }
+    groan: function () { noise(1.4, 700, 0.6, 0.3, 'bandpass', 0.2, 260); },
+    /* THE HIT (2026-11-19). The climb: one note a conversion, a step up the
+       scale each time, so a long run sounds like it is going somewhere */
+    ladder: function (n) {
+      var STEP = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24], k = STEP[Math.max(0, Math.min(STEP.length - 1, (n || 1) - 1))];
+      var f = 392 * Math.pow(2, k / 12);
+      tone(f, 0.22, 0.16, 'triangle'); setTimeout(function () { tone(f * 1.5, 0.3, 0.09, 'sine'); }, 70);
+    },
+    /* a new best: a short rising fanfare over the crowd */
+    best: function () {
+      [523, 659, 784, 1047].forEach(function (f, i) { setTimeout(function () { tone(f, i === 3 ? 0.5 : 0.16, 0.16, 'square'); tone(f / 2, i === 3 ? 0.5 : 0.16, 0.08, 'triangle'); }, i * 95); });
+    },
+    /* a stop lost: a low thud as the pip breaks */
+    /* a moment earned: a quick bright sparkle, one more note for each */
+    sparkle: function (n) {
+      for (var i = 0; i < 3 + Math.min(3, (n || 1) - 1); i++) (function (i) { setTimeout(function () { tone(1568 + i * 220, 0.09, 0.07, 'sine'); tone(2093 + i * 260, 0.07, 0.04, 'triangle'); }, i * 55); })(i);
+    },
+    pip: function () { noise(0.18, 140, 1, 0.5, 'lowpass', 0.004, 60); tone(150, 0.32, 0.22, 'sine', 55); }
   };
   function play(kind, arg) { if (!on) return; try { var a = ctx(); if (!a || a.state !== 'running') return; SOUNDS[kind] && SOUNDS[kind](arg); } catch (e) {} }
   function buzz(p) { if (!on) return; try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }

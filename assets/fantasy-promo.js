@@ -8,6 +8,8 @@
  * a way in.
  *
  *   RTG_FANPROMO.init({ league, nowUrl, href, entryPrefix, auth, show })
+ *     label(week) optional: what the sheet calls the week. Default "Week " + its number. The
+ *     college Playoff's server week is 100, which read "Week 100" (2026-11-16).
  *   RTG_FANPROMO.check()     ask again now (the page calls it on every auth change)
  *   RTG_FANPROMO.open()      draw it whatever the rules say (a check's handle)
  *
@@ -247,7 +249,7 @@
       /* LEFT OPEN PAST THE LOCK, the sheet stops selling an entry nobody can make. */
       segs[0].textContent = segs[1].textContent = segs[2].textContent = '00';
       el.querySelector('.fp-h').textContent = 'Lineups are locked';
-      el.querySelector('.fp-when').textContent = 'Week ' + week.week + ' is live.';
+      el.querySelector('.fp-when').textContent = weekLabel(week) + ' is live.';
       el.querySelector('.fp-go').textContent = 'See the board';
       if (tick) { clearInterval(tick); tick = null; }
     }
@@ -281,7 +283,7 @@
     el.innerHTML = '<div class="fp-card" tabindex="-1">'
       + '<button class="fp-x" type="button" aria-label="Close">&times;</button>'
       + CREST
-      + '<div class="fp-eye">Fantasy Challenge &middot; Week ' + week.week + '</div>'
+      + '<div class="fp-eye">Fantasy Challenge &middot; ' + weekLabel(week) + '</div>'
       + '<h2 class="fp-h" id="fpromo-h">Lineups lock today</h2>'
       + '<div class="fp-clock" role="timer" aria-live="off">'
       + '<div class="fp-seg"><b>00</b><i>Hrs</i></div>'
@@ -304,6 +306,14 @@
     /* Focus goes to the card rather than the button, so a screen reader starts at the top
        and no focus ring is drawn round the button before anybody has touched anything. */
     try { el.querySelector('.fp-card').focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* The caller's name for the week when it has one, so a page with a special week (the
+     college Playoff) never prints its server number. */
+  function weekLabel(w) {
+    try { if (CFG && typeof CFG.label === 'function') { var l = CFG.label(w); if (l) return String(l); } }
+    catch (e) {}
+    return 'Week ' + w.week;
   }
 
   function init(cfg) {

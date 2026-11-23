@@ -28,6 +28,7 @@ function desk() { return !!(DESK && DESK.on()); }
 function showing(t) { return tab === t || desk(); }
 /* your history (history-ui.js): the Pro perk's screen */
 var HU = window.STD_HISTORY_UI || null;
+var CU = window.STD_CHALLENGE_UI || null;
 /* the welcome to Pro (pro-welcome.js): once, after a checkout comes back and Pro lands */
 var PW = window.STD_PRO_WELCOME || null;
 var METER = window.STD_METER || null;
@@ -145,7 +146,8 @@ var TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', 
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
   /* Survivor and the archive put their own spot on the mound; the home and its links are today's */
-  if (id === 's-home' || id === 's-board' || id === 's-hist') dailyBack();
+  if (id === 's-home' || id === 's-board' || id === 's-hist' || id === 's-chal' || id === 's-cint') dailyBack();
+  if (id === 's-home') dropCode();
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
@@ -155,6 +157,16 @@ function show(id) {
   if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
   if (SFX) SFX.bed(id === 's-mound' && S.outing ? leverage(S.outing) : 0);
   backSync();
+}
+
+/* A challenge link (?c=CODE) stays in the address while its screens are up, so the mound's home (a
+   reload) comes back to it. Home takes it off. */
+function dropCode() {
+  var q = new URLSearchParams(location.search);
+  if (!q.has('c')) return;
+  q.delete('c');
+  Q.delete('c');
+  try { history.replaceState(history.state, '', location.pathname + (q.toString() ? '?' + q.toString() : '') + location.hash); } catch (e) {}
 }
 
 /* BACK CLOSES WHAT IS OPEN (the QA audit, 2026-11-02: back left the page from the board, a sheet or
@@ -177,7 +189,8 @@ function backSync() {
   }, 0);
 }
 function backPressed() {
-  if (BACK_SKIP) { BACK_SKIP = false; backSync(); return; }
+  /* (a tap home drops the page's own entry: the entry under it still carries ?c, so home takes it off again) */
+  if (BACK_SKIP) { BACK_SKIP = false; if ((document.body.dataset.screen || 's-home') === 's-home') dropCode(); backSync(); return; }
   if (PW && PW.isOpen()) { PW.close(); return; }
   if (MN && MN.isOpen()) { MN.close(); return; }
   var id = document.body.dataset.screen || 's-home';
@@ -185,6 +198,8 @@ function backPressed() {
   if (id === 's-clip' && window.STD_CLIP_UI) { window.STD_CLIP_UI.close(); backSync(); return; }
   /* a kept outing looked back on goes back to the history, its list as it was */
   if (id === 's-result' && S.mode === 'history') { show('s-hist'); return; }
+  /* a challenge's result goes back to the challenge, its standings read again */
+  if (id === 's-result' && S.mode === 'challenge' && CU && S.chal) { CU.openCode(S.chal.code); return; }
   if (id === 's-mound' || id === 's-half' || id === 's-next') {
     if (S.busy) { backSync(); return; }
     moundHome();
@@ -397,11 +412,18 @@ var MOMENT = {
 function clubsOf(s) {
   var p = s.pitcher, u = window.STD_CLUB_NAMED ? window.STD_CLUB_NAMED(p.team) : null;
   var parts = String(p.team || '').trim().split(/\s+/);
-  var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: s.title, scenarioId: s.id, pitcher: p }) : null;
+  var them = themClub(s);
   return {
     us: { name: u ? u.nick : parts[parts.length - 1] || 'us', pri: p.teamColors && p.teamColors[0], sec: p.teamColors && p.teamColors[1] },
     them: them ? { name: them.as || them.nick, full: them.city + ' ' + (them.as || them.nick), pri: them.pri, sec: them.sec } : null,
   };
+}
+/* the hitters' club: the title's other club or the series table (clubs.js), and for a custom
+   challenge the matchup's own lineup club (challenge.js names it), which neither of those knows */
+function themClub(s) {
+  var t = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: s.title, scenarioId: s.id, pitcher: s.pitcher }) : null;
+  if (!t && s.matchup && s.matchup.lineupTeam && window.STD_CLUB_NAMED) t = window.STD_CLUB_NAMED(s.matchup.lineupTeam);
+  return t;
 }
 function clubStyle(t) {
   if (!t) return '';
@@ -959,9 +981,10 @@ function enterMound() {
   setPitcher();
   setBatter(true);
   renderHud(S.outing);
+  /* the voice of the ump: one player's voice for the whole outing, picked by its id, and a few of
+     that voice's clips fetched a beat after the mound is up (voices.js). Set before the first call */
+  if (window.STD_VOICES) window.STD_VOICES.preload(S.outing.outingId || S.outing.seed);
   if (S.outing.pitchNo === 0) { pbp('', batterAt(S.outing.batterIndex).name + ' leads off.'); if (SFX) SFX.ump('play'); }
-  /* the voice of the ump: a few approved clips, fetched a beat after the mound is up (voices.js) */
-  if (window.STD_VOICES) window.STD_VOICES.preload();
   else pbp(isTied(S.outing) ? 'tied' : '', 'pitch ' + (S.outing.pitchNo + 1) + '. ' + batterAt(S.outing.batterIndex).name + ' up.');
   updateThrow();
   if (DEBUG) { $('m-dbg').hidden = false; $('m-dbg').textContent = 'seed ' + S.outing.seed + ' · ' + S.outing.mode; }
@@ -1011,7 +1034,7 @@ function renderHud(st) {
   var sit = st && st.half && st.half.inning ? st.half : S.scn.situation;
   setClub($('m-usclub'), S.scn.pitcher.teamColors);
   // the hitters' club, from the same rule the 3D kit uses (clubs.js, loaded by index.html); grey until it is
-  var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: S.scn.title, scenarioId: S.scn.id, pitcher: S.scn.pitcher }) : null;
+  var them = themClub(S.scn);
   setClub($('m-themclub'), them ? [them.pri, them.sec] : null);
   var usName = closerName(S.scn.pitcher), themName = them ? (them.as || them.nick) : '';
   $('m-usname').textContent = usName || 'us';
@@ -2055,7 +2078,7 @@ function finish() {
   return API.finishOuting(id).then(function (r) {
     if (EV()) EV().outingEnd(id, S.mode, evDay(), r);
     /* a save as a club's closer unlocks its plate (plate.js). Practice is not kept, so it unlocks nothing */
-    var won = r.outcome === 'door_shut' && S.mode !== 'practice' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : [];
+    var won = r.outcome === 'door_shut' && S.mode !== 'practice' && S.mode !== 'challenge' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : [];
     won = won && won.length ? won : null;
     if (won) paintProfile();
     if (S.mode === 'survivor') return survivorNext(r);
@@ -2125,6 +2148,13 @@ function paintProCard(e) {
   if (!el) return;
   el.innerHTML = show ? (desk() && C.bar ? C.bar() : C.home()) : '';
   el.hidden = !show || !el.innerHTML;
+  /* and the small unlock row: the last item in the menu sheet, and at the foot of the desk's drawer (desk.js) */
+  ['menu-pro', 'd-pro'].forEach(function (id) {
+    var m = $(id);
+    if (!m) return;
+    m.innerHTML = show && C.unlock ? C.unlock(id) : '';
+    m.hidden = !m.innerHTML;
+  });
 }
 /* signed in: the account's plates, and a guest's chosen plate carried over when the account has it */
 function syncPlates() {
@@ -2151,6 +2181,7 @@ function renderModes() {
   if (!MU) return;
   var daily = S.mode === 'daily';
   if (daily) MU.saveBlock($('r-save'), { account: S.result && S.result.account, justSaved: S.saved });
+  else if (S.mode === 'challenge' && CU) CU.saveBlock($('r-save'), S.result);
   else { $('r-save').hidden = true; }
   if (daily && S.dailyResult) MU.voteBlock($('r-vote')); else { $('r-vote').hidden = true; voteRow(null); }
 }
@@ -2353,6 +2384,8 @@ function proLand(t) {
 function proGo(where) {
   if (where === 'arc') { MN.show('past'); proLand('arc'); return; }
   if (where === 'hist') { showHistory(); return; }
+  /* custom challenges (challenge-ui.js): the builder, now open to them */
+  if (where === 'chal') { if (CU) CU.open(); return; }
   if (where === 'plate') {
     MN.show('auth');
     var g = $('pk-grid'); if (g) try { g.scrollIntoView({ block: 'start' }); } catch (e) {}
@@ -2411,7 +2444,9 @@ function runsOf(r, st) { return r.runs != null ? r.runs : st && st.score ? st.sc
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
   var runs = runsOf(r, st);
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored'
+  var chal = S.mode === 'challenge' && !!r.challenge, cpr = chal && !!r.challenge.practice;
+  $('r-eyebrow').textContent = chal ? (cpr ? 'challenge practice · not posted · ' : 'challenge · ' + r.challenge.code + ' · final · ') + s.title.toLowerCase()
+    : S.mode === 'practice' ? 'practice · not scored'
     : (S.mode === 'archive' ? 'archive · ' : S.mode === 'history' ? 'your history · ' + fmtDay(s.day) + ' · ' : '') +
       (s.survivor ? 'survivor' : s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
   var o = $('r-outcome');
@@ -2422,7 +2457,9 @@ function renderResult() {
   var tc = s.pitcher.teamColors;
   $('s-result').style.setProperty('--club', tc && tc[0] ? tc[0] : '');
   var p = Math.round(r.percentile);
-  R.nums = { p: r.pitches, r: runs, pct: p };
+  /* a challenge has no percentile (CONTRACT.md 18): its score takes the tile */
+  $('r-kpct').innerHTML = chal ? '<b class="pct" id="r-pct"></b><span>score</span>' : '<b class="pct" id="r-pct"></b><span>of closers<span id="r-score"></span></span>';
+  R.nums = chal ? { p: r.pitches, r: runs, pct: r.score || 0, plain: true } : { p: r.pitches, r: runs, pct: p };
   $('r-kp').innerHTML = '<b>' + esc(r.pitches) + '</b>' + (r.pitches === 1 ? 'pitch' : 'pitches');
   $('r-kr').hidden = runs == null;
   $('r-kr').innerHTML = runs != null ? '<b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') : '';
@@ -2431,22 +2468,34 @@ function renderResult() {
   /* the box line and the grade mix (postgame.js): the engine's counts, after the outing only */
   $('r-box').innerHTML = PG && st ? boxHTML(PG.box(st.log, r)) : '';
   $('r-mix').innerHTML = mixHTML(r.strip);
-  $('r-pct').innerHTML = p + '<sup>' + ordSuffix(p) + '</sup>';
-  $('r-kpct').setAttribute('aria-label', p + ordSuffix(p) + ' of closers');
+  if (chal) { $('r-pct').textContent = r.score; $('r-kpct').setAttribute('aria-label', 'score ' + r.score); }
+  else { $('r-pct').innerHTML = p + '<sup>' + ordSuffix(p) + '</sup>'; $('r-kpct').setAttribute('aria-label', p + ordSuffix(p) + ' of closers'); }
   $('r-pctline').innerHTML = 'better than <b>' + esc(p) + '%</b> of the closer pool in this spot.';
-  $('r-score').textContent = r.score != null ? 'score ' + r.score : '';
+  if ($('r-score')) $('r-score').textContent = r.score != null ? 'score ' + r.score : '';
   $('r-chart').innerHTML = poolChart(r);
   $('r-like').textContent = r.pitchedLike ? r.pitchedLike.name : '-';
   $('r-why').textContent = r.pitchedLike ? r.pitchedLike.reason : '';
   var rv = r.reveal || {};
-  $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
-  $('r-real').innerHTML = '<div class="vs-t"><small>' + esc(vsLabel()) + '</small>' +
-    '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal)) + '</b>' +
-    vsWhy(r, rv, runs) + '</div>';
+  if (chal && CU) {
+    /* a custom challenge: you against them, never the real game (it never happened) */
+    var cv = CU.versus(r);
+    $('r-real').className = 'vsbar chal ' + cv.tone;
+    $('r-real').innerHTML = cv.html;
+  } else {
+    $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
+    $('r-real').innerHTML = '<div class="vs-t"><small>' + esc(vsLabel()) + '</small>' +
+      '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal)) + '</b>' +
+      vsWhy(r, rv, runs) + '</div>';
+  }
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
-  $('r-share').hidden = S.mode !== 'daily';
+  $('r-chal').hidden = !(chal && CU);
+  if (chal && CU) $('r-chal').innerHTML = CU.tileHTML(r);
+  $('r-pool').hidden = chal;
+  $('r-chal-go').hidden = !(chal && CU);
+  $('r-again').querySelector('span').textContent = chal ? 'practice. never posted.' : 'practice. not scored.';
+  $('r-share').hidden = !(S.mode === 'daily' || (chal && !cpr));
   /* a kept outing looked back on (history-ui.js): back to the list, and no board (today's is not its day) */
-  $('r-board').hidden = S.mode === 'history';
+  $('r-board').hidden = S.mode === 'history' || S.mode === 'challenge';
   $('r-hist-go').hidden = S.mode !== 'history';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
   /* Run The Diamond, under the menu: not on a player's first result, as the Diamond's own promo
@@ -2478,7 +2527,7 @@ function playResult() {
     var pv = Math.round(n.p * k), rv = n.r == null ? null : Math.round(n.r * k), cv = Math.round(n.pct * k);
     $('r-kp').firstChild.textContent = pv;
     if (rv != null) $('r-kr').firstChild.textContent = rv;
-    $('r-pct').innerHTML = cv + '<sup>' + ordSuffix(cv) + '</sup>';
+    if (n.plain) $('r-pct').textContent = cv; else $('r-pct').innerHTML = cv + '<sup>' + ordSuffix(cv) + '</sup>';
   };
   if (reducedMotion()) { set(1); return; }
   var t0 = null, MS = 900, DELAY = 420;
@@ -2751,6 +2800,8 @@ function compareCard(r, rv, runs, st) {
   var n = Math.max(AB.list.length, real.length), bats = '';
   var bat = (clubsOf(S.scn).them || {}).pri || '';
   for (var i = 0; i < n; i++) bats += abCard(AB.list[i], real[i], i, col, bat);
+  /* a custom challenge never happened: no real game beside yours, only your at bats */
+  if (S.mode === 'challenge') return '<p class="ab-t">At bat by at bat</p>' + kzLegend() + '<div class="ab-grid">' + bats + '</div>';
   return '<div class="cmp-top"><p class="cmp-t">' + esc(cap(vsLabel())) + '</p>' +
     '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">You</span><span class="who him">' + esc(col) + '</span></div>' +
     rows + '</div>' +
@@ -2810,7 +2861,7 @@ function openCoach() {
    opens, so the share button inside it hands the file over in the same tap: a browser only lets
    navigator.share run straight off a tap. Where files cannot be shared, the image is saved instead,
    and the text is always one tap away. */
-function shareText(r) { return r.share || (window.STD_SHARE && window.STD_SHARE.text(r, S.scn.number)) || ''; }
+function shareText(r) { if (S.mode === 'challenge' && CU && r.challenge) return CU.shareText(r, S.scn); return r.share || (window.STD_SHARE && window.STD_SHARE.text(r, S.scn.number)) || ''; }
 function copyText(text, msg, done) {
   function copied() { toast(msg || 'copied. paste it anywhere.'); if (done) done(); }
   function fallback() {
@@ -2835,13 +2886,16 @@ function shared(method) { if (EV()) EV().share(S.mode, evDay(), method); }
 function cardOf(r) {
   var s = S.scn, st = S.daily || S.outing;
   var rv = r.reveal || {};
-  return {
+  var out = {
     outcome: r.outcome, strip: r.strip || [], pitches: r.pitches, percentile: r.percentile,
     label: s.preview ? 'preview' : '#' + s.number, title: s.title,
     vsReal: r.vsReal || null, vsLabel: vsLabel(),
     vsHead: r.vsReal ? vsHead(r.vsReal) : null, vsWhy: r.vsReal && rv.outcome ? vsText(r, rv, runsOf(r, st)) : null,
     pitchedLike: r.pitchedLike && r.pitchedLike.name || null,
   };
+  /* a custom challenge: the score in the percentile's place, you against them, the link (CONTRACT.md 18) */
+  if (S.mode === 'challenge' && CU && r.challenge) { var f = CU.cardFields(r); for (var k in f) out[k] = f[k]; }
+  return out;
 }
 var SH = { size: 'tall', files: {}, text: '', n: 0 };
 function share(r) {
@@ -2851,7 +2905,7 @@ function share(r) {
   SH.text = text; SH.files = {}; SH.urls = SH.urls || {};
   Object.keys(SH.urls).forEach(function (k) { try { URL.revokeObjectURL(SH.urls[k]); } catch (e) {} });
   SH.urls = {};
-  var name = 'shut-the-door-' + (S.scn.preview ? 'preview' : S.scn.number);
+  var name = 'shut-the-door-' + (S.mode === 'challenge' && r.challenge ? 'challenge-' + r.challenge.code : S.scn.preview ? 'preview' : S.scn.number);
   renderShare('loading');
   MN.open('sheet-share');
   var c = cardOf(r);
@@ -2896,7 +2950,8 @@ function renderShare(state) {
     '<div class="sh-act">' +
     '<button class="btn go" type="button" id="sh-go"' + (f ? '' : ' disabled') + '>' + (canFile ? 'share image' : 'save image') + '</button>' +
     (canFile ? '<button class="btn ghost" type="button" id="sh-save">save image</button>' : '') +
-    '<button class="btn ghost" type="button" id="sh-text">copy the text</button></div>';
+    '<button class="btn ghost" type="button" id="sh-text">copy the text</button>' +
+    (S.mode === 'challenge' && S.result && S.result.challenge && S.result.challenge.url ? '<button class="btn ghost" type="button" data-copy="' + esc(S.result.challenge.url) + '">copy the link</button>' : '') + '</div>';
   body.querySelectorAll('[data-size]').forEach(function (b) {
     b.addEventListener('click', function () { SH.size = b.getAttribute('data-size'); renderShare(); });
   });
@@ -2932,6 +2987,11 @@ function postIfOwed() {
 }
 
 function practice() {
+  if (S.mode === 'challenge' && S.chal && API.startChallenge) {
+    API.startChallenge(S.chal.code, { practice: true }).then(function (st) { playChallenge(S.chal.view, st); },
+      function () { toast('that did not start. try again.'); });
+    return;
+  }
   var seed = 1;
   try { var a = new Uint32Array(1); crypto.getRandomValues(a); seed = a[0] || 1; } catch (e) { seed = (Date.now() >>> 0) || 1; }
   API.startOuting(S.scn.id, seed, { mode: 'practice' }).then(function (st) {
@@ -2951,6 +3011,31 @@ function takeMound() {
     if (st.status === 'over') return finish();
     enterMound();
   });
+}
+
+/* ---- custom challenges (challenge-ui.js, CONTRACT.md 18) ---------------------------------------
+   The intro's Play and Practice hand over the challenge and its outing. The spot is the matchup's,
+   so S.scn is the challenge's scenario until home puts today's back (dailyBack). The counted try
+   resumes after a reload; one already finished opens its result. */
+function playChallenge(v, st) {
+  if (MN.isOpen()) MN.close(true);
+  S.scn = v.scenario;
+  S.mode = 'challenge';
+  S.chal = { code: v.code, practice: !!(st.challenge && st.challenge.practice), view: v };
+  S.outing = st;
+  if (st.status === 'over') return finish();
+  enterMound();
+  pbp(S.chal.practice ? 'practice' : 'challenge', batterAt(st.batterIndex).name + ' up.');
+}
+/* signed in on a challenge's result: post the device's try (claimChallenge), then draw it again */
+function chalClaim() {
+  if (S.mode !== 'challenge' || !S.chal || S.chal.practice || !API.claimChallenge) return;
+  API.claimChallenge(S.chal.code).then(function (x) {
+    if (x && x.result) S.result = x.result;
+    if (CU && CU.reload) return CU.reload();
+  }).then(function () {
+    if (document.body.dataset.screen === 's-result' && S.mode === 'challenge') { renderResult(); renderModes(); }
+  }, function () {});
 }
 
 /* ---- clips (clip-ui.js): a pitch played again, as a video or a link ------------------------- */
@@ -3001,6 +3086,9 @@ function boot() {
       if (document.body.dataset.screen === 's-home' && showing('surv') && MU) MU.showSurvivor();
       if (document.body.dataset.screen === 's-home') homeVote();
       if (MU) MU.entitlements().then(proPlate);
+      /* custom challenges: the screens read the account again, and a guest's try posts on the sign-in */
+      if (CU && (document.body.dataset.screen === 's-chal' || document.body.dataset.screen === 's-cint')) { if (MN.current() === 'sheet-auth') MN.close(true); CU.refresh(); }
+      if (document.body.dataset.screen === 's-result' && S.mode === 'challenge') { if (MN.current() === 'sheet-auth') MN.close(true); chalClaim(); }
     });
   } catch (e) {}
   /* a daily played signed out, posted on the sign-in (api.js claim): say where it landed */
@@ -3016,6 +3104,19 @@ function boot() {
   });
   $('r-vote-go').addEventListener('click', jumpToVote);
   $('r-hist-go').addEventListener('click', function () { show('s-hist'); });
+  if (CU) CU.init({
+    toast: toast,
+    signIn: function () { MN.show('auth'); },
+    bug: function (s) { return homeBug(s, clubsOf(s)); },
+    show: function (id) { if (MN.isOpen()) MN.close(true); show(id); },
+    onPlay: playChallenge,
+    onHome: function () { renderHomeState(); show('s-home'); drawHero(); },
+  });
+  $('r-chal-go').addEventListener('click', function () {
+    var t = $('r-chal');
+    if (t.hidden) return;
+    t.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  });
   if (HU) HU.init({
     onOpen: viewHistory, toast: toast,
     onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
@@ -3076,6 +3177,14 @@ function boot() {
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
   $('r-voice').addEventListener('click', function () { if (window.STD_VOICES) window.STD_VOICES.open('result'); });
+  /* the record sheet's end screen, Back to home: from the mound as the home button goes (after a play
+     in flight), from anywhere else straight home */
+  if (window.STD_VOICES) window.STD_VOICES.onHome = function () {
+    var id = document.body.dataset.screen || 's-home';
+    if (id === 's-home') return;
+    if (id === 's-mound' || id === 's-half' || id === 's-next') return homeWhenSettled();
+    renderHomeState(); show('s-home'); drawHero();
+  };
   $('r-promo').addEventListener('click', function () { if (EV()) EV().promo('baseball', S.mode, evDay()); });
   initResultNav();
   initClips();
@@ -3119,6 +3228,9 @@ function boot() {
     /* a clip link (?clip=): its viewer over the home, once the page is in. It plays only on a tap */
     var cq = Q.get('clip');
     if (cq && window.STD_CLIP_UI) BOOT.ready.then(function () { window.STD_CLIP_UI.fromLink(cq); });
+    /* a challenge link (?c=CODE): its intro, the screen the link is for. Nothing plays until a tap */
+    var cc = Q.get('c');
+    if (cc && CU && !cq) BOOT.ready.then(function () { CU.fromLink(cc); });
   }).catch(function (e) {
     /* nothing to wait for: the error and its try again go up at once */
     bootFail();

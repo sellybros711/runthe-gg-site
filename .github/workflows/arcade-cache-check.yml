@@ -1,0 +1,42 @@
+name: Arcade cache check
+
+# _headers keeps every arcade script for a year. That holds only while every
+# tag that loads one carries a ?v= version and the arcade block in _headers
+# keeps its shape (no /arcade/* catch-all). This fails the build when either
+# breaks.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-arcade-cache.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - '_headers'
+      - '**/*.html'
+      - 'scripts/check-arcade-cache.mjs'
+      - '.github/workflows/arcade-cache-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - '_headers'
+      - '**/*.html'
+      - 'scripts/check-arcade-cache.mjs'
+      - '.github/workflows/arcade-cache-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: arcade-cache-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/check-arcade-cache.mjs

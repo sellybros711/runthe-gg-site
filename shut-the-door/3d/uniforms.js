@@ -76,6 +76,24 @@ export const FRONT = {
   'std-2025-scott-kc': { them: { at: 'L', color: ROYAL_KC, outline: null } },
 };
 
+/* Which side was at home in each scenario with a sourced cap or front number (its pack's usHome:
+ * 'us' the closer's club, 'them' the hitters'). A cap or a number is sourced for that game's jersey
+ * only, home whites or road greys, so a custom challenge that puts the club in the other one leaves
+ * it off (people.js kitFor). test/clubs.mjs holds this table to the packs. */
+export const HOME_SIDE = {
+  'std-1988-ws1-eckersley': 'them',
+  'std-2011-rivera-min': 'us',
+  'std-2011-ws6-feliz': 'them',
+  'std-2019-nlwc-hader': 'them',
+  'std-2025-scott-kc': 'them',
+};
+
+/** Whether a side wore its home jersey in a scenario with a sourced cap or number (null: not listed). */
+export function wornHome(scenarioId, side) {
+  const h = HOME_SIDE[scenarioId];
+  return h ? h === side : null;
+}
+
 /** The front number a side really wore in a scenario ({ at, color, outline }), or null for none. */
 export function frontFor(scenarioId, side) {
   const k = FRONT[scenarioId];

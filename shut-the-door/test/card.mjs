@@ -48,6 +48,10 @@ const CASES = [
   ["door's open", { outcome: 'doors_open', vsReal: 'lost', vsHead: 'Papelbon did better', vsLabel: 'you vs Papelbon', pitchedLike: 'Jonathan Papelbon' }],
   ['walk-off, one pitch, no percentile', { outcome: 'walk_off', pitches: 1, strip: ['red'], percentile: null, vsReal: 'lost', vsHead: 'Rodriguez did better', vsLabel: 'you vs Rodriguez' }],
   ['a preview, no verdict', { label: 'preview', vsReal: null, vsHead: null, vsWhy: null }],
+  /* a custom challenge (CONTRACT.md 18): no percentile, the score in its tile, you against them, the link in the footer */
+  ['a challenge, you ahead', { label: 'challenge', percentile: null, score: 742, title: 'Aroldis Chapman vs the 2019 Washington Nationals', vsReal: 'beat', vsLabel: 'you vs paintsblack', vsHead: 'You 742 · paintsblack 688', vsWhy: 'Your turn. The link is below.', link: 'runthe.gg/shut-the-door/?c=K7M4QX', pitchedLike: 'Kenley Jansen' }],
+  ['a challenge, a long handle behind', { label: 'challenge', percentile: null, score: 1, outcome: 'walk_off', title: 'Francisco Rodríguez vs the 2001 Arizona Diamondbacks', vsReal: 'lost', vsLabel: 'you vs runnersonsecond2026', vsHead: 'You 1 · runnersonsecond2026 1,000', vsWhy: 'Your turn. The link is below.', link: 'runthe.gg/shut-the-door/?c=K7M4QX' }],
+  ['a challenge nobody else played', { label: 'challenge', percentile: null, score: 655, vsReal: null, vsHead: null, vsWhy: null, link: 'runthe.gg/shut-the-door/?c=K7M4QX' }],
 ];
 
 const TYPES = { '.js': 'text/javascript', '.svg': 'image/svg+xml', '.json': 'application/json', '.html': 'text/html' };

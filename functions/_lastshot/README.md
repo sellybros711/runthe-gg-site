@@ -9,7 +9,7 @@ synthesized sound (`sound.js`, mute remembered); dead time plays at 4x.
 
 **The run gets the room.** While a play runs and its card is up, the clipboard's rows and the mode
 bars step aside (`.app.running`); the top bar and the scoreboard stay. The court's camera
-(`court.js`) frames every body, the ball and the rim, as big as the stage allows (never smaller than
+(`court2d.js`) frames every body, the ball and the rim, as big as the stage allows (never smaller than
 the whole court fit, at most 2.2 times it), easing after the action; with reduced motion it holds
 one frame for the whole run. Past half court the floor goes on, mirrored. The clipboard never uses
 it. **The card docks** after the ball has played out (a made winner holds GAME WINNER over the court
@@ -18,6 +18,79 @@ first): small, at the bottom, no veil, with the verdict, the score, the reason a
 Escape or a tap beside it docks it again. The Daily's filed card on a later visit opens whole.
 Every control is at least 44 by 44 CSS px (check-browser walks home, the clipboard and a card).
 Escape closes the sheet on top (Plays, Test it, How it works), and any screen change closes them all.
+
+## The run view (the tactics board)
+
+The play is drawn by `court2d.js` (2026-11-19, Phase 1 of the owner's "hybrid"; Phase 2, the 3D
+shot cam, takes the release to the finish on a capable device, see below). A crisp top-down court: light maple boards toward the basket, the lane painted
+navy, number discs with shoulders, a facing pointer and a stride bob on soft shadows (home navy and
+gold, away red), short motion trails, the ball with a height shadow, swish rings on a make and
+confetti on a winner. Over it, the coaching layer, every piece read off the sim:
+
+- the coach's routes, faint as drawn, glowing as each runner covers them (worked out once a run
+  from the frames: each runner's routes in order, projected), screen bars that light when set, and
+  pass lines where the ball actually went
+- at a screen, the cutter's own man's path (the defender whose `m` was the cutter just before
+  `result.screens[i].t`) in red, with a chip for `result.scheme`: FOUGHT OVER, WENT UNDER, SWITCHED,
+  ZONE SITS
+- from the pass to the shooter, a ring as wide as his space to the closest defender, that becomes
+  the shot event's own `open` at the release, coloured on the sim's thresholds (6, 4, 2 ft)
+- at the release, a read chip: the shot caption's word and its make chance (`HAND UP · 40%`, the
+  same numbers as the readout)
+
+Chips stay on the stage, clear of the caption and the readout, and clear of each other. Reduced
+motion: one fixed box, no trails, no bob, a still confetti scatter. The floor is one texture built
+while the coach draws (`warm()`); lines, routes and glows are paths (a glow is a wide faint stroke
+under a thin one, never a shadow blur); discs, the ball and chips are sprites made once. Nothing
+from Run The Floor's rig (`/hoops/baller.js`) is loaded any more; hoops still has it.
+
+**The run view switch.** `run-view.js` is the one switch: `RUN_VIEW` names the renderer, and every
+renderer gives `draw`, `drawAnswer`, `camStart(frames, { res, play })`, `redraw` and `view`.
+`client.js` (timing, captions, the bleed, the banner, the card) does not change. `RUN_VIEW` is
+`hybrid` since Phase 2; `board` is the tactics board alone.
+
+## The 3D shot cam (Phase 2)
+
+The hybrid (`shotcam.js`, 2026-11-22) keeps the board for the play. At the release (the first frame
+with `fr.sk` set, `inShotSpan`) a slanted wipe with a SHOT CAM tag cuts to a 3D camera on a canvas of
+its own, laid over the court: over the shooter's shoulder, then a push in on the rim as the ball
+flies, the make or the miss, and on a made winner a pull back wide with confetti. The answer
+cutaway and anything after the span go back to the board. The scene is `shotcam3d.js`: a dim arena
+with a pool of light, the glossy maple floor (the moving things drawn again mirrored under it), the
+navy lane, the hoop with a net that stretches on a make and sways on a miss, the coach's routes,
+passes, screen bars and the open space ring drawn on the floor as a telestrator (`planRun`, the
+board's own read), and the read chip (`HAND UP · 40%`). The camera fits the shooter, the ball (and
+its peak), the rim and the board into the frame at any aspect, aims under the rim so the hoop sits
+above the GAME WINNER banner, and keeps the chip in the band between the banner and the caption.
+
+**Nothing is invented.** Every body stands, faces and strides where the sim's frame has him. The
+ball is the sim's own shot path and height (`fr.b[2]`, the arc over the line from the hands, riding
+up that line to the rim), then plays out by `ballAfter` in `court2d.js`, the same path the board
+draws. Make, miss, the rim rattle, the winner and the answer are all the result's.
+
+**The players** are stylized figures built from primitives in `figures3d.js` (torso and jersey with
+the number front and back, shorts, head, arms, legs), home navy and gold, away red, with procedural
+poses: the shooter's jumper (release, follow through, landing; the gather and the rise happen
+before the release, on the board), the contesting defender's close out with the hand up, the sim's
+run, slide, screen and catch codes, and an idle sway. **A real model replaces that one file**:
+`build()` would clone a rigged GLB and `pose()` drive its bones from the same inputs. Nothing else
+knows about limbs.
+
+**When it runs.** The gate (asked once a page): WebGL2 on a real GPU (SwiftShader, llvmpipe and
+other software renderers count as weak), `navigator.deviceMemory` at least 4 where it is reported,
+`hardwareConcurrency` at least 4, and never with prefers-reduced-motion (asked again every run).
+Otherwise the board draws the whole run. three.js is Shut The Door's vendored copy, imported by URL
+(`/shut-the-door/3d/vendor/three-0.170.0/three.module.min.js`, about 690 KB, 170 KB gzipped, kept a
+year by `_headers`), never a module of this bundle. `warm()` waits till the stage is on screen (the
+clipboard), then in idle time fetches it, builds the scene a piece at a time, compiles every shader
+and draws once, so the first cut does not hitch. Not ready by the release: the board keeps that
+run. **The watchdog**: under 40 fps over the first half second after the cut, the run drops back to
+the board (after two such runs the page stops trying); a lost context or a throw does the same.
+Timing is the board's to the frame: the 3D only draws the frames `client.js` already asks for.
+
+`window.__shotCam` says what happened (state, why, runs shown, dropped, the measured fps, the chip's
+box). `window.__shotCamOpts = { software: true }` lets a software renderer through, for headless
+checks; `{ off: true }` keeps the board.
 
 ## Start from a play, and Save this play
 
@@ -36,7 +109,7 @@ The button then reads "Saved · Open", which opens the play; a run saves once. S
 
 ## The Ladder
 
-Home's second card. 24 levels in four chapters (Down 1, Down 2, Zones, Down 3), each a situation
+Line 3 of home's practice plan. 24 levels in four chapters (Down 1, Down 2, Zones, Down 3), each a situation
 with its own clock, score, starting set and sometimes a defense the scout already told you about
 ("Scout: 2-3 zone", shown on the tile and above the clipboard, and the X's set up that way). A
 level opens once the one before it is won; 1-1 is always open. Three stars a level: win, win with
@@ -51,7 +124,7 @@ on page hide. A stale write is merged and sent again. Signed out it stays local.
 
 ## The Daily Last Shot
 
-Home's first card: "Daily Last Shot #N", today's title ("Down 2. 14 seconds. Horns."), the clock
+Line 2 of home's practice plan, an index card beside Play: "Daily Last Shot #N", today's title ("Down 2. 14 seconds. Horns."), the clock
 to the next one (midnight Eastern). One situation a day for everybody (`daily.js`), on the Arcade
 Lab's daily service as the external game `last-shot` (flag `arcade_last_shot`):
 `/api/arcade/last-shot/today|start|run|leaderboard`. The clipboard has the day's spots, clock and
@@ -87,8 +160,9 @@ gate works for every tester game is `platform/platform-tester-gate.md`.
 
 ## My Playbooks
 
-Home has two parts: **Play** (the game, first and biggest) and **My Playbooks** (needs a Run The Games
-account). A playbook play is drawn as a **storyboard**: Next frame opens a frame where everyone
+Home is a practice plan on the clipboard, four numbered lines in a fixed order for every player:
+**Play** (line 1, the biggest, Start here for a new player), the Daily, the Ladder, and **My Playbooks**
+(needs a Run The Games account). How it works is a sticky note on the sheet. A playbook play is drawn as a **storyboard**: Next frame opens a frame where everyone
 ended, earlier frames show faintly, Play frame runs just that frame. Frames are presentation only:
 the sim never reads them. Plays are named from the coach's terminology, tested against every
 defense (switch, fight over, go under, and the 2-3, 1-3-1, 3-2 and match-up zones), and printed as
@@ -104,7 +178,7 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `sim.js` | the possession as a pure fixed-step sim (60 Hz, no DOM, no Math.random) |
 | `motion.js`, `defense.js`, `shot.js` | how bodies move; man to man and the three screen schemes; shot quality |
 | `board.js` | the clipboard: Move, Screen, Pass, Shoot, Undo, Clear, Run It (pointer events) |
-| `court.js`, `view.js` | the live court, drawn with Run The Floor's rig (`/hoops/baller.js`, read only) |
+| `run-view.js`, `court2d.js`, `view.js` | the renderer switch and the frame tween; the live court (the tactics board and its coaching layer); feet to pixels, shared with the clipboard |
 | `client.js`, `share.js`, `sound.js` | home, the page flow (the hold, the run, the answer cutaway), the result and the share line; the sounds |
 | `starters.js` | the four starter plays behind Plays (and the first run's play) |
 | `levels.js`, `ladder-ui.js` | the ladder's levels, sets and star rules; its storage, unlocks and screen |
@@ -133,6 +207,7 @@ node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's re
 node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
 node functions/_lastshot/test/check-starters.mjs  Plays (the starters, replace, undo, a level's scout) and Save this play
 node functions/_lastshot/test/check-analytics.mjs the tester round's events: every name, the beacon on hide, inert under automation
+node functions/_lastshot/test/check-shotcam.mjs   the 3D shot cam: the cut in the span only, the timing, the fallbacks, the watchdog
 ```
 
 The seed for any result is behind **Seed** on the result screen. The same seed and the same play

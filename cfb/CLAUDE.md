@@ -29,6 +29,7 @@ node cfb/build/test/commish/test_standings.mjs   the standings screen, four stat
 node cfb/build/test/test_fantasy.mjs             the College Fantasy Challenge (--quick: no browser)
 node cfb/build/test/test_fanpromo.mjs            the results screen's Fantasy card: open week, no lineup in
 node cfb/build/test/test_analytics.mjs           GA on College Fantasy and Commish: consent first, the events, nothing personal
+node cfb/build/test/test_chemistry.mjs           the links between two men: a transfer links at every school he played at
 node cfb/build/test/test_playoff.mjs             the Playoff Fantasy's builders (no network)
 node cfb/build/fantasy/playoff.mjs [--season Y]  a dry Playoff board (--write, --refresh, --check)
 ```
@@ -106,7 +107,7 @@ run against a scratch Postgres; the order of files each needs is in the matching
   covers every day of December and January.
 - **The pointer carries `prev`, `kind`, `ends_at` and `next`.** The previous week is `prev`, never
   week minus one. The door reads its phase off them: week, waiting, playoff open, playoff live, off.
-- **The shared lock day sheet is not set up for the Playoff**: it would say "Week 100".
+- **The shared lock day sheet runs for the Playoff with `label`**: from week 100 it reads "The Playoff", never "Week 100".
 
 **On the clock** (`workers/clock`, shared with the NFL game)
 

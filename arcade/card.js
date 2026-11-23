@@ -172,12 +172,22 @@
     ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><path d="M15 6v12" stroke-dasharray="2 2"/></svg>',
     hilo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4v16M8 4l-4 5M8 4l4 5"/><path d="M16 20V4M16 20l-4-5M16 20l4-5"/></svg>'
   };
+  /* How many games only the Card opens, from tokens.js, so the pitch can never
+     again say six when there are eight. scripts/check-freegames.mjs holds the
+     hub's static copy of the same word to it. */
+  var NUMW = ['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  function membersOnly(cap){
+    var T = window.RTGTokens, n = 8;
+    try { if (T && T.GAMES && T.FREE_GAMES) n = T.GAMES.length - T.FREE_GAMES.length; } catch (e) {}
+    var w = NUMW[n] || String(n);
+    return cap ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+  }
   function benefitsHTML(){
     return '<ul class="rtgc-perks">' +
       // Lead with the most differentiated perk: 27 daily puzzles vs the free 4.
-      '<li><span>' + ICN.ball + '</span><div><b><s>4</s> 25 new daily games</b>' +
+      '<li><span>' + ICN.ball + '</span><div><b><s>4</s> 27 daily games</b>' +
         '<small>All twelve games instead of four, plus NFL, NBA and MLB specific editions of five of them.</small></div></li>' +
-      '<li><span>' + ICN.hilo + '</span> Six members-only games, Higher or Lower included</li>' +
+      '<li><span>' + ICN.hilo + '</span> ' + membersOnly(true) + ' members-only games, High Low included</li>' +
       '<li><span>' + ICN.infinity + '</span> Unlimited plays, every day</li>' +
       '<li><span>' + ICN.archive + '</span> The full Archive of all past games</li>' +
       '<li><span>' + ICN.spark + '</span> New games &amp; challenges as they drop</li>' +
@@ -228,7 +238,7 @@
       // they came here for.
       var gn = opts.name || gameName(opts.game);
       kicker='Members only'; head='You need the Arcade Card';
-      sub = (gn ? (gn + ' is one of six members-only games. ') : 'This is one of six members-only games. ')
+      sub = (gn ? (gn + ' is one of ' + membersOnly() + ' members-only games. ') : 'This is one of ' + membersOnly() + ' members-only games. ')
         + 'The card opens all twelve, unlimited, plus NBA, NFL and MLB editions of five of them and the full Archive.';
     } else if(reason==='upsell'){
       kicker='Arcade Card'; head='4 → 27 daily games';
