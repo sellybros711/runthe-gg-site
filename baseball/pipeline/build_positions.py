@@ -273,6 +273,26 @@ try:
         print(f"  Lahman ends at {lahman_last}: {provisional}/{newer} batters after it carry "
               f"their latest Lahman position, provisionally, until Lahman publishes")
 
+    # AND A ROOKIE HAS NO LATEST SEASON TO BORROW. The game lets a batter with no
+    # position play anywhere, catcher included, so the owner set the 2026 rookies'
+    # positions by hand (position_overrides.json). Read only for a season Lahman
+    # does not have and a batter still without one, so Lahman's release replaces
+    # every entry on the next rebuild without anybody remembering to delete it.
+    ov_path = os.path.join(SCRIPT_DIR, "position_overrides.json")
+    overrides = json.load(open(ov_path)) if os.path.exists(ov_path) else {}
+    by_hand = 0
+    for idx, row in df.iterrows():
+        if row["role"] != "bat" or int(row["season"]) <= lahman_last:
+            continue
+        if isinstance(row.get("primary_pos"), str) and row.get("primary_pos"):
+            continue
+        o = overrides.get(str(int(row["season"])), {}).get(row["bbref_id"])
+        if o:
+            df.at[idx, "primary_pos"], df.at[idx, "eligible_pos"] = o["pp"], o["ep"]
+            by_hand += 1
+    if by_hand:
+        print(f"  {by_hand} batters after Lahman take the position the owner set by hand")
+
     HAS_POSITIONS = applied > 0
 
 except Exception as e:

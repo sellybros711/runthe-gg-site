@@ -5280,7 +5280,7 @@ async function boot(){
     });
   }catch(_){}
   try{
-    const res=await fetch('data/players.json?v=6');
+    const res=await fetch('data/players.json?v=7');
     if(!res.ok) throw new Error('Failed to load player data');
     const players=await res.json();
     // Curated real relationships (families). Non-fatal if it fails to load.
