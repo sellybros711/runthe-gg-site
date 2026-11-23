@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* A BADGE YOU ADD HAS TO BE PROVED REACHABLE.
  *
- *   node baseball/check-badges.mjs            the full sweep, a few minutes
- *   node baseball/check-badges.mjs --quick    fewer runs, for a fast loop
+ *   node baseball/check-badges.mjs            the full sweep, about two minutes (CI runs this)
+ *   node baseball/check-badges.mjs --quick    fewer runs, for a fast loop (misses are notes)
  *   node baseball/check-badges.mjs --list     what lit each badge
  *
  * It plays Run The Diamond for real through run.js, in every mode and six ways of
@@ -261,9 +261,16 @@ for (const [opts, bot, respins] of plan) {
 const GRIND = {
   daily_100: 'daily_50',
   daily_streak_30: 'daily_streak_14',
-  title_10: 'title_5',
 };
 const SKILL = {
+  /* RE-CUT FOR THE FULL SWEEP (2026-11-23), which CI now runs. Eleven excuses came
+     off because 864 seasons light them (ten titles, five titles, back to back, the
+     wild card, Trade Machine, Survivor and Decades titles, a Survivor October, every
+     mode's October, 110 wins, the perfect draft, a clean Survivor October). Two the
+     full sweep still misses are anchored on the rung below. The notes further down
+     record how each entry got here; read them as history. */
+  mode_staff_title: 'mode_staff_oct',
+  oct_streak_5: 'oct_streak_3',
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
      asks for a title AND a second condition is a coincidence the sweep cannot
      schedule. Each is excused by the half of itself that IS reached, so no claim
@@ -316,13 +323,11 @@ const SKILL = {
      the cap, so the market rarely forces it into five cuts, and a clean October
      in Survivor becomes a coin toss at three runs a bot. The perfect draft is
      the same coin toss one pass later. The FULL sweep lights all three. */
-  perfect_draft: 'eff_95',
   /* The Pro token pass moved it a fourth time. `mode_trade_title` and
      `surv_cut_5` light in quick now and came off. Murderers' Row champions went
      the other way: a title with one named archetype is the coincidence the note
      at the top of this list describes, and the archetype itself still lights. */
   murderers_row: 'arch_murderers_row',
-  surv_clean_oct: 'mode_survivor_oct',
   /* ERAS AND DIVISION STOPPED PAYING THE TEAM-MATES LINK, the owner's call, and
      those two modes had been handing the bots about eleven wins a season through
      it. So titles got rarer and three and four in a row went back behind the
@@ -342,7 +347,6 @@ const SKILL = {
      than a wall. */
   tie_record: 'win_110',
   goat: 'win_110',
-  btb_title: 'title_5',
   /* THE SCHEDULE GOT HARDER, the owner's call: a careful draft was winning 90
      about half the time and the target is one in four. Opponents score 1.05x
      and allow 0.92x (was 1.02x and 0.95x). Measured over 2,250 seasons of the
@@ -370,11 +374,7 @@ const SKILL = {
      sweep lights every one of them (864 seasons, "All good"). Each is anchored on
      the half of itself the quick sweep reaches: the wild card itself, the mode's
      October, three Octobers in a row, ten Survivor seasons, every mode played. */
-  wildcard_title: 'seed_wildcard',
   mode_division_title: 'mode_division_oct',
-  mode_trade_title: 'mode_trade_oct',
-  mode_survivor_oct: 'mode_survivor_10',
-  all_modes_oct: 'all_modes',
   /* THE OWNER'S POSITIONS FOR 37 ROOKIES (2026-11-23) moved it a sixth time. Those
      men had been wildcards who could play any spot, and now play their own. Measured
      at 200 drafts a bot, the careful drafter's rating barely moved (81.9 to 82.1) and
@@ -384,11 +384,8 @@ const SKILL = {
      110 wins on 105, five titles on three, eight from one club on four, the family
      link on the team-mates link, a Decades title on a Decades October. The FULL
      sweep lights all of them. */
-  win_110: 'win_105',
-  title_5: 'title_3',
   one_franchise_8: 'one_franchise_4',
   family: 'link_teammates',
-  mode_era_title: 'mode_era_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,
@@ -401,20 +398,18 @@ const SKILL = {
 let problems = 0;
 const say = (ok, msg) => { if (!ok) problems++; console.log((ok ? '  ok   ' : '  FAIL ') + msg); };
 
-/* THE EXCUSE LISTS ANSWER TO THE QUICK SWEEP, AND THAT IS THE STRICTER CHOICE OF
-   THE TWO. Reachability (section 4) is hard on both: a badge nothing lit and
-   nothing excuses is a failure whatever size the sweep is, and it is what CI runs.
-   What CANNOT be hard on both is section 5, which prunes an excuse written for
-   something that turned out to be reachable. A sweep four times the size reaches
-   strictly more, so it will always call some of these stale: over 1,750 measured
-   seasons, matching the all-time record happens on 0.2% of them and taking a title
-   in one named mode on about 3%, which the smaller sweep resolves as a coin toss.
-   Pruning on the full sweep would then make the quick one fail, which is the loop
-   this is written to avoid. So the lists are tuned to --quick, and the full sweep
-   reports its extra reach as a note rather than as an instruction. */
+/* THE EXCUSE LISTS ANSWER TO THE FULL SWEEP, AND CI RUNS IT (2026-11-23). They used
+   to answer to --quick: three seeded runs a bot, 354 seasons. At that size every
+   change to the pool moved which borderline badges a sweep happens to reach, so the
+   lists had to be re-cut on two pool PRs in a row (the 2026 season, then the owner's
+   positions for 37 rookies) with nothing about the game changed. The full sweep is
+   864 seasons, lights every badge, and costs about 75 seconds more in CI, so the
+   borderline sits far enough out that a pool edit rarely crosses it.
+   Sections 4 and 5 are hard on the full sweep and notes on --quick, which stays as
+   the fast local loop: a badge the quick sweep misses is reported, not failed. */
 const soft = (ok, msg) => {
-  if (!ok && QUICK) problems++;
-  console.log((ok ? '  ok   ' : QUICK ? '  FAIL ' : '  note ') + msg);
+  if (!ok && !QUICK) problems++;
+  console.log((ok ? '  ok   ' : !QUICK ? '  FAIL ' : '  note ') + msg);
 };
 
 console.log('Run The Diamond: every badge, against real runs\n');

@@ -138,15 +138,15 @@ jobs:
       # both found here: a re-spin rung asking for five of a thing capped at three,
       # and a play streak that reported ten after forty consecutive days because it
       # sorted its day keys as text.
-      # --quick IS THE STRICT ONE HERE, which is the opposite of what the flag
-      # usually means. The two excuse lists are a record of what a sweep reaches,
-      # so they can only be tuned to one sweep, and they are tuned to this one: the
-      # full run reaches strictly more and would call some of them stale, pruning
-      # them would then fail this run, and that loop has no end. Reachability is
-      # hard on both. The full sweep is three minutes and is the developer's
-      # stronger answer.
+      # THE FULL SWEEP, NOT --quick (2026-11-23). The two excuse lists are a record
+      # of what a sweep reaches, so they are tuned to one sweep. At --quick's 354
+      # seasons every pool change moved the borderline and the lists had to be
+      # re-cut on two pool PRs in a row with nothing in the game changed. The full
+      # sweep is 864 seasons and about two minutes, and its borderline sits far
+      # enough out to hold across pool edits. --quick stays for a fast local loop,
+      # where what it misses is a note, not a failure.
       - name: Every badge is reachable
-        run: node baseball/check-badges.mjs --quick
+        run: node baseball/check-badges.mjs
 
       # The two themes. A dark mode bolted onto a cream page fails silently three
       # ways: a panel nobody tokenised stays cream, a hairline written
