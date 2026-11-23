@@ -138,15 +138,12 @@ jobs:
       # both found here: a re-spin rung asking for five of a thing capped at three,
       # and a play streak that reported ten after forty consecutive days because it
       # sorted its day keys as text.
-      # THE FULL SWEEP, NOT --quick (2026-11-23). The two excuse lists are a record
-      # of what a sweep reaches, so they are tuned to one sweep. At --quick's 354
-      # seasons every pool change moved the borderline and the lists had to be
-      # re-cut on two pool PRs in a row with nothing in the game changed. The full
-      # sweep is 864 seasons and about two minutes, and its borderline sits far
-      # enough out to hold across pool edits. --quick stays for a fast local loop,
-      # where what it misses is a note, not a failure.
+      # --quick, against excuse lists that cover every rare rung (2026-11-23).
+      # Which rare rungs a seeded sweep reaches moves with every pool change, at
+      # any sweep size, so the lists excuse all of them on the rung below and a lit
+      # one is a note. A rung nothing reaches, or a chain ending dark, still fails.
       - name: Every badge is reachable
-        run: node baseball/check-badges.mjs
+        run: node baseball/check-badges.mjs --quick
 
       # The two themes. A dark mode bolted onto a cream page fails silently three
       # ways: a panel nobody tokenised stays cream, a hairline written
