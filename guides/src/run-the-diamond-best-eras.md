@@ -35,7 +35,7 @@ This hits the early decades hardest. On boards the wheel can draw, 59% of 1900s 
 
 Since price is fixed, an era's value is what lands on your boards. Every spin draws one real team-season from your decade, and you take one man from it. Three things move from decade to decade.
 
-**Depth.** The card shows how many team seasons the wheel can land on. Six seasons of the 2020s give it 175. The 2010s give it 300. A thin decade repeats clubs more and offers fewer big seasons.
+**Depth.** The card shows how many team seasons the wheel can land on. Seven seasons of the 2020s give it 205. The 2010s give it 300. A thin decade repeats clubs more and offers fewer big seasons.
 
 **Shape.** The card draws its top 40 seasons as bats against arms. A lopsided decade wears a chip: Pitchers' decade or Hitters' decade. In a pitchers' decade aces are easy to find. Good bats are rarer.
 
@@ -56,7 +56,7 @@ These come from every team-season the wheel can draw, counting each pitcher by h
 - **1920s:** the weakest decade for starters. A board's best starter averages 3.3 WAR, the lowest of any decade.
 - **1940s:** catchers are scarce. Only one board in ten has a 3 WAR catcher.
 - **1970s:** the best decade for catchers. About a third of boards have a 3 WAR one.
-- **2020s:** the thinnest decade overall. A board's best man averages 5.1 WAR, against 5.6 to 6.1 everywhere else. Only 34% of boards hold a 6 WAR season. Starters are scarce as well.
+- **2020s:** the thinnest decade overall. A board's best man averages 5.2 WAR, against 5.6 to 6.1 everywhere else. Only 34% of boards hold a 6 WAR season. Starters are scarce as well.
 
 ## Chemistry inside a decade
 

@@ -354,7 +354,6 @@ const SKILL = {
      (five cuts, eight from one club, a Survivor October, every mode's
      October): tougher seasons mean more cuts and different drafts, and all four
      light in quick now. */
-  win_110: 'win_100',
   oct_streak_10: 'oct_streak_5',
   /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER (TITLE.ELITE_* in engine.js): a
      roster rated 85 or better meets easier opponents, so a 95+ roster reaches
@@ -362,7 +361,22 @@ const SKILL = {
      a 95+ roster wins it about half the time. Two excuses came off because the
      quick sweep lights them now (a wild card title and a Division title). Ten
      titles and a Decades title stay behind the line. */
-  mode_era_title: 'mode_era_oct',
+  /* THE 2026 SEASON GREW THE POOL BY 583 ROWS (2026-11-23), and the borderline
+     moved a fifth time, the pool-growth note above arriving again. The quick sweep
+     is seeded, so this is the same answer every run. Two excuses came off because
+     they light in quick now (110 wins, a Decades title). Seven went the other way:
+     a wild card title, a Division, Staff and Trade Machine title, a five-year
+     October streak, a Survivor October and an October in every mode. The FULL
+     sweep lights every one of them (864 seasons, "All good"). Each is anchored on
+     the half of itself the quick sweep reaches: the wild card itself, the mode's
+     October, three Octobers in a row, ten Survivor seasons, every mode played. */
+  wildcard_title: 'seed_wildcard',
+  mode_division_title: 'mode_division_oct',
+  mode_staff_title: 'mode_staff_oct',
+  mode_trade_title: 'mode_trade_oct',
+  oct_streak_5: 'oct_streak_3',
+  mode_survivor_oct: 'mode_survivor_10',
+  all_modes_oct: 'all_modes',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,
