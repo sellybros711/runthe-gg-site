@@ -106,12 +106,20 @@
     if (p.ballOn === 50) return 'midfield';
     return 'the ' + (p.ballOn < 50 ? code(p.def, p.season) + ' ' + p.ballOn : code(p.off, p.season) + ' ' + (100 - p.ballOn));
   }
+  /* the stakes: the score and the clock in two short sentences, from the row */
+  function stakesText(p) {
+    var d = p.offScore - p.defScore, c = String(p.clock || '').replace(/^0(\d:)/, '$1');
+    return (d < 0 ? 'Down ' + (-d) + '.' : d > 0 ? 'Up ' + d + '.' : 'Tied.') + ' ' + (p.qtr >= 5 ? 'Overtime. ' + c + ' left.' : p.qtr === 4 ? c + ' to play.' : 'Q' + p.qtr + ', ' + c + ' left.');
+  }
   function downText(p) { return '4th & ' + (p.goal || p.togo >= p.ballOn ? 'Goal' : p.togo); }
   /* what really happened: the play-by-play line, without its clock and formation tags */
   function realText(p) {
     return String(p.desc || '').replace(/^\([^)]*\)\s*/, '').replace(/^\((Shotgun|No Huddle|No Huddle, Shotgun|Shotgun, No Huddle)\)\s*/i, '')
       .replace(/\s*\[[^\]]*\]/g, '').trim();
   }
+  /* you against the real call: which of four */
+  var VS = { beat: 'You beat the real call.', same: 'Same as the real thing.', lost: "They made it. You didn't.", none: 'Nobody made it.' };
+  function vsKind(win, conv) { return win ? (conv ? 'same' : 'beat') : (conv ? 'lost' : 'none'); }
   function verdictText(p) {
     if (p.td) return 'They scored.';
     if (p.conv) return 'They converted. ' + (p.yards >= 0 ? 'Gained ' + p.yards + '.' : '');
@@ -126,9 +134,20 @@
       'https://runthe.gg/4th-and-what#daily';
   }
 
-  var CORE = { EPOCH: EPOCH, dayOf: dayOf, numberOf: numberOf, order: order, playFor: playFor, seedFor: seedFor,
+  /* the streak on this device (the launch plan, Phase 2: a streak for
+     everybody, not only the signed in): days in a row with a daily played,
+     counted back from today, or from yesterday when today is still to play */
+  function prevDay(d) { var t = Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) - 86400000, x = new Date(t); return x.toISOString().slice(0, 10); }
+  function streakOf(days, today) {
+    var has = {}; days.forEach(function (d) { has[d] = true; });
+    var d = has[today] ? today : prevDay(today), n = 0;
+    while (has[d]) { n++; d = prevDay(d); }
+    return n;
+  }
+
+  var CORE = { EPOCH: EPOCH, prevDay: prevDay, streakOf: streakOf, dayOf: dayOf, numberOf: numberOf, order: order, playFor: playFor, seedFor: seedFor,
     code: code, name: name, conf: conf, dateText: dateText, roundText: roundText, teamsText: teamsText, clockText: clockText,
-    scoreText: scoreText, spotText: spotText, downText: downText, realText: realText, verdictText: verdictText, shareText: shareText };
+    scoreText: scoreText, stakesText: stakesText, spotText: spotText, downText: downText, realText: realText, verdictText: verdictText, shareText: shareText };
   if (typeof module !== 'undefined' && module.exports) { module.exports = CORE; return; }
 
   /* ================= the page ================= */
@@ -140,6 +159,11 @@
 
   function kept() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
   function keep(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+  function localStreak() {
+    var days = [];
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^faw_daily_\d{4}-\d{2}-\d{2}$/.test(k) && localStorage.getItem(k)) days.push(k.slice(10)); } } catch (e) {}
+    return streakOf(days, day);
+  }
 
   /* ---- the server: supabase/162. Every call answers null on any failure. ---- */
   var SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
@@ -160,9 +184,11 @@
     mine: function () { return rpc('faw_daily_my_stats', {}, true); }
   };
 
-  /* ---- Home: the banner is the way in (the owner, 2026-11-01: "it shouldnt
-     tell you the situation until you click into it"). It says which daily it
-     is and whether you have played it. Nothing about the situation. ---- */
+  /* ---- Home: the banner is the way in (the owner, 2026-11-01). Its corner
+     card (the owner, 2026-11-06: "move the play today to the bottom right. And
+     it can say the scenario there too") says which daily it is, the down and
+     the spot, the teams and the clock, and whether you have played it. What
+     really happened stays inside. ---- */
   function renderHome() {
     var box = $('hdBox'); if (!box) return;
     box.hidden = !today;
@@ -170,6 +196,8 @@
     if (!today) return;
     var k = kept();
     $('hdNum').textContent = "Today's 4th down · Daily #" + number;
+    $('hdSit').textContent = downText(today) + ' at ' + spotText(today);
+    $('hdMeta').textContent = teamsText(today) + ' · ' + clockText(today);
     $('hdGo').textContent = k ? (k.win ? 'You converted. See it' : 'You were stopped. See it') : 'Play today';
   }
   function openDaily() { if (today) A.show('daily'); }
@@ -185,7 +213,11 @@
     $('dRound').textContent = roundText(today) + ' · ' + dateText(today.date);
     $('dScore').textContent = scoreText(today);
     $('dClock').textContent = clockText(today);
-    $('dGo').textContent = k ? 'Practice it' : 'Draw your call';
+    $('dOffCode').textContent = code(today.off, today.season); $('dOffScore').textContent = String(today.offScore);
+    $('dDefCode').textContent = code(today.def, today.season); $('dDefScore').textContent = String(today.defScore);
+    $('dStakes').textContent = stakesText(today) + ' No punt. No kick. Your call.';
+    renderStrip();
+    $('dGoTxt').textContent = k ? 'Practice it' : 'Make the call';
     $('dDone').hidden = !k;
     if (k) {
       $('dMine').textContent = (k.win ? 'You converted. ' : 'You were stopped. ') + (k.yards >= 0 ? 'Gained ' + k.yards + '.' : 'Lost ' + (-k.yards) + '.');
@@ -194,11 +226,22 @@
     }
     renderStats();
   }
+  /* the field under the scoreboard: the ball where it was, the line to gain in front */
+  function renderStrip() {
+    var nums = $('dNums');
+    if (!nums.firstChild) for (var x = 10; x <= 90; x += 10) { var n = document.createElement('span'); n.style.left = x + '%'; n.textContent = String(x <= 50 ? x : 100 - x); nums.appendChild(n); }
+    var bx = 100 - today.ballOn, goal = today.goal || today.togo >= today.ballOn, gx = goal ? 100 : Math.min(100, bx + today.togo);
+    $('dOwnEz').textContent = code(today.off, today.season); $('dOppEz').textContent = code(today.def, today.season);
+    $('dBall').style.left = bx + '%'; $('dGain').style.left = gx + '%';
+    $('dToGo').style.left = bx + '%'; $('dToGo').style.width = (gx - bx) + '%';
+    $('dToGo').textContent = goal ? 'Goal' : today.togo + (today.togo === 1 ? ' yd' : ' yds');
+  }
   function renderStats() {
     var t = $('dStats'), r = $('rDayStats');
     var line = '';
     if (dayStats && dayStats.players) line = Math.round(dayStats.converted * 100 / dayStats.players) + '% converted today · ' + dayStats.players + ' played';
-    if (server && server.streak) line += (line ? ' · ' : '') + 'Streak ' + server.streak;
+    var sk = server && server.streak ? server.streak : localStreak();
+    if (sk) line += (line ? ' · ' : '') + 'Streak ' + sk;
     if (t) { t.textContent = line; t.hidden = !line; }
     if (r) { r.textContent = line; r.hidden = !line || !kept(); }
   }
@@ -229,7 +272,9 @@
       var play = k && k.drawn ? k.drawn : A.emptyPlay('gun3x1');
       A.setDraft({ play: A.copy(play), name: '', nameEdited: false, tag: A.tagOf(play), fav: false, notes: '', situations: [], ref: null });
     }
-    A.show('studio', { mode: 'game' });
+    /* the day's call (the launch plan, Phase 2): Call it with the day's look
+     and the day's hand, the same for everybody; Draw your own is a card */
+    A.show('call');
   }
   function leave() {
     if (!active) return;
@@ -254,17 +299,35 @@
     lastFirst = first;
     renderHome();
   }
-  var lastFirst = false;
+  var lastFirst = false, lastVs = null;
   /* the card's daily block: what really happened, the day so far */
   function card(res) {
     var box = $('rDaily'); if (!box) return;
     box.hidden = !active;
+    $('rCard').classList.toggle('daily', !!active);
     if (!active) return;
     var k = kept();
     $('rDailyHead').textContent = lastFirst ? 'Daily #' + number + ' is in.' : 'Practice. Your daily stands: ' + (k && k.win ? 'converted' : 'stopped') + '.';
     $('rReal').textContent = realText(today);
     $('rVerdict').textContent = verdictText(today);
     $('rDown').textContent = 'Daily #' + number + ' · ' + downText(today) + ' · ' + spotText(today);
+    /* THE HEAD TO HEAD (2026-11-19): the day's snap against the real call, once, on the
+       day's own snap. Beating the real thing gets the fanfare; the streak pops. */
+    var vs = $('rDailyVs');
+    if (vs) {
+      vs.hidden = !lastFirst; vs.className = 'rdvs';
+      if (lastFirst) {
+        var k2 = vsKind(res.win, !!(today.conv || today.td));
+        vs.textContent = VS[k2]; vs.classList.add(k2);
+        if (lastVs !== res.seed) {
+          lastVs = res.seed; void vs.offsetWidth; vs.classList.add('pop');
+          var st2 = $('rDayStats'); if (st2) { st2.classList.remove('pop'); void st2.offsetWidth; st2.classList.add('pop'); }
+          if (k2 === 'beat' && root.FAW_FEEL) setTimeout(function () { root.FAW_FEEL.play('best'); }, 300);
+        }
+      }
+    }
+    var G = root.FAW_GO, gr = G && G.run(), gb = $('rDailyGo');
+    if (gb) gb.querySelector('span').textContent = gr && !gr.over && !gr.daily ? 'Resume run' : 'Go For It';
     renderStats();
   }
   function share(res) { return shareText(today, number, res); }
@@ -275,6 +338,14 @@
     banner.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openDaily(); } });
   }
   $('dGo') && $('dGo').addEventListener('click', enter);
+  /* what next, from the day's card: the main mode, or the other daily */
+  function off() { leave(); var w = $('watch'); if (w) w.hidden = true; $('rCard').hidden = true; }
+  $('rDailyGo') && $('rDailyGo').addEventListener('click', function () {
+    var G = root.FAW_GO; if (!G) return;
+    off(); var r = G.run();
+    if (r && !r.over && !r.daily) G.enter(); else G.start();
+  });
+  $('rDailyDef') && $('rDailyDef').addEventListener('click', function () { off(); A.show('trivia'); });
   $('dBack') && $('dBack').addEventListener('click', function () { leave(); A.show('home'); });
   A.on('daily', renderIntro);
   A.on('home', function () { leave(); renderHome(); });
@@ -290,5 +361,5 @@
   if (root.RTG_AUTH && root.RTG_AUTH.onChange) root.RTG_AUTH.onChange(function (s) { if (s && s.resolved && today) refreshStats(); });
 
   root.FAW_DAILY = { active: function () { return active; }, today: function () { return today; }, day: function () { return day; }, number: function () { return number; },
-    seed: seed, snapped: snapped, card: card, share: share, enter: enter, leave: leave, kept: kept, core: CORE };
+    seed: seed, snapped: snapped, card: card, share: share, enter: enter, leave: leave, kept: kept, rpc: rpc, signedIn: function () { return !!token(); }, core: CORE };
 })(typeof window !== 'undefined' ? window : this);

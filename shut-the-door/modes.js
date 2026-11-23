@@ -9,7 +9,8 @@
  * on any of the VOTE.WINDOW days before D, ordered by the site's hashSeed of
  * 'shut-the-door-vote-' + D + '-' + id, the first two. The first is A. A pack that was played was
  * offered, so nothing played in the last WINDOW days comes back. With 30 packs and two offered a
- * day, at least 30 - 2 x 13 = 4 are eligible each day, so the pairs vary.
+ * day, at least 30 - 2 x 13 = 4 are eligible each day, so the pairs vary (from POOL.FROM, 42, at
+ * least 16; from the Reds' day, 43, at least 17).
  *
  * The server (supabase/160_shut_the_door_vote_survivor.sql, shutdoor_vote_candidates) runs the
  * same rule over the same list, and locks the winner once the day begins: more votes wins, and
@@ -17,7 +18,7 @@
  * holds the two to the same answers (fixtures/vote-candidates.json).
  *
  * SURVIVOR (CONTRACT.md section 17). Run r of day D plays the packs in the order of a
- * Fisher-Yates shuffle of the rotation, from mulberry32(hashSeed('shut-the-door-survivor-' + D +
+ * Fisher-Yates shuffle of the day's pool (POOL below), from mulberry32(hashSeed('shut-the-door-survivor-' + D +
  * '-' + r + '-' + cycle)), one cycle of every pack before the next shuffle. Situation i of the run
  * is played on seed hashSeed('shut-the-door-survivor-' + D + '-' + r + '-' + i). Run 0 is the
  * day's run, the same for everyone; a Pro player's further runs are 1, 2, ... A door shut is a
@@ -34,6 +35,25 @@
      to a day after the SQL has run and the page has shipped. */
   const VOTE = Object.freeze({ EPOCH: '2026-11-05', WINDOW: 13, PREFIX: 'shut-the-door-vote-' });
   const SURVIVOR = Object.freeze({ PREFIX: 'shut-the-door-survivor-', CONTINUES: 'door_shut' });
+
+  /* POOL: the situations the vote and Survivor draw from on a day. The rotation grows only at its end,
+     and each growth starts on a day of its own, so no day already drawn, offered or begun moves: a day
+     before FROM draws from the rotation's first BASE exactly as it did, a day on or after FROM from the
+     whole rotation. BASE is the 30 of 2026-10-30. FROM is the first day the 12 clubs' situations of
+     2026-11-18 can be offered (its candidates are stored the day before). The same day is in
+     shutdoor_packs.from_day (supabase/179); test/modes.mjs reads both. Move FROM only to a day whose
+     candidates the server has not stored yet.
+     GROW: each growth since, [the rotation's length from that day, that day]. The 12 are the first (42
+     from FROM). The Reds' situation (std-2025-pagan-mil, held back for a 3D fix, 2026-11-18) is the
+     next, at the rotation's end, from a day of its own (supabase/184, shutdoor_packs.from_day). A day
+     takes the longest growth that has begun by it, so every day before a growth draws exactly as it
+     did. Add a growth only on a day whose candidates the server has not stored yet. */
+  const POOL = Object.freeze({ BASE: 30, FROM: '2026-11-25', GROW: Object.freeze([[42, '2026-11-25'], [43, '2026-11-26']]) });
+  function poolOn(sch, day) {
+    let n = POOL.BASE;
+    for (const [len, from] of POOL.GROW) if (day >= from) n = len;
+    return sch.rotation.slice(0, n);
+  }
 
   const addDays = (day, n) => new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) + n * 86400000)
     .toISOString().slice(0, 10);
@@ -68,7 +88,7 @@
         if (voteOpen(p)) m.get(p).forEach(x => seen.add(x));
         else seen.add(fixedPack(sch, p));
       }
-      const eligible = sch.rotation.map((id, i) => ({ id, i, h: R.hashSeed(VOTE.PREFIX + d + '-' + id) }))
+      const eligible = poolOn(sch, d).map((id, i) => ({ id, i, h: R.hashSeed(VOTE.PREFIX + d + '-' + id) }))
         .filter(x => !seen.has(x.id))
         .sort((a, b) => a.h - b.h || a.i - b.i);
       m.set(d, [eligible[0].id, eligible[1].id]);
@@ -82,7 +102,7 @@
   /* Survivor: the pack and the seed of situation i of run r on day D. */
   function survivorOrder(sch, day, run, cycle) {
     const rnd = R.mulberry32(R.hashSeed(SURVIVOR.PREFIX + day + '-' + run + '-' + cycle));
-    const a = sch.rotation.slice();
+    const a = poolOn(sch, day).slice();
     for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(rnd() * (i + 1));
       const t = a[i]; a[i] = a[j]; a[j] = t;
@@ -90,14 +110,14 @@
     return a;
   }
   function survivorAt(sch, day, run, i) {
-    const L = sch.rotation.length;
+    const L = poolOn(sch, day).length;
     return {
       pack: survivorOrder(sch, day, run, Math.floor(i / L))[i % L],
       seed: R.hashSeed(SURVIVOR.PREFIX + day + '-' + run + '-' + i),
     };
   }
 
-  const api = { VOTE, SURVIVOR, addDays, fixedPack, voteOpen, candidates, defaultPack, survivorAt };
+  const api = { VOTE, SURVIVOR, POOL, poolOn, addDays, fixedPack, voteOpen, candidates, defaultPack, survivorAt };
   if (NODE) module.exports = api;
   if (typeof window !== 'undefined') window.STD_MODES = api;
 })();

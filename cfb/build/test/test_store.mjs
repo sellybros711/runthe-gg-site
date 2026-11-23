@@ -483,8 +483,18 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   for (const w of [320, 390, 430, 1200]) {
     await p.setViewportSize({ width: w, height: 900 });
     await p.waitForTimeout(250);
-    ok('  two lines at ' + w + 'px', (await lineCount(p, '#b-hp-commish .hp-sub')) === 2,
-      (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
+    /* ON A PHONE, BESIDE THE FANTASY DOOR, THE CARD IS A TILE (the owner, 2026-11-17) and the
+       sentence waits for the full card: hidden, never removed. Everywhere else, two lines. */
+    const paired = w < 920 && await p.evaluate(() => !!document.querySelector('#b-hp-commish + #b-hp-fantasy'));
+    if (paired) {
+      ok('  at ' + w + 'px it is a tile beside Fantasy, the sentence kept for the full card',
+        (await lineCount(p, '#b-hp-commish .hp-sub')) === 0
+        && (await txt(p, '#b-hp-commish .hp-sub')) === 'Leave your mark on College Football forever',
+        (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
+    } else {
+      ok('  two lines at ' + w + 'px', (await lineCount(p, '#b-hp-commish .hp-sub')) === 2,
+        (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
+    }
   }
   await p.setViewportSize({ width: 390, height: 844 });
   await p.waitForTimeout(250);
@@ -516,8 +526,18 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   for (const w of [320, 390, 1200]) {
     await p.setViewportSize({ width: w, height: 900 });
     await p.waitForTimeout(250);
-    ok('  two lines at ' + w + 'px', (await lineCount(p, '#b-hp-commish .hp-sub')) === 2,
-      (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
+    /* ON A PHONE, BESIDE THE FANTASY DOOR, THE CARD IS A TILE (the owner, 2026-11-17) and the
+       sentence waits for the full card: hidden, never removed. Everywhere else, two lines. */
+    const paired = w < 920 && await p.evaluate(() => !!document.querySelector('#b-hp-commish + #b-hp-fantasy'));
+    if (paired) {
+      ok('  at ' + w + 'px it is a tile beside Fantasy, the sentence kept for the full card',
+        (await lineCount(p, '#b-hp-commish .hp-sub')) === 0
+        && (await txt(p, '#b-hp-commish .hp-sub')) === 'Leave your mark on College Football forever',
+        (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
+    } else {
+      ok('  two lines at ' + w + 'px', (await lineCount(p, '#b-hp-commish .hp-sub')) === 2,
+        (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
+    }
   }
   ok('the link still points at the mode',
     (await p.$eval('#b-hp-commish', (e) => e.getAttribute('href'))) === '/cfb/commish/');

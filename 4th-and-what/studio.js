@@ -49,10 +49,15 @@
   }
   function draw() {
     if (!V) return;
-    var p = P(), plans = null;
-    if (view !== 'offense' && E.plans) { try { plans = E.plans(A.SC, p, call); } catch (e) { plans = null; } }
+    var p = P(), plans = null, look = null;
+    /* Play's draw screen shows the defense this snap will face, lined up
+       (FAW_ENGINE.look with the snap's own seed), never its call */
+    var game = document.body.classList.contains('gamemode') && window.FAW_FLOW;
+    if (game) { try { look = E.look(A.SC, p, window.FAW_FLOW.pending()); plans = look.defense; } catch (e) { look = null; } }
+    else if (view !== 'offense' && E.plans) { try { plans = E.plans(A.SC, p, call); } catch (e) { plans = null; } }
+    if (game && look && window.FAW_CALLS) { var gh = document.querySelector('.gamebar .hint'); if (gh) gh.textContent = window.FAW_CALLS.readText(look); }
     V.field().play(p, {
-      offense: view !== 'defense', defense: view !== 'offense', defenseStyle: 'letters', plans: plans, coverage: !!plans,
+      offense: game ? true : view !== 'defense', defense: game ? !!look : view !== 'offense', defenseStyle: 'letters', plans: plans, coverage: !!plans && !game,
       distance: A.SC.distance, depths: true, hot: drag && drag.who ? [drag.who] : armed ? ['QB'] : null
     });
     if (drag && drag.pts && drag.pts.length > 1) {
@@ -343,17 +348,20 @@
     return q;
   }
 
+  /* how near a touch must land, in yards: 1.8, or 24 screen pixels where that is
+     more (a fingertip on a phone covers about four yards); the nearest man wins */
+  function reach(yd, px) { var s = V && V.scale ? V.scale() : 0; return s ? Math.max(yd, px / s) : yd; }
   function hit(pt, ids) {
-    var O2 = O(), best = null, bd = 1.8;
+    var O2 = O(), best = null, bd = reach(1.8, 24);
     ids.forEach(function (id) { var a = id === 'QB' ? O2[id] : snapSpot(id), d = len(a[0] - pt[0], a[1] - pt[1]); if (d < bd) { bd = d; best = id; } });
     /* the aligned spot of a motion man counts too */
-    if (!best && P().motion) { var a2 = O2[P().motion.who]; if (len(a2[0] - pt[0], a2[1] - pt[1]) < 1.8) best = P().motion.who; }
+    if (!best && P().motion) { var a2 = O2[P().motion.who]; if (len(a2[0] - pt[0], a2[1] - pt[1]) < reach(1.8, 24)) best = P().motion.who; }
     return best;
   }
   function routeEndNear(pt) {
-    var p = P();
-    for (var i = 0; i < p.routes.length; i++) { var e = p.routes[i].pts[p.routes[i].pts.length - 1]; if (len(e[0] - pt[0], e[1] - pt[1]) < 1.6) return p.routes[i].who; }
-    if (isRun() && p.handoff.path && p.handoff.path.length) { var e2 = p.handoff.path[p.handoff.path.length - 1]; if (len(e2[0] - pt[0], e2[1] - pt[1]) < 1.6) return '#path'; }
+    var p = P(), near = reach(1.6, 22);
+    for (var i = 0; i < p.routes.length; i++) { var e = p.routes[i].pts[p.routes[i].pts.length - 1]; if (len(e[0] - pt[0], e[1] - pt[1]) < near) return p.routes[i].who; }
+    if (isRun() && p.handoff.path && p.handoff.path.length) { var e2 = p.handoff.path[p.handoff.path.length - 1]; if (len(e2[0] - pt[0], e2[1] - pt[1]) < near) return '#path'; }
     return null;
   }
   function simplify(pts, eps) {

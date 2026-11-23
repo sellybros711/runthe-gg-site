@@ -18,12 +18,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=33';
-import { SHADE } from './shade-data.js?v=5';
-import { Crew } from './fielders.js?v=14';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=44';
+import { planPlay, planSteal, planPickoff, planFoul, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=34';
+import { SHADE } from './shade-data.js?v=12';
+import { Crew } from './fielders.js?v=21';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=50';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=59';
+import { kitFor } from './people.js?v=66';
 import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 
@@ -57,6 +57,9 @@ const PLAIN_PRE = 0.45, PLAIN_POST = 0.3, PLAIN_EASE = 0.15;
 // (a pickup this soon after his bobble is posed on his own stride, not the plain one: the plain one, with the bobble's
 // short shuffle drawn eased, skated his foot, check-jolt.mjs skate fielder bobble)
 const QUICK_PICKUP = 1.5;
+// (a dive that comes up short reaches this far short of where the ball lands, in feet: the ball lands past
+// the glove's tip, clear of it, as check-catch.mjs holds every hit that falls in, CLEAR_M)
+const DIVE_SHORT_FT = 2.5;
 const TAKE_KINDS = ['catch', 'drop', 'bobble', 'field', 'pickup', 'receive', 'catch_throw', 'tag'];
 // (the low plate camera is the close one, saved for a run scoring: it keeps the tighter room it had)
 const ROOM_PLATE_FT = 46;
@@ -583,6 +586,10 @@ export class InPlay {
       if (a.kind === 'set') spec.crouch = Math.max(spec.crouch, 0.35 * bump(s, t - 0.15, t + 0.05, t + 0.6, t + 0.9) * (1 - moving));
       if (a.kind === 'field' || a.kind === 'pickup') {
         const k = bump(s, t - 0.38, t - 0.06, t + 0.12, t + 0.45);
+        // (his own bobble picked up, the error's chase: he comes round from the ball to the infield over twice as
+        // long. In the third of a second the rest of a take eases out over, the turn back was up to two radians, a
+        // spin in place on planted feet that slid one over check-jolt.mjs's skate (skate fielder pickup, 2026-11-19))
+        const ia = acts.indexOf(a), kT = a.kind === 'pickup' && ia > 0 && acts[ia - 1].kind === 'bobble' ? bump(s, t - 0.38, t - 0.06, t + 0.12, t + 0.8) : k;
         // (the fit comes in on its own weight, from before his reach starts: set only with the reach, it
         // came in part way at once and jumped him toward the ball, lab/pipeline/check-jolt.mjs)
         const bp = a.ball || ball;
@@ -605,7 +612,7 @@ export class InPlay {
             const st1 = tr.at(t + 0.12), th = plan.segs.find((sg) => sg.kind === 'throw' && sg.from === n && sg.t0 > t - 1e-6 && sg.t0 < t + 1.5);
             a.turnRef = angDiff(th ? heading(st1, th.b) : faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3)));
           }
-          faceYaw = turnNear(faceYaw, bh, k, a.turnRef);
+          faceYaw = turnNear(faceYaw, bh, Math.max(k, kT), a.turnRef);
           // at range, on the move: a ball well off to one side is a backhand (his throwing hand's side, the glove
           // across his body) or a forehand (his glove side), his trunk turned to it and his feet wider
           // (decided once, at the act, from the way he came to the ball: the angle from his body to the ball
@@ -623,7 +630,7 @@ export class InPlay {
             if (Math.sign(side) === gsd) handW *= 1 - 0.6 * kk;   // (a backhand is one hand)
           }
           f.reaching = true;
-        }
+        } else if (kT > 0 && a.turnRef != null) faceYaw = turnNear(faceYaw, heading(st, plan.ballAt(t - 0.3)), kT, a.turnRef);
       }
       if (a.kind === 'catch' || a.kind === 'drop') {
         const k = ramp(s, t - 0.5, t - 0.05) * (1 - ramp(s, t + 0.25, t + 0.7));
@@ -764,7 +771,14 @@ export class InPlay {
         }
       }
       if (a.kind === 'dive' || a.kind === 'dive_short') {
-        const at = a.to || a.at;
+        let at = a.to || a.at;
+        // (a dive that comes up short reaches for a point DIVE_SHORT_FT short of where the ball lands, on his
+        // line to it: aimed at the landing spot itself, a third baseman diving from 6 ft had his glove 0.31 m
+        // from a soft liner as it dropped, a catch he then did not make, check-catch.mjs hit lands)
+        if (a.kind === 'dive_short') {
+          const from = tr.at(t), d = Math.hypot(at.x - from.x, at.y - from.y);
+          if (d > 1e-3) { const c = Math.min(DIVE_SHORT_FT, d) / d; at = { x: at.x - (at.x - from.x) * c, y: at.y - (at.y - from.y) * c }; }
+        }
         // (an infielder's lunge at a ground ball lays out over 0.45 s, push off to the dirt, as a real one does: in
         // the 0.3 s a shoestring catch takes, off a run his head went over a body's speed, check-jolt.mjs)
         const lay = a.kind === 'dive' ? [0.3, 0.15] : [0.18, 0.12];
@@ -1042,7 +1056,12 @@ export class InPlay {
       }
       f.root.updateMatrixWorld(true);
       const fl = f.jointPoint('foot_l'), fr = f.jointPoint('foot_r');
-      const foot = Math.hypot(fl.x - bag.x, fl.y - bag.y) < Math.hypot(fr.x - bag.x, fr.y - bag.y) ? fl : fr;
+      // (a throw taken at first is the stretch: the glove side foot goes out to the throw and the other one
+      // stays on the bag, always that one. The nearer foot flipped on a stretch whose feet started level: the
+      // stretching foot went onto the bag, the back foot 2.5 ft behind it and the glove 0.27 m short of a
+      // double play's throw home to first, check-catch.mjs throw taken)
+      const stretch = fa.kind === 'receive' && fa.base === 1;
+      const foot = stretch ? (f.glove === 'r' ? fl : fr) : Math.hypot(fl.x - bag.x, fl.y - bag.y) < Math.hypot(fr.x - bag.x, fr.y - bag.y) ? fl : fr;
       // (on the bag: within half a foot of its middle; past that, back onto it)
       const off = Math.hypot(bag.x - foot.x, bag.y - foot.y), need = Math.max(0, off - 0.5) / Math.max(1e-3, off);
       if (need <= 0) continue;

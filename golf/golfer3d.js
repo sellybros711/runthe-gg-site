@@ -110,7 +110,7 @@
 
   // the clubs. A stock set or a recoloured kit is a real club for the shot (driver, iron, putter) in the
   // kit's own finish. A novelty club is the novelty, whatever the shot: a scepter putts too.
-  const NOVELTY={scepter:1,candycane:1,excalibur:1,wand:1,hockey:1,glizzy:1,poolnoodle:1,coffin:1,broomstick:1,pitchfork:1};
+  const NOVELTY={scepter:1,candycane:1,excalibur:1,wand:1,hockey:1,glizzy:1,poolnoodle:1,coffin:1,broomstick:1,pitchfork:1,icicle:1,iceaxe:1};
   function clubParts(push,hands,cdir,face,head,kind,id,pal){
     const n3=norm(cross(face,cdir)), along=t=>add(hands,sc(cdir,t)), L=Math.hypot(...sub(head,hands));
     const X=h=>'x:'+h, grip=(c,r)=>push(capsule(along(-2.6),along(3.6),r||0.95,X(c||'#26262e')));
@@ -158,6 +158,14 @@
         push(capsule(add(head,sc(face,-2.2)),add(head,sc(face,2.2)),0.6,X(pal.G),{gloss:2}));
         for(const k of [-2.1,0,2.1]){ const b=add(head,sc(face,k)); push(capsule(b,add(b,sc(cdir,3.8)),0.45,X(pal.S),{gloss:2}));
           push(ellipsoid(add(b,sc(cdir,4.0)),AX,[0.45,0.45,0.45],X(pal.L),{gloss:2})); } return; }
+      if(id==='icicle'){ push(capsule(along(-2.8),head,0.62,X(pal.W),{gloss:3}));
+        const bc=add(head,sc(face,1.4)); push(ellipsoid(bc,AX,[3.4,1.6,1.4],X(pal.I),{gloss:3}));
+        push(over(bc,AX,[3.4,1.6,1.4],X(pal.L),l=>l[1]<-0.5,{gloss:3}));
+        for(const k of [-1.8,0,1.8]) push(capsule(add(bc,sc(face,k)),add(bc,sc(face,k),sc(cdir,2.4-Math.abs(k)*0.4)),0.35,X(pal.i),{gloss:3,noCast:1})); return; }
+      if(id==='iceaxe'){ push(capsule(along(-2.8),head,0.6,X(pal.W),{gloss:2})); push(capsule(along(-1.2),along(1.6),0.72,X(pal.O)));
+        push(capsule(add(head,sc(face,-4.2),sc(cdir,1.0)),add(head,sc(face,2.6)),0.55,X(pal.S),{gloss:3}));
+        push(ellipsoid(add(head,sc(face,3.0)),AX,[1.2,0.5,0.9],X(pal.L),{gloss:3}));
+        push(ellipsoid(head,AX,[0.8,0.8,0.8],X(pal.G),{gloss:2})); return; }
     }
     // a real club. Stock is the old finish; a kit (and the two classics) wear their palette.
     const wood=id==='persimmon', blade=id==='blade', kit=!!(pal&&pal.H&&!wood);
@@ -466,7 +474,9 @@
   // The art rides with the head, so a hat tips when the golfer looks down at the ball.
   const HAT3D={ halo:{ring:1}, headphones:{flat:1,T:2.3}, antlers:{flat:1,T:1.0}, horns:{flat:1,T:1.5},
     pirate:{dz:.42}, grad:{sq:1}, turkey:{fF:-3.2}, laurel:{wrapAll:1,w:1.7,snug:1}, crown:{wrapAll:1,w:1.25,dy:-2,snug:1},
-    headband:{wrapAll:1,w:1.3}, pphallowscrown:{wrapAll:1,w:1.25,dy:-2,snug:1}, ppvisor:{wrapAll:1,w:1.3}, pptricorn:{dz:.6} };
+    headband:{wrapAll:1,w:1.3}, pphallowscrown:{wrapAll:1,w:1.25,dy:-2,snug:1}, ppvisor:{wrapAll:1,w:1.3}, pptricorn:{dz:.6},
+    // Season 3: the earmuffs are a band and two muffs like the headphones, the wreath wraps like the laurel, the sparkler crown like the crown
+    earmuffs:{flat:1,T:2.3}, holly:{wrapAll:1,w:1.7,snug:1}, sparkler:{wrapAll:1,w:1.25,dy:-2,snug:1} };
   function roleFor(ch,pal,P,lens){
     if(lens&&ch==='E') return {m:'x:#14161e',gloss:3};
     if(pal&&pal[ch]) return {m:'x:'+pal[ch]};
@@ -706,6 +716,18 @@
       for(const k of [-2.3,0,2.3]){ const t0=add(cb,sc(sd,k)); push(capsule(t0,add(t0,sc(d,4.2)),0.36,X(pal.S),{gloss:3}));
         push(ellipsoid(add(t0,sc(d,4.3)),AXd,[0.3,0.3,0.3],X(pal.L),{gloss:3,noCast:1})); }
       return; }
+    if(id==='icicle'){ // a long clear icicle for a shaft, a frozen block for the head with icicles hanging off it
+      push(capsule(at(-1.3),at(L-3.2),0.55,X(pal.W),{gloss:3}));
+      const hc=add(at(L-1.8),sc(sd,1.2)); push(ellipsoid(hc,[sd,U,fw],[3.0,1.3,1.2],X(pal.I),{gloss:3}));
+      push(ellipsoid(add(hc,sc(U,0.6),sc(sd,-0.8)),[sd,U,fw],[1.4,0.5,0.8],X(pal.L),{gloss:3,noCast:1}));
+      for(const k of [-1.9,-0.6,0.7,1.9]) push(capsule(add(hc,sc(sd,k),sc(U,-0.8)),add(hc,sc(sd,k),sc(U,-1.9+Math.abs(k)*0.3)),0.3,X(pal.i),{gloss:3,noCast:1}));
+      return; }
+    if(id==='iceaxe'){ // a blue shaft with grip tape, a steel head: a long curved pick behind, a flat adze in front
+      push(capsule(at(-1.3),at(L-1.4),0.55,X(pal.W),{gloss:2})); push(capsule(at(-0.6),at(2.0),0.68,X(pal.O)));
+      const hc=at(L-1.0); push(ellipsoid(hc,AXd,[0.7,0.9,0.9],X(pal.G),{gloss:2}));
+      push(capsule(hc,add(hc,sc(sd,-3.6),sc(U,-0.8)),0.42,X(pal.S),{gloss:3})); push(capsule(add(hc,sc(sd,-3.6),sc(U,-0.8)),add(hc,sc(sd,-4.4),sc(U,-1.8)),0.3,X(pal.S),{gloss:3}));
+      push(capsule(hc,add(hc,sc(sd,2.4)),0.45,X(pal.S),{gloss:3})); push(ellipsoid(add(hc,sc(sd,2.8)),[sd,U,fw],[0.6,1.1,0.25],X(pal.L),{gloss:3}));
+      return; }
   }
 
   /* THE BODY SKINS ON THE MENU GOLFER, built the way their art draws them. Pumpkin Head is a scarecrow: a lobed
@@ -729,6 +751,20 @@
     push(capsule(top,st,0.9,X(z.hair||'#3f5a1e'),{gloss:1}));                                   // the stem
     push(ellipsoid(add(top,sc(sd,-2.0),sc(up,0.4)),[sd,up,gz],[2.1,0.4,1.1],X(mix2(z.hair||'#3f5a1e','#9ac040',0.4))));   // a leaf
   }
+  /* THE SNOWMAN'S HEAD (the Season 3 capstone): a ball of packed snow, two coal eyes, a carrot for a nose, a smile of
+     coal, and a red knit scarf wound round the neck with its tail hanging down the chest. */
+  function snowHead(push,hc,gz,up,sd,hr,z){ const AXh=[gz,up,sd], R=[hr*1.04,hr*1.0,hr*1.06], c=add(hc,sc(up,-0.3)), X=h=>'x:'+h;
+    const snow=z.skin||'#f4f8fc', coal=z.eye||'#1c1c22', carrot=z.nose||'#f0802a', scarf=z.scarf||'#c8302e';
+    push(ellipsoid(c,AXh,R,X(snow),{gloss:1,bias:.1,paint:l=>({m:X(snow),dt:Math.sin(l[0]*23+l[2]*17)*Math.sin(l[1]*19)>0.7?-1:0})}));   // packed snow
+    const fp=(y,x)=>add(c,sc(gz,R[0]*Math.sqrt(Math.max(0,1-y*y-x*x))*0.98),sc(up,R[1]*y),sc(sd,R[2]*x));                             // a point on the face
+    for(const k of [1,-1]) push(ellipsoid(fp(0.2,0.34*k),AXh,[0.9,1.05,0.9],X(coal),{gloss:2,noCast:1}));                              // coal eyes
+    const nb=fp(-0.04,0); push(capsule(nb,add(nb,sc(gz,2.2),sc(up,-0.3)),0.95,X(carrot),{gloss:1}));                                   // the carrot, thick at the face
+    push(capsule(add(nb,sc(gz,2.0),sc(up,-0.3)),add(nb,sc(gz,4.4),sc(up,-0.7)),0.5,X(carrot),{gloss:1}));                              // and thin at the tip
+    for(let i=0;i<5;i++){ const t=(i-2)/2; push(ellipsoid(fp(-0.4+0.12*t*t,0.34*t),AXh,[0.55,0.55,0.55],X(coal),{gloss:2,noCast:1})); }   // a coal smile
+    const nb2=add(c,sc(up,-R[1]*0.9)), rr=hr*0.72, ring=a=>add(nb2,sc(gz,Math.cos(a)*rr),sc(sd,Math.sin(a)*rr));
+    for(let i=0;i<12;i++) push(capsule(ring(i*Math.PI/6),ring((i+1)*Math.PI/6),1.35,X(i%3?scarf:mix2(scarf,'#ffffff',0.7)),{gloss:1}));   // the scarf, striped
+    const tl=ring(Math.PI*0.3); push(capsule(tl,add(tl,sc(up,-5.2),sc(gz,0.8)),1.1,X(scarf),{gloss:1}));                                  // its tail
+  }
   /* THE SCARECROW'S HEAD: a burlap sack stuffed with straw, a little lumpy, a coarse weave, its top corners puckered, twine
      cinched at the neck with straw fanning out under it and out of the top, stitched X eyes and a stitched grin. */
   function sackHead(push,hc,gz,up,sd,hr,z){ const AXh=[gz,up,sd], R=[hr*1.02,hr*1.02,hr*1.08], c=add(hc,sc(up,-0.2)), X=h=>'x:'+h;
@@ -750,7 +786,7 @@
     let tag='';   // the item the parts being pushed belong to, so a tile can draw it alone (MO.only)
     const HD=(MO?MO.K:1)>=2, parts=[], push=p=>{ if(tag) p.o.item=tag; parts.push(p); }, top=gear.top, tpal=gear.topPal||{}, cl=gear.cleats, lg=gear.legPal;
     // the Pro Shop line's tops: long sleeved (PLL), vests over the polo's own sleeves (PLV), and the mock neck
-    const PLL={quarterzip:1,windbreaker:1,hoodie:1,rainjacket:1,argyle:1,pilgrimcoat:1}, PLV={sweatervest:1,puffervest:1}, pl=!!(PLL[top]||PLV[top]||top==='mockneck');
+    const PLL={quarterzip:1,windbreaker:1,hoodie:1,rainjacket:1,argyle:1,pilgrimcoat:1,skijacket:1}, PLV={sweatervest:1,puffervest:1}, pl=!!(PLL[top]||PLV[top]||top==='mockneck');
     const body=top==='shacket'?'plaid':(top==='cardigan'||top==='sweatervest'||top==='argyle')?'k:'+tpal['1']:'shirt', AX=[F,U,T], blz=top==='blazer'||top==='ppchampjacket';   // a cardigan is knitted (k: is ribbed when painted)
     // THE BUILD: a lean golfer. BW narrows the torso, hips and belt, AW brings the arms, hands and club in to match.
     const BW=0.84, AW=0.87;
@@ -891,6 +927,13 @@
         push(over(tc,AX,TRo,yk,l=>inT(l)&&l[1]>0.02&&l[1]<0.16,{noCast:1}));                                                  // the colour block across the chest
         for(const y of [0.02,0.16]) push(over(tc,AX,TR.map(v=>v*1.016),trim,l=>inT(l)&&Math.abs(l[1]-y)<0.008,{noCast:1}));        // its piping
         ring(32.5,35.4,3.65,3.35,body,7); zip(0.04,0.3); hemRib(trim); }
+      // THE SKI JACKET (Season 3 Tour Pass): colour blocked like the art, ice blue over the shoulders, a white and a red
+      // stripe across the chest, navy below them, a stand collar and a full zip
+      else if(top==='skijacket'){ const wht=X2(tpal['6']||'#f6f6f2'), red=X2(tpal['7']||'#d42a2e'), nav=X2(tpal['8']||'#1c2c52');
+        push(over(tc,AX,TRo,nav,l=>inT(l)&&l[1]<-0.06,{noCast:1}));                                                            // navy below
+        push(over(tc,AX,TR.map(v=>v*1.016),wht,l=>inT(l)&&l[1]>=-0.02&&l[1]<0.05,{noCast:1}));                                // the white stripe
+        push(over(tc,AX,TR.map(v=>v*1.016),red,l=>inT(l)&&l[1]>=-0.06&&l[1]<-0.02,{noCast:1}));                               // the red one
+        ring(32.4,35.6,3.7,3.4,body,7); zip(lo+0.02,0.3); hemRib(nav); }
       else if(top==='hoodie'){ const Ra=4.1, Rb=5.3, hcN=P(0.0,33.6,0);
         const roll=p=>{ const q=sub(p,hcN), a=dot(q,F), b=dot(q,T), h=dot(q,U), t2=Math.atan2(b/Rb,a/Ra); return Math.hypot(a-Ra*Math.cos(t2),b-Rb*Math.sin(t2),h)-1.05; };
         push(field(P(-1.4,34.6,0),9,p=>smin(roll(p),sdE(p,P(-3.4,35.6,0),AX,[2.6,3.3,5.4]),1.2),body,{mf:(p,n)=>dot(sub(p,hcN),F)>2.4&&dot(n,U)>0.3?[body,-1]:null}));   // the hood
@@ -973,7 +1016,7 @@
     else if(HD) poloFront(); // the polo
     // THE ARMS, at rest. Each joins the body only at the shoulder and hangs clear of the shirt. The dominant hand
     // (the right for a righty) holds the club, its head on the grass beside that foot; the other hand wears the glove.
-    const dom=gear.lefty?-1:1, scare=gear.body==='pumpkinhead'||gear.body==='scarecrow', zomb=gear.body==='zombie', bp=gear.bodyPal||{};
+    const dom=gear.lefty?-1:1, scare=gear.body==='pumpkinhead'||gear.body==='scarecrow', snowy=gear.body==='snowgolfer', zomb=gear.body==='zombie', bp=gear.bodyPal||{};
     // the body skins' clothes, as their art draws them
     if(scare&&!jacket){ const pc=P(4.6,24.2,-3.2);   // a burlap patch on the chest, stitched at its corners
       push(ellipsoid(pc,AX,[0.4,1.55,1.5],'x:#a8844e',{noCast:1}));
@@ -1017,11 +1060,11 @@
           return HD&&Math.abs(t-0.5-0.12*dot(sub(p,s0),U)*s)<0.035?[slv,-1]:null; }}));       // a fold across it
         push(capsule(se,el,1.6,'skin')); push(ellipsoid(el,AX,[1.55,1.5,1.6],'skin'));                                  // the upper arm and elbow
         push(capsule(el,mid,1.5,'skin')); push(capsule(mid,wr,1.22,'skin'));                                             // the forearm, to the wrist
-        if(scare){ const strw='x:'+(bp.straw||'#d8b04e'), dk='x:#a8843a';   // straw arms, tufts out of the sleeve and the cuff
+        if(scare||snowy){ const strw='x:'+(bp.straw||'#d8b04e'), dk=snowy?'x:#3a2410':'x:#a8843a';   // the Snowman's are twigs   // straw arms, tufts out of the sleeve and the cuff
           for(let k=0;k<6;k++){ const a=k*Math.PI/3, o=add(sc(F,Math.cos(a)*1.9),sc(T,Math.sin(a)*1.9*s));
             push(capsule(add(se,o),add(se,sc(o,1.35),sc(U,-1.4)),0.32,k%2?strw:dk,{noCast:1}));
             push(capsule(add(wr,sc(o,0.55)),add(wr,sc(o,0.95),sc(U,-1.5)),0.26,k%2?strw:dk,{noCast:1})); }
-          if(!hold&&!jacket) push(ellipsoid(add(sh,sc(sub(se,sh),0.55),sc(F,2.45)),AX,[0.4,1.25,1.2],'x:#9c3a2e',{noCast:1})); } }   // a red patch on the sleeve
+          if(!hold&&!jacket&&!snowy) push(ellipsoid(add(sh,sc(sub(se,sh),0.55),sc(F,2.45)),AX,[0.4,1.25,1.2],'x:#9c3a2e',{noCast:1})); } }   // a red patch on the sleeve
       const hand=add(wr,sc(U,-1.5),sc(F,hold?0.35:0.15));
       push(ellipsoid(hand,AX,[1.75,2.0,1.55],hold?'skin':'glove'));                                                       // a closed hand
       if(hold){ for(let k=0;k<4;k++) push(ellipsoid(add(hand,sc(F,1.45),sc(U,0.95-k*0.62),sc(T,s*0.15)),AX,[0.55,0.42,0.75],'skin',{dt:k===0?1:0}));   // the fingers round the grip
@@ -1071,9 +1114,9 @@
     for(let i=c0;i<parts.length;i++) parts[i].o.item='club';
     // the head: on the collar, the profile's size
     const hc=P(0.7,42.0,0), gaze=norm(add(F,sc(U,-0.04))), hup=norm(cross(cross(gaze,U),gaze)), side=norm(cross(hup,gaze)), hr=7.8;
-    if(gear.body==='pumpkinhead'||gear.body==='scarecrow'){ const strw='x:'+((gear.bodyPal||{}).straw||'#d8b04e');
+    if(gear.body==='pumpkinhead'||gear.body==='scarecrow'||gear.body==='snowgolfer'){ const strw='x:'+((gear.bodyPal||{}).straw||'#d8b04e');
       for(const q of parts) if(q.mat==='skin') q.mat=strw;
-      (gear.body==='scarecrow'?sackHead:pumpkinHead)(push,hc,gaze,hup,side,hr,gear.bodyPal||{});
+      (gear.body==='scarecrow'?sackHead:gear.body==='snowgolfer'?snowHead:pumpkinHead)(push,hc,gaze,hup,side,hr,gear.bodyPal||{});
       return {parts,hc,look:gaze,hup,Lf:side,hr:hr*1.14,F,U,T,ball:V(0,0,0),tc,noHair:true}; }
     push(ellipsoid(hc,[gaze,hup,side],[hr,hr*1.04,hr*0.98],'skin',{bias:.06}));
     push(ellipsoid(add(hc,sc(hup,-3.3),sc(gaze,0.3)),[gaze,hup,side],[hr*0.86,hr*0.6,hr*0.86],'skin',{bias:.06}));   // the jaw
@@ -1116,9 +1159,11 @@
      the page's PXG_EW_PAL): the frame, the lens, a strap, a trim and the inside of a mask. The Phantom Mask is its
      own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
   const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
-    ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'}, ppemeraldspecs:{as:'shades',frame:'%',lens:'Q'},
+    ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppinvisible:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'}, ppemeraldspecs:{as:'shades',frame:'%',lens:'Q'},
     // the Glacier Glasses (the Himalayas): an old climber's round glacier glasses, dark lenses in a brass wire rim, leather side shields
     ppglacier:{as:'round',frame:'%',lens:'Q',strap:'&'},
+    // the Frosted Specs (the Season 3 Tour Pass): round wire frames rimed with frost, pale ice lenses
+    frostspecs:{as:'round',frame:'%',lens:'Q'},
     ppphantommask:{as:'mask',frame:'%',trim:'*',inner:'a',mark:'=',strap:'+'} };
   function ewColoursPP(d,EP){ const o={}; for(const k of ['frame','lens','strap','trim','inner','mark']) if(d[k]&&EP[d[k]]) o[k]='x:'+EP[d[k]];
     o.lens=o.lens||'x:#14161e'; o.frame=o.frame||'x:#26272d'; return o; }
@@ -1647,6 +1692,51 @@
     out.push(ellipsoid(add(tk,sc(look,hr*0.03)),AXh,[hr*0.02,hr*0.03,hr*0.16],ink,{gloss:1,noCast:1}));                         // and its writing
     return out; };
   HAT_OVER_HAIR.pphattop=1;
+  /* THE RINGMASTER'S TOPPER (the Big Top): the ringmaster's tall black silk hat of the old circus posters, its crown a little wider
+     at the top, a broad red band edged in gold round it, and a small gold star pinned to the band. Modelled on the course golfer
+     too, so it is worn on the trail. */
+  HAT_MODEL.pptopper=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const silk=X2((P&&P.W)||'#1a1a1e'), lite=X2((P&&P.G)||'#2e2e34'), band=X2((P&&P.S)||'#c8302a'), gold=X2((P&&P.g)||'#f4c840');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.34)),AXh,[hr*1.4,hr*0.07,hr*1.4],silk,{gloss:3}));                                       // the brim
+    for(let k=0;k<8;k++){ const r=hr*(0.96+k*0.02); out.push(ellipsoid(add(hc,sc(hup,hr*(0.42+k*0.2))),AXh,[r,hr*0.14,r],k===7?lite:silk,{gloss:3})); }   // the tall crown
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.6)),AXh,[hr*1.02,hr*0.15,hr*1.02],band,{gloss:1}));                                    // the red band
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.75)),AXh,[hr*1.025,hr*0.025,hr*1.025],gold,{gloss:2}));                                 // its gold edge
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.6),sc(look,hr*1.0)),AXh,[hr*0.05,hr*0.13,hr*0.13],gold,{gloss:2,noCast:1}));           // the gold star
+    return out; };
+  HAT_OVER_HAIR.pptopper=1;
+  /* THE BAKER STREET DEERSTALKER (London Mystery): the tweed deerstalker of Sidney Paget's plates, a soft round crown in a brown check,
+     a peak fore and aft, and its ear flaps tied up over the crown with a little bow. Modelled on the course golfer too, so it is worn
+     on the trail. */
+  HAT_MODEL.ppdeerstalker=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const tweed=X2((P&&P.W)||'#7a6a50'), dark=X2((P&&P.G)||'#5a4e3a'), lite=X2((P&&P.S)||'#9a8a68');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.42)),AXh,[hr*1.08,hr*0.66,hr*1.08],tweed,{gloss:1}));                                     // the round crown
+    for(let k=0;k<3;k++){ const r=hr*(1.09-k*0.1); out.push(ellipsoid(add(hc,sc(hup,hr*(0.24+k*0.22))),AXh,[r,hr*0.03,r],dark,{gloss:1})); }   // the check's darker bands
+    for(const k of [-1,1]) out.push(ellipsoid(add(hc,sc(hup,hr*0.16),sc(look,hr*0.98*k)),AXh,[hr*0.55,hr*0.06,hr*0.74],dark,{gloss:1}));   // the peaks, fore and aft
+    for(const k of [-1,1]) out.push(ellipsoid(add(hc,sc(hup,hr*0.82),sc(Lf,hr*0.56*k)),AXh,[hr*0.5,hr*0.1,hr*0.34],lite,{gloss:1}));   // the ear flaps, tied up
+    out.push(ellipsoid(add(hc,sc(hup,hr*1.08)),AXh,[hr*0.14,hr*0.08,hr*0.22],dark,{gloss:1,noCast:1}));                           // the little bow on top
+    return out; };
+  HAT_OVER_HAIR.ppdeerstalker=1;
+  /* THE BELL-RINGER'S HOOD (Notre-Dame): a hood of coarse brown wool as the poor of Hugo's Paris wore it, drawn up round the head,
+     its point falling behind. Modelled on the course golfer too, so it is worn on the
+     trail. */
+  HAT_MODEL.ppbellhood=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const wool=X2((P&&P.W)||'#6a4a2a'), dark=X2((P&&P.G)||'#4a3018'), lite=X2((P&&P.S)||'#8a6a3e');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.3),sc(look,-hr*0.12)),AXh,[hr*1.02,hr*0.9,hr*1.08],wool,{gloss:1}));                       // the hood round the head
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.22),sc(look,hr*0.78)),AXh,[hr*0.16,hr*0.72,hr*0.78],lite,{gloss:1}));                      // its rolled edge round the face
+    for(let k=0;k<3;k++) out.push(ellipsoid(add(hc,sc(hup,hr*(0.45-k*0.22)),sc(look,-hr*(0.85+k*0.2))),AXh,[hr*(0.34-k*0.06),hr*(0.32-k*0.05),hr*(0.32-k*0.06)],dark,{gloss:1}));   // the point falling behind
+    return out; };
+  HAT_OVER_HAIR.ppbellhood=1;
+  /* THE GOATSKIN CAP (Treasure Island): Ben Gunn's cap, as the maroon of Stevenson's island made it from the goats he lived on: a
+     round crown of shaggy brown and cream hair, tufts standing out all over it, and a ragged fringe round the brow. Modelled on the
+     course golfer too, so it is worn on the trail. */
+  HAT_MODEL.ppgoatskin=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const hair=X2((P&&P.W)||'#8a6a44'), dark=X2((P&&P.G)||'#5a4028'), cream=X2((P&&P.S)||'#c8aa7a');
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.62)),AXh,[hr*1.06,hr*0.62,hr*1.06],hair,{gloss:1}));                                       // the round crown
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.34)),AXh,[hr*1.1,hr*0.16,hr*1.1],dark,{gloss:1}));                                         // the fringe round the brow
+    for(let k=0;k<14;k++){ const a=k/14*Math.PI*2, up=0.5+(k%3)*0.22; out.push(ellipsoid(add(hc,sc(hup,hr*up),sc(look,Math.cos(a)*hr*0.92),sc(Lf,Math.sin(a)*hr*0.92)),AXh,[hr*0.2,hr*0.26,hr*0.2],k%2?cream:dark,{gloss:1})); }   // the tufts standing out
+    out.push(ellipsoid(add(hc,sc(hup,hr*1.12)),AXh,[hr*0.42,hr*0.2,hr*0.42],cream,{gloss:1}));                                       // a pale tuft on top
+    return out; };
+  HAT_OVER_HAIR.ppgoatskin=1;
   /* THE WHITE KNIGHT'S HELM (Through the Looking-Glass): his tin helmet as Tenniel drew it, a round crown rising to a sugar-loaf
      point, a dark slit across the front to see through, and a red plume tied at its tip. Modelled on the course golfer too. */
   HAT_MODEL.ppknighthelm=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
@@ -1691,7 +1781,7 @@
     out.push(ellipsoid(add(hc,sc(hup,hr*1.36),sc(Lf,hr*0.18)),AXh,[hr*0.22,hr*0.22,hr*0.22],toorie,{gloss:1}));                    // the toorie
     return out; };
   HAT_OVER_HAIR.pptam=1;
-  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1};   // a modelled hat that is modelled on the course golfer too
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1, ppbronzehelm:1, ppasphodel:1, ppwingcap:1, pphattop:1, ppknighthelm:1, ppthimble:1, ppstrawhat:1, pptam:1, pptopper:1, ppdeerstalker:1, ppbellhood:1, ppgoatskin:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1787,6 +1877,14 @@
       push(ellipsoid(Q(0.2,2.2),AXs,[3.2,1.6,2.9],X(P.W),{gloss:2}));                                         // the heel strap
       push(ellipsoid(Q(-0.6,3.2,2.9*s),AXs,[2.4,1.4,0.35],X(P.g),{gloss:1,noCast:1}));                         // the little wing
       push(ellipsoid(Q(-1.4,3.9,2.9*s),AXs,[1.6,0.8,0.3],X(P.o),{gloss:1,noCast:1})); },                      // its tip
+    // Caulk Boots (the Pacific Forest's signature prize): a logger's high boot of dark oiled leather laced up the front in red, on a
+    // thick lug sole set with steel caulks for gripping a wet log
+    ppcaulkboots(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.6,0.6),AXs,[5.8,0.8,3.4],X(P.s),{gloss:1}));                                          // the lug sole
+      for(const x of [4.6,3.0,1.4,-0.2]) push(ellipsoid(Q(x,0.05,0),AXs,[0.35,0.35,2.6],X(P.g),{gloss:3,noCast:1}));   // its steel caulks
+      push(ellipsoid(Q(2.2,1.8),AXs,[4.4,1.5,3.1],X(P.W),{gloss:2}));                                          // the boot
+      push(ellipsoid(Q(-0.2,4.0),AXs,[3.0,2.6,3.0],X(P.W),{gloss:2}));                                         // its tall shaft
+      for(const y of [2.2,3.0,3.8,4.6]) push(ellipsoid(Q(2.4,y,0),AXs,[0.8,0.25,1.4],X(P.b),{gloss:1,noCast:1})); },   // the red laces
     // Mars Boots (Red Planet's world prize): a padded white surface boot on a thick rust tread, a blue band at the ankle
     ppmarsboots(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
       push(ellipsoid(Q(1.6,0.55),AXs,[5.8,0.8,3.4],X(P.s),{gloss:0}));                                         // the rust tread
@@ -1867,6 +1965,8 @@
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(over(sc0,sax,sr,'x:'+P.W,l=>l[1]>=-0.5&&Math.abs(Math.sin(l[0]*7))>0.75)); push(ellipsoid(add(ank,sc(sax[1],0.2)),sax,[2.6,0.6,2.7],'x:'+P.b,{gloss:1})); },
     ppwingsandals(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.f,{gloss:1,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(over(sc0,sax,sr,'x:'+P.W,l=>l[1]>=-0.5&&Math.abs(Math.sin(l[0]*7))>0.75)); push(ellipsoid(add(ank,sc(sax[1],0.2)),sax,[2.6,0.6,2.7],'x:'+P.g,{gloss:1})); },
+    ppcaulkboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:2,bias:.15}));
+      push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5)); push(ellipsoid(add(ank,sc(sax[1],0.9)),sax,[2.8,2.2,2.9],'x:'+P.W,{gloss:2})); push(ellipsoid(add(ank,sc(sax[1],1.4)),sax,[2.9,0.5,3.0],'x:'+P.b,{gloss:1})); },
     ppmarsboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:2,bias:.15}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45)); push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'x:'+P.W,{gloss:2}));
       push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },
@@ -1933,6 +2033,28 @@
     // chimneys' crowns
     ppriverboat:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[1])<0.1) return {c:P.b,gloss:2};
       if(Math.abs(p[1]-0.5)<0.06||Math.abs(p[1]+0.5)<0.06) return {c:P.s,gloss:2}; return {c:p[1]>0.3?P.h:P.C,gloss:3}; } },
+    // the Big Top Ball: a performer's balance ball, its segments red, gold and blue from pole to pole round a white band
+    ppbigtop:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2])<0.08) return {c:P.W,gloss:2};
+      const k=Math.floor((Math.atan2(p[1],p[0])/Math.PI+1)*3)%3; return {c:k===0?P.C:k===1?P.h:P.b,gloss:3}; } },
+    // the Gaslight Ball: a street lamp's glowing glass, warm amber under the black iron of its frame, six bars from pole to pole
+    // and a ring round its crown
+    ppgaslight:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const a=Math.atan2(p[1],p[0]), m=Math.abs((((a/(Math.PI/3))%1)+1)%1-0.5);
+      if(m>0.44||Math.abs(p[2]-0.55)<0.06) return {c:P.s,gloss:2}; return {c:p[2]>0.2?P.h:P.C,gloss:3}; } },
+    // the Bourdon Ball: the bronze of a great bell, warm and burnished, its two raised bands round it and a sheen up its shoulder
+    // the Piece of Eight Ball: an old Spanish silver dollar gilded with the sea's years, its cross of the arms in relief and a milled
+    // rim round its equator
+    // the Full Moon Ball: the Werewolf's full moon, pale and bright, its grey seas and a few craters with their pale rims
+    ppfullmoon:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const cr=[[0.5,0.3,0.8],[-0.6,0.5,0.6],[0.2,-0.8,0.55],[-0.3,-0.4,-0.85],[0.8,-0.2,-0.5]];
+      for(const q of cr){ const d=Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]); if(d<0.16) return {c:P.b,gloss:2}; if(d<0.21) return {c:P.h,gloss:3}; }
+      const sea=Math.sin(p[0]*3.1+p[2]*1.7)+Math.cos(p[1]*2.6-p[2]*2.2); return {c:sea>1.1?P.b:P.C,gloss:3}; } },
+    ppeight:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2])<0.07) return {c:Math.floor(Math.atan2(p[1],p[0])*12)%2?P.h:P.b,gloss:3};
+      if((Math.abs(p[0])<0.1||Math.abs(p[1])<0.1)&&p[2]>0.35) return {c:P.h,gloss:3}; return {c:p[0]+p[2]>0.5?P.h:P.C,gloss:3}; } },
+    ppbourdon:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; if(Math.abs(p[2]-0.3)<0.06||Math.abs(p[2]+0.25)<0.05) return {c:P.h,gloss:3};
+      return {c:p[0]+p[2]>0.5?P.b:P.C,gloss:3}; } },
+    // the Tree Ring Ball: the cut end of an old fir, pale wood ringed with its years, a crack out from the heart and bark round its edge
+    pptreering:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
+      const r=Math.hypot(p[0],p[1]); if(Math.abs(p[2])<0.35) return {c:P.b,gloss:1};
+      if(Math.abs(p[1])<0.03&&p[0]>0&&r<0.8) return {c:P.s,gloss:1}; return {c:Math.abs(((r*9)%1)-0.5)<0.14?P.h:P.C,gloss:2}; } },
     // the Yeti Print Ball: new snow, a little blue in its shade, with two huge footprints stamped across it, toes and all
     ppyetiprint:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3};
       for(const [cx,cy,a] of [[-0.25,-0.05,0.5],[0.3,0.25,0.3]]){ const dx=p[0]-cx, dy=p[1]-cy, u=dx*Math.cos(a)+dy*Math.sin(a), v=-dx*Math.sin(a)+dy*Math.cos(a);

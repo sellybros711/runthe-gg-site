@@ -37,6 +37,7 @@ function Px(w,h){
 var PAL={
   clubhouse:{ g:['#5f9e45','#6cae4f','#79bb58','#86c663'], sp:[['#f6e8a8',.008],['#ffffff',.006]], tree:'round', leaf:['#24552a','#2f6d33','#3f8a3e','#5aa84c'], trunk:'#5a3d26', path:['#d9caa0','#e6d9b4'], water:['#2e6f9e','#3e86b8','#5aa3d3','#cfeaf7'], shadow:.62 },
   haunted:{ g:['#24223a','#2b2843','#322e4c','#3a3556'], sp:[['#4f4868',.03],['#5d3a5a',.008]], tree:'dead', leaf:['#0f1519','#172126','#22313a','#2f4249'], trunk:'#1a1418', path:['#6e6185','#82749a'], water:['#1f4a4a','#2a6058','#3a7a68','#7fb59a'], shadow:.55, fog:'#8a6fb8' },
+  monster:{ g:['#22303a','#283840','#2e4046','#36484c'], sp:[['#4a4a62',.02],['#5a5a7a',.006]], tree:'dead', leaf:['#0f1519','#172126','#22313a','#2f4249'], trunk:'#1a1418', path:['#6e6a7a','#82808e'], water:['#1e3448','#24405a','#3a5a78','#5a86a4'], shadow:.55, fog:'#7a7ab8' },
   winter:{ g:['#d4e1ee','#dde8f3','#e7eff8','#f3f7fc'], sp:[['#c2d0e0',.02],['#ffffff',.02]], tree:'pine', leaf:['#173d30','#21503e','#2c644d','#3b7a5c'], snow:'#f6f9fd', trunk:'#4a3626', path:['#a9b9ca','#bccad8'], water:['#8cc0e2','#a3cdea','#c0def3','#eaf5fc'], shadow:.72 },
   beach:{ g:['#e2c47c','#eacf8c','#f1da9c','#f6e5b6'], sp:[['#fff6dc',.02],['#c9a964',.012]], tree:'palm', leaf:['#256b31','#2f8139','#3f9a46','#5bb352'], trunk:'#8a6a3e', path:['#8f6539','#a8794a'], water:['#165f86','#1f7aa6','#2e95c2','#55b6db'], shadow:.7 },
   tour:{ g:['#3f7f37','#468a3c','#4f9643','#59a24a'], sp:[['#e9f0c0',.004]], tree:'round', leaf:['#1d4a24','#265c2c','#327236','#428a41'], trunk:'#4a3220', path:['#c7b88f','#d6c8a0'], water:['#2b6a95','#357fae','#4d97c6','#cfe8f5'], shadow:.62 },
@@ -62,6 +63,11 @@ var PAL={
   beanstalk:{ g:['#528a38','#62a242','#74b452','#86c464'], sp:[['#fff6c8',.012],['#ffffff',.01]], tree:'round', leaf:['#2a5a22','#3a7a2e','#4e9a3a','#5aae46'], trunk:'#5a3a22', path:['#d8c8a0','#e8dab8'], water:['#4a88c8','#6aa8e0','#8ac0ec','#f2f6fc'], shadow:.62 },
   mississippi:{ g:['#5e8a3a','#6a9a44','#7ab24e','#8ac05a'], sp:[['#f4f0d8',.012],['#e8c860',.008]], tree:'round', leaf:['#2e5a22','#3e7a2e','#5a9a3e','#4a8a34'], trunk:'#6a5a44', path:['#d8c8a0','#e8dab8'], water:['#4e6e76','#5e7f86','#6e8c94','#b8d0d0'], shadow:.62 },
   himalayas:{ g:['#d8e4f0','#e8f0f8','#f4f8fc','#ffffff'], sp:[['#a8bcd0',.014],['#86827a',.01]], tree:'round', leaf:['#173a2a','#1e3f30','#28503e','#f6f9fd'], trunk:'#4a3626', path:['#a8a49a','#b8b4aa'], water:['#3a94a8','#5ab4c4','#7ac8d4','#e8f8fc'], shadow:.7 },
+  london:{ g:['#26402c','#2e4a34','#385a3c','#4a6a46'], sp:[['#4e5256',.02],['#ffd27a',.004]], tree:'round', leaf:['#203e22','#2a4a2a','#345a32','#3e6a3a'], trunk:'#6a6450', path:['#4e5256','#5a5e62'], water:['#1a262c','#22323a','#2a3e46','#6a8088'], shadow:.6 },
+  treasure:{ g:['#4e6a30','#5e7a38','#688440','#7a9048'], sp:[['#c8b07c',.02],['#e8c860',.004]], tree:'pine', leaf:['#1e3a22','#2a4a2a','#345a30','#466a3a'], trunk:'#5a3e26', path:['#c8aa72','#d4b880'], water:['#164a54','#1e5a64','#266a72','#6ab0a8'], shadow:.62 },
+  notredame:{ g:['#3e5e3e','#4a6e48','#527a4e','#6a8a5a'], sp:[['#b8a882',.02],['#e8c060',.004]], tree:'round', leaf:['#2e5a2c','#3a6a34','#4a7a3e','#5a8a4a'], trunk:'#5a4a36', path:['#b8a882','#c8b890'], water:['#2a4a5c','#34566a','#3e6276','#8ab0bc'], shadow:.6 },
+  bigtop:{ g:['#4a7a32','#5a8a3a','#689a44','#7aa44a'], sp:[['#d8b878',.016],['#f4c840',.006]], tree:'round', leaf:['#2e5a22','#3a6a2a','#4a7a32','#5a8a3a'], trunk:'#5a4630', path:['#d8b878','#e8cc90'], water:['#2a2234','#3a3048','#4a4060','#e8dcc0'], shadow:.62 },
+  pacific:{ g:['#2e5a2e','#386a34','#467a3c','#5a8a44'], sp:[['#6a4a2a',.012],['#8ab06a',.012]], tree:'pine', leaf:['#16301e','#1e3f26','#2a5230','#3e6a38'], trunk:'#4a2a1a', path:['#7a5a3a','#8a6a46'], water:['#24484a','#3a6a6a','#5a8a84','#c8e8e0'], shadow:.62 },
   lochness:{ g:['#557e42','#5f8e4a','#689a50','#76a85a'], sp:[['#c8a0e0',.014],['#8a5aaa',.01]], tree:'round', leaf:['#22462a','#2e5a32','#3e6e3a','#4e7e3a'], trunk:'#5a4a3e', path:['#b8b0a0','#c8c0b0'], water:['#1c3640','#24434c','#2e5058','#8ab4b8'], shadow:.62 },
   jellara:{ g:['#2aa890','#3fd0b0','#6ae0c4','#9be86a'], sp:[['#ff9ad8',.012],['#ffd0ec',.008]], tree:'round', leaf:['#ff5fb8','#ff8ad0','#9be86a','#ffb030'], trunk:'#227068', path:['#ffd0ec','#ffe8f6'], water:['#2aa890','#3fd0b0','#6ae0c4','#ffd0ec'], shadow:.62 },
   mars:{ g:['#b85a32','#c4683e','#d07648','#dc8654'], sp:[['#7a3220',.014],['#f0b088',.01]], tree:'round', leaf:['#5a2a1c','#7a3a22','#8a4a2a','#a8502e'], trunk:'#3a2420', path:['#e8b088','#f2c4a0'], water:['#2a0e08','#3a140c','#5a2010','#a8502e'], shadow:.62 },
@@ -212,6 +218,23 @@ WORLD.haunted=function(P,th,seed){
   for(var yy=20;yy<P.h;yy+=40){ var lx=P.pathX(yy); if(lx!=null)lamp(P,lx+6,yy,1); }
   for(var k=0;k<5;k++){ var p=spot(P,P.w*(.2+.6*hash(k,1,seed)),P.h*hash(k,2,seed),4,4,6,tk); if(p){ P.ell(p[0]+2,p[1]+2,1.6,1.4,function(a,b){ P.set(a,b,hex('#e8761f')); }); P.ell(p[0]+2,p[1]+2,5,4,function(a,b,dx,dy){ P.tint(a,b,hex('#ffb347'),.15*(1-Math.sqrt(dx*dx+dy*dy))); }); } }
   fog(P,th.fog,9,.45);
+};
+/* Monster Castle (the Members Tour): the moat round the castle on its hill under the moon, the castle with its towers and lit windows,
+   the bare wood and the dark pines, the bridge where the trail crosses the moat, candle lanterns, and pumpkins by the Horseman's road */
+WORLD.monster=function(P,th,seed){
+  var tk=[], my=P.h*.5;
+  var moat=function(x,y){ var cy=my+Math.sin(x*.05+1.3)*8+fbm(x*.04,0,5)*6; return (6-Math.abs(y-cy))/6; };
+  water(P,th,moat,8,false);
+  for(var y=0;y<P.h;y++)for(var x=0;x<P.w;x++)if(P.pathD(x,y)<4&&moat(x,y)>-.3)P.set(x,y,hex((x+y)%3?'#5a5666':'#46424e'));   // a stone bridge over the moat
+  var c=spot(P,P.w*.7,P.h*.16,24,16,8,tk); if(c)building(P,c[0],c[1]+10,24,16,{ wall:'#6e6a7e', roof:'#2a2838', win:'#ffd27a', spire:1, glow:1 });
+  var t2=spot(P,P.w*.24,P.h*.3,12,10,8,tk); if(t2)building(P,t2[0],t2[1],12,10,{ wall:'#5e5a6e', roof:'#24222e', win:'#ffd27a', spire:1, glow:1 });
+  var h=spot(P,P.w*.28,P.h*.8,14,10,8,tk); if(h)building(P,h[0],h[1],14,10,{ wall:'#4e4a5a', roof:'#1e1c28', win:'#ffb347', glow:1 });
+  var pines=Object.assign({},th,{ tree:'pine', snow:null }), near=function(x,y){ return P.pathD(x,y)<9; };
+  forest(P,pines,function(x,y){ var n=fbm(x*.045,y*.045,14); return n>.6?.75:x<P.vx0-4||x>P.vx1+4?.9:.03; },seed+11,function(x,y){ return near(x,y)||moat(x,y)>-.2||P.clear(x,y,tk); },7,6);
+  forest(P,th,function(){ return .16; },seed+13,function(x,y){ return near(x,y)||moat(x,y)>-.2||P.clear(x,y,tk); },13,6);
+  for(var yy=24;yy<P.h;yy+=44){ var lx=P.pathX(yy); if(lx!=null)lamp(P,lx-6,yy,1); }
+  for(var k=0;k<4;k++){ var p=spot(P,P.w*(.2+.6*hash(k,3,seed)),P.h*hash(k,4,seed),4,4,6,tk); if(p){ P.ell(p[0]+2,p[1]+2,1.6,1.4,function(a,b){ P.set(a,b,hex('#e8781f')); }); } }
+  fog(P,th.fog,9,.4);
 };
 WORLD.winter=function(P,th,seed){
   var tk=[];
@@ -719,6 +742,101 @@ WORLD.himalayas=function(P,th,seed){
     else { for(y=0;y<6;y++)for(x=1;x<5;x++) P.set(bb[0]+x,bb[1]+y,hex(y===0?'#f4f8fc':(x+y)%3?'#bfe4f4':'#8ac0dc')); } }
   // the footprints: a line of pairs across the snow, left and right
   for(var fq=0;fq<9;fq++){ var fx=Math.round(P.w*0.12+fq*P.w*0.045), fy=Math.round(P.h*0.3+fq*1.6+(fq%2?2:0)); P.set(fx,fy,hex('#7a94b4')); P.set(fx+1,fy,hex('#7a94b4')); P.set(fx+2,fy,hex('#5a7698')); }
+};
+WORLD.pacific=function(P,th,seed){
+  var tk=[], x, y;
+  // the old growth: a forest floor of moss and needles in deep warped greens, a creek winding down the map over grey stones with
+  // white water where it falls, the walk an old logging road of trodden brown earth, and huge cedars and firs, stumps, sword ferns
+  // and cut logs along it, and one line of huge bare footprints in the mud by the creek. Every edge is noise.
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var cx=P.w*(0.26+0.08*Math.sin(y*0.017+seed*0.01)+0.05*Math.sin(y*0.051+0.7))+(fbm(x*.02,y*.02,seed+5)-.5)*28+(fbm(x*.08,y*.08,seed+6)-.5)*6, d=x-cx, w=P.w*0.05+(fbm(x*.025,y*.025,seed+7)-.5)*8, st=hash(x,y,seed+9), a=fbm(x*.05,y*.05,seed+11);
+    if(Math.abs(d)<w){ P.set(x,y,hex(st>.985||Math.sin(y*0.4+a*6)>.93?'#c8e8e0':a>.6?'#3a6a6a':a<.35?'#1e3e40':'#24484a')); continue; }
+    if(Math.abs(d)<w+2+fbm(x*.08,y*.08,seed+13)*3){ P.set(x,y,hex(st>.6?'#7a7a72':'#5a5a54')); continue; }
+    if(fbm(x*.03,y*.03,seed+15)>.68){ P.set(x,y,hex(st>.97?'#8a5a3a':a>.5?'#5a4a2e':'#4a3e26')); continue; }
+    P.set(x,y,hex(st>.994?'#e8e8d0':st>.97?'#7ab04a':a>.64?'#4e8a3e':a<.3?'#2a4e2a':'#386a34')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+17)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#4a3420':fbm(x*.2,y*.2,seed+19)>.6?'#8a6a46':'#7a5a3a')); else if(pd<e+1.5)P.shade(x,y,.8); }
+  // giant cedars and firs, stumps, ferns and cut logs, each with its shadow
+  for(var bq=0;bq<34;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.4,.9,function(a,b){ P.shade(a,b,.7); });
+    if(kd<.5){ for(y=0;y<6;y++){ var hw2=Math.round((y+1)*0.5); for(x=-hw2;x<=hw2;x++) P.set(bb[0]+3+x,bb[1]+y,hex(x<0?'#2a5230':y%2?'#16301e':'#1e3f26')); } P.set(bb[0]+3,bb[1]+6,hex('#4a2a1a')); }
+    else if(kd<.68){ for(y=3;y<6;y++)for(x=1;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(y===3?((x+bq)%2?'#d8b07a':'#a8784e'):x<3?'#6a3a22':'#5a2e1a')); }
+    else if(kd<.84){ for(y=2;y<6;y++)for(x=0;x<7;x++) if(Math.abs(x-3)<=y-1&&(x+y)%2) P.set(bb[0]+x,bb[1]+y,hex(x<3?'#3e7e34':'#2e6a2a')); }
+    else { for(y=3;y<6;y++)for(x=0;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(x===0||x===5?'#d8b07a':y===4?'#5a3a22':'#7a5234')); } }
+  // the footprints: a line of big bare prints in the mud along the creek
+  for(var fq=0;fq<8;fq++){ var fy=Math.round(P.h*0.2+fq*P.h*0.07), fx=Math.round(P.w*(0.26+0.08*Math.sin(fy*0.017+seed*0.01))+P.w*0.09+(fq%2?3:0)); P.set(fx,fy,hex('#2a1e12')); P.set(fx,fy+1,hex('#2a1e12')); P.set(fx+1,fy+1,hex('#3a2a1a')); }
+};
+WORLD.treasure=function(P,th,seed){
+  var tk=[], x, y;
+  // Stevenson's island in the long gold light: the turf in its greens with the sand spread over it on its own noise, the anchorage
+  // down one side with a fringe of beach, the walk a way of sand, pines with their shadows, grey boulders, and the stockade's
+  // palisade with its log house
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var cx=P.w*(0.9-0.05*Math.sin(y*0.025+seed*0.01))+(fbm(x*.03,y*.03,seed+5)-.5)*12, st=hash(x,y,seed+9), a=fbm(x*.05,y*.05,seed+11);
+    if(x>cx+3){ P.set(x,y,hex(fbm(x*.2,y*.2,seed+13)>.64?'#266a72':'#1e5a64')); continue; }
+    if(x>cx-1){ P.set(x,y,hex(st>.9?'#f4e8c8':'#d8c08a')); continue; }
+    if(fbm(x*.035,y*.035,seed+15)>.64){ P.set(x,y,hex(st>.97?'#f4e8c8':a>.5?'#d8c08a':'#c8b07c')); continue; }
+    P.set(x,y,hex(st>.995?'#e8c860':a>.64?'#688440':a<.3?'#4e6a30':'#5e7a38')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+17)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#a8905e':fbm(x*.2,y*.2,seed+19)>.6?'#d4b880':'#c8aa72')); else if(pd<e+1.5)P.shade(x,y,.8); }
+  for(var bq=0;bq<26;bq++){ var bb=spot(P,P.w*hash(bq,5,seed)*0.85,P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.6,.9,function(a,b){ P.shade(a,b,.7); });
+    if(kd<.55){ for(y=0;y<7;y++)for(x=0;x<7;x++){ var w=(7-y)*0.42; if(Math.abs(x-3)<w) P.set(bb[0]+x,bb[1]+y,hex(y===6?'#5a3e26':(x+y)%3?'#2a4a2a':'#345a30')); } }
+    else if(kd<.8){ for(y=2;y<6;y++)for(x=1;x<6;x++) if(Math.hypot(x-3.5,(y-4)*1.2)<2.6) P.set(bb[0]+x,bb[1]+y,hex(y===2?'#bab4a0':(x+y)%2?'#948e7c':'#7a7466')); }
+    else { for(x=0;x<7;x++){ P.set(bb[0]+x,bb[1]+2,hex(x%2?'#c8a070':'#7a5a36')); P.set(bb[0]+x,bb[1]+3,hex('#7a5a36')); } for(y=4;y<6;y++)for(x=2;x<5;x++) P.set(bb[0]+x,bb[1]+y,hex(y===4?'#4a3420':'#7a5a36')); } }
+};
+WORLD.notredame=function(P,th,seed){
+  var tk=[], x, y;
+  // Paris in 1482: the close's lawns in their dusk greens with the parvis's pale paving spread over them on its own noise, the walk a
+  // way of worn limestone, the Seine winding down one side round the island, houses of old Paris with their tiled roofs, the square
+  // towers with their belfries, and market stalls under striped awnings
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var cx=P.w*(0.88-0.04*Math.sin(y*0.02+seed*0.01))+(fbm(x*.03,y*.03,seed+5)-.5)*10, st=hash(x,y,seed+9), a=fbm(x*.05,y*.05,seed+11);
+    if(Math.abs(x-cx)<3.6){ P.set(x,y,hex(Math.abs(x-cx)<2.6?(fbm(x*.2,y*.2,seed+13)>.62?'#3e6276':'#34566a'):'#b8a882')); continue; }
+    if(fbm(x*.03,y*.03,seed+15)>.62){ P.set(x,y,hex(st>.96?'#e4d8b4':a>.5?'#c8b890':'#b8a882')); continue; }
+    P.set(x,y,hex(st>.994?'#e8c060':a>.64?'#527a4e':a<.3?'#3e5e3e':'#4a6e48')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+17)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#8a7e62':fbm(x*.2,y*.2,seed+19)>.6?'#c8b890':'#b8a882')); else if(pd<e+1.5)P.shade(x,y,.8); }
+  // houses, towers and stalls, each with its shadow
+  for(var bq=0;bq<28;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.6,.9,function(a,b){ P.shade(a,b,.7); });
+    if(kd<.45){ for(y=0;y<6;y++)for(x=0;x<7;x++) P.set(bb[0]+x,bb[1]+y,hex(y<2?((x+y)%2?'#8a3a2a':'#7a2e22'):(x===0||x===6||y===4)?'#3a2616':(x%3===1&&y===3&&(bq+x)%2)?'#f0c878':'#e8dcc0')); }
+    else if(kd<.7){ for(y=0;y<7;y++)for(x=1;x<6;x++) P.set(bb[0]+x,bb[1]+y-1,hex(y===0?'#d8cca8':(x===2||x===4)&&y>1&&y<4?'#1a1820':'#bcac86')); }
+    else { for(y=3;y<6;y++)for(x=1;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(y===3?((x%2)?'#2a4aa0':'#e8dcb8'):'#6a4a28')); P.set(bb[0]+1,bb[1]+6,hex('#4a3018')); P.set(bb[0]+5,bb[1]+6,hex('#4a3018')); } }
+};
+WORLD.london=function(P,th,seed){
+  var tk=[], x, y;
+  // London by night: the squares' lawns in the night's greens with wet cobbles spread over them on their own noise, the walk a way
+  // of grey setts, the Thames winding up one side with its foreshore of mud, terraces with their lit windows, gas lamps with their
+  // pools of light, and the barrows and pillar boxes of the street
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var cx=P.w*(0.1+0.035*Math.sin(y*0.018+seed*0.01))+(fbm(x*.03,y*.03,seed+5)-.5)*10, st=hash(x,y,seed+9), a=fbm(x*.05,y*.05,seed+11);
+    if(Math.abs(x-cx)<3.2){ P.set(x,y,hex(Math.abs(x-cx)<2.2?(fbm(x*.2,y*.2,seed+13)>.62?'#2a3e46':'#22323a'):'#4a4236')); continue; }
+    if(fbm(x*.03,y*.03,seed+15)>.62){ P.set(x,y,hex(st>.96?'#7a7e84':a>.5?'#5a5e62':'#4e5256')); continue; }
+    P.set(x,y,hex(st>.994?'#b07a26':a>.64?'#385a3c':a<.3?'#26402c':'#2e4a34')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+17)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#3e4246':fbm(x*.2,y*.2,seed+19)>.6?'#5a5e62':'#4e5256')); else if(pd<e+1.5)P.shade(x,y,.8); }
+  // terraces, gas lamps, barrows and pillar boxes, each with its shadow
+  for(var bq=0;bq<30;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.6,.9,function(a,b){ P.shade(a,b,.7); });
+    if(kd<.4){ for(y=1;y<6;y++)for(x=0;x<7;x++) P.set(bb[0]+x,bb[1]+y,hex(y===1?'#3a3e44':(x%2&&y%2===0)?((x+y+bq)%3?'#ffd88a':'#2a2630'):'#6a3426')); }
+    else if(kd<.65){ for(y=0;y<6;y++) P.set(bb[0]+3,bb[1]+y,hex(y===0?'#ffe6a0':'#141418')); P.set(bb[0]+2,bb[1],hex('#ffe6a0')); P.set(bb[0]+4,bb[1],hex('#ffe6a0')); }
+    else if(kd<.85){ for(y=3;y<6;y++)for(x=1;x<6;x++) P.set(bb[0]+x,bb[1]+y,hex(y===3?['#c8302a','#f4a020','#6aa83a'][x%3]:'#6a4a28')); P.set(bb[0]+1,bb[1]+6,hex('#4a3018')); P.set(bb[0]+5,bb[1]+6,hex('#4a3018')); }
+    else { for(y=2;y<6;y++)for(x=2;x<4;x++) P.set(bb[0]+x,bb[1]+y,hex(y===2?'#e8c040':'#c4221c')); } }
+};
+WORLD.bigtop=function(P,th,seed){
+  var tk=[], x, y;
+  // the circus lot: trodden grass in warped greens with sawdust spread over it on its own noise, the walk a broad path of sawdust,
+  // the tents along it in red and cream stripes with their flags, wagons, tubs and balance balls, and the rail siding up one side
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var cx=P.w*(0.12+0.03*Math.sin(y*0.02+seed*0.01))+(fbm(x*.03,y*.03,seed+5)-.5)*10, st=hash(x,y,seed+9), a=fbm(x*.05,y*.05,seed+11);
+    if(Math.abs(x-cx)<2.2){ P.set(x,y,hex(Math.abs(x-cx)<0.8?'#6a5a4a':y%4===0?'#5a3a1e':'#4a4038')); continue; }
+    if(fbm(x*.03,y*.03,seed+15)>.64){ P.set(x,y,hex(st>.96?'#f4e2a0':a>.5?'#e8cc90':'#d8b878')); continue; }
+    P.set(x,y,hex(st>.994?'#f4e2a0':st>.975?'#d8b878':a>.64?'#689a44':a<.3?'#4a7a32':'#5a8a3a')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=7+fbm(x*.06,y*.06,seed+17)*3;
+    if(pd<e) P.set(x,y,hex(pd>e-1?'#b8985a':fbm(x*.2,y*.2,seed+19)>.6?'#e8cc90':'#d8b878')); else if(pd<e+1.5)P.shade(x,y,.8); }
+  // tents, wagons, tubs and balance balls, each with its shadow
+  for(var bq=0;bq<30;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),6,7,5,tk); if(!bb)continue; var kd=hash(bq,7,seed);
+    P.ell(bb[0]+3,bb[1]+6.2,2.6,.9,function(a,b){ P.shade(a,b,.7); });
+    if(kd<.45){ for(y=0;y<6;y++){ var hw2=Math.round((y+1)*0.55); for(x=-hw2;x<=hw2;x++) P.set(bb[0]+3+x,bb[1]+y,hex(((x+9)%2)?'#f4ecd8':'#c8302a')); } P.set(bb[0]+3,bb[1]-1,hex('#f4c840')); }
+    else if(kd<.7){ for(y=2;y<5;y++)for(x=0;x<7;x++) P.set(bb[0]+x,bb[1]+y,hex(y===2?'#f4c840':'#c8302a')); P.set(bb[0]+1,bb[1]+5,hex('#f4c840')); P.set(bb[0]+5,bb[1]+5,hex('#f4c840')); }
+    else if(kd<.85){ for(y=3;y<6;y++)for(x=1;x<5;x++) P.set(bb[0]+x,bb[1]+y,hex(y===3?'#f8f2e4':x%2?'#c8302a':'#a8202a')); }
+    else { for(y=3;y<6;y++)for(x=1;x<4;x++) P.set(bb[0]+x,bb[1]+y,hex(['#c8302a','#f4c840','#2a5ab8'][(x+y)%3])); } }
 };
 WORLD.candy=function(P,th,seed){
   var tk=[], x, y;

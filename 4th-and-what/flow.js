@@ -51,7 +51,8 @@
     });
   }
   function choose(d) { A.SC.distance = d; spotLine(); }
-  function pick(d) { if (d != null) A.SC.distance = d; spotLine(); A.show('studio', { mode: 'game' }); }
+  /* Play now goes to Call it (calls.js): the defense's look and three cards */
+  function pick(d) { if (d != null) A.SC.distance = d; spotLine(); A.show('call'); }
   $('pGo').addEventListener('click', function () { pick(); });
 
   /* THE STRIP: the whole field, your end zone on the left and theirs on the
@@ -107,28 +108,55 @@
     });
   });
   /* the situation goes back to where it was picked: the daily's is the day's */
-  $('sSit').addEventListener('click', function () { A.show(window.FAW_DAILY && window.FAW_DAILY.active() ? 'daily' : 'play'); });
+  $('sSit').addEventListener('click', function () { A.show(window.FAW_DAILY && window.FAW_DAILY.active() ? 'daily' : 'call'); });
 
   /* ---------- 2 and 3. Snap it, watch it ---------- */
   function ready(p) { return (p.handoff && p.handoff.to) || (p.targets && p.targets.length); }
-  function snap() {
-    var p = A.copy(A.draft.play);
+  /* THE SNAP'S SEED is fixed before the snap, so the defense a player reads
+     (Call it, and the draw screen) is the defense he plays: the daily's
+     first snap is against the day's defense, ?seed= replays one, and every
+     other snap gets a fresh one that is kept until it is played. */
+  var pend = null;
+  function pending() {
+    var D = window.FAW_DAILY, ds = D && D.active() ? D.seed() : null;
+    if (ds != null) return ds;
+    var G = window.FAW_GO, gs = G ? G.seed() : null;
+    if (gs != null) return gs;
+    if (forced != null) return +forced >>> 0;
+    if (pend == null) pend = RNG.freshSeed();
+    return pend;
+  }
+  /* snap(play, name): a card's play, or the draft drawn in the Studio */
+  var playedName = '';
+  /* snap(play, name, card): card is the kind picked in Call it, for the launch events */
+  function snap(given, name, card) {
+    var p = A.copy(given || A.draft.play);
     if (!ready(p)) { A.toast('sToast', 'Give it a read (Read, then tap a receiver) or make it a run first.'); $('sHint').textContent = 'Give it a read, or make it a run.'; return false; }
-    /* the daily's first snap is against the day's defense; every other one is fresh */
-    var D = window.FAW_DAILY, ds = D ? D.seed() : null;
-    var seed = ds != null ? ds : forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
-    played = p;
+    var D = window.FAW_DAILY;
+    if (window.FAW_FEEL) window.FAW_FEEL.unlock();
+    var seed = pending(); forced = null; pend = null;
+    played = p; playedName = name || A.draft.name || A.nameFor(p);
     if (window.FAW_CLIP) window.FAW_CLIP.cancel();
+    /* the situation as it was snapped: Go For It moves A.SC on to the next down
+       as soon as it hears the result, so the card's header and the kept snap
+       (a replay re-runs it) read this, never A.SC after the run */
+    var at = A.copy(A.SC);
     res = E.run(A.SC, p, seed);
     if (D && D.active()) D.snapped(res, p);
-    remember(res, p, D && D.active());
+    if (window.FAW_GO) window.FAW_GO.snapped(res);
+    /* the coach record and the moments (profile.js) */
+    var G = window.FAW_GO;
+    if (window.FAW_PROFILE) window.FAW_PROFILE.snapped(res, { name: playedName, run: G && G.active() && G.run() ? G.run().n : null });
+    remember(res, p, D && D.active(), at);
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('snap', { mode: G && G.active() ? (G.run() && G.run().daily ? 'today' : 'go') : D && D.active() ? 'daily' : 'practice',
+      card: card || 'own', win: !!res.win, outcome: res.outcome, shell: res.shell, distance: res.distance });
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
-    if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(b); } });
+    if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.putStats(b); } });
     A.watch3d(res, showCard);
     return true;
   }
-  $('sSnap').addEventListener('click', snap);
+  $('sSnap').addEventListener('click', function () { snap(); });
 
   /* ---------- every snap you ran (the owner, 2026-11-01: "I ran 2 plays, I
      should be able to see the result of both") ----------
@@ -137,8 +165,8 @@
      daily's list starts with the day's snap (kept by daily.js, so it is there
      after a reload); the rest are practice. Free play keeps its own list. */
   var LOG_MAX = 12, log = [], shown = null;
-  function remember(r, p, daily) {
-    var e = { sc: A.copy(A.SC), play: A.copy(p), seed: r.seed, win: r.win, yards: r.yards, outcome: r.outcome, daily: !!daily };
+  function remember(r, p, daily, at) {
+    var e = { sc: at || A.copy(A.SC), play: A.copy(p), seed: r.seed, win: r.win, yards: r.yards, outcome: r.outcome, daily: !!daily };
     log.push(e); if (log.length > LOG_MAX) log.shift();
     shown = e;
   }
@@ -155,7 +183,7 @@
     return list.map(function (e, i) { return { e: e, label: daily ? (i === 0 ? 'Daily' : 'Practice ' + i) : 'Snap ' + (i + 1) }; });
   }
   function chipText(x) {
-    var e = x.e, y = e.outcome === 'incomplete' || e.outcome === 'throwaway' ? 'no gain' : (e.yards > 0 ? '+' + e.yards : String(e.yards));
+    var e = x.e, y = e.outcome === 'incomplete' || e.outcome === 'throwaway' || e.outcome === 'interception' ? 'no gain' : (e.yards > 0 ? '+' + e.yards : String(e.yards));
     return x.label + ' · ' + (e.win ? 'First down' : 'Stopped') + ' ' + y;
   }
   function openSnap(e) {
@@ -186,14 +214,29 @@
   function title(r) { return r.title.charAt(0) + r.title.slice(1).toLowerCase(); }
   function showCard() {
     var r = res, c = $('rCard');
-    c.className = 'rescard ' + (r.win ? 'win' : 'lose');
-    $('rDown').textContent = A.sitText().down + ' · ' + A.sitText().spot;
-    $('rTitle').textContent = title(r);
-    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
-    $('rLine').textContent = gained + ' · ' + r.callName;
-    $('rWhy').textContent = r.reason;
+    /* THE CARD THAT HITS (the launch plan, 1D): one big word, the margin,
+       one line of why, and the read's answer; one big button; the rest small */
+    var td = r.outcome === 'touchdown';
+    c.className = 'rescard ' + (td ? 'win td' : r.win ? 'win' : 'lose');
+    var sit = A.sitText(shown && shown.seed === r.seed ? shown.sc : null);
+    $('rDown').textContent = sit.down + ' · ' + sit.spot;
+    $('rTitle').textContent = td ? 'Touchdown' : r.win ? 'First down' : r.outcome === 'interception' ? 'Picked off' : 'Stopped';
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
+    var line = A.marginText(r) || gained + '.', why = r.reason;
+    /* the line already says it: no "Incomplete. Incomplete." */
+    if (why.indexOf(line) === 0) why = why.slice(line.length).trim();
+    /* nor the title again: "Picked off" over "Picked off. The throw went into tight coverage." */
+    var tt = $('rTitle').textContent + '.';
+    if (why.toLowerCase().indexOf(tt.toLowerCase()) === 0) why = why.slice(tt.length).trim();
+    /* nor at the end: a touchdown read "Six. Nobody laid a hand on him. Six." */
+    if (why.length > line.length && why.slice(-line.length) === line) why = why.slice(0, -line.length).trim();
+    $('rLine').textContent = line;
+    $('rWhy').textContent = why;
+    $('rRead').textContent = window.FAW_CALLS ? window.FAW_CALLS.revealText(r) : r.callName;
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
+    if (window.FAW_GO) window.FAW_GO.card(r);
+    if (window.FAW_PROFILE) window.FAW_PROFILE.card();
     renderSnaps();
     clipFor(r);
     c.hidden = false;
@@ -219,37 +262,41 @@
     x.fillStyle = res.win ? '#36d399' : '#ef4b3f'; x.font = 'italic 900 120px "Barlow Condensed", Inter, sans-serif';
     x.fillText(res.title, 60, 960);
     x.fillStyle = '#fff'; x.font = '800 44px Inter, sans-serif';
-    x.fillText((A.draft.name || A.nameFor(played)).slice(0, 34), 60, 1100);
+    x.fillText(playedName.slice(0, 34), 60, 1100);
     x.fillStyle = '#8fa2b8'; x.font = '600 36px Inter, sans-serif';
-    var gained = res.outcome === 'incomplete' || res.outcome === 'throwaway' ? 'No gain' : (res.yards >= 0 ? 'Gained ' + res.yards : 'Lost ' + (-res.yards));
+    var gained = res.outcome === 'incomplete' || res.outcome === 'throwaway' || res.outcome === 'interception' ? 'No gain' : (res.yards >= 0 ? 'Gained ' + res.yards : 'Lost ' + (-res.yards));
     x.fillText(gained + ' · vs ' + res.callName, 60, 1165);
     x.fillStyle = '#8fa2b8'; x.font = '700 30px Inter, sans-serif'; x.fillText('runthe.gg/4th-and-what', 60, 1260);
     card = c; return c;
   }
   function close3d() { $('watch').hidden = true; $('rCard').hidden = true; }
-  $('rAgain').addEventListener('click', function () { snap(); });
-  $('rEdit').addEventListener('click', function () { close3d(); A.show('studio', { mode: 'game' }); });
-  $('rNew').addEventListener('click', function () {
+  /* Run it back: the same play against a fresh defense, at once */
+  $('rAgain').addEventListener('click', function () { snap(played, playedName); });
+  /* Edit play: the play just snapped, on the draw screen */
+  $('rEdit').addEventListener('click', function () {
     close3d();
-    var f = A.draft.play.formation;
-    A.setDraft({ play: A.emptyPlay(f), name: '', nameEdited: false, tag: 'pass', fav: false, notes: '', situations: [], ref: null });
-    A.show('play');
+    if (JSON.stringify(played) !== JSON.stringify(A.draft.play)) A.setDraft({ play: A.copy(played), name: '', nameEdited: false, tag: A.tagOf(played), fav: false, notes: '', situations: [], ref: null });
+    A.show('studio', { mode: 'game' });
   });
+  /* New play: a new look and a new hand */
+  $('rNew').addEventListener('click', function () { close3d(); A.show('call'); });
   $('rSave').addEventListener('click', function () {
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
     if (b) { A.toast('rToast', 'It is already in ' + b.name + '. This snap counted in its stats.'); return; }
     A.saveDialog(A.copy(played), { distance: A.SC.distance, tag: A.draft.tag, done: function (bk, e) {
       A.draft.ref = { book: bk.id, id: e.id }; A.draft.name = e.name; A.draft.nameEdited = e.nameEdited; A.saveDraft();
-      B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(bk);
+      B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.putStats(bk);
       A.toast('rToast', 'Saved to ' + bk.name + '.');
+      if (window.FAW_EVENTS) window.FAW_EVENTS.track('save', { kind: 'play' });
     } });
   });
   $('rCardBtn').addEventListener('click', function () {
     var c = makeCard();
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('save', { kind: 'card' });
     c.toBlob(function (blob) {
       if (!blob) return;
       var u = URL.createObjectURL(blob), a = document.createElement('a');
-      a.href = u; a.download = (A.draft.name || A.nameFor(played)).replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-card.png'; a.click();
+      a.href = u; a.download = playedName.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-card.png'; a.click();
       setTimeout(function () { URL.revokeObjectURL(u); }, 1000);
     });
   });
@@ -260,17 +307,18 @@
      for one more tap. A browser that cannot record shares the line alone. */
   var CL = window.FAW_CLIP;
   function shareLine() { var D = window.FAW_DAILY; return D && D.active() ? D.share(res) : SH.text(res); }
-  function clipName() { return (A.draft.name || A.nameFor(played) || '4th-and-what').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(); }
+  function clipName() { return (playedName || '4th-and-what').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(); }
   function clipFor(r) {
     $('rShare').textContent = 'Share';
     if (!CL || !CL.supported()) return;
-    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
+    var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 'No gain' : (r.yards >= 0 ? 'Gained ' + r.yards : 'Lost ' + (-r.yards));
     var D = window.FAW_DAILY, s = A.sitText();
     CL.start(r, { situation: (D && D.active() ? 'Daily #' + D.number() + ' · ' : '') + s.down + ' · ' + s.spot,
       name: A.draft.name || A.nameFor(played), title: r.title, line: gained + ' · vs ' + r.callName, win: r.win });
   }
   $('rShare').addEventListener('click', function () {
     if (!res) return;
+    if (window.FAW_EVENTS) window.FAW_EVENTS.track('share', { kind: CL && CL.supported() ? 'video' : 'line' });
     if (CL && CL.supported()) {
       var c = CL.ready();
       if (c) {
@@ -294,5 +342,5 @@
   A.on('replay', renderSnaps);
   A.on('studio', spotLine);
 
-  window.FAW_FLOW = { snaps: snapsNow, openSnap: openSnap, refresh: spotLine, pick: pick, snap: snap, last: function () { return res; }, card: makeCard };
+  window.FAW_FLOW = { snaps: snapsNow, openSnap: openSnap, refresh: spotLine, pick: pick, snap: snap, pending: pending, last: function () { return res; }, card: makeCard };
 })();

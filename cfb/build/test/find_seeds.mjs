@@ -26,7 +26,7 @@ const rd = (f) => JSON.parse(fs.readFileSync(path.join(ROOT, 'cfb/data', f), 'ut
 const data = R.indexData(rd('cfb_player_seasons.json'), rd('cfb_team_seasons.json'));
 const league = rd('cfb_league_context.json');
 const cal = rd('cfb_display_calibration.json');
-const CTX = { battery: rd('cfb_battery.json'), curated: rd('cfb_curated.json'), coaches: rd('cfb_coaches.json') };
+const CTX = { battery: rd('cfb_battery.json'), curated: rd('cfb_curated.json'), coaches: rd('cfb_coaches.json'), schools: E.schoolsByPlayer(rd('cfb_player_seasons.json')) };
 
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 ? +process.argv[i + 1] : d; };
 const FROM = arg('--from', 0), TO = arg('--to', 400);

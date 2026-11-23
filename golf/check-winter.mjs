@@ -100,15 +100,17 @@ try {
   ok('the home card counts what is waiting', /11 to open/.test(r.card), r.card);
   await page.close();
 
-  head('desktop: the event card sits under the hero, and the drop banner goes');
+  // The classic home (.homeextras and its rail) went with the First Tee launch, so the event is the First Tee's pennant now.
+  head('desktop: the First Tee flies the event pennant, and the drop banner goes');
   page = await b.newPage({ viewport: { width: 1400, height: 900 } });
   page.on('pageerror', (e) => errs.push(String(e)));
   await page.clock.setSystemTime(new Date('2026-12-07T17:00:00Z'));
   await page.addInitScript(() => { try { localStorage.setItem('bag_tour_done', 'true'); } catch (e) {} });
   await page.goto(HOST + '/golf/index.html'); await page.waitForTimeout(2200);
   r = await page.evaluate(() => { S.overlay = null; S.screen = 'title'; render(); const vis = (e) => !!e && getComputedStyle(e).display !== 'none';
-    return { left: vis(document.querySelector('.homeextras .gc-winter')), rail: vis(document.querySelector('.homerail .gc-winter')), drop: vis(document.querySelector('.homedrop')) }; });
-  ok('left column card shown, rail card and banner hidden', r.left && !r.rail && !r.drop, r);
+    const pn = document.querySelector('.ft-pennant');
+    return { pennant: vis(pn) && /Winter Classic/.test(pn.textContent), drop: vis(document.querySelector('.homedrop')) }; });
+  ok('the Winter Classic pennant shows, and the drop banner does not', r.pennant && !r.drop, r);
   await page.close();
 
   head('page errors');

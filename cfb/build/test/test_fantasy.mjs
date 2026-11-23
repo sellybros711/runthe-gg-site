@@ -17,9 +17,10 @@ import {
 } from '../fantasy/espn.mjs';
 import {
   pickSlate, nextWeek, gameScore, priorsFrom, buildMen, projectMan, positionLevels, pricePool,
-  SLATE_SIZE, MATCHUP_HI, MATCHUP_LO, PROJ_LEVEL,
+  applyRoles, asPriced, asShown, SLATE_SIZE, MATCHUP_HI, MATCHUP_LO, PROJ_LEVEL,
 } from '../fantasy/pool.mjs';
-import { seasonToDate } from '../fantasy/season.mjs';
+import { quarterbacks, backupQBs } from '../fantasy/roles.mjs';
+import { seasonToDate, loadStore } from '../fantasy/season.mjs';
 import { sweepCap, DRAFT } from '../fantasy/cap.mjs';
 import { poolSQL, resultsSQL } from '../fantasy/publish.mjs';
 import { buildReport, desig } from '../fantasy/injuries.mjs';
@@ -240,8 +241,11 @@ let POOL;
     Math.sign(projectMan(withPrior, levels).proj - projectMan(same, levels).proj)
       === Math.sign(30 - PROJ_LEVEL * levels.get(withPrior.position)));
   const missed = men.find((m) => m.missed_last);
-  const full = { ...missed, games: missed.played_of };
-  ok('missing games costs projection', projectMan(missed, levels).proj < projectMan(full, levels).proj);
+  const full = { ...missed, played_of: missed.games };
+  /* The owner, 2026-11-12: from three games a man is priced on the games he played, and the
+     chip says he missed. Every man in this fixture has three or four. */
+  ok('missing games does not cost projection from three games on', missed.games >= 3
+    && projectMan(missed, levels).proj === projectMan(full, levels).proj);
   const p = pricePool(men);
   ok('prices run $3M to $48M', Math.min(...men.map((m) => m.price_musd)) >= 3
     && Math.max(...men.map((m) => m.price_musd)) === 48);
@@ -253,6 +257,115 @@ let POOL;
   men.sort((a, b) => b.price_musd - a.price_musd);
   POOL = { season: 2026, week: 5, locks_at: SLATE[0].kick, cap_musd: 0,
     swap: { pct: 0.25, floor_musd: 5 }, games: SLATE, pool: men };
+}
+
+/* ─── 3b. who starts at quarterback ─────────────────────────────────────────────── */
+
+/* THE BOARD READS ROLES (the owner, 2026-11-12, "Do the same for college football fantasy").
+   College football has no depth chart this mode can reach, so the starter is read off the
+   box scores. Each team below is a case off the week 11 board. */
+section('3b. the board reads roles: only starting quarterbacks');
+{
+  /* A row: [id, team, game, pts, line, passYds, ...the rest of STAT_KEYS]. */
+  const row = (id, tid, gid, py, pts = py / 10) => [id, tid, gid, pts, '', py, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const store = { season: 2026, names: {}, weeks: {} };
+  /* Five weeks, every team playing a stand-in opponent. `who[w]` is that week's passers. */
+  const plan = {
+    IU: [[['hoover', 250]], [['hoover', 260]], [['hoover', 290]], [['hoover', 80]], [['wilson', 156], ['hoover', 119]]],
+    NU: [[['chiles', 270]], [['chiles', 220]], [['chiles', 210]], [['chiles', 280]], [['marchiol', 181]]],
+    KU: [[['marshall', 330]], [['marshall', 150]], [['marshall', 210]], [['ballard', 285]], [['marshall', 210]]],
+    OSU: [[['sayin', 320]], [['sayin', 240]], [['sayin', 230]], [['fahey', 260]], [['fahey', 360]]],
+    FLA: [[['philo', 275]], [['philo', 240]], [['philo', 200]], [['jones', 155]], [['jones', 172], ['philo', 26]]],
+    UGA: [[['stockton', 295]], [['stockton', 250]], [['stockton', 270], ['puglisi', 55]], [['stockton', 100]], [['stockton', 186]]],
+  };
+  for (let w = 1; w <= 5; w++) {
+    const games = [], rows = [];
+    for (const tid of Object.keys(plan)) {
+      const gid = `${tid}${w}`;
+      games.push([gid, tid, 'opp', 30, 20, `2026-10-0${w}T19:00Z`]);
+      for (const [id, py] of plan[tid][w - 1]) { rows.push(row(id, tid, gid, py)); store.names[id] = id; }
+    }
+    /* The man who filled in at Kansas still runs a sneak in week 5, so he is in the box. */
+    if (w === 5) rows.push(['ballard', 'KU', 'KU5', 0.5, '', 0, 0, 0, 5, 0, 0, 0, 0, 0, 0]);
+    store.weeks[String(w)] = { games, rows };
+  }
+  const roles = quarterbacks(store, 6);
+  const starts = (t) => [...roles.teams.get(t).starters].sort().join(',');
+  ok('the store speaks once it holds the week just played', roles.ready);
+  ok('Indiana: the regular who played in a blowout still starts, beside the man who led it',
+    starts('IU') === 'hoover,wilson', starts('IU'));
+  ok('Northwestern: a regular who missed one game still starts, beside his stand in',
+    starts('NU') === 'chiles,marchiol', starts('NU'));
+  ok('Kansas: the man who filled in for one game is a backup again', starts('KU') === 'marshall',
+    starts('KU'));
+  ok('Ohio State: a regular absent two games still starts, beside the man in his place',
+    starts('OSU') === 'fahey,sayin', starts('OSU'));
+  ok('Florida: a regular who played behind the new man was benched', starts('FLA') === 'jones',
+    starts('FLA'));
+  ok('a starter\'s starts are the games he led', roles.starts.get('fahey').n === 2
+    && roles.starts.get('sayin').n === 3
+    && roles.starts.get('hoover').n === 4 && Math.abs(roles.starts.get('fahey').pts - 62) < 1e-9);
+  ok('the store without the week just played says nothing', !quarterbacks(store, 7).ready);
+  ok('nor in week 1', !quarterbacks(store, 1).ready);
+  const q = (id, team_id) => ({ player_id: id, position: 'QB', team_id });
+  const board = [q('sayin', 'OSU'), q('fahey', 'OSU'), q('philo', 'FLA'), q('ballard', 'KU'), q('marshall', 'KU'),
+    q('puglisi', 'UGA'), q('elsewhere', 'NOSTORE'), { player_id: 'rb', position: 'RB', team_id: 'OSU' }];
+  const b = backupQBs(roles, board);
+  ok('the backups come off', b.has('philo') && b.has('ballard') && b.has('puglisi'), [...b].join(','));
+  ok('  and the starters stay', !b.has('fahey') && !b.has('sayin') && !b.has('marshall'));
+  ok('a team the store cannot speak for loses nobody', !b.has('elsewhere'));
+  ok('only quarterbacks', !b.has('rb'));
+  ok('a store that is not ready takes nobody off', backupQBs(quarterbacks(store, 7), board).size === 0);
+
+  /* The Monday build: a starter ESPN's roster left out is added, as a quarterback, off what
+     the store has on him. The roster stops at 100 names, alphabetically. */
+  const slate = [{ id: 'g', kick: '2026-11-07T19:00Z', spread: -3, total: 50,
+    home: { id: 'UGA', abbr: 'UGA' }, away: { id: 'OSU', abbr: 'OSU' } }];
+  const rosters = new Map([
+    ['UGA', new Map([['puglisi', { name: 'Ryan Puglisi', pos: 'QB' }]])],
+    ['OSU', new Map([['backup', { name: 'A Backup', pos: 'QB' }], ['fahey', { name: 'Luke Fahey', pos: 'WR' }]])],
+  ]);
+  const todate = seasonToDate(store, 6, STAT_KEYS);
+  const built = buildMen(slate, rosters, todate, new Map(), roles);
+  const ids = built.men.map((m) => m.player_id);
+  ok('a starter missing from the roster is added', ids.includes('stockton') && ids.includes('sayin')
+    && built.dropped.added === 2, String(built.dropped.added));
+  ok('  as a quarterback on his own team', built.men.find((m) => m.player_id === 'stockton').position === 'QB'
+    && built.men.find((m) => m.player_id === 'stockton').team === 'UGA');
+  ok('a man the roster lists at another position is left as it says',
+    built.men.find((m) => m.player_id === 'fahey').position === 'WR');
+  ok('played_of is never below the games he played', built.men.every((m) => m.played_of >= m.games));
+  const kept = applyRoles(built.men, roles);
+  ok('the board keeps only the starters', !kept.some((m) => m.player_id === 'puglisi' || m.player_id === 'backup')
+    && kept.some((m) => m.player_id === 'stockton'));
+  ok('without roles nobody is dropped', applyRoles(built.men.slice(), null).length === built.men.length);
+
+  /* PRICED ON HIS STARTS, SHOWN AS WHAT HE DID. Wilson at Indiana came on in relief once and
+     led one game; his season average is the two games, his price reads the one start. */
+  const w = { player_id: 'wilson', position: 'QB', games: 2, half_ppg: 7, played_of: 5, starts: 1,
+    start_ppg: 15.6, prior: null };
+  asPriced(w);
+  ok('a starter is priced on his starts, never discounted', w.games === 1 && w.half_ppg === 15.6
+    && w.played_of === 1);
+  const lv = new Map([['QB', 20]]);
+  const priced = projectMan(w, lv).proj;
+  asShown(w);
+  ok('  and his card goes back to what he did', w.games === 2 && w.half_ppg === 7 && w.played_of === 5);
+  /* THE THREE GAME GUARD ("yes add it", the owner). The box score lists only men who
+     touched the ball, so one catch all season reads as one game. */
+  const three = { player_id: 'm', position: 'RB', games: 3, half_ppg: 12, played_of: 9 };
+  ok('a three game man is not discounted for the games he missed',
+    projectMan(three, lv).proj === projectMan({ ...three, played_of: 3 }, lv).proj);
+  const one = { player_id: 'o', position: 'WR', games: 1, half_ppg: 23.3, played_of: 9 };
+  ok('a one game man stays discounted by his share of his team\'s games',
+    projectMan(one, lv).proj < projectMan({ ...one, played_of: 1 }, lv).proj
+    && Math.abs(projectMan(one, lv).proj * 9 - projectMan({ ...one, played_of: 1 }, lv).proj) < 1);
+  const two = { player_id: 't', position: 'TE', games: 2, half_ppg: 10, played_of: 9 };
+  ok('  and so does a two game man', projectMan(two, lv).proj < projectMan({ ...two, played_of: 2 }, lv).proj);
+  ok('  which projects him above his relief average', priced > projectMan(w, lv).proj);
+  const plain = { player_id: 'x', position: 'RB', games: 3, half_ppg: 9, played_of: 4 };
+  asPriced(plain);
+  ok('a man with no starts is priced as he was', plain.games === 3 && plain.played_of === 4 && !plain.disp);
 }
 
 /* ─── 4. the cap ────────────────────────────────────────────────────────────────── */
@@ -292,6 +405,16 @@ section('5. the injury report says only what it knows');
     { name: t2.name, pos: t2.position, inj: { status: 'Day-To-Day', detail: 'Ankle' } }]])]]), []);
   ok('  and it reaches the report', rep2.men[t2.player_id]
     && rep2.men[t2.player_id].st === 'questionable' && rep2.men[t2.player_id].d === 'Ankle');
+  /* A BACKUP QUARTERBACK COMES OFF MID-WEEK, coded the NFL file's way, and no price moves. */
+  const qbs = POOL.pool.filter((m) => m.position === 'QB');
+  const before = JSON.stringify(POOL.pool.map((m) => m.price_musd));
+  const rep3 = buildReport(POOL, rosters, [{ id: qbs[2].player_id }], new Set([qbs[1].player_id,
+    qbs[2].player_id, POOL.pool[0].player_id]));
+  ok('a backup quarterback is off, as QB2', rep3.men[qbs[1].player_id]
+    && rep3.men[qbs[1].player_id].st === 'off' && rep3.men[qbs[1].player_id].roster === 'QB2');
+  ok('  ESPN\'s out group still reads as out', rep3.men[POOL.pool[0].player_id].st === 'out');
+  ok('  a site ruling still wins', rep3.men[qbs[2].player_id].by === 'site');
+  ok('  and the board\'s prices did not move', JSON.stringify(POOL.pool.map((m) => m.price_musd)) === before);
 }
 
 /* ─── 6. the SQL ────────────────────────────────────────────────────────────────── */
@@ -349,6 +472,32 @@ section('8. the live week drafts');
       }
     }
     ok('400 drafts all finish', stranded === 0, `${stranded} stranded`);
+
+    /* THE BOARD THE PAGE REALLY DRAWS: the injury file's off, out, suspended and doubtful
+       men taken away, which since 2026-11-12 includes every backup quarterback. */
+    const injFile = path.join(ROOT, 'cfb/data/fantasy', `injuries_${pool.season}_w${pool.week}.json`);
+    if (fs.existsSync(injFile)) {
+      const inj = JSON.parse(fs.readFileSync(injFile, 'utf8'));
+      const GONE = { off: 1, out: 1, suspended: 1, doubtful: 1 };
+      const drawn = pool.pool.filter((m) => !(inj.men[m.player_id] && GONE[inj.men[m.player_id].st]));
+      const want = backupQBs(quarterbacks(loadStore(pool.season), pool.week), pool.pool);
+      const marked = new Set(Object.entries(inj.men).filter(([, v]) => v.roster === 'QB2').map(([k]) => k));
+      ok('the live file has every backup quarterback off', [...want].every((id) => marked.has(id)),
+        [...want].filter((id) => !marked.has(id)).join(','));
+      ok('  and nobody else coded QB2', [...marked].every((id) => want.has(id)));
+      let stuck = 0;
+      for (let k = 0; k < 400; k++) {
+        const chance = { seed: 5000 + k, men: [] };
+        for (let i = 0; i < DRAFT.SLOTS.length; i++) {
+          const board = DRAFT.boardFor(drawn, chance, i, cap);
+          const left = cap - DRAFT.spent(chance);
+          const can = board.filter((m) => DRAFT.canSign(drawn, i, left, m));
+          if (!can.length) { stuck++; break; }
+          chance.men.push(can[k % can.length]);
+        }
+      }
+      ok('400 drafts finish on the board the page draws', stuck === 0, `${stuck} stranded`);
+    }
   }
 }
 

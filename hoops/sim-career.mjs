@@ -216,7 +216,24 @@ for (const x of results) for (const id in x.seen) { ev[id] = ev[id] || { careers
 const exSeen = {};
 for (const x of exAll) for (const id in x.seen) exSeen[id] = 1;
 const allIds = new Set(Object.keys(C.EVENTS).concat(Object.keys(C.AM_EVENTS || {}), Object.keys(C.STORY_EV || {}), Object.keys(C.ARC_EVENTS || {})));
-const never = [...allIds].filter((id) => !ev[id] && !exSeen[id]);
+let never = [...allIds].filter((id) => !ev[id] && !exSeen[id]);
+/* A son's card the sons sweep missed is played on before it is called never
+   dealt. leg_rafters needs a son who lands on his father's club in his first
+   three seasons, so 400 sons on today's rosters can meet none (the
+   2026-11-09 refresh did). Up to 1,200 more sons of the sweep's fathers are
+   played only while something is still never dealt; they feed nothing else. */
+if (never.length && EX.sons.length) {
+  /* Fathers with a number in the rafters, as the sons sweep puts them first:
+     with them about one son in eighty is dealt leg_rafters. */
+  const all = EX.sons.map((x) => x.dad), hung = all.filter((d) => d.final && d.final.jersey);
+  const dads = hung.length ? hung : all;
+  for (let i = 0; i < 1200 && never.length; i++) {
+    const dad = dads[i % dads.length];
+    try { const r = run('son+' + i, i % 2 ? 'hs' : 'gen', POLICIES[i % POLICIES.length], null, true, { parent: parentOf(dad), parentLeague: C.leagueEnd(dad) }); for (const id in r.seen) exSeen[id] = 1; }
+    catch (e) { crashes++; }
+    never = never.filter((id) => !exSeen[id]);
+  }
+}
 
 /* Overlap is measured over the story catalog: the system cards every career
    meets (training, free agency, the combine, the draft) are not story. */

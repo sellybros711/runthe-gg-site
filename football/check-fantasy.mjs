@@ -673,6 +673,72 @@ console.log('\nTHE INJURY REPORT IS BUILT FROM TWO SOURCES');
     twice[0] === twice[1] ? `${twice[0].length} bytes` : 'the output carries a clock');
 }
 
+/* THE BOARD READS ROLES (the owner, 2026-11-12): the roster's club, only starting
+   quarterbacks, and a starter priced on his starts. */
+{
+  const { applyRoles, START_ATTEMPTS } = await import('./build/weekly-pool.mjs');
+  const now = Date.parse('2026-11-12T16:00:00Z');
+  const dt = '2026-11-12T15:00:00Z';
+  const depth = [
+    { dt, team: 'NYG', gsis_id: 'mcc', pos_abb: 'QB', pos_rank: '1' },
+    { dt, team: 'NYG', gsis_id: 'win', pos_abb: 'QB', pos_rank: '2' },
+    { dt, team: 'MIA', gsis_id: 'new', pos_abb: 'QB', pos_rank: '1' },
+    { dt, team: 'MIN', gsis_id: 'cou', pos_abb: 'QB', pos_rank: '1' },
+  ];
+  const players = [
+    { gsis_id: 'mcc', status: 'ACT', latest_team: 'NYG' }, { gsis_id: 'win', status: 'ACT', latest_team: 'NYG' },
+    { gsis_id: 'new', status: 'ACT', latest_team: 'MIA', display_name: 'New Starter' },
+    { gsis_id: 'cou', status: 'ACT', latest_team: 'MIN' }, { gsis_id: 'wr', status: 'ACT', latest_team: 'SF' },
+  ];
+  const g = (id, week, att, fp) => ({ player_id: id, season_type: 'REG', week: String(week),
+    attempts: String(att), fantasy_points: String(fp), receptions: '0' });
+  const rows = [g('mcc', 1, 3, 1), g('mcc', 2, 4, 2), g('mcc', 7, 30, 18), g('mcc', 8, 32, 20),
+    g('win', 1, 35, 16), g('win', 2, 38, 15)];
+  const t = (id, team, pos, games, half) => ({ player_id: id, team, position: pos, games, half,
+    half_ppg: half / games });
+  const todate = [t('mcc', 'NYG', 'QB', 4, 41), t('win', 'NYG', 'QB', 2, 31), t('cou', 'LV', 'QB', 9, 150),
+    t('wr', 'IND', 'WR', 8, 80)];
+  const out = applyRoles(todate, rows, 10, players, depth, now);
+  const by = Object.fromEntries(out.map((p) => [p.player_id, p]));
+  ok('the backup quarterback is not on the board', !by.win);
+  ok('the starter is priced on his starts only (' + START_ATTEMPTS + '+ attempts)',
+    by.mcc && by.mcc.qb1 && by.mcc.starts === 2 && Math.abs(by.mcc.start_ppg - 19) < 1e-9,
+    by.mcc && by.mcc.starts + ' starts at ' + by.mcc.start_ppg);
+  ok('a starter with nothing done yet is on it, from the roster', by.new && by.new.qb1
+    && by.new.games === 0 && by.new.name === 'New Starter' && by.new.team === 'MIA');
+  ok('a man who moved is on his new club', by.cou && by.cou.team === 'MIN' && by.wr.team === 'SF');
+}
+
+/* A BACKUP QUARTERBACK COMES OFF THE BOARD (the owner, 2026-11-12). Read off each club's own
+   latest depth chart; a starter anywhere stays; a stale chart takes nobody off. */
+{
+  const { backupQBs, buildInjuries } = await import('./build/injuries.mjs');
+  const now = Date.parse('2026-11-12T16:00:00Z');
+  const d = (dt, team, id, rank) => ({ dt, team, gsis_id: id, pos_abb: 'QB', pos_rank: String(rank) });
+  const depth = [
+    d('2026-11-12T15:00:00Z', 'NYG', 'mccarthy', 1), d('2026-11-12T15:00:00Z', 'NYG', 'winston', 2),
+    d('2026-11-10T15:00:00Z', 'NYG', 'winston', 1),            /* an older stamp is ignored */
+    d('2026-11-12T15:00:00Z', 'BAL', 'brissett', 1),            /* moved clubs, starts there */
+    d('2026-11-12T15:00:00Z', 'ARI', 'beck', 1),
+    d('2026-10-20T15:00:00Z', 'OLD', 'stale1', 1), d('2026-10-20T15:00:00Z', 'OLD', 'stale2', 2),
+  ];
+  const q = (id, team) => ({ player_id: id, position: 'QB', team });
+  const pool = [q('mccarthy', 'NYG'), q('winston', 'NYG'), q('brissett', 'ARI'), q('gone', 'ARI'),
+    q('stale2', 'OLD'), q('nochart', 'XYZ'), { player_id: 'rb2', position: 'RB', team: 'NYG' }];
+  const b = backupQBs(depth, pool, now);
+  ok('the starter on his club\'s latest chart stays', !b.has('mccarthy'));
+  ok('the man behind him comes off', b.has('winston'));
+  ok('a starter traded since the board was built stays', !b.has('brissett'));
+  ok('a man missing from a fresh chart comes off', b.has('gone'));
+  ok('a chart more than eight days old takes nobody off', !b.has('stale2'));
+  ok('a club with no chart takes nobody off', !b.has('nochart'));
+  ok('only quarterbacks', !b.has('rb2'));
+  const r = buildInjuries({ season: 2026, week: 10, ids: ['winston', 'mccarthy'], injuries: [],
+    players: [{ gsis_id: 'winston', status: 'ACT' }, { gsis_id: 'mccarthy', status: 'ACT' }], backups: b });
+  ok('and the report marks him off as QB2', r.men.winston && r.men.winston.st === 'off'
+    && r.men.winston.roster === 'QB2' && !r.men.mccarthy, JSON.stringify(r.men));
+}
+
 /* ---------------------------------------------------------------- */
 /*
  * THE CLUB COLOURS, ASKED OF THE POOL RATHER THAN OF A BOARD.
@@ -918,7 +984,10 @@ console.log('\nEVERY CLUB THE BOARD CAN NAME HAS A COLOUR THAT READS');
     const code = CLUBS.PUBLISHED[c] ? c : { LA: 'LAR' }[c];
     return code && CLUBS.color(c).toLowerCase() !== CLUBS.PUBLISHED[code][0].toLowerCase();
   });
-  ok('  and most of them had to be lifted to get there', lifted.length >= 25,
+  /* MOST, AS A SHARE OF THE CLUBS ON THIS BOARD. It was a count of 25, which is most of 32
+     and more than a bye week can have: week 11 of 2026 had 26 clubs and 24 lifted, and the
+     Tuesday build refused to open the week over it. */
+  ok('  and most of them had to be lifted to get there', lifted.length >= Math.ceil(codes.size * 0.75),
     `${lifted.length} of ${codes.size} moved off the published primary`);
 
   /*
@@ -3972,7 +4041,7 @@ for (const [label, who, want] of [
   ok(label, got.there === want, JSON.stringify(got));
   if (want) {
     /* AN ANCHOR, because it goes to another page and middle click has to work. */
-    ok('  it is a link and it points at the mode', got.tag === 'A' && got.href === '/football/fantasy/',
+    ok('  it is a link and it points at the mode', got.tag === 'A' && got.href === '/football/fantasy/?from=home',
       got.tag + ' ' + got.href);
     ok('  it is visible', got.shown);
     /* null means this reader is not shown the store at all, which is a fine answer and not
@@ -4159,7 +4228,7 @@ console.log('\nTHE LOCK DAY REMINDER COMES UP ONCE, ON THE DAY THE WEEK LOCKS');
       ok('  it says what first place wins', /wins 30 days of Pro/.test(got.text));
       ok('  the countdown is the real time to the lock',
         got.segs.length === 3 && Number(got.segs[0]) === 2 && Number(got.segs[1]) >= 58, got.segs.join(':'));
-      ok('  the way in is the mode', got.href === '/football/fantasy/', got.href);
+      ok('  the way in is the mode', got.href === '/football/fantasy/?from=lockday', got.href);
       ok('  and the whole card fits a phone', got.fits && got.goShown);
       const s1 = await page.evaluate(() => document.querySelector('#fpromo .fp-seg:nth-child(3) b').textContent);
       await page.waitForTimeout(2100);

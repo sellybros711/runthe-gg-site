@@ -102,10 +102,18 @@ test('the carrier runs the path drawn, to the end of it', () => {
 });
 
 test('runs gain like real runs: a long tail, not a wall at three yards', () => {
-  const ys = []; for (let s = 1; s <= 200; s++) ys.push(E.run(at(10), PLAYBOOK['inside zone'], s * 7919).yards);
+  /* the run cards a player is dealt, every look, on a base down and a long
+     4th down (since 2026-11-16: one I formation play into an eight man box
+     is the box read working, not the spread) */
+  const K = require('../calls.js'), ys = [];
+  for (const [down, distance, ballOn] of [[1, 10, 75], [4, 10, 50]]) {
+    const sc = Object.assign({}, C.SCENARIO, { down, distance, ballOn });
+    for (let i = 0; i < 200; i++) { const s = (i * 2654435761 + distance * 97 + down) >>> 0; ys.push(E.run(sc, K.deal(sc, s)[0].play, s).yards); }
+  }
   const share = k => ys.filter(y => y >= k).length / ys.length;
   assert.ok(share(5) > 0.2 && share(5) < 0.5, 'five or more about a third of the time: ' + share(5));
   assert.ok(share(10) > 0.01, 'and now and then ten');
+  assert.ok(share(20) < 0.08, 'but not a race to the end zone: ' + share(20));
 });
 
 test('the same seed and the same play give the same result, frame for frame', () => {
@@ -138,7 +146,7 @@ test('outcomes follow the spot: past the marker wins, short loses', () => {
   for (let s = 1; s <= 120; s++) for (const d of [1, 5, 15]) {
     const r = E.run(at(d), PLAYBOOK['slant flat'], s);
     if (r.outcome === 'down') assert.equal(r.win, r.spotY >= r.marker, 'seed ' + s);
-    if (['sack', 'throwaway', 'incomplete', 'fumble'].includes(r.outcome)) assert.equal(r.win, false);
+    if (['sack', 'throwaway', 'incomplete', 'interception', 'fumble'].includes(r.outcome)) assert.equal(r.win, false);
     if (r.outcome === 'touchdown') assert.equal(r.win, true);
   }
 });
@@ -152,4 +160,22 @@ test('a sensible play converts about as often as a real 4th down', () => {
     const avg = SENS[d].reduce((a, n) => a + rate(PLAYBOOK[n], d, 120), 0) / SENS[d].length * 100;
     assert.ok(Math.abs(avg - TARGET[d]) <= 13, '4th and ' + d + ': ' + avg.toFixed(0) + '% against ' + TARGET[d] + '%');
   }
+});
+
+test('interceptions: about 3% of throws, only into tight coverage, and they never change whether it was caught', () => {
+  const T2 = JSON.parse(JSON.stringify(C.TUNING)); T2.catch.int = 0; T2.catch.intPressure = 0;
+  let thr = 0, ints = 0;
+  for (const [n, p] of Object.entries(PLAYBOOK)) for (const d of [3, 7, 15]) for (let s = 1; s <= 60; s++) {
+    const sc = Object.assign({}, C.SCENARIO, { down: 4, distance: d, ballOn: 40 });
+    const r = E.run(sc, p, s), r0 = E.run(sc, p, s, { tuning: T2 });
+    if (r.throwInfo && !r.isRun) thr++;
+    if (r.outcome === 'interception') {
+      ints++;
+      assert.equal(r.win, false); assert.equal(r.title, 'INTERCEPTED');
+      assert.equal(r0.outcome, 'incomplete', 'a pick was a miss with the pick switched off: ' + n + ' ' + s);
+      assert.ok(r.throwInfo.sep < C.TUNING.catch.intSep, 'into tight coverage: ' + r.throwInfo.sep);
+      assert.ok(r.events.some(e => e.kind === 'int') && /^Picked off\./.test(r.reason));
+    } else assert.equal(r.outcome === 'touchdown' || r.win, r0.outcome === 'touchdown' || r0.win, 'everything else is the same snap: ' + n + ' ' + s);
+  }
+  assert.ok(ints / thr > 0.01 && ints / thr < 0.06, 'interceptions per throw: ' + (ints / thr).toFixed(3));
 });

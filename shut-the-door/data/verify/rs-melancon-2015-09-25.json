@@ -1,0 +1,360 @@
+{
+ "id": "rs-melancon-2015-09-25",
+ "plan": "13clubs",
+ "resolution": "real",
+ "gamePk": 415950,
+ "date": "2015-09-25",
+ "game": "Regular Season Game 1: Pittsburgh Pirates at Chicago Cubs",
+ "gameType": "R",
+ "pitcher": {
+  "id": 453343,
+  "name": "Mark Melancon",
+  "throws": "R",
+  "team": "Pittsburgh Pirates",
+  "seasonLine": "2.23 ERA, 51 SV, 76.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 66,
+   "batterId": 456121,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "453343": 3
+   },
+   "pitches": 3,
+   "event": "double",
+   "des": "Chris Denorfia doubles (11) on a line drive to right fielder Gregory Polanco.",
+   "feedEvent": "double",
+   "feedDescription": "Chris Denorfia doubles (11) on a line drive to right fielder Gregory Polanco.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Chris Denorfia",
+   "batSideListed": "R",
+   "seasonLine": ".269/.319/.373, 3 HR"
+  },
+  {
+   "atBat": 67,
+   "batterId": 471083,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "453343": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Miguel Montero strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Miguel Montero strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Miguel Montero",
+   "batSideListed": "L",
+   "seasonLine": ".248/.345/.409, 15 HR"
+  },
+  {
+   "atBat": 68,
+   "batterId": 516770,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "453343": 2
+   },
+   "pitches": 2,
+   "event": "triple",
+   "des": "Starlin Castro triples (2) on a line drive to right fielder Gregory Polanco.   Chris Denorfia scores.",
+   "feedEvent": "triple",
+   "feedDescription": "Starlin Castro triples (2) on a line drive to right fielder Gregory Polanco. Chris Denorfia scores.",
+   "runs": 1,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Starlin Castro",
+   "batSideListed": "R",
+   "seasonLine": ".265/.296/.375, 11 HR"
+  },
+  {
+   "atBat": 69,
+   "batterId": 624585,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "453343": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Jorge Soler strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Jorge Soler strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Jorge Soler",
+   "batSideListed": "R",
+   "seasonLine": ".262/.324/.399, 10 HR"
+  },
+  {
+   "atBat": 70,
+   "batterId": 595879,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "453343": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Javier Baez strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Javier Baez strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Javier Báez",
+   "batSideListed": "R",
+   "seasonLine": ".289/.325/.408, 1 HR"
+  }
+ ],
+ "realFaced": 5,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 18,
+  "runs": 1,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 451594,
+   "name": "Dexter Fowler",
+   "batSideListed": "S"
+  },
+  {
+   "id": 457706,
+   "name": "Austin Jackson",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592178,
+   "name": "Kris Bryant",
+   "batSideListed": "R"
+  },
+  {
+   "id": 519203,
+   "name": "Anthony Rizzo",
+   "batSideListed": "L"
+  },
+  {
+   "id": 456121,
+   "name": "Chris Denorfia",
+   "batSideListed": "R"
+  },
+  {
+   "id": 471083,
+   "name": "Miguel Montero",
+   "batSideListed": "L"
+  },
+  {
+   "id": 450641,
+   "name": "Quintin Berry",
+   "batSideListed": "L"
+  },
+  {
+   "id": 624585,
+   "name": "Jorge Soler",
+   "batSideListed": "R"
+  },
+  {
+   "id": 595879,
+   "name": "Javier Báez",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1073,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 637,
+     "usage": 0.5937,
+     "velo": 91.2,
+     "pfxXin": 5.8,
+     "pfxZin": 6.4
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 290,
+     "usage": 0.2703,
+     "velo": 81.4,
+     "pfxXin": 8.1,
+     "pfxZin": -16.4
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 143,
+     "usage": 0.1333,
+     "velo": 91.9,
+     "pfxXin": -1.6,
+     "pfxZin": 10.3
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 3,
+     "usage": 0.0028,
+     "velo": 85.3,
+     "pfxXin": -2.6,
+     "pfxZin": 7.7
+    }
+   ],
+   "dropped": {
+    "IN": 6
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2015%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=453343"
+  },
+  "postseason": {
+   "pitches": 8,
+   "types": [
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 5,
+     "usage": 0.625,
+     "velo": 81.9,
+     "pfxXin": 8.5,
+     "pfxZin": -18.1
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 3,
+     "usage": 0.375,
+     "velo": 92.5,
+     "pfxXin": 6.4,
+     "pfxZin": 8.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2015%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=453343"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 415950: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=415950",
+  "MLB Stats API schedule 2015-09-25 and live feed /api/v1.1/game/415950/feed/live",
+  "MLB Stats API people with 2015 season stats",
+  "Baseball Savant 453343 2015 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    456121,
+    471083,
+    516770,
+    624585,
+    595879,
+    451594,
+    457706,
+    592178,
+    519203
+   ],
+   "lineupNames": [
+    "Chris Denorfia",
+    "Miguel Montero",
+    "Starlin Castro",
+    "Jorge Soler",
+    "Javier Báez",
+    "Dexter Fowler",
+    "Austin Jackson",
+    "Kris Bryant",
+    "Anthony Rizzo"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "PIT",
+   "CHC"
+  ],
+  "innings": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   7,
+   5
+  ],
+  "E": [
+   0,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/415950/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 18,
+  "runs": 1,
+  "score": {
+   "us": 3,
+   "them": 2
+  }
+ }
+}

@@ -1,0 +1,105 @@
+/* Call it: the hand, the read, and that the look is the snap.
+ *
+ *   node --test 4th-and-what/test/calls.test.mjs
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const K = require('../calls.js'), E = require('../engine.js'), C = require('../config.js'), TR = require('../trivia.js');
+const at = (o) => Object.assign({}, C.SCENARIO, { down: 4, distance: 5, ballOn: 40 }, o);
+
+test('a hand is a run, a quick pass and a shot, the same for the same snap', () => {
+  for (let s = 1; s <= 300; s++) {
+    const h = K.deal(at(), s);
+    assert.deepEqual(h.map(c => c.type), ['run', 'quick', 'shot']);
+    h.forEach(c => assert.equal(K.TYPE[c.concept], c.type, c.concept));
+    assert.ok(!h.some(c => c.type === 'run' && c.set === 'empty'), 'no run from Empty');
+    assert.ok(!h.some(c => c.concept === 'QB Sneak'), 'no sneak at 4th and 5');
+    assert.ok(new Set(h.map(c => c.set)).size === 3, 'three sets');
+    assert.deepEqual(K.deal(at(), s).map(c => c.concept + c.set + c.side), h.map(c => c.concept + c.set + c.side));
+  }
+  const sneaks = Array.from({ length: 400 }, (_, s) => K.deal(at({ distance: 1 }), s)).filter(h => h[0].concept === 'QB Sneak').length;
+  assert.ok(sneaks > 10, 'the sneak is dealt at 4th and 1: ' + sneaks);
+  /* every concept in the library has a card kind */
+  TR.pool().forEach(it => assert.ok(K.TYPE[it.concept], it.concept));
+});
+
+test('the look is the snap: the shell shown is the one played, and it is the men standing deep', () => {
+  /* a heavy set draws a defense with one safety, so the shell can differ by
+     card: the label is what stands over that card's formation (2026-11-16) */
+  const DEEP = { two: 2, one: 1, zero: 0 };
+  let dis = 0;
+  for (const d of [1, 2, 5]) for (let s = 1; s <= 120; s++) {
+    const sc = at({ distance: d });
+    K.deal(sc, s).forEach(c => {
+      const l = E.look(sc, c.play, s), deep = l.defense.filter(x => x.role === 's' && x.at[1] > 8).length;
+      assert.equal(deep, DEEP[l.shell], 'the label is the men deep: ' + l.shell + ' with ' + deep + ' deep, 4th & ' + d);
+    });
+  }
+  for (let s = 1; s <= 200; s++) {
+    const h = K.deal(at(), s);
+    h.forEach(c => { const r = E.run(at(), c.play, s), l = E.look(at(), c.play, s); assert.equal(r.shell, l.shell); assert.equal(r.disguised, r.shell !== E.SHELL[r.call.coverage]); });
+    dis += E.run(at(), h[0].play, s).disguised;
+  }
+  assert.ok(dis > 25 && dis < 75, 'about a quarter of snaps disguise: ' + dis + ' of 200');
+});
+
+test('the look tells the truth more often than not, and never names the call', () => {
+  const l = E.look(at(), K.deal(at(), 9)[1].play, 9);
+  assert.deepEqual(Object.keys(l).sort(), ['box', 'defense', 'shell']);
+  l.defense.forEach(d => assert.deepEqual(Object.keys(d).sort(), ['at', 'id', 'role']));
+  assert.match(K.readText(l), /^(Two deep|One deep|Nobody deep) · \d+ in the box$/);
+  const txt = K.hintText(l) + K.readText(l);
+  assert.ok(K.hintText(l).length > 10 && ![...txt].some(c => c.charCodeAt(0) === 0x2013 || c.charCodeAt(0) === 0x2014), 'no dashes');
+});
+
+test('the read is worth something: vs nobody deep, the quick game beats the run', () => {
+  /* the same snaps, run and quick, at 4th and 2: a pre-snap read must pay */
+  let run = [0, 0], quick = [0, 0];
+  for (let s = 1; s <= 1500; s++) {
+    const h = K.deal(at({ distance: 2 }), s);
+    if (E.look(at({ distance: 2 }), h[0].play, s).shell !== 'zero') continue;
+    run[0] += E.run(at({ distance: 2 }), h[0].play, s).win; run[1]++;
+    quick[0] += E.run(at({ distance: 2 }), h[1].play, s).win; quick[1]++;
+  }
+  assert.ok(run[1] > 40, 'enough zero looks: ' + run[1]);
+  assert.ok(quick[0] / quick[1] > run[0] / run[1] + 0.1, 'quick ' + (quick[0] / quick[1]).toFixed(2) + ' against run ' + (run[0] / run[1]).toFixed(2));
+});
+
+test('count the box: every hint names the card that converts best on the looks it is shown for', () => {
+  /* the owner, 2026-11-16: "make the read decide". Dealt hands at each
+     distance, from midfield, grouped by the hint the read gives (off the run
+     card's look, as the page does); the card a hint calls must convert at
+     least as often as each other card there, give or take a little noise */
+  const tally = {};
+  for (const [d, n] of [[1, 700], [2, 700], [4, 400], [7, 300]]) {
+    const sc = at({ distance: d, ballOn: 50 });
+    for (let i = 0; i < n; i++) {
+      const s = (i * 2654435761 + d * 97) >>> 0, h = K.deal(sc, s), key = K.hintKey(E.look(sc, h[0].play, s), sc);
+      const row = tally[key] = tally[key] || { n: 0, run: 0, quick: 0, shot: 0 };
+      row.n++;
+      h.forEach(c => { row[c.type] += E.run(sc, c.play, s).win; });
+    }
+  }
+  for (const k of ['light', 'yard', 'loaded', 'zero', 'long']) assert.ok(tally[k] && tally[k].n >= 60, 'enough ' + k + ' looks: ' + (tally[k] && tally[k].n));
+  for (const [k, row] of Object.entries(tally)) {
+    const card = K.HINT[k].card, rate = t => row[t] / row.n;
+    if (!card) continue;
+    for (const t of ['run', 'quick', 'shot']) assert.ok(rate(card) >= rate(t) - 0.03, k + ': ' + card + ' ' + rate(card).toFixed(2) + ' against ' + t + ' ' + rate(t).toFixed(2));
+  }
+  /* and the box decides at 4th and 2: a light box runs, a loaded one throws */
+  assert.ok(tally.light.run / tally.light.n > tally.loaded.run / tally.loaded.n + 0.15, 'the run against a light box beats the run against a loaded one');
+});
+
+test('a new player\'s first hand: three plays that convert well at 4th and 1', () => {
+  for (let s = 1; s <= 50; s++) {
+    const h = K.deal(at({ distance: 1, ballOn: 65 }), s, { first: true });
+    assert.deepEqual(h.map(c => c.concept), [K.FIRST.run, K.FIRST.quick, K.FIRST.shot]);
+  }
+  for (const c of Object.values(K.FIRST)) {
+    const its = TR.pool().filter(it => it.concept === c);
+    const rate = its.reduce((a, it) => { let w = 0; for (let s = 1; s <= 40; s++) w += E.run(at({ distance: 1, ballOn: 65 }), it.play, s * 977).win; return a + w / 40; }, 0) / its.length;
+    assert.ok(rate > 0.58, c + ' converts at 4th and 1: ' + rate.toFixed(2));
+  }
+});

@@ -216,6 +216,94 @@ for (const s of [9, 11, 13.5]){
     let rests = true; for (let t0 = 0; t0 < k.period; t0 += 0.25) for (const ft of [9.6, 10.4, 11.2]){ const r = go(Cy, ft, t0); for (const [p, D] of P.printsAt(k, t0 + r.t)){ const dx = r.rest[0] - p.x, dy = r.rest[1] - p.y, a = dx * p.ux + dy * p.uy, b = -dx * p.uy + dy * p.ux; if (D > 1e-9 && a * a / (k.rl * k.rl) + b * b / (k.rw * k.rw) < 1) rests = false; } }
     claim(rests, 'a ball never comes to rest in a print that is still a hollow: from every moment of the clock, a slow ball across the line rests only on level snow');
     claim(JSON.stringify(go(Cy, 11, pc.t - 1).pts) === JSON.stringify(slow.pts) && JSON.stringify(go(Cy, 16, pc.t - 1).pts) === JSON.stringify(firm.pts), 'a putt held in a print and a putt run through one replay exactly'); }
+  /* THE HIGH WIRE (the Big Top): a wire over the net from one platform's edge to the other's. A putt rolled off the edge in line
+     with it steps onto it, runs its length and steps off on the far platform, dry, where the same putt with no wire is in the net;
+     one too far off its line never gets on, one too far across the mouth misses it, and one too slow falls off into the net. It
+     can be ridden either way, nothing ever rests on it, and every putt replays exactly. */
+  { const mk = (w) => { const C = { bounds:[-20, -40, 20, 20], comps:[], stimp:9, cup:[0, -34], cupR:P.CUP_R_MINI, wires:w }; C.matFn = (x, y) => (y < -8 && y > -16) ? M.WATER : M.GREEN; return P.finishCourse(C); };
+    const Cw = mk([{ a:[0, -7.9], b:[0, -16.1] }]), none = mk([]), k = Cw.wires[0];
+    const go = (C, ft, ang, x0, y0, back) => { const v = P.speedFor(C, ft), a = ang * Math.PI / 180, sg = back ? 1 : -1; return P.simulate(C, x0 || 0, y0 == null ? 0 : y0, Math.sin(a) * v, sg * Math.cos(a) * v, 0); };
+    const on = go(Cw, 16, 0), off = go(none, 16, 0), ang = go(Cw, 16, P.WIRE_ANG + 6, -7.9 * Math.tan((P.WIRE_ANG + 6) * Math.PI / 180)), wide = go(Cw, 16, 0, P.WIRE_CATCH + 0.2), slow = go(Cw, 9, 0), back = go(Cw, 16, 0, 0, -24, true);
+    const ins = (r) => r.pts.some(p => p[1] < -8.2 && p[1] > -15.8 && Math.abs(p[0]) > 0.01);
+    claim(!on.water && on.rest[1] < -16.1 && on.ev.some(q => q[1] === 'wire') && off.water && !ins(on), `a putt in line with the wire runs its ${k.len.toFixed(1)} ft over the net and rests dry ${(-16.1 - on.rest[1]).toFixed(1)} ft past it, where the same putt with no wire is in the net`);
+    claim(ang.water && !ang.ev.some(q => q[1] === 'wire') && wide.water && !wide.ev.some(q => q[1] === 'wire'), `a putt more than ${P.WIRE_ANG} degrees off the wire, or more than ${P.WIRE_CATCH} ft across its mouth, never gets on and drops in the net`);
+    claim(slow.water && slow.ev.some(q => q[1] === 'fall'), `a putt too slow for the wire (under ${P.WIRE_MIN} ft/s on it) wobbles off into the net`);
+    claim(!back.water && back.rest[1] > -7.9 && back.ev.some(q => q[1] === 'wire'), 'the wire is ridden the other way just as well');
+    let rests = true; for (const ft of [8, 10, 12, 14, 18, 24]) for (const a of [-20, -8, 0, 8, 20]){ const r = go(Cw, ft, a, -7.9 * Math.tan(a * Math.PI / 180)); if (!r.water && r.rest[1] < -8 && r.rest[1] > -16 && Math.abs(r.rest[0]) < 0.3) rests = false; }
+    claim(rests, 'a ball never comes to rest on the wire: it reaches the far platform or it is in the net');
+    claim(JSON.stringify(go(Cw, 16, 0).pts) === JSON.stringify(on.pts) && JSON.stringify(go(Cw, 9, 0).pts) === JSON.stringify(slow.pts), 'a putt along the wire and a putt that falls off it replay exactly'); }
+  /* THE THAMES TIDE (London): a foreshore across the green, the river on its left, the tide coming up it and going back on the clock.
+     A putt across it at low water rolls on dry where the same putt at high water is in the river; at half tide the dry side of the
+     shore is a way over and the wet side is not; a ball that stops on the shore at any moment waits there till the tide reaches it
+     and is in the river (never at rest on it, never longer than a period); the shore with no tide is plain carpet; and every
+     putt replays exactly. */
+  { const mk = (td) => { const C = { bounds:[-20, -40, 20, 20], comps:[], stimp:9, cup:[0, -34], cupR:P.CUP_R_MINI, tides:td }; C.matFn = () => M.GREEN; return P.finishCourse(C); };
+    const Ct = mk([{ x0:-10, y0:-18, x1:10, y1:-10, side:'l', period:20, phase:0 }]), none = mk([]), q = Ct.tides[0];
+    const go = (C, ft, ang, t0, x0) => { const v = P.speedFor(C, ft), a = ang * Math.PI / 180; return P.simulate(C, x0 || 0, 0, Math.sin(a) * v, -Math.cos(a) * v, t0); };
+    const lowT = 0, highT = q.period / 2, low = go(Ct, 30, 0, lowT), high = go(Ct, 30, 0, highT), bare = go(none, 30, 0, highT);
+    claim(!low.water && low.rest[1] < -18 && high.water && high.ev.some(e => e[1] === 'tide') && !bare.water && JSON.stringify(bare.pts) === JSON.stringify(go(none, 30, 0, 0).pts),
+      `a putt across the foreshore at low water rolls on dry (rests ${(-low.rest[1]).toFixed(1)} ft up), the same putt at high water is in the river, and with no tide the shore is carpet at any moment`);
+    let tm = 0; for (let t = q.period / 2; t < q.period; t += 0.05){ const l = P.tideLevel(q, t); if (l > 0.45 && l < 0.6){ tm = t; break; } }   // half tide on the ebb, the water going back as the ball crosses
+    const dry = go(Ct, 30, 0, tm, 8.6), wet = go(Ct, 30, 0, tm, -8.6);
+    claim(!dry.water && wet.water, `at half tide on the ebb (level ${P.tideLevel(q, tm).toFixed(2)} of the shore) the dry side of the foreshore is a way over and the river side is not`);
+    let rests = true, worst = 0; for (let t = 0; t < q.period; t += q.period / 9) for (const x of [-9.5, -4, 0, 5, 9.4]) for (const y of [-10.3, -14, -17.7]){ const r = P.simulate(Ct, x, y, 0, 0, t);
+      if (P.tideH(q, x, y) < 9 && (!r.water || r.t > q.period + 0.05)) rests = false; if (r.water) worst = Math.max(worst, r.t); }
+    claim(rests, `a ball never comes to rest on the foreshore: from every moment of the clock, one stopped on it waits for the tide and is in the river in at most ${worst.toFixed(1)} s`);
+    claim(JSON.stringify(go(Ct, 13, 0, 0.7).pts) === JSON.stringify(go(Ct, 13, 0, 0.7).pts) && JSON.stringify(go(Ct, 30, 0, tm, 8.6).pts) === JSON.stringify(dry.pts), 'a putt across the tide and a putt the tide takes replay exactly'); }
+  /* THE LOG CHUTE (the Pacific Forest): logs roll down the skid road on the hole's clock, tipping off the deck at its top and
+     gathering speed to its foot, then the road is empty for a while. A putt across the road while it is empty rolls as if nothing
+     were there; one a log meets is shoved down the road ahead of it. A ball that stops on the road is held there, still, until the
+     next log carries it to the foot and leaves it on the carpet past it, so a ball never comes to rest where a log will roll. */
+  { const mk = (sk) => { const C = { bounds:[-20, -40, 20, 20], comps:[], stimp:9, cup:[0, -30], cupR:P.CUP_R_MINI, skids:sk }; C.matFn = () => M.GREEN; return P.finishCourse(C); };
+    const Cs = mk([{ a:[-8, -12], b:[5, -12], v:1, acc:1, L:4.4, n:2, gap:2, idle:3, phase:0 }]), k = Cs.skids[0], none = mk([]);
+    const at = (tt) => P.logsAt(k, tt), first = at(0.1), top = at(0.5)[0], foot = at(k.run - 0.2)[0], empty = at((k.n - 1) * k.gap + k.run + 0.3);
+    claim(first.length === 1 && first[0].s < 0.2 && top.v < foot.v && foot.s > k.len - 1.5 && !empty.length && Math.abs(at(0.5 + k.period)[0].s - top.s) < 1e-9 && k.period >= (k.n - 1) * k.gap + k.run + 1,
+      `its ${k.n} logs tip off the deck ${k.gap.toFixed(1)} s apart and roll ${k.len.toFixed(1)} ft to the foot in ${k.run.toFixed(1)} s, from ${top.v.toFixed(1)} to ${foot.v.toFixed(1)} ft/s, and the road is empty for ${(k.period - (k.n - 1) * k.gap - k.run).toFixed(1)} s of every ${k.period.toFixed(1)}`);
+    const go = (C, ft, t0, x0) => { const v = P.speedFor(C, ft); return P.simulate(C, x0 == null ? 0 : x0, 0, 0, -v, t0); };
+    const tE = (k.n - 1) * k.gap + k.run + 0.2, calm = go(Cs, 20, tE), bare = go(none, 20, tE);
+    // a log meets the ball: strike so the ball is on the road as the first log comes by
+    let met = null; for (let t0 = 0; t0 < k.period && !met; t0 += 0.05){ const r = go(Cs, 20, t0), b = go(none, 20, t0); if (r.ev.some(q => q[1] === 'log') && r.rest[0] - b.rest[0] > 1) met = [r, b, t0]; }
+    claim(JSON.stringify(calm.pts) === JSON.stringify(bare.pts) && !!met, `a putt across the road while it is empty rolls as if nothing were there, and one a log meets is shoved ${met ? (met[0].rest[0] - met[1].rest[0]).toFixed(1) : '?'} ft down the road ahead of it`);
+    // a slow ball that stops on the road waits there and is carried off by the next log
+    const slow = go(Cs, 12.1, tE), slowB = go(none, 12.1, tE), inR = (r) => P.skidReach(k, r.rest[0], r.rest[1]);
+    claim(P.skidReach(k, slowB.rest[0], slowB.rest[1]) && !inR(slow) && slow.rest[0] > k.b[0] && slow.t > slowB.t + 1 && slow.ev.some(q => q[1] === 'log'),
+      `a ball that stops on the road is held there ${(slow.t - slowB.t).toFixed(1)} s until a log carries it to the foot, and rests ${(slow.rest[0] - k.b[0]).toFixed(1)} ft past it`);
+    let rests = true, worst = 0; for (let t0 = 0; t0 < k.period; t0 += 0.25) for (const ft of [10, 11, 12, 13, 14]) for (const x0 of [-6, -2, 2]){ const r = go(Cs, ft, t0, x0); worst = Math.max(worst, r.t); if (inR(r) || r.t > P.MAX_T - 0.1) rests = false; }
+    claim(rests, `a ball never comes to rest on the skid road: from every moment of the clock, a ball that stops on it is carried off in at most ${worst.toFixed(1)} s`);
+  /* THE BELLS (Notre-Dame): a bell hung across the green swings on its yoke on the clock, a pendulum: quickest through the bottom
+     of its swing and still at its ends, low and solid only through the bottom, lifted clear of a ball at the ends. A putt under it
+     while it is up at the end of its swing rolls as if nothing were there; one it meets low is knocked on along its swing's tangent,
+     the way the bell is going; a ball that stops under its low sweep waits there and is knocked out of it; and every putt replays. */
+  { const mk = (b) => { const C = { bounds:[-20, -40, 20, 20], comps:[], stimp:9, cup:[0, -34], cupR:P.CUP_R_MINI, bells:b }; C.matFn = () => M.GREEN; return P.finishCourse(C); };
+    const Cb = mk([{ x:0, y:-15, a:Math.PI / 2, period:8 }]), none = mk([]), q = Cb.bells[0], at = (t) => P.bellAt(q, t);
+    const bot = at(0), end = at(q.period / 4), mid = at(q.period / 8);
+    claim(Math.abs(bot.vs) > Math.abs(mid.vs) && Math.abs(mid.vs) > Math.abs(end.vs) && Math.abs(end.vs) < 1e-6 && bot.low && !end.low && end.z > P.BELL_CLEAR + 0.3 && Math.abs(at(1.3 + q.period).s - at(1.3).s) < 1e-9 && Math.abs(at(q.period / 2 + 0.7).s + at(0.7).s) < 1e-9,
+      `a bell is a pendulum: ${Math.abs(bot.vs).toFixed(2)} ft/s through the bottom of its swing, ${Math.abs(mid.vs).toFixed(2)} on the way out and still at its ends, low there and ${end.z.toFixed(2)} ft up at the ends, the same swing each way and each period`);
+    const go = (C, ft, t0, x0) => { const v = P.speedFor(C, ft); return P.simulate(C, x0 == null ? 0 : x0, 0, 0, -v, t0); };
+    // the moment the ball reaches the bell's line, struck at t0: find one with the bell up at its end over the line, and one where it meets the bell low
+    let under = null, struck = null; for (let t0 = 0; t0 < q.period; t0 += 0.02){ const r = go(Cb, 30, t0, q.L * Math.sin(q.A) * 0.98), b = go(none, 30, t0, q.L * Math.sin(q.A) * 0.98); if (!under && JSON.stringify(r.pts) === JSON.stringify(b.pts)) under = t0;
+      const r2 = go(Cb, 30, t0), b2 = go(none, 30, t0); if (!struck && r2.ev.some(e => e[1] === 'bell')){ const k = r2.pts.findIndex((p, i) => i > 0 && r2.ev.find(e => e[1] === 'bell')[0] <= p[2]), p0 = r2.pts[k], p1 = r2.pts[Math.min(r2.pts.length - 1, k + 6)], dx = p1[0] - p0[0], dy = p1[1] - p0[1], bb = P.bellAt(q, t0 + r2.ev.find(e => e[1] === 'bell')[0]);
+        if (Math.abs(dx) > Math.abs(dy) && Math.sign(dx) === Math.sign(bb.vs)) struck = [r2, b2, t0, Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI]; } }
+    claim(under != null && !!struck, `a putt under the end of a bell's swing while it is up rolls as if nothing were there, and one the low bell meets is knocked on the way it swings, ${struck ? struck[3].toFixed(0) : '?'} degrees off its tangent` + (struck ? `, resting ${Math.abs(struck[0].rest[0] - struck[1].rest[0]).toFixed(1)} ft aside` : ''));
+    let rests = true, worst = 0; for (let t0 = 0; t0 < q.period; t0 += q.period / 12) for (const x of [-1.6, -0.9, 0, 0.8, 1.5]) for (const y of [-14.4, -15, -15.6]){ const r = P.simulate(Cb, x, y, 0, 0, t0);
+      worst = Math.max(worst, r.t); if (P.bellReach(q, r.rest[0], r.rest[1]) || r.t > P.MAX_T - 0.1) rests = false; }
+    claim(rests && JSON.stringify(go(none, 30, 0.4).pts) === JSON.stringify(go(mk([]), 30, 3.1).pts), `a ball never comes to rest under a bell's low sweep: from every moment of the clock, one stopped there is knocked out of it in at most ${worst.toFixed(1)} s; with no bell the green is plain carpet at any moment`);
+    claim(JSON.stringify(go(Cb, 30, 1.37).pts) === JSON.stringify(go(Cb, 30, 1.37).pts) && JSON.stringify(go(Cb, 30, struck ? struck[2] : 0).pts) === JSON.stringify(struck ? struck[0].pts : go(Cb, 30, 0).pts), 'a putt under a bell and a putt a bell strikes replay exactly'); }
+  /* THE QUICKSAND (Treasure Island): a patch of quicksand on the green drags a ball QS_F times as hard as the carpet and sinks a slow
+     one, gripping it the harder the deeper it lies. A quick putt skims across and runs on; one that runs out of pace in it is
+     swallowed (a stroke and back, as water is); a ball left in it at rest goes down within a second, so none ever rests there; with
+     no quicksand the green is plain carpet; and every putt replays. */
+  { const mk = (q) => { const C = { bounds:[-20, -60, 20, 20], comps:[], stimp:9, cup:[0, -54], cupR:P.CUP_R_MINI, quicks:q }; C.matFn = () => M.GREEN; return P.finishCourse(C); };
+    const Cq = mk([{ x:0, y:-15, rx:1.8, ry:1.6, a:0.3, seed:2 }]), none = mk([]), q = Cq.quicks[0], go = (C, ft, x0) => { const v = P.speedFor(C, ft); return P.simulate(C, x0 || 0, 0, 0, -v, 0); };
+    let cross = 0; for (let ft = 10; ft <= 42 && !cross; ft += 0.25){ const r = go(Cq, ft); if (!r.water && r.rest[1] < -17.5) cross = ft; }
+    const fast = go(Cq, 34), plain = go(none, 34), slow = go(Cq, cross - 2), sh = go(Cq, 12), sh0 = go(none, 12);
+    claim(cross > 14 && !fast.water && fast.rest[1] > plain.rest[1] + 5 && fast.ev.some(e => e[1] === 'quick') && slow.water && slow.sunk && slow.ev.some(e => e[1] === 'sink') && JSON.stringify(sh.pts) === JSON.stringify(sh0.pts),
+      `quicksand drags and sinks: a putt of ${cross} ft gets across a patch ${(2 * q.ry).toFixed(1)} ft deep and one of ${cross - 2} is swallowed in it, a 34 ft putt across rests ${(fast.rest[1] - plain.rest[1]).toFixed(1)} ft short of the same putt on the carpet, and one short of it never knows it is there`);
+    let rests = true, worst = 0; for (let x = -1.8; x <= 1.8; x += 0.3) for (let y = -16.6; y <= -13.4; y += 0.3){ if (!P.quickIn(q, x, y)) continue; const r = P.simulate(Cq, x, y, 0, 0, 0); worst = Math.max(worst, r.t); if (!r.water || !r.sunk || r.t > 1 / P.QS_SINK + 0.05) rests = false; }
+    claim(rests && worst > 0.5, `a ball never comes to rest in quicksand: one left anywhere in a patch goes down in ${worst.toFixed(2)} s at most, and that is a stroke and back`);
+    const Cm = mk([{ x:0, y:-15, rx:1.8, ry:1.6, a:-0.3, seed:2, mir:true }]), qm = Cm.quicks[0]; let mir = true; for (let x = -2.4; x <= 2.4; x += 0.2) for (let y = -17; y <= -13; y += 0.2) if (P.quickIn(q, x, y) !== P.quickIn(qm, -x, y)) mir = false;
+    claim(mir && JSON.stringify(go(Cq, 34).pts) === JSON.stringify(fast.pts) && JSON.stringify(go(Cq, cross - 2).pts) === JSON.stringify(slow.pts), 'a patch mirrors point for point, and a putt across quicksand and a putt it swallows replay exactly'); }
+    claim(JSON.stringify(go(Cs, 12.1, tE).pts) === JSON.stringify(slow.pts) && JSON.stringify(go(Cs, 20, met[2]).pts) === JSON.stringify(met[0].pts), 'a putt carried down the road and a putt shoved by a log replay exactly'); }
   /* THE RAFTS ON THE RIVER (The Mississippi): the river wanders across the course and a raft every gap feet drifts down it at the
      current's speed, so where the rafts are is the clock and comes round again every gap / v seconds. A putt across the river while
      a raft is passing rolls over its deck and rests dry on the far bank, carried a little way downstream; the same putt between
@@ -420,7 +508,7 @@ if (!QUICK){
     const ok = ['', ':sc', ':3'].map(k => ROUTES[TR.id + ':' + n + k]).filter(l => l && l.length <= want).find(l => !replayRoute(C, l));
     claim(!!ok && P.starsOf(ok.length, L.par, L.three) === 3, `${TR.id} ${n} ${P.levelName(n, TR.id)}: three stars (${want === 1 ? 'an ace' : want + ' strokes'}) has a route that replays with room for error`); };
   const TM = P.TOURS.main, TB = P.TOURS.members, Cn = P.PAY;
-  claim(TM.levels.length === 486 && TM.worlds.length === 27 && TM.per === 18, `the main tour is 360 holes in ${TM.worlds.length} worlds of ${TM.per}`);
+  claim(TM.levels.length === 576 && TM.worlds.length === 32 && TM.per === 18, `the main tour is 360 holes in ${TM.worlds.length} worlds of ${TM.per}`);
   /* THE EXPEDITION'S ALBUM (Loch Ness on): each expedition world hides its camera sightings on its own walks, never on a gym's walk
      with a second one or the world's first, each with its painter. A photo taken is kept the way the trail finds are: the record's
      list only grows when two copies are merged, the walk's own record marks it found, and the server's progress count includes it.
@@ -433,7 +521,17 @@ if (!QUICK){
     const SRC = fs.readFileSync(new URL('./putt.js', import.meta.url), 'utf8'), behind = /data-alb>Open the album</.test(SRC) && (SRC.match(/albumSheet\(\)/g) || []).length === 3;   // its definition, its button and the checks' hook: nothing else calls it
     claim(EX[0] === 'lochness' && all.length >= 3 && uniq && !out.length && m.cam.length === 2 && m.trail['main:454'].cm === 1 && P._prog(m) > P._prog(b) && behind,
       `the Cryptid Expedition's ${all.length} camera sightings are each on their own walk (${EX.join(', ')}), a photo is kept and merged like a trail find and counts toward the saved progress, and the album opens only from its button in the Bag` + (out.length ? ' (' + out.join(', ') + ')' : '')); }
-  claim(TB.levels.length === 18 && TB.worlds.length === 2 && TB.per === 9 && TB.members, `the Members Tour is 18 holes in ${TB.worlds.length} worlds of ${TB.per}`);
+  /* LONDON'S CASEBOOK (World 30): the walks are a clue hunt on the sightings' own machinery. Each clue is on its own walk, never a
+     gym's or the world's first, each with its sketch; it is a clue (picked up, not photographed) and goes in the casebook, so the
+     Expedition album's count leaves it out; and the casebook opens only from its own button in the Bag. */
+  { const SG = P.SIGHTINGS, CB = P.CASEBOOK || [], out = [];
+    for (const th of CB){ const w = TM.worlds.findIndex(W => W.theme === th), L = SG[th] || [];
+      L.forEach(g => { const lo = P._loot('main', w * 18 + g.walk); if (w < 0 || !lo.sight || !lo.sight.clue || lo.sight.id !== th + ':' + g.id || g.walk < 2 || g.walk > 17 || g.walk === 9) out.push(th + ':' + g.id); }); }
+    const all = CB.reduce((a, th) => a.concat((SG[th] || []).map(g => th + ':' + g.id)), []), notAlbum = CB.every(th => P.EXPEDITION.indexOf(th) < 0);
+    const SRC = fs.readFileSync(new URL('./putt.js', import.meta.url), 'utf8'), behind = /data-case>Open the casebook</.test(SRC) && (SRC.match(/caseSheet\(\)/g) || []).length === 3;
+    claim(CB[0] === 'london' && all.length >= 4 && new Set(all).size === all.length && !out.length && notAlbum && behind,
+      `London's casebook holds ${all.length} clues, each on its own walk and none on a gym's, picked up as clues and kept apart from the Expedition album, and it opens only from its button in the Bag` + (out.length ? ' (' + out.join(', ') + ')' : '')); }
+  claim(TB.levels.length === 27 && TB.worlds.length === 3 && TB.per === 9 && TB.members && TB.worlds[2].id === 'monster', `the Members Tour is 27 holes in ${TB.worlds.length} worlds of ${TB.per}, Monster Castle the third`);
   claim(TM.worlds.every(W => P.CAL_THEMES.indexOf(W.theme) < 0), 'the main tour wears none of the calendar themes, which belong to the passes (' + TM.worlds.map(W => W.theme).join(', ') + ')');
   for (const TR of [TM, TB]){
     claim(TR.levels.every((L, i) => !!L.sig === ((i + 1) % TR.per === 0)), `${TR.name}: the last hole of each world, and only it, is a signature hole`);
@@ -518,6 +616,86 @@ if (!QUICK){
           if (Math.hypot(p.x - C.cup[0], p.y - C.cup[1]) < k.rl + 2 || Math.hypot(p.x - C.tee[0], p.y - C.tee[1]) < k.rl + 2) ok = false; }
         if (!ok || !(k.period > k.run + 0.5)) bad.push(n); } }
       claim(!bad.length, `${TR.name}: every yeti's print lies on open snow clear of every rail, block and bumper, the tee and the cup, and the snow is smooth for part of every period` + (bad.length ? ' (' + bad.join(', ') + ')' : '')); }
+    /* EVERY HIGH WIRE IS A FAIR WAY OVER THE NET (the Big Top). Each end of a wire is a mouth on the net's edge: carpet just before
+       it and net just past it, with a clear run of carpet up to it (no rail, block or bumper within reach of its mouth for two feet
+       back), the net under its whole length, and open carpet past the far end to step off onto. And a ball sent onto it from either
+       end, at any pace from a crawl to a hard putt, either steps off onto the course or is in the net: it never stays on the wire. */
+    { const bad = [], why = {}; let any = false;
+      for (let n = 1; n <= TR.levels.length; n++){ const C = P.buildLevel(n, TR.id); for (const k of C.wires || []){ any = true; let w = '';
+        for (const [ex, ey, dx, dy] of [[k.a[0], k.a[1], k.ux, k.uy], [k.b[0], k.b[1], -k.ux, -k.uy]]){ const lx = -dy, ly = dx, mt = (s, l) => C.matFn(ex + dx * s + lx * l, ey + dy * s + ly * l);
+          if (mt(-0.3, 0) !== M.GREEN && mt(-0.3, 0) !== M.MUD || mt(0.6, 0) !== M.WATER) w = w || 'a mouth not on the net\'s edge';
+          for (let s = -2; s < 0 && !w; s += 0.25) for (let l = -(P.WIRE_CATCH + 0.2); l <= P.WIRE_CATCH + 0.2 && !w; l += 0.2){ const x = ex + dx * s + lx * l, y = ey + dy * s + ly * l;
+            if (C.matFn(x, y) === M.OUT || C.blocks.some(r => P.inBlock(r, x, y, 0.1)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1)) w = 'something in the way of a mouth'; } }
+        for (let s = 0.6; s < k.len - 0.6 && !w; s += 0.25) if (C.matFn(k.a[0] + k.ux * s, k.a[1] + k.uy * s) !== M.WATER) w = 'carpet under the wire';
+        for (const [ex, ey, dx, dy] of [[k.b[0], k.b[1], k.ux, k.uy], [k.a[0], k.a[1], -k.ux, -k.uy]]) for (let s = 0.1; s < 1.5 && !w; s += 0.2){ const x = ex + dx * s, y = ey + dy * s, m = C.matFn(x, y); if (m === M.OUT || m === M.WATER || C.blocks.some(r => P.inBlock(r, x, y, 0.1))) w = 'no platform past an end'; }
+        for (const [ex, ey, dx, dy] of [[k.a[0], k.a[1], k.ux, k.uy], [k.b[0], k.b[1], -k.ux, -k.uy]]) for (const ft of [4, 8, 12, 18, 26]) if (!w){ const v = P.speedFor(C, ft), r = P.simulate(C, ex - dx * 0.4, ey - dy * 0.4, dx * v, dy * v, 0);
+          const sOn = (r.rest[0] - k.a[0]) * k.ux + (r.rest[1] - k.a[1]) * k.uy, lOn = Math.abs(-(r.rest[0] - k.a[0]) * k.uy + (r.rest[1] - k.a[1]) * k.ux);
+          if (r.t > P.MAX_T - 1 || (!r.water && !r.out && sOn > 0.05 && sOn < k.len - 0.05 && lOn < 0.3)) w = 'a ball stays on the wire'; }
+        if (w){ bad.push(n); why[n] = w; } } }
+      if (any) claim(!bad.length, `${TR.name}: every high wire's ends are mouths on the net's edge with a clear run up and a platform past them, the net under its whole length, and a ball sent onto it from either end steps off or drops in the net` + (bad.length ? ' (' + bad.map(n => n + ' ' + why[n]).join(', ') + ')' : '')); }
+    /* EVERY FORESHORE IS FAIR AND KEEPS NO BALL (London). Each tide's shore lies on open carpet (no fixed water, no block and no
+       bumper below its high water mark, where it runs under the railings only the course counts), its river side
+       against the Thames, and the tee and the cup well clear of it.
+       And a ball left anywhere on it, at any moment of the clock, waits for the tide and is in the river within one period: none is
+       ever kept on the shore, so no hole can leave a player with a ball that never comes to rest. */
+    { const bad = [], why = {}; let any = false, worst = 0;
+      for (let n = 1; n <= TR.levels.length; n++){ const C = P.buildLevel(n, TR.id); for (const q of C.tides || []){ any = true; let w = '';
+        for (let y = q.y0 + 0.2; y < q.y1 && !w; y += 0.4) for (let x = q.x0 + 0.2; x < q.x1 && !w; x += 0.4){ if (P.tideH(q, x, y) >= 9) continue; const m = C.matFn(x, y);
+          if (m === M.OUT) continue; if (m === M.WATER) w = 'fixed water on the shore'; else if (C.blocks.some(r => P.inBlock(r, x, y, 0.1)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1)) w = 'something standing on the shore'; }
+        const ux = q.side === 'l' ? -1 : q.side === 'r' ? 1 : 0, uy = q.side === 't' ? -1 : q.side === 'b' ? 1 : 0; let wetAt = 0;
+        for (let v = 0.1; v < 0.95; v += 0.2){ const x = ux ? (ux < 0 ? q.x0 : q.x1) + ux * 0.4 : q.x0 + (q.x1 - q.x0) * v, y = uy ? (uy < 0 ? q.y0 : q.y1) + uy * 0.4 : q.y0 + (q.y1 - q.y0) * v; if (C.matFn(x, y) === M.WATER) wetAt++; }
+        if (!w && wetAt < 3) w = 'its river side is not against the river';
+        if (!w && [C.tee, C.cup].some(p => Math.hypot(Math.max(q.x0 - p[0], 0, p[0] - q.x1), Math.max(q.y0 - p[1], 0, p[1] - q.y1)) < 2)) w = 'the tee or the cup by the shore';
+        for (let t = 0; t < q.period && !w; t += q.period / 7) for (let k = 0; k < 9 && !w; k++){ const x = q.x0 + (q.x1 - q.x0) * ((k * 0.37 + 0.1) % 1), y = q.y0 + (q.y1 - q.y0) * ((k * 0.61 + 0.2) % 1);
+          if (P.tideH(q, x, y) >= 9 || C.matFn(x, y) === M.OUT) continue; const r = P.simulate(C, x, y, 0, 0, t); if (!r.water || r.t > q.period + 0.05) w = 'a ball left on it is kept'; else worst = Math.max(worst, r.t); }
+        if (w){ bad.push(n); why[n] = w; } } }
+      if (any) claim(!bad.length, `${TR.name}: every foreshore lies on open carpet against the river, clear of the tee and the cup, and a ball left on it at any moment is taken by the tide (at worst ${worst.toFixed(1)} s)` + (bad.length ? ' (' + bad.map(n => n + ' ' + why[n]).join(', ') + ')' : '')); }
+    /* EVERY SKID ROAD IS OPEN AND NONE KEEPS A BALL (the Pacific Forest). Its log deck stands behind a rail, so a log is full size
+       before it reaches the green; the whole sweep of its logs on the green is open carpet, off the water, clear of every block and
+       bumper, the tee and the cup, and the far half of it is all on the course, so a ball carried to the foot is never pinned
+       against a rail. And a ball left anywhere on the road, at any moment of its clock, is carried off it by the next log and
+       rests on the course, dry, well inside the putt's time. So no ball ever rests where a log will roll. */
+    { const bad = [], why = {}; let worst = 0, any = false;
+      for (let n = 1; n <= TR.levels.length; n++){ const C = P.buildLevel(n, TR.id); for (const k of C.skids || []){ any = true; const m = k.r + P.BALL_R + 0.05, lax = -k.uy, lay = k.ux, tip = k.v0 * P.LOG_RISE + 0.5 * k.acc * P.LOG_RISE * P.LOG_RISE + 0.15; let w = '';
+        for (let s = -m; s <= k.len + m && !w; s += 0.25) for (let l = -(k.hl + m); l <= k.hl + m && !w; l += 0.25){ const x = k.a[0] + k.ux * s + lax * l, y = k.a[1] + k.uy * s + lay * l, mt = C.matFn(x, y);
+          if (mt === M.OUT){ if (s > k.len / 2) w = 'its foot runs off the course'; continue; }
+          if (s < tip) w = 'its deck is not behind a rail'; else if (mt === M.WATER) w = 'water on the road';
+          else if (C.blocks.some(r => P.inBlock(r, x, y, 0.1)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1)) w = 'something on the road';
+          else if (Math.hypot(x - C.cup[0], y - C.cup[1]) < 2 || Math.hypot(x - C.tee[0], y - C.tee[1]) < 2) w = 'the tee or the cup on the road'; }
+        for (let s = 0.3; s < k.len + m && !w; s += 1.1) for (let l = -(k.hl + m) + 0.1; l < k.hl + m && !w; l += 0.7){ const x = k.a[0] + k.ux * s + lax * l, y = k.a[1] + k.uy * s + lay * l; if (C.matFn(x, y) === M.OUT) continue;
+          for (let t0 = 0; t0 < k.period && !w; t0 += k.period / 6){ const r = P.simulate(C, x, y, 0, 0, t0); worst = Math.max(worst, r.t);
+            if (r.water || r.out || r.t > P.MAX_T - 1 || C.skids.some(q => P.skidReach(q, r.rest[0], r.rest[1]))) w = 'a ball left on it is kept'; } }
+        if (w){ bad.push(n); why[n] = w; } } }
+      if (any) claim(!bad.length, `${TR.name}: every skid road's deck stands behind a rail and its sweep is open carpet, and a ball left on the road at any moment is carried off it and rests dry on the course (at worst ${worst.toFixed(1)} s)` + (bad.length ? ' (' + bad.map(n => n + ' ' + why[n]).join(', ') + ')' : '')); }
+    /* EVERY BELL SWINGS CLEAR AND KEEPS NO BALL (Notre-Dame). The whole sweep of a bell's mouth, end to end of its swing, is open
+       carpet on the course, off the water, clear of every block and bumper, the tee and the cup; and a ball left anywhere under its
+       low sweep, at any moment of its clock, is knocked out of it and rests dry on the course well inside the putt's time. */
+    { const bad = [], why = {}; let worst = 0, any = false;
+      for (let n = 1; n <= TR.levels.length; n++){ const C = P.buildLevel(n, TR.id); for (const q of C.bells || []){ any = true; const lx = -q.uy, ly = q.ux, sw = q.L * Math.sin(q.A), m = q.r + P.BALL_R; let w = '';
+        for (let s2 = -sw - m; s2 <= sw + m && !w; s2 += 0.2) for (let l = -m; l <= m && !w; l += 0.2){ if (Math.hypot(Math.max(0, Math.abs(s2) - sw), l) > m) continue; const x = q.x + q.ux * s2 + lx * l, y = q.y + q.uy * s2 + ly * l, mt = C.matFn(x, y);
+          if (mt === M.OUT) w = 'its swing runs off the course'; else if (mt === M.WATER) w = 'water under its swing';
+          else if (C.blocks.some(r => P.inBlock(r, x, y, 0.02)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r)) w = 'something under its swing';
+          else if (Math.hypot(x - C.cup[0], y - C.cup[1]) < 2 || Math.hypot(x - C.tee[0], y - C.tee[1]) < 2) w = 'the tee or the cup under its swing'; }
+        for (let s2 = -q.ls; s2 <= q.ls + 0.01 && !w; s2 += q.ls / 2) for (const l of [-q.r * 0.6, 0, q.r * 0.6]){ if (w) break; const x = q.x + q.ux * s2 + lx * l, y = q.y + q.uy * s2 + ly * l;
+          for (let t0 = 0; t0 < q.period && !w; t0 += q.period / 6){ const r = P.simulate(C, x, y, 0, 0, t0); worst = Math.max(worst, r.t);
+            if (r.water || r.out || r.t > P.MAX_T - 1 || C.bells.some(b => P.bellReach(b, r.rest[0], r.rest[1]))) w = 'a ball left under it is kept'; } }
+        if (w){ bad.push(n); why[n] = w; } } }
+      if (any) claim(!bad.length, `${TR.name}: every bell's whole swing is open carpet clear of the tee and the cup, and a ball left under its low sweep at any moment is knocked out of it and rests dry on the course (at worst ${worst.toFixed(1)} s)` + (bad.length ? ' (' + bad.map(n => n + ' ' + why[n]).join(', ') + ')' : '')); }
+    /* NO BALL RESTS IN QUICKSAND (Treasure Island). Every patch lies on open carpet on the course, a rail's width in from its edge,
+       off the water, clear of every block and bumper and at least two feet from the tee and the cup; and a ball left anywhere in it
+       goes down within a second, a stroke and back to where it was struck, so no putt ever ends in it and none starts there. */
+    { const bad = [], why = {}; let worst = 0, any = false;
+      for (let n = 1; n <= TR.levels.length; n++){ const C = P.buildLevel(n, TR.id); for (const q of C.quicks || []){ any = true; let w = '';
+        for (const [x, y] of P.quickRing(q, 48, 1)){ const mt = C.matFn(x, y);
+          if (mt === M.OUT) w = 'it runs off the course'; else if (mt === M.WATER) w = 'water at its edge';
+          else if (C.blocks.some(r => P.inBlock(r, x, y, 0.1)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1)) w = 'something stands in it';
+          else if (Math.hypot(x - C.cup[0], y - C.cup[1]) < 2 || Math.hypot(x - C.tee[0], y - C.tee[1]) < 2) w = 'the tee or the cup at its edge';
+          else if ([[0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3]].some(d => C.matFn(x + d[0], y + d[1]) === M.OUT)) w = 'it runs under a rail';
+          if (w) break; }
+        for (let x = q.x - q.R; x <= q.x + q.R && !w; x += 0.4) for (let y = q.y - q.R; y <= q.y + q.R && !w; y += 0.4){ if (!P.quickIn(q, x, y)) continue; const r = P.simulate(C, x, y, 0, 0, 0); worst = Math.max(worst, r.t);
+          if (!r.water || !r.sunk || r.t > 1.2) w = 'a ball left in it is kept'; }
+        if (w){ bad.push(n); why[n] = w; } } }
+      if (any) claim(!bad.length, `${TR.name}: every patch of quicksand is open carpet on the course clear of the rails, the tee and the cup, and a ball left in it goes down in ${worst.toFixed(2)} s at most, so none ever rests there` + (bad.length ? ' (' + bad.map(n => n + ' ' + why[n]).join(', ') + ')' : '')); }
     /* NO RIVER SHUTS A BALL IN (The Mississippi). A river the rafts drift down cuts the course, and a raft is the only way over it, so
        every river must run in over one rail and out over another (both its ends off the course, so no raft comes or goes in the
        middle of the carpet), its rafts must reach from bank to bank, and along it there must be a crossing: a place where the course
@@ -581,10 +759,14 @@ if (!QUICK){
     // HARDER AS IT GOES: each world packs more into a hole than the one before, and asks for more putts
     const per = (fn) => TR.worlds.map((W, w) => { let t = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) t += fn(n); return t / TR.per; });
     // a rail or a curb is something to aim at, not a set piece, so a thin block is not counted
-    const kitAvg = per(n => { const C = P.buildLevel(n, TR.id); return C.bumpers.length + C.blocks.filter(r => Math.min(r.x1 - r.x0, r.y1 - r.y0) > 0.7).length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.ferries || []).length + (C.devils || []).length + (C.rings || []).length + (C.hazes || []).length + (C.beams || []).length + (C.hops || []).length + (C.cyclones || []).length + (C.eyes || []).length + (C.gazes || []).length + (C.lethes || []).length + (C.bolts || []).length + (C.sizers || []).length + (C.wees || []).length + (C.glasses || []).length + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.mill ? 1 : 0) + C.zones.length; });
+    const kitAvg = per(n => { const C = P.buildLevel(n, TR.id); return C.bumpers.length + C.blocks.filter(r => Math.min(r.x1 - r.x0, r.y1 - r.y0) > 0.7).length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.ferries || []).length + (C.devils || []).length + (C.rings || []).length + (C.hazes || []).length + (C.beams || []).length + (C.hops || []).length + (C.cyclones || []).length + (C.eyes || []).length + (C.gazes || []).length + (C.lethes || []).length + (C.bolts || []).length + (C.sizers || []).length + (C.wees || []).length + (C.glasses || []).length + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length + (C.wires || []).length + (C.tides || []).length + (C.bells || []).length + (C.quicks || []).length + (C.mill ? 1 : 0) + C.zones.length; });
     const parAvg = per(n => TR.levels[n - 1].par);
     claim(kitAvg.every((a, w) => !w || a > kitAvg[w - 1]), `${TR.name}: more set pieces a hole world by world (${kitAvg.map(a => a.toFixed(2)).join(', ')})`);
-    claim(parAvg[parAvg.length - 1] > parAvg[0], `${TR.name}: the last world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
+    /* The Members Tour's one trick worlds (Hallows Night, Monster Castle) are held to par 3 and a par 4 signature, its own and not
+       harder (below), so a one trick world after Harvest Moon cannot ask for more putts than Hallows Night: there the climb is asked
+       of the busiest world, and the main tour asks it of its last. */
+    if (TR.members) claim(Math.max(...parAvg) > parAvg[0], `${TR.name}: a later world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
+    else claim(parAvg[parAvg.length - 1] > parAvg[0], `${TR.name}: the last world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
   }
   /* THE LAB: the tester-only prototype world. Same rule as the tours (the obvious route is a birdie
      with room for error, a slightly off putt stays dry), and it pays nothing, so it can never be a
@@ -630,6 +812,23 @@ if (!QUICK){
     const hh = []; for (let n = 1; n <= TB.per; n++) hh.push(kit(n));
     claim(hh.every(k => k <= 2) && TB.levels.slice(0, TB.per).every(L => L.par <= (L.sig ? 4 : 3)), `Hallows Night: one trick a hole, at most two moving or wet pieces (${hh.join(' ')}), par 3 and a par 4 signature`);
     claim(T && T.w === 0 && T.each > 0 && T.all > 0 && /Members only/.test(T.reward), 'Hallows Night pays a trick or treat bonus under par, and a members-only reward for all nine'); }
+  /* MONSTER CASTLE IS ITS OWN TOO (the owner's rule for the Members worlds: "HALLOWS NIGHT IS NOT HARDER THAN THE TOUR, IT IS ITS
+     OWN"). Each hole is one castle idea, held to the Hallows bar, and every moving or wet piece the engine has is counted here, not
+     only the ones Hallows Night was built from: at most two a hole, par 3 and a par 4 signature. It carries no trick or treat (that
+     is Hallows Night's), its rewards are members only, and the Champion's Jacket is still won where it always was, at Harvest Moon. */
+  { const w = TB.worlds.findIndex(W => W.id === 'monster'), K = TB.per, mw = [], pars = [];
+    const moving = n => { const C = P.buildLevel(n, 'members'); return C.movers.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.rivers || []).length + (C.mill ? 1 : 0) + C.zones.filter(z => z.m === M.WATER).length
+      + (C.belts || []).length + (C.ferries || []).length + (C.devils || []).length + (C.beams || []).length + (C.hops || []).length + (C.cyclones || []).length + (C.eyes || []).length + (C.gazes || []).length + (C.lethes || []).length + (C.bolts || []).length
+      + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length + (C.wires || []).length + (C.tides || []).length + (C.bells || []).length + (C.quicks || []).length + (C.wells || []).length + (C.floats || []).length + (C.hazes || []).length; };
+    for (let n = w * K + 1; n <= w * K + K; n++){ mw.push(moving(n)); pars.push(TB.levels[n - 1].par + (TB.levels[n - 1].sig ? 's' : '')); }
+    const sigOk = TB.levels.slice(w * K, w * K + K).every(L => L.par <= (L.sig ? 4 : 3)) && TB.levels[w * K + K - 1].sig;
+    claim(w === 2 && mw.every(k => k <= 2) && sigOk, `Monster Castle: one castle idea a hole, at most two moving or wet pieces of any kind (${mw.join(' ')}), par 3 and a par 4 signature (${pars.join(' ')})`);
+    const Pm = Cn.members, rw = [Pm.sigReward[w], Pm.worldReward[w]];
+    claim(Cn.members.treat.w !== w && rw.every(r => r && /Members only/.test(r)) && Pm.finishW === 1 && P.TOURS.members.worlds[Pm.finishW].id === 'harvest',
+      `Monster Castle pays its own two members-only rewards (${rw.join(', ')}), no trick or treat, and the Champion's Jacket stays Harvest Moon's`);
+    const TSRC = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8'), folk = Object.values(P.FOLK.monster || {}).map(f => f.id).concat([P.GREETERS.monster.folk]);
+    const drawn = folk.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), bad = ['frankenstein', 'dracula', 'lugosi', 'orlok'].filter(x => new RegExp(x, 'i').test(JSON.stringify(P.FOLK.monster) + JSON.stringify(P.GREETERS.monster)));
+    claim(folk.length === 8 && new Set(folk).size === 8 && drawn.length === 8 && !bad.length, `Monster Castle's host and its seven monsters each have a model of their own in trail.js (${drawn.join(', ')}), and none is Frankenstein's creature or Dracula`); }
   head(`4. ${DAYS} DAILY HOLES FROM TODAY`);
   const day0 = new Date(Date.UTC(2026, 9, 1));
   const themesSeen = new Set();
@@ -657,6 +856,28 @@ if (!QUICK){
   const yr = new Set(); for (let i = 0; i < 365; i++){ const d = new Date(day0.getTime() + i * 86400000); yr.add(P.themeForDay(d.toISOString().slice(0, 10))); }
   claim(yr.size === P.CAL_THEMES.length && P.CAL_THEMES.every(t => yr.has(t)), `a year of dailies wears every calendar theme (${[...yr].join(', ')})`);
   claim(P.themeForDay('2026-10-31') === 'haunted' && P.themeForDay('2026-11-26') === 'harvest' && P.themeForDay('2026-12-25') === 'winter', 'Halloween is haunted, Thanksgiving is harvest, Christmas is winter');
+  /* THE HOLIDAY FOLK stand by today's page of the Daily calendar in their season and on no other day (putt.js HOLIDAY_FOLK). Each has a
+     model of its own in trail.js and two short lines, and none of them walks a tour's trail. The seasons are held here day by day,
+     written out again by hand rather than read off the code: Easter is the Sunday each year's table says. */
+  { const HF = P.HOLIDAY_FOLK, ids = Object.keys(HF), TSRC = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
+    const want = ['santa', 'mrsclaus', 'krampus', 'easterbunny', 'toothfairy', 'cupid', 'fathertime', 'mothernature'];
+    const drawn = ids.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), lines = ids.every(id => HF[id].say.length === 2 && HF[id].say.every(l => l.length <= 60 && !l.split('').some(c => c.charCodeAt(0) === 8211 || c.charCodeAt(0) === 8212)));
+    claim(want.every(id => ids.includes(id)) && ids.length === 8 && drawn.length === 8 && lines, `the eight holiday folk each have a model of their own in trail.js (${drawn.join(', ')}) and two short lines`);
+    const onTrail = Object.keys(P.FOLK || {}).flatMap(w => Object.values(P.FOLK[w]).map(f => f.id)).concat(Object.values(P.GREETERS || {}).map(g => g.folk)).filter(id => ids.includes(id));
+    claim(!onTrail.length, 'no holiday folk stands on a tour trail or greets a world: they belong to the Daily' + (onTrail.length ? ' (' + onTrail.join(', ') + ')' : ''));
+    const EASTER = { 2026:'04-05', 2027:'03-28', 2028:'04-16' }, md = d => d.slice(5), inR = (m, a, b) => m >= a && m <= b;
+    claim(Object.keys(EASTER).every(y => P.easterDay(+y) === y + '-' + EASTER[y]) && P.easterDay(2038) === '2038-04-25' && P.easterDay(2008) === '2008-03-23', 'Easter falls where the calendar has it (2026 to 2028, the latest in 2038 and an early one in 2008)');
+    const season = d => { const y = d.slice(0, 4), e = Date.parse(y + '-' + EASTER[y] + 'T12:00:00Z'), t = Date.parse(d + 'T12:00:00Z'), m = md(d);
+      if (t >= e - 7 * 864e5 && t <= e + 864e5) return ['easterbunny'];
+      if (inR(m, '12-01', '12-06')) return ['santa', 'krampus']; if (inR(m, '12-07', '12-26')) return ['santa', 'mrsclaus'];
+      if (m >= '12-27' || m <= '01-06') return ['fathertime']; if (inR(m, '02-01', '02-18')) return ['cupid'];
+      if (inR(m, '02-19', '03-20')) return ['toothfairy']; if (inR(m, '03-21', '05-31')) return ['mothernature']; return []; };
+    const off = [], seen = {}; for (let t = Date.UTC(2026, 0, 1); t <= Date.UTC(2028, 11, 31); t += 864e5){ const d = new Date(t).toISOString().slice(0, 10), got = P.holidayFolk(d), w = season(d);
+      got.forEach(id => { seen[id] = (seen[id] || 0) + 1; }); if (got.join() !== w.join()) off.push(d + ' ' + got.join('+') + ' not ' + w.join('+')); }
+    claim(!off.length && ids.every(id => seen[id] > 0), `three years of days: each of the folk shows in their season and on no other day (${ids.map(id => id + ' ' + seen[id]).join(', ')})` + (off.length ? ': ' + off.slice(0, 4).join('; ') : ''));
+    const fixed = { '2026-12-03':'santa+krampus', '2026-12-24':'santa+mrsclaus', '2026-12-31':'fathertime', '2027-01-01':'fathertime', '2027-02-14':'cupid', '2027-02-28':'toothfairy', '2027-03-28':'easterbunny', '2027-04-22':'mothernature', '2026-10-31':'', '2026-11-26':'', '2027-07-04':'', '2027-01-07':'' };
+    const fx = Object.keys(fixed).filter(d => P.holidayFolk(d).join('+') !== fixed[d]);
+    claim(!fx.length, 'on a fixed clock: Santa and Krampus on 3 December, Santa and Mrs. Claus on Christmas Eve, Father Time at New Year, Cupid on Valentine\'s Day, the Tooth Fairy on Tooth Fairy Day, the Easter Bunny at Easter, Mother Nature on Earth Day, and nobody at Halloween, Thanksgiving, the Fourth of July or 7 January' + (fx.length ? ' (' + fx.join(', ') + ')' : '')); }
   head('5. NOTHING ESCAPES, NOTHING ROLLS FOR EVER');
   claim(escapes === 0, `no shot left the course through a wall (${escapes})`);
   claim(stuck === 0, `no shot was still rolling at the time limit (${stuck})`);
@@ -725,7 +946,15 @@ const GYMS = loadGyms(), KFILES = kindFiles(), PAGE = fs.readFileSync(new URL('.
     const hi = K.hello, okLine = typeof hi === 'string' && hi.length >= 12 && hi.length <= 90 && /\.$/.test(hi) && !hi.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212);
     claim(okLine && /^[a-z]+$/.test(K.unit || '') && (!live || K.calm === true), `gymkinds/${f}: its own entry line ("${hi}"), its own unit (${K.unit})` + (live ? ', and a calm room' : '')); }
   { const TRAIL = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
-    claim(!/One tile a step|Tap a piece to change it|' moves'/.test(TRAIL) && /GK\.hello/.test(TRAIL) && /GK\.unit/.test(TRAIL), 'the frame has no entry line or counter word of its own: each kind says how it is played (hello) and names what the panel counts (unit)'); }
+    claim(!/One tile a step|Tap a piece to change it|' moves'/.test(TRAIL) && /GK\.hello/.test(TRAIL) && /GK\.unit/.test(TRAIL), 'the frame has no entry line or counter word of its own: each kind says how it is played (hello) and names what the panel counts (unit)');
+    /* A GYM TAKES HIM ONLY AT ITS DOOR (QA, 2026-11-19, on Loch Ness's walk into hole 18: the door test had no far bound,
+       so walking up the screen anywhere in line with a door, 78 ft past it, put him in the room, and again after every
+       Leave). The walk enters a gym in one place, atGymDoor; here it is held on a door's own geometry (the door 0.8 ft in
+       front of the room's wall, which stops him 0.25 ft past it), and section 6 walks every gym trail's path through it. */
+    { const win = {}; win.window = win; const ctx = { window:win }; vm.createContext(ctx); vm.runInContext(TRAIL, ctx, { filename:'trail.js' });
+      const D = win.RTT_PUTT_TRAIL.atGymDoor, G = { ax:0, ay:50 }, one = (TRAIL.match(/gymEnter\(/g) || []).length === 2 && /else if \(atGymDoor\(GY, g\.x, g\.y, g\.vy\)\) gymEnter\(tsec\);/.test(TRAIL);
+      const inAt = [[0, 50.39], [0, 50], [0, 49.75], [0.9, 50], [-0.9, 49.8]].filter(q => !D(G, q[0], q[1], -10)), away = [[0, 50, 0.5], [0, 50, -0.2], [0, 48.4, -10], [0, 40, -10], [0, 22, -10], [0, -1, -10], [1, 50, -10], [-1, 50, -10], [0, 50.5, -10]].filter(q => D(G, q[0], q[1], q[2]));
+      claim(typeof D === 'function' && one && !inAt.length && !away.length, `a gym takes him only at its door, walking into it: atGymDoor is the walk's one way in, true from 0.4 ft short of the door to the room's wall and false past the room, up the land in line with it, beside it, or walking any other way` + (inAt.length || away.length ? ' (' + JSON.stringify({ inAt, away }) + ')' : '')); } }
   claim(GYMS.MASTER.badges === 22 && GYMS.MASTER.wired === false, 'all 22 badges unlock the Puzzle Master, recorded and not yet wired (its art waits for the owner)'); }
 /* ============================================================== 5c. THE TRICK SHOT ROOMS, PROVEN */
 /* THE CLUBHOUSE'S GYMS ARE TRICK SHOT ROOMS (gymkinds/trickshot.js): a putting puzzle with the real ball. Numbered bottles
@@ -911,6 +1140,28 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     claim(calk.days >= 60 && calk.todayDone, `the Daily tab is a calendar of ${calk.days} days with today marked played`);
     claim(calk.lockN > 0 && calk.sheet && calk.noRound, 'without the Tour Pass a missed day is shut, and pressing it opens the Pass sheet rather than a hole');
     claim(calk.pastRound && calk.late && calk.streak === 2 && calk.last, `a Pass holder plays a missed day, and it is filed late without moving the streak (streak ${calk.streak})`);
+    // THE HOLIDAY FOLK on the page, on a fixed clock: each stands by today's page in their season and says their line in the walks'
+    // bubble, a tap gives their next line, and a day with no holiday has nobody. The clock is the game's own day key. It runs on a page
+    // of its own (a fresh context, its own storage), because a clock moved forward leaves days behind it that the checks after it trip on.
+    const hpg = await b.newPage({ viewport:{ width:390, height:844 } }); hpg.on('pageerror', e => errs.push(e.message));
+    await hpg.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort()); await hpg.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
+    await hpg.waitForFunction(() => window.RTT_PUTT && typeof puttOn === 'function' && window.RTT_PUTT_TRAIL && window.RTT_PUTT_3D, null, { timeout:30000 });
+    const hol = await hpg.evaluate(async () => { window.RTT_PUTT_MAPFIRST = true; const wait = async q => { for (let t = 0; t < 100 && !document.querySelector(q); t++) await new Promise(r => setTimeout(r, 50)); return !!document.querySelector(q); };
+      const keep = _tzKey, out = {}; sbUser = { id:'hol' };
+      for (const day of ['2026-12-03', '2026-12-24', '2027-01-01', '2027-02-14', '2027-02-28', '2027-03-28', '2027-04-22', '2026-11-12', '2027-07-04']){
+        window.RTT_PUTT.close(); const n = +day.replace(/-/g, ''); _tzKey = () => n; openPutt(); await wait('.pp-tabs [data-tab="daily"]');
+        document.querySelector('.pp-tabs [data-tab="daily"]').click(); await wait('.pp-cday.cur');
+        const ids = [...document.querySelectorAll('.pp-calw .pp-hf')].map(e => e.getAttribute('data-folk')), bub = document.querySelector('.pp-calw .pp-hbub'), first = bub ? bub.textContent : '';
+        let second = ''; if (ids.length){ const f = document.querySelector('.pp-hf[data-folk="' + ids[0] + '"]'); f.click(); second = bub.textContent; }
+        const seen = ids.length ? (() => { const r = document.querySelector('.pp-hf').getBoundingClientRect(), b = bub.getBoundingClientRect(), pgR = document.querySelector('.pp-cday.cur').getBoundingClientRect();
+          return r.width > 20 && r.height > 30 && r.left >= -4 && r.right <= innerWidth + 4 && b.left >= -4 && b.right <= innerWidth + 4 && b.bottom <= pgR.top + 2; })() : true;
+        out[day] = { ids:ids.join('+'), first, second, seen, today:document.querySelector('.pp-cday.cur').getAttribute('data-day') === day }; }
+      _tzKey = keep; window.RTT_PUTT.close(); return out; });
+    const HF = await hpg.evaluate(() => window.RTT_PUTT.HOLIDAY_FOLK); await hpg.close();
+    const hw = { '2026-12-03':'santa+krampus', '2026-12-24':'santa+mrsclaus', '2027-01-01':'fathertime', '2027-02-14':'cupid', '2027-02-28':'toothfairy', '2027-03-28':'easterbunny', '2027-04-22':'mothernature', '2026-11-12':'', '2027-07-04':'' };
+    const hbad = Object.keys(hw).filter(d => { const o = hol[d], id = hw[d].split('+')[0]; if (!o.today || o.ids !== hw[d] || !o.seen) return true;
+      return id ? !(o.first === HF[id].name + HF[id].say[0] && o.second === HF[id].name + HF[id].say[1]) : !!o.first; });
+    claim(!hbad.length, `on a fixed clock the Daily tab stands each of the holiday folk by today's page in their season, on screen at 390 x 844, saying their first line and a tap their second, and nobody on a day without a holiday (${Object.keys(hw).map(d => d.slice(5) + ' ' + (hol[d].ids || 'nobody')).join(', ')})` + (hbad.length ? ': ' + hbad.map(d => d + ' ' + JSON.stringify(hol[d])).join('; ') : ''));
     // THE WALK TO THE NEXT HOLE IS A PLACE (trail.js): Next opens a 3D trail of the world, walked with a stick,
     // with a waypoint on the hole ahead. No coin lies loose: chests are hidden off the path, and opening one throws
     // its coins onto the ground to be walked over and paid into the account. A chest behind a locked gate and its
@@ -1009,11 +1260,11 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        pick up lies in the water, every crossing has its bridge and its deck is dry, and the creeks come in the
        worlds' own kinds. Then he really walks across one: the deck holds him and the water either side does not. */
     const cr = await pg.evaluate(async () => { const out = { n:0, kinds:{}, wet:0, inWater:0, bridges:0, crossings:0, dryDeck:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {};
-      for (let n = 1; n <= 486; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas'], tours:{ main:{ lv:486, best, ace:{}, paid:{}, wpaid:{} } } }));
+      for (let n = 1; n <= 576; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'pacific', 'bigtop', 'london', 'notredame', 'treasure'], tours:{ main:{ lv:504, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'walk' }; openPutt(); await sleep(300);
       let firstWater = 0;
-      for (let f = 1; f < 486; f++){ const P = window.RTT_PUTT._trailPlan(f);
+      for (let f = 1; f < 576; f++){ const P = window.RTT_PUTT._trailPlan(f);
         for (const p of P.path){ const o = P.poolAt(p[0], p[1]); if ((o && o.k === 'water') || P.seaAt(p[0], p[1])) out.wet++; }
         if (!P.creek) continue; out.n++; out.kinds[P.creek.k] = 1; if (P.creek.k === 'water' && !firstWater) firstWater = f;
         out.crossings += P.creek.xs.length; out.bridges += P.things.filter(t => t.k === 'bridge').length;
@@ -1051,17 +1302,17 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        ended: a prize that turns up before its puzzle is done, a gate that never shuts, a crate that goes either way,
        all fail here. And the local on a puzzle trail gives its clue. */
     const pzr = await pg.evaluate(async () => { const out = { gymTrails:0, gymWorlds:{}, gymPz:0, gymNotNone:0, n:0, pz:0, kinds:{}, drops:true, solo:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, bm = {}, TR = window.RTT_PUTT_TRAIL, GLz = window.RTT_PUTT_GYMS;
-      for (let n = 1; n <= 486; n++) best[n] = 3; for (let n = 1; n <= 18; n++) bm[n] = 3;
-      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'haunted', 'harvest'], tours:{ main:{ lv:486, best, ace:{}, paid:{}, wpaid:{} }, members:{ lv:18, best:bm, ace:{}, paid:{}, wpaid:{} } } }));
+      for (let n = 1; n <= 576; n++) best[n] = 3; for (let n = 1; n <= 18; n++) bm[n] = 3;
+      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'pacific', 'haunted', 'harvest'], tours:{ main:{ lv:504, best, ace:{}, paid:{}, wpaid:{} }, members:{ lv:18, best:bm, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'pzl' }; openPutt(); await sleep(300);
       const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@pzl')).trail || {}), first = {};
       // the main tour: a gym world's trails carry no puzzle
-      for (let f = 1; f < 486; f++){ const P = window.RTT_PUTT._trailPlan(f), th = P.spec.theme; if (!GLz.GYMS.some(g => g.world === th)) continue;
+      for (let f = 1; f < 576; f++){ const P = window.RTT_PUTT._trailPlan(f), th = P.spec.theme; if (!GLz.GYMS.some(g => g.world === th)) continue;
         out.gymTrails++; out.gymWorlds[th] = 1; if (P.puzzle) out.gymPz++; if (!P.spec.cross && P.spec.pzKind !== 'none') out.gymNotNone++; }
       // where they live on: the Members Tour first, then a main world with no gyms yet
       const where = [];
       for (let f = 1; f < window.RTT_PUTT.TOURS.members.levels.length; f++) where.push(['members', f, 9]);
-      for (let f = 1; f < 486; f++) where.push(['main', f, 18]);
+      for (let f = 1; f < 576; f++) where.push(['main', f, 18]);
       for (const [tid, f, per] of where){ const P = window.RTT_PUTT._trailPlan(f, tid); if (tid === 'main' && GLz.GYMS.some(g => g.world === P.spec.theme)) continue; out.n++; const pz = P.puzzle; if (!pz) continue; out.pz++; out.kinds[pz.k] = (out.kinds[pz.k] || 0) + 1;
         const pr = P.items.filter(t => t.k === 'prize'); if (pr.length !== 1 || pr[0].drops.length !== TR.PZ_COINS) out.drops = false;
         if (!pz.clue || P.items.filter(t => t.k === 'chest').length !== 1) out.solo = false;
@@ -1123,12 +1374,12 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
        line comes), walked out of and back into, and solved by its recorded proof, one tile a step. The vault pays its
        coins once and the badge is kept; opened again the gym shows as it was left solved. */
     const gyr = await pg.evaluate(async () => { const out = { trails:[] }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, GL = window.RTT_PUTT_GYMS;
-      for (let n = 1; n <= 486; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@gyc', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas'], tours:{ main:{ lv:486, best, ace:{}, paid:{}, wpaid:{} } } }));
+      for (let n = 1; n <= 576; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@gyc', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'pacific', 'bigtop', 'london', 'notredame', 'treasure'], tours:{ main:{ lv:504, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'gyc' }; openPutt(); await sleep(300);
       const segMin = (P, x, y) => { let m = 1e9; for (let i = 0; i < P.path.length - 1; i++){ const a = P.path[i], c = P.path[i + 1], dx = c[0] - a[0], dy = c[1] - a[1], L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / L)); m = Math.min(m, Math.hypot(x - a[0] - dx * u, y - a[1] - dy * u)); } return m; };
       const want = GL.GYMS.map(g => g.id).sort().join(), got = [];
-      for (let f = 1; f < 486; f++){ const P = window.RTT_PUTT._trailPlan(f); if (!P.spec.gym) continue; got.push(P.spec.gym);
+      for (let f = 1; f < 576; f++){ const P = window.RTT_PUTT._trailPlan(f); if (!P.spec.gym) continue; got.push(P.spec.gym);
         const G = P.gym, o = { f, id:P.spec.gym, has:!!G }; out.trails.push(o); if (!G) continue;
         let near = 1e9; for (let y = G.y0; y <= G.y0 + G.d; y += 0.5) for (let x = G.x0; x <= G.x0 + G.w; x += 0.5) near = Math.min(near, segMin(P, x, y));
         o.clear = +near.toFixed(2); o.gateOff = +segMin(P, G.ax, G.ay).toFixed(2);
@@ -1141,8 +1392,28 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
           o.over = P.things.filter(t => t.k !== 'gym' && t.k !== 'bridge' && (t.h || 0) > 0.2).filter(t => { const rx = t.w ? t.w / 2 : (t.cr || t.r || 0.5), ry = t.d ? t.d / 2 : (t.r || 0.5);
             const dx = Math.max(G.x0 - t.x, 0, t.x - G.x0 - G.w); if (dx >= rx + m) return false;
             return t.y * SE - t.h * CE < rb + m * SE && (t.y + ry) * SE > rt - m * SE; }).map(t => t.k); }
-        o.civ = !!P.civ && FL.near(G0, P.civ.x, P.civ.y + 1.4, 1.2); o.vault = P.items.some(t => t.k === 'vault'); o.leftNames = window.RTT_PUTT._trailLeft ? window.RTT_PUTT._trailLeft(f + 1) : null; }
+        o.civ = !!P.civ && FL.near(G0, P.civ.x, P.civ.y + 1.4, 1.2); o.vault = P.items.some(t => t.k === 'vault'); o.leftNames = window.RTT_PUTT._trailLeft ? window.RTT_PUTT._trailLeft(f + 1) : null;
+        /* ONLY AT ITS DOOR: the trail's own path walked from its start to the arch at walking pace, anywhere across its
+           width (PW, 2.2 ft either side), never meets the walk's door test (atGymDoor, the one way in); up the spur from the
+           path to the door and on into the wall, it does, and only within a step of the door */
+        { const D = window.RTT_PUTT_TRAIL.atGymDoor, V = 10; let path = 0, far = 0, spur = 0;
+          for (let i = 0; i < P.path.length - 1; i++){ const a = P.path[i], c = P.path[i + 1], L = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1e-9, tx = (c[0] - a[0]) / L, ty = (c[1] - a[1]) / L;
+            for (let u = 0; u < L; u += 0.1) for (let w = -2.2; w <= 2.21; w += 0.55){ const x = a[0] + tx * u - ty * w, y = a[1] + ty * u + tx * w; if (D(G, x, y, ty * V)){ path++; far = Math.max(far, Math.hypot(x - G.ax, y - G.ay)); } } }
+          const s0 = G.spur[0], legs = [[s0, [G.ax, G.ay]], [[G.ax, G.ay], [G.ax, G.ay - 0.25]]];
+          for (const [a, c] of legs){ const L = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1e-9, ty = (c[1] - a[1]) / L; for (let u = 0; u <= L; u += 0.05){ const x = a[0] + (c[0] - a[0]) * u / L, y = a[1] + (c[1] - a[1]) * u / L; if (D(G, x, y, ty * V)){ spur++; far = Math.max(far, Math.hypot(x - G.ax, y - G.ay)); } } }
+          o.door = { path, spur, far:+far.toFixed(2) }; } }
       out.all = got.sort().join() === want;
+      /* the walk QA found (2026-11-19): Loch Ness's gatekeeper trail, whose arch is 0.75 ft off the line of its door, walked
+         for real along its own path at walking pace. He was taken into the room 78 ft past the door, and never got to 18. */
+      { const ln = out.trails.find(o => o.id === 'ln2' && o.has), T = () => window.RTT_PUTT._trail(); if (ln){ window.RTT_PUTT._walkTo(ln.f); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(300);
+        const t = T(), P = t.plan(), G = P.gym, pa = P.path, SE = Math.sin(42 * Math.PI / 180), cum = [0]; for (let i = 1; i < pa.length; i++) cum.push(cum[i - 1] + Math.hypot(pa[i][0] - pa[i - 1][0], pa[i][1] - pa[i - 1][1]));
+        const SL = cum[cum.length - 1], atS = s => { for (let i = 0; i < pa.length - 1; i++) if (cum[i + 1] >= s){ const u = (s - cum[i]) / ((cum[i + 1] - cum[i]) || 1); return [pa[i][0] + (pa[i + 1][0] - pa[i][0]) * u, pa[i][1] + (pa[i + 1][1] - pa[i][1]) * u]; } return pa[pa.length - 1]; };
+        let s = 0, pulled = null, line = 1e9; const t0 = performance.now();
+        while (performance.now() - t0 < 45000 && T() === t){ if (t.gym().in){ pulled = t.pos().map(v => +v.toFixed(1)); break; }
+          const q = t.pos(); for (let i = 0; i < pa.length; i++) if (cum[i] > s && cum[i] < s + 6 && Math.hypot(pa[i][0] - q[0], pa[i][1] - q[1]) < 2.5) s = cum[i];
+          if (q[1] < G.ay - 2) line = Math.min(line, Math.abs(q[0] - G.ax));
+          const a = s >= SL - 3 ? [P.arch.x, -2] : atS(s + 3), dx = a[0] - q[0], dy = (a[1] - q[1]) * SE, m = Math.hypot(dx, dy) || 1; t.stick(dx / m, dy / m); await sleep(30); }
+        if (T() === t) t.stick(0, 0); out.lnWalk = { pulled, reached:T() !== t, inLine:+line.toFixed(2) }; } }
       // play the first gym
       const paid = []; let hk = null, hc = null; const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail();
       const packs = [], hook = () => { const h = S().host; if (h !== hk){ if (hk){ hk.coins = hc; delete hk.pack; } hk = h; hc = h.coins; h.coins = n => { paid.push(n); }; h.pack = (tier) => { packs.push(tier); return 1; }; } };
@@ -1181,6 +1452,8 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     claim(gyr.trails.every(o => o.clear > 2.2 + 1.2 && o.gateOff < 9.5 && o.inside === 0), `each gym is clear of the walk, its gate a few steps off the path, and nothing else stands in it (${JSON.stringify(gyr.trails.map(o => [o.clear, o.gateOff, o.inside]))})`);
     claim(gyr.trails.every(o => !o.over.length), `nothing tall stands over a gym's room on screen: no tree, landmark, rock or lamp within its walls' rect plus a margin (${JSON.stringify(gyr.trails.filter(o => o.over.length).map(o => [o.id, o.over]))})`);
     claim(gyr.trails.every(o => o.gateReach && o.archReach && o.civ && o.vault), `each gym's gate and civilian can be walked to and its trail is still walkable to the arch, its vault on the list (${JSON.stringify(gyr.trails.map(o => [o.gateReach, o.archReach, o.civ, o.vault]))})`);
+    claim(gyr.trails.every(o => o.door && o.door.path === 0 && o.door.spur > 0 && o.door.far <= 1.6), `a gym takes him only at its door: walked along every gym trail's own path, start to arch and anywhere across it, he is never taken in, and walked up the spur he is, within a step of the door (${JSON.stringify(gyr.trails.filter(o => !o.door || o.door.path || !o.door.spur || o.door.far > 1.6).map(o => [o.id, o.door]))})`);
+    claim(gyr.lnWalk && !gyr.lnWalk.pulled && gyr.lnWalk.reached && gyr.lnWalk.inLine < 0.95, `walked for real along Loch Ness's gatekeeper trail, up the land in line with its gym's door, he reaches hole 18 and is never taken into the room (${JSON.stringify(gyr.lnWalk)})`);
     claim(gyr.trails.every(o => !o.leftNames || o.leftNames.indexOf('a gym') >= 0) && gyr.leftAfter && gyr.leftAfter.indexOf('a gym') < 0, `skipping a gym's trail warns that its gym is left, and not once it is solved (${JSON.stringify(gyr.leftAfter)})`);
     claim(gyr.entered && gyr.startOk && gyr.reset, `walked into at its gate he moves a tile a step, and the lever puts every piece back (${JSON.stringify([gyr.entered, gyr.startOk, gyr.reset])})`);
     claim(gyr.plain && gyr.civSays, `after two resets the civilian's plainer line comes, in the gym's docked panel and at the gate (${JSON.stringify([gyr.plain, gyr.civSays])})`);
@@ -1190,7 +1463,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     // THE GATEKEEPER GUARDS THE WORLD'S LAST HOLE (the owner, 2026-10-17), and CHESTS ROLL THEIR ODDS once, fixed
     const gk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@gk';
       const keep = GL.GYMS.filter(g => g.keeper), mid = GL.GYMS.filter(g => !g.keeper), W = window.RTT_PUTT._trailPlan; out.keepers = keep.length;
-      const n = (() => { for (let f = 1; f < 486; f++){ const P = W(f); if (P.spec.gym === keep[0].id) return f + 1; } return 0; })(); out.n = n;
+      const n = (() => { for (let f = 1; f < 576; f++){ const P = W(f); if (P.spec.gym === keep[0].id) return f + 1; } return 0; })(); out.n = n;
       const best = {}; for (let i = 1; i < n; i++) best[i] = 3;
       const rec = (gym) => localStorage.setItem(K, JSON.stringify({ v:2, lives:9, l9:1, back:[], gym, tours:{ main:{ lv:n, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'gk' }; window.RTT_PUTT_MAPFIRST = true; rec([]); openPutt(); await sleep(400);
@@ -1212,9 +1485,9 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       window.RTT_PUTT.close(); rec([]); openPutt(); await sleep(300);   // open again: the chest odds below read the host
       // chest odds: fixed for a key, and near the table over many chests
       const R = window.RTT_PUTT._chestRoll, cnt = { coins:0, haul:0, item:0, pack:0 }; out.fixed = R('main:7', 'ch0') === R('main:7', 'ch0');
-      for (let i = 0; i < 4000; i++) cnt[R('main:' + (i % 486 + 1), 'ch' + i)]++; out.cnt = cnt;
+      for (let i = 0; i < 4000; i++) cnt[R('main:' + (i % 576 + 1), 'ch' + i)]++; out.cnt = cnt;
       const h = window.RTT_PUTT._state().host, hp = h.pack, hi = h.commonItem; h.pack = () => 0; h.commonItem = () => null;
-      let k = null; for (let i = 0; i < 4000 && !k; i++) if (R('main:' + (i % 486 + 1), 'x' + i) === 'pack') k = ['main:' + (i % 486 + 1), 'x' + i];
+      let k = null; for (let i = 0; i < 4000 && !k; i++) if (R('main:' + (i % 576 + 1), 'x' + i) === 'pack') k = ['main:' + (i % 576 + 1), 'x' + i];
       out.fallback = k ? window.RTT_PUTT._chestLuck(k[0], k[1], 600) : null;
       h.pack = () => 1; out.packMsg = k ? window.RTT_PUTT._chestLuck(k[0], k[1], 600) : null; h.pack = hp; h.commonItem = hi;
       window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
@@ -1248,10 +1521,10 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
       await p2.evaluate(settle);
       for (const gid of KEEPS) lay[vw + ' ' + gid] = await p2.evaluate(async ([desk, gid]) => { const out = { id:gid }, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@lay', best = {};
-        for (let n = 1; n <= 486; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas'], gyt:{ [gid]:desk ? [0, 240] : [0, 200] }, tours:{ main:{ lv:486, best, ace:{}, paid:{}, wpaid:{} } } }));
+        for (let n = 1; n <= 576; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'pacific', 'bigtop', 'london', 'notredame', 'treasure'], gyt:{ [gid]:desk ? [0, 240] : [0, 200] }, tours:{ main:{ lv:504, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'lay' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
-        const G = GL.byId(gid), tapIn = GL.input(G) === 'tap'; let f = 0; for (let i = 1; i < 486 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
+        const G = GL.byId(gid), tapIn = GL.input(G) === 'tap'; let f = 0; for (let i = 1; i < 576 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
         const t = T(), hit = (a, c) => !!a && !!c && a.left < c.right && a.right > c.left && a.top < c.bottom && a.bottom > c.top;
         const idle = async () => { for (let i = 0; i < 1000 && t.gymBusy(); i++) await sleep(20); };
@@ -1325,10 +1598,10 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && window.RTT_GYMKIND_TRICKSHOT && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
       await p2.evaluate(settle);
       layT[vw] = await p2.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@layt', best = {};
-        for (let n = 1; n <= 486; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas'], gyt:{ clubhouse2:[0, 240] }, tours:{ main:{ lv:486, best, ace:{}, paid:{}, wpaid:{} } } }));
+        for (let n = 1; n <= 576; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'pacific', 'bigtop', 'london', 'notredame', 'treasure'], gyt:{ clubhouse2:[0, 240] }, tours:{ main:{ lv:504, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'layt' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
-        const G = GL.byId('clubhouse2'); let f = 0; for (let i = 1; i < 486 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
+        const G = GL.byId('clubhouse2'); let f = 0; for (let i = 1; i < 576 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
         const t = T(), hit = (a, c) => !!a && !!c && a.left < c.right && a.right > c.left && a.top < c.bottom && a.bottom > c.top;
         const Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);
@@ -1352,10 +1625,10 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     const ex = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@ex', best = {};
       await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'putt/gymkinds/example.js?v=check'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
       GL.rescan(); const E = GL.byId('example1'), M = GL.GYMS.find(g => g.world === 'pirate' && !g.keeper), w0 = [E.world, E.leg, M.leg]; E.world = 'pirate'; E.leg = M.leg; M.leg = -1;
-      try{ for (let n = 1; n <= 486; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas'], tours:{ main:{ lv:486, best, ace:{}, paid:{}, wpaid:{} } } }));
+      try{ for (let n = 1; n <= 576; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'pacific', 'bigtop', 'london', 'notredame', 'treasure'], tours:{ main:{ lv:504, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT.close(); sbUser = { id:'ex' }; openPutt(); await sleep(300); const h = window.RTT_PUTT._state().host, hc = h.coins, hp = h.pack; h.coins = () => {}; h.pack = () => 1;
-        let f = 0; for (let i = 1; i < 486 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === E.id) f = i; out.f = f;
+        let f = 0; for (let i = 1; i < 576 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === E.id) f = i; out.f = f;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(500);
         const t = T(), Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);
         // a tap is taken only once he has finished walking in (on a busy machine 600 ms is not always enough)
@@ -1378,11 +1651,11 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     const tapG = await pg.evaluate(() => window.RTT_PUTT_GYMS.GYMS.filter(g => g.world && window.RTT_PUTT_GYMS.input(g) === 'tap').map(g => g.id));
     for (const gid of tapG){
       const tp = await pg.evaluate(async (gid) => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@tp', best = {}, G = GL.byId(gid);
-        for (let n = 1; n <= 486; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas'], tours:{ main:{ lv:486, best, ace:{}, paid:{}, wpaid:{} } } }));
+        for (let n = 1; n <= 576; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'pacific', 'bigtop', 'london', 'notredame', 'treasure'], tours:{ main:{ lv:504, best, ace:{}, paid:{}, wpaid:{} } } }));
         const paid = [], packs = [], S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(); let hk = null, hc = null, hp = null;
         const hook = () => { const h = S().host; if (h !== hk){ if (hk){ hk.coins = hc; hk.pack = hp; } hk = h; hc = h.coins; hp = h.pack; h.coins = n => { paid.push(n); }; h.pack = tier => { packs.push(tier); return 1; }; } };
-        let f = 0; for (let i = 1; i < 486 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === gid) f = i; out.f = f;
+        let f = 0; for (let i = 1; i < 576 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === gid) f = i; out.f = f;
         const open = async () => { window.RTT_PUTT.close(); sbUser = { id:'tp' }; openPutt(); await sleep(300); hook(); window.RTT_PUTT._walkTo(f); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(500); hook(); return T(); };
         const idle = async t => { for (let i = 0; i < 300 && t.gymBusy(); i++) await sleep(20); };
         const enter = async t => { const Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0); await idle(t); await sleep(300); return t.gym().in; };
@@ -1422,6 +1695,25 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         if (!a.spec.space) continue; out.push({ f, cross:!!a.host, landed:!!b2.host, landedGate:!!b2.gate }); }
       return out; });
     claim(sg.length >= 5 && sg.every(o => !o.cross && o.landed && !o.landedGate), `a space world's greeter waits on the landed walk, where no gate holds them, and not on the crossing that ends at the launch pad (${JSON.stringify(sg)})`);
+    /* EVERY LANDING LETS HIM OUT (QA, 2026-11-19: the Big Top's walk opened with him inside the circus train, 12 ft long
+       and parked 6.5 ft from the start, and he could not move; the ship in the Oz poppies did the same). On every landed
+       walk, at a phone's and a desktop's size, the spot run() stands him on (atS(2)) is clear of every collider by run()'s
+       own rule, he has a first step of a foot and a half that way up the walk, and the hole's end of the walk floods
+       from where he stands. Plans only, so it is quick. */
+    { const land = []; for (const [vw, vh] of [[390, 844], [1440, 900]]){ await pg.setViewportSize({ width:vw, height:vh });
+        land.push(...await pg.evaluate(v => { const TR = window.RTT_PUTT._trailPlan, out = [], R = 0.55;
+          for (let f = 18; f < window.RTT_PUTT.LEVELS.length; f += 18){ const P = TR(f, 'main', true); if (!P || !P.spec || !P.spec.landed) continue;
+            const hit = (x, y) => x < P.b[0] + 2.5 || x > P.b[2] - 2.5 || y > P.b[3] - 2 || (P.poolAt(x, y) || {}).k === 'water' || P.seaAt(x, y) ||
+              P.cols.some(c => c.w ? Math.abs(x - c.x) < c.w / 2 + R && Math.abs(y - c.y) < c.d / 2 + R : Math.hypot(x - c.x, y - c.y) < c.r + R);
+            const g0 = P.atS(2), tn = P.tanS(4), a0 = Math.atan2(tn[1], tn[0]);
+            let step = false; for (let da = 0; da <= Math.PI / 2 + 1e-9 && !step; da += Math.PI / 16) for (const sg2 of [1, -1]){ const a = a0 + sg2 * da;
+              let ok = true; for (let d = 0.25; d <= 1.5 && ok; d += 0.25) if (hit(g0[0] + Math.cos(a) * d, g0[1] + Math.sin(a) * d)) ok = false; if (ok){ step = true; break; } }
+            const end = P.path[P.path.length - 1], G = P._fl.flood(false);
+            out.push({ v, f, th:P.spec.theme, free:!hit(g0[0], g0[1]), step, end:P._fl.near(G, end[0], Math.max(end[1], 1), 2) }); }
+          return out; }, vw + 'x' + vh)); }
+      await pg.setViewportSize({ width:390, height:844 });
+      const bad = land.filter(o => !o.free || !o.step || !o.end);
+      claim(land.length >= 40 && !bad.length, `every landed walk (${land.length / 2} of them, at 390 x 844 and 1440 x 900) stands him clear of every collider, gives him a first step up the walk, and floods to the hole's end` + (bad.length ? ': ' + JSON.stringify(bad) : '')); }
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.
@@ -1449,13 +1741,15 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       const L3 = T().life(), P3 = T().plan(); out.ships = L3.ships.length; out.afloat = L3.ships.every(q => q.y < P3.b[1] || q.y > P3.b[3] || P3.seaAt(q.x, q.y));
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
-      out.greeters = []; for (let w = 0; w < 27; w++){ let P = window.RTT_PUTT._trailPlan(w * 18); if (P.spec.space) P = window.RTT_PUTT._trailPlan(w * 18, 'main', true); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }   // a space world's greeter is on its landed walk
-      for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      out.greeters = []; for (let w = 0; w < 32; w++){ let P = window.RTT_PUTT._trailPlan(w * 18); if (P.spec.space) P = window.RTT_PUTT._trailPlan(w * 18, 'main', true); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }   // a space world's greeter is on its landed walk
+      for (let w = 0; w < 3; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      // Monster Castle's monsters stand on its walks in place of the local, one to a walk, and say their own lines
+      out.folk = []; for (let f = 19; f < 27; f++){ const P = window.RTT_PUTT._trailPlan(f, 'members'); out.folk.push(P.spec.folk ? P.spec.folk.id + (P.items.some(t => t.k === 'npc') ? '' : '?') : '-'); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       out.secrets = []; out.secretElse = []; out.secretAt = [];
-      for (let w = 0; w < 27; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
+      for (let w = 0; w < 32; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
         out.secrets.push(!!(P.secret && P.secret.i === w + 1 && P.spur2 && P.spur2.length > 1 && P.secret.reach && P.items.some(t => t.k === 'npc'))); }
-      for (let f = 0; f < 486; f++) if (window.RTT_PUTT._trailPlan(f).secret && out.secretAt[Math.floor(f / 18)] !== f % 18 + 1) out.secretElse.push(f + 1);
+      for (let f = 0; f < 576; f++) if (window.RTT_PUTT._trailPlan(f).secret && out.secretAt[Math.floor(f / 18)] !== f % 18 + 1) out.secretElse.push(f + 1);
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'chk' }; return out; });
     claim(wo.world && wo.ban && wo.host, `opening the Tour drops the golfer into the world on the trail to the next hole, with its title card and Map top right (${wo.world}, ${wo.ban}, ${wo.host})`);
     claim(wo.talk && wo.face && wo.held, `the world's greeter walks up and talks, with their face in the box, and walking waits for them (${wo.talk}, ${wo.face}, ${wo.held})`);
@@ -1466,7 +1760,8 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     /* seventeen walks can hold one (never the first), and there are more worlds than that, so a walk comes round again only once
        every other walk has had its turn: any seventeen worlds in a row hold their secrets on seventeen different walks */
     claim(wo.secretAt.every(k => k > 1 && k <= 18) && wo.secretAt.every((k, w) => wo.secretAt.slice(Math.max(0, w - 16), w).indexOf(k) < 0), `the secrets sit on a different walk in each run of seventeen worlds, never a world's first (${wo.secretAt.join(' ')})`);
-    claim(wo.greeters.every(Boolean) && wo.notMid, `all twenty-seven worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
+    claim(wo.greeters.every(Boolean) && wo.notMid, `all thirty-two worlds and the three Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
+    claim(wo.folk.join() === 'zombie,invisible,hyde,vampire,werewolf,golem,horseman,-', `Monster Castle's monsters stand on its walks, one to a walk (${wo.folk.join(' ')})`);
     // THE HOLES AT EACH END OF A WALK ARE THE REAL HOLES: the one you just played behind you, the next one past the arch,
     // each drawn from its own compiled course, with its cup where the course puts it
     const ft = await pg.evaluate(() => { const P = window.RTT_PUTT._trailPlan(17), f = P.feet || [];
@@ -1504,7 +1799,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'cld' };
       // short of the stars: 18 pars is 18 stars, under the 40 the gate asks
       localStorage.setItem(K, JSON.stringify(rec(18, 3))); openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="1"]'); i++) await sleep(50);
-      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 26 && !document.querySelector('.pp-map [data-lv="19"]');
+      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 31 && !document.querySelector('.pp-map [data-lv="19"]');
       out.card = window.RTT_PUTT.summary().world === 'The Clubhouse';
       window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
       out.walk = !hidden.test(document.body.innerText) && T().clouds() === 'on';
@@ -1610,7 +1905,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 26), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the twenty-three worlds ahead under cloud');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 31), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the twenty-three worlds ahead under cloud');
     // A RECORD SAVED SIGNED OUT IS CLAIMED, NEVER LOST. A player reached hole 18 and came back to hole 1, because
     // the record is keyed by account and a session that opened before sign-in resolved played under the bare key.
     const mrg = await pg.evaluate(async () => { window.RTT_PUTT.close(); const best = {}; for (let n = 1; n <= 17; n++) best[n] = 2;
@@ -1736,12 +2031,12 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     { const tr = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
       claim(/if \(!api\.guestCoins\) floatText\('\+' \+ COIN_V/.test(tr) && /if \(!api\.guestCoins\) floatText\('\+' \+ BRK_V/.test(tr) && /api\.guestCoins \? 'Sign in' : '\+' \+ coinsGot/.test(tr),
         'a guest\'s trail floats no +coins and its counter reads Sign in'); }
-    // every world painted means every world revealed: a record that has walked through all twenty-seven gates
-    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
+    // every world painted means every world revealed: a record that has walked through all thirty-two gates
+    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
     // the map paints one world a frame (mapArt), about half a second each on a CI runner, so the wait grows with
     // the tour: 15 s ran out at World 25. This is only the ceiling; it returns the moment the last band is painted.
-    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 27, null, { timeout:60000 }).catch(() => {});
+    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 32, null, { timeout:60000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
       return { cols:cols.size, exact:Math.abs(c.offsetWidth - c.width * 2) < 1 && Math.abs(c.offsetHeight - c.height * 2) < 1, covers:c.offsetWidth >= b.offsetWidth && c.offsetHeight >= b.offsetHeight }; }));
@@ -1834,7 +2129,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     // Members world (here, the map: this section runs map first), and walking up to a hole opens a sheet that
     // sells nothing for coins and sends the player to the free tour
     await pg.click('.pp-tabs [data-tab="members"]'); await pg.waitForSelector('.pp-mem .pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 9 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 1 && !/Harvest Moon/.test(document.querySelector('.pp-map').innerText)), 'without a pass the Members tab still shows Hallows Night: its nine holes and their signature hole, and the second world under cloud, unnamed');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 9 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === window.RTT_PUTT.TOURS.members.worlds.length - 1 && !/Harvest Moon|Monster Castle/.test(document.querySelector('.pp-map').innerText)), 'without a pass the Members tab still shows Hallows Night: its nine holes and their signature hole, and every later world under cloud, unnamed');
     await pg.click('.pp-mem .pp-map [data-lv="1"]'); await pg.waitForSelector('.pp-memsh');
     const ms = await pg.textContent('.pp-memsh');
     claim(/Members only/.test(await pg.evaluate(() => JSON.stringify(window.RTT_PUTT.PAY.members))) && /Get Tour Pass/.test(ms) && !/\d+ coins? to (buy|unlock)/i.test(ms) && /Putt Putt Tour is free/.test(ms) && !!(await pg.$('.pp-memsh [data-main]')) && await pg.evaluate(() => window.RTT_PUTT._state().screen !== 'play'), 'a hole on Hallows Night without a pass opens a sheet about the Tour Pass that also offers the free tour, and the hole does not start');
@@ -1886,13 +2181,13 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
         const FA = fa.cv.getContext('2d').getImageData(0, 0, fa.cv.width, fa.cv.height).data, FB = fr.cv.getContext('2d').getImageData(0, 0, fr.cv.width, fr.cv.height).data;
         let fd = fa.cv.width === fr.cv.width && fa.cv.height === fr.cv.height ? 0 : -1; if (!fd) for (let k = 0; k < FA.length; k++) if (FA[k] !== FB[k]) fd++;
         out.fxDiff = fd; out.fxSky = !!(fa.sky && fa.bg); const fms = [];
-        for (let n2 = 1; n2 <= 486; n2 += 18){ const t1 = performance.now(); D3.render(P.buildFrom(P.tourDesc(n2, null, 'main')), { aspect:2, fx:true }); fms.push(performance.now() - t1); }
+        for (let n2 = 1; n2 <= 576; n2 += 18){ const t1 = performance.now(); D3.render(P.buildFrom(P.tourDesc(n2, null, 'main')), { aspect:2, fx:true }); fms.push(performance.now() - t1); }
         fms.sort((x, y) => x - y); out.fxMed = Math.round(fms[fms.length >> 1]); }
       out.ms.sort((x, y) => x - y); out.med = Math.round(out.ms[out.ms.length >> 1]); out.max = Math.round(out.ms[out.ms.length - 1]);
       return out; });
     claim(!!v3, 'the 3D hole module loaded');
     if (v3){
-      claim(v3.n === 72 + 486 + 18 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
+      claim(v3.n === 72 + 576 + 27 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
       claim(v3.off.length === 0, 'the projection puts open carpet on carpet in every picture, so the ball rolls on what is drawn' + (v3.off.length ? ': ' + v3.off.slice(0, 4).join('; ') : ''));
       claim(v3.sliceDiff === 0 && v3.slices > 20, `rendered a little at a time (${v3.slices} steps) it is the same picture, pixel for pixel` + (v3.sliceDiff ? ': ' + v3.sliceDiff + ' differ' : ''));
       claim(v3.med < 600, `a hole renders in ${v3.med}ms at the median (${v3.max}ms the slowest), on this machine`);
@@ -2020,11 +2315,11 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && window.RTT_GYMKIND_TRICKSHOT && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
       const ts = await p2.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, KT = window.RTT_GYMKIND_TRICKSHOT, K = 'bag_ppt_v1@ts', best = {};
-        for (let n = 1; n <= 486; n++) best[n] = 3;
-        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas'], tours:{ main:{ lv:486, best, ace:{}, paid:{}, wpaid:{} } } }));
+        for (let n = 1; n <= 576; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'moon', 'mars', 'saturn', 'crystara', 'jellara', 'oz', 'cyclops', 'medusa', 'underworld', 'olympus', 'wonderland', 'lookingglass', 'beanstalk', 'mississippi', 'lochness', 'himalayas', 'pacific', 'bigtop', 'london', 'notredame', 'treasure'], tours:{ main:{ lv:504, best, ace:{}, paid:{}, wpaid:{} } } }));
         window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'ts' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
         const h = window.RTT_PUTT._state().host, hc = h.coins, hp = h.pack; h.coins = () => {}; h.pack = () => 1;
-        const G = GL.byId('clubhouse1'); let f = 0; for (let i = 1; i < 486 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i; out.f = f;
+        const G = GL.byId('clubhouse1'); let f = 0; for (let i = 1; i < 576 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i; out.f = f;
         const lives0 = window.RTT_PUTT.summary(puttHost()).lives;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
         const t = T(), Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);

@@ -19,13 +19,21 @@
 import { fitView, sizeCanvas, courtLines } from './view.js';
 import { COURT, dist } from './court-geo.js';
 import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf, beatOf, framesOf, stepsBefore, stepsThrough, addToFrame } from './playbook.js';
-import { startSpots } from './defense.js';
+import { startSpots, targetFor } from './defense.js';
 
 const HIT = 3.4;          // feet: how close a tap must land to a player
 const MIN_ROUTE = 2.5;    // feet: shorter than this is a tap, not a route
 
 export function createBoard(cv, sc, getPlay, setPlay, ui) {
-  let tool = null, drag = null, pickFrom = null, V = null;
+  let tool = null, drag = null, pickFrom = null, V = null, showH = null;
+  const MIN_SHOW = 34, ROOM = 8;
+  function showFor(p) {
+    let y = 0;
+    const at = q => { if (q && Number.isFinite(q.y) && q.y > y) y = q.y; };
+    for (const k of Object.keys(p.spots || {})) at(p.spots[k]);
+    for (const s of p.steps || []) for (const q of s.pts || []) at(q);
+    return Math.min(COURT.H, Math.max(MIN_SHOW, y + ROOM));
+  }
   /* the frame on show, and how many there are (the last may be empty, just opened) */
   let beat = 1, frameCount = 1;
 
@@ -94,7 +102,7 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     if (!drag || !V) return;
     const ft = clampFt(V.ft({ x: e.offsetX, y: e.offsetY }));
     if (drag.kind === 'spot') {
-      const p = clone(play()); p.spots[drag.who] = ft; setPlay(p); draw(); return;
+      const p = clone(play()); p.spots[drag.who] = r1(ft); setPlay(p); draw(); return;
     }
     const last = drag.raw[drag.raw.length - 1];
     if (dist(last, ft) >= 0.6) { drag.raw.push(ft); drag.pts = simplify(drag.raw, 1.3); draw(); }
@@ -136,7 +144,14 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
   function draw() {
     const { w, h, ctx } = sizeCanvas(cv);
     if (w < 60 || h < 60) return;   // its screen is hidden: drawn again when it shows
-    V = fitView(w, h, 12);
+    /* THE CLIPBOARD'S CROP (2026-11-19). Every play lives within about 36 ft
+       of the baseline, yet the whole half court was drawn, so on a short phone
+       the players were small and the labels ran into each other. The view
+       shows the baseline down to the deepest player or route plus room to
+       drag, never under MIN_SHOW ft, and holds still while a finger is down
+       (it settles on the next draw after the drag). */
+    if (!drag || showH == null) showH = showFor(play());
+    V = fitView(w, h, 12, showH);
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#fbfaf6'; ctx.fillRect(0, 0, w, h);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -165,7 +180,8 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     const start = spotsAfter(p, stepsBefore(p, beat)), now = spotsAfter(p, upTo());
     const holder0 = holderAfter(S, stepsBefore(p, beat)), holder = holderAfter(S, upTo());
     // defenders: where they set up on frame 1, then shading the frame's start
-    const xs = startSpots(S, { ...p, spots: start });
+    const known = ui.scheme ? ui.scheme() : null;
+    const xs = known ? scoutSpots(S, { ...p, spots: start }, known) : startSpots(S, { ...p, spots: start });
     for (const xid of Object.keys(S.matchups)) drawX(ctx, V.px(xs[xid]));
     // players: where the frame starts, ghosted where they end up
     for (const id of IDS) {
@@ -252,6 +268,17 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
 }
 
 /* ---------- helpers ---------- */
+/* Where the defense sets up when the scout already told you the scheme (a
+   ladder level): defense.js's own startSpots with the scheme known, so a 2-3
+   shows as a 2-3 on the clipboard. Placed one by one, as the sim places them. */
+function scoutSpots(sc, play, scheme) {
+  const st = { scheme, O: {}, X: [], ball: { holder: sc.handler, pos: null, flight: null } };
+  for (const id of Object.keys(play.spots)) st.O[id] = { id, arch: sc.roster[id].arch, pos: { ...play.spots[id] }, vel: { x: 0, y: 0 } };
+  for (const [xid, man] of Object.entries(sc.matchups)) st.X.push({ id: xid, man, holdT: 0, underT: 0 });
+  const out = {};
+  for (const x of st.X) { x.pos = targetFor(x, st, sc.tuning); out[x.id] = x.pos; }
+  return out;
+}
 const clone = o => JSON.parse(JSON.stringify(o));
 const r1 = p => ({ x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 });
 const clampFt = p => ({ x: Math.max(0.5, Math.min(COURT.W - 0.5, p.x)), y: Math.max(0.5, Math.min(COURT.H - 0.5, p.y)) });

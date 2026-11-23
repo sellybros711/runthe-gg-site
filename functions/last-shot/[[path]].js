@@ -5,9 +5,15 @@
  * The source lives under functions/_lastshot, which is never a static asset,
  * so there is no other URL that hands it out. Everybody else gets the site's
  * own 404 page with a 404 status, exactly as Stumpire answers them.
+ *
+ * Also the tester round's two routes (gate.js roundGate): POST /last-shot/e
+ * takes a tester's gameplay events, GET /last-shot/report shows an admin the
+ * four launch targets. Refused the same way.
  */
 import { supabaseDb } from '../_lastshot/db-supabase.js';
-import { pageGate } from '../_lastshot/gate.js';
+import { pageGate, roundGate } from '../_lastshot/gate.js';
+import { readBody } from '../_lastshot/events.js';
+import { BUILD } from '../_lastshot/pages.js';
 import { verify, readCookie, secretOf } from '../_stumpire/cookie.js';
 
 export async function onRequest(context) {
@@ -17,11 +23,22 @@ export async function onRequest(context) {
   try {
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE) {
       const uid = await verify(secretOf(env), readCookie(request), Date.now());
-      out = await pageGate(sub, uid, supabaseDb(env));
+      const db = supabaseDb(env);
+      /* the tester round's events and report; undefined means not one of those */
+      const round = await roundGate({ method: request.method, sub, uid, query: Object.fromEntries(new URL(request.url).searchParams),
+        body: request.method === 'POST' ? await readBody(request) : null, nowMs: Date.now() }, db);
+      out = round === undefined ? (request.method === 'GET' || request.method === 'HEAD' ? await pageGate(sub, uid, db) : null) : round;
     }
   } catch (e) { out = null; }
   if (!out) return notFound(context);
-  return new Response(out.body, { headers: { 'Content-Type': out.type, 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+  if (out.status === 204) return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
+  /* A module asked for at this build's hash (the page and every import carry
+     it) is the same bytes for as long as that URL lives: the browser keeps
+     it a year, privately (it is still a tester's file). The page itself, and
+     anything else, is never cached: the gate decides every visit. */
+  const fresh = /^m\//.test(sub) && new URL(request.url).searchParams.get('b') === BUILD;
+  return new Response(out.body, { status: out.status || 200, headers: { 'Content-Type': out.type,
+    'Cache-Control': fresh ? 'private, max-age=31536000, immutable' : 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
 }
 
 /* The same 404 as functions/arcade/stumpire/[[path]].js, byte for byte in what

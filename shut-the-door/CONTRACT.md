@@ -1229,7 +1229,9 @@ played moves. The rule, and the server's copy of it, are in `modes.js` and
   30 are eligible each day, so the pairs vary. A pure function of the day: every device and the
   server agree without asking.
 - **Who votes**: signed in, once, for tomorrow only, played today or not (164, 2026-11-04: from the
-  home without playing; 160 asked for today's daily first). Each candidate's card carries a `setup`
+  home without playing; 160 asked for today's daily first). A player who voted may change it to the
+  other candidate until the vote closes (180, the owner's call 2026-11-18). Still one vote an account:
+  a change moves it, the tally never gains one. Each candidate's card carries a `setup`
   (data/setups.json): the moment in a sentence or two, never how it ended. Not a device id: a device id is a string any script can mint, so it is no limit. Guests see the
   candidates and the result.
 - **The lock**: voting for D closes when D begins (Eastern). The first read of D locks it, the same for
@@ -1241,12 +1243,15 @@ played moves. The rule, and the server's copy of it, are in `modes.js` and
 ```js
 /** The vote for a day (default tomorrow).
  *  @returns {Promise<{day, open, candidates: Card[2], myVote: string|null, votes: {a, b}|null,
- *                     winner: string|null, canVote: boolean, why: string|null, offline: boolean}>}
+ *                     winner: string|null, canVote: boolean, canChange: boolean, why: string|null,
+ *                     offline: boolean}>}
  *  votes show once you voted or the day is locked. why is the server's reason when canVote is false:
- *  'sign in to vote', 'you voted', 'voting is closed'. */
+ *  'sign in to vote', 'you voted', 'voting is closed'. canChange: you voted and the vote is still
+ *  open, so a cast for the other one moves it (180). */
 vote(day)
 
-/** Cast this player's one vote for tomorrow. The same shape, with error set when refused. */
+/** Cast this player's one vote for tomorrow, or move it to the other one while canChange. The same
+ *  shape, with error set when refused. */
 castVote(scenarioId)
 ```
 
@@ -1306,3 +1311,74 @@ exist (the store agent turns it on in a later migration and adds `std_premium` t
 /** @returns {Promise<{signedIn, pro, archive, survivorRuns (null is unlimited)}>} */
 entitlements()
 ```
+
+## 18. Custom challenges (Pro, the owner's call 2026-11-18)
+
+A **Pro** player makes a challenge: any pack's pitcher against any pack's lineup (its first nine,
+in its batting order), who is up, who is on, the outs, the count, the lead and the inning. **Anyone**
+with the link plays it free, signed in or not. Signing in posts the score: **one counted try a
+player**, the first post stands. A challenge never expires. It is **never** a daily, Survivor or the
+archive, and never on any of their boards. It has **no percentile** (no closer pool was played in a
+spot a player made) and no reveal (it never happened). It shows **best-play hold%** instead, from
+the matchup's own table.
+
+**The data** is a matchup pack per pair (`pipeline/build_matchups.py`, then `matchups.js`): the
+model every pack uses, each side read in its own era, a hold table solved for every start a player
+can pick (one half, every lead 0 to 3), the rules 2 centre and the pro examples. It is a pack like
+any other, so the engine plays it by the same rules. The packs live in a public bucket
+(`shutdoor-matchups`, gzipped) and `data/matchups.json` lists them, each with the sha the page checks
+before it plays. The grade, the bands, the score and the lesson are the daily's.
+
+**The spec** (`challenge.js normalize`; `supabase/183` checks the same):
+
+| field | values |
+|---|---|
+| `pitcher`, `lineup` | pack ids, a built pair in `data/matchups.json` |
+| `up` | the lineup index at the plate, 0-8 |
+| `on` | `[first, second, third]`: a lineup index or null. A runner is one of the four hitters before the man up, on one base |
+| `outs`, `balls`, `strikes` | 0-2, 0-3, 0-2 |
+| `lead`, `them` | 1-3 runs ahead; the other side's runs, 0-20 (the scoreboard) |
+| `inning` | 8, 9 or 10 |
+| `home` | true when the pitcher's club is at home: he pitches the top. On the road the bottom, and from the 9th a walk-off is live |
+
+```js
+/** What the builder picks from. pairs has only built pairs.
+ *  @returns {Promise<{build, pitchers: {id, name, team, year, throws, resolution}[],
+ *    lineups: {id, team, year, resolution, batters: {id, name}[]}[],
+ *    pairs: {[pitcher + '__' + lineup]: {startHold}}, limits, pro}>} */
+challengeOptions()
+
+/** A spec as it would play, before it is made. scenario.batters carry each hitter's side against
+ *  this pitcher; scenario.setup is the one-line setup; bestHold is a percent (one decimal).
+ *  @returns {Promise<{spec, scenario, bestHold} | {error}>} */
+previewChallenge(spec)
+
+/** Pro, signed in. @returns {Promise<{code, url, spec} | {error}>}  url: https://runthe.gg/shut-the-door/?c=CODE */
+createChallenge(spec)
+
+/** Anyone, by its code (six letters and digits, any case).
+ *  @returns {Promise<{code, url, spec, creator, mine, createdAt, players,
+ *    results: {rank, username, score, outcome, pitches, creator, mine}[], myResult,
+ *    scenario, bestHold, played: {score, outcome, submitted} | null} | {error}>} */
+getChallenge(code)
+
+/** Play it. The counted try: the challenge's seed and rules, resumed after a reload; an account's
+ *  posted try is replayed, never played again. {practice: true}: the same spot on a fresh seed,
+ *  never kept or posted. Returns the outing's state with state.challenge {code, practice}; then
+ *  throwPitch, challenge (ABS), pickoff and finishOuting on state.outingId as in the daily. */
+startChallenge(code, {practice})
+
+/** finishOuting on a challenge answers the daily's result shape with percentile null, share '' and
+ *  challenge: {code, url, practice, taken, results, players, creator}. taken false: this account's
+ *  earlier try is the one that counts. A guest's try waits on the device for claimChallenge. */
+
+/** Signed in: post this device's finished, unposted try. @returns {Promise<{posted, result} | null>} */
+claimChallenge(code)
+
+/** Signed in: made and played, newest first.
+ *  @returns {Promise<{code, url, spec, createdAt, made, players, best, myScore}[] | null>} */
+myChallenges()
+```
+
+The page opens a challenge from `?c=CODE` (the screens' part). Every reason a spec is refused is
+a short sentence the screens can show as it is.

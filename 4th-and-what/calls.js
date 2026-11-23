@@ -1,0 +1,194 @@
+/* 4th and What: the play call.
+ *
+ * The owner, 2026-11-13, approving the launch plan: play-call cards as the
+ * main way to call a play, with drawing your own as the fourth card, and a
+ * pre-snap read. So Play goes 4th and what? (the spot and the distance),
+ * then Call it: the defense lines up and shows its shell, you are dealt three
+ * cards (a run, a quick pass and a shot), you pick one, you snap it.
+ *
+ * Honest by construction. The snap's seed is fixed when the screen opens,
+ * and the defense on the field is FAW_ENGINE.look() with that seed: exactly
+ * what run() starts from, never the call or the blitz. The coverage and the
+ * shell it shows are rolled from the seed and the situation, and the men line
+ * up over the card's formation. The label is the men standing deep: a heavy
+ * set or short yardage brings one safety, so a two deep shell shows one deep
+ * there and the read can change with the card. A quarter of snaps disguise it
+ * (config.js shell.disguise), so the read is good, not certain.
+ *
+ * The hand is dealt from its own stream off the same seed, so a reload deals
+ * the same three cards for the same snap. Concepts come from the route
+ * library on every formation, both ways (FAW_TRIVIA.pool, the same pool
+ * Daily Defense draws from). A sneak is only dealt at 4th and 1 or 2.
+ *
+ * Plain script: window.FAW_CALLS in the page, module.exports in node (the
+ * deal and the read, tested in test/calls.test.mjs).
+ */
+(function (root) {
+  'use strict';
+  var isNode = typeof module !== 'undefined' && module.exports;
+  var req = function (n, g) { return root[g] || (typeof require === 'function' ? require(n) : null); };
+  var RNG = req('./rng.js', 'FAW_RNG'), TR = req('./trivia.js', 'FAW_TRIVIA');
+  if (TR && TR.core) TR = TR.core;
+
+  /* what a concept is, as a card */
+  var TYPE = {
+    'Inside Zone': 'run', 'Outside Zone': 'run', 'Power': 'run', 'Toss': 'run', 'QB Sneak': 'run',
+    'Slant Flat': 'quick', 'Stick': 'quick', 'Snag': 'quick', 'Spacing': 'quick', 'Mesh': 'quick', 'Smash': 'quick',
+    'Four Verts': 'shot', 'Dagger': 'shot', 'Flood': 'shot', 'Y Cross': 'shot', 'Levels': 'shot', 'Drive': 'shot', 'Curl Flat': 'shot'
+  };
+  var ORDER = ['run', 'quick', 'shot'];
+  var LABEL = { run: 'Run', quick: 'Quick', shot: 'Shot' };
+
+  /* A new player's first hand (the launch plan, 1F): three plays that all
+     convert two thirds of the time or better at 4th and 1 (measured
+     2026-11-13: QB Sneak 75%, Stick 70%, Levels 65%; Toss is 30%, Curl Flat
+     34%. Re-measured 2026-11-16 after the box retune, 1000 snaps of each
+     entry from the opponent's 35: QB Sneak 78%, Stick 61%, Levels 60%. The
+     passes were under two thirds before the retune too: 100 snaps were too
+     few. No shot holds two thirds (Drive is the best, 66%); Mesh is the one
+     quick card over it, 70%. The owner's call). It is the hand, not the
+     snap: the defense and the dice are the seed's as always. */
+  var FIRST = { run: 'QB Sneak', quick: 'Stick', shot: 'Levels' };
+  /* deal(sc, seed, opt): three cards, one of each kind, on three different
+     sets where the pool allows; opt.first deals the first hand */
+  function deal(sc, seed, opt) {
+    var first = opt && opt.first;
+    var r = RNG.mulberry32(((seed >>> 0) ^ 0x2545f491) >>> 0), P = TR.pool(), used = {}, hand = [];
+    var dist = Math.min(+sc.distance || 5, +sc.ballOn || 40);
+    ORDER.forEach(function (t) {
+      /* no run from Empty (there is no back), and a sneak only at 4th and 1 or 2 */
+      var fit = P.filter(function (it) { return TYPE[it.concept] === t && !(t === 'run' && it.set === 'empty') && (it.concept !== 'QB Sneak' || dist <= 2) && (!first || it.concept === FIRST[t]); });
+      var fresh = fit.filter(function (it) { return !used[it.set]; });
+      var from = fresh.length ? fresh : fit, it = from[Math.floor(r() * from.length)];
+      used[it.set] = true;
+      hand.push({ type: t, label: LABEL[t], concept: it.concept, set: it.set, setName: it.setName, side: it.side, play: JSON.parse(JSON.stringify(it.play)) });
+    });
+    return hand;
+  }
+
+  /* the read, in the game's voice: what the shell is and how many are in the
+     box (both from the engine), and what it usually means */
+  var SHELL_TEXT = { two: 'Two deep', one: 'One deep', zero: 'Nobody deep' };
+  function readText(look) { return SHELL_TEXT[look.shell] + ' · ' + look.box + ' in the box'; }
+  /* COUNT THE BOX (the owner, 2026-11-16: "make the read decide"). The
+     engine blocks a run by count: more men in the box than blockers leaves
+     a free hitter (engine.js, run blocking). So the hint reads the box and
+     the distance, and each one names the card that converts best on the
+     looks it is shown for, measured over dealt hands (test/calls.test.mjs
+     holds every one of them to it). The look is the run card's (hand[0]):
+     the box the defense shows that formation. LOADED is the count that
+     loads it.
+     card is the card the hint calls; null when it calls none. */
+  var LOADED = 8;
+  var HINT = {
+    zero: { text: 'Nobody deep. Get it out fast.', card: 'quick' },
+    light: { text: "They're light against your run. Run it.", card: 'run' },
+    yard: { text: "They're loaded against your run. It's one yard. Lean on them.", card: 'run' },
+    loaded: { text: "They're loaded against your run. Throw it.", card: 'quick' },
+    live: { text: "They're light against your run. This one's still a throw.", card: 'quick' },
+    long: { text: 'Long way to go. Take a shot.', card: 'shot' }
+  };
+  function hintKey(look, sc) {
+    var d = Math.min(+(sc && sc.distance) || 5, +(sc && sc.ballOn) || 40);
+    if (d >= 6) return 'long';
+    if (look.shell === 'zero') return 'zero';
+    if (look.box < LOADED) return d <= 2 ? 'light' : 'live';
+    return d <= 1 ? 'yard' : 'loaded';
+  }
+  function hintText(look, sc) { return HINT[hintKey(look, sc)].text; }
+
+  /* after the snap, the read's answer: what they showed, and what it was */
+  var SHOWED = { two: 'two deep', one: 'one deep', zero: 'nobody deep' };
+  function revealText(res) {
+    if (!res.shell || !res.callName) return '';
+    return 'They showed ' + SHOWED[res.shell] + (res.disguised ? ' and rotated to ' + res.callName + '.' : '. It was ' + res.callName + '.');
+  }
+
+  var CORE = { TYPE: TYPE, LABEL: LABEL, FIRST: FIRST, HINT: HINT, deal: deal, readText: readText, hintKey: hintKey, hintText: hintText, revealText: revealText };
+  if (isNode) { module.exports = CORE; return; }
+
+  /* ================= the page ================= */
+  var A = root.FAW_APP, E = root.FAW_ENGINE, T = root.FAW_TURF, FL = root.FAW_FLOW;
+  var $ = function (id) { return document.getElementById(id); }, el = A.el;
+  var seed = null, hand = [], pick = -1, V = null, mine = null;
+  /* YOUR PLAYBOOK AS CARDS (the launch plan, Phase 3): signed in with saved
+     plays, the Yours card opens them; a pick is snapped like a dealt card and
+     counts in that play's stats, the way Run it in Playbooks does */
+  function myPlays() { return A.signedIn && A.signedIn() ? A.choices().filter(function (c) { return c.book && c.entry; }) : []; }
+
+  function sitText() { var s = A.sitText(); return s.down + ' · ' + s.spot + (A.SC.level && A.SC.level !== 'nfl' ? ' · ' + A.levelShort(A.SC.level) : ''); }
+  function current() { return pick === 'mine' && mine ? mine.play : pick >= 0 ? hand[pick].play : hand[0].play; }
+
+  function open() {
+    var s = FL.pending();
+    var G = root.FAW_GO, first = !!(G && G.firstHand && G.firstHand());
+    if (s !== seed || !hand.length) { seed = s; hand = deal(A.SC, seed, { first: first }); pick = -1; mine = null; }
+    $('cMine').hidden = true;
+    $('cSit').textContent = sitText();
+    renderCards(); draw();
+  }
+  function draw() {
+    var c = $('cField'), sc = A.SC, Y0 = 100 - sc.ballOn, p = current();
+    if (!V) V = T.view(c, {});
+    /* a short phone frames the field tighter so Snap it stays above the fold
+       (the launch checklist); the deep safety stands about 13 yards off, inside 15 */
+    var short = root.innerHeight < 760;
+    V.set({ BX: sc.ballX, Y0: Y0, marker: Math.min(100, Y0 + sc.distance), behind: short ? 6 : 8, ahead: short ? 15 : 19, across: T.across() });
+    V.layout();
+    var lk = E.look(sc, p, seed);
+    $('cRead').textContent = readText(lk);
+    /* the hint counts the box against the run card, whichever card is up:
+       the shell is the same for every card, the box is the run's */
+    $('cHint').textContent = hintText(p === hand[0].play ? lk : E.look(sc, hand[0].play, seed), sc);
+    var shown = pick === 'mine' || pick >= 0;
+    V.field().play(p, { offense: shown, defense: true, plans: lk.defense, coverage: false, distance: sc.distance, depths: shown });
+  }
+  function renderCards() {
+    var box = $('cCards'); box.textContent = '';
+    hand.forEach(function (h, i) {
+      box.appendChild(el('button', { type: 'button', class: 'ccard ' + h.type, 'aria-pressed': String(i === pick), on: { click: function () { choose(i); } } }, [
+        el('span', { class: 'ctype', text: h.label }),
+        T.thumb(h.play, 132, 84, { distance: A.SC.distance, reads: false }),
+        el('b', { text: h.concept }),
+        el('small', { text: h.setName })
+      ]));
+    });
+    var mp = myPlays();
+    box.appendChild(el('button', { type: 'button', class: 'ccard own', 'aria-pressed': String(pick === 'mine'), on: { click: mp.length ? openMine : drawOwn } },
+      pick === 'mine' && mine ? [el('span', { class: 'ctype', text: 'Yours' }), T.thumb(mine.play, 132, 84, { distance: A.SC.distance, reads: false }), el('b', { text: mine.label }), el('small', { text: mine.group })]
+        : [el('span', { class: 'ctype', text: 'Yours' }), el('i', { class: 'cpen', text: '+' }), el('b', { text: mp.length ? 'Your playbook' : 'Draw your own' }), el('small', { text: mp.length ? mp.length + (mp.length === 1 ? ' play' : ' plays') + ' or a new one' : 'The full playbook' })]));
+    var ready = pick === 'mine' ? !!mine : pick >= 0;
+    $('cSnap').disabled = !ready;
+    $('cSnapTxt').textContent = ready ? 'Snap it' : 'Pick a play';
+  }
+  function choose(i) { pick = i; $('cMine').hidden = true; renderCards(); draw(); }
+  function openMine() {
+    var box = $('cMineList'); box.textContent = '';
+    myPlays().forEach(function (c) {
+      box.appendChild(el('button', { type: 'button', class: 'cmine', on: { click: function () { mine = c; choose('mine'); } } }, [el('b', { text: c.label }), el('small', { text: c.group })]));
+    });
+    $('cMine').hidden = false;
+  }
+  $('cMineNew').addEventListener('click', function () { $('cMine').hidden = true; drawOwn(); });
+  $('cMineClose').addEventListener('click', function () { $('cMine').hidden = true; });
+  function drawOwn() { A.show('studio', { mode: 'game' }); }
+  function snapIt() {
+    if (pick === 'mine' && mine) {
+      var m = mine;
+      if (FL.snap(m.play, m.label, 'mine')) {
+        var r = FL.last(), B = root.FAW_BOOK;
+        if (r && B && m.entry && m.book) { B.countSnap(m.entry, r.distance, r.callKey, r.win, r.level); A.store.putStats(m.book); }
+      }
+      return;
+    }
+    if (pick < 0) return;
+    var h = hand[pick];
+    FL.snap(h.play, h.concept + ' · ' + h.setName, h.type);
+  }
+  $('cSnap').addEventListener('click', snapIt);
+  $('cBack').addEventListener('click', function () { A.show(root.FAW_DAILY && root.FAW_DAILY.active() ? 'daily' : 'play'); });
+  A.on('call', open);
+  window.addEventListener('resize', function () { if (!$('vCall').hidden && hand.length) draw(); });
+
+  root.FAW_CALLS = { openMine: openMine, deal: deal, readText: readText, hintText: hintText, revealText: revealText, hand: function () { return hand; }, seed: function () { return seed; }, choose: choose };
+})(typeof window !== 'undefined' ? window : this);

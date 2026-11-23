@@ -7,6 +7,7 @@ import { rollDefense } from '../sim.js';
 import { simulate } from '../sim.js';
 import * as P from '../playbook.js';
 import * as N from '../names.js';
+import './setup-playbook.mjs';
 import * as B from '../book.js';
 import { testPlay, testKey, DEFENSES as TEST_DEFENSES } from '../testit.js';
 

@@ -144,7 +144,7 @@ const browser = await pw.chromium.launch({ executablePath: CHROME });
   ok('  it says what the week\'s top score wins', /Top score this week wins Pro\./.test(r.text));
   ok('  and says when entries lock, in Eastern time', /Lineups lock \w{3} \d{1,2}:\d{2}[ap]m ET\./.test(r.text), r.text);
   ok('  it links to the college page', await h.page.evaluate(() =>
-    document.getElementById('b-fanpromo').getAttribute('href') === '/cfb/fantasy/'));
+    document.getElementById('b-fanpromo').getAttribute('href') === '/cfb/fantasy/?from=results'));
   ok('  a guest is not asked the server (no account)', !r.rpcs.some((x) => x.name === 'cfb_fantasy_my_entry'));
   if (SHOTS) {
     await h.page.locator('#o-fanpromo').scrollIntoViewIfNeeded();
@@ -224,6 +224,65 @@ const browser = await pw.chromium.launch({ executablePath: CHROME });
   await h.page.evaluate(() => { document.getElementById('b-hp-fantasy').remove(); });
   const r = await results(h);
   ok('the Fantasy door is not drawn: no card', !r.shown);
+  await h.page.close();
+}
+
+/* THE PLAYOFF AND THE DOOR'S PHASES (the owner's call, 2026-11-16). The pointer says which:
+   `kind: 'playoff'` with its `ends_at`, or `next: 'playoff'` once the regular season is over
+   and the bracket is not set. Each reads off the door's own line. */
+console.log('\nTHE PLAYOFF, AND THE DOOR BETWEEN THE SEASONS');
+const doorText = (h) => h.page.evaluate(() => {
+  const d = document.getElementById('b-hp-fantasy');
+  return d ? d.textContent : '';
+});
+const PLAYOFF = (lockIn, endIn) => ({ season: SEASON, week: 100, kind: 'playoff', file: 'pool_2026_w100.json',
+  locks_at: new Date(Date.now() + lockIn).toISOString(), ends_at: new Date(Date.now() + endIn).toISOString(), prev: 15 });
+{
+  const h = await load({ now: PLAYOFF(30 * HOUR, 40 * 24 * HOUR) });
+  const t = await doorText(h);
+  ok('Playoff open: the door sells the Playoff and its lock', /The Playoff · locks in/.test(t), t);
+  const r = await results(h);
+  ok('  and the results card offers it, labelled the Playoff', r.shown && /Playoff/.test(r.text) && !/Week 100/.test(r.text),
+    r.text.slice(0, 80));
+  ok('  in the Playoff\'s words', /every game their team plays/.test(r.text));
+  /* The lock day sheet (assets/fantasy-promo.js) is set up for the Playoff too, and names it
+     through `label`. open() draws it whatever its day rule says. */
+  const eye = await h.page.evaluate(async () => {
+    window.RTG_FANPROMO_TEST = true;
+    if (!window.RTG_FANPROMO) return 'no sheet';
+    await window.RTG_FANPROMO.open();
+    for (let i = 0; i < 50 && !document.querySelector('#fpromo .fp-eye'); i++) await new Promise((r) => setTimeout(r, 100));
+    const e = document.querySelector('#fpromo .fp-eye');
+    return e ? e.textContent : 'not drawn';
+  });
+  ok('  and the lock day sheet names it the Playoff, never Week 100', /The Playoff/.test(eye) && !/Week 100/.test(eye), eye);
+  await h.page.close();
+}
+{
+  const h = await load({ now: PLAYOFF(-2 * HOUR, 30 * 24 * HOUR) });
+  const t = await doorText(h);
+  ok('Playoff kicked off: the door says it is on, and sells nothing', /The Playoff is on/.test(t) && !/locks in/.test(t), t);
+  const r = await results(h);
+  ok('  and no results card', !r.shown);
+  await h.page.close();
+}
+{
+  const h = await load({ now: PLAYOFF(-30 * 24 * HOUR, -2 * 24 * HOUR) });
+  const t = await doorText(h);
+  ok('a day after the title game: the door says next season', /back next season/.test(t), t);
+  await h.page.close();
+}
+{
+  const h = await load({ now: { ...pointer(-3 * 24 * HOUR), week: 15, next: 'playoff' } });
+  const t = await doorText(h);
+  ok('the season over, the bracket not set: the door says the Playoff is next', /opens once the bracket/.test(t), t);
+  ok('  and no week that is not there', !/Week 15 · locks/.test(t) && !/week's biggest games/.test(t));
+  await h.page.close();
+}
+{
+  const h = await load({ now: { ...pointer(30 * HOUR), next: 'playoff' } });
+  const t = await doorText(h);
+  ok('a regular week still open reads as a week, whatever comes next', /Week 10 · locks in/.test(t), t);
   await h.page.close();
 }
 

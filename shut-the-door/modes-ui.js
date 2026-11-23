@@ -100,7 +100,7 @@ function saveBlock(el, opts) {
 /* ---- 2. the vote for tomorrow ---------------------------------------------------------------
    From VOTE.EPOCH on. Before it vote() has no candidates and the block stays hidden. A signed-in
    player picks one of two, played today or not (164); then the block says the vote is in and shows
-   the count. Signed out: the two, and the same sign-in button. The result and the home each carry
+   the count. While the vote is open the other one stays tappable, and a tap moves the vote (180). Signed out: the two, and the same sign-in button. The result and the home each carry
    one; each block keeps its own request count, so one never drops the other's answer. opts.quiet
    (the home's) leaves ctx.onVote, the result menu's row, alone. */
 function voteBlock(el, opts) {
@@ -122,8 +122,9 @@ function drawVote(el, v, busy, opts) {
   var opts = v.candidates.map(function (c, i) {
     var L = cardLine(c), n = v.votes ? (i ? v.votes.b : v.votes.a) : null, on = mine === c.id;
     var share = tot && n != null ? Math.round(n / tot * 100) : 0;
+    var tap = !busy && (v.canVote || (v.canChange && mine && !on));
     return '<button class="vt-o' + (on ? ' on' : '') + (mine ? ' done' : '') + '" type="button" data-id="' + esc(c.id) + '"' +
-      (v.canVote && !busy ? '' : ' disabled') + ' aria-pressed="' + on + '">' +
+      (tap ? '' : ' disabled') + ' aria-pressed="' + on + '">' +
       (v.votes ? '<i class="vt-bar" style="width:' + share + '%" aria-hidden="true"></i>' : '') +
       '<span class="vt-t"><b>' + esc(L.name) + (on ? '<em class="vt-me">your vote</em>' : '') + '</b><span>' + esc(L.meta) + '</span>' +
       (L.setup ? '<span class="vt-s">' + esc(L.setup) + '</span>' : '') + '</span>' +
@@ -132,13 +133,14 @@ function drawVote(el, v, busy, opts) {
   }).join('');
   var foot;
   if (v.error) foot = '<p class="vt-say err">' + esc(v.error) + '.</p>';
+  else if (mine && v.canChange) foot = '<p class="vt-say ok"><b>Your vote is in.</b> Changed your mind? Tap the other one. It locks at midnight Eastern.</p>';
   else if (mine) foot = '<p class="vt-say ok"><b>Your vote is in. It counts.</b> It locks at midnight Eastern.</p>';
   else if (v.canVote) foot = '<p class="vt-say">One vote. Pick the spot you want tomorrow.</p>';
   else if (!st.signedIn) foot = '<div class="vt-in"><p>Sign in to vote.</p><button class="btn save-b" type="button" data-save>' +
     (has('pending') && API().pending() ? SAVE_LABEL : 'Sign in to vote') + '</button></div>';
   else if (v.offline) foot = '<p class="vt-say">The vote didn\'t load. Try again later.</p>';
   else foot = '<p class="vt-say">' + esc(cap(v.why || 'voting is closed')) + '.</p>';
-  el.innerHTML = '<div class="r-sec-h"><h3>Tomorrow\'s situation</h3><span>' + (mine ? 'The count so far' : 'You pick') + '</span></div>' +
+  el.innerHTML = '<div class="r-sec-h"><h3>Vote for tomorrow\'s situation</h3><span>' + (mine ? 'The count so far' : 'You pick') + '</span></div>' +
     '<div class="vt-opts">' + opts + '</div>' + foot;
   el.querySelectorAll('.vt-o:not([disabled])').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -154,20 +156,13 @@ function drawVote(el, v, busy, opts) {
   if (s) s.addEventListener('click', function () { if (ctx.signIn) ctx.signIn(); });
 }
 
-/* The home's one line on how today was picked, once the vote is on: "picked by your votes · 63-48",
-   or, when the server could not say, that this is the first pick. Never the reveal. */
+/* The home's one line on how today was picked: only when the server could not say, that this is the
+   first pick. A day the vote picked says nothing on the home (the owner, 2026-11-16: the "picked by
+   your votes" line came off the daily card). Never the reveal. */
 function pickLine(el, scn) {
   if (!el) return;
   el.hidden = true;
-  if (!scn || !scn.pick) return;
-  if (scn.pick === 'default') { el.hidden = false; el.textContent = 'The vote didn\'t load. First pick plays.'; return; }
-  if (!has('vote')) return;
-  Promise.resolve().then(function () { return API().vote(scn.day); }).then(function (v) {
-    if (!v || v.winner !== scn.id) return;
-    el.hidden = false;
-    var w = v.votes ? (v.candidates[0] && v.candidates[0].id === v.winner ? [v.votes.a, v.votes.b] : [v.votes.b, v.votes.a]) : null;
-    el.textContent = 'Picked by your votes' + (w ? ' · ' + w[0] + '-' + w[1] : '');
-  }, function () {});
+  if (scn && scn.pick === 'default') { el.hidden = false; el.textContent = 'The vote didn\'t load. First pick plays.'; }
 }
 
 /* ---- 3. Survivor ---------------------------------------------------------------------------- */
@@ -219,7 +214,11 @@ function drawRun(s) {
       (entries ? '<ol class="sv-run">' + entries + '</ol>' : '');
     if (!s.over) html += '<button class="btn take sm sv-go" type="button" id="sv-go">keep going · spot ' + (s.index + 1) + '</button>';
     else if (s.canStart) html += '<button class="btn take sm sv-go" type="button" id="sv-go">start another run</button>';
-    else { var t = untilTomorrow(); html += '<p class="sv-next">run over. ' + (t ? 'the next one opens in <b>' + esc(t) + '</b>.' : 'the next one opens tomorrow.') + '</p>'; }
+    else {
+      var t = untilTomorrow(); html += '<p class="sv-next">run over. ' + (t ? 'the next one opens in <b>' + esc(t) + '</b>.' : 'the next one opens tomorrow.') + '</p>';
+      /* signed in and not Pro: the store's Get Pro block (pro.js). Pro starts another run (supabase/160, 181) */
+      if (st.signedIn && !s.pro && window.STD_PRO) html += window.STD_PRO.offer('survivor');
+    }
   }
   if (!st.signedIn) html += '<div class="bd-in"><p>sign in to put your run on the leaderboard.</p><button class="btn dk" type="button" id="sv-in">sign in</button></div>';
   el.innerHTML = html;

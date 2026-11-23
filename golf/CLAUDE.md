@@ -53,7 +53,8 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - Three stars is two under par, or a `three` that is exactly par minus one. It must be makeable.
 - Moving `PACE` re-times every moving hole: re-solve all of them with `--write`.
 - Routes are recorded at full precision. Never round them.
-- A Hallows Night hole has at most two moving or wet pieces and par 3 (the signature 4).
+- A Hallows Night or Monster Castle hole has at most two moving or wet pieces and par 3 (the signature 4). Monster Castle's
+  count takes in every moving or wet piece the engine has.
 - Every hole stays under 34% wet or out in `fair.mjs`, and each tour's mean under 10%.
 - **A ball never comes to rest on a ferry.** A moving deck grips the ball (`DECK_GRIP`), so a ball that lands on it
   rides. The deck pulls away gently and eases into the dock at its landing speed (`f.e`), so the ball slides ashore;

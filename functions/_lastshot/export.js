@@ -30,6 +30,10 @@ import { framesOf, scenarioFor, situationKey, playKey } from './playbook.js';
 import { captionOf } from './names.js';
 import { SCHEME_NAMES } from './scenario.js';
 
+/* The page plumbing both coaching games share: /assets/playbook.js (window.RTG_PLAYBOOK), loaded
+   by web/play.html. Paper sizes, which plays print and their numbers, printing and downloading are
+   its; how a basketball play is laid out and drawn is this file's. */
+const PB = () => globalThis.RTG_PLAYBOOK;
 export const PAPER = Object.freeze({ letter: [8.5, 11], legal: [8.5, 14], tabloid: [11, 17], a4: [8.27, 11.69], a5: [5.83, 8.27] });
 /* cards to a page, as columns x rows on portrait paper (landscape swaps them) */
 export const GRID = Object.freeze({ 1: [1, 1], 2: [1, 2], 4: [2, 2], 6: [2, 3], 8: [2, 4], 12: [3, 4] });
@@ -82,23 +86,7 @@ export function withDefaults(o) {
 
 /* The plays to export, in order, each with its number and section name. */
 export function pick(book, o) {
-  const opt = withDefaults(o);
-  const secName = {}, secIdx = {};
-  (book.sections || []).forEach((s, i) => { secName[s.id] = s.name; secIdx[s.id] = i; });
-  const all = book.plays || [];
-  let list = all.slice();
-  if (opt.plays === 'sections') list = list.filter(p => opt.sections.indexOf(p.section) >= 0);
-  if (opt.plays === 'chosen') list = list.filter(p => opt.chosen.indexOf(p.id) >= 0);
-  if (opt.order === 'section') list.sort((a, b) => (secIdx[a.section] || 0) - (secIdx[b.section] || 0) || all.indexOf(a) - all.indexOf(b));
-  if (opt.order === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-  let n = Number.isFinite(+opt.startAt) ? Math.round(+opt.startAt) : 1;
-  const perSec = {};
-  return list.map(p => {
-    let num = '';
-    if (opt.numbering === 'continuous') num = String(n++);
-    else if (opt.numbering === 'section') { const si = (secIdx[p.section] || 0) + 1; perSec[si] = (perSec[si] || 0) + 1; num = String(si * 100 + perSec[si]); }
-    return { entry: p, number: num, section: secName[p.section] || '' };
-  });
+  return PB().pick(book, withDefaults(o));
 }
 
 /* The frames worth printing: every frame with a step in it (frame 1 at least). */
@@ -344,7 +332,7 @@ function canvas(w, h) {
   return c;
 }
 function newPage(opt) {
-  const size = PAPER[opt.paper] || PAPER.letter, wIn = opt.landscape ? size[1] : size[0], hIn = opt.landscape ? size[0] : size[1];
+  const P = (PB() && PB().PAPER) || PAPER, size = P[opt.paper] || P.letter, wIn = opt.landscape ? size[1] : size[0], hIn = opt.landscape ? size[0] : size[1];
   const c = canvas(wIn * opt.dpi, hIn * opt.dpi);
   c.inches = [wIn, hIn];
   return c;
@@ -569,61 +557,12 @@ export function playPng(sc, entry, terms, o) {
 
 /* ---------- out to the printer or a file ---------- */
 
-function blobUrl(c) {
-  return new Promise(res => {
-    if (c.toBlob) c.toBlob(b => res(b ? URL.createObjectURL(b) : c.toDataURL('image/png')), 'image/png');
-    else res(c.toDataURL('image/png'));
-  });
-}
-
-/* Print the pages as they were drawn, from a hidden frame, so the app's own
-   page is never touched. Each canvas is one sheet, edge to edge (the margin
-   is already in the drawing). Answers a promise once the dialog is open. */
-export function print(canvases, o) {
-  const opt = withDefaults(o), doc = globalThis.document;
-  const list = Array.isArray(canvases) ? canvases : [canvases];
-  const size = PAPER[opt.paper] || PAPER.letter;
-  const inches = list[0] && list[0].inches ? list[0].inches : opt.landscape ? [size[1], size[0]] : size;
-  const old = doc.getElementById('lsPrintFrame'); if (old) old.remove();
-  return Promise.all(list.map(blobUrl)).then(urls => new Promise(resolve => {
-    const f = doc.createElement('iframe');
-    f.id = 'lsPrintFrame'; f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
-    f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
-    doc.body.appendChild(f);
-    const w = f.contentWindow, d = w.document;
-    d.open();
-    d.write('<!doctype html><html><head><meta charset="utf-8"><title>' + String(opt.title || 'Playbook').replace(/[<&>]/g, '') + '</title><style>' +
-      '@page{size:' + inches[0] + 'in ' + inches[1] + 'in;margin:0}html,body{margin:0;padding:0;background:#fff}' +
-      'img{display:block;width:' + inches[0] + 'in;height:' + inches[1] + 'in;break-after:page;page-break-after:always}img:last-child{break-after:auto;page-break-after:auto}' +
-      '</style></head><body>' + urls.map(u => '<img alt="" src="' + u + '">').join('') + '</body></html>');
-    d.close();
-    const imgs = Array.from(d.images);
-    const go = () => {
-      const done = () => { urls.forEach(u => { if (u.indexOf('blob:') === 0) URL.revokeObjectURL(u); }); f.remove(); };
-      w.addEventListener('afterprint', () => globalThis.setTimeout(done, 100));
-      globalThis.setTimeout(() => { w.focus(); w.print(); resolve(); }, 50);
-    };
-    Promise.all(imgs.map(i => (i.complete ? Promise.resolve() : new Promise(r => { i.onload = i.onerror = r; })))).then(go);
-  }));
-}
-
-/* Save one canvas as a PNG file. */
-export function download(canvas, filename) {
-  return blobUrl(canvas).then(u => {
-    const a = globalThis.document.createElement('a');
-    a.href = u; a.download = filename || 'play.png';
-    globalThis.document.body.appendChild(a); a.click(); a.remove();
-    if (u.indexOf('blob:') === 0) globalThis.setTimeout(() => URL.revokeObjectURL(u), 2000);
-  });
-}
+/* Print the pages as they were drawn, and save a page as a PNG: the shared module's. */
+export function print(canvases, o) { return PB().print(Array.isArray(canvases) ? canvases : [canvases], withDefaults(o)); }
+export function download(canvas, filename) { return PB().download(canvas, filename || 'play.png'); }
 
 /* A file name from a play or book name: "Box Pin 2" -> "box-pin-2". */
 export function slug(s) { return String(s || 'play').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'play'; }
 
-/* The fonts the pages draw with, loaded before drawing (the page already
-   links them; this waits for them so the first preview is not in Arial). */
-export function ready() {
-  const F = globalThis.document && globalThis.document.fonts;
-  if (!F || !F.load) return Promise.resolve();
-  return Promise.all(['800 20px Outfit', '400 14px "DM Sans"', '600 14px "DM Sans"', '700 14px "DM Sans"'].map(f => F.load(f).catch(() => null))).then(() => undefined);
-}
+/* The fonts the pages draw with, loaded before drawing (the shared module waits for them). */
+export function ready() { return PB().ready(); }

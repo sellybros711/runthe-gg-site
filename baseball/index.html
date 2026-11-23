@@ -60,7 +60,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
-<script src="/assets/rtg-ads.js?v=3"></script>
+<script src="/assets/rtg-ads.js?v=5"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -1624,6 +1624,43 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 .hp-pro b{color:var(--gold)}
 .hp-pro button{background:none;border:0;padding:0;font:inherit;font-weight:800;color:var(--gold);
   text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+/* THE PAIR CARD (paintPair): Run The Diamond Pro and Shut The Door Pro together. A panel in the
+   page's own paper with the gold rim of More ways to play, and the Shut The Door half in the
+   Diamond plate's ice, so each game looks like itself. Every price is a catalog copy (PRO_PRICE,
+   PAIR_PRICE, held by verify-bundles.mjs); the difference is arithmetic. */
+.hp-pair{position:relative;overflow:hidden;margin:0 0 14px;border-radius:16px;padding:16px 14px 14px;background:var(--panel);
+  border:2px solid var(--gold);box-shadow:var(--shadow);text-align:left}
+.hp-pair[hidden]{display:none}
+.hp-pair:before{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;
+  background:radial-gradient(circle,rgba(143,201,242,.45),transparent 70%);pointer-events:none}
+.hp-pair>*{position:relative}
+.pp-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pp-both{font:700 11px var(--fn);letter-spacing:.08em;text-transform:uppercase;color:var(--dim-2)}
+.hp-pair h3{font-family:var(--fd);font-weight:400;font-size:36px;line-height:1;text-transform:uppercase;letter-spacing:.02em;margin:10px 0 0;color:var(--ink)}
+.hp-pair h3 em{display:block;font-style:normal;color:#2b6fc4}
+.pp-lead{font-size:14px;line-height:1.45;margin:8px 0 0;color:var(--ink)}
+.pp-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px}
+.pp-c{border-radius:12px;padding:10px;background:var(--bg);border:1px solid rgba(var(--edge),.1);min-width:0}
+.pp-c.std{background:linear-gradient(160deg,#eef7ff,#dcecff);border-color:rgba(43,89,255,.25);color:#0b1a2e}
+.pp-c>img{width:34px;height:34px;border-radius:8px;display:block}
+.pp-c .pp-gem{width:34px;height:35px;display:block}
+.pp-c b{display:block;font-family:var(--fd);font-weight:400;font-size:17px;letter-spacing:.04em;text-transform:uppercase;margin:6px 0 4px;color:var(--ink)}
+.pp-c.std b{font-family:'Anton','Bebas Neue',Impact,sans-serif;font-size:15px;letter-spacing:.02em;color:#0b1a2e}
+.pp-c ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pp-c li{display:flex;gap:7px;align-items:center;font:600 11.5px/1.25 var(--fn);color:var(--ink)}
+.pp-c.std li{font-family:'Inter',system-ui,sans-serif;color:#0b1a2e}
+.pp-c li.soon{opacity:.72;font-style:italic}
+.pp-c li i{width:22px;height:22px;flex:0 0 22px;border-radius:6px;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c)}
+.pp-c li i svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hp-pair .pro-price{margin-top:12px}
+.hp-pair .btn.gold{margin-top:12px}
+.hp-pair .pro-err{text-align:center}
+:root[data-theme="dark"] .hp-pair h3 em{color:#8fc9f2}
+:root[data-theme="dark"] .pp-c.std{background:linear-gradient(160deg,rgba(191,230,255,.16),rgba(217,210,255,.10));border-color:rgba(143,201,242,.35);color:var(--ink)}
+:root[data-theme="dark"] .pp-c.std b,:root[data-theme="dark"] .pp-c.std li{color:var(--ink)}
+:root[data-theme="dark"] .pp-c.std li i{color:#8fc9f2;background:rgba(143,201,242,.14)}
+@media(max-width:359px){.pp-two{grid-template-columns:1fr}}
 .hp-meter{position:absolute;z-index:1;top:10px;right:10px;font-family:var(--fn);font-style:normal;
   font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;
   border-radius:99px;color:var(--dim);border:1px solid rgba(var(--edge),.18);background:var(--panel)}
@@ -2665,6 +2702,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
   <button class="hp-modes" id="b-modes"><span class="hm-dots" id="hm-dots" aria-hidden="true"></span><span class="hm-txt"><b>More ways to play</b><span class="hm-sub" id="hm-sub"></span></span><svg class="hm-arrow" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
   <p class="hp-pro" id="hp-pro"></p>
+  <!-- BOTH GAMES ON ONE BILL (the owner's pick, direction A, 2026-11-18): a card in the page for an account
+       that holds neither Pro, painted by paintPair. It opens nothing; its button is the store's buyPro. -->
+  <section class="hp-pair" id="hp-pair" data-pro-scope hidden></section>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/>
@@ -2707,6 +2747,12 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
   @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* A 320PX PHONE (QA, 2026-11-16): the column is the screen less the wrap's padding (292px at 320),
+     so a 320x50 hung 14px past the screen and the page scrolled sideways. Below 348px the zone takes
+     the screen's own width, so the 320x50 fits a 320px phone. On a narrower screen no slim banner
+     fits, so the unit is not shown and never asked for (an ad is never clipped). */
+  @media (max-width:347px){ [data-ad-zone="menu"],[data-ad-zone="results"]{width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)} }
+  @container (max-width:319px){ [data-ad-zone="menu"] ins.adsbygoogle,[data-ad-zone="results"] ins.adsbygoogle{display:none} }
   </style>
   <div class="menu-ad" data-ad-zone="menu">
     <span class="ad-label">Advertisement</span>
@@ -3180,7 +3226,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="crest.js?v=2"></script>
 <script src="board.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=3"></script>
+<script src="auth.js?v=4"></script>
 <!-- The release newsletter checkbox under the account in the trophy sheet. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
 <script>
@@ -3641,9 +3687,9 @@ function renderParks(target){
 
    The browser keeps a COPY of both, and it is only ever a copy: it is what paints
    the first frame before the server answers, and it is how a season played on a
-   train reaches the server once the train is out of the tunnel. On every sign-in
-   the device sends every season it holds for the account and gets back every
-   season the account has, from every device. The server only ever adds.
+   train reaches the server once the train is out of the tunnel. Once a visit the
+   device sends the seasons the server has not yet kept and gets back the ones it has
+   not seen, from every device (careerSync below). The server only ever adds.
 
    EVERY FAILURE KEEPS WHAT IS THERE. A null from the server is "could not ask",
    never "you have nothing", so a dropped connection can never paint an empty
@@ -3665,13 +3711,71 @@ function hasProfileApi(){return typeof A.myProfile==='function'&&typeof A.career
 
 /* Fold the server's career into this device's history. Guest seasons and other
    accounts' seasons on this browser are left exactly where they are; the account's
-   own are replaced by the server's, which is the union of every device. */
+   own are replaced by the server's, which is the union of every device. Every row
+   it adopts is marked `sv`, "the server keeps this one". */
 function adoptCareer(uid,serverRows){
   const keep=loadHistory().filter(r=>r.u!==uid);
   const mine=new Map();
-  serverRows.forEach(r=>{if(r&&r.ts)mine.set(r.ts,r);});
+  serverRows.forEach(r=>{if(r&&r.ts)mine.set(r.ts,Object.assign({},r,{sv:1}));});
   saveHistory(keep.concat([...mine.values()]).sort((a,b)=>(a.ts||0)-(b.ts||0)));
   parkMemo=null;
+}
+/* THE CAREER IS SENT ONLY WHEN SOMETHING IS NEW (supabase/172_rtd_career_sync.sql,
+   the Advisor's review of 2026-11-16). It used to send every season the device held,
+   up to 1,000 of them, on every auth event (the hourly token refresh too) and after
+   every season, and the server rewrote the whole row each time: the shape of the
+   2026-11-12 Disk IO outage. Now:
+   - a season the server has been seen to keep is marked `sv` on this device, and
+     only unmarked ones are sent (usually none, or the one just finished);
+   - `since` is the newest marked ts, so the server sends back only seasons this
+     device has not seen, usually none;
+   - it runs once a visit per account, plus once for each finished season;
+   - the server writes only when a season is new.
+   `n` is how many seasons the server keeps. Fewer marked here means another device
+   filed one late under an older ts, and the whole career is read again, at most once
+   a day. A database without 172 answers { missing: true }, and the old full merge
+   runs instead, still only once a visit. */
+const CAREER_FULL_KEY='rtd_career_full_v1';
+const careerSent=new Set();
+function bareRow(r){const o=Object.assign({},r);delete o.sv;return o;}
+async function careerSync(uid){
+  const mine=loadHistory().filter(r=>r.u===uid);
+  const pending=mine.filter(r=>!r.sv);
+  const since=mine.reduce((m,r)=>r.sv&&r.ts>m?r.ts:m,0);
+  let res={missing:true};
+  if(typeof A.careerSync==='function'){res=null;try{res=await A.careerSync(pending.map(bareRow),since);}catch(_){}}
+  if(acctId()!==uid)return false;
+  if(!res||res.missing){
+    if(res&&res.missing){
+      let merged=null;
+      try{merged=await A.careerMerge(mine.map(bareRow));}catch(_){}
+      if(acctId()!==uid||!Array.isArray(merged))return false;
+      adoptCareer(uid,merged);return true;
+    }
+    return false;
+  }
+  const sent=new Set(pending.map(r=>r.ts));
+  const add=new Map();res.rows.forEach(r=>{if(r&&r.ts)add.set(r.ts,r);});
+  const all=loadHistory();
+  const out=all.map(r=>{
+    if(r.u!==uid)return r;
+    if(add.has(r.ts)){const x=Object.assign({},add.get(r.ts),{sv:1});add.delete(r.ts);return x;}
+    return sent.has(r.ts)?Object.assign({},r,{sv:1}):r;
+  });
+  add.forEach(r=>out.push(Object.assign({},r,{sv:1})));
+  saveHistory(out.sort((a,b)=>(a.ts||0)-(b.ts||0)));
+  parkMemo=null;
+  const held=out.filter(r=>r.u===uid&&r.sv).length;
+  if(res.n>held){
+    let stamp={};try{stamp=JSON.parse(localStorage.getItem(CAREER_FULL_KEY))||{};}catch(_){}
+    const day=new Date().toISOString().slice(0,10);
+    if(stamp[uid]!==day){
+      stamp[uid]=day;try{localStorage.setItem(CAREER_FULL_KEY,JSON.stringify(stamp));}catch(_){}
+      let full=null;try{full=await A.careerSync([],0);}catch(_){}
+      if(acctId()===uid&&full&&Array.isArray(full.rows))adoptCareer(uid,full.rows);
+    }
+  }
+  return true;
 }
 let syncAsk=0;
 async function profileSync(){
@@ -3679,10 +3783,13 @@ async function profileSync(){
   if(!uid){PROF=null;PROF_FOR=null;paintAvatar();refreshParkedFields();pfRepaint();return;}
   paintAvatar();
   if(!hasProfileApi())return;
-  let merged=null,row=null;
-  try{merged=await A.careerMerge(loadHistory().filter(r=>r.u===uid));}catch(_){}
+  /* ONCE A VISIT. auth.js fires on every auth event, the hourly token refresh
+     included, and none of those changes the career or the choices. */
+  if(careerSent.has(uid)&&PROF_FOR===uid&&PROF)return;
+  let ok=false,row=null;
+  try{ok=await careerSync(uid);}catch(_){}
   if(ask!==syncAsk||acctId()!==uid)return;
-  if(Array.isArray(merged))adoptCareer(uid,merged);
+  if(ok)careerSent.add(uid);
   try{row=await A.myProfile();}catch(_){}
   if(ask!==syncAsk||acctId()!==uid)return;
   if(row){
@@ -3698,12 +3805,13 @@ async function profileSync(){
   paintAvatar();refreshParkedFields();pfRepaint();
   if($('sheet-trophy').classList.contains('on'))renderTrophy();
 }
-/* A finished season goes to the server the moment it is filed. If it cannot, it
-   stays on the device and the next sign-in sends it with everything else. */
+/* A finished season goes to the server the moment it is filed, with any season
+   still waiting from an earlier failure. If it cannot, it stays unmarked on the
+   device and the next sync sends it. */
 function careerPush(row){
   if(!row||!row.u||!hasProfileApi())return;
-  A.careerMerge([row]).then(m=>{
-    if(Array.isArray(m)&&acctId()===row.u){adoptCareer(row.u,m);pushEarned();paintAvatar();}
+  careerSync(row.u).then(ok=>{
+    if(ok&&acctId()===row.u){pushEarned();paintAvatar();}
   }).catch(()=>{});
 }
 /* Save some of the choices. The copy moves at once so the screen answers the tap,
@@ -5417,6 +5525,14 @@ const ICO_PROBALL='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" c
    price that reads as once. */
 const PRO_TERM=' a year';
 const PRO_BUNDLE='diamond-pro';
+/* THE PAIR (the owner, 2026-11-18): Run The Diamond Pro and Shut The Door Pro on one
+   yearly bill. Both prices here are copies of `cents` on the catalog rows in
+   functions/api/stripe/_bundles.js, and scripts/stripe/verify-bundles.mjs fails when
+   either drifts. Offered only to an account that holds neither half: the checkout
+   refuses it otherwise. */
+const PAIR_PRICE='$19.99';
+const PAIR_BUNDLE='diamond-door-pro';
+let stdOwned=false;       // premium_products() includes std_premium (Shut The Door Pro)
 /* The card id to the mode name the board and the server use. One spelling per
    mode on the server, which is runModeOf's. */
 const CARD_METER={era:'era',fran:'franchise',div:'division',cap:'capsurvivor',staff:'staff',trade:'trade'};
@@ -5484,7 +5600,8 @@ function modeBegin(m){
 let proAsked=0;
 async function proRefresh(force){
   const ask=++proAsked;
-  if(!acctId()){proOwned=false;meter=null;paintProState();return;}
+  if(!force)proKnown=false;
+  if(!acctId()){proOwned=false;stdOwned=false;meter=null;paintProState();return;}
   let prods=null,st=null;
   try{
     [prods,st]=await Promise.all([
@@ -5493,7 +5610,8 @@ async function proRefresh(force){
   }catch(_){}
   /* A slower answer for an account that has since changed is dropped. */
   if(ask!==proAsked)return;
-  if(Array.isArray(prods))proOwned=prods.indexOf('rtd_premium')>=0;
+  if(Array.isArray(prods)){proOwned=prods.indexOf('rtd_premium')>=0;stdOwned=prods.indexOf('std_premium')>=0;}
+  proKnown=true;
   meter=st&&st.signed_in?st:null;
   paintProState();
 }
@@ -5515,6 +5633,47 @@ function untilReset(){
   return h>0?h+'h '+mn+'m':mn+'m';
 }
 /* Everything that shows the meter, repainted from one call. */
+/* THE PAIR CARD on the front page (the owner's pick, direction A, 2026-11-18): Run The Diamond Pro and
+   Shut The Door Pro on one bill, for an account that holds neither (the checkout refuses the pair to
+   anybody holding a half) and only once the account's answer is in, so a Pro player never sees it flash.
+   Signed out it shows and asks to sign in. It is a block in the page: nothing here opens by itself. */
+const ICO_GEM='<svg class="plate pp-gem gem" viewBox="40 40 432 440" aria-hidden="true" focusable="false"><defs><linearGradient id="rtdgemf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4fbff"/><stop offset=".45" stop-color="#bfe6ff"/><stop offset=".7" stop-color="#d9d2ff"/><stop offset="1" stop-color="#8fc9f2"/></linearGradient><linearGradient id="rtdgemr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#9fb4c8"/><stop offset="1" stop-color="#e8f2fb"/></linearGradient><clipPath id="rtdgemc"><path d="M70 64H442V283.52L256 456L70 283.52Z"/></clipPath></defs><path d="M70 64H442V283.52L256 456L70 283.52Z" fill="url(#rtdgemf)"/><g clip-path="url(#rtdgemc)"><path d="M70 64L256 64L160 170Z" fill="#ffffff" fill-opacity=".55"/><path d="M256 64L442 64L352 170Z" fill="#ffffff" fill-opacity=".25"/><path d="M160 170L256 64L352 170Z" fill="#ffffff" fill-opacity=".7"/><path d="M70 64L160 170L70 284Z" fill="#5aa8e0" fill-opacity=".28"/><path d="M442 64L352 170L442 284Z" fill="#9a8cf0" fill-opacity=".22"/><path d="M70 284L160 170L256 456Z" fill="#ffffff" fill-opacity=".3"/><path d="M160 170L352 170L256 456Z" fill="#7cc4f5" fill-opacity=".16"/><path d="M352 170L442 284L256 456Z" fill="#4f8fd0" fill-opacity=".3"/><path d="M70 64L160 170L256 64L352 170L442 64M70 284L160 170H352L442 284M160 170L256 456L352 170" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="5"/></g><path d="M70 64H442V283.52L256 456L70 283.52Z" fill="none" stroke="url(#rtdgemr)" stroke-width="30" stroke-linejoin="round"/><rect x="156" y="118" width="200" height="200" rx="20" fill="none" stroke="#0b1a2e" stroke-opacity=".7" stroke-width="22"/><path d="M285 130L348 118Q357 118 357 127V309Q357 318 348 318L285 306Z" fill="#ff4f1f"/><path d="M404 52L412 84L444 92L412 100L404 132L396 100L364 92L396 84Z" fill="#ffffff"/></svg>';
+const cents=p=>Math.round(parseFloat(String(p).replace(/[^0-9.]/g,''))*100);
+const usd=c=>'$'+(c%100?(c/100).toFixed(2):String(c/100));
+let proKnown=false;       // the first answer from proRefresh is in
+function paintPair(){
+  const box=$('hp-pair');if(!box)return;
+  const signed=!!acctId();
+  if(isPro()||stdOwned||(signed&&!proKnown)){box.hidden=true;box.innerHTML='';return;}
+  const ic=(c,d)=>'<i style="--c:'+c+'"><svg viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg></i>';
+  const rtd=[['var(--green)','<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>','Unlimited plays of all six modes'],
+    ['var(--blue)','<path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/>','Set your own batting order'],
+    ['var(--orange)','<path d="M2.5 4v6h6"/><path d="M4.4 15a8.5 8.5 0 1 0 1.9-8.8L2.5 10"/>','Run it back after a bad draft'],
+    ['var(--purple)','<path d="M2.5 20.5h19"/><path d="M4.5 20.5V11l7.5-6 7.5 6v9.5"/><path d="M9.5 20.5V15h5v5.5"/>','The Dome and Neon Nights']];
+  const std=[['<path d="M6.5 3.5h11L22 9.5 12 21 2 9.5z"/><path d="M2 9.5h20"/>','The Diamond plate'],
+    ['<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>','Unlimited Survivor runs'],
+    ['<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>','Every past daily'],
+    ['<path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v5h5"/><path d="M12 7.5v5l3.2 2"/>','Your history'],
+    ['<circle cx="12" cy="12" r="9"/><path d="M10 8.6l5 3.4-5 3.4z"/><path d="M5.6 5.6l12.8 12.8"/>','No video ads']];
+  const add=cents(PAIR_PRICE)-cents(PRO_PRICE);
+  box.innerHTML='<div class="pp-top"><span class="pro-badge">'+ICO_PROBALL+'Pro</span><span class="pp-both">for both ballgames</span></div>'+
+    '<h3>Run The Diamond +<em>Shut The Door package</em></h3>'+
+    '<p class="pp-lead">Run The Diamond Pro and Shut The Door Pro, together. One account. One price.</p>'+
+    '<div class="pp-two"><div class="pp-c"><img src="icon-192.png" alt="" width="34" height="34" loading="lazy"><b>Run The Diamond</b><ul>'+
+      rtd.map(r=>'<li>'+ic(r[0],r[1])+r[2]+'</li>').join('')+'</ul></div>'+
+    '<div class="pp-c std">'+ICO_GEM+'<b>Shut The Door</b><ul>'+
+      std.map(r=>'<li>'+ic('#2b59ff',r[0])+r[1]+'</li>').join('')+
+      '<li>'+ic('#2b59ff','<path d="M5 21V4h11l-1.5 3.5L16 11H5"/>')+'Custom challenges</li></ul></div></div>'+
+    '<div class="pro-price"><b>'+PAIR_PRICE+'</b><span><strong>a year for both</strong>'+PRO_PRICE+' for this game alone.'+
+      (add>0?' The second game costs '+usd(add)+'.':'')+'</span></div>'+
+    '<button class="btn gold" id="b-hp-pair">'+(signed?'Get both for '+PAIR_PRICE+PRO_TERM:'Sign in to get both')+'</button>'+
+    '<p class="pro-err" hidden></p>';
+  box.hidden=false;
+  $('b-hp-pair').onclick=e=>{
+    if(!acctId()){openTrophy();ga('pro_signin',{bundle:PAIR_BUNDLE,from:'home'});return;}
+    buyPro(e.currentTarget,PAIR_BUNDLE);
+  };
+}
 function paintProState(){
   /* Pro is what lets the squad screen's lineup be moved, so a Pro answer that lands
      while that screen is up redraws it. */
@@ -5530,6 +5689,7 @@ function paintProState(){
       const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
     }
   }
+  try{paintPair();}catch(_){}
   try{paintModeTiles();}catch(_){}
   if($('sheet-modes').classList.contains('on'))try{openModes();}catch(_){}
   if($('sheet-trophy').classList.contains('on'))try{renderAccount();}catch(_){}
@@ -5609,6 +5769,9 @@ function proSheet(m,fresh){
       ?'Billed yearly through Stripe. It renews until you cancel, which you can do from your account any time. Classic and the daily stay free for everybody.'
       :'Pro belongs to your RunThe.GG account, so it follows you to every device you sign in on.')+'</p>'+
     '<div class="pro-cta"><button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE+PRO_TERM:'Sign in to get Pro')+'</button>'+
+      (stdOwned?'':'<button class="btn ghost" id="b-pro-pair" style="width:100%;margin-top:8px">'+
+        (signed?'Add Shut The Door Pro: both for '+PAIR_PRICE+PRO_TERM:'Sign in to get both games for '+PAIR_PRICE+PRO_TERM)+'</button>')+
+      (stdOwned?'':'<p class="pro-note">Shut The Door Pro adds custom challenges. Build a spot and send it to friends.</p>')+
       '<p class="pro-err" id="pro-err" hidden></p>'+
       '<button type="button" class="pro-later" data-close-pro>Not now</button></div>';
   wirePro(box);
@@ -5616,24 +5779,31 @@ function proSheet(m,fresh){
     if(!acctId()){closeSheet('sheet-pro');openTrophy();ga('pro_signin',{});return;}
     buyPro(e.currentTarget);
   };
+  if($('b-pro-pair'))$('b-pro-pair').onclick=e=>{
+    if(!acctId()){closeSheet('sheet-pro');openTrophy();ga('pro_signin',{bundle:PAIR_BUNDLE});return;}
+    buyPro(e.currentTarget,PAIR_BUNDLE);
+  };
   if(fresh)ga('pro_sheet_shown',{mode:m||'none',signed:signed?1:0});
 }
 function wirePro(box){box.querySelectorAll('[data-close-pro]').forEach(el=>el.onclick=()=>closeSheet('sheet-pro'));}
 
 /* One POST to the site's one checkout, verdict by the `error` field and never the
    status, the contract functions/api/stripe/checkout-bundle.js keeps on purpose. */
-async function buyPro(btn){
+async function buyPro(btn,bundle){
   const t=typeof A.token==='function'?A.token():null;
   if(!t){closeSheet('sheet-pro');openTrophy();return;}
-  ga('checkout_started',{bundle:PRO_BUNDLE,from:'baseball'});
-  const err=$('pro-err');if(err)err.hidden=true;
+  const which=bundle||PRO_BUNDLE,label=btn.textContent;
+  ga('checkout_started',{bundle:which,from:'baseball'});
+  /* the error line in the block the button sits in (the home's pair card), else the sheet's */
+  const scope=btn.closest('[data-pro-scope]');
+  const err=scope?scope.querySelector('.pro-err'):$('pro-err');if(err)err.hidden=true;
   btn.disabled=true;btn.textContent='Opening checkout...';
   let d={};
   try{
     const r=await fetch('/api/stripe/checkout-bundle',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-      body:JSON.stringify({bundle:PRO_BUNDLE,return_path:'/baseball/',
+      body:JSON.stringify({bundle:which,return_path:'/baseball/',
         email:(A.state()&&A.state().email)||undefined})
     });
     d=await r.json().catch(()=>({}));
@@ -5641,11 +5811,11 @@ async function buyPro(btn){
   if(d&&d.url){location.href=d.url;return;}
   if(d&&d.error==='already_owned'){proRefresh(true);}
   btn.disabled=false;
-  btn.textContent='Get Pro for '+PRO_PRICE+PRO_TERM;
+  btn.textContent=label;
   if(err){
     err.hidden=false;
     err.textContent=d&&d.error==='stripe_not_configured'?'Pro is not on sale yet. Try again soon.'
-      :d&&d.error==='already_owned'?'This account already has Pro.'
+      :d&&d.error==='already_owned'?(which===PAIR_BUNDLE?'This account already has one of the two. Get Pro on its own.':'This account already has Pro.')
       :d&&d.error==='unauthorized'?'Sign in again, then try once more.'
       :'Checkout did not open. Try again.';
   }
@@ -8340,7 +8510,11 @@ function paintSpeed(){
      marked seen when it shows, so closing it or playing are the same to tomorrow.
    - IT WAITS for the result to land (longer after a title, for the confetti), and gives up
      without spending the day if the player has moved on or a sheet is open: the next run that
-     ends gets it instead. */
+     ends gets it instead.
+   - NEVER ON A PLAYER'S FIRST RESULT (the owner, 2026-11-16, from the Advisor's review): a
+     brand-new player sees the record they just earned, not an ad over it. "First" is this
+     browser holding one season, the one just filed, so a signed-in player's career from other
+     devices counts. Nothing is spent: their second run gets it. */
 const STD_PROMO_KEY='rtd_std_promo_v1';
 function etDay(){
   try{return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
@@ -8350,7 +8524,7 @@ function stdPromoDue(){
   try{return localStorage.getItem(STD_PROMO_KEY)!==etDay();}catch(_){return false;}
 }
 function stdPromoSoon(big){
-  if(!stdPromoDue())return;
+  if(!stdPromoDue()||loadHistory().length<2)return;
   setTimeout(()=>{
     const busy=document.querySelector('.sheet.on');
     if(!$('s-over').classList.contains('on')||busy||$('std-promo'))return;

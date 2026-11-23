@@ -13,6 +13,12 @@
    site's to fix, and they come and go, so failing on them would make this a check people learn to
    ignore.
 
+   It also asks the Supabase project every game signs in through whether it answers: sign-in
+   (/auth/v1/health) and the database (/rest/v1/). On 2026-11-12 the project stopped answering
+   (Cloudflare 522) and every page here still loaded, because each game falls back to playing
+   without an account, so this check stayed green while nobody could sign in anywhere. The project's
+   address and public anon key are read from arcade/auth.js, the same values the browser uses.
+
    It tests what a visitor gets, which no other check here does: the code checks run against the
    repo, and the deploy, the CDN, a stale cache version or a missing file only show up here. */
 import fs from 'node:fs';
@@ -71,9 +77,37 @@ for (const p of PAGES) {
 }
 await browser.close();
 
+/* SIGN-IN AND THE DATABASE. Two tries ten seconds apart, so one dropped request never opens an
+   issue; two in a row is the project really not answering. */
+const authSrc = fs.readFileSync(path.join(ROOT, 'arcade/auth.js'), 'utf8');
+const SB_URL = (authSrc.match(/SB_URL\s*=\s*'([^']+)'/) || [])[1];
+const SB_ANON = (authSrc.match(/SB_ANON\s*=\s*'([^']+)'/) || [])[1];
+async function ask(u) {
+  let last = '';
+  for (let i = 0; i < 2; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 10000));
+    const t0 = Date.now();
+    try {
+      const r = await fetch(u, { headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` }, signal: AbortSignal.timeout(20000) });
+      const secs = ((Date.now() - t0) / 1000).toFixed(1);
+      // Up means it answered at all. A 401 or 404 is the project replying (the database root can
+      // refuse an anon key), and only a 5xx or no answer is it being down.
+      if (r.status < 500) return { ok: true, status: r.status, secs };
+      last = { ok: false, status: r.status, secs, why: `answered ${r.status}${r.status === 522 ? ' (Cloudflare could not reach the project)' : ''}` };
+    } catch (e) { last = { ok: false, status: 0, secs: ((Date.now() - t0) / 1000).toFixed(1), why: `no answer: ${String(e.message || e).slice(0, 120)}` }; }
+  }
+  return last;
+}
+if (!SB_URL || !SB_ANON) rows.push({ p: 'Supabase', ok: false, status: 0, secs: '0', errors: ['could not read SB_URL and SB_ANON from arcade/auth.js'], missing: [], thirdParty: [] });
+else for (const [name, u] of [['Supabase: sign-in', `${SB_URL}/auth/v1/health`], ['Supabase: database', `${SB_URL}/rest/v1/`]]) {
+  const r = await ask(u);
+  rows.push({ p: name, ok: r.ok, status: r.status, secs: r.secs, errors: r.ok ? [] : [`${r.why}. Every game's accounts, boards and saves are down. Check status.supabase.com, then the project in the Supabase dashboard.`], missing: [], thirdParty: [] });
+  console.error(`${r.ok ? 'ok  ' : 'FAIL'} ${String(r.status).padEnd(4)} ${name}`);
+}
+
 const bad = rows.filter(r => !r.ok);
-const L = [`# Live site check: ${BASE}`, '', `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC, ${rows.length} pages, ${bad.length} failing.`, ''];
-L.push('| page | status | result | load secs |', '|---|---|---|---|');
+const L = [`# Live site check: ${BASE}`, '', `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC, ${rows.length} checks, ${bad.length} failing.`, ''];
+L.push('| check | status | result | secs |', '|---|---|---|---|');
 for (const r of rows) L.push(`| \`${r.p}\` | ${r.status} | ${r.ok ? 'ok' : '**FAIL**'} | ${r.secs} |`);
 for (const r of bad) {
   L.push('', `## ${r.p}`, '');

@@ -213,7 +213,7 @@ const mn = await pg.evaluate(async () => {
   for (const o of allShirts().slice(0, 12)) jobs.push(['shirt', g3dItemLook({ polo: o.id, shirtPat: 'none' }), 'shirt ' + o.id]);
   for (const o of PANTS) jobs.push(['pants', g3dItemLook({ pants: o.id }), 'trousers ' + o.id]);
   // every novelty club in the hand is a real object: its tile is no smaller than a stock club's head
-  for (const c of ['scepter','candycane','excalibur','wand','hockey','glizzy','poolnoodle','coffin','broomstick','pitchfork']) jobs.push(['fig', Object.assign({}, DEFLOOK, { club: c }), 'holding ' + c]);
+  for (const c of ['scepter','candycane','excalibur','wand','hockey','glizzy','poolnoodle','coffin','broomstick','pitchfork','icicle','iceaxe']) jobs.push(['fig', Object.assign({}, DEFLOOK, { club: c }), 'holding ' + c]);
   for (const t of Object.keys(PXG_TOPS)) jobs.push(['fig', Object.assign({}, DEFLOOK, { top: t }), 'wearing ' + t]);
   for (const c of Object.keys(PXG_CLEATS)) jobs.push(['shoe', g3dItemLook({ cleats: c }), c]);
   const hairs = Object.keys(PXG_HAIR), tops = Object.keys(PXG_TOPS);
