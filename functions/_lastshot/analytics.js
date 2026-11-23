@@ -12,10 +12,21 @@
  * browser keeps ('last_shot_device'), so a player who never signs in still
  * counts once the game is public (2026-11-16); it says nothing about who.
  *
+ * THE PROBE (the owner, 2026-11-23). Guests in the EU, the UK and
+ * Switzerland must consent before gameplay events are sent, and the site has
+ * no consent banner yet, so visitors from there send none. The first track()
+ * of a page load asks GET /last-shot/e once ({ on }, the server reads the
+ * country, events.js NO_EVENTS). Until it answers, events only queue and no
+ * device id exists. On: the queue goes out as below. Off: the queue is
+ * dropped, the device id is never made (one already kept is deleted, with
+ * last_shot_seen) and the page stays silent. A probe that fails or answers
+ * anything else sends nothing this page either. The server drops a batch
+ * from those countries as well, a second line.
+ *
  * SENDING: track(n, p) queues. The queue goes out when it reaches FLUSH_AT,
  * every FLUSH_MS while anything is queued, and when the page is hidden or
  * goes away (sendBeacon, a text/plain Blob, falling back to fetch with
- * keepalive). At most MAX_POST events a post. The answer is ignored and a
+ * keepalive), once the probe said on. At most MAX_POST events a post. The answer is ignored and a
  * failed post is dropped, never retried.
  *
  * INERT under automation (navigator.webdriver) unless the page sets
@@ -29,6 +40,11 @@ export const FLUSH_AT = 20, FLUSH_MS = 15000, MAX_POST = 40, MAX_P = 600;
 
 const hasWin = typeof window !== 'undefined';
 let queue = [], timer = null, wired = false, sid = null;
+/* the probe: null (not asked), 'asking', 'on', 'off' (the region) or 'fail'.
+   wanted: a send was due while it was out, so it goes when on comes back.
+   seen: trackOpen's key, set only once the probe says on. */
+let gate = null, wanted = false, seenDue = false;
+export const DEVICE_KEY = 'last_shot_device';
 
 function sessionId() {
   if (sid) return sid;
@@ -67,10 +83,11 @@ function cleanP(p) {
 }
 
 let dev = null;
+/* Made only in bodyOf, so only once the probe said on. */
 function deviceId() {
   if (dev) return dev;
   try {
-    const k = 'last_shot_device', v = localStorage.getItem(k);
+    const k = DEVICE_KEY, v = localStorage.getItem(k);
     if (v && /^[A-Za-z0-9-]{8,40}$/.test(v)) return (dev = v);
     const b = new Uint8Array(12); crypto.getRandomValues(b);
     dev = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
@@ -80,11 +97,36 @@ function deviceId() {
 }
 function bodyOf(ev) { return JSON.stringify({ s: sessionId(), d: deviceId(), ev }); }
 
+/* Ask once a page load. Anything but a clear { on: true } is silence. */
+function ask() {
+  if (gate) return;
+  gate = 'asking';
+  const done = (g) => {
+    gate = g;
+    if (g !== 'on') { queue = []; wanted = false; clearTimeout(timer); timer = null; }
+    if (g === 'off') { dev = null; for (const k of [DEVICE_KEY, SEEN_KEY]) { try { localStorage.removeItem(k); } catch (e) {} } }
+    if (g === 'on') {
+      if (seenDue) { seenDue = false; try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) {} }
+      if (wanted || queue.length >= FLUSH_AT) { wanted = false; flush(false); }
+    }
+  };
+  try {
+    fetch(ENDPOINT, { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r && r.ok ? r.json() : null))
+      .then(j => done(j && j.on === true ? 'on' : j && j.on === false ? 'off' : 'fail'), () => done('fail'));
+  } catch (e) { done('fail'); }
+}
+
 /* Every batch of MAX_POST. beacon: the page is going, so sendBeacon first. */
 function flush(beacon) {
   try {
     clearTimeout(timer); timer = null;
     if (!queue.length || !live()) { queue = []; return; }
+    if (gate !== 'on') {
+      if (gate === null || gate === 'asking') { wanted = true; ask(); }
+      else queue = [];
+      return;
+    }
     const all = queue; queue = [];
     for (let i = 0; i < all.length; i += MAX_POST) send(bodyOf(all.slice(i, i + MAX_POST)), beacon);
   } catch (e) {}
@@ -111,8 +153,8 @@ function wire() {
 /* Queue an event. Unknown names are dropped here, as the server would. */
 export function track(n, p) {
   try {
-    if (!live() || !NAMES.includes(n)) return;
-    wire();
+    if (!live() || !NAMES.includes(n) || gate === 'off' || gate === 'fail') return;
+    wire(); ask();
     queue.push({ n, t: Math.round(performance.now()), p: cleanP(p) });
     if (queue.length >= FLUSH_AT) flush(false);
     else if (!timer) timer = setTimeout(() => flush(false), FLUSH_MS);
@@ -123,14 +165,15 @@ export function track(n, p) {
 export function flushNow() { flush(false); }
 
 /* THE FIRST OPEN: true only when this browser never opened Last Shot
-   before. The key is set after the event is queued; a localStorage that
-   fails says false, so a blocked one never counts as new every load.
-   Inert, it neither reads nor sets the key. */
+   before. The key is set once the probe says on (at once if it already
+   has); a localStorage that fails says false, so a blocked one never counts
+   as new every load. Inert, or off, it neither reads nor sets the key. */
 export const SEEN_KEY = 'last_shot_seen';
 export function trackOpen(entry) {
-  if (!live()) return;
+  if (!live() || gate === 'off' || gate === 'fail') return;
   let first = false;
   try { first = localStorage.getItem(SEEN_KEY) == null; } catch (e) { first = false; }
   track('open', { first, entry });
-  try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
+  if (gate === 'on') { try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) {} }
+  else seenDue = true;
 }
