@@ -158,7 +158,10 @@ console.log('\n3. The Trade Machine is not ranked among the best ever for tradin
 /* It accepts three offers a run, so it rebuilds three times. On the old number
    it finished on a mean all-time rank of 7th of 2,594 real team-seasons. */
 let ranks = [], top50 = 0;
-for (let s = 1; s <= Math.max(8, Math.floor(RUNS / 2)); s++) {
+/* FORTY RUNS, NOT TEN. "Most are not in the top fifty" at ten runs is a coin toss on
+   a pool change: the 37 rookie positions (2026-11-23) took it from 5 of 10 to 6 of 10
+   while the mean over 80 runs stayed in the 90s on both pools. */
+for (let s = 1; s <= Math.max(40, Math.floor(RUNS / 2)); s++) {
   const run = drafted(s * 104729, { tradeMachine: true });
   if (!run) continue;
   let g = 0;
