@@ -2089,10 +2089,21 @@ function createBracket(opts) {
       ladder[i] = b;
       delete B.oppSeats[col];
       if (b) {
+        used[b.id] = 1; clubs[b.code] = 1;
+        /* WHO TAKES THE SEAT THE NEW OPPONENT LEAVES. The club he replaces, when there
+         * is one. When there is none (a run that went out early and now goes on), the
+         * seat kept the new opponent and he sat in the bracket twice: the 2019 Astros
+         * as a far-side filler and as the World Series opponent. So it goes to the
+         * club a new World Series pin knocks off the far side's top seed, or failing
+         * that a fresh filler, drawn the way createBracket() draws one. */
+        let spare = col === 3 && B.far[1] && B.far[1].team && B.far[1].team.id !== b.id ? B.far[1].team : null;
         for (const side of BRACKET.SIDES) for (let s = 1; s <= 6; s++) {
           const seat = B[side][s];
           if (seat && seat.team && seat.team.id === b.id && !(col === 3 && side === 'far' && s === 1)) {
-            seat.team = a || seat.team;
+            let rep = a && a.id !== b.id ? a : null;
+            if (!rep && spare) { rep = spare; spare = null; }
+            if (!rep) rep = take(1)[0] || null;
+            seat.team = rep;
           }
         }
         if (col === 3) B.far[1] = { team: b, seed: 1 };
