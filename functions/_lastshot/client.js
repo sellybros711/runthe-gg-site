@@ -27,7 +27,8 @@
  * TESTER-ROUND ANALYTICS (analytics.js): open at boot, run when the sim runs
  * the player's own play (never their play in a challenge), result when its
  * card opens, and the moments in between (a level, the daily, Plays, Save,
- * Share, a #beat= link). Inert under a browser driver unless a check asks.
+ * Share, a #beat= link). Inert under a browser driver unless a check asks,
+ * and silent for a visitor from the EU, the UK or Switzerland (the probe).
  *
  * ACCOUNT PLUG POINTS still out of scope:
  *   TODO(results): save a free play or ladder possession through a gated API,

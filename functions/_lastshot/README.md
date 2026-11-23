@@ -169,6 +169,28 @@ defense (switch, fight over, go under, and the 2-3, 1-3-1, 3-2 and match-up zone
 frames side by side.
 Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no new table.
 
+## The tester round's events
+
+`analytics.js` queues first party gameplay events (open, run, result and the moments between) and
+posts them to `POST /last-shot/e` (`events.js`, behind the tester gate; `report.js` counts them at
+`/last-shot/report`). No cookie of its own, nothing third party. A row carries the account and a
+random device id the page keeps in `last_shot_device`.
+
+**No events from the EU, the UK or Switzerland** (the owner, 2026-11-23). Guests there must consent
+first, and the site has no consent banner, so for now they send none. Once a page load, before the
+first send and before any device id exists, the page asks `GET /last-shot/e`, which answers
+`{ on: true | false }` (no-store) by Cloudflare's `request.cf.country`. Off is the site's own GA4
+consent region list (`events.js NO_EVENTS`, the EEA plus GB and CH; `test/events.test.mjs` holds it
+equal to `404.html`'s). Off: the queue is dropped, no device id is made, a kept `last_shot_device`
+(and `last_shot_seen`) is deleted, and the page stays silent. A probe that fails sends nothing that
+page either. The server drops a batch from those countries too. The probe answers only a caller who
+may post; anybody else gets the 404. No country at all (local dev, tests) counts as allowed; the dev
+server fakes one with `?cc=DE`. This holds until a consent banner exists. 4th and What's own events
+path (`functions/_faw`) is not covered by this.
+
+Under a browser driver the page sends nothing, not even the probe, unless a check sets
+`window.__lastShotAnalytics`.
+
 ## Where things are
 
 | | |
@@ -191,13 +213,14 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `diagram.js`, `export.js` | a play drawn the way a coach prints it; every print and export option |
 | `web/play.html` -> `pages.js` | the page shell and modules as strings, built by `build/pages.mjs` |
 | `gate.js`, `db-supabase.js` | who gets in (pure), and the one database question |
+| `analytics.js`, `events.js`, `report.js` | the tester round's events: the page's queue and probe; the route's cleaning and the country rule; the report |
 | `check-posture.mjs` | tester only, linked from nowhere, the same 404 as Stumpire |
 
 ## Scripts
 
 ```
 node functions/_lastshot/build/pages.mjs          after editing web/play.html or any browser module
-node functions/_lastshot/build/dev-server.mjs     local play at /last-shot (?as=nobody for the 404), the Daily in memory
+node functions/_lastshot/build/dev-server.mjs     local play at /last-shot (?as=nobody for the 404, ?cc=DE for a blocked country), the Daily in memory
 node --test functions/_lastshot/test/*.test.mjs   the gate beside Stumpire's, the sim, the three test plays
 node functions/_lastshot/check-posture.mjs
 node functions/_lastshot/test/check-browser.mjs   a whole play on a phone in Chromium
@@ -206,7 +229,7 @@ node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, pl
 node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's real handler in memory (test/fake-arcade.mjs)
 node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
 node functions/_lastshot/test/check-starters.mjs  Plays (the starters, replace, undo, a level's scout) and Save this play
-node functions/_lastshot/test/check-analytics.mjs the tester round's events: every name, the beacon on hide, inert under automation
+node functions/_lastshot/test/check-analytics.mjs the tester round's events: every name, the beacon on hide, the probe (off sends nothing), inert under automation
 node functions/_lastshot/test/check-shotcam.mjs   the 3D shot cam: the cut in the span only, the timing, the fallbacks, the watchdog
 ```
 
