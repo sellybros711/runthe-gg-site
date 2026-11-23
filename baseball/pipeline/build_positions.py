@@ -26,7 +26,8 @@ DATA_DIR = os.path.join(SCRIPT_DIR, "data")
 # ---- constants (locked, must match engine.js) ----
 COEF, EXPONENT, FLOOR = 1.5, 1.6, 1.0
 ANCHOR_IP = 210.0
-POOL_MIN_YEAR, POOL_MAX_YEAR = 1901, 2025
+from seasons import last_completed_season
+POOL_MIN_YEAR, POOL_MAX_YEAR = 1901, last_completed_season()   # see seasons.py
 ELIG_GAMES = 10        # min games at a position to count as eligible
 CLOSER_MIN_SV = 20     # saves threshold for closer flag
 SP_GS_RATIO = 0.5      # GS/G ratio threshold for starter classification
@@ -245,6 +246,33 @@ try:
             "  The join has collapsed rather than the data being thin. Check "
             "that People.csv\n  carries bbrefID, or pass --allow-no-positions."
         )
+    # A SEASON LAHMAN HAS NOT PUBLISHED YET. Lahman's tables land in the January
+    # after a season, and the WAR files are current the morning after the World
+    # Series, so for a few months the newest season has prices and no positions,
+    # and every slot in the draft is a position. Until Lahman catches up, a
+    # batter in such a season plays where he played in his latest Lahman season.
+    # That is provisional and nearly always right for a regular; a rookie with
+    # no Lahman season gets none, as a Negro Leagues season does. The next
+    # rebuild after Lahman's release replaces every one of them with the real
+    # thing, because this only fills a season Lahman does not have.
+    lahman_last = int(A["season"].max()) if len(A) else POOL_MAX_YEAR
+    latest = {}
+    for (pid, season), v in pos_data.items():
+        if season <= lahman_last and (pid not in latest or season > latest[pid][0]):
+            latest[pid] = (season, v)
+    provisional = newer = 0
+    for idx, row in df.iterrows():
+        if row["role"] != "bat" or int(row["season"]) <= lahman_last:
+            continue
+        newer += 1
+        got = latest.get(row["bbref_id"])
+        if got:
+            df.at[idx, "primary_pos"], df.at[idx, "eligible_pos"] = got[1]
+            provisional += 1
+    if newer:
+        print(f"  Lahman ends at {lahman_last}: {provisional}/{newer} batters after it carry "
+              f"their latest Lahman position, provisionally, until Lahman publishes")
+
     HAS_POSITIONS = applied > 0
 
 except Exception as e:

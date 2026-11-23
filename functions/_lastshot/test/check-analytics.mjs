@@ -16,6 +16,12 @@
  * a throwing localStorage, inert under a driver unless asked, and the dev
  * server's 204 for an account or a guest with a device id, 404 for anybody else.
  *
+ * The probe (2026-11-23): GET /last-shot/e is asked once a page load, before
+ * the first post. A blocked answer ({ on: false }, the EU, the UK and
+ * Switzerland) means no post, no beacon and no last_shot_device key (one
+ * already kept is deleted); a failed probe sends nothing either; the dev
+ * server's probe answers by its faked country (?cc=).
+ *
  *   node functions/_lastshot/test/check-analytics.mjs */
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -60,8 +66,9 @@ const fake = fakeArcade({ uidOf: h => (/^Bearer tok-dev$/.test(h.authorization |
 
 /* A context: signed in (the arcade's sign in stood in), the cloud in memory,
    the arcade routed to the fake, /last-shot/e routed into posts.
-   on: set window.__lastShotAnalytics. throwing: a localStorage that throws. */
-async function context({ on = true, throwing = false } = {}) {
+   on: set window.__lastShotAnalytics. throwing: a localStorage that throws.
+   probe: what GET /last-shot/e answers, 'on', 'off' or 'fail' (a 500). */
+async function context({ on = true, throwing = false, probe = 'on' } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
   await ctx.addInitScript(({ on, throwing }) => {
@@ -91,9 +98,15 @@ async function context({ on = true, throwing = false } = {}) {
       body: q.method() === 'GET' ? null : JSON.parse(q.postData() || '{}'), headers: q.headers() });
     return r.fulfill({ status: out.status, contentType: 'application/json', body: JSON.stringify(out.body) });
   });
-  const posts = [];
+  const posts = [], probes = [], log = [];
   await ctx.route(/\/last-shot\/e$/, r => {
     const q = r.request();
+    log.push(q.method());
+    if (q.method() === 'GET') {
+      probes.push({ url: q.url() });
+      if (probe === 'fail') return r.fulfill({ status: 500, body: 'down' });
+      return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify({ on: probe === 'on' }) });
+    }
     let body = null; try { body = JSON.parse(q.postData() || ''); } catch (e) {}
     posts.push({ method: q.method(), type: q.headers()['content-type'] || '', raw: q.postData() || '', body });
     return r.fulfill({ status: 204, body: '' });
@@ -111,7 +124,7 @@ async function context({ on = true, throwing = false } = {}) {
   const flush = async () => { const n = posts.length; await L(() => window.__lastShot.flushEvents()); await page.waitForFunction(() => true); for (let i = 0; i < 40 && posts.length === n; i++) await page.waitForTimeout(50); };
   const runTo = async sel => { await L(id => document.getElementById(id).click(), sel || 'bRun');  /* Run It pulses, so a DOM click */
     await page.waitForSelector('#sheet.on', { timeout: 60000 }); };
-  return { ctx, page, posts, errs, L, ready, evs, flush, runTo };
+  return { ctx, page, posts, probes, log, errs, L, ready, evs, flush, runTo };
 }
 const last = (list, n) => list.filter(e => e.n === n).pop();
 const fresh = (list, from) => list.slice(from);
@@ -120,11 +133,12 @@ const fresh = (list, from) => list.slice(from);
 console.log('\nopen, a free run, share, save, Plays');
 const A = await context();
 {
-  const { page, L, ready, evs, flush, runTo, posts } = A;
+  const { page, L, ready, evs, flush, runTo, posts, probes, log } = A;
   await page.goto(BASE + '/last-shot/');
   await ready();
   await L(() => localStorage.setItem('last_shot_speed', '2'));
   await flush();
+  ok(probes.length === 1 && log[0] === 'GET' && log.indexOf('POST') > 0, 'an allowed visitor: the probe is asked once, before the first post (' + log.slice(0, 3).join(' ') + ')');
   let o = last(evs(), 'open');
   ok(!!o && o.p.first === true && o.p.entry === 'home', 'the first boot sends open, first: true, entry home: ' + JSON.stringify(o && o.p));
   ok((await L(() => localStorage.getItem('last_shot_seen'))) != null, 'last_shot_seen is set after it');
@@ -134,6 +148,7 @@ const A = await context();
   o = last(evs(), 'open');
   ok(!!o && o.p.first === false && o.s !== s1, 'a reload sends open, first: false, in a new session');
   ok(/^[A-Za-z0-9-]{8,40}$/.test(o.s), 'the session id: ' + o.s);
+  ok(probes.length === 2, 'and once again on the reload, a new page load: ' + probes.length);
   { const ds = [...new Set(posts.filter(p => p.body && p.body.ev).map(p => p.body.d))];
     ok(ds.length === 1 && /^[A-Za-z0-9-]{8,40}$/.test(ds[0]) && ds[0] === await L(() => localStorage.getItem('last_shot_device')),
       'every post carries the one device id this browser keeps, across a reload: ' + ds.join(',')); }
@@ -179,6 +194,7 @@ const A = await context();
   await L(() => window.__lastShot.openLadder());
   await page.click('[data-level="1-1"]');
   await L(() => window.__lastShot.loadStarter('pin-down'));
+  await page.click('#goMinus');   // a level runs only your own play: one edit makes it yours
   await runTo();
   await flush();
   got = fresh(evs(), from);
@@ -295,6 +311,7 @@ const A = await context();
   // the contract, on every body sent
   const bodies = posts.map(p => p.body);
   ok(posts.length > 5 && posts.every(p => p.method === 'POST'), posts.length + ' posts, all POST');
+  ok(probes.length === 3, 'one probe a page load: ' + probes.length + ' for three loads (the bad link is a hash change)');
   ok(bodies.every(b => b && /^[A-Za-z0-9-]{8,40}$/.test(b.s) && Array.isArray(b.ev) && b.ev.length >= 1 && b.ev.length <= MAX_POST), 'every body: s, and 1 to ' + MAX_POST + ' events');
   ok(evs().every(e => NAMES.includes(e.n) && Number.isInteger(e.t) && e.t >= 0 && e.p && typeof e.p === 'object' && JSON.stringify(e.p).length <= MAX_P), 'every event: a known name, a whole t, p within ' + MAX_P + ' characters');
   ok(posts.filter(p => !/^text\/plain/.test(p.type)).every(p => /^application\/json/.test(p.type)), 'fetch posts are application/json');
@@ -339,11 +356,48 @@ console.log('\ngarbage and the timer');
   await T.ctx.close();
 }
 
+/* ---------------- the probe says no: the EU, the UK, Switzerland ---------------- */
+console.log('\nblocked by the probe');
+for (const how of ['off', 'fail']) {
+  const B = await context({ probe: how });
+  const { page, L, ready, posts, probes, runTo, errs } = B;
+  const quiet = async () => {
+    await L(() => { window.__lastShot.flushEvents(); window.dispatchEvent(new Event('pagehide')); });
+    await page.waitForTimeout(600);
+  };
+  await page.goto(BASE + '/last-shot');
+  await ready();
+  await L(() => localStorage.setItem('last_shot_speed', '2'));
+  await page.click('#hPlay');
+  await runTo();
+  await page.click('#bBack');
+  await L(() => { for (let i = 0; i < 24; i++) window.__lastShot.loadStarter(i % 2 ? 'floppy' : 'spain'); });
+  await quiet();
+  ok(probes.length === 1, how + ': the probe was asked once: ' + probes.length);
+  ok(posts.length === 0 && (await L(() => window.__beacons.length)) === 0, how + ': no post and no beacon, a run, a full queue, a flush and a hide later');
+  ok((await L(() => localStorage.getItem('last_shot_device'))) == null, how + ': no last_shot_device key was made');
+  ok((await L(() => localStorage.getItem('last_shot_seen'))) == null, how + ': nor last_shot_seen');
+  if (how === 'off') {
+    // a browser that kept a device id before: the next load deletes it
+    await L(() => { localStorage.setItem('last_shot_device', 'dev-kept-12345678'); localStorage.setItem('last_shot_seen', '1'); });
+    await page.reload(); await ready();
+    await page.waitForFunction(() => localStorage.getItem('last_shot_device') == null, null, { timeout: 5000 }).catch(() => {});
+    ok((await L(() => localStorage.getItem('last_shot_device'))) == null, 'off: a kept last_shot_device is deleted');
+    ok((await L(() => localStorage.getItem('last_shot_seen'))) == null, 'off: and last_shot_seen with it');
+    await quiet();
+    ok(posts.length === 0 && probes.length === 2, 'off: still silent after the reload, one probe a load');
+  }
+  /* the browser logs the failed probe's 500 itself; nothing else may show */
+  const left = errs.filter(e => !(how === 'fail' && /status of 500/.test(e)));
+  ok(left.length === 0, how + ': no console errors' + (left.length ? ': ' + left.join(' | ') : ''));
+  await B.ctx.close();
+}
+
 /* ---------------- inert under a driver ---------------- */
 console.log('\ninert');
 {
   const I = await context({ on: false });
-  const { page, L, ready, posts, runTo } = I;
+  const { page, L, ready, posts, probes, runTo } = I;
   await page.goto(BASE + '/last-shot/');
   await ready();
   await L(() => localStorage.setItem('last_shot_speed', '2'));
@@ -352,7 +406,7 @@ console.log('\ninert');
   await L(() => { window.__lastShot.flushEvents(); window.dispatchEvent(new Event('pagehide')); });
   await page.reload(); await ready();
   await page.waitForTimeout(400);
-  ok(posts.length === 0 && (await L(() => window.__beacons.length)) === 0, 'navigator.webdriver without __lastShotAnalytics: nothing sent');
+  ok(posts.length === 0 && probes.length === 0 && (await L(() => window.__beacons.length)) === 0, 'navigator.webdriver without __lastShotAnalytics: nothing sent, not even the probe');
   ok(await L(() => localStorage.getItem('last_shot_seen') == null), 'and last_shot_seen is not touched');
   await I.ctx.close();
 }
@@ -368,6 +422,15 @@ console.log('\nthe dev endpoint');
   ok(b.status === 404 && devEvents.length === n0 + 1, 'a guest with no device id: the 404, nothing kept');
   const g = await fetch(BASE + '/last-shot/e?as=nobody', { method: 'POST', body: JSON.stringify({ ...JSON.parse(body), d: 'dev-abcd1234' }) });
   ok(g.status === 204 && devEvents.length === n0 + 2 && devEvents[n0 + 1].who === null, 'a guest with a device id: 204, and the body kept (the game is live)');
+  const pr = async q => { const r = await fetch(BASE + '/last-shot/e' + q); return { status: r.status, cache: r.headers.get('cache-control'), on: r.status === 200 ? (await r.json()).on : null }; };
+  const p1 = await pr('?as=dev');
+  ok(p1.status === 200 && p1.on === true && p1.cache === 'no-store', 'the probe, no country: on, no-store');
+  ok((await pr('?cc=DE')).on === false && (await pr('')).on === false, 'a faked DE: off, and it is remembered');
+  const n1 = devEvents.length;
+  const c = await fetch(BASE + '/last-shot/e', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body });
+  ok(c.status === 204 && devEvents.length === n1, 'a post from DE: 204, nothing kept');
+  ok((await pr('?cc=US')).on === true && (await pr('?cc=')).on === true, 'US and a cleared country: on');
+  ok((await pr('?as=nobody')).on === true, 'the probe for a guest: on (the game is live)');
   await fetch(BASE + '/last-shot?as=dev');
 }
 

@@ -199,6 +199,7 @@ async function stubbed(ctx, seen, routes) {
       const auth = new Proxy({
         getSession: async () => ({ data: { session: JSON.parse(localStorage.getItem(sk) || 'null') } }),
         signInAnonymously: async () => {
+          if (window.__anonRefuse) return { data: { session: null }, error: { message: 'Anonymous sign-ins are disabled' } };
           const s = { access_token: 'guest-token', user: { id: 'eeeeeeee-9999-4999-8999-999999999999', is_anonymous: true } };
           localStorage.setItem(sk, JSON.stringify(s)); window.__anon = (window.__anon || 0) + 1; return { data: { session: s }, error: null };
         },
@@ -233,20 +234,32 @@ async function finishAlma(p) {
   await sleep(4500);
 }
 if (run('guest')) {
-  R.section('guest: on the daily board, placed against the field, offered to save the streak');
-  const ROUTES = [
-    [/rpc\/arcade_guest_ticket/, 's3cr3t-0123456789abcdef0123456789abcdef'],
-    [/rpc\/grid_submit_run/, { id: 9, streak: 1, best_streak: 1 }],
+  R.section('guest: on the daily board through the server, placed against the field, offered to save the streak');
+  // A guest's run goes to /api/arcade-guest (185). No Supabase session of any
+  // kind is made: signInAnonymously is a trap here, never called.
+  const BOARD = [
     [/grid_runs\?.*score=lt/, '0-0/7', 206],
     [/grid_runs\?.*select=id$/, '0-0/40', 206],
   ];
-  for (const flag of ['guestboard', '-guestboard']) {
-    const seen = [];
+  const GUEST_UID = 'aaaabbbb-cccc-4ddd-8eee-ffff00001111';
+  async function guestApi(ctx, posts, status) {
+    await ctx.route(/\/api\/arcade-guest$/, async r => {
+      posts.push({ body: r.request().postData(), auth: (r.request().headers().authorization || '').slice(7) });
+      const b = JSON.parse(r.request().postData() || '{}');
+      if (b.action === 'claim') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ moved: 2 }) });
+      if (status !== 200) return r.fulfill({ status, contentType: 'application/json', body: JSON.stringify({ error: 'guest limit' }) });
+      return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ uid: GUEST_UID, id: 9 }) });
+    });
+  }
+  for (const [flag, status] of [['guestboard', 200], ['-guestboard', 200], ['guestboard', 429]]) {
+    const seen = [], posts = [];
     const { ctx, p } = await page(br, base, { tier: 'guest', mobile: true, vp: { width: 375, height: 740 }, time: TIME });
-    await stubbed(ctx, seen, ROUTES);
+    await stubbed(ctx, seen, BOARD);
+    await guestApi(ctx, posts, status);
     await ctx.addInitScript(() => { navigator.share = async (d) => { window.__shared = d; }; });
     await p.goto(base + '/arcade/almamater/?flags=' + flag, { waitUntil: 'load' }); await sleep(2000);
     await finishAlma(p);
+    await sleep(1200);
     const o = await p.evaluate(() => {
       const sh = document.querySelector('#scrim .sheet, #scrim .modal');
       return { rank: ((sh && sh.querySelector('.rtgres .c.rank')) || {}).textContent || '',
@@ -254,14 +267,21 @@ if (run('guest')) {
                again: [...document.querySelectorAll('#scrim button')].map(b => b.textContent.trim()).filter(t => /streak|account/i.test(t)),
                rec: JSON.parse(localStorage.getItem('rtg:guest:v1') || 'null'), anon: window.__anon || 0 };
     });
-    const submits = seen.filter(s => /grid_submit_run/.test(s.u));
-    if (flag === 'guestboard') {
-      R.ok(o.anon === 1 && submits.length === 1 && submits[0].auth === 'guest-token', 'flag on: one post, with the guest\'s own token', JSON.stringify(submits.map(s => s.auth)));
-      R.ok(o.rec && o.rec.uid && o.rec.secret, 'flag on: the browser keeps the guest id and its ticket');
+    const body = posts[0] ? JSON.parse(posts[0].body) : null;
+    const gridPosts = seen.filter(s => /grid_submit_run/.test(s.u));
+    const tag = flag + (status !== 200 ? ' ' + status : '');
+    R.ok(o.anon === 0 && gridPosts.length === 0, tag + ': no anonymous session and nothing posted to Supabase', JSON.stringify({ anon: o.anon, grid: gridPosts.length }));
+    if (flag === 'guestboard' && status === 200) {
+      R.ok(posts.length === 1 && body && body.game === 'almamater' && /^[0-9a-f-]{36}$/.test(body.device) && !posts[0].auth,
+        'flag on: one post to the server, with a device id and no token', JSON.stringify(posts));
+      R.ok(o.rec && o.rec.device === body.device && o.rec.uid === GUEST_UID, 'flag on: the browser keeps its device id and the board id the server gave it', JSON.stringify(o.rec));
       R.ok(/Top 20%/.test(o.rank), 'flag on: placed against the field, counted in once (8th of 40)', o.rank);
       R.ok(/You.re on today.s board as [A-Z][a-z]+ [A-Z][a-z ]+ \d{3}\./.test(o.note) && /free account/.test(o.note), 'flag on: says which name they are on the board as, and offers to keep it', o.note);
+    } else if (flag === 'guestboard') {
+      R.ok(posts.length === 1, 'refused (the IP cap): one try, no retry loop', String(posts.length));
+      R.ok(/on this device only/.test(o.note) && !/board/.test(o.note), 'refused: the note does not claim the board', o.note);
     } else {
-      R.ok(o.anon === 0 && submits.length === 0 && !o.rec, 'flag off: no anonymous session, nothing posted');
+      R.ok(posts.length === 0 && !o.rec, 'flag off: nothing sent, no guest record');
       R.ok(/Top 20%/.test(o.rank), 'flag off: still placed against the field, counted in as one more (8th of 41)', o.rank);
       R.ok(/on this device only/.test(o.note) && /not on the leaderboard/.test(o.note), 'flag off: says the streak is on this device only', o.note);
       R.ok(o.again.includes('Save my streak'), 'the account offer is framed as saving the streak', JSON.stringify(o.again));
@@ -274,26 +294,29 @@ if (run('guest')) {
         'Share sends text: name, day number, squares, link', sh && sh.text);
       R.ok(sh && ans.every(a => a && sh.text.indexOf(a) < 0), 'and no answer is in it', JSON.stringify(ans));
     }
-    if (p.errs.length) R.ok(false, `no page errors (${flag})`, p.errs.join(' | '));
+    if (p.errs.length) R.ok(false, `no page errors (${tag})`, p.errs.join(' | '));
     await ctx.close();
   }
 
-  // signing in afterwards: the account claims the guest's runs with the secret
-  const seen = [];
-  const { ctx, p } = await page(br, base, { tier: 'guest', mobile: true, time: TIME });
-  await stubbed(ctx, seen, [[/rpc\/arcade_claim_guest/, { moved: 2, claimed: true }]]);
-  await ctx.addInitScript(() => {
-    if (sessionStorage.getItem('__claimset')) return; sessionStorage.setItem('__claimset', '1');
-    localStorage.setItem('rtg:guest:v1', JSON.stringify({ uid: 'eeeeeeee-9999-4999-8999-999999999999', secret: 's3cr3t' }));
-    localStorage.setItem('rtg-guest-auth', JSON.stringify({ access_token: 'guest-token' }));
-    localStorage.setItem('sb-jcrrxqfpdelrmvjuihnm-auth-token', JSON.stringify({ access_token: 'acct-token', user: { id: 'aaaaaaaa-1111-4111-8111-111111111111' } }));
-  });
-  await p.goto(base + '/arcade/', { waitUntil: 'load' }); await sleep(2500);
-  const claim = seen.find(s => /arcade_claim_guest/.test(s.u));
-  const left = await p.evaluate(() => ({ rec: localStorage.getItem('rtg:guest:v1'), auth: localStorage.getItem('rtg-guest-auth') }));
-  R.ok(claim && claim.auth === 'acct-token' && /"p_secret":"s3cr3t"/.test(claim.body), 'signing in hands the guest runs to the account, with the account\'s own token', claim && claim.body);
-  R.ok(!left.rec && !left.auth, 'and the browser forgets the guest');
-  await ctx.close();
+  // signing in afterwards: the device's guest days move to the account
+  {
+    const seen = [], posts = [];
+    const { ctx, p } = await page(br, base, { tier: 'guest', mobile: true, time: TIME });
+    await stubbed(ctx, seen, []);
+    await guestApi(ctx, posts, 200);
+    await ctx.addInitScript(() => {
+      if (sessionStorage.getItem('__claimset')) return; sessionStorage.setItem('__claimset', '1');
+      localStorage.setItem('rtg:guest:v1', JSON.stringify({ device: '11112222-3333-4444-8555-666677778888', uid: 'aaaabbbb-cccc-4ddd-8eee-ffff00001111' }));
+      localStorage.setItem('sb-jcrrxqfpdelrmvjuihnm-auth-token', JSON.stringify({ access_token: 'acct-token', user: { id: 'aaaaaaaa-1111-4111-8111-111111111111' } }));
+    });
+    await p.goto(base + '/arcade/', { waitUntil: 'load' }); await sleep(2500);
+    const claim = posts.find(x => /"action":"claim"/.test(x.body));
+    const left = await p.evaluate(() => localStorage.getItem('rtg:guest:v1'));
+    R.ok(claim && claim.auth === 'acct-token' && /"device":"11112222-3333-4444-8555-666677778888"/.test(claim.body),
+      'signing in hands the device to the server with the account\'s own token', claim && claim.body);
+    R.ok(!left, 'and the browser forgets the guest');
+    await ctx.close();
+  }
 }
 
 if (run('from')) {

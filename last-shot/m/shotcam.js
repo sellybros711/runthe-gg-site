@@ -29,7 +29,7 @@
  * why, runs shown, dropped, the last cut's measured fps. A check may set
  * window.__shotCamOpts = { software: true } before the page loads, to let a
  * software renderer (headless Chromium's SwiftShader) through the gate. */
-import { createCourt2d, warm as warm2d, planRun } from './court2d.js?b=f3ede3a5eb';
+import { createCourt2d, warm as warm2d, planRun } from './court2d.js?b=e8adaf5f5c';
 
 export const THREE = '/shut-the-door/3d/vendor/three-0.170.0/three.module.min.js';
 const FPS_MIN = 40, WATCH = 0.5, WIPE = 0.38, TAG = 1.6, MAX_DPR = 2;
@@ -80,7 +80,7 @@ function load() {
   STATUS.state = 'loading';
   const host = HOST;
   LOADING = (async () => {
-    const [T, M] = await Promise.all([import(THREE), import('./shotcam3d.js?b=f3ede3a5eb')]);
+    const [T, M] = await Promise.all([import(THREE), import('./shotcam3d.js?b=e8adaf5f5c')]);
     await breathe();
     const sc = M.createScene(T, host.c3);
     host.c3.addEventListener('webglcontextlost', e => { e.preventDefault(); fail('context-lost'); });

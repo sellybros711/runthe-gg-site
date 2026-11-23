@@ -6,6 +6,9 @@
  * with its card (the stars, the checklist, New best, Next level), the play
  * kept per level across a reload, down 2 on the scoreboard, a down 3 two
  * that is not enough, overtime with its own beat, and garbage in storage.
+ * The Ladder needs your own play (the owner, 2026-11-23): no starters in a
+ * level's Plays sheet, a starter loaded as is cannot run and the hint says
+ * so, one edit lets it run, and free play still runs a starter.
  *
  *   node functions/_lastshot/test/check-ladder.mjs   (SHOTS=dir for screenshots) */
 import { createRequire } from 'node:module';
@@ -19,6 +22,7 @@ if (!chromium) { console.error('playwright is not installed'); process.exit(2); 
 const EXE = process.env.CHROMIUM || ['/opt/pw-browsers/chromium'].find(f => fs.existsSync(f)) || undefined;
 import { startDev } from '../build/dev-server.mjs';
 import { LEVELS, levelScenario, CLUTCH } from '../levels.js';
+import { STARTERS, starterPlay, isStarter, OWN_HINT, NO_STARTERS } from '../starters.js';
 
 const PORT = 8794, BASE = 'http://localhost:' + PORT;
 const OUT = process.env.SHOTS || null;
@@ -38,6 +42,9 @@ function refPlay(id) {
   return { spots: sc.spots, goAt: g, steps: [{ kind: 'screen', who: s, pts: [scr] }, { kind: 'move', who: 'O2', pts: [P(scr.x - 1, scr.y - 1), P(tx, ty)] },
     { kind: 'pass', from: 'O1', to: 'O2' }, { kind: 'shoot', who: 'O2' }] };
 }
+
+/* every reference play here is the player's own, never a starter: the ladder stays winnable */
+ok(Object.keys(REF).every(id => !isStarter(refPlay(id))), 'no reference play is a starter');
 
 async function run(name, viewport, mobile) {
   console.log('\n' + name);
@@ -239,11 +246,58 @@ async function run(name, viewport, mobile) {
     ok(st.n === 0 && Object.keys(st.best).every(k => k === '1-1'), 'garbage in storage: ' + junk.slice(0, 40) + ' read as ' + JSON.stringify(st.best));
   }
 
-  // free play is as it was
+  // the Ladder needs your own play: a starter as is cannot run in a level
+  const hintIs = t => page.waitForFunction(t => document.getElementById('hint').textContent === t, t, { timeout: 6000 }).then(() => true, () => false);
+  const runOff = () => page.isDisabled('#bRun');
+  await page.click('#bPlays');
+  await page.waitForSelector('#playsSheet.on');
+  ok((await page.locator('#playsList [data-starter]').count()) === 0 && (await page.textContent('#playsNote')) === NO_STARTERS, 'a level\'s Plays sheet has no starters: ' + await page.textContent('#playsNote'));
+  await page.click('#playsClose');
+  for (const st of STARTERS) {
+    await L(id => window.__lastShot.loadStarter(id), st.id);
+    ok(isStarter(await L(() => window.__lastShot.play)) && await runOff(), st.name + ' loaded in a level: Run It stays off');
+  }
+  await L(() => window.__lastShot.loadStarter('pin-down'));
+  ok(await hintIs(OWN_HINT), 'the hint says so: ' + await page.textContent('#hint'));
+  ok(!DASHES.test(OWN_HINT + NO_STARTERS), 'no dashes in the copy');
+  await shot('5-starter-locked');
+  await L(() => { window.__r0 = window.__lastShot.result; document.getElementById('bRun').click(); window.__lastShot.run(7); });
+  await page.waitForTimeout(300);
+  ok(!(await page.isVisible('#sheet.on')) && (await L(() => window.__lastShot.result === window.__r0)) && await hintIs(OWN_HINT), 'a tap on Run It, or a run asked for, runs nothing');
+  // one edit makes it the player's own: the Go at
+  await page.click('#goMinus');
+  ok(!(await runOff()) && await hintIs('Ready. Run It.') && (await L(() => window.__lastShot.play.goAt)) === 5.5, 'one Go at step: Run It is on, Ready. Run It.');
+  await shot('6-starter-edited');
+  await L(() => document.getElementById('bRun').click());
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
+  ok(await L(() => window.__lastShot.result !== window.__r0), 'and it runs');
+  await L(() => window.__lastShot.openLevel('1-1'));
+  await page.waitForSelector('#board', { state: 'visible' });
+  ok((await L(() => window.__lastShot.play.goAt)) === 5.5 && !(await runOff()), 'the level keeps the edited play, still runnable');
+  // a spot or a route counts as an edit too; drawn back to the starter's shape, it is locked again
+  const moved = starterPlay('floppy'); moved.spots.O3 = P(moved.spots.O3.x + 1.5, moved.spots.O3.y);
+  const rerouted = starterPlay('spain'); rerouted.steps[1].pts[1] = P(35, 23);
+  for (const [what, p] of [['a moved spot', moved], ['a changed route', rerouted]]) {
+    await L(p => { window.__lastShot.setPlay(p); window.__lastShot.board.draw(); }, p);
+    ok(!isStarter(p) && !(await runOff()), what + ': Run It is on');
+  }
+  await L(p => { window.__lastShot.setPlay(p); window.__lastShot.board.draw(); }, starterPlay('horns-twist'));
+  ok(await runOff() && await hintIs(OWN_HINT), 'the exact shape of a starter, however it got there: off again');
+
+  // free play is as it was, and still runs a starter
   await page.click('#back'); await page.click('#back');
   await page.click('#hPlay');
   await page.waitForSelector('#board', { state: 'visible' });
   ok(await page.isHidden('#lvlBar') && (await page.textContent('#sUs')) === '87' && (await L(() => window.__lastShot.mode)) === 'game', 'free Play: no level bar, 87-88');
+  await page.click('#bPlays');
+  await page.waitForSelector('#playsSheet.on');
+  ok((await page.locator('#playsList [data-starter]').count()) === 4, 'free play\'s Plays sheet has the four starters');
+  await page.click('[data-starter=pin-down]');
+  if (await page.isVisible('#playsReplace')) await page.click('#playsReplace');
+  ok(isStarter(await L(() => window.__lastShot.play)) && !(await runOff()) && (await page.textContent('#hint')) !== OWN_HINT, 'free play: the Pin-down starter as is, Run It on');
+  await L(() => document.getElementById('bRun').click());
+  await page.waitForSelector('#sheet.on', { timeout: 40000 });
+  ok((await L(() => window.__lastShot.mode === 'game' && window.__lastShot.result !== window.__r0)), 'and it runs');
 
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await ctx.close();

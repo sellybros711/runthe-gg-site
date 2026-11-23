@@ -13,34 +13,42 @@
  * /api/arcade/* is the Arcade Lab's real handler on an in-memory database
  * (test/fake-arcade.mjs), so the Daily plays locally, as the signed in 'dev'.
  * POST /last-shot/e answers as the real one does (gate.js roundGate): 204 for
- * an account or a guest with a good device id, and keeps each body in events. */
+ * an account or a guest with a good device id, and keeps each body in events.
+ * GET /last-shot/e is the probe ({ on }); ?cc=DE (any page or call, remembered
+ * like ?as=) fakes Cloudflare's country for it, and ?cc= clears it. A faked
+ * country on the list keeps nothing. */
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeAll, STATIC_DIR } from './pages.mjs';
-import { deviceOf } from '../events.js';
 import { fakeArcade } from '../test/fake-arcade.mjs';
+import { deviceOf, eventsOn, probeEvents } from '../events.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(HERE, '../../..');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' };
 
-export function startDev(port = 8790) {
-  let who = 'dev';
+export function startDev(port = 8790, { country: cc0 = null } = {}) {
+  let who = 'dev', country = cc0;
   const arcade = fakeArcade({ uidOf: () => who });
   const events = [];
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     const as = url.searchParams.get('as');
     if (as) who = as === 'nobody' ? null : as === 'boss' ? 'boss' : 'dev';
+    if (url.searchParams.has('cc')) country = url.searchParams.get('cc') || null;
     /* The round's events (analytics.js): an account, or a guest with a good
        device id, gets 204 and the body is kept in events for the checks;
-       anybody else the 404. The real endpoint is functions/last-shot/e.js. */
-    if (url.pathname === '/last-shot/e' && req.method === 'POST') {
+       anybody else the 404. GET is the probe, for anybody now the game is
+       public. A faked country on the list keeps nothing. The real endpoint
+       is functions/last-shot/e.js. */
+    if (url.pathname === '/last-shot/e' && (req.method === 'POST' || req.method === 'GET')) {
+      if (req.method === 'GET') { const p = probeEvents(country); res.writeHead(200, { 'Content-Type': p.type, 'Cache-Control': 'no-store' }); return res.end(p.body); }
       const chunks = []; for await (const c of req) chunks.push(c);
       let body = null; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch (e) {}
       if (!who && !deviceOf(body)) { res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(path.join(REPO, '404.html'))); }
+      if (!eventsOn(country)) { res.writeHead(204, { 'Cache-Control': 'no-store' }); return res.end(); }
       events.push({ who, type: req.headers['content-type'] || '', body });
       res.writeHead(204, { 'Cache-Control': 'no-store' }); return res.end();
     }
@@ -69,7 +77,7 @@ export function startDev(port = 8790) {
     }
     res.writeHead(404); res.end('not found');
   });
-  return new Promise(r => server.listen(port, () => r({ server, arcade, events, setWho: w => { who = w; } })));
+  return new Promise(r => server.listen(port, () => r({ server, arcade, events, setWho: w => { who = w; }, setCountry: c => { country = c || null; } })));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {

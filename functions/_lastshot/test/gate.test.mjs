@@ -149,8 +149,10 @@ test('the report and the events: refusals get exactly the answer Stumpire gives 
         assert.deepEqual(a, b, name + ' ' + p + ': Last Shot and Stumpire differ');
         assert.equal(a.body, NOT_FOUND_HTML, name + ' ' + p + ': the site 404 page');
       }
-      /* the events: GET is never an answer, whoever asks */
-      assert.deepEqual(await snap(await EVENTS(ctx('https://runthe.gg/last-shot/e', env, cookie))), b, name + ' GET e');
+      /* the events: GET is the probe for anybody once launched, and the 404 with no database */
+      const g = await snap(await EVENTS(ctx('https://runthe.gg/last-shot/e', env, cookie)));
+      if (!env.SUPABASE_URL) assert.deepEqual(g, b, name + ' GET e');
+      else { assert.equal(g.status, 200, name + ' GET e'); assert.deepEqual(JSON.parse(g.body), { on: true }, name + ' GET e'); assert.equal(g.cache, 'no-store'); }
     }
     /* a guest's events with no device id, and anything without a database */
     const post = (env, cookie, body) => EVENTS(ctx('https://runthe.gg/last-shot/e', env, cookie, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }));
@@ -175,4 +177,23 @@ test('the routes are what Pages runs, and nothing else under /last-shot/ is', ()
     assert.match(src, /from '\.\.\/_lastshot\/route\.js'/, f + ' answers through route.js');
     assert.doesNotMatch(src, /pages\.js/, f + ' never imports the page bundle');
   }
+});
+
+test('the route passes Cloudflare\'s country to the probe, for a tester, a signed in player and a guest', async () => {
+  const real = globalThis.fetch;
+  globalThis.fetch = fakeSupabase({ tess: 'tester' });
+  try {
+    const cookie = await sign(SECRET, 'tess', Date.now());
+    const at = (country, c = cookie) => { const x = ctx('https://runthe.gg/last-shot/e', SECRET_ENV, c); if (country) Object.defineProperty(x.request, 'cf', { value: { country } }); return x; };
+    for (const [country, on] of [[null, true], ['US', true], ['DE', false], ['GB', false], ['CH', false]]) {
+      const a = await snap(await EVENTS(at(country)));
+      assert.equal(a.status, 200, String(country)); assert.equal(a.cache, 'no-store'); assert.match(a.type, /application\/json/);
+      assert.deepEqual(JSON.parse(a.body), { on }, String(country));
+    }
+    /* launched: a signed in non tester and a guest get the same answer, by country */
+    for (const c of [await sign(SECRET, 'stranger', Date.now()), null]) {
+      assert.deepEqual(JSON.parse((await snap(await EVENTS(at('US', c)))).body), { on: true }, 'US for ' + (c ? 'a player' : 'a guest'));
+      assert.deepEqual(JSON.parse((await snap(await EVENTS(at('FR', c)))).body), { on: false }, 'FR for ' + (c ? 'a player' : 'a guest'));
+    }
+  } finally { globalThis.fetch = real; }
 });

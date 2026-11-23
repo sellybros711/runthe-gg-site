@@ -2,6 +2,7 @@
  * functions/last-shot/e.js and functions/last-shot/report.js.
  *
  *   POST /last-shot/e        a player's gameplay events (an account, a device or both)
+ *   GET  /last-shot/e        the probe: are events on for this visitor (off from the EEA, the UK and CH)
  *   GET  /last-shot/report   the four targets, admins only
  *
  * Everything else under /last-shot/ is a static file in last-shot/ at the
@@ -25,7 +26,7 @@ export async function answer(context, sub) {
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE) {
       const uid = await verify(secretOf(env), readCookie(request), Date.now());
       out = await roundGate({ method: request.method, sub, uid, query: Object.fromEntries(new URL(request.url).searchParams),
-        body: request.method === 'POST' ? await readBody(request) : null, nowMs: Date.now() }, supabaseDb(env));
+        body: request.method === 'POST' ? await readBody(request) : null, nowMs: Date.now(), country: request.cf && request.cf.country }, supabaseDb(env));
     }
   } catch (e) { out = null; }
   if (!out) return notFound(context);

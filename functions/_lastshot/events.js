@@ -12,6 +12,7 @@
  * browser cannot write rows for somebody else.
  *
  * POST /last-shot/e  { s: session id, d: device id, ev: [{ n, t, p }] }  ->  204
+ * GET  /last-shot/e  the probe: may this visitor send events at all  ->  { on }
  *
  * GUESTS (2026-11-16). A row carries the account when the gate knows one,
  * and the device id the page keeps ('last_shot_device'), so after the launch
@@ -46,6 +47,28 @@ export const EVENTS = Object.freeze({
   beat_open: { ok: bool }
 });
 
+/* NO EVENTS FROM THE EU, THE UK OR SWITZERLAND (the owner, 2026-11-23).
+ * Guests there must consent before gameplay events are sent, and the site has
+ * no consent banner, so for now a visitor from those countries sends none.
+ * The list is the site's own GA4 consent default region list (404.html and
+ * every page's gtag('consent','default')), the EEA plus GB and CH, and
+ * test/events.test.mjs holds the two equal.
+ *
+ * The country is Cloudflare's request.cf.country, passed in by the route.
+ * None at all (local dev, the tests) counts as allowed. This holds until a
+ * consent banner exists. */
+export const NO_EVENTS = Object.freeze(['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+  'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH']);
+export function eventsOn(country) {
+  return !(typeof country === 'string' && NO_EVENTS.includes(country.trim().toUpperCase()));
+}
+
+/* GET /last-shot/e, the probe analytics.js asks once a page load before it
+   sends anything or keeps a device id: { on: true | false }. */
+export function probeEvents(country) {
+  return { status: 200, type: 'application/json; charset=utf-8', body: JSON.stringify({ on: eventsOn(country) }) };
+}
+
 /* The rows to store, or [] for anything that is not a well formed batch. */
 export function cleanBatch(body) {
   if (!body || typeof body !== 'object') return [];
@@ -77,9 +100,11 @@ export function deviceOf(body) {
 
 /* POST /last-shot/e for a caller the gate let in: an account (uid), a guest
    (uid null, a device), or both. Never throws: a store error is a 204 all
-   the same, so a flaky write never shows in the game. */
-export async function postEvents(uid, body, db) {
-  const rows = cleanBatch(body), device = deviceOf(body);
+   the same, so a flaky write never shows in the game. A batch from a country
+   on NO_EVENTS is dropped here too, the server's own line behind the page's
+   probe: a 204, nothing stored. */
+export async function postEvents(uid, body, db, country) {
+  const rows = eventsOn(country) ? cleanBatch(body) : [], device = deviceOf(body);
   if (rows.length && (uid || device)) {
     try { await db.insertEvents(uid || null, device, rows); } catch (e) { /* dropped */ }
   }

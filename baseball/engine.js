@@ -85,7 +85,7 @@ const ERAS = {
   '1990s': [1990, 1999],
   '2000s': [2000, 2009],
   '2010s': [2010, 2019],
-  '2020s': [2020, 2025],
+  '2020s': [2020, 2026],
 };
 
 /* Divisions, as they actually were.
@@ -100,19 +100,19 @@ const ERAS = {
  * Central until 2013 and AL West after, and Montreal becomes Washington in 2005.
  * Drafting the 1996 AL West and getting Houston would be the whole point missed. */
 const DIVISIONS = {
-  'AL East': [['BAL', 1994, 2025], ['BOS', 1994, 2025], ['NYY', 1994, 2025],
-    ['TOR', 1994, 2025], ['DET', 1994, 1997], ['TBD', 1998, 2007], ['TBR', 2008, 2025]],
-  'AL Central': [['CHW', 1994, 2025], ['CLE', 1994, 2025], ['KCR', 1994, 2025],
-    ['MIN', 1994, 2025], ['MIL', 1994, 1997], ['DET', 1998, 2025]],
-  'AL West': [['OAK', 1994, 2024], ['SEA', 1994, 2025], ['TEX', 1994, 2025],
-    ['ATH', 2025, 2025], ['CAL', 1994, 1996], ['ANA', 1997, 2004],
-    ['LAA', 2005, 2025], ['HOU', 2013, 2025]],
-  'NL East': [['ATL', 1994, 2025], ['NYM', 1994, 2025], ['PHI', 1994, 2025],
-    ['FLA', 1994, 2011], ['MIA', 2012, 2025], ['MON', 1994, 2004], ['WSN', 2005, 2025]],
-  'NL Central': [['CHC', 1994, 2025], ['CIN', 1994, 2025], ['PIT', 1994, 2025],
-    ['STL', 1994, 2025], ['HOU', 1994, 2012], ['MIL', 1998, 2025]],
-  'NL West': [['COL', 1994, 2025], ['LAD', 1994, 2025], ['SDP', 1994, 2025],
-    ['SFG', 1994, 2025], ['ARI', 1998, 2025]],
+  'AL East': [['BAL', 1994, 2026], ['BOS', 1994, 2026], ['NYY', 1994, 2026],
+    ['TOR', 1994, 2026], ['DET', 1994, 1997], ['TBD', 1998, 2007], ['TBR', 2008, 2026]],
+  'AL Central': [['CHW', 1994, 2026], ['CLE', 1994, 2026], ['KCR', 1994, 2026],
+    ['MIN', 1994, 2026], ['MIL', 1994, 1997], ['DET', 1998, 2026]],
+  'AL West': [['OAK', 1994, 2024], ['SEA', 1994, 2026], ['TEX', 1994, 2026],
+    ['ATH', 2025, 2026], ['CAL', 1994, 1996], ['ANA', 1997, 2004],
+    ['LAA', 2005, 2026], ['HOU', 2013, 2026]],
+  'NL East': [['ATL', 1994, 2026], ['NYM', 1994, 2026], ['PHI', 1994, 2026],
+    ['FLA', 1994, 2011], ['MIA', 2012, 2026], ['MON', 1994, 2004], ['WSN', 2005, 2026]],
+  'NL Central': [['CHC', 1994, 2026], ['CIN', 1994, 2026], ['PIT', 1994, 2026],
+    ['STL', 1994, 2026], ['HOU', 1994, 2012], ['MIL', 1998, 2026]],
+  'NL West': [['COL', 1994, 2026], ['LAD', 1994, 2026], ['SDP', 1994, 2026],
+    ['SFG', 1994, 2026], ['ARI', 1998, 2026]],
 };
 const DIVISION_FIRST_SEASON = 1994;
 
@@ -152,19 +152,19 @@ const DIVISION_FIRST_SEASON = 1994;
  * span holds real seasons, no season is claimed twice, and the only pool season no
  * lineage claims is the Terrapins. */
 const FRANCHISES = {
-  ATL: [['BSN', 1901, 1952], ['MLN', 1953, 1965], ['ATL', 1966, 2025]],
-  BAL: [['MLA', 1901, 1901], ['SLB', 1902, 1953], ['BAL', 1954, 2025]],
-  LAA: [['LAA', 1961, 1964], ['CAL', 1965, 1996], ['ANA', 1997, 2004], ['LAA', 2005, 2025]],
-  LAD: [['BRO', 1901, 1957], ['LAD', 1958, 2025]],
-  MIA: [['FLA', 1993, 2011], ['MIA', 2012, 2025]],
-  MIL: [['SEP', 1969, 1969], ['MIL', 1970, 2025]],
-  MIN: [['WSH', 1901, 1960], ['MIN', 1961, 2025]],
-  NYY: [['BLA', 1901, 1902], ['NYY', 1903, 2025]],
-  ATH: [['PHA', 1901, 1954], ['KCA', 1955, 1967], ['OAK', 1968, 2024], ['ATH', 2025, 2025]],
-  SFG: [['NYG', 1901, 1957], ['SFG', 1958, 2025]],
-  TBR: [['TBD', 1998, 2007], ['TBR', 2008, 2025]],
-  TEX: [['WSA', 1961, 1971], ['TEX', 1972, 2025]],
-  WSN: [['MON', 1969, 2004], ['WSN', 2005, 2025]],
+  ATL: [['BSN', 1901, 1952], ['MLN', 1953, 1965], ['ATL', 1966, 2026]],
+  BAL: [['MLA', 1901, 1901], ['SLB', 1902, 1953], ['BAL', 1954, 2026]],
+  LAA: [['LAA', 1961, 1964], ['CAL', 1965, 1996], ['ANA', 1997, 2004], ['LAA', 2005, 2026]],
+  LAD: [['BRO', 1901, 1957], ['LAD', 1958, 2026]],
+  MIA: [['FLA', 1993, 2011], ['MIA', 2012, 2026]],
+  MIL: [['SEP', 1969, 1969], ['MIL', 1970, 2026]],
+  MIN: [['WSH', 1901, 1960], ['MIN', 1961, 2026]],
+  NYY: [['BLA', 1901, 1902], ['NYY', 1903, 2026]],
+  ATH: [['PHA', 1901, 1954], ['KCA', 1955, 1967], ['OAK', 1968, 2024], ['ATH', 2025, 2026]],
+  SFG: [['NYG', 1901, 1957], ['SFG', 1958, 2026]],
+  TBR: [['TBD', 1998, 2007], ['TBR', 2008, 2026]],
+  TEX: [['WSA', 1961, 1971], ['TEX', 1972, 2026]],
+  WSN: [['MON', 1969, 2004], ['WSN', 2005, 2026]],
 };
 
 /* THE THIRTY CLUBS PLAYING TODAY, and the only things One Franchise offers.
@@ -2089,10 +2089,21 @@ function createBracket(opts) {
       ladder[i] = b;
       delete B.oppSeats[col];
       if (b) {
+        used[b.id] = 1; clubs[b.code] = 1;
+        /* WHO TAKES THE SEAT THE NEW OPPONENT LEAVES. The club he replaces, when there
+         * is one. When there is none (a run that went out early and now goes on), the
+         * seat kept the new opponent and he sat in the bracket twice: the 2019 Astros
+         * as a far-side filler and as the World Series opponent. So it goes to the
+         * club a new World Series pin knocks off the far side's top seed, or failing
+         * that a fresh filler, drawn the way createBracket() draws one. */
+        let spare = col === 3 && B.far[1] && B.far[1].team && B.far[1].team.id !== b.id ? B.far[1].team : null;
         for (const side of BRACKET.SIDES) for (let s = 1; s <= 6; s++) {
           const seat = B[side][s];
           if (seat && seat.team && seat.team.id === b.id && !(col === 3 && side === 'far' && s === 1)) {
-            seat.team = a || seat.team;
+            let rep = a && a.id !== b.id ? a : null;
+            if (!rep && spare) { rep = spare; spare = null; }
+            if (!rep) rep = take(1)[0] || null;
+            seat.team = rep;
           }
         }
         if (col === 3) B.far[1] = { team: b, seed: 1 };

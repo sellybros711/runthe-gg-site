@@ -1,0 +1,64 @@
+name: Arcade guest board check
+
+# A guest's run reaches the arcade's daily board through /api/arcade-guest and
+# supabase/185, never through a Supabase anonymous sign-in. This runs the
+# Function with Supabase faked, and 185 against a real Postgres.
+#
+# Runnable locally:
+#   node scripts/check-arcade-guest.mjs
+#   (the SQL half: see the header of supabase/test/arcade_guest_server_test.sql)
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'functions/api/arcade-guest.js'
+      - 'functions/_arcadeguest/**'
+      - 'supabase/185_arcade_guest_runs_server.sql'
+      - 'supabase/test/arcade_guest_server_test.sql'
+      - 'scripts/check-arcade-guest.mjs'
+      - '.github/workflows/arcade-guest-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'functions/api/arcade-guest.js'
+      - 'functions/_arcadeguest/**'
+      - 'supabase/185_arcade_guest_runs_server.sql'
+      - 'supabase/test/arcade_guest_server_test.sql'
+      - 'scripts/check-arcade-guest.mjs'
+      - '.github/workflows/arcade-guest-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: arcade-guest-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: The Function, with Supabase faked
+        run: node scripts/check-arcade-guest.mjs
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+      - name: supabase/185 against a real Postgres
+        run: |
+          createdb gst
+          P="psql -X -q -v ON_ERROR_STOP=1 -d gst"
+          $P -f supabase/test/fantasy_base.sql
+          $P -c 'create table public.subscriptions(user_id uuid, status text, current_period_end timestamptz);'
+          for f in 101_premium_bundles 52_grid_daily 70_grid_integrity 72_grid_game_keys \
+                   74_arcade_new_games 76_sport_variant_boards 82_grid_submit_idempotent \
+                   84_free_games_crossword 85_rollcall_chain 125_arcade_cap_and_bonus_refund \
+                   131_arcade_generated_names; do
+            $P -f supabase/$f.sql
+          done
+          $P -f supabase/test/arcade_guest_server_test.sql

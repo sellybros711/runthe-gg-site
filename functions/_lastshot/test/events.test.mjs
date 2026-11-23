@@ -3,10 +3,14 @@
  *   - POST /last-shot/e takes any account, or a guest with a device id (launched)
  *   - the account is the gate's, never the body's
  *   - a store error never surfaces (still 204)
- *   - /last-shot/report is for admins only and marks each target met or not */
+ *   - /last-shot/report is for admins only and marks each target met or not
+ *   - the EU, the UK and Switzerland send none: the probe says off, a POST stores nothing */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanBatch, EVENTS, MAX_EVENTS } from '../events.js';
+import { cleanBatch, EVENTS, MAX_EVENTS, NO_EVENTS, eventsOn } from '../events.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { roundGate, PUBLIC_EVENTS } from '../gate.js';
 import { listStatic } from '../build/pages.mjs';
 import { memoryDb } from '../db-supabase.js';
@@ -47,7 +51,7 @@ test('POST /last-shot/e: any account, the account from the gate', async () => {
   assert.deepEqual(db.events.map(e => e.user_id), ['t', 'a', 'nobody'], 'the account is the cookie\'s, never the body\'s');
   assert.ok(db.events.every(e => e.game === 'last-shot' && e.name === 'open'));
   assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: null, body, nowMs: NOW }, db), null, 'no account and no device id: refused');
-  assert.equal(await roundGate({ method: 'GET', sub: 'e', uid: 't', nowMs: NOW }, db), null, 'GET is not a route');
+  assert.equal(await roundGate({ method: 'PUT', sub: 'e', uid: 't', nowMs: NOW }, db), null, 'PUT is not a route');
   const broken = { async role() { return 'tester'; }, async insertEvents() { throw new Error('down'); } };
   assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: 't', body, nowMs: NOW }, broken)).status, 204, 'a store error never surfaces');
   const down = { async role() { throw new Error('down'); } };
@@ -96,7 +100,8 @@ test('guests: launched, a guest counts by the device; the report stays admins on
   assert.deepEqual(db.events.slice(-1).map(e => [e.user_id, e.device_id]), [['stranger', 'dev-abcd1234']]);
   const down = { ...db, async role() { throw new Error('down'); } };
   assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: 'stranger', body, nowMs: NOW }, down)).status, 204, 'events never wait on the tester list');
-  assert.equal(await roundGate({ method: 'GET', sub: 'e', uid: null, body, nowMs: NOW }, db), null, 'only a POST');
+  assert.equal((await roundGate({ method: 'GET', sub: 'e', uid: null, nowMs: NOW }, db)).body, '{"on":true}', 'a GET is the probe, for a guest too');
+  assert.equal(await roundGate({ method: 'PUT', sub: 'e', uid: null, body, nowMs: NOW }, db), null, 'only a POST or the probe');
   for (const uid of [null, 'stranger', 't']) assert.equal(await roundGate({ method: 'GET', sub: 'report', uid, query: {}, nowMs: NOW }, db), null, 'the report stays admins only: ' + uid);
   /* the switch still works the old way if it is ever turned off */
   const closed = { method: 'POST', sub: 'e', body, nowMs: NOW, publicEvents: false };
@@ -117,4 +122,58 @@ test('until 175 has run, a tester\'s rows still land in 170\'s table', async () 
     await assert.rejects(db.insertEvents(null, 'dev-abcd1234', [{ name: 'open', session_id: S, client_ms: 1, props: {} }]));
     assert.deepEqual(calls, ['rpc/last_shot_events_add'], 'a guest row needs 175; it is not forced into 170');
   } finally { globalThis.fetch = real; }
+});
+
+/* ---------- the EU, the UK and Switzerland (the owner, 2026-11-23) ---------- */
+const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const probe = async (args, db) => { const r = await roundGate({ method: 'GET', sub: 'e', nowMs: NOW, ...args }, db); return r && { status: r.status, type: r.type, on: JSON.parse(r.body).on }; };
+
+test('the region list is the site\'s own GA4 consent list, exactly', () => {
+  const html = fs.readFileSync(path.join(REPO, '404.html'), 'utf8');
+  const m = html.match(/gtag\('consent','default',\{[^}]*region:\[([^\]]+)\]/);
+  assert.ok(m, '404.html has the consent default');
+  const site = m[1].split(',').map(x => x.trim().replace(/'/g, ''));
+  assert.deepEqual([...NO_EVENTS].sort(), [...site].sort());
+  assert.equal(NO_EVENTS.length, 32);
+});
+
+test('eventsOn: blocked in the list, allowed elsewhere and with no country', () => {
+  for (const c of ['DE', 'FR', 'GB', 'CH', 'NO', 'IS', 'LI', 'IE', 'de', ' gb ']) assert.equal(eventsOn(c), false, c);
+  for (const c of ['US', 'CA', 'AU', 'BR', 'JP', 'T1', 'XX']) assert.equal(eventsOn(c), true, c);
+  for (const c of [undefined, null, '', 0, {}]) assert.equal(eventsOn(c), true, 'no country: ' + JSON.stringify(c));
+});
+
+test('GET /last-shot/e, the probe: on or off by country, for a caller who may post only', async () => {
+  const db = memoryDb({ t: 'tester', a: 'admin' });
+  for (const uid of ['t', 'a']) {
+    assert.deepEqual(await probe({ uid, country: 'US' }, db), { status: 200, type: 'application/json; charset=utf-8', on: true }, uid + ' allowed');
+    assert.deepEqual(await probe({ uid }, db), { status: 200, type: 'application/json; charset=utf-8', on: true }, uid + ' no country');
+    for (const c of ['DE', 'GB', 'CH']) assert.equal((await probe({ uid, country: c }, db)).on, false, uid + ' ' + c);
+  }
+  /* tester only (the switch off): nobody else gets an answer */
+  for (const uid of [null, 'stranger']) for (const country of ['US', 'DE', undefined])
+    assert.equal(await probe({ uid, country, publicEvents: false }, db), null, 'off: the 404 for ' + uid + ' in ' + country);
+  const down = { async role() { throw new Error('down'); } };
+  assert.equal(await probe({ uid: 't', country: 'US', publicEvents: false }, down), null, 'off: a role error is a refusal');
+  assert.equal((await probe({ uid: 't', country: 'US' }, down)).on, true, 'launched: the probe never waits on the tester list');
+  // after the launch a guest may ask too, before it has a device id
+  assert.equal((await probe({ uid: null, country: 'US', publicEvents: true }, db)).on, true);
+  assert.equal((await probe({ uid: null, country: 'FR', publicEvents: true }, db)).on, false);
+  assert.equal((await probe({ uid: 'stranger', country: 'IT', publicEvents: true }, db)).on, false);
+  assert.equal(await roundGate({ method: 'HEAD', sub: 'e', uid: 't', country: 'US', nowMs: NOW }, db), null, 'HEAD is not a route');
+});
+
+test('POST /last-shot/e from a blocked country: a 204, nothing stored', async () => {
+  const db = memoryDb({ t: 'tester' });
+  const body = { s: S, d: 'dev-abcd1234', ev: [{ n: 'open', t: 1, p: { first: true } }] };
+  for (const country of ['DE', 'GB', 'CH', 'se']) assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: 't', body, country, nowMs: NOW }, db)).status, 204, country);
+  assert.equal(db.events.length, 0, 'not one row from the region');
+  assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: null, body, country: 'DE', nowMs: NOW, publicEvents: true }, db)).status, 204);
+  assert.equal(db.events.length, 0, 'nor from a guest there');
+  assert.equal(await roundGate({ method: 'POST', sub: 'e', uid: 'stranger', body, country: 'DE', nowMs: NOW, publicEvents: false }, db), null, 'off: a non tester still gets the 404');
+  assert.equal((await roundGate({ method: 'POST', sub: 'e', uid: 'stranger', body, country: 'DE', nowMs: NOW }, db)).status, 204, 'launched: a signed in player from DE gets 204');
+  assert.equal(db.events.length, 0, 'and nothing is stored');
+  await roundGate({ method: 'POST', sub: 'e', uid: 't', body, country: 'US', nowMs: NOW }, db);
+  await roundGate({ method: 'POST', sub: 'e', uid: 't', body, nowMs: NOW }, db);
+  assert.deepEqual(db.events.map(e => e.user_id), ['t', 't'], 'allowed and no country store as before');
 });

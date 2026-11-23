@@ -28,7 +28,7 @@
   .sg-room .lab{position:absolute;left:8px;top:8px;}
   .sg-demo-wipe{position:relative;height:60px;overflow:hidden;background:var(--k-panel);}
 </style>
-<script src="../career-kit.js?v=12"></script>
+<script src="../career-kit.js?v=13"></script>
 </head>
 <body>
 <main class="sg k-root" id="sg">
@@ -96,6 +96,24 @@
       (function(){ var K = window.RTF_KIT;
         document.getElementById('sg-ib').innerHTML = [['shirt','Look'],['film','Scenes'],['sound','Sound'],['home','Home']].map(function(x, i){ return '<button class="k-ib"' + (i === 1 ? ' aria-pressed="true"' : '') + '>' + K.iconHtml(x[0], 2) + '<span>' + x[1] + '</span>' + (i === 1 ? '<i></i>' : '') + '</button>'; }).join('');
         document.getElementById('sg-itabs').innerHTML = [['clip','Story'],['ball','Team'],['up','Seasons'],['trophy','Trophies'],['face','People'],['crown','Legacy'],['mic','News']].map(function(x, i){ return '<button class="k-tab k-itab" role="tab" aria-selected="' + (i === 0) + '">' + K.iconHtml(x[0], 2) + '<span>' + x[1] + '</span></button>'; }).join('');
+      })();
+    </script>
+  </section>
+
+  <section>
+    <h2>App shell</h2>
+    <p class="sg-note">Career as an app. The app bar is the player: his face, name, position, number, club and overall, in the club's colors. A line under it says when. Five tabs sit at the foot of a phone and down the left of a desktop. List rows hold settings and the way out. A bar says a decision is waiting. Drawn here in place, not fixed.</p>
+    <div class="k-panel k-shell" id="sg-shell" style="position:relative;padding:0;overflow:hidden">
+      <div class="k-abar" style="position:relative;height:60px;padding:0 12px"><span class="k-av" style="display:block"></span><div class="k-who"><b>Dante Vance</b><span>SG · #8 · Bulls</span></div><div class="k-aovr"><b>83</b><small>OVR</small></div></div>
+      <div class="k-actx" style="position:relative;top:0"><b>2029-30 · Game 55</b><span class="k-sp"></span><span>Bulls 31-24</span></div>
+      <div class="k-lrows" style="padding:8px 4px" id="sg-lrows"></div>
+      <div class="k-waitbar" style="position:relative;left:0;right:0;bottom:0;margin:8px 10px 12px;width:auto"><div class="k-wt"><small>A decision is waiting</small><span>A quiet summer</span></div><button class="k-btn" type="button">Answer</button></div>
+      <nav class="k-tabbar" style="position:relative;height:64px;padding:0" id="sg-tabbar"></nav>
+    </div>
+    <script>
+      (function(){ var K = window.RTF_KIT;
+        document.getElementById('sg-tabbar').innerHTML = [['ball','Now'],['bolt','Moves'],['people','Team'],['shirt','Player'],['crown','Legacy']].map(function(x, i){ return '<button type="button"' + (i === 0 ? ' aria-current="page"' : '') + '>' + K.iconHtml(x[0], 4) + '<span>' + x[1] + '</span>' + (i === 1 ? '<i>5</i>' : '') + '</button>'; }).join('');
+        document.getElementById('sg-lrows').innerHTML = [['shirt','Your look','Body, off court and on court',''],['home','Leave to the front page','Your career is saved',''],['lock','Retire now','The career ends here. There is no coming back.',' k-danger']].map(function(x){ return '<button type="button" class="k-lrow' + x[3] + '">' + K.iconHtml(x[0], 4) + '<span class="k-lt">' + x[1] + '<small>' + x[2] + '</small></span><span class="k-lgo" aria-hidden="true">&gt;</span></button>'; }).join('');
       })();
     </script>
   </section>

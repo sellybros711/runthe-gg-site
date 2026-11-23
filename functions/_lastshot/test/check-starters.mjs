@@ -5,7 +5,8 @@
  *
  *   the Plays sheet   the four starters, each loading its own spots, Go at and steps;
  *                     Replace your play? on a clipboard with steps; Undo puts it back
- *   a level           a starter there keeps the scout scheme
+ *   a level           no starters in its Plays sheet; a starter there runs once edited
+ *                     (the owner, 2026-11-23) and keeps the scout scheme
  *   Save this play    signed out it reads Sign in to save; signed in it saves once,
  *                     named from the terminology, with its situation and the run counted,
  *                     then Saved · Open lands on the play
@@ -189,12 +190,17 @@ async function run(name, viewport, mobile) {
   await page.waitForSelector('#lvlBar', { state: 'visible' });
   const scout = await page.textContent('#lvlScout');
   await page.click('#bPlays');
-  await page.click('[data-starter=horns-twist]');
-  if (await page.isVisible('#playsAsk')) await page.click('#playsReplace');
+  ok((await page.locator('#playsList [data-starter]').count()) === 0, 'a level\'s Plays sheet offers no starters');
+  await page.click('#playsClose');
+  await L(() => window.__lastShot.loadStarter('horns-twist'));
   ok(same(await clip(), body(starterPlay('horns-twist'))), 'a level takes Horns Twist, spots and all');
+  ok(await page.isDisabled('#bRun'), 'but it cannot run as is');
+  await page.click('#goMinus');
+  const edited = { ...body(starterPlay('horns-twist')), goAt: 7.5 };
+  ok(same(await clip(), edited) && !(await page.isDisabled('#bRun')), 'one Go at step makes it yours, Run It on');
   ok((await page.textContent('#lvlScout')) === scout && /Fight over/i.test(scout), 'the scout line stays: ' + scout);
   ok((await L(() => [1, 2, 3, 4].map(s => window.__lastShot.simulate(s).scheme).join())) === 'over,over,over,over', 'and the level still plays the scout\'s scheme');
-  ok(same(body(await L(() => window.__lastShot.ladder.plays['2-4'])), body(starterPlay('horns-twist'))), 'the level keeps the starter as its play');
+  ok(same(body(await L(() => window.__lastShot.ladder.plays['2-4'])), edited), 'the level keeps the edited play');
   await runTo(5);
   ok((await page.textContent('#bSavePlay')) === 'Save this play', 'the level card has Save this play');
   await openCard(page);
@@ -205,7 +211,7 @@ async function run(name, viewport, mobile) {
   e = bks[0].plays[1];
   const sit = { clock: 20, down: 2 };
   ok(same(e.situation, sit), 'with the level\'s situation: ' + JSON.stringify(e.situation));
-  ok(e.name === nameOf(starterPlay('horns-twist'), sit), 'named from the terminology: ' + e.name);
+  ok(e.name === nameOf(edited, sit), 'named from the terminology: ' + e.name);
   tally = e.stats[situationKey(SCENARIO, sit)];
   ok(tally && tally.byScheme.over && tally.byScheme.over.n === 1, 'the run counts under Fight over, down 2 from 20.0');
   await page.click('#bSavePlay');

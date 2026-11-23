@@ -13,9 +13,16 @@ export const ROLES = Object.freeze(['tester', 'admin']);
 
 /* THE ROUTES:
  *   POST /last-shot/e        a player's events (events.js)        -> 204
+ *   GET  /last-shot/e        the probe: { on }, may this visitor send any
  *   GET  /last-shot/report   the report, admins only (report.js)
- * Anything else is undefined (not a route here). A refusal is null, the same 404. */
-import { postEvents, deviceOf, GAME } from './events.js';
+ * Anything else is undefined (not a route here). A refusal is null, the same 404.
+ *
+ * THE COUNTRY (2026-11-23). country is Cloudflare's request.cf.country, the
+ * route's only part in this. The probe answers { on: false } and a POST
+ * stores nothing for a visitor from the EU, the UK or Switzerland
+ * (events.js NO_EVENTS). Only a caller who may post gets either answer;
+ * anybody else still gets the 404. No country (local dev, tests) is allowed. */
+import { postEvents, deviceOf, probeEvents, GAME } from './events.js';
 
 /* Guests may send events. ON since the launch, so a player who never signs
    in still counts: an account, a good device id, or both. With it off the
@@ -28,27 +35,28 @@ export function isRound(sub) {
   return s === 'e' || s === 'report';
 }
 
-export async function roundGate({ method, sub, uid, query, body, nowMs, publicEvents = PUBLIC_EVENTS }, db) {
-  if (!isRound(sub)) return undefined;
+const posted = r => ({ status: r.status, type: 'text/plain; charset=utf-8', body: '' });
+
+export async function roundGate({ method, sub, uid, query, body, nowMs, country, publicEvents = PUBLIC_EVENTS }, db) {
   const s = String(sub || '').replace(/\/+$/, '');
-  if (s === 'e') {
-    if (method !== 'POST') return null;
-    if (publicEvents) {
-      if (!uid && !deviceOf(body)) return null;
-    } else {
-      if (!uid) return null;
-      let role = null;
-      try { role = await db.role(uid); } catch (e) { return null; }
-      if (!ROLES.includes(role)) return null;
-    }
-    const r = await postEvents(uid || null, body, db);
-    return { status: r.status, type: 'text/plain; charset=utf-8', body: '' };
+  if (s !== 'e' && s !== 'report') return undefined;
+  if (s === 'e' && publicEvents) {
+    /* launched: anybody may ask the probe, and an account or a guest with a
+       good device id may post. Events never wait on the tester list. */
+    if (method === 'GET') return probeEvents(country);
+    if (method === 'POST' && (uid || deviceOf(body))) return posted(await postEvents(uid || null, body, db, country));
+    return null;
   }
-  /* the report: admins only, whatever the game's posture */
-  if (method !== 'GET' || !uid) return null;
+  if (!uid) return null;
   let role = null;
   try { role = await db.role(uid); } catch (e) { return null; }
-  if (role !== 'admin') return null;
+  if (s === 'e') {
+    if (method !== 'POST' && method !== 'GET') return null;
+    if (!ROLES.includes(role) && !publicEvents) return null;
+    if (method === 'GET') return probeEvents(country);
+    return posted(await postEvents(uid, body, db, country));
+  }
+  if (method !== 'GET' || role !== 'admin') return null;
   const range = rangeOf(query || {}, nowMs);
   let r = null;
   try { r = await db.report(GAME, range.sinceAt, range.untilAt, !range.admins); } catch (e) { r = null; }

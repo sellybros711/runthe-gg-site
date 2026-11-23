@@ -96,10 +96,10 @@ checks; `{ off: true }` keeps the board.
 
 **Plays** on the clipboard opens a sheet of four starters (`starters.js`: Pin-down, Floppy, Horns
 Twist, Spain pick and roll), each with its note and a small diagram. A tap puts its spots, steps
-and Go at on the clipboard, in free play, a level, the Daily (practice and the scored shot) and
-Draw yours. A clipboard with steps asks "Replace your play?" inline first. Undo right after puts the
-old play back. A starter's spots replace a level's or the day's set; the scout scheme and the
-day's seed are left alone.
+and Go at on the clipboard, in free play, the Daily (practice and the scored shot) and Draw yours,
+but not in a Ladder level (below). A clipboard with steps asks "Replace your play?" inline first.
+Undo right after puts the old play back. A starter's spots replace the day's set; the day's seed
+is left alone.
 
 Every result card but a playbook's has **Save this play**: the run's play goes into the first
 playbook (or a new "My plays"), named from the coach's terminology, with its situation when it is
@@ -116,6 +116,16 @@ level opens once the one before it is won; 1-1 is always open. Three stars a lev
 an open look, and let it go late. The result card lands the stars one at a time with the rules
 as a checklist, says New best, and offers Next level, Try again and Back to Ladder. Three stars
 gets a party. Down 2 and down 3 bring overtime (a coin flip), which gets its own OVERTIME beat.
+
+**A level runs only your own play** (the owner, 2026-11-23). In the playtest the unedited Pin-down
+starter won 1-1 to 1-5 with no drawing, so a new player was never pushed to draw. In a level the
+Plays sheet shows no starters ("No starters in the Ladder. Draw your own play."), and a play with a
+starter's exact shape (`starters.js isStarter`, by `playKey`: spots, routes, Go at) keeps Run It
+off with the hint "Make it yours. Change the starter or draw your own." One edit (a spot, a route,
+the Go at) makes it the player's own, and it runs. A play kept for a level from before stays, and
+waits for that one edit if it is a starter. Free play, the Daily, Beat my play and playbooks run
+starters as before. No level's reference play (`test/levels.test.mjs`, `check-ladder.mjs`) is a
+starter, and both assert it, so the ladder stays winnable.
 Progress is `last_shot_ladder` in localStorage (best stars and a play per level with when it was
 kept, the Daily's filed days, cleaned on read so garbage never breaks the page). Signed in, it is
 also in the shared cloud saves, game `last_shot`, slot `ladder`: on load the two merge (per level the
@@ -186,6 +196,28 @@ defense (switch, fight over, go under, and the 2-3, 1-3-1, 3-2 and match-up zone
 frames side by side.
 Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no new table.
 
+## The tester round's events
+
+`analytics.js` queues first party gameplay events (open, run, result and the moments between) and
+posts them to `POST /last-shot/e` (`events.js`, behind the tester gate; `report.js` counts them at
+`/last-shot/report`). No cookie of its own, nothing third party. A row carries the account and a
+random device id the page keeps in `last_shot_device`.
+
+**No events from the EU, the UK or Switzerland** (the owner, 2026-11-23). Guests there must consent
+first, and the site has no consent banner, so for now they send none. Once a page load, before the
+first send and before any device id exists, the page asks `GET /last-shot/e`, which answers
+`{ on: true | false }` (no-store) by Cloudflare's `request.cf.country`. Off is the site's own GA4
+consent region list (`events.js NO_EVENTS`, the EEA plus GB and CH; `test/events.test.mjs` holds it
+equal to `404.html`'s). Off: the queue is dropped, no device id is made, a kept `last_shot_device`
+(and `last_shot_seen`) is deleted, and the page stays silent. A probe that fails sends nothing that
+page either. The server drops a batch from those countries too. The probe answers only a caller who
+may post; anybody else gets the 404. No country at all (local dev, tests) counts as allowed; the dev
+server fakes one with `?cc=DE`. This holds until a consent banner exists. 4th and What's own events
+path (`functions/_faw`) is not covered by this.
+
+Under a browser driver the page sends nothing, not even the probe, unless a check sets
+`window.__lastShotAnalytics`.
+
 ## Where things are
 
 | | |
@@ -209,21 +241,22 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `web/play.html` -> `last-shot/`, `pages.js` | the static page and modules at the site root, and the same bytes as one bundle for the tests, both built by `build/pages.mjs` |
 | `route.js`, `gate.js`, `db-supabase.js` | the two Function routes (`functions/last-shot/e.js`, `report.js`); the events and the admins only report (pure); the database calls |
 | `check-posture.mjs` | live: indexable, in the sitemap, the folder in step, only the two routes are Functions, the report admins only, the same 404 as Stumpire |
+| `analytics.js`, `events.js`, `report.js` | the events: the page's queue and probe; the route's cleaning and the country rule; the report |
 
 ## Scripts
 
 ```
 node functions/_lastshot/build/pages.mjs          after editing web/play.html or any browser module (writes last-shot/ and pages.js)
-node functions/_lastshot/build/dev-server.mjs     local play at /last-shot/ from the static folder (?as=nobody for a guest), the Daily in memory
+node functions/_lastshot/build/dev-server.mjs     local play at /last-shot/ from the static folder (?as=nobody for a guest, ?cc=DE for a blocked country), the Daily in memory
 node --test functions/_lastshot/test/*.test.mjs   the folder in step, the routes beside Stumpire's, the events, the sim, the three test plays
 node functions/_lastshot/check-posture.mjs
 node functions/_lastshot/test/check-browser.mjs   a whole play on a phone in Chromium
 node functions/_lastshot/test/check-playbook.mjs  the storyboard and My Playbooks, phone and desktop, cloud in memory
-node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, down 2 and 3, overtime, garbage, the account's copy
+node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, no starter as is, down 2 and 3, overtime, garbage, the account's copy
 node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's real handler in memory (test/fake-arcade.mjs)
 node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
 node functions/_lastshot/test/check-starters.mjs  Plays (the starters, replace, undo, a level's scout) and Save this play
-node functions/_lastshot/test/check-analytics.mjs the round's events: every name, the beacon on hide, inert under automation
+node functions/_lastshot/test/check-analytics.mjs the round's events: every name, the beacon on hide, the probe (off sends nothing), inert under automation
 node functions/_lastshot/test/check-shotcam.mjs   the 3D shot cam: the cut in the span only, the timing, the fallbacks, the watchdog
 ```
 

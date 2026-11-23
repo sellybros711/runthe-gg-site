@@ -9,7 +9,8 @@
  *
  * Measured 2026-11-13 (150 seeds a defense) and held by test/starters.test.mjs.
  * Steps carry beat 1: one storyboard frame. */
-import { SCENARIO } from './scenario.js?b=f3ede3a5eb';
+import { SCENARIO } from './scenario.js?b=e8adaf5f5c';
+import { playKey } from './playbook.js?b=e8adaf5f5c';
 
 const P = (x, y) => ({ x, y });
 const one = steps => steps.map(s => ({ ...s, beat: 1 }));
@@ -61,3 +62,17 @@ export const starterPlay = id => {
   const s = starterById(id);
   return s ? JSON.parse(JSON.stringify(s.play)) : null;
 };
+
+/* THE LADDER NEEDS YOUR OWN PLAY (the owner, 2026-11-23). In the playtest
+   the unedited Pin-down won levels 1-1 to 1-5 with no drawing at all, so a
+   new player was never pushed to draw. In a level a starter cannot run as is:
+   the Plays sheet there shows none, and a play whose shape (playKey: spots,
+   routes, Go at) is a starter's keeps Run It off with OWN_HINT. One edit (a
+   spot, a route, the Go at) makes it the player's own. Free play, the Daily,
+   Beat my play and playbooks are unchanged. */
+const KEYS = new Set(STARTERS.map(s => playKey(s.play)));
+export function isStarter(play) {
+  try { return !!play && KEYS.has(playKey(play)); } catch (e) { return false; }
+}
+export const OWN_HINT = 'Make it yours. Change the starter or draw your own.';
+export const NO_STARTERS = 'No starters in the Ladder. Draw your own play.';
