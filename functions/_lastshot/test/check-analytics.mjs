@@ -194,6 +194,7 @@ const A = await context();
   await L(() => window.__lastShot.openLadder());
   await page.click('[data-level="1-1"]');
   await L(() => window.__lastShot.loadStarter('pin-down'));
+  await page.click('#goMinus');   // a level runs only your own play: one edit makes it yours
   await runTo();
   await flush();
   got = fresh(evs(), from);

@@ -96,10 +96,10 @@ checks; `{ off: true }` keeps the board.
 
 **Plays** on the clipboard opens a sheet of four starters (`starters.js`: Pin-down, Floppy, Horns
 Twist, Spain pick and roll), each with its note and a small diagram. A tap puts its spots, steps
-and Go at on the clipboard, in free play, a level, the Daily (practice and the scored shot) and
-Draw yours. A clipboard with steps asks "Replace your play?" inline first. Undo right after puts the
-old play back. A starter's spots replace a level's or the day's set; the scout scheme and the
-day's seed are left alone.
+and Go at on the clipboard, in free play, the Daily (practice and the scored shot) and Draw yours,
+but not in a Ladder level (below). A clipboard with steps asks "Replace your play?" inline first.
+Undo right after puts the old play back. A starter's spots replace the day's set; the day's seed
+is left alone.
 
 Every result card but a playbook's has **Save this play**: the run's play goes into the first
 playbook (or a new "My plays"), named from the coach's terminology, with its situation when it is
@@ -116,6 +116,16 @@ level opens once the one before it is won; 1-1 is always open. Three stars a lev
 an open look, and let it go late. The result card lands the stars one at a time with the rules
 as a checklist, says New best, and offers Next level, Try again and Back to Ladder. Three stars
 gets a party. Down 2 and down 3 bring overtime (a coin flip), which gets its own OVERTIME beat.
+
+**A level runs only your own play** (the owner, 2026-11-23). In the playtest the unedited Pin-down
+starter won 1-1 to 1-5 with no drawing, so a new player was never pushed to draw. In a level the
+Plays sheet shows no starters ("No starters in the Ladder. Draw your own play."), and a play with a
+starter's exact shape (`starters.js isStarter`, by `playKey`: spots, routes, Go at) keeps Run It
+off with the hint "Make it yours. Change the starter or draw your own." One edit (a spot, a route,
+the Go at) makes it the player's own, and it runs. A play kept for a level from before stays, and
+waits for that one edit if it is a starter. Free play, the Daily, Beat my play and playbooks run
+starters as before. No level's reference play (`test/levels.test.mjs`, `check-ladder.mjs`) is a
+starter, and both assert it, so the ladder stays winnable.
 Progress is `last_shot_ladder` in localStorage (best stars and a play per level with when it was
 kept, the Daily's filed days, cleaned on read so garbage never breaks the page). Signed in, it is
 also in the shared cloud saves, game `last_shot`, slot `ladder`: on load the two merge (per level the
@@ -225,7 +235,7 @@ node --test functions/_lastshot/test/*.test.mjs   the gate beside Stumpire's, th
 node functions/_lastshot/check-posture.mjs
 node functions/_lastshot/test/check-browser.mjs   a whole play on a phone in Chromium
 node functions/_lastshot/test/check-playbook.mjs  the storyboard and My Playbooks, phone and desktop, cloud in memory
-node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, down 2 and 3, overtime, garbage, the account's copy
+node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, no starter as is, down 2 and 3, overtime, garbage, the account's copy
 node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's real handler in memory (test/fake-arcade.mjs)
 node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
 node functions/_lastshot/test/check-starters.mjs  Plays (the starters, replace, undo, a level's scout) and Save this play
