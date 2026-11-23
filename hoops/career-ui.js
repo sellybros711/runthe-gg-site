@@ -1040,6 +1040,54 @@ var CSS = [
 '.cr-cbcomps li:first-child .rk{background:var(--k-gold);}',
 '.cr-cbcomps .nm{min-width:0;flex:1;font:400 20px/1.05 var(--k-f-display);text-transform:uppercase;color:#fff;overflow-wrap:anywhere;}',
 '.cr-cbcomps i{flex:none;font:400 7px/1.4 var(--k-f-pixel);font-style:normal;letter-spacing:.06em;color:var(--k-gold);text-transform:uppercase;}',
+
+/* THE APP SHELL (lifeView, shellHtml). The site bar and footer go while the
+   career screen is up, and come back with any other screen. The shell shows
+   only over a career in progress (.cr-app); the builder, the Hall and the
+   Vault keep their own top. */
+'#cr-shell{display:none;}',
+'body:has(#s-car.active.cr-app) #cr-shell{display:block;}',
+'body:has(#s-car.active) .appbar,body:has(#s-car.active) footer.legal{display:none;}',
+'html:has(#s-car.active.cr-app){scroll-padding-top:calc(104px + env(safe-area-inset-top,0px));scroll-padding-bottom:calc(76px + env(safe-area-inset-bottom,0px));}',
+'#s-car.cr-app{--cr-tabs:64px;padding-top:calc(92px + env(safe-area-inset-top,0px) + 8px);padding-bottom:calc(var(--cr-tabs) + env(safe-area-inset-bottom,0px) + 16px);}',
+'@media (min-width:920px){#s-car.cr-app{--cr-tabs:0px;padding-top:calc(92px + env(safe-area-inset-top,0px) + 16px);}',
+'  .wrap:has(#s-car.active.cr-app){margin-left:max(104px,calc((100vw - 1040px) / 2));}}',
+'@media (min-width:1240px){.wrap:has(#s-car.active.cr-app){margin-left:max(104px,calc((100vw - 1160px) / 2));}}',
+'body:has(#s-car.active.cr-app) .k-toasts{bottom:calc(80px + env(safe-area-inset-bottom,0px));}',
+'@media (min-width:920px){body:has(#s-car.active.cr-app) .k-toasts{bottom:16px;}}',
+'body:has(#s-car.active.cr-app) .k-lane:not(.foot){top:calc(env(safe-area-inset-top,0px) + 100px);}',
+/* the tray and the next button stand on the tab bar */
+'@media (max-width:719px){#s-car.cr-app .cr-card{bottom:calc(var(--cr-tabs) + env(safe-area-inset-bottom,0px));padding-bottom:0;}',
+'  #s-car.cr-app.cr-has-tray::before{bottom:calc(var(--cr-tray,0px) + var(--cr-tabs) + env(safe-area-inset-bottom,0px));}',
+'  #s-car.cr-app.cr-has-tray .cr-grid{padding-bottom:calc(var(--cr-tray,0px) + 12px);}}',
+'#s-car.cr-app .cr-dock{bottom:calc(var(--cr-tabs) + env(safe-area-inset-bottom,0px));padding-bottom:10px;}',
+/* one screen, five views of it */
+'#s-car.cr-app .cr-feedh,#s-car.cr-app .cr-pageh,#s-car.cr-app .cr-me{display:none;}',
+'#s-car.cr-app .cr-feedh{align-items:center;gap:8px;margin:0 0 10px;}',
+'#s-car.cr-app .cr-pageh{margin:4px var(--k-px) 12px;font-size:32px;line-height:1;color:#fff;}',
+'#s-car.cr-app[data-ctab="now"] .cr-rtfold,#s-car.cr-app[data-ctab="now"] .cr-tabs{display:none;}',
+'#s-car.cr-app[data-ctab="now"] .cr-feedh{display:flex;}',
+'@media (max-width:919px){#s-car.cr-app[data-ctab="now"] .cr-id{display:none;}',
+'  #s-car.cr-app[data-ctab="now"] .cr-grid{display:flex;flex-direction:column;}',
+'  #s-car.cr-app[data-ctab="now"] .cr-main{display:contents;}',
+'  #s-car.cr-app[data-ctab="now"] .cr-shades{order:0;}#s-car.cr-app[data-ctab="now"] .cr-stage{order:2;}#s-car.cr-app[data-ctab="now"] .cr-facts{order:3;}',
+'  #s-car.cr-app[data-ctab="now"] .cr-side{order:4;}#s-car.cr-app[data-ctab="now"] .cr-tabsec{order:5;}#s-car.cr-app[data-ctab="now"] .cr-dock{order:6;}}',
+'#s-car.cr-app[data-ctab="team"] .cr-grid > :not(.cr-main),#s-car.cr-app[data-ctab="legacy"] .cr-grid > :not(.cr-main){display:none;}',
+'#s-car.cr-app[data-ctab="team"] .cr-main > :not(.cr-tabsec):not(.cr-pageh),#s-car.cr-app[data-ctab="legacy"] .cr-main > :not(.cr-tabsec):not(.cr-pageh){display:none;}',
+'#s-car.cr-app[data-ctab="team"] .cr-pageh,#s-car.cr-app[data-ctab="legacy"] .cr-pageh{display:block;}',
+'#s-car.cr-app[data-ctab="team"] .cr-tabs [data-tg]:not([data-tg="team"]),#s-car.cr-app[data-ctab="legacy"] .cr-tabs [data-tg]:not([data-tg="legacy"]){display:none;}',
+'@media (min-width:920px){#s-car.cr-app[data-ctab="team"] .cr-grid,#s-car.cr-app[data-ctab="legacy"] .cr-grid{display:block;}}',
+'#s-car.cr-app[data-ctab="me"] .cr-shades,#s-car.cr-app[data-ctab="me"] .cr-stage,#s-car.cr-app[data-ctab="me"] .cr-facts,#s-car.cr-app[data-ctab="me"] .cr-tabsec,#s-car.cr-app[data-ctab="me"] .cr-dock{display:none;}',
+'#s-car.cr-app[data-ctab="me"] .cr-me{display:block;}',
+'#s-car.cr-app .cr-me{padding:12px 4px 4px;}#s-car.cr-app .cr-me > .k-eyebrow{margin:0 10px 8px;}',
+/* Your moves is a tab: the same sheet, laid flat between the bars */
+'#cr-sheet.cr-flat{position:fixed;top:calc(92px + env(safe-area-inset-top,0px));bottom:calc(var(--cr-tabs) + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:30;display:block;',
+'  overflow-y:auto;overscroll-behavior:contain;background:var(--k-floor);}',
+'#cr-sheet.cr-flat[hidden]{display:none;}',
+'#cr-sheet.cr-flat .k-sheet{max-width:560px;max-height:none;overflow:visible;margin:0 auto;box-shadow:none;animation:none;background:none;}',
+'#cr-sheet.cr-flat #cr-sheet-x{display:none;}',
+'@media (min-width:920px){#cr-sheet.cr-flat{left:88px;}#cr-sheet.cr-flat .k-sheet{max-width:960px;padding-left:24px;padding-right:24px;}',
+'  #cr-sheet.cr-flat .cr-mvlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}}',
 ].join('\n');
 (function(){
   if (document.getElementById('cr-css')) return;
@@ -1821,7 +1869,7 @@ var rtOpen = false;
 function ratingsHtml(L, d){
   var moved = !!(d && d.rt && C.RATINGS.some(function(k){ return d.rt[k] != null && d.rt[k] !== L.rt[k]; }));
   var wide = window.matchMedia && window.matchMedia('(min-width:720px)').matches;
-  var open = wide || rtOpen || moved;
+  var open = wide || rtOpen || moved || ctab === 'me';
   return '<details class="k-panel cr-sec cr-rtfold"' + (open ? ' open' : '') + '><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Ratings'
     + '<span class="cr-rtsum">' + C.show(C.ovrOf(L)) + ' OVR · Ceiling ' + grade(L) + '</span></summary>'
     + '<p class="k-small" style="margin:0 0 10px">Green counts most at ' + esc(L.pos) + '. Ceiling ' + grade(L) + '.</p>'
@@ -1839,8 +1887,8 @@ function tabsHtml(L){
   else if (tab === 'news') body = newsHtml(L);
   else body = trophies(L);
   var TI = { log: 'clip', team: 'shirt', seasons: 'chart', trophies: 'trophy', people: 'people', legacy: 'crown', news: 'paper' };
-  var t = function(id, name){ var on = tab === id; return '<button class="k-tab k-itab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + K.iconHtml(TI[id], 2) + '<span>' + name + '</span></button>'; };
-  return '<div class="k-panel cr-sec cr-tabsec"><div class="k-tabs k-itabs cr-tabs" role="tablist">' + t('log', 'Story') + (C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
+  var t = function(id, name){ var on = tab === id; return '<button class="k-tab k-itab" role="tab" aria-selected="' + on + '" data-tab="' + id + '" data-tg="' + TAB_GROUP[id] + '">' + K.iconHtml(TI[id], 2) + '<span>' + name + '</span></button>'; };
+  return '<div class="k-panel cr-sec cr-tabsec"><h3 class="k-eyebrow cr-feedh">' + K.iconHtml('clip', 2) + 'Story</h3><div class="k-tabs k-itabs cr-tabs" role="tablist">' + t('log', 'Story') + (C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
     + t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') + '</div>'
     + '<div role="tabpanel">' + body + '</div></div>';
 }
@@ -2108,28 +2156,120 @@ function shadesHtml(L, d){
     + '<p class="cr-shnote">' + (shift ? 'The comparison moves with your game.' : 'Real players your game looks like. Play your way and they change.') + '</p></section>';
 }
 function lifeView(L, d){
-  var SC = window.RTF_SCENES, SN = window.RTF_SOUND;
-  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career</h2>' + hud(L) + '</div><div class="cr-topbtns">'
-    + (window.RTF_BALLER ? ib('cr-lookbtn', 'shirt', 'Look') : '')
+  /* THE APP SHELL (the owner's call, 2026-11-10). The top bar is gone from
+     here: the app bar outside the screen is the player (shellHtml). The one
+     career screen is drawn whole every time, and the tab on top (ctab, as
+     data-ctab on the screen) says which parts of it show, so every reader of
+     an id or a class still finds it. Retire now is a row on Player. */
+  var pageh = ctab === 'team' ? clubOf(L) : ctab === 'legacy' ? 'Legacy' : '';
+  return '<div class="cr-grid">' + shadesHtml(L, d) + '<div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
+    + '<div class="cr-main">' + (pageh ? '<h2 class="k-h1 cr-pageh">' + esc(pageh) + '</h2>' : '') + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
+    + meRows(L) + dockHtml(L) + '</div></div>';
+}
+/* WHO YOU ARE, one way everywhere: the club as the player card says it. */
+function clubOf(L){
+  var rv = C.roadView(L);
+  return rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '')
+    : L.team ? teamName(L.team) : (L.draft && !L.draft.team ? 'Undrafted' : 'Draft prospect');
+}
+/* PLAYER: the rows that were buttons in the top bar and at the foot of the
+   column. Your look, the Locker with the coins the site bar used to carry,
+   sound, the way home, and Retire now last, in red, behind its own sheet. */
+function meRows(L){
+  var SC = window.RTF_SCENES, SN = window.RTF_SOUND, W = window.RTF_WARD;
+  var coins = null; try { coins = W && W.wallet ? W.wallet.balance() : null; } catch (e) {}
+  var row = function(attr, icon, title, sub, cls){
+    return '<button type="button" class="k-lrow' + (cls ? ' ' + cls : '') + '" ' + attr + '>' + K.iconHtml(icon, 4) + '<span class="k-lt">' + esc(title)
+      + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span><span class="k-lgo" aria-hidden="true">&gt;</span></button>';
+  };
+  var out = '';
+  if (window.RTF_BALLER) out += row('data-prow="look"', 'shirt', 'Your look', 'Body, off court and on court');
+  if (window.RTF_CLOSET && W) out += row('data-prow="locker"', 'bag', 'Locker and shop', coins != null ? coins.toLocaleString('en-US') + ' coins' : '');
+  if (SC && SN) out += row('data-prow="sound" aria-pressed="' + SN.on() + '"', SN.on() ? 'sound' : 'mute', 'Sound in scenes', SN.on() ? 'On' : 'Off');
+  out += row('id="cr-home"', 'home', 'Leave to the front page', 'Your career is saved');
+  if (L.phase !== 'after') out += row('id="cr-quit"', 'lock', 'Retire now', 'The career ends here. There is no coming back.', 'k-danger');
+  return '<section class="k-panel cr-sec cr-me" aria-label="You"><h3 class="k-eyebrow">You</h3><div class="k-lrows">' + out + '</div></section>';
+}
+
+/* ─── THE APP SHELL ──────────────────────────────────────────────────────
+   One app bar that is the player (his face from the rig, his name, position,
+   number and club, his overall), one line under it that says when, and five
+   tabs: a bar at the foot of a phone, a rail down the left of a desktop.
+   Drawn outside #s-car, so the screen's own layout checks never measure it,
+   and shown only while the career screen is up (CSS :has). The tray and the
+   next button sit on the tabs; a card waiting while you read another tab is a
+   bar that takes you back to it. */
+var CTABS = [['now', 'Now', 'ball'], ['moves', 'Moves', 'bolt'], ['team', 'Team', 'people'], ['me', 'Player', 'shirt'], ['legacy', 'Legacy', 'crown']];
+var TAB_GROUP = { log: 'now', team: 'team', people: 'team', news: 'team', seasons: 'legacy', trophies: 'legacy', legacy: 'legacy' };
+var ctab = 'now', lastCur = null;
+function shellEl(){
+  var s = $('cr-shell');
+  if (!s) { s = document.createElement('div'); s.id = 'cr-shell'; s.className = 'k-root k-shell'; document.body.appendChild(s); }
+  return s;
+}
+function shellHtml(L){
+  var v = C.view(L), k = C.colorsOf(L), B = window.RTF_BALLER, SC = window.RTF_SCENES, SN = window.RTF_SOUND;
+  var ovr = C.show(v.ovr), s = L.season, rv = C.roadView(L);
+  var face = B ? B.img(lookOf(L), Object.assign(dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: 'stand', scale: 1 }), { still: true })) : '';
+  var when = s ? seasonTag(s.year) + (s.g ? ' · Game ' + s.g : ' · Preseason') : L.year ? 'Summer ' + (L.year - 1) : '';
+  var where = rv ? rv.what : L.team ? teamName(L.team) + (s ? ' ' + s.w + '-' + s.l : '') : '';
+  var nm = movesOf(L).filter(function(a){ return a.ok; }).length, wait = L.pending.length && ctab !== 'now';
+  return '<header class="k-abar">'
+    + (B ? '<button class="k-av" id="cr-lookbtn" type="button" aria-label="Your look">' + face + '</button>' : '')
+    + '<div class="k-who"><b>' + esc(L.name) + '</b><span>' + esc(L.pos + ' · #' + L.num + ' · ' + clubOf(L)) + '</span></div>'
+    + '<div class="k-aovr" role="img" aria-label="Overall ' + ovr + '"><b id="cr-ab-ovr">' + ovr + '</b><small>OVR</small></div>'
     + (SC && SN ? ib('cr-sound', SN.on() ? 'sound' : 'mute', SN.on() ? 'Sound' : 'Muted', { cls: 'cr-snd', attr: 'aria-pressed="' + SN.on() + '" aria-label="Sound in scenes, ' + (SN.on() ? 'on' : 'off') + '"' }) : '')
-    + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
-    /* the reveal is the grid's first child: above the card on a phone, as it
-       always was, and over the stage beside the card on a desktop */
-    + '<div class="cr-grid">' + shadesHtml(L, d) + '<div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
-    + '<div class="cr-main">' + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
-    + (L.phase === 'after' ? '' : '<button class="k-btn k-quiet k-block" id="cr-quit">Retire now</button>')
-    + dockHtml(L) + '</div></div>';
+    + '</header>'
+    + '<div class="k-actx"><b>' + esc(when) + '</b><span class="k-sp"></span><span>' + esc(where) + '</span></div>'
+    + '<nav class="k-tabbar" aria-label="Career">' + CTABS.map(function(t){
+      var badge = t[0] === 'moves' && nm ? '<i aria-label="' + nm + ' you can make">' + nm + '</i>' : t[0] === 'now' && wait ? '<i class="k-dot" aria-label="A decision is waiting">1</i>' : '';
+      return '<button type="button" id="cr-t-' + t[0] + '" data-ctab="' + t[0] + '"' + (ctab === t[0] ? ' aria-current="page"' : '') + '>' + K.iconHtml(t[2], 4) + '<span>' + t[1] + '</span>' + badge + '</button>';
+    }).join('') + '</nav>'
+    + '<div class="k-waitbar" id="cr-wait" role="status"' + (wait ? '' : ' hidden') + '>' + (wait ? '<div class="k-wt"><small>A decision is waiting</small><span>' + esc(L.pending[0].title) + '</span></div>'
+      + '<button class="k-btn" type="button" id="cr-wait-go">Answer</button>' : '') + '</div>';
+}
+function paintShell(L){
+  var sh = shellEl(), k = C.colorsOf(L);
+  K.theme(sh, k.primary, k.secondary);
+  sh.innerHTML = shellHtml(L);
+  sh.querySelectorAll('[data-ctab]').forEach(function(b){ b.onclick = function(){ goTab(b.getAttribute('data-ctab')); }; });
+  var lb = $('cr-lookbtn'); if (lb) lb.onclick = function(){ openLook(); };
+  var sn = $('cr-sound'); if (sn) sn.onclick = toggleSound;
+  var w = $('cr-wait-go'); if (w) w.onclick = function(){ goTab('now'); };
+}
+function toggleSound(){ var SN = window.RTF_SOUND; SN.setOn(!SN.on()); if (SN.on()) SN.cue('chime'); render(); }
+/* The tab on top, without a repaint when nothing in the column changes. */
+function applyTab(){
+  var root = $('s-car'), L = store().cur;
+  if (root) root.setAttribute('data-ctab', ctab);
+  if (L) paintShell(L);
+}
+function goTab(t){
+  var L = store().cur;
+  if (!L) return;
+  var kb = kbdFocus() || (document.activeElement && document.activeElement.closest && document.activeElement.closest('.k-tabbar') && document.activeElement.matches(':focus-visible'));
+  if (t === 'moves') { ctab = 'moves'; applyTab(); openOff(); return; }
+  var was = ctab;
+  ctab = t;
+  if (was === 'moves') closeOff();
+  if (t === 'team' && TAB_GROUP[tab] !== 'team') tab = C.rotationOf && C.rotationOf(L) ? 'team' : 'people';
+  else if (t === 'legacy' && TAB_GROUP[tab] !== 'legacy') tab = 'seasons';
+  else if (t === 'now' || t === 'me') tab = 'log';
+  render();
+  window.scrollTo(0, 0);
+  if (kb) { var b = $('cr-t-' + t); if (b) b.focus({ preventScroll: true }); }
 }
 
 function wireLife(L, d){
   var root = $('s-car');
   var rf = root.querySelector('.cr-rtfold');
   if (rf) rf.ontoggle = function(){ if (!(window.matchMedia && window.matchMedia('(min-width:720px)').matches)) rtOpen = rf.open; };
-  $('cr-home').onclick = goHome;
-  var lb = $('cr-lookbtn');
-  if (lb) lb.onclick = openLook;
-  var sn = $('cr-sound');
-  if (sn) sn.onclick = function(){ var SN = window.RTF_SOUND; SN.setOn(!SN.on()); if (SN.on()) SN.cue('chime'); render(); };
+  var hm = $('cr-home');
+  if (hm) hm.onclick = goHome;
+  root.querySelectorAll('[data-prow]').forEach(function(b){
+    var w = b.getAttribute('data-prow');
+    b.onclick = w === 'look' ? function(){ openLook(); } : w === 'locker' ? function(){ openLocker('shop'); } : toggleSound;
+  });
   var nx = $('cr-next');
   if (nx) nx.onclick = function(){ doStep(); };
   root.querySelectorAll('.cr-choice').forEach(function(b){
@@ -2139,7 +2279,8 @@ function wireLife(L, d){
     b.onclick = function(){ openRoster(+b.getAttribute('data-ros')); };
   });
   root.querySelectorAll('[data-act]').forEach(function(b){ b.onclick = function(){ doAct(b.getAttribute('data-act')); }; });
-  root.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ tab = b.getAttribute('data-tab'); render(); var t = root.querySelector('[data-tab="' + tab + '"]'); if (t) t.focus(); }; });
+  /* a tab inside a page belongs to one of the five: Story is the feed on Now */
+  root.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ tab = b.getAttribute('data-tab'); ctab = TAB_GROUP[tab] || ctab; render(); var t = root.querySelector('[data-tab="' + tab + '"]'); if (t) t.focus(); }; });
   /* The tab row scrolls sideways on a phone: the chosen tab is brought into it,
      and a fade on the right says there is more while there is. */
   var strip = root.querySelector('.k-itabs');
@@ -2150,7 +2291,7 @@ function wireLife(L, d){
     strip.onscroll = edge; edge();
   }
   var off = $('cr-off');
-  if (off) off.onclick = openOff;
+  if (off) off.onclick = function(){ goTab('moves'); };
   var q = $('cr-quit');
   if (q) q.onclick = function(){ openRetire(L); };
   K.wireTips(root);
@@ -2446,10 +2587,11 @@ function scrollStage(){
      has to bring what happened into view above it. */
   var ch = trayMode() && document.querySelector('#s-car.cr-has-tray') ? null : st.querySelector('.cr-choice'), cr = ch ? ch.getBoundingClientRect() : null;
   var low = cr && cr.bottom > window.innerHeight - 24;
-  if (r.top < 60 || r.top > window.innerHeight * 0.55 || low) {
+  var bar = document.querySelector('#s-car.cr-app') ? 102 : 60;
+  if (r.top < bar || r.top > window.innerHeight * 0.55 || low) {
     /* When a receipt and the beats stand above the card, the stage top is
        further up than the answers can afford: the answers win. */
-    var to = low ? Math.max(window.scrollY + r.top - 70, window.scrollY + cr.bottom - window.innerHeight * 0.7) : window.scrollY + r.top - 70;
+    var to = low ? Math.max(window.scrollY + r.top - bar - 10, window.scrollY + cr.bottom - window.innerHeight * 0.7) : window.scrollY + r.top - bar - 10;
     window.scrollTo({ top: Math.max(0, to), behavior: REDUCED ? 'auto' : 'smooth' });
   }
 }
@@ -2482,12 +2624,15 @@ function animateDraft(){
 /* One sheet for everything off the main line: a phone gets it from the
    bottom, a desktop a centred modal, and focus stays inside it. */
 var dlg = null;
-function openSheet(html, label, cls){
-  var sh = $('cr-sheet');
+function openSheet(html, label, cls, o){
+  var sh = $('cr-sheet'), flat = !!(o && o.flat);
   sh.querySelector('.in').className = 'k-sheet in' + (cls ? ' ' + cls : '');
   sh.querySelector('.in').innerHTML = html;
+  /* a sheet over the Moves tab ends the tab: closing it lands on Now */
+  if (!flat && ctab === 'moves') { ctab = 'now'; applyTab(); }
+  sh.classList.toggle('cr-flat', flat);
   if (dlg) { dlg = null; }
-  dlg = K.dialog(sh, { label: label, onClose: function(){ dlg = null; } });
+  dlg = K.dialog(sh, { label: label, flat: flat, onClose: function(){ dlg = null; sh.classList.remove('cr-flat'); if (flat && ctab === 'moves') { ctab = 'now'; if (store().cur) applyTab(); } } });
   K.wireTips(sh);
 }
 /* ─── YOUR MOVES (career/moves.js) ─────────────────────────────────────────
@@ -2565,8 +2710,11 @@ function openOff(){
     mvTab = first ? first[0] : 'brand';
   }
   mvSel = null;
-  openSheet('<div class="cr-mvroot"></div>', 'Your moves', 'cr-mvsheet');
+  openSheet('<div class="cr-mvroot"></div>', 'Your moves', 'cr-mvsheet', { flat: true });
   drawMoves();
+  /* the tiles exist only now: focus goes to the group on top */
+  var sh = $('cr-sheet'), g = sh.querySelector('[data-mgroup][aria-selected="true"]');
+  if (g && !sh.contains(document.activeElement)) g.focus({ preventScroll: true });
 }
 function drawMoves(){
   var L = store().cur, root = $('cr-sheet').querySelector('.cr-mvroot');
@@ -2960,7 +3108,7 @@ function wireFinal(card){
    and New career) off the screen until the right column ran out, so its top
    is set to where its foot meets the bottom of the window instead: it
    scrolls until all of it has been seen, then holds. */
-var STICK_TOP = 64;
+var STICK_TOP = 64, STICK_APP = 108;
 function stickFit(){
   var root = $('s-car');
   if (!root) return;
@@ -2969,7 +3117,7 @@ function stickFit(){
     var el = list[i];
     if (!wideNow()) { el.style.removeProperty('top'); continue; }
     var h = el.getBoundingClientRect().height;
-    el.style.top = Math.min(STICK_TOP, Math.floor(window.innerHeight - h - 12)) + 'px';
+    el.style.top = Math.min(root.classList.contains('cr-app') ? STICK_APP : STICK_TOP, Math.floor(window.innerHeight - h - 12)) + 'px';
   }
 }
 window.addEventListener('resize', function(){ if (onScreen()) stickFit(); });
@@ -3212,11 +3360,17 @@ function render(){
   var team = st.cur ? st.cur.team : null;
   if (st.cur && lastTeam && team && team !== lastTeam) { K.wipe(); K.toast(K.iconHtml('home', 2) + '<span>Welcome to the ' + esc(teamName(team)) + '.</span>', 'k-gold'); }
   lastTeam = team;
+  /* a different career opens on Now */
+  if (st.cur !== lastCur) { lastCur = st.cur; ctab = 'now'; if (TAB_GROUP[tab] !== 'now') tab = 'log'; }
+  var app = !!st.cur && view !== 'vault';
+  root.classList.toggle('cr-app', app);
+  root.setAttribute('data-ctab', app ? ctab : '');
   if (view === 'vault') { body.innerHTML = vaultView(); wireVault(); }
   else if (st.cur) {
     var d = stage.delta || null;
     stage.delta = null;
     body.innerHTML = lifeView(st.cur, d);
+    paintShell(st.cur);
     wireLife(st.cur, d);
   }
   else if (st.last) { body.innerHTML = finalView(st.last); wireFinal(st.last); }
@@ -3234,6 +3388,7 @@ function open(){
   view = null;
   stage = { beats: [], result: null, draft: null };
   lastTeam = null;
+  ctab = 'now'; tab = 'log'; lastCur = null;
   P.show('s-car');
   render();
 }

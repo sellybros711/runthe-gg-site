@@ -1079,6 +1079,60 @@ var CSS = [
    element keeps it still. */
 '.k-in{animation:k-in var(--k-m-move) var(--k-e-move) both;}',
 '@keyframes k-in{from{transform:translateY(10px);opacity:0;}to{transform:none;opacity:1;}}',
+
+/* THE APP SHELL (the owner's call, 2026-11-10). An app bar that is the player,
+   a line under it that says when, five tabs (a bar at the foot of a phone, a
+   rail down the left of a desktop), a list row, and a bar that says a decision
+   is waiting. Nothing in it is under 10px. */
+'.k-shell{--k-abar-h:60px;--k-actx-h:32px;--k-tabbar-h:64px;--k-rail-w:88px;}',
+'.k-abar{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:10px;height:calc(var(--k-abar-h) + env(safe-area-inset-top,0px));',
+'  padding:env(safe-area-inset-top,0px) max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));',
+'  background:linear-gradient(180deg,color-mix(in srgb,var(--k-team-1) 62%,#080b14),#0a0d18);box-shadow:inset 0 -3px 0 var(--k-team-1);}',
+'.k-abar .k-av{position:relative;flex:none;width:44px;height:44px;padding:0;overflow:hidden;border:0;cursor:pointer;background:var(--k-team-1);}',
+'.k-abar .k-av .rtf-baller{position:absolute;left:50%;top:-16px;width:88px;height:128px;margin-left:-44px;max-width:none;image-rendering:pixelated;}',
+'.k-abar .k-av::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 3px var(--k-team-2);pointer-events:none;}',
+'.k-abar .k-av:focus-visible{outline:2px solid var(--k-accent);outline-offset:2px;}',
+'.k-abar .k-who{min-width:0;flex:1;}',
+'.k-abar .k-who b{display:block;font:400 22px/1 var(--k-f-display);letter-spacing:.02em;text-transform:uppercase;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+'.k-abar .k-who span{display:block;margin-top:4px;font:700 13px/1.2 var(--k-f-text);color:var(--k-team-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+'.k-abar .k-aovr{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;height:44px;padding:0 6px;background:#05070d;box-shadow:inset 0 0 0 3px var(--k-gold);color:var(--k-gold);}',
+'.k-abar .k-aovr b{font:400 24px/1 var(--k-f-display);}',
+'.k-abar .k-aovr small{margin-top:1px;font:800 10px/1 var(--k-f-text);letter-spacing:.1em;color:var(--k-ink-2);}',
+'.k-abar .k-ib{flex:none;width:52px;height:44px;font-size:10px;}',
+'.k-actx{position:fixed;left:0;right:0;top:calc(var(--k-abar-h) + env(safe-area-inset-top,0px));z-index:40;display:flex;align-items:center;gap:8px;height:var(--k-actx-h);',
+'  padding:0 max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));background:#0a0d18;box-shadow:inset 0 -1px 0 var(--k-frame);',
+'  font:600 13px/1 var(--k-f-text);color:var(--k-ink-2);white-space:nowrap;overflow:hidden;}',
+'.k-actx b{font-weight:800;color:var(--k-ink);}.k-actx .k-sp{flex:1;}',
+'.k-tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:calc(var(--k-tabbar-h) + env(safe-area-inset-bottom,0px));',
+'  padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);background:#0a0d18;box-shadow:inset 0 3px 0 var(--k-frame),0 -8px 18px rgba(0,0,0,.45);}',
+'.k-tabbar button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:44px;min-height:44px;padding:8px 2px 6px;border:0;background:none;cursor:pointer;',
+'  color:var(--k-ink-3);font:800 11px/1 var(--k-f-text);letter-spacing:.04em;-webkit-tap-highlight-color:transparent;}',
+'.k-tabbar button > .k-ico{opacity:.55;transition:opacity var(--k-m-snap);}',
+'.k-tabbar button[aria-current="page"]{color:#fff;}',
+'.k-tabbar button[aria-current="page"] > .k-ico{opacity:1;}',
+'.k-tabbar button[aria-current="page"]::before{content:"";position:absolute;top:0;left:24%;right:24%;height:4px;background:var(--k-accent);}',
+'.k-tabbar button:focus-visible{outline:2px solid var(--k-accent);outline-offset:-4px;}',
+'.k-tabbar button:active{transform:translateY(1px);}',
+'.k-tabbar i{position:absolute;top:5px;left:calc(50% + 8px);min-width:20px;height:18px;padding:0 4px;font:400 10px/18px var(--k-f-pixel);font-style:normal;text-align:center;background:var(--k-accent);color:#1a0d00;}',
+'.k-tabbar i.k-dot{background:var(--k-bad);color:#fff;}',
+'@media (min-width:920px){.k-tabbar{top:calc(var(--k-abar-h) + var(--k-actx-h) + env(safe-area-inset-top,0px));right:auto;width:var(--k-rail-w);height:auto;grid-template-columns:1fr;grid-auto-rows:76px;align-content:start;',
+'    padding:10px 0 0 env(safe-area-inset-left,0px);box-shadow:inset -3px 0 0 var(--k-frame);}',
+'  .k-tabbar button[aria-current="page"]::before{top:14px;bottom:14px;left:0;right:auto;width:4px;height:auto;}}',
+'.k-lrows{display:grid;}',
+'.k-lrow{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px 12px;border:0;box-shadow:inset 0 2px 0 var(--k-frame);background:none;color:var(--k-ink);text-align:left;cursor:pointer;font:700 15px/1.25 var(--k-f-text);}',
+'.k-lrow:first-child{box-shadow:none;}',
+'.k-lrow:hover,.k-lrow:focus-visible{background:rgba(255,255,255,.04);outline:none;box-shadow:inset 3px 0 0 var(--k-accent);}',
+'.k-lrow .k-lt{min-width:0;flex:1;}.k-lrow small{display:block;margin-top:3px;font:500 13px/1.3 var(--k-f-text);color:var(--k-ink-3);}',
+'.k-lrow .k-lgo{flex:none;color:var(--k-ink-3);font:400 10px/1 var(--k-f-pixel);}',
+'.k-lrow.k-danger{color:#ff8f86;}',
+'.k-waitbar{position:fixed;z-index:41;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(var(--k-tabbar-h) + env(safe-area-inset-bottom,0px) + 8px);',
+'  display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;background:var(--k-panel);box-shadow:inset 0 0 0 3px var(--k-accent),0 10px 24px rgba(0,0,0,.55);color:var(--k-ink);font:700 14px/1.25 var(--k-f-text);}',
+'.k-waitbar[hidden]{display:none;}',
+'.k-waitbar .k-wt{min-width:0;flex:1;}.k-waitbar .k-wt small{display:block;margin-bottom:3px;font:800 10px/1.2 var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--k-accent);}',
+'.k-waitbar .k-wt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+'.k-waitbar .k-btn{flex:none;min-height:44px;}',
+'@media (min-width:920px){.k-waitbar{left:auto;right:24px;bottom:24px;width:380px;}}',
+'@media (prefers-reduced-motion:reduce){.k-tabbar button > .k-ico{transition:none;}}',
 ].join('\n');
 
 function inject(){
@@ -1175,26 +1229,48 @@ function wipe(cb){
 }
 
 /* A dialog: focus goes in, Tab stays in, Escape and the scrim close it, and
-   focus goes back to whatever opened it. */
+   focus goes back to whatever opened it.
+   ESCAPE IS HEARD BY THE DOCUMENT, not by the sheet. A sheet that drew its
+   contents after it opened (Your moves) had nothing to focus, so focus stayed
+   on the button behind it and Escape went to the page: the sheet never heard
+   it. A tap on the sheet's own words does the same thing to focus. So the
+   open dialogs are a stack and Escape closes the one on top, wherever focus
+   is. A sheet with nothing to focus yet takes focus itself.
+   A FLAT dialog (o.flat) is a screen between the app bar and the tabs: not
+   modal, Tab is free to reach the tabs, and there is no scrim to tap. */
+var DLG = [];
+if (typeof document !== 'undefined') document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape' || !DLG.length) return;
+  var top = DLG[DLG.length - 1];
+  if (top.scrim.hidden) { top.drop(); return; }
+  e.preventDefault(); top.close();
+});
 function dialog(scrim, opts){
   var o = opts || {}, back = document.activeElement;
+  if (scrim.__kd) scrim.__kd.drop();
   scrim.hidden = false;
   var sheet = scrim.querySelector('.k-sheet') || scrim;
-  sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true');
+  sheet.setAttribute('role', 'dialog');
+  if (o.flat) sheet.removeAttribute('aria-modal'); else sheet.setAttribute('aria-modal', 'true');
   if (o.label) sheet.setAttribute('aria-label', o.label);
   function focusables(){ return Array.prototype.slice.call(sheet.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')).filter(function(x){ return !x.disabled && x.offsetParent !== null; }); }
-  function close(){ scrim.hidden = true; scrim.removeEventListener('keydown', key); scrim.removeEventListener('click', out); if (back && back.focus) back.focus(); if (o.onClose) o.onClose(); }
+  var done = false, api;
+  function drop(){ done = true; scrim.removeEventListener('keydown', key); scrim.removeEventListener('click', out); var i = DLG.indexOf(api); if (i >= 0) DLG.splice(i, 1); if (scrim.__kd === api) scrim.__kd = null; }
+  function close(){ if (done) return; drop(); scrim.hidden = true; if (back && back.focus) back.focus(); if (o.onClose) o.onClose(); }
   function key(e){
-    if (e.key === 'Escape'){ e.preventDefault(); close(); return; }
-    if (e.key !== 'Tab') return;
+    if (e.key !== 'Tab' || o.flat) return;
     var f = focusables(); if (!f.length) return;
     if (e.shiftKey && document.activeElement === f[0]){ e.preventDefault(); f[f.length - 1].focus(); }
     else if (!e.shiftKey && document.activeElement === f[f.length - 1]){ e.preventDefault(); f[0].focus(); }
   }
-  function out(e){ if (e.target === scrim) close(); }
+  function out(e){ if (e.target === scrim && !o.flat) close(); }
   scrim.addEventListener('keydown', key);
   scrim.addEventListener('click', out);
-  var first = focusables()[0]; if (first) first.focus();
+  api = { close: close, drop: drop, scrim: scrim };
+  scrim.__kd = api; DLG.push(api);
+  var first = focusables()[0];
+  if (first) first.focus();
+  else { if (!sheet.hasAttribute('tabindex')) sheet.setAttribute('tabindex', '-1'); sheet.focus({ preventScroll: true }); }
   return { close: close };
 }
 
