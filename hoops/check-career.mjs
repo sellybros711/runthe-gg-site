@@ -1412,10 +1412,12 @@ section('19. deals from who you are, more ways out, and goals asked some years')
      the rest are held to happening. */
   /* Walking away on top is offered to under one career in a hundred, so 300
      careers on today's rosters can meet none (the 2026-11-09 refresh did).
-     A way out the sweep missed is played on for up to 900 more careers by
-     the same bot; one no career can reach still fails. */
+     A way out the sweep missed is played on by the same bot, up to 1,500
+     careers in all (the owner's call, 2026-11-11); one no career can reach
+     still fails, and says how many careers it searched. */
   const WAYS = ['injury', 'cut', 'finale', 'topOffered'];
-  for (let j = 0; j < 900 && !WAYS.every((k) => how[k]); j++) {
+  let searched = N;
+  for (let j = 0; searched < 1500 && !WAYS.every((k) => how[k]); j++, searched++) {
     const L = C.newLife({ seed: 'enx' + j, league, start: j % 2 ? 'hs' : 'draft' });
     let g = 0;
     while (!L.retired && g++ < 6000) {
@@ -1426,7 +1428,7 @@ section('19. deals from who you are, more ways out, and goals asked some years')
     const k = /injury ended/.test(t) ? 'injury' : /Cut, and never/.test(t) ? 'cut' : /Europe/.test(t) ? 'finale' : '';
     if (k) how[k] = (how[k] || 0) + 1;
   }
-  ok(WAYS.every((k) => how[k]), `every new way out happens or is offered (${JSON.stringify(how)})`);
+  ok(WAYS.every((k) => how[k]), `every new way out happens or is offered (${JSON.stringify(how)} in ${searched} careers)`);
   /* The owner's call: a career ending injury is likelier the worse the
      body. Read off the engine's own chance at a sound and a worn body. */
   const P = (dur, health) => C.careerEndP({ dur, m: { health }, age: 29, mem: {}, traits: {} });
