@@ -143,6 +143,9 @@ the environment pins it. There is no year to edit in the scripts.
   next morning, so the new season is priced. Lahman's tables land the following January, so until
   then a batter in the new season carries his latest Lahman position, provisionally, and a rookie
   Lahman has never seen carries none (`build_positions.py` prints how many of each).
+- **Leave `split_stints` on `as-shipped`.** It builds the shape the live pool has (traded seasons
+  one row per club since the owner's call). The 2026 season's first build used the old checkbox,
+  which defaulted to off, and went back to one row a season with every gate green.
 - **In January, when Lahman publishes.** Dispatch it again. The real positions replace every
   provisional one, because the provisional step only fills a season Lahman does not have.
 - **The page moves with the data, in the same pull request.** `check-numbers` holds the
