@@ -2389,16 +2389,16 @@
       "sha": "260c8dc0bc33a527"
     },
     "data/players.json": {
-      "v": "5",
-      "sha": "bc185f1fd271d846"
+      "v": "6",
+      "sha": "000b91cbf1ded89e"
     },
     "data/chemistry.json": {
       "v": "1",
       "sha": "73536afeab43b741"
     },
     "data/colleges.json": {
-      "v": "2",
-      "sha": "25ed18e880ab7202"
+      "v": "3",
+      "sha": "23065dab2aa1c706"
     }
   },
   "cfb/commish/index.html": {

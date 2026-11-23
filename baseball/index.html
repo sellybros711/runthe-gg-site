@@ -5172,7 +5172,7 @@ async function boot(){
     });
   }catch(_){}
   try{
-    const res=await fetch('data/players.json?v=5');
+    const res=await fetch('data/players.json?v=6');
     if(!res.ok) throw new Error('Failed to load player data');
     const players=await res.json();
     // Curated real relationships (families). Non-fatal if it fails to load.
@@ -5182,7 +5182,7 @@ async function boot(){
     }catch(_){}
     // Where each man went to college, for the college link. Non-fatal the same way.
     try{
-      const col=await fetch('data/colleges.json?v=2');
+      const col=await fetch('data/colleges.json?v=3');
       if(col.ok) E.setColleges(await col.json());
     }catch(_){}
     DATA=R.indexData(players);
