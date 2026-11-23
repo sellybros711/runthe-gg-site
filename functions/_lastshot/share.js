@@ -1,14 +1,14 @@
 /* The share line, in the Arcade Lab's shape: a header, one strip of squares,
  * the url. One square per step of the play, the last one the shot. It links
- * the arcade, never this game's gated path, so a pasted result does not
- * hand a non-tester the route.
+ * the game itself (before the launch it linked the arcade, so a pasted
+ * result did not hand a non-tester the route).
  *
  *   Last Shot WINNER 89-88 · 2.1
  *   (a tie that went to overtime: Last Shot WINNER 88-88 OT · 2.1)
  *   ⬜🟦🟨🟩
- *   https://runthe.gg/arcade/
+ *   https://runthe.gg/last-shot/
  */
-export const SHARE_URL = 'https://runthe.gg/arcade/';
+export const SHARE_URL = 'https://runthe.gg/last-shot/';
 const SQ = { move: '⬜', screen: '🟦', pass: '🟨' };
 
 export function squaresOf(play, res) {
@@ -28,12 +28,12 @@ export function shareText(play, res) {
 }
 
 /* The Daily's share line: the number, the stars as squares, the score's own
- * words, the arcade's url. Never the defense or the play, so it spoils nothing.
+ * words, the game's url. Never the defense or the play, so it spoils nothing.
  *
  *   Last Shot #35
  *   ⭐⭐⬛
  *   Won · 2 stars · 64% look
- *   https://runthe.gg/arcade/
+ *   https://runthe.gg/last-shot/
  */
 export function dailyShareText(dayNumber, squares, scoreText) {
   return 'Last Shot #' + dayNumber + '\n' + (Array.isArray(squares) ? squares.join('') : '') + '\n' + scoreText + '\n' + SHARE_URL;

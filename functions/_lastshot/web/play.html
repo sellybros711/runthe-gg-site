@@ -3,14 +3,48 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
-<title>Last Shot | RunThe.GG</title>
+<title>Last Shot: Basketball Coaching Game | RunThe.GG</title>
+<meta name="description" content="Last Shot: a basketball coaching game. One possession to win it. You are the coach. Draw the play, then watch your five run it. Free, no download.">
+<link rel="canonical" href="https://runthe.gg/last-shot/">
+<meta property="og:title" content="Last Shot: Basketball Coaching Game">
+<meta property="og:description" content="One possession to win it. You are the coach. Draw the play, then watch your five run it. Free, no download.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/last-shot/">
+<meta property="og:image" content="https://runthe.gg/assets/last-shot-og_1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Last Shot: your five run the play on the court. Draw it up. Win it.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@RunTheGG">
+<meta name="twitter:title" content="Last Shot: Basketball Coaching Game">
+<meta name="twitter:description" content="One possession to win it. You are the coach. Draw the play, then watch your five run it. Free, no download.">
+<meta name="twitter:image" content="https://runthe.gg/assets/last-shot-og_1200x630.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Last Shot","url":"https://runthe.gg/last-shot/",
+"description":"A basketball coaching game. You get one possession to win it. Draw the play in a timeout, set when it goes, then watch your five run exactly what you drew against a real defense. Play the Daily, climb the Ladder and save your plays in a playbook.",
+"genre":["Sports","Strategy"],"gamePlatform":["Web browser"],"applicationCategory":"Game",
+"playMode":"SinglePlayer","inLanguage":"en","isAccessibleForFree":true,
+"image":"https://runthe.gg/assets/last-shot-og_1200x630.png",
+"publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
+</script>
+<!-- Consent Mode defaults first (Europe denies all four until the certified CMP answers), then the
+     AdSense tag, then the shared bottom banner and rails (Ads Agent, 2026-11-23, the owner: "ads on at
+     launch"). functions/_lastshot/ads.js says where each unit goes. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=5"></script>
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Outfit:wght@600;800&family=Russo+One&family=Permanent+Marker&display=swap">
 <style>
 /* One fixed palette, like the Arcade Lab shell: a light page, a dark
-   scoreboard. Served by functions/last-shot/[[path]].js, never as a file. */
+   scoreboard. Built into last-shot/index.html by build/pages.mjs. */
 /* --go is the fill under white button text: 4.9:1 against white. The brand --green is 2.8:1, too light to read on. */
 :root{--ground:#EFEDE8;--ink:#141414;--green:#22B07D;--red:#E0533D;--dim:#5d5a54;--card:#fff;--edge:rgba(20,20,20,.12);--accent:#E8742A;--board:#fbfaf6;--marker:#22324d;--go:#15805A}
 *{box-sizing:border-box}
@@ -25,7 +59,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .top h1{margin:0;font-family:'Russo One','Outfit',sans-serif;font-weight:400;font-size:22px;line-height:1.05;letter-spacing:.02em;text-shadow:0 2px 0 #6e3511}
 .top .sub{display:flex;align-items:center;gap:7px;margin-top:3px;font-size:12px;font-weight:600;color:#fbe3cc;white-space:nowrap;overflow:hidden}
 .top .sub em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
-.tag{flex:none;font-size:9px;font-weight:700;letter-spacing:.12em;background:#1d2129;color:#fff;padding:3px 7px;border-radius:999px}
 .score{position:relative;display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 10px 6px;padding:6px 12px;border-radius:14px;background:#1d2129;color:#fff;font-family:'Outfit',sans-serif;font-variant-numeric:tabular-nums}
 .score .team{display:flex;flex-direction:column;align-items:center;min-width:56px}
 .score .team span{font-size:10px;letter-spacing:.12em;color:#b9bec8;font-weight:700}
@@ -133,9 +166,14 @@ canvas.shot3d{pointer-events:none;background:#06070a}
 .actions #bPlays{flex:.7}
 .btn.save{flex:1 0 100%;white-space:nowrap}.btn.save[data-state="saved"]{border-color:var(--green);color:var(--green)}
 @media (min-width:900px){.app{max-width:1100px}.view.wide{display:grid;grid-template-columns:minmax(380px,1fr) 1fr;gap:0}.xform{columns:2;column-gap:24px}}
-/* THE BOTTOM BANNER (/assets/rtg-ads.js), once the ad tag is on at launch: the app ends above it, so
-   the court shrinks to fit and Run It is never under it. --sticky-ad-h is 0 until it fills. */
+/* THE BOTTOM BANNER (/assets/rtg-ads.js, on since launch): the app ends above it, so the court
+   shrinks to fit and Run It, the result card and Take your shot are never under it. The full screen
+   sheets (My Playbooks, Test it, How it works) end above it too, and the toast rides on it.
+   --sticky-ad-h is 0 until it fills, so an empty banner moves nothing. */
 body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
+body.rtg-sticky-on .fsheet{bottom:var(--sticky-ad-h,0px)}
+body.rtg-sticky-on .toast{bottom:calc(24px + var(--sticky-ad-h,0px))}
+#howSheet .legal{font-size:13px;color:var(--dim);margin:4px 0 0}#howSheet .legal a{color:inherit;font-weight:700;display:inline-block;min-width:44px;min-height:44px;line-height:44px;text-align:center}
 /* the feel (Phase 1): Go at, speed and sound, the readout, GAME WINNER, the answer cutaway */
 .gorow{display:flex;align-items:center;gap:8px;padding:2px 10px 0}
 .golab{flex:1;font-size:13px;font-weight:700;color:var(--dim)}
@@ -502,7 +540,7 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 <div class="app">
   <div class="top">
     <a class="back" id="back" href="/arcade/" aria-label="Back">&#8592;</a>
-    <div class="ttl"><h1>Last Shot</h1><div class="sub"><span class="tag">TESTERS ONLY</span><em id="tagline">Draw it up. Win it.</em></div></div>
+    <div class="ttl"><h1>Last Shot</h1><div class="sub"><em id="tagline">Draw it up. Win it.</em></div></div>
   </div>
   <div class="view home" id="vHome">
     <div class="hboard">
@@ -591,19 +629,21 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
   <p>The Daily is one spot a day for everybody. Practice all you want. Then take your one scored shot.</p>
   <p>The Ladder is a run of late game spots. Win one to open the next. Stars grade the play: the win, an open look, a late shot.</p>
   <p>My Playbooks keeps your plays on your account. Test it runs a play against every defense.</p>
+  <p>Last Shot is free. Ads pay for it. The banner sits under the court, never on it. Tap its X to close it for the visit. On a big screen two more ads stand beside the game.</p>
+  <p class="legal"><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/">RunThe.GG</a></p>
   <div class="row"><button class="btn alt" id="howClose">Close</button></div>
 </div></div>
 <!-- Who is signed in, and the account's saves: the arcade's sign in, as the
      Arcade Lab shell loads it, and the site's shared cloud saves (playbooks,
-     game last_shot). Absolute paths: this page is served from pages.js. -->
+     game last_shot). Absolute paths, so they resolve from /last-shot/ or anywhere. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/assets/cloudsave.js?v=4"></script>
 <!-- The playbook plumbing shared with 4th and What (store, file, print frame). -->
 <script src="/assets/playbook.js?v=2"></script>
 <script type="module" src="/last-shot/m/client.js?b=__BUILD__"></script>
-<!-- The ads (Ads Agent, 2026-10-30): ready, and inert until the launch commit adds the ad tag.
-     functions/_lastshot/ads.js says what turns on. -->
+<!-- The ads (Ads Agent): the bottom banner and the desktop rails. functions/_lastshot/ads.js
+     says where each one goes. -->
 <script defer src="/last-shot/m/ads.js?b=__BUILD__"></script>
 </body>
 </html>

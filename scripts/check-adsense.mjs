@@ -24,6 +24,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
+/* last-shot/ is generated (functions/_lastshot/build/pages.mjs writes it from
+ * functions/_lastshot/web/play.html and the modules beside it) and carries ads
+ * since its launch (2026-11-23, ADS in functions/_lastshot/check-posture.mjs).
+ * It is checked here like any ad-carrying page, against the built files Pages
+ * serves: last-shot/index.html as a page, last-shot/m/ads.js for its units.
+ * functions/ stays skipped, so each unit is counted once, in the built copy. */
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'supabase', 'functions']);
 
 const PUB = 'pagead2.googlesyndication.com';

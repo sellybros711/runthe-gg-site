@@ -5,7 +5,7 @@
  *
  *   POST /last-shot/e   { s: <session id>, d: <device id>, ev: [{ n, t, p }, ...] }
  *
- * Same origin, behind the tester gate, so the gate cookie says who it is. The
+ * Same origin, so the sign in cookie says who it is, when anybody is. The
  * events carry no personal data, this sets no cookie of its own and nothing
  * here talks to a third party. s is a random id per page load; t is
  * Math.round(performance.now()) when the event happened. d is a random id this

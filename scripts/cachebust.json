@@ -2766,6 +2766,10 @@
     }
   },
   "functions/_lastshot/web/play.html": {
+    "/assets/rtg-ads.js": {
+      "v": "5",
+      "sha": "5db35f8b2981e3a6"
+    },
     "/arcade/auth.js": {
       "v": "4",
       "sha": "c71a149f3b8da69e"
@@ -3175,6 +3179,24 @@
     "/golf/pxgolfer.js": {
       "v": "3",
       "sha": "96bda416e37a468b"
+    }
+  },
+  "last-shot/index.html": {
+    "/assets/rtg-ads.js": {
+      "v": "5",
+      "sha": "5db35f8b2981e3a6"
+    },
+    "/arcade/auth.js": {
+      "v": "4",
+      "sha": "c71a149f3b8da69e"
+    },
+    "/assets/cloudsave.js": {
+      "v": "4",
+      "sha": "9f0e387d6587c96d"
+    },
+    "/assets/playbook.js": {
+      "v": "2",
+      "sha": "68c3ca6a3a844005"
     }
   },
   "mythiball/proto3d/index.html": {

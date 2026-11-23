@@ -55,18 +55,18 @@ async function run(name, viewport, mobile) {
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   const shot = async f => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
   const L = (fn, a) => page.evaluate(fn, a);
   const ready = () => page.waitForFunction(() => window.__lastShot && window.__lastShot.view);
   const clip = () => L(() => navigator.clipboard.readText());
   const codeOf = s => (/#beat=([A-Za-z0-9_-]+)$/.exec(s) || [])[1];
 
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await L(() => { try { localStorage.clear(); } catch (e) {} });
 
   // a link opens the Challenge screen: their result from their play
-  await page.goto(BASE + '/last-shot#beat=' + CODE);
+  await page.goto(BASE + '/last-shot/#beat=' + CODE);
   await ready();
   await page.waitForSelector('#vBeat:not([hidden])');
   ok((await page.textContent('#beatHead')) === 'Their play: ' + summaryOf(T.res), 'the header: ' + await page.textContent('#beatHead'));
@@ -126,7 +126,7 @@ async function run(name, viewport, mobile) {
   ok(await page.isVisible('#vHome') && await page.isHidden('#vBeat'), 'a reload after leaving is home, not the challenge');
 
   // the back arrow from the clipboard goes to the Challenge screen, then home
-  await page.goto(BASE + '/last-shot#beat=' + CODE); await ready();
+  await page.goto(BASE + '/last-shot/#beat=' + CODE); await ready();
   await page.click('#bDraw');
   await page.click('#back');
   ok(await page.isVisible('#vBeat'), 'back from the clipboard: the Challenge screen');
@@ -135,7 +135,7 @@ async function run(name, viewport, mobile) {
 
   // a garbage link: one line and a way home, never a crash
   for (const junk of ['nope', '%%%', CODE.slice(0, 30), 'e30', '']) {
-    await page.goto(BASE + '/last-shot#beat=' + junk); await ready();
+    await page.goto(BASE + '/last-shot/#beat=' + junk); await ready();
     ok(await page.isVisible('#beatBad') && (await page.textContent('#beatBad')) === 'That link didn\'t work.', 'garbage ' + JSON.stringify(junk.slice(0, 12)) + ': That link didn\'t work.');
   }
   await shot('3-bad-link');

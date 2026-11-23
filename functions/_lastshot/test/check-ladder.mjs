@@ -53,7 +53,7 @@ async function run(name, viewport, mobile) {
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   const shot = async f => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
   const L = (fn, a) => page.evaluate(fn, a);
   const boot = async () => { await page.reload(); await page.waitForFunction(() => window.__lastShot && window.__lastShot.view); };
@@ -61,7 +61,7 @@ async function run(name, viewport, mobile) {
     if (want === '3' ? r.stars === 3 : want === 'ot' ? r.how === 'ot' && r.outcome === 'win' && r.ot.after === 'end' : r.how === want) return s; } return null; }, want);
   const runTo = async seed => { await L(s => window.__lastShot.run(s), seed); await page.waitForSelector('#sheet.on', { timeout: 40000 }); };
 
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await L(() => { try { localStorage.clear(); } catch (e) {} });
   await boot();
 
@@ -328,7 +328,7 @@ async function cloud(name, viewport, mobile) {
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   const L = (fn, a) => page.evaluate(fn, a);
   const boot = async () => { await page.reload(); await page.waitForFunction(() => window.__lastShot && window.__lastShot.view && window.__lastShot.ladderSynced); await L(() => window.__lastShot.ladderSynced()); await page.waitForTimeout(100); };
   const writes = () => L(() => Number(sessionStorage.getItem('__writes') || 0));
@@ -336,7 +336,7 @@ async function cloud(name, viewport, mobile) {
   const setCloud = (payload, progress) => L(([p, n]) => { const m = JSON.parse(sessionStorage.getItem('__cloud') || '{}'); m['last_shot/ladder'] = { progress: n, payload: p }; sessionStorage.setItem('__cloud', JSON.stringify(m)); }, [payload, progress]);
   const old = Date.now() - 86400000, ref = refPlay('1-1'), ref2 = { ...refPlay('1-1'), goAt: 7, steps: refPlay('1-1').steps.slice(1) };
 
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await L(() => { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem('__in', '1'); });
 
   // a cleared browser gets its stars and plays back after sign in

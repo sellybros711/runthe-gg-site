@@ -1,28 +1,35 @@
 #!/usr/bin/env node
 /* Play Last Shot locally.
  *   node functions/_lastshot/build/dev-server.mjs [port]     then open /last-shot
- * Everybody is the tester 'dev'; add ?as=nobody to see the 404 a non-tester
- * gets. pages.js is rebuilt on every page load, so edits show on reload.
+ * Everybody is signed in as the tester 'dev'; add ?as=nobody to be a guest
+ * (the game is live, so a guest gets the page too).
+ *
+ * Served the way production serves it: /last-shot/ and /last-shot/m/* are the
+ * static files in last-shot/ at the site root, /last-shot redirects to
+ * /last-shot/ (308, as Pages does for a folder), and a path with no file is
+ * the site's 404.html with a 404. Every page load rebuilds pages.js and the
+ * folder first (build/pages.mjs writeAll), so edits show on reload. Unlike
+ * production nothing is cached (no-store), so a reload always reads the disk.
  * /api/arcade/* is the Arcade Lab's real handler on an in-memory database
  * (test/fake-arcade.mjs), so the Daily plays locally, as the signed in 'dev'.
- * POST /last-shot/e answers 204 and keeps each body in events. GET
- * /last-shot/e is the probe ({ on }); ?cc=DE (any page or call, remembered
- * like ?as=) fakes Cloudflare's country for it, and ?cc= clears it. */
+ * POST /last-shot/e answers as the real one does (gate.js roundGate): 204 for
+ * an account or a guest with a good device id, and keeps each body in events.
+ * GET /last-shot/e is the probe ({ on }); ?cc=DE (any page or call, remembered
+ * like ?as=) fakes Cloudflare's country for it, and ?cc= clears it. A faked
+ * country on the list keeps nothing. */
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { memoryDb } from '../db-supabase.js';
-import { render } from './pages.mjs';
+import { fileURLToPath } from 'node:url';
+import { writeAll, STATIC_DIR } from './pages.mjs';
 import { fakeArcade } from '../test/fake-arcade.mjs';
-import { eventsOn, probeEvents } from '../events.js';
+import { deviceOf, eventsOn, probeEvents } from '../events.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(HERE, '../../..');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' };
 
 export function startDev(port = 8790, { country: cc0 = null } = {}) {
-  const db = memoryDb({ dev: 'tester', boss: 'admin' });
   let who = 'dev', country = cc0;
   const arcade = fakeArcade({ uidOf: () => who });
   const events = [];
@@ -31,26 +38,32 @@ export function startDev(port = 8790, { country: cc0 = null } = {}) {
     const as = url.searchParams.get('as');
     if (as) who = as === 'nobody' ? null : as === 'boss' ? 'boss' : 'dev';
     if (url.searchParams.has('cc')) country = url.searchParams.get('cc') || null;
-    /* The tester round's events (analytics.js): a tester gets 204 and the
-       body is kept in events for the checks, anybody else the 404. GET is
-       the probe. A faked country on the list keeps nothing. The real
-       endpoint is functions/last-shot/[[path]].js. */
+    /* The round's events (analytics.js): an account, or a guest with a good
+       device id, gets 204 and the body is kept in events for the checks;
+       anybody else the 404. GET is the probe, for anybody now the game is
+       public. A faked country on the list keeps nothing. The real endpoint
+       is functions/last-shot/e.js. */
     if (url.pathname === '/last-shot/e' && (req.method === 'POST' || req.method === 'GET')) {
-      const chunks = []; for await (const c of req) chunks.push(c);
-      const role = who ? await db.role(who) : null;
-      if (role !== 'tester' && role !== 'admin') { res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(path.join(REPO, '404.html'))); }
       if (req.method === 'GET') { const p = probeEvents(country); res.writeHead(200, { 'Content-Type': p.type, 'Cache-Control': 'no-store' }); return res.end(p.body); }
-      if (!eventsOn(country)) { res.writeHead(204, { 'Cache-Control': 'no-store' }); return res.end(); }
+      const chunks = []; for await (const c of req) chunks.push(c);
       let body = null; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch (e) {}
+      if (!who && !deviceOf(body)) { res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(path.join(REPO, '404.html'))); }
+      if (!eventsOn(country)) { res.writeHead(204, { 'Cache-Control': 'no-store' }); return res.end(); }
       events.push({ who, type: req.headers['content-type'] || '', body });
       res.writeHead(204, { 'Cache-Control': 'no-store' }); return res.end();
     }
-    if (url.pathname === '/last-shot' || url.pathname.startsWith('/last-shot/')) {
-      fs.writeFileSync(path.join(HERE, '../pages.js'), render());
-      const { pageGate } = await import(pathToFileURL(path.join(HERE, '../gate.js')).href + '?t=' + Date.now());
-      const out = await pageGate(url.pathname.slice('/last-shot'.length), who, db);
-      if (!out) { res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(path.join(REPO, '404.html'))); }
-      res.writeHead(200, { 'Content-Type': out.type, 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' }); return res.end(out.body);
+    if (url.pathname === '/last-shot') { res.writeHead(308, { Location: '/last-shot/' + url.search }); return res.end(); }
+    if (url.pathname.startsWith('/last-shot/')) {
+      /* /last-shot/report is a Function with a database, which the dev server
+         does not have: the 404, as production gives anybody but an admin */
+      let rel = decodeURIComponent(url.pathname.slice('/last-shot/'.length));
+      if (rel === '' || rel === 'index.html') writeAll();
+      if (rel === '' || rel.endsWith('/')) rel += 'index.html';
+      const f = path.join(STATIC_DIR, rel);
+      if (rel !== 'report' && f.startsWith(STATIC_DIR + path.sep) && fs.existsSync(f) && fs.statSync(f).isFile()) {
+        res.writeHead(200, { 'Content-Type': (TYPES[path.extname(f)] || 'text/plain') + '; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(f));
+      }
+      res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(path.join(REPO, '404.html')));
     }
     if (url.pathname.startsWith('/api/arcade/')) {
       let body = null;

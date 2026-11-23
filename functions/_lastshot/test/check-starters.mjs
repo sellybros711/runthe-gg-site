@@ -61,14 +61,14 @@ async function run(name, viewport, mobile) {
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
-  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|supabase\.co/, r => r.abort());
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google|fundingchoicesmessages\.google\.com|googletagmanager\.com|google-analytics\.com|supabase\.co/, r => r.abort());
   const shot = async f => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
   const L = (fn, a) => page.evaluate(fn, a);
   const clip = () => L(() => { const p = window.__lastShot.play; return { spots: p.spots, goAt: p.goAt, steps: p.steps }; });
   const runTo = async seed => { await L(s => window.__lastShot.run(s), seed); await page.waitForSelector('#sheet.on', { timeout: 40000 }); };
   const books = () => L(() => window.__lastShot.books.store.books());
 
-  await page.goto(BASE + '/last-shot');
+  await page.goto(BASE + '/last-shot/');
   await L(() => { try { localStorage.clear(); } catch (e) {} localStorage.setItem('last_shot_speed', '2'); });
   await page.reload();
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.books);
