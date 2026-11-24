@@ -81,11 +81,12 @@ const GOAT_AT = 145;
 
 /* A CAREER PLAYS IN 10 TO 15 MINUTES (the owner's call, 2026-11-24: BitLife
    for an NBA player). An NBA season dealt about ten cards, five of them from
-   the story draws below, and a career read 6,700 words. Each number is the
-   chance a draw deals one story card in that stretch (an arc that is due takes
-   the slot first). They were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
-   late 1 and off 1. */
-const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 3.5 };
+   the story draws below, and a career read 6,700 words. The season's
+   story card goes to one stretch a year, drawn with the stretch weights
+   (storyStretch); off is the chance of the summer's. An arc that is due takes
+   the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
+   late 1 and off 1 cards. */
+const PACE = { stretch: { pre: 0.15, early: 0.35, mid: 0.3, late: 0.2 }, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 3.5 };
 /* team is how many of your club's cards a season (it was one a phase, about
    1.1 a season). cap is the story budget (queueEvents), one for the season and one for
    the summer: due arcs always, then your club's card and new events while
@@ -11711,7 +11712,7 @@ function step(L) {
       roleReview(L, beats, 'early');
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
-      queueEvents(L, 'early', rngAt(L, 'n:early')() < PACE.early ? 1 : 0);
+      queueEvents(L, 'early', storyStretch(L) === 'early' ? 1 : 0);
       break;
     }
     case 'early':
@@ -11725,7 +11726,7 @@ function step(L) {
       tradeDeadline(L, beats);
       L.season.race = mvpRace(L); debate(L);
       L.phase = 'mid';
-      queueEvents(L, 'mid', rngAt(L, 'n:mid')() < PACE.mid ? 1 : 0);
+      queueEvents(L, 'mid', storyStretch(L) === 'mid' ? 1 : 0);
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
@@ -11749,7 +11750,7 @@ function step(L) {
       logIt(L, s.w + '-' + s.l + '. ' + seedTxt, s.seed <= 6 ? 'good' : '');
       pay(L, beats);
       L.phase = 'late';
-      queueEvents(L, 'late', rngAt(L, 'n:late')() < PACE.late ? 1 : 0);
+      queueEvents(L, 'late', storyStretch(L) === 'late' ? 1 : 0);
       break;
     }
     case 'late':
@@ -11931,13 +11932,26 @@ function newYear(L, beats) {
 }
 /* A summer with a club: the season is opened now, so whatever happens before
    it (the training card, a summer event, a camp injury) lands on it. */
+/* WHICH STRETCH OF THE SEASON GETS ITS STORY CARD (PACE.stretch). The season
+   deals one (queueEvents), and a first come draw gave it to the early stretch
+   nearly every year, so a card that only fits April or the playoffs was never
+   dealt. The stretch is drawn once a season; a rookie year has no preseason
+   draw. */
+function storyStretch(L) {
+  const f = L.flags.stretch;
+  if (f && f.y === L.year) return f.ph;
+  const keys = Object.keys(PACE.stretch).filter((k) => k !== 'pre' || L.seasonsDone > 0);
+  const ph = weighted(rngAt(L, 'pace:stretch'), keys, (k) => PACE.stretch[k]);
+  L.flags.stretch = { y: L.year, ph };
+  return ph;
+}
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
   L.pending.push(summerCard(L));
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
-  if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < PACE.pre ? 1 : 0);
+  if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L) === 'pre' ? 1 : 0);
   rollInjury(L, 'early', []);
 }
 

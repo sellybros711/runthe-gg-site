@@ -32,11 +32,12 @@ const GOAT_AT = 145;
 
 /* A CAREER PLAYS IN 10 TO 15 MINUTES (the owner's call, 2026-11-24: BitLife
    for an NBA player). An NBA season dealt about ten cards, five of them from
-   the story draws below, and a career read 6,700 words. Each number is the
-   chance a draw deals one story card in that stretch (an arc that is due takes
-   the slot first). They were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
-   late 1 and off 1. */
-const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 3.5 };
+   the story draws below, and a career read 6,700 words. The season's
+   story card goes to one stretch a year, drawn with the stretch weights
+   (storyStretch); off is the chance of the summer's. An arc that is due takes
+   the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
+   late 1 and off 1 cards. */
+const PACE = { stretch: { pre: 0.15, early: 0.35, mid: 0.3, late: 0.2 }, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 3.5 };
 /* team is how many of your club's cards a season (it was one a phase, about
    1.1 a season). cap is the story budget (queueEvents), one for the season and one for
    the summer: due arcs always, then your club's card and new events while

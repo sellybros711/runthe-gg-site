@@ -125,7 +125,7 @@ function step(L) {
       roleReview(L, beats, 'early');
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
-      queueEvents(L, 'early', rngAt(L, 'n:early')() < PACE.early ? 1 : 0);
+      queueEvents(L, 'early', storyStretch(L) === 'early' ? 1 : 0);
       break;
     }
     case 'early':
@@ -139,7 +139,7 @@ function step(L) {
       tradeDeadline(L, beats);
       L.season.race = mvpRace(L); debate(L);
       L.phase = 'mid';
-      queueEvents(L, 'mid', rngAt(L, 'n:mid')() < PACE.mid ? 1 : 0);
+      queueEvents(L, 'mid', storyStretch(L) === 'mid' ? 1 : 0);
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
@@ -163,7 +163,7 @@ function step(L) {
       logIt(L, s.w + '-' + s.l + '. ' + seedTxt, s.seed <= 6 ? 'good' : '');
       pay(L, beats);
       L.phase = 'late';
-      queueEvents(L, 'late', rngAt(L, 'n:late')() < PACE.late ? 1 : 0);
+      queueEvents(L, 'late', storyStretch(L) === 'late' ? 1 : 0);
       break;
     }
     case 'late':
@@ -345,13 +345,26 @@ function newYear(L, beats) {
 }
 /* A summer with a club: the season is opened now, so whatever happens before
    it (the training card, a summer event, a camp injury) lands on it. */
+/* WHICH STRETCH OF THE SEASON GETS ITS STORY CARD (PACE.stretch). The season
+   deals one (queueEvents), and a first come draw gave it to the early stretch
+   nearly every year, so a card that only fits April or the playoffs was never
+   dealt. The stretch is drawn once a season; a rookie year has no preseason
+   draw. */
+function storyStretch(L) {
+  const f = L.flags.stretch;
+  if (f && f.y === L.year) return f.ph;
+  const keys = Object.keys(PACE.stretch).filter((k) => k !== 'pre' || L.seasonsDone > 0);
+  const ph = weighted(rngAt(L, 'pace:stretch'), keys, (k) => PACE.stretch[k]);
+  L.flags.stretch = { y: L.year, ph };
+  return ph;
+}
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
   L.pending.push(summerCard(L));
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
-  if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < PACE.pre ? 1 : 0);
+  if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L) === 'pre' ? 1 : 0);
   rollInjury(L, 'early', []);
 }
 
