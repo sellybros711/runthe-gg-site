@@ -167,6 +167,10 @@ function teamDue(L, phase) {
   if (!it) it = teamSeasonWatch(L, phase);
   L.flags.tw = (L.flags.tw || []).filter((x) => !(x.y === L.year && x.ph === phase));
   if (!it) return null;
+  /* One of your club's cards a season (PACE.team, the 10 to 15 minute career):
+     the first watch that comes up is answered, the rest go to the feed. */
+  if ((L.flags.twYear || []).filter((y) => y === L.year).length >= PACE.team) return null;
+  L.flags.twYear = (L.flags.twYear || []).filter((y) => y >= L.year - 1).concat([L.year]);
   const ids = TEAM_KINDS[it.k];
   const r = rngAt(L, 'tw:' + phase);
   const n = (id) => ((L.evlog || {})[id] || []).length;

@@ -28,6 +28,19 @@ const HOF_AT = [85, 60, 44];
    and 145 reads 0.6%, the middle (2026-10-17). */
 const GOAT_AT = 145;
 
+// ── pace (turns, season) ──
+
+/* A CAREER PLAYS IN 10 TO 15 MINUTES (the owner's call, 2026-11-24: BitLife
+   for an NBA player). An NBA season dealt about ten cards, five of them from
+   the story draws below, and a career read 6,700 words. Each number is the
+   chance a draw deals one story card in that stretch (an arc that is due takes
+   the slot first). They were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
+   late 1 and off 1. */
+const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.6, team: 1, cap: 2 };
+/* team is how many of your club's cards a season (it was one a phase, about
+   1.1 a season). cap is the season's story budget (queueEvents): due arcs
+   always, then your club's card and new events while there is room. */
+
 // ── growth, decline and the summer (season, events) ──
 
 /* How a year changes the body. Growth closes a share of the gap to potential,

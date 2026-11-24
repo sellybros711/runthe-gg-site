@@ -77,6 +77,19 @@ const HOF_AT = [85, 60, 44];
    and 145 reads 0.6%, the middle (2026-10-17). */
 const GOAT_AT = 145;
 
+// ── pace (turns, season) ──
+
+/* A CAREER PLAYS IN 10 TO 15 MINUTES (the owner's call, 2026-11-24: BitLife
+   for an NBA player). An NBA season dealt about ten cards, five of them from
+   the story draws below, and a career read 6,700 words. Each number is the
+   chance a draw deals one story card in that stretch (an arc that is due takes
+   the slot first). They were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
+   late 1 and off 1. */
+const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.6, team: 1, cap: 2 };
+/* team is how many of your club's cards a season (it was one a phase, about
+   1.1 a season). cap is the season's story budget (queueEvents): due arcs
+   always, then your club's card and new events while there is room. */
+
 // ── growth, decline and the summer (season, events) ──
 
 /* How a year changes the body. Growth closes a share of the gap to potential,
@@ -4594,7 +4607,7 @@ function offseason(L, beats) {
   }
   /* Something off the court, most summers, and now and then the brands. */
   brandCard(L);
-  queueEvents(L, 'off', 1);
+  queueEvents(L, 'off', rngAt(L, 'n:off')() < PACE.off ? 1 : 0);
 }
 /* The answers to no offer this summer (choose() runs them). */
 ANSWER.nooffer = function(L, card, i, opt, rng, beats, touch, touches) {
@@ -6373,7 +6386,7 @@ function eventful(L) {
    The summer was made occasional too and went back to every year: a summer
    not asked cost the sweep's ring share (19.5% to 17.3%) however the quiet
    summer was chosen, so the owner's fallback stands. */
-const ASK_P = 0.5;
+const ASK_P = 0.25;  // 0.5 until the 10 to 15 minute career (2026-11-24)
 const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
@@ -6726,12 +6739,20 @@ function queueEvents(L, phase, n, pool) {
   const due = dueArcs(L, phase);
   /* Two arcs can be due in one slot (an April with a farewell and a
      label to answer); both are dealt, each taking a place. */
-  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); }
+  /* THE SEASON'S STORY BUDGET (PACE.cap, the 10 to 15 minute career): an NBA
+     year deals at most this many story cards. An arc that is due is always
+     dealt, so a story never breaks off; your club's card and a new event only
+     while there is room. The amateur years keep their own pace. */
+  const nba = pool !== AM_ALL;
+  const yr = nba ? (L.flags.evYear && L.flags.evYear.y === L.year ? L.flags.evYear : (L.flags.evYear = { y: L.year, n: 0 })) : null;
+  const room = () => !yr || yr.n < PACE.cap;
+  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); if (yr) yr.n++; }
   /* Then whatever your club gave the career to answer (teamDue). */
-  if (pool !== AM_ALL) {
+  if (nba && room()) {
     const tid = teamDue(L, phase);
-    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); }
+    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); yr.n++; }
   }
+  if (yr) n = Math.min(n, Math.max(0, PACE.cap - yr.n));
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
     /* On a story career the old recurring cards (a slump, a night out) give
@@ -6746,6 +6767,7 @@ function queueEvents(L, phase, n, pool) {
     if (pool[id].once) once[id] = 1;
     (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
     dealCard(L, phase, pool[id]);
+    if (yr) yr.n++;
   }
 }
 
@@ -9643,6 +9665,10 @@ function teamDue(L, phase) {
   if (!it) it = teamSeasonWatch(L, phase);
   L.flags.tw = (L.flags.tw || []).filter((x) => !(x.y === L.year && x.ph === phase));
   if (!it) return null;
+  /* One of your club's cards a season (PACE.team, the 10 to 15 minute career):
+     the first watch that comes up is answered, the rest go to the feed. */
+  if ((L.flags.twYear || []).filter((y) => y === L.year).length >= PACE.team) return null;
+  L.flags.twYear = (L.flags.twYear || []).filter((y) => y >= L.year - 1).concat([L.year]);
   const ids = TEAM_KINDS[it.k];
   const r = rngAt(L, 'tw:' + phase);
   const n = (id) => ((L.evlog || {})[id] || []).length;
@@ -11673,7 +11699,7 @@ function step(L) {
       roleReview(L, beats, 'early');
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
-      queueEvents(L, 'early', 1 + (rngAt(L, 'n:early')() < (0.35) ? 1 : 0));
+      queueEvents(L, 'early', rngAt(L, 'n:early')() < PACE.early ? 1 : 0);
       break;
     }
     case 'early':
@@ -11687,7 +11713,7 @@ function step(L) {
       tradeDeadline(L, beats);
       L.season.race = mvpRace(L); debate(L);
       L.phase = 'mid';
-      queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < (0.3) ? 1 : 0));
+      queueEvents(L, 'mid', rngAt(L, 'n:mid')() < PACE.mid ? 1 : 0);
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
@@ -11711,7 +11737,7 @@ function step(L) {
       logIt(L, s.w + '-' + s.l + '. ' + seedTxt, s.seed <= 6 ? 'good' : '');
       pay(L, beats);
       L.phase = 'late';
-      queueEvents(L, 'late', 1);
+      queueEvents(L, 'late', rngAt(L, 'n:late')() < PACE.late ? 1 : 0);
       break;
     }
     case 'late':
@@ -11748,6 +11774,36 @@ function step(L) {
   headlines(L, beats);
   sayAll(L, beats);
   return { beats };
+}
+/* THE YEAR IN ONE TAP (the BitLife plan, phase 1, 2026-11-24). Age up plays
+   the season on until a card needs an answer, the year turns or the career
+   ends, and hands every beat back at once, so the page can show a year as one
+   screen rather than a press a stretch. It is step, repeated: nothing in it
+   draws, so a career aged up is the career stepped. */
+function ageUp(L) {
+  const beats = [], y0 = L.year;
+  let steps = 0;
+  while (!L.retired && !L.pending.length && steps < 24) {
+    const r = step(L);
+    steps++;
+    for (const b of r.beats || []) beats.push(b);
+    if (L.year !== y0) break;
+  }
+  return { beats, steps, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0 };
+}
+/* The year as the summary screen reads it: the last season played, how his
+   overall moved, the money and the meters. Null before a season is played. */
+function yearSummary(L) {
+  const H = L.history, h = H[H.length - 1];
+  if (!h) return null;
+  const p = H[H.length - 2];
+  return {
+    y: h.y, age: h.age, team: h.t, role: h.role, gp: h.gp,
+    ovr: h.ovr, ovrChange: p ? h.ovr - p.ovr : 0,
+    record: [h.w, h.l], seed: h.seed, playoffs: h.po, awards: (h.aw || []).slice(),
+    line: { min: h.min, pts: h.pts, reb: h.reb, ast: h.ast, stl: h.stl, blk: h.blk, fgp: h.fgp, tpp: h.tpp, ftp: h.ftp },
+    salary: h.sal, cash: L.cash, earned: L.earned, meters: Object.assign({}, L.m),
+  };
 }
 function recordBeat(L, when) {
   const s = L.season, pg = perGame(s);
@@ -11869,7 +11925,7 @@ function openYear(L) {
   L.pending.push(summerCard(L));
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
-  if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
+  if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < PACE.pre ? 1 : 0);
   rollInjury(L, 'early', []);
 }
 
@@ -12799,7 +12855,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

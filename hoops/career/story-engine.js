@@ -201,12 +201,20 @@ function queueEvents(L, phase, n, pool) {
   const due = dueArcs(L, phase);
   /* Two arcs can be due in one slot (an April with a farewell and a
      label to answer); both are dealt, each taking a place. */
-  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); }
+  /* THE SEASON'S STORY BUDGET (PACE.cap, the 10 to 15 minute career): an NBA
+     year deals at most this many story cards. An arc that is due is always
+     dealt, so a story never breaks off; your club's card and a new event only
+     while there is room. The amateur years keep their own pace. */
+  const nba = pool !== AM_ALL;
+  const yr = nba ? (L.flags.evYear && L.flags.evYear.y === L.year ? L.flags.evYear : (L.flags.evYear = { y: L.year, n: 0 })) : null;
+  const room = () => !yr || yr.n < PACE.cap;
+  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); if (yr) yr.n++; }
   /* Then whatever your club gave the career to answer (teamDue). */
-  if (pool !== AM_ALL) {
+  if (nba && room()) {
     const tid = teamDue(L, phase);
-    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); }
+    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); yr.n++; }
   }
+  if (yr) n = Math.min(n, Math.max(0, PACE.cap - yr.n));
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
     /* On a story career the old recurring cards (a slump, a night out) give
@@ -221,6 +229,7 @@ function queueEvents(L, phase, n, pool) {
     if (pool[id].once) once[id] = 1;
     (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
     dealCard(L, phase, pool[id]);
+    if (yr) yr.n++;
   }
 }
 
