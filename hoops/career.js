@@ -85,10 +85,11 @@ const GOAT_AT = 145;
    chance a draw deals one story card in that stretch (an arc that is due takes
    the slot first). They were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
    late 1 and off 1. */
-const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.6, team: 1, cap: 2 };
+const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.9, team: 1, cap: { season: 1, off: 1 } };
 /* team is how many of your club's cards a season (it was one a phase, about
-   1.1 a season). cap is the season's story budget (queueEvents): due arcs
-   always, then your club's card and new events while there is room. */
+   1.1 a season). cap is the story budget (queueEvents), one for the season and one for
+   the summer: due arcs always, then your club's card and new events while
+   there is room. */
 
 // ── growth, decline and the summer (season, events) ──
 
@@ -6744,15 +6745,21 @@ function queueEvents(L, phase, n, pool) {
      dealt, so a story never breaks off; your club's card and a new event only
      while there is room. The amateur years keep their own pace. */
   const nba = pool !== AM_ALL;
-  const yr = nba ? (L.flags.evYear && L.flags.evYear.y === L.year ? L.flags.evYear : (L.flags.evYear = { y: L.year, n: 0 })) : null;
-  const room = () => !yr || yr.n < PACE.cap;
+  /* Two budgets: the season's and the summer's. The summer is where a life
+     happens (a baby, a breakup, a legend's night), and it comes last in the
+     year, so one shared budget left it nothing. */
+  const half = phase === 'off' ? 'off' : 'season';
+  const yk = L.year + ':' + half;
+  const yr = nba ? (L.flags.evYear && L.flags.evYear.y === yk ? L.flags.evYear : (L.flags.evYear = { y: yk, n: 0 })) : null;
+  const cap = PACE.cap[half];
+  const room = () => !yr || yr.n < cap;
   for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); if (yr) yr.n++; }
   /* Then whatever your club gave the career to answer (teamDue). */
   if (nba && room()) {
     const tid = teamDue(L, phase);
     if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); yr.n++; }
   }
-  if (yr) n = Math.min(n, Math.max(0, PACE.cap - yr.n));
+  if (yr) n = Math.min(n, Math.max(0, cap - yr.n));
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
     /* On a story career the old recurring cards (a slump, a night out) give

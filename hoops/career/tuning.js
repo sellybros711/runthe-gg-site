@@ -36,10 +36,11 @@ const GOAT_AT = 145;
    chance a draw deals one story card in that stretch (an arc that is due takes
    the slot first). They were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
    late 1 and off 1. */
-const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.6, team: 1, cap: 2 };
+const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.9, team: 1, cap: { season: 1, off: 1 } };
 /* team is how many of your club's cards a season (it was one a phase, about
-   1.1 a season). cap is the season's story budget (queueEvents): due arcs
-   always, then your club's card and new events while there is room. */
+   1.1 a season). cap is the story budget (queueEvents), one for the season and one for
+   the summer: due arcs always, then your club's card and new events while
+   there is room. */
 
 // ── growth, decline and the summer (season, events) ──
 
