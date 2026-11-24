@@ -369,7 +369,9 @@ const TARGETS = [
   ['endings in the catalog', 30, Infinity, 'D'],
   ['endings met in the sweep', 30, Infinity, 'D'],
   ['legend events met in the sweep', 20, Infinity, 'D'],
-  ['distinct events per career', 70, 110, 'D'],
+  /* 70 to 110 until the owner's 10 to 15 minute career (2026-11-24), which
+     deals about two story cards a season: the owner set 45 to 80. */
+  ['distinct events per career', 45, 80, 'D'],
   ["two careers' event overlap", 0, 50, 'D'],
   ['median NBA seasons', 11, 14, 'C'],
   ['events never dealt', 0, 0, '0'],
