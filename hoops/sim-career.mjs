@@ -216,7 +216,7 @@ for (const x of results) for (const id in x.seen) { ev[id] = ev[id] || { careers
 const exSeen = {};
 for (const x of exAll) for (const id in x.seen) exSeen[id] = 1;
 const allIds = new Set(Object.keys(C.EVENTS).concat(Object.keys(C.AM_EVENTS || {}), Object.keys(C.STORY_EV || {}), Object.keys(C.ARC_EVENTS || {})));
-let never = [...allIds].filter((id) => !ev[id] && !exSeen[id]);
+let never = [...allIds].filter((id) => !ev[id] && !exSeen[id] && !rareSeen[id]);
 /* A son's card the sons sweep missed is played on before it is called never
    dealt. leg_rafters needs a son who lands on his father's club in his first
    three seasons, so 400 sons on today's rosters can meet none (the
@@ -264,9 +264,13 @@ const T = (x) => C.totals(x.L);
    seeds, keeping only the ending of each. */
 const RARE_X = 2;
 const rareEnds = results.map(endOf);
+/* What those careers were dealt, for "events never dealt": at about two
+   story cards a season (the 10 to 15 minute career) a card behind a narrow
+   gate comes a few times in 3,000 careers, and 1,000 met it by luck. */
+const rareSeen = {};
 if (!SCRIPT && !ONLY) for (let i = 0; i < N * RARE_X; i++) {
   const pol = POLICIES[i % POLICIES.length];
-  try { rareEnds.push(endOf(run('rare' + i, i % 2 ? 'hs' : 'draft', pol))); } catch (e) { crashes++; if (crashes <= 3) console.error('crash rare' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
+  try { const x = run('rare' + i, i % 2 ? 'hs' : 'draft', pol); rareEnds.push(endOf(x)); for (const id in x.seen) rareSeen[id] = 1; } catch (e) { crashes++; if (crashes <= 3) console.error('crash rare' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
 }
 const rarePct = (f) => 100 * rareEnds.filter(f).length / Math.max(1, rareEnds.length);
 const hs = results.filter((x) => routeOf(x.L).start === 'hs');
