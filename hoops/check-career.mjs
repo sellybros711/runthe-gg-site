@@ -1734,7 +1734,11 @@ async function browser() {
        by being hidden. Everything else in this arm is as it was. */
     if (!trayed && st.card && st.steps >= 5) {
       trayed = true;
-      const probe = () => page.evaluate(() => {
+      /* Read after the next frame: the tray's padding follows its height through a
+         ResizeObserver, which is delivered before a frame is painted. Reading in
+         between measures a frame nobody sees (the flake at 360x640, a Story line
+         10px under the tray, never on screen). */
+      const probe = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)))).then(() => page.evaluate(() => {
         const c = document.querySelector('#cr-card'), o = [...c.querySelectorAll('.cr-choice')];
         const r = c.getBoundingClientRect(), y0 = window.scrollY, H = window.innerHeight;
         const fixed = getComputedStyle(c).position === 'fixed';
@@ -1746,10 +1750,13 @@ async function browser() {
         c.scrollTop = 0;
         window.scrollTo(0, document.documentElement.scrollHeight);
         const col = [...document.querySelectorAll('#s-car .cr-grid *')].filter((e) => e !== c && !c.contains(e) && getComputedStyle(e).position !== 'fixed' && e.getBoundingClientRect().height > 0);
-        const qb = col.length ? Math.max(...col.map((e) => e.getBoundingClientRect().bottom)) : Infinity, top2 = c.getBoundingClientRect().top;
-        const under = col.filter((e) => e.getBoundingClientRect().bottom > top2 + 1).slice(0, 2).map((e) => (e.id || e.className || e.tagName).toString().slice(0, 30) + ' ' + Math.round(e.getBoundingClientRect().bottom)).join(', ');
+        /* what shows of each: a line scrolled inside a box of its own (the Story
+           feed scrolls past 440px) is cut at that box, not drawn under the tray */
+        const seen = (e) => { let b = e.getBoundingClientRect().bottom; for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) { if (/(auto|scroll|hidden)/.test(getComputedStyle(p).overflowY)) b = Math.min(b, p.getBoundingClientRect().bottom); } return b; };
+        const qb = col.length ? Math.max(...col.map(seen)) : Infinity, top2 = c.getBoundingClientRect().top;
+        const under = col.filter((e) => seen(e) > top2 + 1).slice(0, 2).map((e) => (e.id || e.className || e.tagName).toString().slice(0, 30) + ' ' + Math.round(e.getBoundingClientRect().bottom)).join(', ');
         return { fixed, h: r.height, H, dock, bottom: Math.round(r.bottom), reach, moved, clear: !fixed || qb <= top2 + 1, under, top2: Math.round(top2), next: !!document.querySelector('#cr-next'), rise: c.className };
-      });
+      }));
       for (const [w, h] of [[390, 844], [360, 640]]) {
         await page.setViewportSize({ width: w, height: h });
         await page.evaluate(() => RTF_CAREER_UI.paintPress({ beats: [], result: null }));
@@ -2171,6 +2178,8 @@ async function browser() {
       page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
       await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
       await page.route('**/*', serve);
+      /* a page before the game, so a back that leaves Career has somewhere to go */
+      await page.goto('http://local.test/hoops/how-to-play.html', { waitUntil: 'domcontentloaded' });
       await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
       await page.evaluate(() => document.querySelector('#b-career').click());
@@ -2334,6 +2343,72 @@ async function browser() {
         }
         ok(n >= 20 && !off.length, `${tag}: after each of ${n} presses the next answer or button is on screen between the bars (${off.join('; ') || 'all'})`);
       } else ok(false, `${tag}: found a second career mid season`);
+      /* BACK STAYS IN CAREER (batch 2): a phone's back or the browser's
+         closes the sheet, then steps back through the tabs, then holds on
+         Now. It never leaves the game. And each tab keeps its scroll and its
+         sub-tab. */
+      if (await find('mid')) {
+        await page.waitForTimeout(300);
+        /* a back that leaves the game is a failure, not a crash: read where we are, whatever page it is */
+        const back = async () => { await page.evaluate(() => history.back()).catch(() => {}); await page.waitForTimeout(450); await page.waitForLoadState('domcontentloaded').catch(() => {}); };
+        const home = async () => { if (!(await page.evaluate(() => !!document.querySelector('#s-car.active')).catch(() => false))) {
+          await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' }); await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+          await page.evaluate(() => document.querySelector('#b-career').click()); await page.waitForTimeout(500); } };
+        const where = () => page.evaluate(() => ({ url: location.pathname, car: !!document.querySelector('#s-car.active'), tab: (document.querySelector('.k-tabbar [aria-current="page"]') || {}).id || '',
+          sheet: !!document.querySelector('#cr-sheet:not([hidden]):not(.cr-flat), #rtf-locker:not([hidden])') })).catch(() => ({ url: '?', car: false, tab: '', sheet: false }));
+        await show('team');
+        const ty = await page.evaluate(() => { window.scrollTo(0, Math.min(200, document.documentElement.scrollHeight - innerHeight - 10)); return Math.round(window.scrollY); });
+        await page.waitForTimeout(150);
+        await show('legacy');
+        const opened = await tryPress('#cr-lookbtn') && (await page.waitForSelector('#cr-sheet:not([hidden])', { timeout: 3000 }).then(() => true).catch(() => false));
+        await back(); const w1 = await where();
+        ok(opened && w1.car && !w1.sheet && w1.tab === 'cr-t-legacy', `${tag}: back closes the sheet and stays on Legacy (${JSON.stringify(w1)})`);
+        await back(); const w2 = await where(), y2 = await page.evaluate(() => Math.round(window.scrollY)).catch(() => -1);
+        ok(w2.car && w2.tab === 'cr-t-team', `${tag}: back again returns to Team, the tab before (${w2.tab || w2.url})`);
+        ok(w2.car && ty > 40 && Math.abs(y2 - ty) <= 2, `${tag}: and Team is scrolled where it was, not where the browser kept it (${y2} of ${ty})`);
+        await back(); const w3 = await where();
+        ok(w3.car && w3.tab === 'cr-t-now', `${tag}: back again returns to Now (${w3.tab || w3.url})`);
+        /* on Now the first back says how to leave and stays; a second one while that toast is up leaves, like Leave on Player */
+        await page.waitForTimeout(3400);
+        await back(); const w4 = await where(), toast = await page.evaluate(() => [...document.querySelectorAll('.k-toast')].some((t) => /back again to leave/i.test(t.textContent))).catch(() => false);
+        ok(w4.car && w4.tab === 'cr-t-now' && w4.url === '/hoops/' && toast, `${tag}: the first back on Now stays and says a second one leaves (${w4.url}, ${w4.car ? 'Career' : 'not Career'}, toast ${toast})`);
+        await back(); const w4b = await page.evaluate(() => ({ url: location.pathname, home: !!document.querySelector('#s-home.active'), car: !!document.querySelector('#s-car.active') })).catch(() => ({ url: '?', home: false, car: false }));
+        ok(w4b.url === '/hoops/' && w4b.home && !w4b.car, `${tag}: a second back while it is up leaves to the front page, like Leave (${w4b.url}, ${w4b.home ? 'front page' : 'not the front page'})`);
+        await home();
+        if (await show('moves')) { await back(); const w5 = await where(); ok(w5.car && w5.tab === 'cr-t-now' && (await page.evaluate(() => document.querySelector('#cr-sheet').hidden).catch(() => false)), `${tag}: back from Moves closes it onto Now`); }
+        else ok(false, `${tag}: Moves opens for the back walk`);
+        await home();
+        /* each tab keeps its scroll and its sub-tab: the roster is long enough to scroll */
+        await show('team');
+        await tryPress('[data-tab="team"]'); await page.waitForTimeout(250);
+        const want = await page.evaluate(() => { const m = document.documentElement.scrollHeight - innerHeight; const y = Math.min(260, Math.max(0, m - 10)); window.scrollTo(0, y); return { y: Math.round(window.scrollY), m }; });
+        await page.waitForTimeout(150);
+        await show('legacy'); await tryPress('[data-tab="trophies"]'); await page.waitForTimeout(250);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await show('now'); await show('team');
+        const sub = () => page.evaluate(() => { const t = document.querySelector('#s-car .cr-tabs [aria-selected="true"]'); return t ? t.getAttribute('data-tab') : ''; });
+        const got = { y: await page.evaluate(() => Math.round(window.scrollY)), sub: await sub() };
+        ok(want.y > 40 && Math.abs(got.y - want.y) <= 2 && got.sub === 'team', `${tag}: Team comes back scrolled where it was (${got.sub}, ${got.y} of ${want.y})`);
+        await show('legacy');
+        const lg2 = await sub();
+        ok(lg2 === 'trophies', `${tag}: Legacy comes back on Trophies, the sub-tab you left it on (${lg2})`);
+        await show('team'); await tryPress('[data-tab="people"]'); await page.waitForTimeout(250);
+        await show('now'); await show('team');
+        const pp = await sub();
+        ok(pp === 'people', `${tag}: and Team comes back on People when you left it there (${pp})`);
+        await show('now');
+      } else ok(false, `${tag}: found a career for the back walk`);
+      /* Leave on Player still leaves, and back from the front page does not drop into Career */
+      if (await page.$('#cr-t-me')) await show('me');
+      await tryPress('#cr-home'); await page.waitForTimeout(400);
+      const left = await page.evaluate(() => !!document.querySelector('#s-home.active'));
+      await page.evaluate(() => history.back()).catch(() => {}); await page.waitForTimeout(500); await page.waitForLoadState('domcontentloaded').catch(() => {});
+      const after = await page.evaluate(() => ({ url: location.pathname, car: !!document.querySelector('#s-car.active') })).catch(() => ({ url: '?', car: false }));
+      ok(left && !after.car, `${tag}: Leave goes to the front page, and back from there does not reopen Career (${after.url})`);
+      if (after.url !== '/hoops/') { await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' }); await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 }); }
+      await page.evaluate(() => { if (!document.querySelector('#s-car.active')) document.querySelector('#b-career').click(); });
+      await page.waitForTimeout(400);
+
       /* and the site's bar is back on the front page */
       await page.evaluate(() => { const h = document.querySelector('#cr-home'); if (h) h.click(); else window.RTF_PAGE.goHome(); });
       await page.waitForTimeout(250);
