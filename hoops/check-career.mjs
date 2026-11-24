@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { checkLeague, CHECK_ROSTERS, CHECK_RATINGS } from './build/check-league.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
@@ -36,9 +37,9 @@ let passed = 0;
 function ok(cond, what) { if (cond) passed++; else failures.push(what); }
 function section(t) { console.log(`\n${t}\n${'-'.repeat(t.length)}`); }
 
-/* The league the game seeds: today's rosters when the repo has them. */
-const ROSTERS_FILE = new URL('./data/rosters.json', import.meta.url);
-const league = C.seedLeague(ROWS, C.withRatings(fs.existsSync(ROSTERS_FILE) ? JSON.parse(fs.readFileSync(ROSTERS_FILE, 'utf8')) : null, (() => { const f = new URL('./data/ratings.json', import.meta.url); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; })()));
+/* The league the checks play: a frozen copy of the rosters (build/check-league.mjs),
+   so the weekly roster refresh never moves a check. */
+const league = checkLeague(C, ROWS);
 /* An en or em dash in copy, built from its code points so this file carries none. */
 const DASH = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
 
@@ -1108,12 +1109,11 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   const med = (k) => { const v = C.CLUBS.map((c) => (C.matesOf(L0, c)[k] || {}).ovr).sort((a, b) => a - b); return v[15]; };
   /* THE REAL RATINGS AND THE REAL PAY. A man the 2K ratings cover reads his
      rating exactly in the season it is for, a man they leave out reads under
-     75, and his salary is the real one. Asked only when the repo has the file. */
-  const RF = new URL('./data/ratings.json', import.meta.url);
-  if (fs.existsSync(RF) && league.rs) {
-    const RT = JSON.parse(fs.readFileSync(RF, 'utf8'));
+     75, and his salary is the real one. Read off the frozen files. */
+  if (league.rs) {
+    const RT = CHECK_RATINGS;
     const ids = {};
-    const RO = JSON.parse(fs.readFileSync(ROSTERS_FILE, 'utf8'));
+    const RO = CHECK_ROSTERS;
     for (const c in RO.clubs) for (const m of RO.clubs[c]) ids[m.n] = m.i;
     const L1 = C.newLife({ seed: 'real', league, start: 'draft' });
     L1.year = league.rs;
