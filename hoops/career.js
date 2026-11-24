@@ -85,7 +85,7 @@ const GOAT_AT = 145;
    chance a draw deals one story card in that stretch (an arc that is due takes
    the slot first). They were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
    late 1 and off 1. */
-const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.9, team: 1, cap: { season: 1, off: 1 } };
+const PACE = { pre: 0.3, early: 0.8, mid: 0.5, late: 0.5, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 2.5 };
 /* team is how many of your club's cards a season (it was one a phase, about
    1.1 a season). cap is the story budget (queueEvents), one for the season and one for
    the summer: due arcs always, then your club's card and new events while
@@ -6750,7 +6750,10 @@ function queueEvents(L, phase, n, pool) {
      year, so one shared budget left it nothing. */
   const half = phase === 'off' ? 'off' : 'season';
   const yk = L.year + ':' + half;
-  const yr = nba ? (L.flags.evYear && L.flags.evYear.y === yk ? L.flags.evYear : (L.flags.evYear = { y: yk, n: 0 })) : null;
+  /* The draft (predraft, dn) comes once, before the first season, and keeps
+     its own pace: it spent the rookie year's budget before it began. */
+  const budgeted = nba && phase !== 'predraft' && phase !== 'dn';
+  const yr = budgeted ? (L.flags.evYear && L.flags.evYear.y === yk ? L.flags.evYear : (L.flags.evYear = { y: yk, n: 0 })) : null;
   const cap = PACE.cap[half];
   const room = () => !yr || yr.n < cap;
   for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); if (yr) yr.n++; }
@@ -6767,7 +6770,9 @@ function queueEvents(L, phase, n, pool) {
     /* A life off the floor keeps its pace: meeting someone, a proposal, a
        wedding, a baby. Damping those left a sweep of 600 with eleven weddings,
        so on a story career they are dealt a little more often, not less. */
-    const damp = ((x) => (LIFE_CYCLE[x] ? 1.8 : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1));
+    /* With one story card a season, a legend's night (switch on) is weighted
+       up (PACE.legend), so it is still met as often as it was. */
+    const damp = ((x) => (LIFE_CYCLE[x] ? 1.8 : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1) * (yr && pool[x].legend ? PACE.legend : 1));
     const id = weighted(rng, ids, (x) => pool[x].weight(L) * damp(x));
     if (!id) return;
     used[id] = 1;
