@@ -17,6 +17,7 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
+import { checkLeague } from './build/check-league.mjs';
 const X = require('./economy.js');
 const QUICK = process.argv.includes('--quick');
 
@@ -116,8 +117,7 @@ const H = 3600e3;
 /* 7. the faucet, measured against real careers */
 if (!QUICK) {
   const C = require('./career.js'), ROWS = require('./data/players.json');
-  const rf = new URL('./data/rosters.json', import.meta.url), tf = new URL('./data/ratings.json', import.meta.url);
-  const league = C.seedLeague(ROWS, C.withRatings(fs.existsSync(rf) ? JSON.parse(fs.readFileSync(rf, 'utf8')) : null, fs.existsSync(tf) ? JSON.parse(fs.readFileSync(tf, 'utf8')) : null));
+  const league = checkLeague(C, ROWS);
   const E = require('./engine.js');
   const N = 40, coins = [];
   for (let i = 0; i < N; i++) {
