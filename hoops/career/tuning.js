@@ -16,8 +16,9 @@
    playoff impact in a series: 3.5 left the ring share at 18.0% after step 6,
    the bottom of the owner's 18 to 30% band; 3.0 lands it at 21.5% with every
    other band in (2.5 read 25.3% but left a card never dealt). The owner's
-   call to rebalance, 2026-10-17. */
-const BAL = { star: 4, dec: 1.4, poTax: 3.0, maxAge: 38, tired: 31 };
+   call to rebalance, 2026-10-17. star went 4 to 3.8 with the 10 to 15 minute
+   career (2026-11-24): fewer cards, fewer lifts, and All-Star read 19.8%. */
+const BAL = { star: 3.8, dec: 1.4, poTax: 3.0, maxAge: 38, tired: 31 };
 /* First ballot is 85, the score VERDICTS and the cr-ballot badge already call
    First ballot. At 95 a career between them read "First ballot" on its Hall
    card and "Hall of Famer, in time" as its ending, and first ballot ran 4.7%
@@ -37,7 +38,7 @@ const GOAT_AT = 145;
    (storyStretch); off is the chance of the summer's. An arc that is due takes
    the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
    late 1 and off 1 cards. */
-const PACE = { stretch: { pre: 0.15, early: 0.35, mid: 0.3, late: 0.2 }, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 3.5 };
+const PACE = { stretch: { pre: 0.12, early: 0.33, mid: 0.28, late: 0.27 }, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 3.5 };
 /* team is how many of your club's cards a season (it was one a phase, about
    1.1 a season). cap is the story budget (queueEvents), one for the season and one for
    the summer: due arcs always, then your club's card and new events while
