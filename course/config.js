@@ -10,7 +10,7 @@
 export const GAME = Object.freeze({ name: 'Run The Course', slug: 'course', logo: '/course/logo.svg' });
 
 export const CONFIG = {
-  version: 1,
+  version: 3,
   schema: 1,
 
   shift: {
@@ -52,7 +52,35 @@ export const CONFIG = {
     startCash: 0,
     pads: {
       cart_barn: { name: 'Cart Barn', cost: 60, buildS: 10, kind: 'unlock' },
+      putting_green: { name: 'Putting Green', cost: 90, buildS: 15, kind: 'unlock' },
+      snack_shack: { name: 'Snack Shack', cost: 180, buildS: 20, kind: 'unlock' },
+      driving_range: { name: 'Driving Range', cost: 450, buildS: 30, kind: 'unlock' },
       hole_4: { name: 'Hole 4', cost: 1000, buildS: 1800, kind: 'hole', hole: 4 }
+    },
+    /* Everything that levels up. Each has its own pad. Everything starts at level 1;
+       a level costs `cost` times `growth` for each level already bought, to the
+       nearest $5. Each effect below is what ONE level adds. `needs` names a pad
+       that must be built first. */
+    upgradeMax: 10, upgradeGrowth: 1.45,
+    tierEvery: 3,             // a building changes its look every this many levels
+    snackBase: 1, rangeBase: 1,   // dollars a golfer at the first level of each
+    upgradeQuietS: 12,         // the goal line only sends you to a pad when no group needs you for this long
+    upgrades: {
+      boots:     { name: 'Boots',       cost: 20, walk: 0.25 },                      // your walking speed, units a second
+      shop:      { name: 'Pro Shop',    cost: 25, checkin: 0.07, fee: 0.04 },        // check in that share faster; every fee that share higher
+      starter:   { name: 'Starter Box', cost: 30, sendoff: 0.08, patience: 2 },      // send off faster; groups wait longer on tee 1, seconds
+      shed:      { name: 'Mower Shed',  cost: 30, mow: 0.2, mower: 0.4 },            // seconds less to cut a green; mower speed
+      my_cart:   { name: 'Your Cart',   cost: 35, cart: 0.6 },                       // your cart's speed
+      hole_1:    { name: 'Hole 1',      cost: 40, hole: 1, fee: 0.08, decay: 1.5 },  // that hole's fee that share higher; its green wears less a day
+      hole_2:    { name: 'Hole 2',      cost: 40, hole: 2, fee: 0.08, decay: 1.5 },
+      hole_3:    { name: 'Hole 3',      cost: 40, hole: 3, fee: 0.08, decay: 1.5 },
+      cart_barn: { name: 'Cart Barn',   cost: 50, needs: 'cart_barn', rental: 0.5, pace: 0.02 },   // dollars a golfer for the cart; holes play that share faster
+      gardens:   { name: 'Gardens',     cost: 45, design: 0.05 },                    // the course looks better: the design part of every review rises
+      parking:   { name: 'Parking Lot', cost: 55, bookings: 0.06 },                  // that share more groups booked
+      clubhouse: { name: 'Clubhouse',   cost: 60, tip: 0.02, patience: 2 },          // the most a group tips rises by that share of the fee; groups wait longer at the counter
+      putting_green: { name: 'Putting Green', cost: 70, needs: 'putting_green', practice: 0.25, patience: 2 },   // dollars a golfer to warm up; groups wait longer out on the course
+      snack_shack:   { name: 'Snack Shack',   cost: 90, needs: 'snack_shack', snack: 0.5 },                      // dollars more a golfer spends at the turn
+      driving_range: { name: 'Driving Range', cost: 140, needs: 'driving_range', range: 0.5 }                    // dollars more a golfer spends on range balls
     }
   },
 
