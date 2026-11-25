@@ -2202,6 +2202,15 @@ function meRows(L){
 var CTABS = [['now', 'Now', 'ball'], ['moves', 'Moves', 'bolt'], ['team', 'Team', 'people'], ['me', 'Player', 'shirt'], ['legacy', 'Legacy', 'crown']];
 var TAB_GROUP = { log: 'now', team: 'team', people: 'team', news: 'team', seasons: 'legacy', trophies: 'legacy', legacy: 'legacy' };
 var ctab = 'now', lastCur = null;
+/* WHERE EACH TAB WAS (batch 2): its scroll and its sub-tab, so coming back
+   to a tab lands where you left it. And the tabs you came through, so back
+   steps through them to Now. */
+var tabMem = {}, tabTrail = [];
+function rememberTab(){
+  var m = tabMem[ctab] || (tabMem[ctab] = {});
+  m.y = ctab === 'moves' ? (($('cr-sheet') || {}).scrollTop || 0) : window.scrollY;
+  if (TAB_GROUP[tab] === ctab) m.sub = tab;
+}
 function shellEl(){
   var s = $('cr-shell');
   if (!s) { s = document.createElement('div'); s.id = 'cr-shell'; s.className = 'k-root k-shell'; document.body.appendChild(s); }
@@ -2244,21 +2253,76 @@ function applyTab(){
   if (root) root.setAttribute('data-ctab', ctab);
   if (L) paintShell(L);
 }
-function goTab(t){
+function goTab(t, back){
   var L = store().cur;
-  if (!L) return;
+  if (!L || t === ctab) return;
   var kb = kbdFocus() || (document.activeElement && document.activeElement.closest && document.activeElement.closest('.k-tabbar') && document.activeElement.matches(':focus-visible'));
-  if (t === 'moves') { ctab = 'moves'; applyTab(); openOff(); return; }
+  rememberTab();
+  if (!back) { tabTrail = tabTrail.filter(function(x){ return x !== ctab; }); tabTrail.push(ctab); }
+  var m = tabMem[t] || {};
+  if (t === 'moves') { ctab = 'moves'; applyTab(); openOff(); var sh = $('cr-sheet'); if (sh) sh.scrollTop = m.y || 0; return; }
   var was = ctab;
   ctab = t;
   if (was === 'moves') closeOff();
-  if (t === 'team' && TAB_GROUP[tab] !== 'team') tab = C.rotationOf && C.rotationOf(L) ? 'team' : 'people';
-  else if (t === 'legacy' && TAB_GROUP[tab] !== 'legacy') tab = 'seasons';
-  else if (t === 'now' || t === 'me') tab = 'log';
+  if (t === 'team') tab = m.sub && TAB_GROUP[m.sub] === 'team' ? m.sub : C.rotationOf && C.rotationOf(L) ? 'team' : 'people';
+  else if (t === 'legacy') tab = m.sub && TAB_GROUP[m.sub] === 'legacy' ? m.sub : 'seasons';
+  else tab = 'log';
   render();
-  window.scrollTo(0, 0);
+  window.scrollTo(0, m.y || 0);
   if (kb) { var b = $('cr-t-' + t); if (b) b.focus({ preventScroll: true }); }
 }
+
+/* BACK STAYS IN CAREER (batch 2). While a career is on screen one history
+   entry sits above the page's own, so a phone's back or the browser's lands
+   here first: it closes a sheet, then steps back through the tabs you came
+   through, then holds on Now. It never leaves the game: that is Player's
+   Leave row, which takes the entry away first. Back across the rest of the
+   game is the page's (page/boot.js), not this. */
+var guarded = false, dropPop = false;
+function guard(){
+  if (guarded || !history.pushState) return;
+  /* The browser restores its own scroll after a back, over the tab's. Off on
+     the entry under the guard (set before the push, since it is per entry) and
+     on the guard, while Career holds back. */
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; history.pushState({ rtfCareer: 1 }, ''); guarded = true; if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+}
+function unguard(){
+  if (!guarded) return;
+  guarded = false; dropPop = true;
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'auto'; } catch (e) {}
+  try { history.back(); } catch (e) { dropPop = false; }
+}
+/* The first back on Now says a second one leaves; a second back while that
+   toast is up leaves the game, the same as Leave on Player. */
+var LEAVE_MS = 3200, leaveAt = 0;
+function onBack(){
+  if (dropPop) { dropPop = false; return; }
+  if (!guarded) return;
+  guarded = false;
+  var st = store();
+  if (!onScreen() || !st.cur) return;
+  var SC = window.RTF_SCENES;
+  var busy = (SC && SC.isOpen && SC.isOpen()) || (window.RTF_TICKER && window.RTF_TICKER.isOpen());
+  if (!busy && ctab === 'now' && !document.querySelector('#cr-sheet:not([hidden]), #rtf-locker:not([hidden])') && Date.now() - leaveAt < LEAVE_MS) {
+    leaveAt = 0;
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'auto'; } catch (e) {}
+    closeOff(); P.goHome();
+    return;
+  }
+  guard();
+  if (busy) return;
+  if (K.closeTop && K.closeTop()) return;
+  if (ctab !== 'now') {
+    var to = tabTrail.pop() || 'now';
+    while (to === ctab && tabTrail.length) to = tabTrail.pop();
+    if (to === ctab) to = 'now';
+    goTab(to, true);
+    return;
+  }
+  leaveAt = Date.now();
+  K.toast(K.iconHtml('home', 2) + '<span>Press back again to leave.</span>', '', LEAVE_MS);
+}
+window.addEventListener('popstate', onBack);
 
 function wireLife(L, d){
   var root = $('s-car');
@@ -3361,10 +3425,11 @@ function render(){
   if (st.cur && lastTeam && team && team !== lastTeam) { K.wipe(); K.toast(K.iconHtml('home', 2) + '<span>Welcome to the ' + esc(teamName(team)) + '.</span>', 'k-gold'); }
   lastTeam = team;
   /* a different career opens on Now */
-  if (st.cur !== lastCur) { lastCur = st.cur; ctab = 'now'; if (TAB_GROUP[tab] !== 'now') tab = 'log'; }
+  if (st.cur !== lastCur) { lastCur = st.cur; ctab = 'now'; tabMem = {}; tabTrail = []; if (TAB_GROUP[tab] !== 'now') tab = 'log'; }
   var app = !!st.cur && view !== 'vault';
   root.classList.toggle('cr-app', app);
   root.setAttribute('data-ctab', app ? ctab : '');
+  if (app && onScreen()) guard();
   if (view === 'vault') { body.innerHTML = vaultView(); wireVault(); }
   else if (st.cur) {
     var d = stage.delta || null;
@@ -3388,11 +3453,11 @@ function open(){
   view = null;
   stage = { beats: [], result: null, draft: null };
   lastTeam = null;
-  ctab = 'now'; tab = 'log'; lastCur = null;
+  ctab = 'now'; tab = 'log'; lastCur = null; tabMem = {}; tabTrail = [];
   P.show('s-car');
   render();
 }
-function goHome(){ closeOff(); P.goHome(); }
+function goHome(){ closeOff(); unguard(); P.goHome(); }
 
 // ─── the front page ─────────────────────────────────────────────────────────
 

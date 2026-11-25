@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { checkLeague } from './build/check-league.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -30,10 +31,9 @@ let passed = 0;
 function ok(cond, what) { if (cond) passed++; else failures.push(what); }
 function section(t) { console.log(`\n${t}\n${'-'.repeat(t.length)}`); }
 const clone = (x) => JSON.parse(JSON.stringify(x));
-/* Today's rosters when the repo has them (hoops/data/rosters.json, written by
-   the roster workflow), so every section plays the league a career joins. */
-const ROSTERS = fs.existsSync(path.join(HERE, 'data', 'rosters.json')) ? JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'rosters.json'), 'utf8')) : null;
-const league = C.seedLeague(ROWS, C.withRatings(ROSTERS, (() => { const f = new URL('./data/ratings.json', import.meta.url); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; })()));
+/* The league the checks play: a frozen copy of the rosters (build/check-league.mjs),
+   so the weekly roster refresh never moves a check. */
+const league = checkLeague(C, ROWS);
 const words = (s) => String(s).replace(/\{[a-z0-9]+(?::\w+)?\}/gi, 'X').split(/\s+/).filter(Boolean).length;
 const POOLS = { nba: C.EVENTS, am: C.AM_EVENTS, arc: C.ARC_EVENTS, story: C.STORY_EV, team: C.TEAM_EV };
 
