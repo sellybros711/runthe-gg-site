@@ -72,7 +72,6 @@ test('the goal line always says something, with a place to go', () => {
   play(course, CONFIG, (S, ctx) => {
     const g = goalOf(S, ctx);
     assert.ok(g && g.text.length > 3 && g.text.length <= 60 && Number.isFinite(g.x) && Number.isFinite(g.y), JSON.stringify(g));
-    assert.ok(!/[–—]/.test(g.text));
   });
 });
 

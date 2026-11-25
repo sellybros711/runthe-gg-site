@@ -6,7 +6,7 @@
  * keeps in rtc_device, so a guest counts too.
  *
  * NO EVENTS FROM THE EU, THE UK OR SWITZERLAND until the site has a consent
- * banner (the owner, 2026-11-23, for Last Shot; the same rule here). Once a
+ * banner (the owner, 2026-11-23: the site rule for first party events). Once a
  * page load, before the first send and before any device id exists, the page
  * asks GET /api/course/e, which answers { on } by country. Off, or a probe
  * that fails: nothing is sent and no device id is made.

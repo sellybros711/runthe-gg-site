@@ -8,8 +8,8 @@
  *
  * NO EVENTS FROM THE EU, THE UK OR SWITZERLAND until the site has a consent
  * banner (the owner, 2026-11-23). The list is the site's own GA4 consent
- * region list, the same one Last Shot's events use; test/api.test.mjs holds
- * the two equal. No country at all (local dev, tests) counts as allowed. */
+ * region list (404.html and every page's gtag consent default);
+ * course/test/save.test.mjs holds the two equal. No country at all (local dev, tests) counts as allowed. */
 export const GAME = 'course';
 export const MAX_EVENTS = 40;
 

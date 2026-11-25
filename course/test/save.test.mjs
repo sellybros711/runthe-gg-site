@@ -10,7 +10,6 @@ import { createStore, KEY, QUEUE_MAX } from '../store.js';
 import { handle, toCourse } from '../../functions/_course/api.js';
 import { memoryDb } from '../../functions/_course/db-supabase.js';
 import { cleanBatch, allowed, NO_EVENTS, EVENTS } from '../../functions/_course/events.js';
-import { NO_EVENTS as LAST_SHOT_LIST } from '../../functions/_lastshot/events.js';
 
 function play(course, debug) {
   const ctx = makeCtx(course, CONFIG, MAP), S = startShift(course, CONFIG, MAP), bot = makeBot();
@@ -198,7 +197,10 @@ test('events: only known names and props are kept, and the consent list is the s
   assert.equal(cleanBatch({ s: 'short', ev: [] }), null);
   assert.equal(cleanBatch(null), null);
   for (const n of Object.keys(EVENTS)) assert.match(n, /^[a-z_]{2,20}$/, 'supabase/170 only takes such a name');
-  assert.deepEqual([...NO_EVENTS].sort(), [...LAST_SHOT_LIST].sort());
+  /* the site's own GA4 consent default region list, on its 404 page and every page's tag */
+  const region = fs.readFileSync(new URL('../../404.html', import.meta.url), 'utf8').match(/region:\s*\[([^\]]+)\]/);
+  assert.ok(region, 'the site consent region list was not found in 404.html');
+  assert.deepEqual([...NO_EVENTS].sort(), region[1].match(/[A-Z]{2}/g).sort());
   assert.equal(allowed('DE'), false); assert.equal(allowed('US'), true); assert.equal(allowed(undefined), true);
 });
 
