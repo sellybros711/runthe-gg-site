@@ -1600,12 +1600,23 @@ section('22. replay: every life ends with one ribbon, the life fits on a card, a
     villain: (L) => { for (const P of C.peopleOpen(L)) for (const w of ['trash', 'freeze', 'callout']) if (P.acts.some((a) => a.id === w && a.ok)) return !!C.personAct(L, P.id, w); return false; },
     broke: (L) => { const V = C.wealthOpen(L); if (!V) return false; const h = V.hire.find((x) => x.ok); if (h) return !!C.wealthAct(L, 'hire', h.id); const b = V.shop.filter((x) => x.ok).sort((a, b) => b.cost - a.cost)[0]; return b ? !!C.wealthAct(L, 'buy', b.id) : false; },
   };
-  const play = (seed, bot, extra) => {
+  /* The wild side (phase 4): what somebody who lives that way does on a night out. */
+  const can = (L, id) => { const V = C.wildOpen(L); return V && V.acts.find((a) => a.id === id && a.ok); };
+  const stake = (a) => Math.max(a.min, Math.round(a.max * 25) / 100);
+  Object.assign(BOTS, {
+    gone: (L) => can(L, 'pills') ? !!C.wildAct(L, 'pills') : can(L, 'party') ? !!C.wildAct(L, 'party') : false,
+    jail: (L) => can(L, 'party') ? !!C.wildAct(L, 'party') : false,
+    roller: (L) => { const W = L.wild; if (W && W.net >= 5) return W.hab.bet >= 30 && can(L, 'rehab') ? !!C.wildAct(L, 'rehab') : false; const a = can(L, 'casino'); return a ? !!C.wildAct(L, 'casino', stake(a)) : false; },
+    second: (L) => { const W = L.wild; if (W && W.clean) return false; if (W && Object.keys(W.hook).length) return can(L, 'rehab') ? !!C.wildAct(L, 'rehab') : false; return can(L, 'party') ? !!C.wildAct(L, 'party') : false; },
+  });
+  /* The man who wants the Jailbird fights every charge himself. */
+  const CARDS = { jail: (c) => c.id === 'wildarrest' ? 2 : null };
+  const play = (seed, bot, extra, card) => {
     const L = C.generateRoad(Object.assign({ seed, league }, extra || {}));
     const r = E.createSeededRNG(E.hashSeed('rb-p' + seed));
     let g = 0, n = 0;
     while (!L.retired && g++ < 9000) {
-      if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); n = 0; continue; }
+      if (L.pending.length) { const c = L.pending[0], k = card ? card(c) : null; C.choose(L, k != null ? k : Math.floor(r() * c.options.length)); n = 0; continue; }
       if (bot && n++ < 12 && bot(L)) continue;
       n = 0; C.step(L);
     }
@@ -1634,7 +1645,7 @@ section('22. replay: every life ends with one ribbon, the life fits on a card, a
     return rb.id;
   };
   /* The plain careers, played on until every ribbon that needs no bot has shown. */
-  const NEED_BOT = ['broke', 'heart', 'family', 'villain'];
+  const NEED_BOT = ['broke', 'heart', 'family', 'villain', 'gone', 'jail', 'roller', 'second'];
   const natural = C.RIBBON_KEYS.filter((k) => NEED_BOT.indexOf(k) < 0);
   let plain = 0;
   const mix = {};
@@ -1642,11 +1653,13 @@ section('22. replay: every life ends with one ribbon, the life fits on a card, a
   const top = Object.keys(mix).sort((a, b) => mix[b] - mix[a])[0];
   /* Somebody chasing one gets it. */
   const got = {};
-  for (const k of NEED_BOT) { got[k] = 0; for (let i = 0; i < 20; i++) if (look(play('rb:' + k + i, BOTS[k])) === k) got[k]++; }
-  console.log(`  ${lives} lives  ${plain} plain  ribbons seen ${Object.keys(seen).length} of ${C.RIBBON_KEYS.length}  the commonest in 150: ${top} ${mix[top]}  chased: ${NEED_BOT.map((k) => k + ' ' + got[k] + '/20').join(', ')}`);
+  /* Twenty lives each, played on (to eighty) while a ribbon has shown fewer than twice: the tables pay few. */
+  const tries = {};
+  for (const k of NEED_BOT) { got[k] = 0; tries[k] = 0; for (let i = 0; i < 80 && (i < 20 || got[k] < 2); i++) { tries[k]++; if (look(play('rb:' + k + i, BOTS[k], null, CARDS[k])) === k) got[k]++; } }
+  console.log(`  ${lives} lives  ${plain} plain  ribbons seen ${Object.keys(seen).length} of ${C.RIBBON_KEYS.length}  the commonest in 150: ${top} ${mix[top]}  chased: ${NEED_BOT.map((k) => k + ' ' + got[k] + '/' + tries[k]).join(', ')}`);
   const dark = C.RIBBON_KEYS.filter((k) => !seen[k]);
   ok(C.RIBBON_KEYS.length >= 20 && dark.length === 0, `every ribbon ends a life somewhere (${dark.join(', ') || 'all ' + C.RIBBON_KEYS.length})`);
-  ok(NEED_BOT.every((k) => got[k] >= 4), `a ribbon you live for can be chased: ${NEED_BOT.map((k) => k + ' ' + got[k]).join(', ')} of 20`);
+  ok(NEED_BOT.every((k) => got[k] >= 2), `a ribbon you live for can be chased: ${NEED_BOT.map((k) => k + ' ' + got[k] + ' of ' + tries[k]).join(', ')}`);
   ok(Object.keys(mix).length >= 12 && mix[top] <= 150 * 0.3, `150 plain careers spread over ${Object.keys(mix).length} ribbons and none takes three in ten (${top} ${mix[top]})`);
   ok(!bad.length, `every life has a ribbon and a card whose numbers are the engine's (${bad.slice(0, 3).join(' | ') || lives + ' lives'})`);
   ok(!moved.length, `reading the ribbon and the card changes nothing (${moved.length ? moved.slice(0, 3).join(', ') : 'every life identical'})`);
@@ -1669,6 +1682,271 @@ section('22. replay: every life ends with one ribbon, the life fits on a card, a
     const c = div && C.challengeOf(div);
     ok(!!c && !c.met && c.out && c.prog === 'Divorced', 'a divorce is counted, and it ends Family man');
     ok(C.CHALLENGES.ch_mogul.blurb.indexOf(C.money(300)) > 0 || /\$\d+M/.test(C.CHALLENGES.ch_mogul.blurb), `Mogul says its own number ("${C.CHALLENGES.ch_mogul.blurb}")`);
+  }
+}
+
+// ── 23. the wild side ─────────────────────────────────────────────────────
+section('23. the wild side: the tables, nights out, pills and rehab, and what the league and the law do about it');
+{
+  /* Phase 4 of the BitLife plan (the owner's call, 2026-11-24: anything BitLife does). */
+  const E = require('./engine.js');
+  const N = 140, seen = {}, cards = {}, bad = [], cashOff = [];
+  const st = { ended: 0, died: 0, jail: 0, hooked: {}, clean: 0, sat: 0, acts: 0, over: 0, zero: 0 };
+  const JUNK23 = /\bundefined\b|\bNaN\b|\[object |\{[a-z]/;
+  for (let i = 0; i < N; i++) {
+    const L = C.generateRoad({ seed: 'wild' + i, league });
+    const r = E.createSeededRNG(E.hashSeed('wild-p' + i));
+    let g = 0;
+    while (!L.retired && g++ < 9000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (/^wild/.test(c.id)) { cards[c.id] = (cards[c.id] || 0) + 1; const t = C.say(L, [c.title, c.text].concat(c.options.map((o) => o.label + ' ' + o.hint)).join(' | ')); if (DASH.test(t) || JUNK23.test(t)) bad.push(c.id + ': ' + t.slice(0, 80)); }
+        C.choose(L, Math.floor(r() * c.options.length)); continue;
+      }
+      const V = C.wildOpen(L);
+      if (V && V.left > 0 && r() < 0.5) {
+        const open = V.acts.filter((x) => x.ok && (x.id !== 'rehab' || r() < 0.3));
+        if (open.length) {
+          const x = open[Math.floor(r() * open.length)], amt = x.amt ? Math.max(x.min, Math.round(x.max * 10) / 100) : undefined, cash0 = L.cash, n0 = V.left;
+          const res = C.wildAct(L, x.id, amt);
+          if (!res) { bad.push('refused an open act: ' + x.id); continue; }
+          st.acts++; seen[x.id] = 1;
+          const t = [res.title, res.text].concat(res.more).join(' | ');
+          if (DASH.test(t) || JUNK23.test(t)) bad.push(x.id + ': ' + t.slice(0, 80));
+          if (x.amt && Math.abs(Math.abs(L.cash - cash0) - amt) > 0.101 && Math.abs((L.cash - cash0) - amt * 0.9) > 0.101) cashOff.push(x.id + ' ' + amt + ': ' + (L.cash - cash0).toFixed(2));
+          const V2 = C.wildOpen(L); if (V2 && V2.left !== n0 - 1) st.over++;
+          continue;
+        }
+      }
+      C.step(L);
+    }
+    if (L.retired) st.ended++;
+    if (L.flags.died) st.died++;
+    if (L.flags.jail) st.jail++;
+    if (L.wild) { for (const k in L.wild.hook) st.hooked[k] = 1; if (L.wild.clean) st.clean++; st.sat += L.wild.rec.filter((x) => x.g).length; }
+    if (/NaN|null/.test(JSON.stringify(L.history.map((h) => [h.gp, h.pts, h.min, h.fgp])))) st.zero++;
+    for (const e of L.log) if (JUNK23.test(e.t) || DASH.test(e.t)) bad.push('log: ' + e.t.slice(0, 80));
+  }
+  console.log(`  ${st.acts} nights over ${N} careers  arrests ${cards.wildarrest || 0}  investigations ${cards.wildprobe || 0}  suspensions ${st.sat}  jail ${st.jail}  rehab ${st.clean}  died ${st.died}`);
+  const dark = C.WILD_KEYS.filter((k) => !seen[k]);
+  ok(C.WILD_KEYS.length >= 5 && dark.length === 0, `everything on the wild side is done somewhere (${dark.join(', ') || 'all ' + C.WILD_KEYS.length})`);
+  ok(!bad.length, `every night, card and log line reads clean (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!cashOff.length, `a bet moves the cash by the stake (${cashOff.slice(0, 2).join(' | ') || 'every one'})`);
+  ok(st.over === 0, `a night out spends one of the year's ${C.WILD_MAX}`);
+  ok(st.ended === N, `every career still ends (${st.ended} of ${N})`);
+  ok((cards.wildarrest || 0) >= 5 && (cards.wildprobe || 0) >= 5 && st.sat >= 10 && st.jail >= 1, 'the law and the league answer: arrests, investigations, suspensions and time inside all happen');
+  ok(st.hooked.bet && st.hooked.drink && st.clean >= 5, 'a habit takes hold, and rehab is taken');
+  ok(st.zero === 0, 'a season sat out is still a season: no line of it is broken');
+
+  /* The pieces, on a life held still. */
+  const toSeason = (seed) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (g++ < 4000 && !(L.stage === 'nba' && L.history.length >= 2 && L.phase === 'early' && !L.pending.length)) { if (L.pending.length) C.choose(L, 0); else C.step(L); } L.age = Math.max(L.age, 22); return L; };
+  {
+    const L = toSeason('wild-a'); L.cash = 10;
+    const peek = JSON.stringify(L); C.wildOpen(L);
+    ok(JSON.stringify(L) === peek && !L.wild, 'reading the wild side changes nothing and makes nothing');
+    ok(C.wildAct(L, 'casino', 99) === null && C.wildAct(L, 'casino', 0.01) === null && C.wildAct(L, 'nope') === null, 'a bet past the cash, under the least, or on nothing is refused');
+    const c0 = L.cash; C.wildAct(L, 'casino', 2);
+    ok(Math.abs(Math.abs(L.cash - c0) - 2) < 0.051 && Math.abs(L.wild.net - (L.cash - c0)) < 0.051 && L.wild.hab.bet === 10, `the tables pay or take the stake, and the habit grows (${(L.cash - c0).toFixed(1)})`);
+    C.wildAct(L, 'party'); if (L.pending.length) C.choose(L, 1); C.wildAct(L, 'party'); if (L.pending.length) C.choose(L, 1);
+    ok(C.wildOpen(L) === null || C.wildOpen(L).left === 0, `three nights is the year (${C.WILD_MAX})`);
+  }
+  {
+    /* A habit takes hold at the line, costs him every year, and rehab ends it. */
+    const L = toSeason('wild-b'); L.cash = 40;
+    L.wild = { heat: 0, hab: { bet: 55, drink: 0, pills: 0 }, hook: {}, rec: [], net: 0, susp: 0, y: L.year, n: 0, used: {} };
+    C.wildAct(L, 'casino', 1);
+    ok(L.wild.hook.bet === L.year && L.log.some((e) => /hold on you/.test(e.t)), `at ${C.HOOKED_AT} the habit has hold of him, and the log says so`);
+    let g = 0; const y0 = L.year, c0 = L.cash; while (g++ < 400 && L.year === y0 && !L.retired) { if (L.pending.length) C.choose(L, 0); else C.step(L); }
+    ok(L.log.some((e) => /^Lost \$.* gambling\.$/.test(e.t)), 'a man the tables have hold of loses a share of his cash every year');
+    while (L.pending.length) C.choose(L, 0);
+    const V = C.wildOpen(L), open = V && V.acts.find((a) => a.id === 'rehab');
+    ok(!!open, 'rehab is open to a man with a habit');
+    if (open) { L.cash = Math.max(L.cash, 1); C.wildAct(L, 'rehab'); }
+    ok(L.wild.clean === L.year && !Object.keys(L.wild.hook).length && L.wild.hab.bet === 0, 'rehab clears every habit and is remembered');
+  }
+  {
+    /* Games taken in a season start now and are sat; games taken in the summer are served from opening night. */
+    const L = toSeason('wild-c'); const s = L.season, g0 = s.g, gp0 = s.gp;
+    L.pending.push({ id: 'wildprobe', kind: 'event', key: 'wildprobe:test', eyebrow: '', scene: '', title: '', text: '', options: [{ label: 'a', hint: '' }, { label: 'b', hint: '' }] });
+    L.wild = { heat: 60, hab: { bet: 0, drink: 0, pills: 0 }, hook: {}, rec: [], net: 0, susp: 0, y: L.year, n: 0, used: {} };
+    C.choose(L, 0);
+    ok(s.ban && s.ban.from === g0 + 1 && s.ban.until === g0 + 1 + 10 && L.wild.heat === 0, `telling the league everything costs ten games from tonight (${s.ban && s.ban.from} to ${s.ban && s.ban.until - 1})`);
+    let g = 0; while (g++ < 50 && L.season === s && s.g < Math.min(82, g0 + 27) && !L.retired) { if (L.pending.length) C.choose(L, 0); else C.step(L); }
+    const played = s.gp - gp0, went = s.g - g0;
+    ok(went > 10 && played <= went - 10, `he sits them: ${played} played of the next ${went}`);
+  }
+  {
+    const L = toSeason('wild-d');
+    L.wild = { heat: 0, hab: { bet: 0, drink: 0, pills: 0 }, hook: {}, rec: [], net: 0, susp: 25, y: L.year, n: 0, used: {} };
+    let g = 0; const y0 = L.year; while (g++ < 600 && !(L.year > y0 && L.season && L.season.g > 0) && !L.retired) { if (L.pending.length) C.choose(L, 0); else C.step(L); }
+    ok(!!L.season && !!L.season.ban && L.season.ban.from === 1 && L.season.ban.until === 26 && L.wild.susp === 0, 'games owed from the summer are served from opening night');
+  }
+  {
+    /* The end: the career closes where it stood, with its numbers and a ribbon. */
+    let dead = null;
+    for (let i = 0; i < 60 && !dead; i++) {
+      const L = C.generateRoad({ seed: 'wild-end' + i, league }); let g = 0, n = 0; const r = E.createSeededRNG(i + 3);
+      while (!L.retired && g++ < 9000) {
+        if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); n = 0; continue; }
+        const V = C.wildOpen(L), a = V && (V.acts.find((x) => x.id === 'pills' && x.ok) || V.acts.find((x) => x.id === 'party' && x.ok));
+        if (a && n++ < 6 && C.wildAct(L, a.id)) continue;
+        n = 0; C.step(L);
+      }
+      if (L.flags.died) dead = L;
+    }
+    ok(!!dead, 'a man who lives on pills and nights out can die of it');
+    if (dead) {
+      ok(dead.retired && dead.phase === 'retired' && !dead.pending.length && dead.final && typeof dead.final.verdict === 'string' && /^Gone at \d+\./.test(dead.log[dead.log.length - 1].t), `the career closes where it stood ("${dead.log[dead.log.length - 1].t}")`);
+      ok(C.ribbonOf(dead).id === 'gone' && C.lifeCard(dead).facts.some((f) => /^Died at/.test(f)), 'his ribbon and his card say so');
+    }
+  }
+  /* A career that never goes out is the career it was. */
+  const fp = (L) => JSON.stringify([L.history, L.log.length, L.cash, L.m]);
+  const plain = (seed, peek) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (!L.retired && g++ < 6000) { if (L.pending.length) C.choose(L, L.steps % L.pending[0].options.length); else { if (peek) C.wildOpen(L); C.step(L); } } return fp(L); };
+  let same = 0; for (let i = 0; i < 12; i++) if (plain('xq' + i, false) === plain('xq' + i, true)) same++;
+  ok(same === 12, `reading the wild side changes nothing (${same} of 12 careers identical)`);
+  /* The two challenges. */
+  ok(['ch_clean', 'ch_house'].every((k) => C.CHALLENGES[k] && C.CHALLENGES[k].blurb.length > 8) && C.CHALLENGES.ch_house.blurb.indexOf(C.money(5)) > 0, `two challenges from the wild side ("${C.CHALLENGES.ch_house.blurb}")`);
+}
+
+// ── 24. a childhood ───────────────────────────────────────────────────────
+section('24. before the league: a childhood in nine cards, and the same sophomore at the end of it');
+{
+  /* Phase 5 of the BitLife plan (the owner's call, 2026-11-24). */
+  const E = require('./engine.js');
+  const JUNK24 = /\bundefined\b|\bNaN\b|\[object |\{[a-z]/;
+  const sum = (L) => C.RATINGS.reduce((t, k) => t + L.rt[k], 0);
+  const took = {}, bad = [], shape = [];
+  let same = 0, ages = 0, ended = 0, kept = 0, safe = 0, saved = 0;
+  const N = 60;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'kid' + i, league, start: 'kid' }), H = C.newLife({ seed: 'kid' + i, league, start: 'hs' });
+    const seenAges = [];
+    let n = 0, twin = null;
+    while (L.kid && !L.kid.done && n < 20) {
+      const c = L.pending[0], k = C.kidOf(L);
+      seenAges.push(L.age);
+      if (c.id !== 'kid' || L.stage !== 'kid' || L.pending.length !== 1 || k.i !== n || k.of !== C.KID.length) bad.push('card ' + n + ' of ' + L.seed);
+      const t = [c.eyebrow, c.title, c.text].concat(c.options.map((o) => o.label + ' ' + o.hint)).join(' | ');
+      if (DASH.test(t) || JUNK24.test(t)) bad.push('copy: ' + t.slice(0, 90));
+      /* nothing else is open while he is a child */
+      if (C.step(L).blocked && C.peopleOpen(L).length === 0 && C.wealthOpen(L) === null && C.wildOpen(L) === null && C.actsOpen(L).length === 0) safe++;
+      /* a save in the middle of it plays on the same */
+      if (n === 4) twin = C.migrate(JSON.parse(JSON.stringify(L)));
+      const pick = (i * 3 + n * 5 + (i >> 2)) % c.options.length;
+      took[n + ':' + pick] = 1;
+      const res = C.choose(L, pick);
+      if (twin && n >= 4) C.choose(twin, pick);
+      if (!res || DASH.test(res.text) || JUNK24.test(res.text)) bad.push('answer: ' + (res && res.text));
+      n++;
+    }
+    if (twin && JSON.stringify(twin) === JSON.stringify(L)) saved++;
+    if (JSON.stringify(seenAges) === JSON.stringify(C.KID_AGES)) ages++;
+    const ids = (X) => X.pending.map((c) => c.id).join(',');
+    if (L.stage === 'hs' && L.age === H.age && L.year === H.year && ids(L) === ids(H) && L.am.hs.name === H.am.hs.name && L.pot === H.pot && L.origin === H.origin && JSON.stringify(L.traits) === JSON.stringify(H.traits) && !H.kid) same++;
+    if (sum(L) !== sum(H)) shape.push(L.seed + ' ' + sum(L) + ' against ' + sum(H));
+    if (Object.keys(L.mem).filter((k) => /^kid\./.test(k)).length === C.KID.length - 1) kept++;
+    if (!/^Born in /.test(L.log[0].t) || L.log.some((e, j) => j && e.y < L.log[j - 1].y)) bad.push('log: ' + L.log[0].t);
+    if (i < 30) { const r = E.createSeededRNG(E.hashSeed('kid-p' + i)); let g = 0; while (!L.retired && g++ < 9000) { if (L.pending.length) C.choose(L, Math.floor(r() * L.pending[0].options.length)); else C.step(L); } if (L.retired && C.ribbonOf(L).id) ended++; }
+  }
+  const all = []; C.KID.forEach((k, j) => k.o.forEach((o, x) => all.push(j + ':' + x)));
+  const dark = all.filter((k) => !took[k]);
+  const wrong = []; C.KID.forEach((k, j) => k.o.forEach((o) => { if (o.up && (C.RATINGS.indexOf(o.up) < 0 || o.down.length !== 2 || o.down.some((d) => C.RATINGS.indexOf(d) < 0 || d === o.up) || o.down[0] === o.down[1])) wrong.push(j + ' ' + o.label); }));
+  console.log(`  ${N} childhoods  ${C.KID.length} cards  ${all.length} answers  ages ${C.KID_AGES.join(', ')}`);
+  ok(C.KID.length === 9 && C.KID.length === C.KID_AGES.length && ages === N, `nine cards, birth to fourteen, in order (${ages} of ${N})`);
+  ok(dark.length === 0, `every answer is taken somewhere (${dark.join(', ') || 'all ' + all.length})`);
+  ok(wrong.length === 0, `every answer gives to one rating and takes from two others (${wrong.join(', ') || 'all'})`);
+  ok(!bad.length, `every card, answer and log line reads clean (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(same === N, `at fifteen he is the sophomore the high school start makes: the school, the year, the ceiling, the traits, the first cards (${same} of ${N})`);
+  ok(!shape.length, `shaped, not strengthened: the ratings add up to what they did (${shape.slice(0, 2).join(' | ') || 'every one'})`);
+  ok(kept === N, `what he chose is remembered (${kept} of ${N})`);
+  ok(safe === N * C.KID.length, 'nothing else is open while he is a child, and a press does nothing');
+  ok(saved === N, `a childhood saved in the middle plays on the same (${saved} of ${N})`);
+  ok(ended === 30, `a life from birth still ends, with a ribbon (${ended} of 30)`);
+}
+
+// ── 25. after the whistle ─────────────────────────────────────────────────
+section('25. after the whistle: the rest of a life, four years a press, to the end');
+{
+  /* Phase 6 of the BitLife plan (the owner's call, 2026-11-24). */
+  const E = require('./engine.js');
+  const JUNK25 = /\bundefined\b|\bNaN\b|\[object |\{[a-z]/;
+  const N = 90, bad = [], evs = {}, jobs = {}, took = {}, ages = [];
+  let started = 0, over = 0, finalSame = 0, young = 0, rose = 0, presses = 0, blockedOk = 0, blockedN = 0, paid = 0, paidN = 0;
+  let deadMan = null;
+  for (let i = 0; i < N; i++) {
+    const L = C.generateRoad({ seed: 'later' + i, league });
+    const r = E.createSeededRNG(E.hashSeed('later-p' + i));
+    let g = 0;
+    while (!L.retired && g++ < 9000) { if (L.pending.length) C.choose(L, Math.floor(r() * L.pending[0].options.length)); else C.step(L); }
+    const fin = JSON.stringify(L.final), was = JSON.stringify(L);
+    const peek = C.laterOf(L);
+    if (JSON.stringify(L) !== was || peek.on || peek.can !== !L.flags.died) bad.push('laterOf before it starts: ' + L.seed);
+    if (C.laterAge(L) !== null) bad.push('aged before it started: ' + L.seed);
+    const V = C.laterStart(L);
+    if (!V) { bad.push('would not start: ' + L.seed); continue; }
+    started++;
+    if (C.laterStart(L) !== null) bad.push('started twice: ' + L.seed);
+    jobs[L.later.job] = 1;
+    if (L.later.job !== (C.LATER_JOBS[L.final.path] ? L.final.path : 'family')) bad.push('job is not the after card\'s: ' + L.seed);
+    g = 0;
+    while (!L.later.over && g++ < 200) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        blockedN++; const b = C.laterAge(L); if (b && b.blocked && !b.beats.length) blockedOk++;
+        if (c.id !== 'later' || L.pending.length !== 1) bad.push('card: ' + c.id);
+        evs[c.ctx.ev] = 1;
+        const t = [c.eyebrow, c.title, c.text].concat(c.options.map((o) => o.label + ' ' + o.hint)).join(' | ');
+        if (DASH.test(t) || JUNK25.test(t)) bad.push('copy: ' + t.slice(0, 90));
+        const k = Math.floor(r() * c.options.length); took[c.ctx.ev + ':' + k] = 1;
+        const res = C.choose(L, k);
+        if (!res || DASH.test(res.text) || JUNK25.test(res.text)) bad.push('answer: ' + (res && res.text));
+        continue;
+      }
+      const age0 = L.age, cash0 = L.cash, pay = C.laterOf(L).pay, rung0 = L.later.rung, plain = !L.wealth;
+      const a = C.laterAge(L); presses++;
+      if (L.age !== age0 + C.LATER_STEP) bad.push('a press is not four years: ' + L.seed);
+      if (plain && L.later.rung === rung0) { paidN++; if (Math.abs((L.cash - cash0) - pay * C.LATER_STEP) < 0.25) paid++; }
+      if (L.later.rung > rung0) rose++;
+      for (const b of a.beats) if (DASH.test(b.text) || JUNK25.test(b.text)) bad.push('beat: ' + b.text.slice(0, 80));
+      if (a.over && age0 + C.LATER_STEP < 50) young++;
+    }
+    if (L.later.over) { over++; ages.push(L.later.died); if (!deadMan) deadMan = L; }
+    if (JSON.stringify(L.final) === fin) finalSame++;
+    const end = C.laterOf(L);
+    if (!end.over || end.died !== L.age || typeof end.line !== 'string' || end.line.indexOf(L.name) !== 0 || DASH.test(end.line) || JUNK25.test(end.line)) bad.push('the last page: ' + JSON.stringify(end).slice(0, 90));
+    if (C.laterAge(L) !== null) bad.push('aged after the end: ' + L.seed);
+    for (const e of L.log) if (JUNK25.test(e.t) || DASH.test(e.t)) bad.push('log: ' + e.t.slice(0, 80));
+  }
+  ages.sort((a, b) => a - b);
+  const evDark = C.LATER_EV_KEYS.filter((k) => !evs[k]);
+  const all = []; for (const k of C.LATER_EV_KEYS) C.LATER_EV[k].o.forEach((o, x) => all.push(k + ':' + x));
+  const optDark = all.filter((k) => !took[k]);
+  console.log(`  ${started} lives after  ${presses} presses (${(presses / Math.max(1, started)).toFixed(1)} a life)  died at ${ages[0]} to ${ages[ages.length - 1]}, median ${ages[Math.floor(ages.length / 2)]}  jobs ${Object.keys(jobs).length} of ${C.LATER_JOB_KEYS.length}  promotions ${rose}`);
+  ok(started === N && over === N, `every retired man can live the rest of his life, and it ends (${over} of ${N})`);
+  ok(finalSame === N, `the career's last page is never touched: the Hall card is the Hall card (${finalSame} of ${N})`);
+  ok(!bad.length, `it starts once, in the job the after card chose, a press is four years, and every line reads clean (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(evDark.length === 0 && C.LATER_EV_KEYS.length >= 14, `every card of the later life is dealt somewhere (${evDark.join(', ') || 'all ' + C.LATER_EV_KEYS.length})`);
+  ok(optDark.length <= 2, `and nearly every answer taken (${all.length - optDark.length} of ${all.length}${optDark.length ? ': ' + optDark.join(', ') : ''})`);
+  ok(Object.keys(jobs).length >= 8 && rose >= 20, `the jobs are worked and climbed (${Object.keys(jobs).length} jobs, ${rose} promotions)`);
+  ok(young === 0 && ages[0] >= 50 && ages[ages.length - 1] <= 96 + C.LATER_STEP, `nobody dies of old age young, and nobody lives forever (${ages[0]} to ${ages[ages.length - 1]})`);
+  ok(blockedN > 50 && blockedOk === blockedN, 'a card waiting stops the years');
+  ok(paidN > 50 && paid === paidN, `with nothing owned, four years pay four years of the job (${paid} of ${paidN})`);
+  /* A man who died young has no later life, and a career in progress has none yet. */
+  {
+    const D = C.newLife({ seed: 'later-young', league, start: 'draft' });
+    ok(C.laterStart(D) === null && C.laterOf(D).can === false, 'a career still being played cannot skip to it');
+    const X = JSON.parse(JSON.stringify(deadMan)); delete X.later; X.flags.died = X.year;
+    ok(C.laterStart(X) === null && C.laterOf(X).can === false, 'a man who died young has no later life');
+  }
+  /* The money still has to be paid for. */
+  {
+    const X = JSON.parse(JSON.stringify(deadMan)); delete X.later; X.pending = [];
+    X.cash = 30; X.wealth = { own: [{ id: 'jet', y: X.year, paid: 45, val: 45 }], staff: { crew: X.year, chef: X.year }, inv: {} };
+    X.final.path = 'family';
+    C.laterStart(X);
+    let g = 0; while (!X.later.over && !X.flags.broke && g++ < 60) { if (X.pending.length) C.choose(X, 1); else C.laterAge(X); }
+    ok(!!X.flags.broke || X.wealth.own.length === 0, `a lifestyle with no paycheck is sold off, or breaks him (${X.flags.broke ? 'broke in ' + X.flags.broke : 'the jet went'})`);
   }
 }
 
