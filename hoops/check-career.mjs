@@ -2333,6 +2333,26 @@ async function browser() {
       await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
       await page.evaluate(() => document.querySelector('#b-career').click());
       await page.waitForSelector('#cr-go');
+      /* THE TYPE FLOOR (batch 4): no visible text in Career under 10px, in the
+         screens, the shell, the sheets, the tray and toasts. Read off the
+         computed size of every visible text node, not the source. */
+      const tiny = () => page.evaluate(() => {
+        const out = [];
+        for (const sc of ['#s-car', '#cr-shell', '#cr-sheet', '#rtf-locker', '.k-toasts']) {
+          const root = document.querySelector(sc); if (!root) continue;
+          const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+          while ((n = w.nextNode())) {
+            if (!n.textContent.trim()) continue;
+            const p = n.parentElement, r = p.getBoundingClientRect(), cs = getComputedStyle(p);
+            if (!r.width || !r.height || cs.visibility === 'hidden' || p.closest('[hidden]') || (!p.offsetParent && cs.position !== 'fixed')) continue;
+            const f = parseFloat(cs.fontSize);
+            if (f < 9.95 && out.length < 4) out.push((p.className || p.tagName).toString().split(' ').pop() + ' ' + f + 'px "' + n.textContent.trim().slice(0, 14) + '"');
+          }
+        }
+        return out;
+      });
+      const floor = [];
+      for (const stp of ['player', 'look', 'story', 'start']) { await page.click(`[data-bstep="${stp}"]`); await page.waitForTimeout(120); floor.push(...(await tiny()).map((x) => 'builder ' + x)); }
       await page.click('#cr-go');
       const press = (sel) => touch ? page.tap(sel, { timeout: 4000 }) : page.click(sel, { timeout: 4000 });
       const tryPress = async (sel) => { try { await press(sel); return true; } catch (e) { return false; } };
@@ -2492,6 +2512,24 @@ async function browser() {
         }
         ok(n >= 20 && !off.length, `${tag}: after each of ${n} presses the next answer or button is on screen between the bars (${off.join('; ') || 'all'})`);
       } else ok(false, `${tag}: found a second career mid season`);
+      if (await find('mid')) {
+        await page.waitForTimeout(300);
+        for (const t of ['now', 'team', 'legacy', 'me']) {
+          await show(t);
+          const subs = await page.$$eval('#s-car .cr-tabs [data-tab]', (a) => a.filter((x) => x.offsetParent).map((x) => x.getAttribute('data-tab')));
+          if (!subs.length) floor.push(...(await tiny()).map((x) => t + ' ' + x));
+          for (const sb of subs) { await tryPress(`[data-tab="${sb}"]`); await page.waitForTimeout(120); floor.push(...(await tiny()).map((x) => t + '/' + sb + ' ' + x)); }
+        }
+        if (await show('moves')) for (const g of ['team', 'court', 'body', 'brand', 'life']) { await tryPress(`#cr-sheet [data-mgroup="${g}"]`); await page.waitForTimeout(100); floor.push(...(await tiny()).map((x) => 'moves ' + x)); }
+        await show('now');
+        if (await tryPress('#cr-lookbtn')) { await page.waitForTimeout(300); for (const lt of ['body', 'street', 'court', 'shop']) { await tryPress(`[data-ltab="${lt}"]`); await page.waitForTimeout(300); floor.push(...(await tiny()).map((x) => 'look ' + x)); } await page.keyboard.press('Escape'); await page.waitForTimeout(200); }
+        await show('me'); if (await tryPress('[data-prow="locker"]')) { await page.waitForTimeout(400); floor.push(...(await tiny()).map((x) => 'locker ' + x)); await page.keyboard.press('Escape'); await page.waitForTimeout(200); }
+        await show('now');
+        await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur; let g = 0; while (g++ < 3000 && !L.pending.length) C.step(L);
+          RTF_CAREER_UI.paintPress({ beats: [{ text: 'A beat.', tone: 'good' }], result: { label: 'A', text: 'An answer.', tone: 'good', diff: [{ k: 'r0', label: 'Shooting', d: 2 }, { k: 'cash', label: 'Cash', d: 0.4, money: true }] } }); });
+        await page.waitForTimeout(250); floor.push(...(await tiny()).map((x) => 'tray ' + x));
+        ok(floor.length === 0, `${tag}: no visible text in Career is under 10px, builder, tabs, moves, look, locker and tray (${floor.slice(0, 4).join('; ') || 'none'})`);
+      } else ok(false, `${tag}: found a career for the type floor`);
       /* NO FULL REPAINT, AND MOTION THAT ASKS FIRST (batch 3). A tab switch
          redraws nothing that did not change: his face in the app bar, the tab
          bar, the player card and the meters are the same nodes after it. A
@@ -2732,6 +2770,15 @@ async function browser() {
       ok(a.frame && a.foil, 'the Hall card wears a cast frame and a foil sheen');
       s = await sound();
       ok(s.side <= 0 && !s.cut.length, `the Hall card scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+      /* the type floor on the Hall card and the Vault (batch 4) */
+      const tinyH = () => page.evaluate(() => { const out = []; const w = document.createTreeWalker(document.querySelector('#s-car'), NodeFilter.SHOW_TEXT); let n;
+        while ((n = w.nextNode())) { if (!n.textContent.trim()) continue; const p = n.parentElement, r = p.getBoundingClientRect(), cs = getComputedStyle(p);
+          if (!r.width || !r.height || cs.visibility === 'hidden' || !p.offsetParent) continue; if (parseFloat(cs.fontSize) < 9.95 && out.length < 4) out.push((p.className || p.tagName).toString().split(' ').pop() + ' ' + cs.fontSize); } return out; });
+      const th = await tinyH();
+      await page.click('#cr-vault2'); await page.waitForTimeout(200);
+      const tv = []; for (const v of ['endings', 'careers', 'family']) { await page.click(`[data-vtab="${v}"]`).catch(() => {}); await page.waitForTimeout(120); tv.push(...(await tinyH())); }
+      await page.click('#cr-vback'); await page.waitForTimeout(200);
+      ok(!th.length && !tv.length, `on a desktop no text on the Hall card or in the Vault is under 10px (${th.concat(tv).slice(0, 4).join('; ') || 'none'})`);
       await page.setViewportSize({ width: 1280, height: 640 });
       await page.waitForTimeout(300);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
