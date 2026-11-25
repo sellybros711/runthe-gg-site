@@ -20,11 +20,13 @@ const str = re => v => (typeof v === 'string' && v.length <= 24 && re.test(v) ? 
 export const EVENTS = Object.freeze({
   open: { first: bool, signed: bool },
   shift_start: { no: int(1, 100000) },
-  shift_end: { no: int(1, 100000), rounds: int(0, 1000), cash: int(-100000, 10000000), tips: int(0, 10000000), walk_offs: int(0, 1000), goal_met: bool, stuck: int(0, 1000) },
+  shift_end: { no: int(1, 100000), rounds: int(0, 1000), cash: int(-100000, 10000000), tips: int(0, 10000000), walk_offs: int(0, 1000), goal_met: bool, stuck: int(0, 1000), upgrades: int(0, 1000), hires: int(0, 100) },
   goal_step: { key: str(/^[a-z0-9]+$/), no: int(1, 100000) },
   pad_buy: { id: str(/^[a-z0-9_]+$/) },
   upgrade: { id: str(/^[a-z0-9_]+$/), level: int(1, 100) },
-  book_open: { no: int(1, 100000) }
+  book_open: { no: int(1, 100000) },
+  hire: { id: str(/^[a-z0-9_]+$/) },
+  place_open: { id: str(/^[a-z0-9_]+$/) }
 });
 
 export const NO_EVENTS = Object.freeze(['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',

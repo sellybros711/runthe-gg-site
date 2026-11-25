@@ -16,6 +16,11 @@ The site rules in the root `CLAUDE.md` apply too. `course/README.md` says how th
   `functions/api/course` with the service role, from its own replay. Never trust a number from the page.
 - **Saves send only what changed:** one shift, once, when it ends. No timer, no poll, nothing while
   the tab is hidden. A new database function that rewrites jsonb goes in `scripts/save-writes.json`.
+- **The structure is the owner's** (2026-11-25; vault `games/course/course-structure.md`): a day of
+  dawn, open, close and after hours; one pad a place, opening a card; every station run by hand
+  first, then by a hire; real-time waits held off. A change against it needs the owner.
+- **Buying is a command** (`buy`, `end`), valid only from the place's own pad, so the server's replay
+  buys exactly what the player bought.
 - **No guide opens by itself.** The goal line is part of the HUD.
 - **Nothing in `golf/` is changed or loaded.** Money and ads are other agents' work.
 - **One phase at a time.** Do not start a later phase without the owner asking.

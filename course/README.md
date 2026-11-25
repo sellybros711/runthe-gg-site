@@ -30,6 +30,17 @@ tester gate, noindexed, linked from nowhere, off the home page and the newslette
 | `functions/_course/`, `functions/api/course/[[path]].js` | the save route: who is asking, the replay, the database, the events |
 | `supabase/187_course.sql` | the course on the server. Only the service role reads or writes it |
 
+## The shape of the game (agreed with the owner, 2026-11-25)
+
+- **A day has four parts:** dawn (get the course ready), open (serve), close (the day's card), and
+  **after hours** (no golfers and no clock: walk the property and spend, then end the day).
+- **One pad a place.** Standing on a place's pad opens its card: build it, level what it holds, hire
+  who runs it. Buying is a command from the card, and only from that pad. `economy.places`.
+- **Every station has the same life:** build it, run it by hand, level it, hire someone. The
+  stations are the counter, tee 1, the greens, cart keys at the barn, the snack shack and the range
+  baskets. A hire works slower than the player (`staffSpeed`, `staffDelayS`). `economy.staff`.
+- The whole structure, its chapters and the build order are in the vault: `games/course/course-structure.md`.
+
 ## The rules the code keeps
 
 - **The sim is pure and deterministic.** Same seed, config and command log give the same shift in
