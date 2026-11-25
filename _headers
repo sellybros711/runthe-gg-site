@@ -119,3 +119,11 @@
   Cache-Control: no-cache
 /shut-the-door/lab/*.js
   Cache-Control: public, max-age=31536000, immutable
+
+# Run The Course (unlisted). The page is revalidated like every page; its modules carry ?v=
+# (held by scripts/check-cachebust.mjs). The vendored three.js it draws with sits in a folder
+# named for its release, so those bytes never change and a phone can keep them for a year.
+/course/
+  Cache-Control: no-cache
+/assets/vendor/three-0.180.0/*
+  Cache-Control: public, max-age=31536000, immutable

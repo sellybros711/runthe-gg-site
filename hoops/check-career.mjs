@@ -2492,6 +2492,61 @@ async function browser() {
         }
         ok(n >= 20 && !off.length, `${tag}: after each of ${n} presses the next answer or button is on screen between the bars (${off.join('; ') || 'all'})`);
       } else ok(false, `${tag}: found a second career mid season`);
+      /* NO FULL REPAINT, AND MOTION THAT ASKS FIRST (batch 3). A tab switch
+         redraws nothing that did not change: his face in the app bar, the tab
+         bar, the player card and the meters are the same nodes after it. A
+         press keeps the face and the tab bar, and keeps the card whenever the
+         card did not change, never showing a stale overall. With reduced
+         motion nothing animates on a tab or a sheet; with motion on, a tab
+         fades (opacity only, so the fixed tray stays pinned to the window)
+         and a sheet rises. */
+      if (await find('mid')) {
+        await page.waitForTimeout(300);
+        const keep = await page.evaluate(async () => {
+          const q = (s) => document.querySelector(s), mark = () => [q('#cr-lookbtn'), q('.k-tabbar'), q('.cr-id'), q('.cr-meters')];
+          const bad = []; let m = mark();
+          for (const t of ['team', 'legacy', 'me', 'now']) {
+            q('#cr-t-' + t).click(); await new Promise((x) => setTimeout(x, 250));
+            const n = mark(); ['face', 'tab bar', 'card', 'meters'].forEach((w, i) => { if (!n[i] || n[i] !== m[i]) bad.push(t + ' ' + w); }); m = n;
+          }
+          return bad;
+        });
+        ok(keep.length === 0, `${tag}: switching tabs redraws nothing that did not change (${keep.slice(0, 3).join(', ') || 'face, tab bar, card and meters kept'})`);
+        const pr = { n: 0, face: 0, bar: 0, card: 0, stale: [] };
+        for (let i = 0; i < 16; i++) {
+          if (await page.$('#tkov:not([hidden]) #tk-go')) { await page.click('#tkov #tk-go').catch(() => {}); await page.waitForTimeout(150); continue; }
+          const before = await page.evaluate(() => { window.__m = [document.querySelector('#cr-lookbtn'), document.querySelector('.k-tabbar'), document.querySelector('.cr-id')]; return !!RTF_CAREER_UI.state().cur; });
+          const sel = (await page.$('.cr-choice')) ? '.cr-choice' : (await page.$('#cr-next')) ? '#cr-next' : null;
+          if (!before || !sel) break;
+          await page.waitForFunction((sel) => { const e = document.querySelector(sel); return e && !e.disabled; }, sel, { timeout: 3000 }).catch(() => {});
+          if (!(await tryPress(sel))) break;
+          await page.waitForTimeout(450);
+          const a = await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; if (!L) return null; const C = window.RTF_CAREER, m = window.__m;
+            return { face: document.querySelector('#cr-lookbtn') === m[0], bar: document.querySelector('.k-tabbar') === m[1], card: document.querySelector('.cr-id') === m[2],
+              ovr: (document.querySelector('#cr-ovr') || {}).textContent, eng: String(C.show(C.ovrOf(L))), team: L.team }; });
+          if (!a) break;
+          pr.n++; pr.face += a.face; pr.bar += a.bar; pr.card += a.card;
+          if (a.ovr !== a.eng && pr.stale.length < 3) pr.stale.push(a.ovr + ' for ' + a.eng);
+        }
+        ok(pr.n >= 10 && pr.face === pr.n && pr.bar === pr.n, `${tag}: across ${pr.n} presses his face and the tab bar are never redrawn (${pr.face} and ${pr.bar} kept)`);
+        ok(pr.n >= 10 && pr.card * 2 >= pr.n && !pr.stale.length, `${tag}: the player card is kept when it did not change, and never shows a stale overall (${pr.card} of ${pr.n} kept; ${pr.stale.join(', ') || 'none stale'})`);
+        const running = () => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('#s-car, #cr-sheet') && (a.effect.getComputedTiming().duration || 0) > 0)
+          .map((a) => ({ name: a.animationName || '', el: (a.effect.target.id || a.effect.target.className || '').toString().slice(0, 24), tf: JSON.stringify(a.effect.getKeyframes()).indexOf('transform') >= 0 })));
+        /* reduced motion (this context): nothing moves on a tab or a sheet */
+        await show('team'); const rmTab = await running(); await show('now');
+        await tryPress('#cr-lookbtn'); await page.waitForTimeout(40); const rmSheet = await running();
+        await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+        ok(rmTab.length === 0 && rmSheet.length === 0, `${tag}: with reduced motion a tab and a sheet arrive with no motion (${JSON.stringify(rmTab.concat(rmSheet)).slice(0, 120)})`);
+        /* motion on: a tab fades without a transform, a sheet rises */
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await tryPress('#cr-t-team'); await page.waitForTimeout(30); const onTab = await running();
+        await show('now');
+        await tryPress('#cr-lookbtn'); await page.waitForTimeout(30); const onSheet = await running();
+        await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        ok(onTab.some((x) => x.name === 'cr-tabin') && !onTab.some((x) => x.tf && /grid|cr-body/.test(x.el)), `${tag}: with motion on a tab fades in, opacity only (${onTab.map((x) => x.name).join(', ') || 'nothing ran'})`);
+        ok(onSheet.some((x) => x.name === 'k-sheet-up'), `${tag}: and a sheet rises (${onSheet.map((x) => x.name).join(', ') || 'nothing ran'})`);
+      } else ok(false, `${tag}: found a career for the repaint walk`);
       /* BACK STAYS IN CAREER (batch 2): a phone's back or the browser's
          closes the sheet, then steps back through the tabs, then holds on
          Now. It never leaves the game. And each tab keeps its scroll and its
