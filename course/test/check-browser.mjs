@@ -86,18 +86,19 @@ for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 84
   /* one thumb: a drag walks, a tap travels */
   const before = await page.evaluate(() => ({ x: window.__course.state().player.x, y: window.__course.state().player.y }));
   const cx = vp.viewport.width / 2, cy = vp.viewport.height / 2;
-  await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx + 60, cy, { steps: 4 });
+  /* west: nothing to walk into that way, however slow the machine (the cart is parked to the east) */
+  await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx - 60, cy, { steps: 4 });
   ok(await page.evaluate(() => getComputedStyle(document.getElementById('stick')).display) === 'block', name + ': no joystick under the thumb');
   await page.waitForTimeout(700); await page.mouse.up(); await page.waitForTimeout(250);
   const after = await page.evaluate(() => ({ x: window.__course.state().player.x, y: window.__course.state().player.y, dir: window.__course.state().player.dir }));
-  ok(after.x > before.x + 1.5 && Math.abs(after.y - before.y) < 0.6, name + ': a drag to the right did not walk east (' + JSON.stringify([before, after]) + ')');
+  ok(after.x < before.x - 1.5 && Math.abs(after.y - before.y) < 0.6, name + ': a drag to the left did not walk west (' + JSON.stringify([before, after]) + ')');
   ok(after.dir === -1, name + ': letting go did not stop');
   await page.mouse.click(cx - 80, cy + 60);
-  await page.waitForTimeout(900);
+  await page.waitForFunction(x => window.__course.state().player.x < x - 1, after.x, { timeout: 5000 }).catch(() => {});
   const tapped = await page.evaluate(() => ({ x: window.__course.state().player.x, y: window.__course.state().player.y }));
   ok(tapped.x < after.x - 1, name + ': a tap did not travel there');
   if (!phone) {
-    await page.keyboard.down('KeyW'); await page.waitForTimeout(500); await page.keyboard.up('KeyW');
+    await page.keyboard.down('KeyW'); await page.waitForFunction(y => window.__course.state().player.y > y + 1, tapped.y, { timeout: 5000 }).catch(() => {}); await page.keyboard.up('KeyW');
     const w = await page.evaluate(() => window.__course.state().player.y);
     ok(w > tapped.y + 1, name + ': W did not walk north');
   }
