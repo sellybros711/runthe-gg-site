@@ -2440,7 +2440,9 @@ async function browser() {
         });
         ok(keep.length === 0, `${tag}: switching tabs redraws nothing that did not change (${keep.slice(0, 3).join(', ') || 'face, tab bar, card and meters kept'})`);
         const pr = { n: 0, face: 0, bar: 0, card: 0, stale: [] };
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 40 && pr.n < 16; i++) {
+          /* the year's summary is tapped through, as every walk does (Age up) */
+          if (await passYear(page)) { await page.waitForTimeout(150); continue; }
           if (await page.$('#tkov:not([hidden]) #tk-go')) { await page.click('#tkov #tk-go').catch(() => {}); await page.waitForTimeout(150); continue; }
           const before = await page.evaluate(() => { window.__m = [document.querySelector('#cr-lookbtn'), document.querySelector('.k-tabbar'), document.querySelector('.cr-id')]; return !!RTF_CAREER_UI.state().cur; });
           const sel = (await page.$('.cr-choice')) ? '.cr-choice' : (await page.$('#cr-next')) ? '#cr-next' : null;
