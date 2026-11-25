@@ -11,7 +11,11 @@ export const MAP = {
   draw: { greenR: 3, fairwayHalf: 2.6, teeR: 1.3 },   // how big the turf is drawn; mowing uses greenR
   bounds: { x0: -72, x1: 196, y0: -42, y1: 86 },
   start: { x: 3, y: -9 },
-  gate: { x: -24, y: -20 },
+  gate: { x: -13, y: -17.5 },                 // where golfers walk in: the top of the parking lot
+  parking: { x: -14, y: -22.5, w: 16, d: 9 },
+  entrance: { x: -40, y: -37 },               // the road in from the south west
+  puttingGreen: { x: 25, y: 12.5, r: 4.2 },
+  gardens: { x: 0, y: 8.5 },
   clubhouse: { x: 0, y: 0, w: 12, d: 8, h: 4 },
   counter: { x: 3, y: -6.4 },                 // the ring the player stands in
   queue: { x: 3, y: -10.5, dx: -2.4, dy: 0 },   // groups line up from here
@@ -24,16 +28,20 @@ export const MAP = {
   teeWait: { dx: 2.6, dy: -2.2 },             // where a waiting group stands, off the tee
   pads: {
     cart_barn: { x: 17, y: -6 },
+    putting_green: { x: 25, y: 5.5 },
+    snack_shack: { x: 31.5, y: -16.5 },
+    driving_range: { x: -24, y: -31 },
     hole_4: { x: -6, y: 15 }
   },
   /* one pad for each thing that levels up, beside the thing itself */
   upgradePads: {
-    boots: { x: -2, y: -15.5 }, shop: { x: 10, y: 1.5 }, starter: { x: 3, y: 19.5 }, shed: { x: -19, y: 3 },
+    boots: { x: -3, y: -15 }, shop: { x: 10, y: 1.5 }, starter: { x: 3, y: 19.5 }, shed: { x: -19, y: 3 },
     my_cart: { x: 15.5, y: -13 }, hole_1: { x: 15, y: 30 }, hole_2: { x: 63, y: 45.5 }, hole_3: { x: 35, y: 12.5 },
-    cart_barn: { x: 24, y: -6 }, clubhouse: { x: -10, y: -3 }
+    cart_barn: { x: 24, y: -6 }, clubhouse: { x: -10, y: -3 }, gardens: { x: -7, y: 9.5 }, parking: { x: 1.5, y: -22.5 },
+    putting_green: { x: 31.5, y: 9 }, snack_shack: { x: 26, y: -18.5 }, driving_range: { x: -30, y: -31 }
   },
   snackShack: { x: 26, y: -12 },              // at the turn, between 9 and 10
-  range: { x: -44, y: -22, w: 34, d: 22 },
+  range: { x: -47, y: -21, w: 34, d: 18 },
   road: { x: 100, w: 5 },
   backNine: { x0: 106, x1: 192, y0: -36, y1: 80, sign: { x: 104, y: 8 } },
   waypoints: { toTee: [{ x: 9.5, y: -7 }, { x: 10, y: 9 }] },
@@ -51,5 +59,5 @@ export const MAP = {
   openAtStart: [1, 2, 3],
   trees: [[-20, 12], [-26, 4], [24, 22], [28, 30], [48, 28], [50, 52], [30, 52], [66, 48], [70, 24], [-18, 34],
     [-36, 16], [-40, 40], [-66, 48], [-30, 60], [0, 78], [36, 76], [78, 66], [92, 50], [94, 20], [70, 2],
-    [50, -16], [20, -22], [-10, -26], [-62, 10], [-64, -8], [86, -10], [4, 50], [-4, 40], [22, 6], [90, 76]]
+    [50, -16], [20, -22], [-10, -26], [-62, 10], [-64, -8], [86, -10], [4, 50], [-4, 40], [20, 20], [90, 76]]
 };

@@ -2649,8 +2649,8 @@
       "sha": "1891cdfef9c19253"
     },
     "main.js": {
-      "v": "2",
-      "sha": "7ccbdbb2096a4592"
+      "v": "3",
+      "sha": "b7940eed15d5a44e"
     }
   },
   "football/fantasy/index.html": {
@@ -3489,24 +3489,24 @@
   },
   "course/main.js": {
     "config.js": {
-      "v": "2",
-      "sha": "53e872d6f1624b2f"
+      "v": "3",
+      "sha": "b7948a1f117ebfbf"
     },
     "map.js": {
-      "v": "2",
-      "sha": "eaaa0c7d298b8a41"
+      "v": "3",
+      "sha": "218d3480182de765"
     },
     "sim.js": {
-      "v": "2",
-      "sha": "a0889099bba4475a"
+      "v": "3",
+      "sha": "3be6ad03efe81c73"
     },
     "bot.js": {
-      "v": "2",
-      "sha": "b9d133fe30b9a408"
+      "v": "3",
+      "sha": "4b83e368cae880eb"
     },
     "store.js": {
-      "v": "2",
-      "sha": "1d61490381cd202c"
+      "v": "3",
+      "sha": "1bf02dbf34808c15"
     },
     "analytics.js": {
       "v": "1",
@@ -3517,8 +3517,8 @@
       "sha": "2987d27952084469"
     },
     "render.js": {
-      "v": "2",
-      "sha": "eda51aff02498f1d"
+      "v": "3",
+      "sha": "9c4294e66b8b5132"
     }
   },
   "hoops/page.js": {
@@ -3613,14 +3613,14 @@
   },
   "course/bot.js": {
     "sim.js": {
-      "v": "2",
-      "sha": "a0889099bba4475a"
+      "v": "3",
+      "sha": "3be6ad03efe81c73"
     }
   },
   "course/store.js": {
     "sim.js": {
-      "v": "2",
-      "sha": "a0889099bba4475a"
+      "v": "3",
+      "sha": "3be6ad03efe81c73"
     }
   },
   "mythiball/proto3d/park.js": {

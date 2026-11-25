@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { CONFIG } from '../config.js';
 import { MAP } from '../map.js';
-import { newCourse, startShift, step, endShift, makeCtx, replay, command, roundPlan, buildRoute, goalOf, starsOf, goalFor, stations, migrateCourse, levelOf, upgradeCost, feeOf } from '../sim.js';
+import { newCourse, startShift, step, endShift, makeCtx, replay, command, roundPlan, buildRoute, goalOf, starsOf, goalFor, stations, migrateCourse, levelOf, upgradeCost, feeOf, shopList, looksOf } from '../sim.js';
 import { makeBot } from '../bot.js';
 import { runShifts } from '../headless.mjs';
 
@@ -256,8 +256,11 @@ test('upgrades: every level costs more, raises what it says, and stops at the to
   assert.ok(S.fx.walk > base.fx.walk && S.fx.cart > base.fx.cart && S.fx.mower > base.fx.mower && S.fx.mow < base.fx.mow);
   assert.ok(S.fx.checkin < base.fx.checkin && S.fx.checkin > 0 && S.fx.sendoff < base.fx.sendoff && S.fx.sendoff > 0);
   assert.ok(S.fx.patCounter > base.fx.patCounter && S.fx.patTee > base.fx.patTee && S.fx.pace < base.fx.pace);
-  assert.ok(S.groups.length > base.groups.length, 'a bigger clubhouse books more groups');
-  for (const st of stations(S, ctx, [], true)) if (st.up) { assert.equal(st.st, 'max'); assert.equal(st.can, false); assert.match(st.label, /Max$/); }
+  assert.ok(S.groups.length > base.groups.length, 'a bigger parking lot books more groups');
+  assert.ok(!stations(S, ctx, [], true).some(st => st.up), 'a maxed thing has no pad left');
+  assert.ok(shopList(S, ctx).filter(i => i.kind === 'level').every(i => i.done && !i.can));
+  const list = shopList(base, ctx);
+  assert.ok(list.length >= 12 && list[0].cost <= list[1].cost, 'the list is cheapest first');
   assert.equal(levelOf(base, CONFIG, 'boots'), 1);
   const fresh = startShift(newCourse(CONFIG, MAP, 3), CONFIG, MAP);
   assert.equal(levelOf(fresh, CONFIG, 'cart_barn'), 0, 'the cart barn has no level until it is built');
@@ -295,4 +298,38 @@ test('a course saved before upgrades existed still loads, at level 1', () => {
   const c = migrateCourse(JSON.parse(JSON.stringify(old)), CONFIG);
   assert.deepEqual(c.levels, {});
   assert.equal(levelOf(startShift(c, CONFIG, MAP), CONFIG, 'shop'), 1);
+});
+
+test('new buildings: the putting green, the snack shack and the range each add income once built', () => {
+  const plain = newCourse(CONFIG, MAP, 6); plain.unlocks.cart_barn = 'done';
+  const built = JSON.parse(JSON.stringify(plain)); for (const id of ['putting_green', 'snack_shack', 'driving_range']) built.unlocks[id] = 'done';
+  const ctx = makeCtx(plain, CONFIG, MAP), A = startShift(plain, CONFIG, MAP), B = startShift(built, CONFIG, MAP);
+  assert.equal(A.fx.snack, 0); assert.equal(A.fx.range, 0); assert.equal(A.fx.practice, 0);
+  assert.ok(B.fx.snack > 0 && B.fx.range > 0 && B.fx.practice > 0 && B.fx.patCourse > A.fx.patCourse);
+  assert.ok(feeOf(B, ctx) > feeOf(A, ctx));
+  const bot = makeBot(); while (!B.done) { bot(B, ctx); step(B, ctx); }
+  assert.ok(B.tally.extras > 0, 'snacks were sold at the turn');
+  const r = endShift(B, ctx, built).result;
+  assert.equal(r.cash, r.fees + r.tips + r.extras);
+  const looks = looksOf(B, CONFIG, {});
+  assert.equal(looks['snack_shack:st'], 'done'); assert.equal(looks.snack_shack, 0);
+  assert.equal(looksOf(A, CONFIG, {}).snack_shack, -1, 'not built, no look');
+});
+
+test('gardens raise the design part of a review, the clubhouse the tip, the parking lot the bookings', () => {
+  const a = newCourse(CONFIG, MAP, 7), b = JSON.parse(JSON.stringify(a)); b.levels.gardens = 10; b.levels.clubhouse = 10; b.levels.parking = 10;
+  const A = startShift(a, CONFIG, MAP), B = startShift(b, CONFIG, MAP);
+  assert.ok(B.fx.design > A.fx.design && B.fx.design <= 1); assert.ok(B.fx.tipMax > A.fx.tipMax); assert.ok(B.groups.length > A.groups.length);
+  assert.equal(looksOf(B, CONFIG, {}).gardens, 3); assert.equal(looksOf(A, CONFIG, {}).gardens, 0);
+});
+
+test('a filed shift replays well inside the server\'s 10 ms of CPU, late in the game too', () => {
+  let c = newCourse(CONFIG, MAP, 3), worst = 0;
+  for (let d = 0; d < 40; d++) {
+    const ctx = makeCtx(c, CONFIG, MAP), S = startShift(c, CONFIG, MAP), bot = makeBot();
+    while (!S.done) { bot(S, ctx); step(S, ctx); }
+    if (d >= 30) { let best = 1e9; for (let k = 0; k < 4; k++) { const t = process.hrtime.bigint(); replay(c, S.log, CONFIG, MAP); best = Math.min(best, Number(process.hrtime.bigint() - t) / 1e6); } worst = Math.max(worst, best); }
+    c = endShift(S, ctx, c).course;
+  }
+  assert.ok(worst < 6, 'the slowest replay took ' + worst.toFixed(2) + ' ms');
 });

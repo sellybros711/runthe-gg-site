@@ -10,7 +10,7 @@
 export const GAME = Object.freeze({ name: 'Run The Course', slug: 'course', logo: '/course/logo.svg' });
 
 export const CONFIG = {
-  version: 2,
+  version: 3,
   schema: 1,
 
   shift: {
@@ -52,6 +52,9 @@ export const CONFIG = {
     startCash: 0,
     pads: {
       cart_barn: { name: 'Cart Barn', cost: 60, buildS: 10, kind: 'unlock' },
+      putting_green: { name: 'Putting Green', cost: 90, buildS: 15, kind: 'unlock' },
+      snack_shack: { name: 'Snack Shack', cost: 180, buildS: 20, kind: 'unlock' },
+      driving_range: { name: 'Driving Range', cost: 450, buildS: 30, kind: 'unlock' },
       hole_4: { name: 'Hole 4', cost: 1000, buildS: 1800, kind: 'hole', hole: 4 }
     },
     /* Everything that levels up. Each has its own pad. Everything starts at level 1;
@@ -59,6 +62,8 @@ export const CONFIG = {
        nearest $5. Each effect below is what ONE level adds. `needs` names a pad
        that must be built first. */
     upgradeMax: 10, upgradeGrowth: 1.45,
+    tierEvery: 3,             // a building changes its look every this many levels
+    snackBase: 1, rangeBase: 1,   // dollars a golfer at the first level of each
     upgradeQuietS: 12,         // the goal line only sends you to a pad when no group needs you for this long
     upgrades: {
       boots:     { name: 'Boots',       cost: 20, walk: 0.25 },                      // your walking speed, units a second
@@ -70,7 +75,12 @@ export const CONFIG = {
       hole_2:    { name: 'Hole 2',      cost: 40, hole: 2, fee: 0.08, decay: 1.5 },
       hole_3:    { name: 'Hole 3',      cost: 40, hole: 3, fee: 0.08, decay: 1.5 },
       cart_barn: { name: 'Cart Barn',   cost: 50, needs: 'cart_barn', rental: 0.5, pace: 0.02 },   // dollars a golfer for the cart; holes play that share faster
-      clubhouse: { name: 'Clubhouse',   cost: 60, bookings: 0.06, patience: 2 }      // that share more groups booked; groups wait longer at the counter
+      gardens:   { name: 'Gardens',     cost: 45, design: 0.05 },                    // the course looks better: the design part of every review rises
+      parking:   { name: 'Parking Lot', cost: 55, bookings: 0.06 },                  // that share more groups booked
+      clubhouse: { name: 'Clubhouse',   cost: 60, tip: 0.02, patience: 2 },          // the most a group tips rises by that share of the fee; groups wait longer at the counter
+      putting_green: { name: 'Putting Green', cost: 70, needs: 'putting_green', practice: 0.25, patience: 2 },   // dollars a golfer to warm up; groups wait longer out on the course
+      snack_shack:   { name: 'Snack Shack',   cost: 90, needs: 'snack_shack', snack: 0.5 },                      // dollars more a golfer spends at the turn
+      driving_range: { name: 'Driving Range', cost: 140, needs: 'driving_range', range: 0.5 }                    // dollars more a golfer spends on range balls
     }
   },
 
