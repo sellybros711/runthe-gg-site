@@ -30,13 +30,29 @@ def _bref(f):
 save("war_daily_bat.txt",   _bref("war_daily_bat.txt"))
 save("war_daily_pitch.txt", _bref("war_daily_pitch.txt"))
 
+from seasons import last_completed_season
 print("2/3  fWAR (FanGraphs leaderboards, 1901-present, everyone)")
+# A LEADERBOARD THAT ANSWERS IS NOT ONE THAT ARRIVED. FanGraphs used to refuse
+# outright (403) and this step failed, which build_pricing.py treats as "no fWAR"
+# and prices on bWAR alone. On 2026-11-23 it answered instead, with a frame of a
+# single IDfg column and no names, no seasons, no WAR; the fetch saved it as a
+# success and the build died reading it. A frame without the three columns the
+# build reads is a failed fetch, so it is never written, and the build takes the
+# bWAR path it has always taken without FanGraphs.
+FG_NEEDS = ("Name", "Season", "WAR")
+def _fg_write(df, name):
+    have = set(df.columns)
+    missing = [c for c in FG_NEEDS if c not in have]
+    if missing or len(df) == 0:
+        raise ValueError(f"FanGraphs answered without {missing or 'any rows'} "
+                         f"({len(df)} rows, columns {list(df.columns)[:6]}); not saved")
+    df.to_csv(os.path.join(DATA, name), index=False)
 def _fg_bat():
     from pybaseball import batting_stats
-    batting_stats(1901, 2025, qual=0).to_csv(os.path.join(DATA,"fg_bat.csv"), index=False)
+    _fg_write(batting_stats(1901, last_completed_season(), qual=0), "fg_bat.csv")
 def _fg_pitch():
     from pybaseball import pitching_stats
-    pitching_stats(1901, 2025, qual=0).to_csv(os.path.join(DATA,"fg_pitch.csv"), index=False)
+    _fg_write(pitching_stats(1901, last_completed_season(), qual=0), "fg_pitch.csv")
 save("fg_bat.csv",   _fg_bat)
 save("fg_pitch.csv", _fg_pitch)
 

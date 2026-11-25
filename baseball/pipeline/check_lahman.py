@@ -280,7 +280,7 @@ print("\n7. The build stops rather than writing a pool nobody can draft")
 # whether the file says what it says.
 
 import os
-import shutil
+import shutil, json
 import subprocess
 import tempfile
 
@@ -336,17 +336,20 @@ REFUSES = (
 )
 
 
-def drive(what, lahman_src=None, tables=None, args=()):
+def drive(what, lahman_src=None, tables=None, args=(), bat=None, beside=None):
     """Run the real build_positions.py in a copy of this directory."""
     tmp = tempfile.mkdtemp(prefix="lahman-build-")
     try:
         shutil.copy(os.path.join(HERE, "build_positions.py"), tmp)
+        shutil.copy(os.path.join(HERE, "seasons.py"), tmp)
         with open(os.path.join(tmp, "lahman.py"), "w") as fh:
             fh.write(lahman_src if lahman_src is not None
                      else open(os.path.join(HERE, "lahman.py")).read())
+        for name, body in (beside or {}).items():
+            open(os.path.join(tmp, name), "w").write(body)
         d = os.path.join(tmp, "data")
         os.makedirs(d)
-        open(os.path.join(d, "war_daily_bat.txt"), "w").write(BAT)
+        open(os.path.join(d, "war_daily_bat.txt"), "w").write(bat or BAT)
         open(os.path.join(d, "war_daily_pitch.txt"), "w").write(PIT)
         for name, body in (tables or {}).items():
             open(os.path.join(d, name), "w").write(body)
@@ -381,6 +384,29 @@ claim(f"Closers (saves-based): {CLOSERS}" in log,
       f"and {CLOSERS} of the three arms is the closer, off the saves column",
       log[-500:])
 
+# A SEASON LAHMAN HAS NOT PUBLISHED YET borrows the batter's latest Lahman
+# position, provisionally, so the newest season is draftable in the months
+# between the World Series and Lahman's January release. The fixture's Lahman
+# ends in 1989; Ruth gets a 1990 season, and a man Lahman never saw gets one too.
+LAHMAN_LAST = max(int(ln.split(",")[1]) for ln in APPEARANCES.strip().splitlines()[1:])
+LATER = LAHMAN_LAST + 1
+code, log = drive("a season after Lahman", lahman_src=REFUSES, tables=ALL,
+                  bat=BAT + f"ruthba01,Babe Ruth,{LATER},NYY,1.0,N\n"
+                            f"nobodyxx01,Nobody Lahman Knows,{LATER},NYY,0.5,N\n")
+claim(code == 0, "a season after Lahman's last still builds", log[-400:])
+claim(f"Lahman ends at {LAHMAN_LAST}: 1/2 batters after it carry their latest Lahman position" in log,
+      "and its known batter carries his latest Lahman position, the unknown one none", log[-600:])
+
+# AND THE OWNER'S HAND-SET POSITION fills a batter Lahman never saw, and only
+# him: the known batter keeps the Lahman position he borrowed.
+code, log = drive("an owner's position after Lahman", lahman_src=REFUSES, tables=ALL,
+                  bat=BAT + f"ruthba01,Babe Ruth,{LATER},NYY,1.0,N\n"
+                            f"nobodyxx01,Nobody Lahman Knows,{LATER},NYY,0.5,N\n",
+                  beside={"position_overrides.json": json.dumps({str(LATER): {
+                      "nobodyxx01": {"pp": "C", "ep": "C"}, "ruthba01": {"pp": "C", "ep": "C"}}})})
+claim(code == 0 and "1 batters after Lahman take the position the owner set by hand" in log,
+      "a batter Lahman never saw takes the owner's position, and only he does", log[-600:])
+
 # THE SETUP MAN IS THE CLAIM, and the count above cannot make it: he never
 # starts, so the innings proxy calls him a closer, and two saves says he is not
 # one. Read off the shipped row rather than off the log, because what the game
@@ -395,6 +421,7 @@ flags = None
 tmp = tempfile.mkdtemp(prefix="lahman-flags-")
 try:
     shutil.copy(os.path.join(HERE, "build_positions.py"), tmp)
+    shutil.copy(os.path.join(HERE, "seasons.py"), tmp)
     open(os.path.join(tmp, "lahman.py"), "w").write(REFUSES)
     d = os.path.join(tmp, "data")
     os.makedirs(d)

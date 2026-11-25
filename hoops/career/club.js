@@ -692,7 +692,7 @@ function eventful(L) {
    The summer was made occasional too and went back to every year: a summer
    not asked cost the sweep's ring share (19.5% to 17.3%) however the quiet
    summer was chosen, so the owner's fallback stands. */
-const ASK_P = 0.5;
+const ASK_P = 0.25;  // 0.5 until the 10 to 15 minute career (2026-11-24)
 const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];

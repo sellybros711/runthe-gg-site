@@ -63,26 +63,22 @@
 
   /* ---- A GUEST ON THE DAILY BOARD (flag `guestboard`, flags.js) ----------
      A guest finished a puzzle and posted nothing, so the board only ever
-     showed people with accounts. With the flag on, a guest's run is posted
-     through a SEPARATE anonymous Supabase session:
+     showed people with accounts. With the flag on, a guest's run on one of the
+     four free games goes to /api/arcade-guest (functions/api/arcade-guest.js,
+     185), with a random device id this page keeps. The server derives the
+     guest's board id from it and caps new guest rows per IP per day. No
+     Supabase session of any kind is made for a guest: anonymous sign-ins stay
+     off (QA, 2026-11-23: they would hand out scriptable authenticated
+     sessions).
 
-       - its own storage key (GUEST_KEY), which none of the session readers in
-         tokens.js, card.js, auth.js or bearer() below match, so the page's real
-         session, the play tokens and the Arcade Card never see it;
-       - detectSessionInUrl off, so it can never race the real client for an
-         OAuth code (the reason rtgSharedClient exists);
-       - only ever asked for at submit time, by somebody with no account.
-
-     The row is filed under the generated name (131), because an anonymous
-     user's profile has no username. The page keeps {uid, secret} for the
-     guest; when that browser signs in to a real account, claimGuest() hands
-     the secret to arcade_claim_guest (132) and the guest's days and streaks
-     move onto the account. Every failure (flag off, anonymous sign-ins not
-     enabled in the dashboard, 132 not applied, offline) leaves the run on the
-     device exactly as before. */
+     The row is filed under the generated name (131) for that board id, which
+     the page keeps as {device, uid}. When this browser signs in to a real
+     account, claimGuest() sends the device id with the account's own token and
+     the guest's days move onto the account. Every failure (flag off, the
+     Function or 185 missing, the cap, offline) leaves the run on the device
+     exactly as before. */
   var GUEST_KEY = 'rtg-guest-auth';
   var GUEST_REC = 'rtg:guest:v1';
-  var gsb = null;
   function guestRead() {
     try { var v = JSON.parse(localStorage.getItem(GUEST_REC)); return (v && typeof v === 'object') ? v : null; } catch (e) { return null; }
   }
@@ -95,56 +91,51 @@
   function accountOnDevice() {
     try { return !!(window.RTGTokens && RTGTokens.signedIn && RTGTokens.signedIn()); } catch (e) { return false; }
   }
-  function guestClient() {
-    if (gsb) return gsb;
-    if (!(window.supabase && window.supabase.createClient)) return null;
-    try {
-      gsb = window.supabase.createClient(SB_URL, SB_ANON, {
-        auth: { storageKey: GUEST_KEY, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
-      });
-    } catch (e) { gsb = null; }
-    return gsb;
-  }
-  // The guest's access token, signing in anonymously the first time. Null on
-  // any failure, which the caller reads as "keep it local".
-  function guestToken() {
-    var c = guestClient();
-    if (!c || !c.auth) return Promise.resolve(null);
-    return withTimeout(c.auth.getSession().then(function (r) {
-      var s = r && r.data && r.data.session;
-      if (s) return s;
-      if (!c.auth.signInAnonymously) return null;
-      return c.auth.signInAnonymously().then(function (x) { return (x && !x.error && x.data && x.data.session) || null; });
-    }).then(function (s) {
-      if (!s || !s.access_token) return null;
-      var uid = s.user && s.user.id;
-      var rec = guestRead() || {};
-      if (rec.uid !== uid) rec = { uid: uid };
-      if (rec.secret) { guestWrite(rec); return s.access_token; }
+  // The device id the server derives this guest from, made once.
+  function guestDevice() {
+    var rec = guestRead() || {};
+    if (!rec.device) {
+      var id = null;
+      try { id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : null; } catch (e) {}
+      if (!id) return null;
+      rec = { device: id };      // a record from 132's anonymous path ({uid, secret}) never posted: start over
       guestWrite(rec);
-      // The ticket is what lets an account claim these runs later. Asked once.
-      return fetch(REST + 'rpc/arcade_guest_ticket', { method: 'POST',
-          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json' }, body: '{}' })
-        .then(function (res) { return res.ok ? res.json() : null; })
-        .then(function (sec) { if (typeof sec === 'string' && sec) { rec.secret = sec; guestWrite(rec); } return s.access_token; })
-        .catch(function () { return s.access_token; });
-    }).catch(function () { return null; }));
+    }
+    return rec.device;
   }
+  /* A guest's run to the server. true on the board, null to keep it local. */
+  function guestPost(run) {
+    var device = guestDevice();
+    if (!device) return Promise.resolve(null);
+    var body = JSON.stringify({ device: device, game: run.game, date: run.date, seconds: run.seconds,
+      mistakes: run.mistakes || 0, reveals: run.reveals || 0, runLen: run.runLen == null ? null : run.runLen });
+    return withTimeout(fetch('/api/arcade-guest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (d) {
+        if (!d || typeof d.uid !== 'string') return null;
+        var rec = guestRead() || {};
+        if (rec.device === device && rec.uid !== d.uid) { rec.uid = d.uid; guestWrite(rec); }
+        return d;
+      })['catch'](function () { return null; }));
+  }
+
   // An account signed in on a browser that holds guest runs: move them over.
   function claimGuest() {
     var rec = guestRead();
-    if (!rec || !rec.uid || !rec.secret || !session || claimGuest.busy) return Promise.resolve(null);
-    if (session.user && session.user.id === rec.uid) return Promise.resolve(null);
+    if (!rec || !rec.device || !rec.uid || !session || !session.access_token || claimGuest.busy) return Promise.resolve(null);
     claimGuest.busy = true;
-    return rpcPost('arcade_claim_guest', { p_guest: rec.uid, p_secret: rec.secret }, true).then(function (r) {
-      claimGuest.busy = false;
-      if (!r) return null;                     // network or missing RPC: try again next sign-in
-      guestWrite(null);
-      try { var c = guestClient(); if (c && c.auth) c.auth.signOut({ scope: 'local' }); } catch (e) {}
-      try { localStorage.removeItem(GUEST_KEY); } catch (e) {}
-      if (r.moved) fire();
-      return r;
-    }, function () { claimGuest.busy = false; return null; });
+    return withTimeout(fetch('/api/arcade-guest', { method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+        body: JSON.stringify({ action: 'claim', device: rec.device }) })
+      .then(function (res) { return res.ok ? res.json() : null; }))
+      .then(function (r) {
+        claimGuest.busy = false;
+        if (!r) return null;                     // network or no Function yet: try again next sign-in
+        guestWrite(null);
+        try { localStorage.removeItem(GUEST_KEY); } catch (e) {}
+        if (r.moved) fire();
+        return r;
+      }, function () { claimGuest.busy = false; return null; });
   }
 
   function state() {
@@ -539,14 +530,11 @@
       // A guest posts only with the flag on, and never on a device that holds
       // an account (that run belongs to the account and waits for its session).
       if (!guestBoardOn() || accountOnDevice()) return Promise.resolve(null);
-      return guestToken().then(function (tok) {
-        if (!tok) return null;
-        return post(run, tok).then(function (r) {
-          if (!r || r === false) return null;
-          guestPosted[run.game + '|' + run.date] = 1;
-          try { document.dispatchEvent(new CustomEvent('rtg:guestposted', { detail: { game: run.game, date: run.date, name: boardName() } })); } catch (e) {}
-          return r;
-        });
+      return guestPost(run).then(function (r) {
+        if (!r) return null;
+        guestPosted[run.game + '|' + run.date] = 1;
+        try { document.dispatchEvent(new CustomEvent('rtg:guestposted', { detail: { game: run.game, date: run.date, name: boardName() } })); } catch (e) {}
+        return r;
       });
     }
     return post(run).then(function (r) {

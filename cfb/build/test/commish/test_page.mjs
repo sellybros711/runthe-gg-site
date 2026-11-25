@@ -78,7 +78,7 @@ const arm=(name)=>`
    below rather than at the top of every section. */
 const tester=(products)=>arm(TESTER)+stub(true,TESTER,products||['cfb_premium']);
 
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
+const b=await chromium.launch({executablePath:process.env.PS_CHROME || undefined,args:['--no-sandbox']});
 /* THE SIMULATION SITS BETWEEN THE OFFICE AND THE DESK NOW. Pressing on walks the days of the
    beat before anything lands, which is the point of it and which every walker in these tests
    would otherwise sit through or, worse, time out on. Tapping it skips to the end. */

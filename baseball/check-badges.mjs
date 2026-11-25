@@ -354,7 +354,6 @@ const SKILL = {
      (five cuts, eight from one club, a Survivor October, every mode's
      October): tougher seasons mean more cuts and different drafts, and all four
      light in quick now. */
-  win_110: 'win_100',
   oct_streak_10: 'oct_streak_5',
   /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER (TITLE.ELITE_* in engine.js): a
      roster rated 85 or better meets easier opponents, so a 95+ roster reaches
@@ -362,6 +361,33 @@ const SKILL = {
      a 95+ roster wins it about half the time. Two excuses came off because the
      quick sweep lights them now (a wild card title and a Division title). Ten
      titles and a Decades title stay behind the line. */
+  /* THE 2026 SEASON GREW THE POOL BY 583 ROWS (2026-11-23), and the borderline
+     moved a fifth time, the pool-growth note above arriving again. The quick sweep
+     is seeded, so this is the same answer every run. Two excuses came off because
+     they light in quick now (110 wins, a Decades title). Seven went the other way:
+     a wild card title, a Division, Staff and Trade Machine title, a five-year
+     October streak, a Survivor October and an October in every mode. The FULL
+     sweep lights every one of them (864 seasons, "All good"). Each is anchored on
+     the half of itself the quick sweep reaches: the wild card itself, the mode's
+     October, three Octobers in a row, ten Survivor seasons, every mode played. */
+  wildcard_title: 'seed_wildcard',
+  mode_division_title: 'mode_division_oct',
+  mode_trade_title: 'mode_trade_oct',
+  mode_survivor_oct: 'mode_survivor_10',
+  all_modes_oct: 'all_modes',
+  /* THE OWNER'S POSITIONS FOR 37 ROOKIES (2026-11-23) moved it a sixth time. Those
+     men had been wildcards who could play any spot, and now play their own. Measured
+     at 200 drafts a bot, the careful drafter's rating barely moved (81.9 to 82.1) and
+     the draft's gap stayed inside its noise, so this is the borderline again, not the
+     balance. A Staff title and a five-year October streak light in quick now and came
+     off. Five went the other way, each anchored on the rung below it that lights:
+     110 wins on 105, five titles on three, eight from one club on four, the family
+     link on the team-mates link, a Decades title on a Decades October. The FULL
+     sweep lights all of them. */
+  win_110: 'win_105',
+  title_5: 'title_3',
+  one_franchise_8: 'one_franchise_4',
+  family: 'link_teammates',
   mode_era_title: 'mode_era_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's

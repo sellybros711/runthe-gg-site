@@ -466,6 +466,54 @@
         "shut-the-door/ads.js"
       ],
       "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. Home, result, board, Survivor"
+    },
+    "football-board-row": {
+      "slot": "8108360115",
+      "status": "live",
+      "where": [
+        "football/index.html"
+      ],
+      "size": "300x250 between a long leaderboard's rows: one in the middle of 80 to 149 rows, then after rank 50, 100 and 150 with 30 rows below each, three at most, asked for when near the screen, never while the desktop rails are up. The classic and Dynasty boards"
+    },
+    "college-board-row": {
+      "slot": "9362119076",
+      "status": "planned",
+      "where": [
+        "cfb/index.html"
+      ],
+      "size": "300x250 between a long leaderboard's rows: one in the middle of 80 to 149 rows, then after rank 50, 100 and 150 with 30 rows below each, three at most, asked for when near the screen, never while the desktop rails are up"
+    },
+    "diamond-board-row": {
+      "slot": "5731150773",
+      "status": "planned",
+      "where": [
+        "baseball/index.html"
+      ],
+      "size": "300x250 between a long leaderboard's rows: one in the middle of 80 to 149 rows, then after rank 50, 100 and 150 with 30 rows below each, three at most, asked for when near the screen, never while the desktop rails are up"
+    },
+    "golf-board-row": {
+      "slot": "1855484942",
+      "status": "planned",
+      "where": [
+        "golf/index.html"
+      ],
+      "size": "300x250 between a long leaderboard's rows: one in the middle of 80 to 149 rows, then after rank 50, 100 and 150 with 30 rows below each, three at most, asked for when near the screen, never while the desktop rails are up. The leaderboard overlays"
+    },
+    "pitch-board-row": {
+      "slot": "5230915337",
+      "status": "planned",
+      "where": [
+        "soccer/index.html"
+      ],
+      "size": "300x250 between a long leaderboard's rows: one in the middle of 80 to 149 rows, then after rank 50, 100 and 150 with 30 rows below each, three at most, asked for when near the screen, never while the desktop rails are up. The main, Daily and Streaks boards"
+    },
+    "arcade-board-row": {
+      "slot": "1423919301",
+      "status": "planned",
+      "where": [
+        "arcade/"
+      ],
+      "size": "300x250 between a long leaderboard's rows: one in the middle of 80 to 149 rows, then after rank 50, 100 and 150 with 30 rows below each, three at most, asked for when near the screen, never while the desktop rails are up. The All-time tab of the shared board"
     }
   },
   "retired": {

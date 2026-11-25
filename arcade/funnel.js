@@ -257,6 +257,9 @@
     try { return !!(window.RTGTokens && RTGTokens.signedIn) && !RTGTokens.signedIn(); }
     catch (e) { return false; }
   }
+  /* Listened for from load, because the post can land before the note exists. */
+  var guestPostedOnce = false;
+  try { document.addEventListener('rtg:guestposted', function () { guestPostedOnce = true; }); } catch (e) {}
   function guestNotice(rowEl) {
     var have = document.getElementById('funGuest');
     if (!isGuest()) { if (have) have.remove(); return; }
@@ -267,14 +270,18 @@
        says, with the streak's own number where the game has one. With the
        guest board on (flags.js guestboard) the score IS on today's board, under
        a generated name, and the line says so once board.js has posted it. */
+    /* The board line waits for the post. With the flag on but the post
+       refused (anonymous sign-ins off in Supabase, or 132 not run), the run
+       stays on the device, and the note must not say it is on the board. */
     var msg = document.createElement('span');
     function say() {
       var n = 0;
       try { n = +((window.RTGResultSpec && RTGResultSpec.streak) || 0); } catch (e) {}
       var head = n >= 2 ? ('Your ' + n + '-day streak is on this device only.') : 'Your streak is on this device only.';
-      var B = window.RTG_BOARD, on = !!(B && B.guestBoard && B.guestBoard()), nm = on && B.boardName ? B.boardName() : null;
-      var board = on ? (nm ? ' You\u2019re on today\u2019s board as ' + nm + '.' : ' Your score goes on today\u2019s board.')
-                     : ' This score is not on the leaderboard.';
+      var posted = guestPostedOnce;
+      var B = window.RTG_BOARD, on = !!(B && B.guestBoard && B.guestBoard()), nm = posted && B && B.boardName ? B.boardName() : null;
+      var board = posted ? (nm ? ' You\u2019re on today\u2019s board as ' + nm + '.' : ' Your score is on today\u2019s board.')
+                : on ? '' : ' This score is not on the leaderboard.';
       msg.textContent = head + board + ' Make a free account to keep it.';
     }
     say();

@@ -1,0 +1,95 @@
+name: Run The Course checks
+
+# Run The Course (course/) is served and unlisted until the owner launches it.
+# These checks hold that posture, the simulation (determinism, the shot model,
+# routing, the economy, save and load), twenty headless shifts with no stuck
+# group, the save route, the migration, and a whole shift in a real browser.
+#
+# NO PATH FILTER, ON PURPOSE. The posture check is about the whole site: a
+# nav entry or a sitemap line added anywhere would list the game, and a
+# filter on course/** would never see it.
+#
+# Locally, the same commands:
+#   node --test course/test/*.test.mjs
+#   node course/headless.mjs --shifts 20
+#   node course/check-posture.mjs
+#   node course/test/check-browser.mjs
+#   node scripts/check-dashes.mjs course functions/_course functions/api/course
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: course-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Posture (unlisted, linked from nowhere)
+        run: node course/check-posture.mjs
+      - name: Unit tests (shot model, routing, economy, save and load, the save route)
+        run: node --test course/test/*.test.mjs
+      - name: Twenty headless shifts, zero stuck groups
+        run: node course/headless.mjs --shifts 20
+      - name: No em or en dashes in the game's code
+        run: node scripts/check-dashes.mjs course functions/_course functions/api/course
+      - name: Cache versions recorded
+        run: node scripts/check-cachebust.mjs
+      # Cloudflare's build image bundles with an older esbuild than current
+      # wrangler (see stumpire-checks.yml). The save route imports the game's
+      # own simulation from course/, so the bundle is built the way Cloudflare does.
+      - name: Pages Functions build like Cloudflare's
+        run: npx --yes wrangler@3.20.0 pages functions build --outdir "$RUNNER_TEMP/fn"
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: A whole shift at 390x844 and 1440x900
+        run: node course/test/check-browser.mjs
+
+  # 187 applied twice (it must be safe to run twice) on top of the events
+  # tables it writes to, then its checks.
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: The migration twice, then its checks
+        run: |
+          createdb ev
+          psql -q -d ev -c 'create role authenticated' -c 'create role anon' -c 'create role service_role'
+          psql -q -d ev -f supabase/test/game_events_base.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/170_game_events.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/171_fourth_and_what_events.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/187_course.sql
+          psql -q -d ev -v ON_ERROR_STOP=1 -f supabase/187_course.sql
+          psql -q -d ev -f supabase/test/course_test.sql 2>&1 | tee out.txt
+          test "$(grep -c '^ ok ' out.txt)" -ge 39
+          ! grep -v '^ ok ' out.txt | grep -q .

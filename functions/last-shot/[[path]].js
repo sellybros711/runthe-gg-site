@@ -26,7 +26,7 @@ export async function onRequest(context) {
       const db = supabaseDb(env);
       /* the tester round's events and report; undefined means not one of those */
       const round = await roundGate({ method: request.method, sub, uid, query: Object.fromEntries(new URL(request.url).searchParams),
-        body: request.method === 'POST' ? await readBody(request) : null, nowMs: Date.now() }, db);
+        body: request.method === 'POST' ? await readBody(request) : null, nowMs: Date.now(), country: request.cf && request.cf.country }, db);
       out = round === undefined ? (request.method === 'GET' || request.method === 'HEAD' ? await pageGate(sub, uid, db) : null) : round;
     }
   } catch (e) { out = null; }

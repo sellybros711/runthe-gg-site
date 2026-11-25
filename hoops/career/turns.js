@@ -39,7 +39,7 @@ function choose(L, i, extra) {
         /* A take runs its own answers and carries its own reputation. */
         const o = ev.takes[card.take - 1].options[i];
         text = o.run(L, rng) || '';
-        if (o.rep) moveRep(L, o.rep[0], o.rep[1]);
+        if (o.rep) moveRep(L, o.rep[0] * PACE.rep, o.rep[1] * PACE.rep);
         if (o.watch) watchMark(L, o.watch, beats);
       } else if (ev) {
         const o = ev.options[i];
@@ -47,7 +47,7 @@ function choose(L, i, extra) {
         text = o.run(L, rng) || '';
         applyRel(L, names);
         const rp = (EVENTS[card.id] || TEAM_EV[card.id]) && EVENT_REP[card.id] && EVENT_REP[card.id][i];
-        if (rp) moveRep(L, rp[0], rp[1]);
+        if (rp) moveRep(L, rp[0] * PACE.rep, rp[1] * PACE.rep);
       }
     }
   }
@@ -125,7 +125,7 @@ function step(L) {
       roleReview(L, beats, 'early');
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
-      queueEvents(L, 'early', 1 + (rngAt(L, 'n:early')() < (0.35) ? 1 : 0));
+      queueEvents(L, 'early', storyStretch(L, 'early') ? 1 : 0);
       break;
     }
     case 'early':
@@ -139,7 +139,7 @@ function step(L) {
       tradeDeadline(L, beats);
       L.season.race = mvpRace(L); debate(L);
       L.phase = 'mid';
-      queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < (0.3) ? 1 : 0));
+      queueEvents(L, 'mid', storyStretch(L, 'mid') ? 1 : 0);
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
@@ -163,7 +163,7 @@ function step(L) {
       logIt(L, s.w + '-' + s.l + '. ' + seedTxt, s.seed <= 6 ? 'good' : '');
       pay(L, beats);
       L.phase = 'late';
-      queueEvents(L, 'late', 1);
+      queueEvents(L, 'late', storyStretch(L, 'late') ? 1 : 0);
       break;
     }
     case 'late':
@@ -200,6 +200,60 @@ function step(L) {
   headlines(L, beats);
   sayAll(L, beats);
   return { beats };
+}
+/* THE YEAR IN ONE TAP (the BitLife plan, phase 1, 2026-11-24). Age up plays
+   the season on until a card needs an answer, the year turns or the career
+   ends, and hands every beat back at once, so the page can show a year as one
+   screen rather than a press a stretch. It is step, repeated: nothing in it
+   draws, so a career aged up is the career stepped. */
+function ageUp(L) {
+  const beats = [], log = [], y0 = L.year;
+  let steps = 0, closed = null;
+  while (!L.retired && !L.pending.length && steps < 24) {
+    /* What the page's ticker asks about a stretch: where the season stood
+       before the step, and the beats that step made. */
+    const was = { phase: L.phase, poDone: L.season && L.season.po ? L.season.po.results.length : 0 };
+    /* The season a press closes is gone once the year turns; the page still plays its bracket. */
+    if (L.season) closed = L.season;
+    const r = step(L);
+    steps++;
+    log.push({ phase: was.phase, poDone: was.poDone, beats: r.beats || [] });
+    for (const b of r.beats || []) beats.push(b);
+    if (L.year !== y0) break;
+  }
+  return { beats, steps, log, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0, closed: L.year !== y0 ? closed : null };
+}
+/* How a season ended, in words. */
+const PO_WORDS = { Missed: 'Missed the playoffs', 'Play-in': 'Out in the play-in', R1: 'Out in the first round', R2: 'Out in the second round',
+  CF: 'Out in the conference finals', Finals: 'Lost the Finals', Champion: 'NBA champion' };
+/* Where the year began, marked when it turns (newYear), so the summary can
+   say what moved even after a reload. */
+function markYear(L) {
+  /* the year that just closed keeps its mark, because the summary is read
+     after the turn */
+  if (L.flags.yearMark) L.flags.yearWas = L.flags.yearMark;
+  L.flags.yearMark = { y: L.year, m: Object.assign({}, L.m), cash: L.cash, ovr: show(ovrOf(L)) };
+}
+/* The year as the summary screen reads it: the season that just closed, how
+   his overall moved, the money and the meters. Null before a season is
+   played, and null for a year with no NBA season (overseas, the road). */
+function yearSummary(L) {
+  const H = L.history, h = H[H.length - 1];
+  if (!h || h.y < L.year - 1) return null;
+  const p = H[H.length - 2], mk = [L.flags.yearMark, L.flags.yearWas].find((x) => x && x.y === h.y) || null;
+  const now = show(ovrOf(L));
+  return {
+    y: h.y, age: h.age, team: h.t, role: h.role, gp: h.gp,
+    ovr: h.ovr, ovrChange: p ? h.ovr - p.ovr : 0,
+    /* the overall as it is printed everywhere, today, and its change since
+       the year began (the summer's work included) */
+    ovrShown: now, ovrShownChange: mk ? now - mk.ovr : p ? show(h.ovr) - show(p.ovr) : 0,
+    record: [h.w, h.l], seed: h.seed, playoffs: h.po, playoffsText: PO_WORDS[h.po] || h.po, awards: (h.aw || []).slice(),
+    line: { min: h.min, pts: h.pts, reb: h.reb, ast: h.ast, stl: h.stl, blk: h.blk, fgp: h.fgp, tpp: h.tpp, ftp: h.ftp },
+    salary: h.sal, cash: L.cash, earned: L.earned, worth: netWorth(L), upkeep: upkeepOf(L), meters: Object.assign({}, L.m),
+    /* where the year began, when it was marked: null on a save from before */
+    start: mk ? { meters: Object.assign({}, mk.m), cash: mk.cash } : null,
+  };
 }
 function recordBeat(L, when) {
   const s = L.season, pg = perGame(s);
@@ -302,6 +356,11 @@ function newYear(L, beats) {
   if (L.flags.banned) { retire(L, beats, 'Banned for life at ' + L.age + '.'); return; }
   L.age++;
   L.year++;
+  /* The lifestyle is paid for and the money at work moves (wealth.js). */
+  wealthSeason(L, beats);
+  /* The habits take their share and the league remembers (wild.js). It can end here. */
+  wildSeason(L, beats);
+  if (L.retired) return;
   if (L.season) L.season = null;
   if (L.contract && L.contract.next && L.contract.years <= L.contract.total) {
     L.contract.salary = L.contract.next;
@@ -310,18 +369,36 @@ function newYear(L, beats) {
   if (L.contract && L.contract.years <= 0) L.contract = null;
   beats.push({ kind: 'year', text: 'The ' + (L.year - 1) + '-' + String(L.year).slice(2) + ' season. You are ' + L.age + '.', tone: '' });
   driftLeague(L, beats);
+  markYear(L);
   L.phase = 'pre';
   openYear(L);
 }
 /* A summer with a club: the season is opened now, so whatever happens before
    it (the training card, a summer event, a camp injury) lands on it. */
+/* WHICH STRETCHES OF THE SEASON GET A STORY CARD (PACE.stretch). The season
+   deals up to two (queueEvents), and a first come draw gave them to the early
+   stretches nearly every year, so a card that only fits April or the playoffs
+   was never dealt. The stretches are drawn once a season; a rookie year has
+   no preseason draw. */
+function storyStretch(L, phase) {
+  let f = L.flags.stretch;
+  if (!f || f.y !== L.year) {
+    const keys = Object.keys(PACE.stretch).filter((k) => k !== 'pre' || L.seasonsDone > 0);
+    const r = rngAt(L, 'pace:stretch');
+    const a = weighted(r, keys, (k) => PACE.stretch[k]);
+    /* Most seasons deal a second, in another stretch (PACE.second). */
+    const b = r() < PACE.second ? weighted(r, keys.filter((k) => k !== a), (k) => PACE.stretch[k]) : null;
+    f = L.flags.stretch = { y: L.year, ph: b ? [a, b] : [a] };
+  }
+  return f.ph.indexOf(phase) >= 0;
+}
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
   L.pending.push(summerCard(L));
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
-  if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
+  if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L, 'pre') ? 1 : 0);
   rollInjury(L, 'early', []);
 }
 

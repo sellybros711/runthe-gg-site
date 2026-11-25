@@ -4,6 +4,8 @@
  *     then overtime is a coin flip)
  *   - three stars can be earned
  *   - a lazy one tap shot does not clear it easily
+ *   - the reference play is the player's own, never a starter: a level will
+ *     not run a starter as is (the owner, 2026-11-23)
  * Retuning the sim can move these. If one fails, re-run the search and fix
  * the level or the play here; do not just loosen the bar. */
 import test from 'node:test';
@@ -11,6 +13,7 @@ import assert from 'node:assert/strict';
 import { simulate } from '../sim.js';
 import { problems } from '../playbook.js';
 import { LEVELS, CHAPTERS, levelScenario, levelOpt, starsOf, levelById, SETS } from '../levels.js';
+import { STARTERS, isStarter } from '../starters.js';
 
 const P = (x, y) => ({ x, y });
 const N = 100;
@@ -57,6 +60,7 @@ test('every level is winnable, three stars can be earned, and a lazy shot does n
   for (const l of LEVELS) {
     const { sc, play } = playFor(l);
     assert.deepEqual(problems(sc, play), [], l.id);
+    assert.ok(!isStarter(play), l.id + ' reference play is a starter, which a level will not run');
     const lazy = { spots: sc.spots, steps: [{ kind: 'shoot', who: 'O1' }] };
     let w = 0, three = 0, lw = 0;
     for (let i = 1; i <= N; i++) {
@@ -80,4 +84,9 @@ test('stars grade the play', () => {
   assert.equal(starsOf({ outcome: 'win', shot: { p: 0.6, bailout: false }, shotAt: 4 }), 2);
   assert.equal(starsOf({ outcome: 'win', shot: { p: 0.6, bailout: false }, shotAt: 2.6 }), 3);
   assert.equal(starsOf({ outcome: 'win', shot: { p: 0.6, bailout: true }, shotAt: 2.9 }), 2, 'a heave is not clutch');
+});
+
+test('no reference play is a starter, and every starter is one', () => {
+  for (const l of LEVELS) assert.equal(isStarter(playFor(l).play), false, l.id);
+  for (const s of STARTERS) assert.equal(isStarter(JSON.parse(JSON.stringify(s.play))), true, s.id);
 });

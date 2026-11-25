@@ -1,0 +1,18 @@
+The 3D models in this folder are from asset kits by Kenney (www.kenney.nl):
+
+  Minigolf Kit 3.1
+  Nature Kit 2.1
+  Car Kit 3.1
+  City Kit (Suburban) 2.0
+  City Kit (Commercial) 2.1
+  Mini Characters 2.0
+
+License: Creative Commons Zero (CC0)
+http://creativecommons.org/publicdomain/zero/1.0/
+
+"You can use this content for personal, educational, and commercial purposes.
+Support by crediting 'Kenney' or 'www.kenney.nl' (this is not a requirement)."
+
+The kits were downloaded from opengameart.org, where Kenney publishes them,
+and packed by course/build/models.mjs. Nothing here needs a credit to be
+shown. Thank you, Kenney.

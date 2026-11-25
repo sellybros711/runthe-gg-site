@@ -31,7 +31,12 @@ name: Refresh Run The Diamond player data
 # NO SECRETS. It reads public sources and writes files back to this branch.
 #
 # WHAT IT WILL NOT DO ON ITS OWN is change the shape of the pool. `split_stints`
-# is an input and defaults to false: splitting a traded player's season into one
+# defaults to `as-shipped`: it builds the shape baseball/pipeline/provenance.json
+# says the live pool has. It used to be a checkbox that defaulted to off, which
+# was right while the pool was one row a season and became a trap once the owner
+# shipped the split pool: the 2026 season's first build (2026-11-23) quietly went
+# back to one row a season, 471 traded seasons fewer, with every gate green.
+# Choosing `yes` or `no` is the deliberate change, and for that: splitting a traded player's season into one
 # row per club recovers 2,939 seasons that are currently draftable from nowhere,
 # and it moves the draft economy, because the price curve is convex and half the
 # WAR costs much less than half the price. Run it, then re-run the cap sweep and
@@ -41,9 +46,10 @@ on:
   workflow_dispatch:
     inputs:
       split_stints:
-        description: 'One row per club for a traded season (MOVES THE DRAFT ECONOMY, measure before shipping)'
-        type: boolean
-        default: false
+        description: 'One row per club for a traded season: as-shipped keeps the live pool''s shape; yes or no CHANGES IT (moves the draft economy, measure before shipping)'
+        type: choice
+        options: ['as-shipped', 'yes', 'no']
+        default: 'as-shipped'
       require_fwar:
         description: 'Fail if the FanGraphs blend does not run, instead of falling back to bWAR'
         type: boolean
@@ -84,7 +90,14 @@ jobs:
       # The pool as it stands, kept aside so the run can print what MOVED rather
       # than a column of numbers somebody has to remember the old value of.
       - name: Keep the pool that ships
-        run: cp baseball/data/players.json /tmp/pool_before.json
+        run: |
+          cp baseball/data/players.json /tmp/pool_before.json
+          # The shape it ships in, read before the build rewrites provenance.json.
+          SHIPPED=$(python3 -c "import json;print('yes' if json.load(open('baseball/pipeline/provenance.json')).get('split_stints') else 'no')")
+          WANT="${{ inputs.split_stints }}"
+          [ "$WANT" = "as-shipped" ] || [ -z "$WANT" ] && WANT="$SHIPPED"
+          echo "SPLIT_STINTS=$WANT" >> "$GITHUB_ENV"
+          echo "traded seasons: shipped split=$SHIPPED, this build split=$WANT" | tee -a "$GITHUB_STEP_SUMMARY"
 
       # THE READER, AND THE TWO STEPS THAT USED TO SWALLOW IT. This needs no
       # network at all, so it goes before the fetch: a run that cannot read the
@@ -153,7 +166,7 @@ jobs:
           set -o pipefail
           python3 build_pricing.py
           python3 build_positions.py \
-            ${{ inputs.split_stints && '--split-stints' || '' }} \
+            $( [ "$SPLIT_STINTS" = "yes" ] && echo --split-stints ) \
             ${{ inputs.require_fwar && '--require-fwar' || '' }}
           python3 compact_pool.py
           # Where each man went to college, for the college chemistry link. Its own
@@ -223,7 +236,7 @@ jobs:
         if: ${{ always() && !inputs.commit }}
         uses: actions/upload-artifact@v4
         with:
-          name: players-json${{ inputs.split_stints && '-split-stints' || '' }}
+          name: players-json${{ env.SPLIT_STINTS == 'yes' && '-split-stints' || '' }}
           path: |
             baseball/data/players.json
             baseball/pipeline/provenance.json

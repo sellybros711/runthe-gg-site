@@ -15,6 +15,12 @@
  *                                      element (or a function returning it) the game sits in.
  *                                      o.fixed: pin them to the window, for a leaderboard that is a
  *                                      full screen overlay scrolling inside itself (golf's).
+ *   RTG_ADS.rows(on, list, slot, o)    the leaderboard row ad: a 300x250 between a long board's
+ *                                      rows. A board calls it after every paint. on: the board is
+ *                                      open. list: the element whose children are the rows. slot:
+ *                                      the game's *-board-row unit. o.row: the selector a row
+ *                                      matches. o.offset: ranks drawn above the list (a podium).
+ *                                      o.total: how many rows the board has in all.
  *
  * A page that lays itself out around the banner listens for the 'rtg-sticky' event on window: it
  * fires whenever the banner fills, changes height or goes (the X, or a screen without one).
@@ -38,6 +44,13 @@
  *    the column, and removed when the window gets too narrow. So never on a phone.
  *  - Moving between two screens that both carry an ad keeps the one already up. A unit is never
  *    rebuilt in place, so no screen change reloads an ad that is still showing.
+ *  - The leaderboard row ad (the owner, 2026-11-19): under 80 rows, none. 80 to 149, one, in the
+ *    middle. 150 or more, after rows 50, 100 and 150, each only with 30 rows below it. Never more
+ *    than three. Each is asked for once, when its place has been near the screen for half a
+ *    second (so a jump to your own row far down asks for nothing), and never again on a sort, a
+ *    tab or a redraw: the ad sits in a layer beside the list, over an empty gap the list keeps for
+ *    it, and a repaint only moves it. Clear space above and below, so a tap on a row never lands
+ *    on it. Not while the desktop rails are up (one or the other). Removed when the board closes.
  *  - Every call fails soft. A blocked adsbygoogle.js leaves the page exactly as it was.
  */
 (function (root) {
@@ -64,6 +77,11 @@
     '.rtg-rail.rtg-rail-fixed{position:fixed;z-index:65}',
     '.rtg-rail ins.adsbygoogle{display:inline-block;width:160px;height:600px}',
     '.rtg-rail ins.adsbygoogle[data-ad-status="unfilled"]{display:none}',
+    '.rtg-rowgap{height:0;padding:0;margin:0;border:0;pointer-events:none}',
+    '.rtg-rowlayer{position:relative;height:0;margin:0;padding:0;z-index:1}',
+    '.rtg-rowad{position:absolute;left:50%;width:300px;margin-left:-150px;text-align:center}',
+    '.rtg-rowad .rtg-row-lbl{display:block;height:16px;font:600 9.5px/16px system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;opacity:.6}',
+    '.rtg-rowad ins.adsbygoogle{display:block;width:300px;height:250px}',
     '.rtg-rail-lbl{display:none;font:600 9.5px/1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin:0 0 6px}',
     '.rtg-rail:has(ins[data-ad-status="filled"]) .rtg-rail-lbl{display:block}'
   ].join('\n');
@@ -211,5 +229,145 @@
   }
   root.addEventListener('resize', function () { if (last) rails(last.on, last.slots, last.col, last.o); });
 
-  root.RTG_ADS = { sticky: sticky, rails: rails, clear: clear, dropSticky: dropSticky, dropRails: dropRails };
+  /* ---------- the leaderboard row ad ---------- */
+  /* The gap a row ad takes in the list: clear space, the label, the ad, clear space. The gap is
+     closed (0px) until the ad is asked for, so a board never shows an empty box, and closes again
+     if Google sends nothing. */
+  var ROW_CLEAR = 40, ROW_LBL = 16, ROW_AD = 250, ROW_GAP = ROW_CLEAR + ROW_LBL + ROW_AD + ROW_CLEAR;
+  var ROW_NEAR = '400px 0px', ROW_DWELL = 500, ROW_MAX = 3;
+  var rowState = null;
+  /* Where the ads go, by rank, from how many rows the board has in all. */
+  function rowRanks(n) {
+    if (!(n >= 80)) return [];
+    if (n < 150) return [Math.floor(n / 2)];
+    return [50, 100, 150].filter(function (r) { return n - r >= 30; }).slice(0, ROW_MAX);
+  }
+  function railsUp() { return !!document.querySelector('[data-ad-zone="rail-x"]'); }
+  function dropRows() {
+    var st = rowState; rowState = null;
+    if (!st) return;
+    try {
+      if (st.io) st.io.disconnect();
+      if (st.mo) st.mo.disconnect();
+      if (st.ro) st.ro.disconnect();
+      root.removeEventListener('scroll', st.onScroll);
+      root.removeEventListener('resize', st.onResize);
+      if (st.layer) st.layer.remove();
+      document.querySelectorAll('.rtg-rowgap').forEach(function (g) { g.remove(); });
+    } catch (e) {}
+  }
+  /* Open or close a gap. A gap above the screen that changes height would move what the player is
+     reading, so the scroll moves with it. */
+  function gapTo(g, h) {
+    var was = g.offsetHeight;
+    if (was === h) return;
+    var above = g.getBoundingClientRect().bottom <= 0;
+    g.style.height = h + 'px';
+    if (above) root.scrollBy(0, h - was);
+  }
+  /* Put every box over its gap, and hide the ones whose gap is gone (a repaint in flight, a
+     shorter board, the rails up). Hiding never reloads an ad. */
+  function placeRows() {
+    var st = rowState;
+    if (!st || !st.layer.isConnected) return;
+    var lt = st.layer.getBoundingClientRect().top, off = railsUp();
+    Object.keys(st.ads).forEach(function (rank) {
+      var a = st.ads[rank], g = a.gap;
+      var show = !off && a.state !== 'dead' && g && g.isConnected && a.box;
+      if (a.box) a.box.style.visibility = show ? '' : 'hidden';
+      if (show) a.box.style.top = Math.round(g.getBoundingClientRect().top - lt + ROW_CLEAR) + 'px';
+    });
+  }
+  function askRow(a) {
+    var st = rowState;
+    if (!st || a.state !== 'idle' || railsUp()) return;
+    a.state = 'asked';
+    gapTo(a.gap, ROW_GAP);
+    var b = document.createElement('div');
+    b.className = 'rtg-rowad';
+    b.setAttribute('data-ad-zone', 'row');
+    b.innerHTML = '<span class="rtg-row-lbl">Advertisement</span><ins class="adsbygoogle" data-ad-client="' + CLIENT + '" data-ad-slot="' + st.slot + '"></ins>';
+    st.layer.appendChild(b);
+    a.box = b;
+    var ins = b.querySelector('ins');
+    /* Google sent nothing: close the gap for good on this board. */
+    if (root.MutationObserver) {
+      new MutationObserver(function (_, mo) {
+        if (ins.getAttribute('data-ad-status') !== 'unfilled') return;
+        mo.disconnect();
+        a.state = 'dead';
+        if (a.gap && a.gap.isConnected) gapTo(a.gap, 0);
+        b.remove(); a.box = null;
+        placeRows();
+      }).observe(ins, { attributes: true, attributeFilter: ['data-ad-status'] });
+    }
+    placeRows();
+    push();
+  }
+  function rows(on, list, slot, o) {
+    try {
+      o = o || {};
+      var el = typeof list === 'function' ? list() : list;
+      if (!on || !slot || !el || !root.IntersectionObserver) { dropRows(); return; }
+      if (rowState && rowState.list !== el) dropRows();
+      style();
+      var st = rowState;
+      if (!st) {
+        st = rowState = { list: el, slot: slot, ads: {} };
+        st.layer = document.createElement('div');
+        st.layer.className = 'rtg-rowlayer';
+        el.parentNode.insertBefore(st.layer, el.nextSibling);
+        var t = {};
+        st.io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) {
+            var rank = e.target.getAttribute('data-rank'), a = st.ads[rank];
+            if (!a || a.gap !== e.target) return;
+            clearTimeout(t[rank]);
+            if (e.isIntersecting && a.state === 'idle') t[rank] = setTimeout(function () { if (a.gap === e.target && e.target.isConnected) askRow(a); }, ROW_DWELL);
+          });
+        }, { rootMargin: ROW_NEAR });
+        var raf = 0;
+        st.onScroll = function () { if (!raf) raf = root.requestAnimationFrame(function () { raf = 0; placeRows(); }); };
+        st.onResize = function () { gapsFor(); placeRows(); };
+        root.addEventListener('scroll', st.onScroll, { passive: true });
+        root.addEventListener('resize', st.onResize);
+        /* A repaint replaces the rows (and the gaps with them): hide the boxes at once, and the
+           board's own call puts the gaps back. Rows that change height move the gaps. */
+        if (root.MutationObserver) { st.mo = new MutationObserver(placeRows); st.mo.observe(el, { childList: true }); }
+        if (root.ResizeObserver) { st.ro = new ResizeObserver(placeRows); st.ro.observe(el); }
+      }
+      st.o = o;
+      gapsFor();
+      placeRows();
+    } catch (e) {}
+  }
+  /* Lay the gaps into the list as it is now. A place already asked for gets its gap open at once
+     and its ad moved there; a new place gets a closed gap that asks when it comes near. */
+  function gapsFor() {
+    var st = rowState;
+    if (!st) return;
+    var el = st.list, o = st.o || {}, off = o.offset || 0;
+    var kids = Array.prototype.slice.call(el.children).filter(function (k) { return !k.classList.contains('rtg-rowgap') && (!o.row || k.matches(o.row)); });
+    var total = o.total != null ? o.total : kids.length + off;
+    var want = rowRanks(total);
+    el.querySelectorAll(':scope > .rtg-rowgap').forEach(function (g) { st.io.unobserve(g); g.remove(); });
+    Object.keys(st.ads).forEach(function (r) { st.ads[r].gap = null; });
+    if (railsUp()) return;
+    want.forEach(function (rank) {
+      var row = kids[rank - off - 1];
+      if (!row || !kids[rank - off]) return;          // the row after it must be there too
+      var a = st.ads[rank] || (st.ads[rank] = { state: 'idle', box: null, gap: null });
+      if (a.state === 'dead') return;
+      var g = document.createElement('div');
+      g.className = 'rtg-rowgap';
+      g.setAttribute('data-rank', rank);
+      g.setAttribute('aria-hidden', 'true');
+      if (a.state !== 'idle') g.style.height = ROW_GAP + 'px';
+      row.parentNode.insertBefore(g, row.nextSibling);
+      a.gap = g;
+      if (a.state === 'idle') st.io.observe(g);
+    });
+  }
+
+  root.RTG_ADS = { sticky: sticky, rails: rails, rows: rows, clear: clear, dropSticky: dropSticky, dropRails: dropRails, dropRows: dropRows };
 })(window);

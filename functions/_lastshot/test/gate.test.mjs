@@ -161,3 +161,20 @@ test('a module at this build is cached a year; the page and anything else never'
     for (let i = 0; i < 2; i++) assert.equal((await snap(await LAST(ctx('https://runthe.gg/last-shot', SECRET_ENV, stranger)))).status, 404);
   } finally { globalThis.fetch = real; forgetRoles(); }
 });
+
+test('the route passes Cloudflare\'s country to the probe, and refuses a non tester the same 404', async () => {
+  const real = globalThis.fetch;
+  globalThis.fetch = fakeSupabase({ tess: 'tester' });
+  try {
+    const cookie = await sign(SECRET, 'tess', Date.now());
+    const at = (country, c = cookie) => { const x = ctx('https://runthe.gg/last-shot/e', SECRET_ENV, c); if (country) Object.defineProperty(x.request, 'cf', { value: { country } }); return x; };
+    for (const [country, on] of [[null, true], ['US', true], ['DE', false], ['GB', false], ['CH', false]]) {
+      const a = await snap(await LAST(at(country)));
+      assert.equal(a.status, 200, String(country)); assert.equal(a.cache, 'no-store'); assert.match(a.type, /application\/json/);
+      assert.deepEqual(JSON.parse(a.body), { on }, String(country));
+    }
+    const stranger = await snap(await LAST(at('US', await sign(SECRET, 'stranger', Date.now()))));
+    const b = await snap(await STUMP(ctx('https://runthe.gg/arcade/stumpire/', SECRET_ENV, null)));
+    assert.equal(stranger.status, 404); assert.deepEqual(stranger, b, 'the probe refuses as Stumpire does');
+  } finally { globalThis.fetch = real; }
+});

@@ -583,12 +583,7 @@ const EVENTS = {
     title: '{partner} wants to talk about kids',
     text: (L) => lifeOf(L).kids ? 'Another one? The house is already loud.' : 'You always said you wanted a big family.',
     options: [
-      { label: 'Start a family', hint: 'Grow the house', run: (L) => {
-        const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 });
-        /* A story career knows boy or girl, because only a son can be played next. */
-        const boy = kidIsSon(L, f.kids - 1); if (Number.isFinite(f.sons) && boy) f.sons++;
-        logIt(L, (f.kids === 1 ? 'Became a parent. ' : 'Welcomed kid number ' + f.kids + '. ') + (boy ? 'A boy.' : 'A girl.'), 'good');
-        return (f.kids === 1 ? 'A baby ' : 'Kid number ' + f.kids + ', a baby ') + (boy ? 'boy' : 'girl') + ' by next summer. ' + (f.kids === 1 ? 'You learn to sleep in two-hour pieces.' : 'The house gets louder.'); } },
+      { label: 'Start a family', hint: 'Grow the house', run: (L) => startFamily(L) },
       { label: 'Wait until you retire', hint: 'Career first', run: (L) => { bump(L, { morale: -2 }); return 'You agree to wait. Mostly.'; } },
     ],
   },
@@ -840,6 +835,15 @@ const rivalOn = (L) => !!(L.rival && !L.rival.retired);
    them has a generated name ({partner}, keyed on `pn`, so a new relationship
    is a new person), and every one moves morale
    more than it moves anything about basketball, which is the BitLife half. */
+/* A child arrives: the baby card's answer, and the same thing asked for on
+   purpose (bonds.js). */
+function startFamily(L) {
+  const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 });
+  /* A story career knows boy or girl, because only a son can be played next. */
+  const boy = kidIsSon(L, f.kids - 1); if (Number.isFinite(f.sons) && boy) f.sons++;
+  logIt(L, (f.kids === 1 ? 'Became a parent. ' : 'Welcomed kid number ' + f.kids + '. ') + (boy ? 'A boy.' : 'A girl.'), 'good');
+  return (f.kids === 1 ? 'A baby ' : 'Kid number ' + f.kids + ', a baby ') + (boy ? 'boy' : 'girl') + ' by next summer. ' + (f.kids === 1 ? 'You learn to sleep in two-hour pieces.' : 'The house gets louder.');
+}
 function lifeOf(L) { return L.life || (L.life = { rel: 'single', kids: 0, since: 0 }); }
 function lifeLine(L) {
   const f = lifeOf(L);

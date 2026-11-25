@@ -42,7 +42,7 @@ const want = (s) => !only || only === s;
 
 const b = await chromium.launch({
 
-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  executablePath: process.env.PS_CHROME || undefined,
   args: ['--no-sandbox'],
 });
 /* THE ARCADE HOUSE AD IS TURNED OFF FOR THIS SUITE, the same way a player turns it off:
@@ -281,7 +281,7 @@ if (want('play')) {
        being absent is a 404 with a body, which the ranks suite covers. Both have to
        say something true, and they must not say the same thing. */
     ok('  and says the board did not answer, without inventing rows',
-      /not reachable right now/.test(await p.textContent('#lb-note') || '')
+      /(isn't|is not|not) reachable right now/.test(await p.textContent('#lb-note') || '')
         && ((await p.textContent('#lb-rows')) || '').trim() === '');
     await shut(p);
     if (!await p.$('#s-intro.on')) await p.evaluate(() => { const h = document.getElementById('b-home'); if (h) h.click(); });
@@ -348,17 +348,29 @@ if (want('home')) {
     ok(label + ': the card is on the page', !!card);
     if (card) {
       const box = await card.boundingBox();
-      ok(label + ':   it has real size', box.width > 200 && box.height > 150, Math.round(box.width) + 'x' + Math.round(box.height));
+      /* The home page's cards went compact (about 100px tall on a phone), so "real size" is a
+         card that has not collapsed, not the old 150px tile. */
+      ok(label + ':   it has real size', box.width > 200 && box.height > 60, Math.round(box.width) + 'x' + Math.round(box.height));
       ok(label + ':   its crest loaded', await p.$eval('article.feat.cfb .crest img', (i) => i.naturalWidth > 0));
       ok(label + ':   its play link points at /cfb/', await p.$eval('article.feat.cfb a.play', (a) => a.getAttribute('href')) === '/cfb/');
       /* Green, not the NFL card's red: the two cards are the same markup and only
-         the class separates them, so a typo in the class is invisible except here. */
-      ok(label + ':   it is green, not red',
-        (await p.$eval('article.feat.cfb .play', (e) => getComputedStyle(e).backgroundImage)).includes('16, 185, 129'));
+         the class separates them, so a typo in the class is invisible except here.
+         The button is a solid var(--c) now, not a gradient, so it is read against the
+         page's own --cfb and --nfl rather than a hard-coded colour. */
+      const tint = await p.evaluate(() => {
+        const as = (v) => { const i = document.createElement('i'); i.style.color = getComputedStyle(document.documentElement).getPropertyValue(v); document.body.appendChild(i); const c = getComputedStyle(i).color; i.remove(); return c; };
+        return { got: getComputedStyle(document.querySelector('article.feat.cfb .play')).backgroundColor, cfb: as('--cfb'), nfl: as('--nfl') };
+      });
+      ok(label + ':   it is green, not red', tint.got === tint.cfb && tint.got !== tint.nfl, tint.got);
+      /* Where it sits is the owner's call, and it moved on purpose (fe1b64fe put it
+         first). What has to hold is that the two football games sit together. */
       const order = await p.$$eval('main.games article.feat', (els) => els.map((e) => e.className.split(' ')[1]));
-      ok(label + ':   and sits second, after the NFL game', order[1] === 'cfb', order.join(' > '));
+      ok(label + ':   and sits beside the NFL game', Math.abs(order.indexOf('cfb') - order.indexOf('football')) === 1, order.join(' > '));
     }
-    ok(label + ': the hero counts four games', /4\s*games live/.test(await p.textContent('.hero-status')));
+    /* The hero's "N games live" line is gone; the count a visitor reads now is the All
+       chip's, so it has to match the cards actually on the page. */
+    const counted = await p.evaluate(() => ({ chip: +(document.querySelector('.fchip[data-f="all"] .n')?.textContent || NaN), cards: document.querySelectorAll('main.games article.feat').length }));
+    ok(label + ': the All chip counts every game card', counted.chip === counted.cards, counted.chip + ' vs ' + counted.cards);
     const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     ok(label + ': no sideways scroll', over <= 1, over + 'px');
     ok(label + ': nothing logged', p.errs.length === 0, p.errs.slice(0, 3).join(' | '));

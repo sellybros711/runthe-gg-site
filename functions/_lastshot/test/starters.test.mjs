@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { SCENARIO as SC, DEFENSES } from '../scenario.js';
 import { simulate } from '../sim.js';
 import { problems } from '../playbook.js';
-import { STARTERS, starterPlay, starterById } from '../starters.js';
+import { STARTERS, starterPlay, starterById, isStarter, OWN_HINT, NO_STARTERS } from '../starters.js';
 
 const N = 120;
 const seedOf = i => (i * 2654435761) >>> 0;
@@ -40,4 +40,19 @@ test('each starter wins, and each has a defense it beats and one that stops it',
   assert.ok(r.floppy.over > r.floppy.zone32 + 0.15, 'floppy: man yes, a zone no');
   assert.ok(Math.min(...Object.values(r['horns-twist'])) >= 0.4, 'horns twist holds up against everybody');
   assert.ok(r.spain.switch > r.spain.under + 0.1, 'spain: a switch gives up the roller');
+});
+
+test('isStarter: the exact shape of a starter, and one edit makes it yours', () => {
+  for (const s of STARTERS) {
+    const p = starterPlay(s.id);
+    assert.equal(isStarter(p), true, s.id);
+    assert.equal(isStarter({ ...p, steps: p.steps.map(x => ({ ...x, beat: 2 })) }), true, s.id + ': the frame is not the shape');
+    assert.equal(isStarter({ ...p, goAt: p.goAt - 0.5 }), false, s.id + ': Go at');
+    const sp = starterPlay(s.id); sp.spots.O3 = { x: sp.spots.O3.x + 1, y: sp.spots.O3.y }; assert.equal(isStarter(sp), false, s.id + ': a spot');
+    const rt = starterPlay(s.id); const mv = rt.steps.find(x => x.pts); mv.pts[0] = { x: mv.pts[0].x + 1, y: mv.pts[0].y }; assert.equal(isStarter(rt), false, s.id + ': a route');
+    const st = starterPlay(s.id); st.steps.splice(0, 1); assert.equal(isStarter(st), false, s.id + ': a step less');
+  }
+  for (const junk of [null, undefined, {}, { spots: {} }, 'x']) assert.equal(isStarter(junk), false);
+  const DASH = new RegExp('[' + String.fromCharCode(0x2013, 0x2014) + ']');
+  for (const t of [OWN_HINT, NO_STARTERS]) { assert.ok(!DASH.test(t) && t.length < 60, t); }
 });

@@ -27,7 +27,7 @@
  */
 import { execFileSync } from 'child_process';
 import { createRequire } from 'node:module';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -58,8 +58,12 @@ for (const u of urls) {
   css = css.split(u).join('data:' + type + ';base64,' + buf.toString('base64'));
 }
 
+/* The sandbox's browser moves with each Playwright upgrade (chromium-1194 went away), so
+   take the first that exists, and Playwright's own when none does. */
+const EXE = [process.env.CHROMIUM, '/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome']
+  .find((f) => f && existsSync(f));
 const browser = await chromium.launch({
-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  ...(EXE ? { executablePath: EXE } : {}),
   args: ['--no-sandbox'],
 });
 const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });

@@ -21,8 +21,8 @@ Escape closes the sheet on top (Plays, Test it, How it works), and any screen ch
 
 ## The run view (the tactics board)
 
-The run is drawn by `court2d.js` (2026-11-19, Phase 1 of the owner's "hybrid": the board now, a 3D
-shot cam later). A crisp top-down court: light maple boards toward the basket, the lane painted
+The play is drawn by `court2d.js` (2026-11-19, Phase 1 of the owner's "hybrid"; Phase 2, the 3D
+shot cam, takes the release to the finish on a capable device, see below). A crisp top-down court: light maple boards toward the basket, the lane painted
 navy, number discs with shoulders, a facing pointer and a stride bob on soft shadows (home navy and
 gold, away red), short motion trails, the ball with a height shadow, swish rings on a make and
 confetti on a winner. Over it, the coaching layer, every piece read off the sim:
@@ -44,20 +44,62 @@ while the coach draws (`warm()`); lines, routes and glows are paths (a glow is a
 under a thin one, never a shadow blur); discs, the ball and chips are sprites made once. Nothing
 from Run The Floor's rig (`/hoops/baller.js`) is loaded any more; hoops still has it.
 
-**The seam for Phase 2.** `run-view.js` is the one switch: `RUN_VIEW` names the renderer, and every
+**The run view switch.** `run-view.js` is the one switch: `RUN_VIEW` names the renderer, and every
 renderer gives `draw`, `drawAnswer`, `camStart(frames, { res, play })`, `redraw` and `view`.
-The 3D shot cam is a renderer registered there that keeps the board for the play and takes the span
-`inShotSpan` names (the ball up, `fr.sk`, and the after-ball, `opts.after`) on a canvas of its own.
-`client.js` (timing, captions, the bleed, the banner, the card) does not change.
+`client.js` (timing, captions, the bleed, the banner, the card) does not change. `RUN_VIEW` is
+`hybrid` since Phase 2; `board` is the tactics board alone.
+
+## The 3D shot cam (Phase 2)
+
+The hybrid (`shotcam.js`, 2026-11-22) keeps the board for the play. At the release (the first frame
+with `fr.sk` set, `inShotSpan`) a slanted wipe with a SHOT CAM tag cuts to a 3D camera on a canvas of
+its own, laid over the court: over the shooter's shoulder, then a push in on the rim as the ball
+flies, the make or the miss, and on a made winner a pull back wide with confetti. The answer
+cutaway and anything after the span go back to the board. The scene is `shotcam3d.js`: a dim arena
+with a pool of light, the glossy maple floor (the moving things drawn again mirrored under it), the
+navy lane, the hoop with a net that stretches on a make and sways on a miss, the coach's routes,
+passes, screen bars and the open space ring drawn on the floor as a telestrator (`planRun`, the
+board's own read), and the read chip (`HAND UP · 40%`). The camera fits the shooter, the ball (and
+its peak), the rim and the board into the frame at any aspect, aims under the rim so the hoop sits
+above the GAME WINNER banner, and keeps the chip in the band between the banner and the caption.
+
+**Nothing is invented.** Every body stands, faces and strides where the sim's frame has him. The
+ball is the sim's own shot path and height (`fr.b[2]`, the arc over the line from the hands, riding
+up that line to the rim), then plays out by `ballAfter` in `court2d.js`, the same path the board
+draws. Make, miss, the rim rattle, the winner and the answer are all the result's.
+
+**The players** are stylized figures built from primitives in `figures3d.js` (torso and jersey with
+the number front and back, shorts, head, arms, legs), home navy and gold, away red, with procedural
+poses: the shooter's jumper (release, follow through, landing; the gather and the rise happen
+before the release, on the board), the contesting defender's close out with the hand up, the sim's
+run, slide, screen and catch codes, and an idle sway. **A real model replaces that one file**:
+`build()` would clone a rigged GLB and `pose()` drive its bones from the same inputs. Nothing else
+knows about limbs.
+
+**When it runs.** The gate (asked once a page): WebGL2 on a real GPU (SwiftShader, llvmpipe and
+other software renderers count as weak), `navigator.deviceMemory` at least 4 where it is reported,
+`hardwareConcurrency` at least 4, and never with prefers-reduced-motion (asked again every run).
+Otherwise the board draws the whole run. three.js is Shut The Door's vendored copy, imported by URL
+(`/shut-the-door/3d/vendor/three-0.170.0/three.module.min.js`, about 690 KB, 170 KB gzipped, kept a
+year by `_headers`), never a module of this bundle. `warm()` waits till the stage is on screen (the
+clipboard), then in idle time fetches it, builds the scene a piece at a time, compiles every shader
+and draws once, so the first cut does not hitch. Not ready by the release: the board keeps that
+run. **The watchdog**: under 40 fps over the first half second after the cut, the run drops back to
+the board (after two such runs the page stops trying); a lost context or a throw does the same.
+Timing is the board's to the frame: the 3D only draws the frames `client.js` already asks for.
+
+`window.__shotCam` says what happened (state, why, runs shown, dropped, the measured fps, the chip's
+box). `window.__shotCamOpts = { software: true }` lets a software renderer through, for headless
+checks; `{ off: true }` keeps the board.
 
 ## Start from a play, and Save this play
 
 **Plays** on the clipboard opens a sheet of four starters (`starters.js`: Pin-down, Floppy, Horns
 Twist, Spain pick and roll), each with its note and a small diagram. A tap puts its spots, steps
-and Go at on the clipboard, in free play, a level, the Daily (practice and the scored shot) and
-Draw yours. A clipboard with steps asks "Replace your play?" inline first. Undo right after puts the
-old play back. A starter's spots replace a level's or the day's set; the scout scheme and the
-day's seed are left alone.
+and Go at on the clipboard, in free play, the Daily (practice and the scored shot) and Draw yours,
+but not in a Ladder level (below). A clipboard with steps asks "Replace your play?" inline first.
+Undo right after puts the old play back. A starter's spots replace the day's set; the day's seed
+is left alone.
 
 Every result card but a playbook's has **Save this play**: the run's play goes into the first
 playbook (or a new "My plays"), named from the coach's terminology, with its situation when it is
@@ -67,13 +109,23 @@ The button then reads "Saved · Open", which opens the play; a run saves once. S
 
 ## The Ladder
 
-Home's second card. 24 levels in four chapters (Down 1, Down 2, Zones, Down 3), each a situation
+Line 3 of home's practice plan. 24 levels in four chapters (Down 1, Down 2, Zones, Down 3), each a situation
 with its own clock, score, starting set and sometimes a defense the scout already told you about
 ("Scout: 2-3 zone", shown on the tile and above the clipboard, and the X's set up that way). A
 level opens once the one before it is won; 1-1 is always open. Three stars a level: win, win with
 an open look, and let it go late. The result card lands the stars one at a time with the rules
 as a checklist, says New best, and offers Next level, Try again and Back to Ladder. Three stars
 gets a party. Down 2 and down 3 bring overtime (a coin flip), which gets its own OVERTIME beat.
+
+**A level runs only your own play** (the owner, 2026-11-23). In the playtest the unedited Pin-down
+starter won 1-1 to 1-5 with no drawing, so a new player was never pushed to draw. In a level the
+Plays sheet shows no starters ("No starters in the Ladder. Draw your own play."), and a play with a
+starter's exact shape (`starters.js isStarter`, by `playKey`: spots, routes, Go at) keeps Run It
+off with the hint "Make it yours. Change the starter or draw your own." One edit (a spot, a route,
+the Go at) makes it the player's own, and it runs. A play kept for a level from before stays, and
+waits for that one edit if it is a starter. Free play, the Daily, Beat my play and playbooks run
+starters as before. No level's reference play (`test/levels.test.mjs`, `check-ladder.mjs`) is a
+starter, and both assert it, so the ladder stays winnable.
 Progress is `last_shot_ladder` in localStorage (best stars and a play per level with when it was
 kept, the Daily's filed days, cleaned on read so garbage never breaks the page). Signed in, it is
 also in the shared cloud saves, game `last_shot`, slot `ladder`: on load the two merge (per level the
@@ -82,7 +134,7 @@ on page hide. A stale write is merged and sent again. Signed out it stays local.
 
 ## The Daily Last Shot
 
-Home's first card: "Daily Last Shot #N", today's title ("Down 2. 14 seconds. Horns."), the clock
+Line 2 of home's practice plan, an index card beside Play: "Daily Last Shot #N", today's title ("Down 2. 14 seconds. Horns."), the clock
 to the next one (midnight Eastern). One situation a day for everybody (`daily.js`), on the Arcade
 Lab's daily service as the external game `last-shot` (flag `arcade_last_shot`):
 `/api/arcade/last-shot/today|start|run|leaderboard`. The clipboard has the day's spots, clock and
@@ -118,13 +170,36 @@ gate works for every tester game is `platform/platform-tester-gate.md`.
 
 ## My Playbooks
 
-Home has two parts: **Play** (the game, first and biggest) and **My Playbooks** (needs a Run The Games
-account). A playbook play is drawn as a **storyboard**: Next frame opens a frame where everyone
+Home is a practice plan on the clipboard, four numbered lines in a fixed order for every player:
+**Play** (line 1, the biggest, Start here for a new player), the Daily, the Ladder, and **My Playbooks**
+(needs a Run The Games account). How it works is a sticky note on the sheet. A playbook play is drawn as a **storyboard**: Next frame opens a frame where everyone
 ended, earlier frames show faintly, Play frame runs just that frame. Frames are presentation only:
 the sim never reads them. Plays are named from the coach's terminology, tested against every
 defense (switch, fight over, go under, and the 2-3, 1-3-1, 3-2 and match-up zones), and printed as
 frames side by side.
 Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no new table.
+
+## The tester round's events
+
+`analytics.js` queues first party gameplay events (open, run, result and the moments between) and
+posts them to `POST /last-shot/e` (`events.js`, behind the tester gate; `report.js` counts them at
+`/last-shot/report`). No cookie of its own, nothing third party. A row carries the account and a
+random device id the page keeps in `last_shot_device`.
+
+**No events from the EU, the UK or Switzerland** (the owner, 2026-11-23). Guests there must consent
+first, and the site has no consent banner, so for now they send none. Once a page load, before the
+first send and before any device id exists, the page asks `GET /last-shot/e`, which answers
+`{ on: true | false }` (no-store) by Cloudflare's `request.cf.country`. Off is the site's own GA4
+consent region list (`events.js NO_EVENTS`, the EEA plus GB and CH; `test/events.test.mjs` holds it
+equal to `404.html`'s). Off: the queue is dropped, no device id is made, a kept `last_shot_device`
+(and `last_shot_seen`) is deleted, and the page stays silent. A probe that fails sends nothing that
+page either. The server drops a batch from those countries too. The probe answers only a caller who
+may post; anybody else gets the 404. No country at all (local dev, tests) counts as allowed; the dev
+server fakes one with `?cc=DE`. This holds until a consent banner exists. 4th and What's own events
+path (`functions/_faw`) is not covered by this.
+
+Under a browser driver the page sends nothing, not even the probe, unless a check sets
+`window.__lastShotAnalytics`.
 
 ## Where things are
 
@@ -148,22 +223,24 @@ Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no
 | `diagram.js`, `export.js` | a play drawn the way a coach prints it; every print and export option |
 | `web/play.html` -> `pages.js` | the page shell and modules as strings, built by `build/pages.mjs` |
 | `gate.js`, `db-supabase.js` | who gets in (pure), and the one database question |
+| `analytics.js`, `events.js`, `report.js` | the tester round's events: the page's queue and probe; the route's cleaning and the country rule; the report |
 | `check-posture.mjs` | tester only, linked from nowhere, the same 404 as Stumpire |
 
 ## Scripts
 
 ```
 node functions/_lastshot/build/pages.mjs          after editing web/play.html or any browser module
-node functions/_lastshot/build/dev-server.mjs     local play at /last-shot (?as=nobody for the 404), the Daily in memory
+node functions/_lastshot/build/dev-server.mjs     local play at /last-shot (?as=nobody for the 404, ?cc=DE for a blocked country), the Daily in memory
 node --test functions/_lastshot/test/*.test.mjs   the gate beside Stumpire's, the sim, the three test plays
 node functions/_lastshot/check-posture.mjs
 node functions/_lastshot/test/check-browser.mjs   a whole play on a phone in Chromium
 node functions/_lastshot/test/check-playbook.mjs  the storyboard and My Playbooks, phone and desktop, cloud in memory
-node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, down 2 and 3, overtime, garbage, the account's copy
+node functions/_lastshot/test/check-ladder.mjs    the Ladder: unlocks, stars, plays kept, scout, no starter as is, down 2 and 3, overtime, garbage, the account's copy
 node functions/_lastshot/test/check-daily.mjs     the Daily against the Lab's real handler in memory (test/fake-arcade.mjs)
 node functions/_lastshot/test/check-beat.mjs      Beat my play links: watch, beat it or not, round trips, garbage, the hash
 node functions/_lastshot/test/check-starters.mjs  Plays (the starters, replace, undo, a level's scout) and Save this play
-node functions/_lastshot/test/check-analytics.mjs the tester round's events: every name, the beacon on hide, inert under automation
+node functions/_lastshot/test/check-analytics.mjs the tester round's events: every name, the beacon on hide, the probe (off sends nothing), inert under automation
+node functions/_lastshot/test/check-shotcam.mjs   the 3D shot cam: the cut in the span only, the timing, the fallbacks, the watchdog
 ```
 
 The seed for any result is behind **Seed** on the result screen. The same seed and the same play

@@ -26,6 +26,18 @@ jobs:
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
+      # Checks written on the cloud sandbox pin its Chromium (/opt/pw-browsers/chromium-1194), which
+      # a runner does not have. They read PS_CHROME first, so point it at the browser installed
+      # above. Without this every one of them failed at launch, before testing anything.
+      - name: Tell the browser checks where Chromium is
+        run: echo "PS_CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
+      # The college score check (test_score_parity) asks a real Postgres to round the way the
+      # leaderboard's generated column does. It needs only an empty database called cfbtest.
+      - name: Postgres for the checks that need one
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+          createdb cfbtest
       - name: Run every game's smoke checks
         id: qa
         continue-on-error: true

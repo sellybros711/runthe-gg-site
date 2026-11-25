@@ -26,33 +26,44 @@ export async function pageGate(sub, uid, db) {
   return ROLES.includes(role) ? out : null;
 }
 
-/* THE TESTER ROUND (Phase 4). Two routes beside the page, behind the same
+/* THE TESTER ROUND (Phase 4). Three routes beside the page, behind the same
  * list, refused with the same 404:
  *   POST /last-shot/e        a tester's events (events.js)        -> 204
+ *   GET  /last-shot/e        the probe: { on }, may this visitor send any
  *   GET  /last-shot/report   the round report, admins only (report.js)
- * Anything else falls through to pageGate. */
-import { postEvents, deviceOf, GAME } from './events.js';
+ * Anything else falls through to pageGate.
+ *
+ * THE COUNTRY (2026-11-23). country is Cloudflare's request.cf.country, the
+ * route's only part in this. The probe answers { on: false } and a POST
+ * stores nothing for a visitor from the EU, the UK or Switzerland
+ * (events.js NO_EVENTS). Only a caller who may post gets either answer;
+ * anybody else still gets the 404. No country (local dev, tests) is allowed. */
+import { postEvents, deviceOf, probeEvents, GAME } from './events.js';
 
 /* Guests may send events: OFF while the game is tester only. The launch PR
    turns it on, with the page, so a player who never signs in still counts. */
 export const PUBLIC_EVENTS = false;
 import { renderReport, rangeOf } from './report.js';
 
-export async function roundGate({ method, sub, uid, query, body, nowMs, publicEvents = PUBLIC_EVENTS }, db) {
+const posted = r => ({ status: r.status, type: 'text/plain; charset=utf-8', body: '' });
+
+export async function roundGate({ method, sub, uid, query, body, nowMs, country, publicEvents = PUBLIC_EVENTS }, db) {
   const s = String(sub || '').replace(/\/+$/, '');
   if (s !== 'e' && s !== 'report') return undefined;
-  if (s === 'e' && method === 'POST' && !uid && publicEvents && deviceOf(body)) {
-    const r = await postEvents(null, body, db);
-    return { status: r.status, type: 'text/plain; charset=utf-8', body: '' };
+  if (s === 'e' && !uid && publicEvents) {
+    /* a guest, once the launch lets guests in: the probe needs no device yet */
+    if (method === 'GET') return probeEvents(country);
+    if (method === 'POST' && deviceOf(body)) return posted(await postEvents(null, body, db, country));
+    return null;
   }
   if (!uid) return null;
   let role = null;
   try { role = await db.role(uid); } catch (e) { return null; }
   if (s === 'e') {
-    if (method !== 'POST') return null;
+    if (method !== 'POST' && method !== 'GET') return null;
     if (!ROLES.includes(role) && !publicEvents) return null;
-    const r = await postEvents(ROLES.includes(role) || publicEvents ? uid : null, body, db);
-    return { status: r.status, type: 'text/plain; charset=utf-8', body: '' };
+    if (method === 'GET') return probeEvents(country);
+    return posted(await postEvents(uid, body, db, country));
   }
   if (method !== 'GET' || role !== 'admin') return null;
   const range = rangeOf(query || {}, nowMs);

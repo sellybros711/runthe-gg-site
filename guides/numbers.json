@@ -703,10 +703,10 @@
       "want": 9
     },
     {
-      "say": "Six seasons of the 2020s give it 175",
+      "say": "Seven seasons of the 2020s give it 205",
       "fact": "baseball-eras",
       "key": "2020s.seasons",
-      "want": 175
+      "want": 205
     },
     {
       "say": "The 2010s give it 300",
@@ -739,10 +739,10 @@
       "want": 36
     },
     {
-      "say": "best man averages 5.1 WAR",
+      "say": "best man averages 5.2 WAR",
       "fact": "baseball-eras",
       "key": "2020s.best",
-      "want": 5.14
+      "want": 5.22
     },
     {
       "say": "against 5.6 to 6.1",

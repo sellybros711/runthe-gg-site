@@ -103,6 +103,9 @@ const GUARDED = [
   /* the playbook: the names it gives plays, and what an export prints */
   '4th-and-what/names.js',
   '4th-and-what/export.js', '4th-and-what/cards.js',
+  /* Run The Course, from the day it was written: the page, the goal line (sim.js)
+     and what the page says around a shift (main.js). */
+  'course/index.html', 'course/sim.js', 'course/main.js',
   /* The guides (runthe.gg/guides/), from the day they were written: every page the
      guide builder writes, so a new guide is read here with no list to edit. */
   ...(() => { try { return readdirSync('guides').filter((f) => f.endsWith('.html')).map((f) => 'guides/' + f); } catch { return []; } })(),

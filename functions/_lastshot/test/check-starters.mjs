@@ -5,12 +5,13 @@
  *
  *   the Plays sheet   the four starters, each loading its own spots, Go at and steps;
  *                     Replace your play? on a clipboard with steps; Undo puts it back
- *   a level           a starter there keeps the scout scheme
+ *   a level           no starters in its Plays sheet; a starter there runs once edited
+ *                     (the owner, 2026-11-23) and keeps the scout scheme
  *   Save this play    signed out it reads Sign in to save; signed in it saves once,
  *                     named from the terminology, with its situation and the run counted,
  *                     then Saved · Open lands on the play
  *   home              a new browser: Play (big, Start here), Daily, Ladder, then My
- *                     Playbooks smaller; after its first run the Daily goes back on top
+ *                     Playbooks smaller; after its first run Play stays first, without Start here
  *   a run             the frames strip hides while it plays; the card says Run it again
  *
  *   node functions/_lastshot/test/check-starters.mjs   (SHOTS=dir for screenshots) */
@@ -75,7 +76,9 @@ async function run(name, viewport, mobile) {
   /* ---------- home ---------- */
   const box = id => page.locator('#' + id).boundingBox();
   const [hd, hp, hl, hb] = [await box('hDaily'), await box('hPlay'), await box('hLadder'), await box('hBooks')];
-  ok(hp.y < hd.y && hd.y < hl.y && hl.y < hb.y, 'a new browser: home reads Play, Daily, Ladder, then My Playbooks');
+  /* reading order: a line above, or on the same line (desktop puts the Ladder and My Playbooks in one row) and to the left */
+  const before = (a, b) => a.y < b.y - 4 || (Math.abs(a.y - b.y) <= 4 && a.x < b.x);
+  ok(before(hp, hd) && before(hd, hl) && before(hl, hb), 'a new browser: home reads Play, Daily, Ladder, then My Playbooks');
   ok(await L(() => document.getElementById('hPlay').classList.contains('first')), 'Play is marked Start here');
   ok(hp.height > hb.height && hp.height >= hl.height, 'Play is the big card and My Playbooks is smaller (' + Math.round(hp.height) + ' vs ' + Math.round(hb.height) + ')');
   ok((await L(() => document.querySelectorAll('.sheet.on, .fsheet.on').length)) === 0, 'no sheet opens by itself');
@@ -97,7 +100,7 @@ async function run(name, viewport, mobile) {
   ok(!(await L(() => document.getElementById('framesRow').hidden)), 'back on the clipboard, the strip is back');
   await L(() => window.__lastShot.home());
   const [hd2, hp2] = [await box('hDaily'), await box('hPlay')];
-  ok(hd2.y < hp2.y && !(await L(() => document.getElementById('hPlay').classList.contains('first'))), 'after a first run the Daily is back on top, no Start here');
+  ok(hp2.y < hd2.y && !(await L(() => document.getElementById('hPlay').classList.contains('first'))), 'after a first run Play stays first, no Start here');
   await page.click('#hPlay');
   await page.waitForSelector('#board', { state: 'visible' });
 
@@ -187,12 +190,17 @@ async function run(name, viewport, mobile) {
   await page.waitForSelector('#lvlBar', { state: 'visible' });
   const scout = await page.textContent('#lvlScout');
   await page.click('#bPlays');
-  await page.click('[data-starter=horns-twist]');
-  if (await page.isVisible('#playsAsk')) await page.click('#playsReplace');
+  ok((await page.locator('#playsList [data-starter]').count()) === 0, 'a level\'s Plays sheet offers no starters');
+  await page.click('#playsClose');
+  await L(() => window.__lastShot.loadStarter('horns-twist'));
   ok(same(await clip(), body(starterPlay('horns-twist'))), 'a level takes Horns Twist, spots and all');
+  ok(await page.isDisabled('#bRun'), 'but it cannot run as is');
+  await page.click('#goMinus');
+  const edited = { ...body(starterPlay('horns-twist')), goAt: 7.5 };
+  ok(same(await clip(), edited) && !(await page.isDisabled('#bRun')), 'one Go at step makes it yours, Run It on');
   ok((await page.textContent('#lvlScout')) === scout && /Fight over/i.test(scout), 'the scout line stays: ' + scout);
   ok((await L(() => [1, 2, 3, 4].map(s => window.__lastShot.simulate(s).scheme).join())) === 'over,over,over,over', 'and the level still plays the scout\'s scheme');
-  ok(same(body(await L(() => window.__lastShot.ladder.plays['2-4'])), body(starterPlay('horns-twist'))), 'the level keeps the starter as its play');
+  ok(same(body(await L(() => window.__lastShot.ladder.plays['2-4'])), edited), 'the level keeps the edited play');
   await runTo(5);
   ok((await page.textContent('#bSavePlay')) === 'Save this play', 'the level card has Save this play');
   await openCard(page);
@@ -203,7 +211,7 @@ async function run(name, viewport, mobile) {
   e = bks[0].plays[1];
   const sit = { clock: 20, down: 2 };
   ok(same(e.situation, sit), 'with the level\'s situation: ' + JSON.stringify(e.situation));
-  ok(e.name === nameOf(starterPlay('horns-twist'), sit), 'named from the terminology: ' + e.name);
+  ok(e.name === nameOf(edited, sit), 'named from the terminology: ' + e.name);
   tally = e.stats[situationKey(SCENARIO, sit)];
   ok(tally && tally.byScheme.over && tally.byScheme.over.n === 1, 'the run counts under Fight over, down 2 from 20.0');
   await page.click('#bSavePlay');

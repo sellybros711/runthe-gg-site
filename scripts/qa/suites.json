@@ -10,6 +10,7 @@
         "node scripts/check-numbers.mjs",
         "node scripts/check-cachebust.mjs",
         "node scripts/check-adsense.mjs",
+        "node scripts/check-saves.mjs",
         "node scripts/check-contrast.mjs",
         "node scripts/check-current.mjs"
       ],

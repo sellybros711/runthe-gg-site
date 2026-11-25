@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { checkLeague } from './build/check-league.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -30,10 +31,9 @@ let passed = 0;
 function ok(cond, what) { if (cond) passed++; else failures.push(what); }
 function section(t) { console.log(`\n${t}\n${'-'.repeat(t.length)}`); }
 const clone = (x) => JSON.parse(JSON.stringify(x));
-/* Today's rosters when the repo has them (hoops/data/rosters.json, written by
-   the roster workflow), so every section plays the league a career joins. */
-const ROSTERS = fs.existsSync(path.join(HERE, 'data', 'rosters.json')) ? JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'rosters.json'), 'utf8')) : null;
-const league = C.seedLeague(ROWS, C.withRatings(ROSTERS, (() => { const f = new URL('./data/ratings.json', import.meta.url); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; })()));
+/* The league the checks play: a frozen copy of the rosters (build/check-league.mjs),
+   so the weekly roster refresh never moves a check. */
+const league = checkLeague(C, ROWS);
 const words = (s) => String(s).replace(/\{[a-z0-9]+(?::\w+)?\}/gi, 'X').split(/\s+/).filter(Boolean).length;
 const POOLS = { nba: C.EVENTS, am: C.AM_EVENTS, arc: C.ARC_EVENTS, story: C.STORY_EV, team: C.TEAM_EV };
 
@@ -635,19 +635,35 @@ await (async () => {
     await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
     await page.evaluate(() => document.querySelector('#b-career').click());
-    await page.waitForSelector('.cr-tabs', { timeout: 15000 });
+    await page.waitForSelector('#s-car .cr-tabsec', { timeout: 15000 });
     return { ctx, page, errs };
+  }
+  /* The tabs live inside the five (the app shell, 2026-11-10): People and
+     News are on Team, Legacy on Legacy. A tab is pressed where a player
+     finds it. */
+  const OWNER = { people: 'team', news: 'team', legacy: 'legacy' };
+  async function show(page, t) {
+    if (await page.$('#cr-t-' + OWNER[t])) await page.click('#cr-t-' + OWNER[t]);
+    await page.click('[data-tab="' + t + '"]');
+  }
+  async function labelsFit(page) {
+    const out = [];
+    for (const o of ['team', 'legacy']) {
+      if (await page.$('#cr-t-' + o)) await page.click('#cr-t-' + o);
+      out.push(...(await page.$$eval('.cr-tabs [data-tab]', (a) => a.filter((x) => x.offsetParent !== null).map((x) => x.scrollWidth <= x.clientWidth + 1))));
+    }
+    return out;
   }
   const s1 = await open(mid);
   const tabs = await s1.page.$$eval('.cr-tabs [data-tab]', (a) => a.map((x) => x.getAttribute('data-tab')));
   ok(['people', 'legacy', 'news'].every((t) => tabs.indexOf(t) >= 0), `a story career has the People, Legacy and News tabs (${tabs.join(', ')})`);
   for (const t of ['people', 'legacy', 'news']) {
-    await s1.page.click('[data-tab="' + t + '"]');
+    await show(s1.page, t);
     const html = await s1.page.$eval('.cr-tabs + [role="tabpanel"]', (e) => e.textContent);
     ok(html.length > 60 && !/undefined|NaN|\{[a-z]+\}/.test(html), `the ${t} tab draws real content (${html.slice(0, 50).replace(/\s+/g, ' ')})`);
   }
-  const wide = await s1.page.$$eval('.cr-tabs [data-tab]', (a) => a.every((x) => x.scrollWidth <= x.clientWidth + 1));
-  ok(wide, 'every tab label fits its tab on a phone');
+  const fits = await labelsFit(s1.page), shown = await s1.page.$$eval('.cr-tabs [data-tab]:not([data-tab="log"])', (a) => a.length);
+  ok(fits.length === shown && shown >= 5 && fits.every(Boolean), `every tab label fits its tab on a phone (${fits.length} of ${shown} seen)`);
   ok(s1.errs.length === 0, `no page error (${s1.errs.join(' | ') || 'none'})`);
   await s1.ctx.close();
   const s2 = await open(old);
@@ -657,7 +673,7 @@ await (async () => {
      for a career that started without them. */
   ok(['people', 'legacy', 'news'].every((t) => tabs2.indexOf(t) >= 0), `an old save opens with the story tabs too (${tabs2.join(', ')})`);
   for (const t of ['people', 'legacy', 'news']) {
-    await s2.page.click('[data-tab="' + t + '"]');
+    await show(s2.page, t);
     const html = await s2.page.$eval('.cr-tabs + [role="tabpanel"]', (e) => e.textContent);
     ok(html.length > 20 && !/undefined|NaN|\{[a-z]+\}/.test(html), `an old save's ${t} tab draws (${html.slice(0, 50).replace(/\s+/g, ' ')})`);
   }

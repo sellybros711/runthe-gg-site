@@ -21,13 +21,16 @@
  * window.RTG_AUTH), loaded by web/play.html as the Arcade Lab shell does.
  *
  * PLAYS AND SAVE THIS PLAY: Plays on the clipboard puts a starter
- * (starters.js) on it in any mode; every result card but a playbook's saves
+ * (starters.js) on it in any mode but a level, where the player draws their
+ * own (a starter as is cannot run there, starters.js isStarter); every
+ * result card but a playbook's saves
  * the run's play into My Playbooks (book-ui.js saveRun).
  *
  * TESTER-ROUND ANALYTICS (analytics.js): open at boot, run when the sim runs
  * the player's own play (never their play in a challenge), result when its
  * card opens, and the moments in between (a level, the daily, Plays, Save,
- * Share, a #beat= link). Inert under a browser driver unless a check asks.
+ * Share, a #beat= link). Inert under a browser driver unless a check asks,
+ * and silent for a visitor from the EU, the UK or Switzerland (the probe).
  *
  * ACCOUNT PLUG POINTS still out of scope:
  *   TODO(results): save a free play or ladder possession through a gated API,
@@ -35,7 +38,7 @@
 import { SCENARIO as SC, isZone } from './scenario.js';
 import { simulate } from './sim.js';
 import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js';
-import { STARTERS, starterById, starterPlay } from './starters.js';
+import { STARTERS, starterById, starterPlay, isStarter, OWN_HINT, NO_STARTERS } from './starters.js';
 import { drawPlay } from './diagram.js';
 import { LEVELS, levelById, levelScenario, levelOpt, starsOf } from './levels.js';
 import { loadLadder, saveLadder, renderLadder, isOpen, nextOf, starsIn, maxStars, clockLine, scoutLine, starText, cleanPlay as cleanStored,
@@ -100,6 +103,9 @@ function loadPlay() {
   return emptyPlay(SC);
 }
 const STARTER = playKey(starterPlay('pin-down'));
+/* A Ladder level runs only the player's own play: a starter as is waits for
+   one edit (starters.js isStarter, the owner 2026-11-23). */
+const starterLocked = p => mode === 'level' && !!lvl && isStarter(p);
 
 const ui = {
   hint(t) {
@@ -108,7 +114,7 @@ const ui = {
     hintTimer = t ? setTimeout(() => { hintTimer = null; $('hint').textContent = defaultHint(); }, 2600) : null;
   },
   changed(p, f) {
-    $('bRun').disabled = problems(SCX(), p).length > 0;
+    $('bRun').disabled = problems(SCX(), p).length > 0 || starterLocked(p);
     $('bRun').classList.toggle('pulse', mode === 'game' && !ranOnce && playKey(p) === STARTER);
     /* a blank Daily board: Plays is the way in */
     $('bPlays').classList.toggle('pulse', mode === 'daily' && !p.steps.length && !!day && !day.played);
@@ -127,7 +133,7 @@ function defaultHint() {
   if (!board) return '';
   if (!play.steps.length && !board.tool && mode === 'daily') return 'Tap Plays to start from one. Or draw your own.';
   if (!play.steps.length && !board.tool) return 'Drag players to set the floor. Then pick a tool.';
-  if (!problems(SCX(), play).length) return 'Ready. Run It.';
+  if (!problems(SCX(), play).length) return starterLocked(play) ? OWN_HINT : 'Ready. Run It.';
   return board.tool ? '' : 'Pick a tool.';
 }
 
@@ -205,10 +211,13 @@ function openPlays() {
   pendingStarter = null;
   const card = $('playsCard'), add = adder(card);
   card.innerHTML = '';
-  add('h2', '', 'Start from a play');
-  add('p', 'muted', 'Put one on the clipboard. Then make it yours.');
+  /* a level: no starters, the player draws their own */
+  const inLevel = mode === 'level';
+  add('h2', '', inLevel ? 'Plays' : 'Start from a play');
+  const note = add('p', 'muted', inLevel ? NO_STARTERS : 'Put one on the clipboard. Then make it yours.');
+  note.id = 'playsNote';
   const list = add('div', 'slist'); list.id = 'playsList';
-  for (const s of STARTERS) {
+  for (const s of inLevel ? [] : STARTERS) {
     const b = document.createElement('button');
     b.className = 'sitem'; b.dataset.starter = s.id;
     const cv = document.createElement('canvas'); cv.className = 'thumb'; cv.width = 132; cv.height = 124;
@@ -443,6 +452,7 @@ const readout = e => (e.p != null ? e.text + ' · ' + Math.round(e.p * 100) + '%
 /* pl: the play to run, when it is not the one on the clipboard (their play
    in a challenge, or the daily's play as it was filed) */
 function run(seed, opt, pl) {
+  if (!pl && starterLocked(play)) { ui.hint(OWN_HINT); return; }
   const tap = performance.now();
   sound.unlock();
   const S = SCX();
@@ -838,6 +848,7 @@ function show(v) {
   if (v === 'vGame') { clearTimeout(hintTimer); hintTimer = null; $('hint').textContent = ''; }
   closeSheets();   // a sheet never stays open over the next screen
   for (const id of VIEWS) $(id).hidden = id !== v;
+  document.body.classList.toggle('athome', v === 'vHome');   // the gym wall behind home's clipboard (desktop)
   $('back').dataset.to = v === 'vHome' ? 'arcade' : v === 'vGame' && mode === 'edit' ? 'book' : v === 'vGame' && mode === 'level' ? 'ladder'
     : v === 'vGame' && mode === 'beat' ? 'beat' : v === 'vBooks' ? 'books' : 'home';
   /* the hash (#beat= or #daily) holds only while its screen is up, so a
@@ -887,16 +898,12 @@ function bars() {
   $('bRun').textContent = mode === 'daily' ? 'Practice' : 'Run It';
 }
 
-/* Home's Ladder card: the stars so far. The Daily card: today, or what you
-   filed, and the clock to the next one. */
+/* Home is the practice plan, and its order is fixed: Play is line 1 for
+   everyone, new or returning (the owner's call, 2026-11-22). A browser that
+   has never run a play gets Start here on it. The Ladder line: the stars so
+   far. The Daily card: today, or what you filed, and the clock to the next one. */
 function homeSync() {
-  {
-    const fresh = !lsGet(RAN_KEY), d = $('hDaily'), p = $('hPlay');
-    // a.compareDocumentPosition(b) says where b is: FOLLOWING means b comes after a
-    if (fresh && d.compareDocumentPosition(p) & Node.DOCUMENT_POSITION_FOLLOWING) d.parentNode.insertBefore(p, d);
-    if (!fresh && p.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING) p.parentNode.insertBefore(d, p);
-    p.classList.toggle('first', fresh);
-  }
+  $('hPlay').classList.toggle('first', !lsGet(RAN_KEY));
   $('hLadderStars').textContent = starsIn(ladder) + ' of ' + maxStars() + ' stars';
   $('hLadderSub').textContent = LEVELS.length + ' late game spots. Win one to open the next.';
   D.homeCard({ today: day, error: dayState === 'error', off: dayState === 'off', streak: streakNow() });
