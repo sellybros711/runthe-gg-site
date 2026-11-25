@@ -35,8 +35,11 @@ const bondRel = (p, d) => { p.rel = clamp(p.rel + d, -100, 100); };
 const withNow = (L, p) => p.role === 'Partner' && lifeOf(L).rel !== 'single' && p.n === say(L, '{partner}');
 const paired = (L, st) => (L, p) => withNow(L, p) && [].concat(st).indexOf(lifeOf(L).rel) >= 0;
 /* It ends: the same bookkeeping the breakup card does. */
-function partnerLeaves(L) { const f = lifeOf(L); f.rel = 'single'; f.pn = (f.pn || 0) + 1; }
+function partnerLeaves(L) { const f = lifeOf(L); if (f.rel === 'married') f.div = (f.div || 0) + 1; f.rel = 'single'; f.pn = (f.pn || 0) + 1; }
 
+/* The three loud ones (freezing out the press, trash talk, a call out that
+   goes badly) are public, so they move the reputation too: a man who wants
+   to be the villain can be one on purpose (phase 7, the Villain ribbon). */
 /* Each act: who it is for (`on`), what it costs, and what it does. `run`
    returns the line the screen shows; `tone` colors it. */
 const BONDS = {
@@ -116,7 +119,7 @@ const BONDS = {
     name: 'Call him out', blurb: 'In front of the room.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'mate',
     run(L, p, r) {
       if (ok(r, 0.45 + L.m.trust / 400)) { bondRel(p, 6); bump(L, { trust: 3 }); bondNote(L, p, 'You called him out. He heard it.'); return p.n + ' nods. He needed to hear it from you.'; }
-      bondRel(p, -18); bump(L, { morale: -2, trust: -1 }); bondNote(L, p, 'You called him out. It went badly.');
+      bondRel(p, -18); bump(L, { morale: -2, trust: -1 }); moveRep(L, -1, -3); bondNote(L, p, 'You called him out. It went badly.');
       return p.n + ' does not take it well. The room goes quiet.';
     },
   },
@@ -127,12 +130,12 @@ const BONDS = {
   },
   freeze: {
     name: 'Freeze them out', blurb: 'No quotes. No eye contact.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'press',
-    run(L, p) { bondRel(p, -15); bump(L, { fame: -1 }); bondNote(L, p, 'You froze them out.'); return p.n + ' asks three questions. You answer none.'; },
+    run(L, p) { bondRel(p, -15); bump(L, { fame: -1 }); moveRep(L, -3, -2); bondNote(L, p, 'You froze them out.'); return p.n + ' asks three questions. You answer none.'; },
   },
   // ── rivals ──
   trash: {
     name: 'Talk trash', blurb: 'Loud enough to get back to him.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'foe',
-    run(L, p) { bondRel(p, -12); bump(L, { fame: 3 }); bondNote(L, p, 'You talked trash. It got back.'); return 'It is everywhere by lunch. ' + p.n + ' has seen it.'; },
+    run(L, p) { bondRel(p, -12); bump(L, { fame: 3 }); moveRep(L, -3, -3); bondNote(L, p, 'You talked trash. It got back.'); return 'It is everywhere by lunch. ' + p.n + ' has seen it.'; },
   },
   peace: {
     name: 'Bury it', blurb: 'Life is long. The league is small.', on: (L, p) => BOND_GROUP[p.role] === 'foe' && p.rel < 20,
