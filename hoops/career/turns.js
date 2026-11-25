@@ -356,6 +356,9 @@ function newYear(L, beats) {
   L.year++;
   /* The lifestyle is paid for and the money at work moves (wealth.js). */
   wealthSeason(L, beats);
+  /* The habits take their share and the league remembers (wild.js). It can end here. */
+  wildSeason(L, beats);
+  if (L.retired) return;
   if (L.season) L.season = null;
   if (L.contract && L.contract.next && L.contract.years <= L.contract.total) {
     L.contract.salary = L.contract.next;
