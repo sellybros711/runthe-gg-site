@@ -87,7 +87,7 @@ const GOAT_AT = 145;
    (storyStretch); off is the chance of the summer's. An arc that is due takes
    the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
    late 1 and off 1 cards. */
-const PACE = { stretch: { pre: 0.2, early: 0.28, mid: 0.26, late: 0.26 }, second: 1, off: 0.95, team: 1, cap: { season: 2, off: 1 }, legend: 2, life: 3.5, rep: 1.8 };
+const PACE = { stretch: { pre: 0.2, early: 0.28, mid: 0.26, late: 0.26 }, second: 1, off: 0.95, team: 1, cap: { season: 2, off: 1 }, legend: 2.5, life: 3.5, rep: 1.8 };
 /* life: meeting someone, a proposal, a wedding and a baby are weighted this
    much (they were 1.8): a life off the floor is what the game is, and at
    1.8 a tenth of careers married. */
@@ -11294,7 +11294,7 @@ story({
     tag: 'Agent\'s office', t: 'Your contract runs out in June.', x: '{agent} says every playoff game is worth money now.',
     o: [O('Block it out', { trust: 2 }, 'Basketball now. Money in July.', { sub: 'Basketball first' }),
       O('Go over the numbers', { morale: -2, fame: 1 }, 'He walks you through it. You sleep worse.', { sub: 'Know what\'s at stake' })] },
-  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 3,
+  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 12,
     tag: 'Training staff', t: 'Rest all the way to Game 1?', x: '{gm} wants you off the court until Saturday. No practice at all.',
     o: [O('Take the days off', { health: 10 }, 'Three days in the cold tub. You feel brand new.', { sub: 'Get your legs back' }),
       O('Practice anyway', { health: -4, eth: 2, trust: -2 }, 'You shoot alone at night. Nothing happens. This time.', { sub: 'Stay sharp' })] },

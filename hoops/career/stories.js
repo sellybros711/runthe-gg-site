@@ -1152,7 +1152,7 @@ story({
     tag: 'Agent\'s office', t: 'Your contract runs out in June.', x: '{agent} says every playoff game is worth money now.',
     o: [O('Block it out', { trust: 2 }, 'Basketball now. Money in July.', { sub: 'Basketball first' }),
       O('Go over the numbers', { morale: -2, fame: 1 }, 'He walks you through it. You sleep worse.', { sub: 'Know what\'s at stake' })] },
-  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 3,
+  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 12,
     tag: 'Training staff', t: 'Rest all the way to Game 1?', x: '{gm} wants you off the court until Saturday. No practice at all.',
     o: [O('Take the days off', { health: 10 }, 'Three days in the cold tub. You feel brand new.', { sub: 'Get your legs back' }),
       O('Practice anyway', { health: -4, eth: 2, trust: -2 }, 'You shoot alone at night. Nothing happens. This time.', { sub: 'Stay sharp' })] },
