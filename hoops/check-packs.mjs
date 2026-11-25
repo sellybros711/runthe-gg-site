@@ -419,7 +419,10 @@ async function browser(){
   await mp.click('.sh-ov .sh-tear');
   await mp.waitForSelector('.sh-ov .sh-fl', { timeout: 5000 });
   ok(await mp.evaluate(() => document.querySelectorAll('.sh-ov .sh-fl').length === 5), '13 a bundle deals five cards face down');
-  await mp.waitForSelector('.sh-ov .sh-reveal .sh-cards.many', { timeout: 9000 });
+  /* The five flips run up to about 7.1 seconds by design (shop-ui.js: SPOT_MAX
+     6200, plus 420 before and 500 after). 9 seconds left a slow runner under
+     two of headroom, and it timed out on CI (2026-11-25). */
+  await mp.waitForSelector('.sh-ov .sh-reveal .sh-cards.many', { timeout: 25000 });
   if (process.env.SHOT) await mp.screenshot({ path: process.env.SHOT.replace('.png', '-five.png') });
   ok(await mp.evaluate(() => document.querySelectorAll('.sh-ov .sh-reveal .sh-card').length === 5), '13 and lands on all five');
   await mp.click('.sh-ov .sh-done');

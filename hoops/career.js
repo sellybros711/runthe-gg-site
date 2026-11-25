@@ -5344,12 +5344,7 @@ const EVENTS = {
     title: '{partner} wants to talk about kids',
     text: (L) => lifeOf(L).kids ? 'Another one? The house is already loud.' : 'You always said you wanted a big family.',
     options: [
-      { label: 'Start a family', hint: 'Grow the house', run: (L) => {
-        const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 });
-        /* A story career knows boy or girl, because only a son can be played next. */
-        const boy = kidIsSon(L, f.kids - 1); if (Number.isFinite(f.sons) && boy) f.sons++;
-        logIt(L, (f.kids === 1 ? 'Became a parent. ' : 'Welcomed kid number ' + f.kids + '. ') + (boy ? 'A boy.' : 'A girl.'), 'good');
-        return (f.kids === 1 ? 'A baby ' : 'Kid number ' + f.kids + ', a baby ') + (boy ? 'boy' : 'girl') + ' by next summer. ' + (f.kids === 1 ? 'You learn to sleep in two-hour pieces.' : 'The house gets louder.'); } },
+      { label: 'Start a family', hint: 'Grow the house', run: (L) => startFamily(L) },
       { label: 'Wait until you retire', hint: 'Career first', run: (L) => { bump(L, { morale: -2 }); return 'You agree to wait. Mostly.'; } },
     ],
   },
@@ -5601,6 +5596,15 @@ const rivalOn = (L) => !!(L.rival && !L.rival.retired);
    them has a generated name ({partner}, keyed on `pn`, so a new relationship
    is a new person), and every one moves morale
    more than it moves anything about basketball, which is the BitLife half. */
+/* A child arrives: the baby card's answer, and the same thing asked for on
+   purpose (bonds.js). */
+function startFamily(L) {
+  const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 });
+  /* A story career knows boy or girl, because only a son can be played next. */
+  const boy = kidIsSon(L, f.kids - 1); if (Number.isFinite(f.sons) && boy) f.sons++;
+  logIt(L, (f.kids === 1 ? 'Became a parent. ' : 'Welcomed kid number ' + f.kids + '. ') + (boy ? 'A boy.' : 'A girl.'), 'good');
+  return (f.kids === 1 ? 'A baby ' : 'Kid number ' + f.kids + ', a baby ') + (boy ? 'boy' : 'girl') + ' by next summer. ' + (f.kids === 1 ? 'You learn to sleep in two-hour pieces.' : 'The house gets louder.');
+}
 function lifeOf(L) { return L.life || (L.life = { rel: 'single', kids: 0, since: 0 }); }
 function lifeLine(L) {
   const f = lifeOf(L);
@@ -11803,28 +11807,50 @@ function step(L) {
    screen rather than a press a stretch. It is step, repeated: nothing in it
    draws, so a career aged up is the career stepped. */
 function ageUp(L) {
-  const beats = [], y0 = L.year;
+  const beats = [], log = [], y0 = L.year;
   let steps = 0;
   while (!L.retired && !L.pending.length && steps < 24) {
+    /* What the page's ticker asks about a stretch: where the season stood
+       before the step, and the beats that step made. */
+    const was = { phase: L.phase, poDone: L.season && L.season.po ? L.season.po.results.length : 0 };
     const r = step(L);
     steps++;
+    log.push({ phase: was.phase, poDone: was.poDone, beats: r.beats || [] });
     for (const b of r.beats || []) beats.push(b);
     if (L.year !== y0) break;
   }
-  return { beats, steps, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0 };
+  return { beats, steps, log, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0 };
 }
-/* The year as the summary screen reads it: the last season played, how his
-   overall moved, the money and the meters. Null before a season is played. */
+/* How a season ended, in words. */
+const PO_WORDS = { Missed: 'Missed the playoffs', 'Play-in': 'Out in the play-in', R1: 'Out in the first round', R2: 'Out in the second round',
+  CF: 'Out in the conference finals', Finals: 'Lost the Finals', Champion: 'NBA champion' };
+/* Where the year began, marked when it turns (newYear), so the summary can
+   say what moved even after a reload. */
+function markYear(L) {
+  /* the year that just closed keeps its mark, because the summary is read
+     after the turn */
+  if (L.flags.yearMark) L.flags.yearWas = L.flags.yearMark;
+  L.flags.yearMark = { y: L.year, m: Object.assign({}, L.m), cash: L.cash, ovr: show(ovrOf(L)) };
+}
+/* The year as the summary screen reads it: the season that just closed, how
+   his overall moved, the money and the meters. Null before a season is
+   played, and null for a year with no NBA season (overseas, the road). */
 function yearSummary(L) {
   const H = L.history, h = H[H.length - 1];
-  if (!h) return null;
-  const p = H[H.length - 2];
+  if (!h || h.y < L.year - 1) return null;
+  const p = H[H.length - 2], mk = [L.flags.yearMark, L.flags.yearWas].find((x) => x && x.y === h.y) || null;
+  const now = show(ovrOf(L));
   return {
     y: h.y, age: h.age, team: h.t, role: h.role, gp: h.gp,
     ovr: h.ovr, ovrChange: p ? h.ovr - p.ovr : 0,
-    record: [h.w, h.l], seed: h.seed, playoffs: h.po, awards: (h.aw || []).slice(),
+    /* the overall as it is printed everywhere, today, and its change since
+       the year began (the summer's work included) */
+    ovrShown: now, ovrShownChange: mk ? now - mk.ovr : p ? show(h.ovr) - show(p.ovr) : 0,
+    record: [h.w, h.l], seed: h.seed, playoffs: h.po, playoffsText: PO_WORDS[h.po] || h.po, awards: (h.aw || []).slice(),
     line: { min: h.min, pts: h.pts, reb: h.reb, ast: h.ast, stl: h.stl, blk: h.blk, fgp: h.fgp, tpp: h.tpp, ftp: h.ftp },
-    salary: h.sal, cash: L.cash, earned: L.earned, meters: Object.assign({}, L.m),
+    salary: h.sal, cash: L.cash, earned: L.earned, worth: netWorth(L), upkeep: upkeepOf(L), meters: Object.assign({}, L.m),
+    /* where the year began, when it was marked: null on a save from before */
+    start: mk ? { meters: Object.assign({}, mk.m), cash: mk.cash } : null,
   };
 }
 function recordBeat(L, when) {
@@ -11928,6 +11954,8 @@ function newYear(L, beats) {
   if (L.flags.banned) { retire(L, beats, 'Banned for life at ' + L.age + '.'); return; }
   L.age++;
   L.year++;
+  /* The lifestyle is paid for and the money at work moves (wealth.js). */
+  wealthSeason(L, beats);
   if (L.season) L.season = null;
   if (L.contract && L.contract.next && L.contract.years <= L.contract.total) {
     L.contract.salary = L.contract.next;
@@ -11936,6 +11964,7 @@ function newYear(L, beats) {
   if (L.contract && L.contract.years <= 0) L.contract = null;
   beats.push({ kind: 'year', text: 'The ' + (L.year - 1) + '-' + String(L.year).slice(2) + ' season. You are ' + L.age + '.', tone: '' });
   driftLeague(L, beats);
+  markYear(L);
   L.phase = 'pre';
   openYear(L);
 }
@@ -12432,6 +12461,426 @@ function dealsSeason(L, beats) {
 /* For the Hall card: the brands that sold your face. */
 const dealNames = (L) => (L.deals || []).filter((x) => !x.dropped).map((x) => x.n);
 
+// ─── the people you live with ───────────────────────────────────────────────
+
+/* BONDS (the BitLife plan, phase 2, the owner's call of 2026-11-24). Every
+   invented person in the ledger (story-engine.js) is somebody you can act on:
+   spend time, send money, ask for money, have it out, cut them off, make
+   peace. A partner is dated, proposed to, married, given a family or left.
+   They remember: every act moves the person's meter and leaves a note on
+   them, and the cards that read a meter (relOf) read these too.
+
+   The page reads `peopleOpen(L)` and calls `personAct(L, personId, actId)`,
+   the way it reads actsOpen and act. Nothing here is dealt: a career that
+   never opens the People screen plays exactly as it did, and every draw is on
+   its own stream (bond:person:act:year).
+
+   Real people are never in the ledger, so none of this touches a real man. */
+
+/* How much of a year goes to people: acts a season, and one a person. */
+const BOND_MAX = 4;
+const BOND_GROUP = {
+  Partner: 'partner',
+  Mom: 'family', Dad: 'family', Cousin: 'family',
+  'Friend from home': 'friend', 'College roommate': 'friend', 'Old teammate': 'friend', 'High school coach': 'friend',
+  'AAU coach': 'friend', 'Kid from your camp': 'friend', Superfan: 'friend', 'Streetball legend': 'friend', Trainer: 'friend',
+  Teammate: 'mate', 'Co-star': 'mate',
+  'Beat writer': 'press', 'TV critic': 'press',
+  'Draft-class rival': 'foe', Nemesis: 'foe', 'Rival from camp': 'foe',
+};
+const BOND_ORDER = ['partner', 'family', 'friend', 'mate', 'press', 'foe'];
+const bondMood = (p) => p.gone ? 'Cut off' : p.rel >= 40 ? 'Close' : p.rel >= 10 ? 'Good' : p.rel > -10 ? 'Neutral' : p.rel > -40 ? 'Strained' : 'Bad blood';
+const isParent = (p) => p.role === 'Mom' || p.role === 'Dad';
+const bondNote = (L, p, t) => { p.notes.push([L.year, t]); if (p.notes.length > 5) p.notes.shift(); };
+const bondRel = (p, d) => { p.rel = clamp(p.rel + d, -100, 100); };
+/* The person you are with now. An old partner stays in the ledger under the
+   same role, and nothing here acts on them. */
+const withNow = (L, p) => p.role === 'Partner' && lifeOf(L).rel !== 'single' && p.n === say(L, '{partner}');
+const paired = (L, st) => (L, p) => withNow(L, p) && [].concat(st).indexOf(lifeOf(L).rel) >= 0;
+/* It ends: the same bookkeeping the breakup card does. */
+function partnerLeaves(L) { const f = lifeOf(L); f.rel = 'single'; f.pn = (f.pn || 0) + 1; }
+
+/* Each act: who it is for (`on`), what it costs, and what it does. `run`
+   returns the line the screen shows; `tone` colors it. */
+const BONDS = {
+  time: {
+    name: 'Spend time together', blurb: 'A weekend. No cameras.', on: (L, p) => !p.gone && /^(family|friend)$/.test(BOND_GROUP[p.role]),
+    run(L, p, r) {
+      bondRel(p, 10); bump(L, { morale: 3 }); bondNote(L, p, 'You made the time.');
+      return pick(r, ['A whole weekend with ' + p.n + '. The phone stays in the car.', p.n + ' cooks. You do the dishes. Nobody talks about basketball.', 'You and ' + p.n + ' talk until the sun comes up.']);
+    },
+  },
+  gift: {
+    name: 'Send something nice', blurb: 'They will know it is from you.', cost: () => 0.1,
+    on: (L, p) => !p.gone && /^(family|friend)$/.test(BOND_GROUP[p.role]),
+    run(L, p, r) {
+      bondRel(p, 14); bondNote(L, p, 'You sent a gift.');
+      return pick(r, [p.n + ' calls to say thank you. Twice.', 'It shows up with a bow on it. ' + p.n + ' sends a photo.', p.n + ' says it is too much. ' + p.n + ' keeps it.']);
+    },
+  },
+  house: {
+    name: 'Buy a house', blurb: 'The one promise every rookie makes.', cost: () => 1.2, tone: 'gold',
+    /* Mom's house is one promise, kept here or as the move (turns.js). */
+    on: (L, p) => !p.gone && isParent(p) && !p.house && !(p.role === 'Mom' && L.flags.momHouse),
+    run(L, p) {
+      p.house = L.year; if (p.role === 'Mom') L.flags.momHouse = true; bondRel(p, 40); bump(L, { morale: 6 }); bondNote(L, p, 'You bought the house.');
+      logIt(L, 'Bought ' + p.n + ' a house.', 'gold');
+      return p.n + ' walks every room twice. Then cries in the kitchen.';
+    },
+  },
+  ask: {
+    name: 'Ask for money', blurb: 'Pride is cheaper than rent.',
+    on: (L, p) => !p.gone && /^(family|friend)$/.test(BOND_GROUP[p.role]) && L.cash < 0.5,
+    run(L, p, r) {
+      if (ok(r, 0.35 + p.rel / 120)) { bump(L, { cash: 0.2, morale: -2 }); bondRel(p, -6); bondNote(L, p, 'You asked for money. They gave it.'); return p.n + ' sends it the same day. No questions.'; }
+      bump(L, { morale: -4 }); bondRel(p, -10); bondNote(L, p, 'You asked for money. They said no.');
+      return p.n + ' says no. It is a short call.';
+    },
+  },
+  argue: {
+    name: 'Have it out', blurb: 'Say the thing you have been holding.', tone: 'bad',
+    on: (L, p) => !p.gone && !withNow(L, p) && !!BOND_GROUP[p.role],
+    run(L, p, r) {
+      bondRel(p, -18); bump(L, { morale: -2 }); watchMark(L, 'hot', []); bondNote(L, p, 'You had it out.');
+      return pick(r, ['It gets loud. ' + p.n + ' hangs up first.', 'You say all of it. ' + p.n + ' says some back.', p.n + ' walks out before you finish.']);
+    },
+  },
+  cut: {
+    name: 'Cut them off', blurb: 'No calls. No tickets. Done.', tone: 'bad',
+    on: (L, p) => !p.gone && /^(family|friend)$/.test(BOND_GROUP[p.role]),
+    run(L, p) {
+      p.gone = L.year; p.rel = -100; bump(L, { morale: BOND_GROUP[p.role] === 'family' ? -8 : -3 }); bondNote(L, p, 'You cut them off.');
+      logIt(L, 'Cut ' + p.n + ' off.', 'bad');
+      return 'You block the number. ' + p.n + ' finds out from somebody else.';
+    },
+  },
+  mend: {
+    name: 'Reach out', blurb: 'It has been a while.',
+    on: (L, p) => !!p.gone && L.year > p.gone,
+    run(L, p, r) {
+      if (ok(r, 0.5)) { delete p.gone; p.rel = -20; bump(L, { morale: 5 }); bondNote(L, p, 'You reached out. They answered.'); logIt(L, 'Made up with ' + p.n + '.', 'good'); return p.n + ' picks up on the second ring. It is a start.'; }
+      bump(L, { morale: -3 }); bondNote(L, p, 'You reached out. Nothing.');
+      return 'It rings out. ' + p.n + ' does not call back.';
+    },
+  },
+  // ── teammates ──
+  hang: {
+    name: 'Take him to dinner', blurb: 'Your treat.', on: (L, p) => BOND_GROUP[p.role] === 'mate',
+    run(L, p, r) {
+      bondRel(p, 10); bump(L, { morale: 2 }); bondNote(L, p, 'Dinner was on you.');
+      return pick(r, [p.n + ' orders for the table. You pay. Worth it.', 'Three hours at a steakhouse with ' + p.n + '. He is funnier than you knew.']);
+    },
+  },
+  train: {
+    name: 'Work out together', blurb: 'Six in the morning. Bring him.', on: (L, p) => BOND_GROUP[p.role] === 'mate',
+    run(L, p) { bondRel(p, 8); bump(L, { trust: 1, eth: 1 }); bondNote(L, p, 'You put in the work together.'); return 'You and ' + p.n + ' are in the gym before the lights are on.'; },
+  },
+  callout: {
+    name: 'Call him out', blurb: 'In front of the room.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'mate',
+    run(L, p, r) {
+      if (ok(r, 0.45 + L.m.trust / 400)) { bondRel(p, 6); bump(L, { trust: 3 }); bondNote(L, p, 'You called him out. He heard it.'); return p.n + ' nods. He needed to hear it from you.'; }
+      bondRel(p, -18); bump(L, { morale: -2, trust: -1 }); bondNote(L, p, 'You called him out. It went badly.');
+      return p.n + ' does not take it well. The room goes quiet.';
+    },
+  },
+  // ── the press ──
+  scoop: {
+    name: 'Give an exclusive', blurb: 'One story. Your words.', on: (L, p) => BOND_GROUP[p.role] === 'press',
+    run(L, p) { bondRel(p, 12); bump(L, { fame: 2 }); bondNote(L, p, 'You gave the exclusive.'); return p.n + ' gets the story first. It reads the way you told it.'; },
+  },
+  freeze: {
+    name: 'Freeze them out', blurb: 'No quotes. No eye contact.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'press',
+    run(L, p) { bondRel(p, -15); bump(L, { fame: -1 }); bondNote(L, p, 'You froze them out.'); return p.n + ' asks three questions. You answer none.'; },
+  },
+  // ── rivals ──
+  trash: {
+    name: 'Talk trash', blurb: 'Loud enough to get back to him.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'foe',
+    run(L, p) { bondRel(p, -12); bump(L, { fame: 3 }); bondNote(L, p, 'You talked trash. It got back.'); return 'It is everywhere by lunch. ' + p.n + ' has seen it.'; },
+  },
+  peace: {
+    name: 'Bury it', blurb: 'Life is long. The league is small.', on: (L, p) => BOND_GROUP[p.role] === 'foe' && p.rel < 20,
+    run(L, p, r) {
+      if (ok(r, 0.5)) { bondRel(p, 25); bump(L, { morale: 2 }); bondNote(L, p, 'You buried it.'); return 'You and ' + p.n + ' shake on it. Mostly meant.'; }
+      bondRel(p, -5); bondNote(L, p, 'You tried to bury it. No.');
+      return p.n + ' leaves you on read.';
+    },
+  },
+  // ── your partner ──
+  date: {
+    name: 'Date night', blurb: 'Phones in the glove box.', cost: () => 0.05, on: paired(null, ['dating', 'engaged', 'married']),
+    run(L, p, r) {
+      bondRel(p, 10); bump(L, { morale: 4 }); bondNote(L, p, 'Date night.');
+      return pick(r, ['Dinner, then a walk. ' + p.n + ' laughs at all of it.', 'You cook. It is bad. ' + p.n + ' eats it anyway.', 'Courtside is your office. Tonight you two sit in the cheap seats at a movie.']);
+    },
+  },
+  propose: {
+    name: 'Propose', blurb: 'There is a ring in your pocket.', tone: 'gold', on: (L, p) => withNow(L, p) && lifeOf(L).rel === 'dating' && L.year - lifeOf(L).since >= 1,
+    run(L, p, r) {
+      if (ok(r, 0.55 + p.rel / 250)) { lifeOf(L).rel = 'engaged'; bondRel(p, 25); bump(L, { morale: 10 }); bondNote(L, p, 'You proposed. Yes.'); logIt(L, 'Engaged to {partner}.', 'good'); return 'Yes, before you finish the question.'; }
+      bondRel(p, -10); bump(L, { morale: -6 }); bondNote(L, p, 'You proposed. Not yet.');
+      return '"Not yet," ' + p.n + ' says. The ring goes back in the drawer.';
+    },
+  },
+  elope: {
+    name: 'Elope', blurb: 'Just the two of you. This week.', cost: () => 0.1, tone: 'gold', on: paired(null, 'engaged'),
+    run(L, p) { lifeOf(L).rel = 'married'; bondRel(p, 20); bump(L, { morale: 10 }); bondNote(L, p, 'You eloped.'); logIt(L, 'Married {partner}.', 'gold'); return 'A courthouse, two witnesses and a taco truck. Perfect.'; },
+  },
+  family: {
+    name: 'Start a family', blurb: 'Grow the house.', on: (L, p) => withNow(L, p) && lifeOf(L).rel === 'married' && lifeOf(L).kids < 4 && L.age <= 38,
+    run(L, p) { bondRel(p, 15); bondNote(L, p, 'You grew the family.'); return startFamily(L); },
+  },
+  fight: {
+    name: 'Pick a fight', blurb: 'You know which button.', tone: 'bad', on: paired(null, ['dating', 'engaged', 'married']),
+    run(L, p) {
+      bondRel(p, -25); bump(L, { morale: -4 }); watchMark(L, 'hot', []); bondNote(L, p, 'A bad fight.');
+      /* Enough of these and they go: said at once, not left for a card. */
+      if (p.rel <= -40) {
+        const wed = lifeOf(L).rel === 'married';
+        if (wed) { const cost = round1(Math.max(0, L.cash) * 0.4); bump(L, { cash: -cost, morale: -8 }); logIt(L, 'Divorced {partner}. It cost ' + money(cost) + '.', 'bad'); }
+        partnerLeaves(L);
+        return wed ? p.n + ' packs a bag and calls a lawyer.' : p.n + ' packs a bag. That is that.';
+      }
+      return 'Doors slam. ' + p.n + ' sleeps in the other room.';
+    },
+  },
+  leave: {
+    name: (L) => lifeOf(L).rel === 'married' ? 'File for divorce' : 'End it', blurb: (L) => lifeOf(L).rel === 'married' ? 'It will cost you.' : 'Walk away clean.', tone: 'bad',
+    on: paired(null, ['dating', 'engaged', 'married']),
+    run(L, p) {
+      if (lifeOf(L).rel === 'married') {
+        const cost = round1(Math.max(0, L.cash) * 0.4);
+        bump(L, { cash: -cost, morale: -12 }); p.rel = -40; bondNote(L, p, 'You filed for divorce.');
+        logIt(L, 'Divorced {partner}. It cost ' + money(cost) + '.', 'bad');
+        partnerLeaves(L);
+        return 'The lawyers do the talking. ' + p.n + ' keeps the house.';
+      }
+      bump(L, { morale: -6 }); p.rel = -20; bondNote(L, p, 'You ended it.'); partnerLeaves(L);
+      return 'You say it plainly. ' + p.n + ' already knew.';
+    },
+  },
+};
+const bondText = (L, v) => typeof v === 'function' ? v(L) : v;
+const bondUsed = (L) => (L.flags.bonds && L.flags.bonds.y === L.year) ? L.flags.bonds : { y: L.year, n: 0, who: {} };
+
+/* Everybody you can act on now, each with the acts open on them. An act is
+   listed when it fits the person; `ok` says whether it can be taken (the
+   year's time, one act a person, the cash). */
+function peopleOpen(L) {
+  if (L.retired || L.pending.length || isAm(L)) return [];
+  const used = bondUsed(L), out = [];
+  for (const id in L.people || {}) {
+    const p = L.people[id], g = BOND_GROUP[p.role];
+    if (!g) continue;
+    const acts = Object.keys(BONDS).filter((k) => BONDS[k].on(L, p)).map((k) => {
+      const a = BONDS[k], cost = a.cost ? a.cost(L, p) : 0;
+      return { id: k, name: bondText(L, a.name), blurb: bondText(L, a.blurb), cost, tone: a.tone || '', ok: used.n < BOND_MAX && !used.who[id] && L.cash >= cost };
+    });
+    if (!acts.length) continue;
+    out.push({ id, group: g, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice(), used: !!used.who[id], acts });
+  }
+  return out.sort((a, b) => BOND_ORDER.indexOf(a.group) - BOND_ORDER.indexOf(b.group) || b.rel - a.rel || (a.id < b.id ? -1 : 1));
+}
+/* How much of the year is left for people. */
+const bondsLeft = (L) => Math.max(0, BOND_MAX - bondUsed(L).n);
+function personAct(L, pid, aid) {
+  const who = peopleOpen(L).find((x) => x.id === pid), open = who && who.acts.find((x) => x.id === aid);
+  if (!open || !open.ok) return null;
+  const p = L.people[pid], a = BONDS[aid];
+  const used = L.flags.bonds = bondUsed(L);
+  used.n++; used.who[pid] = 1;
+  const before = snapshot(L);
+  if (open.cost) { L.cash = round1(L.cash - open.cost); if (open.cost >= 0.5) tw(L).spent = (tw(L).spent || 0) + 1; }
+  const text = say(L, a.run(L, p, rngAt(L, 'bond:' + pid + ':' + aid)));
+  sayAll(L);
+  const res = { title: open.name, label: open.name, who: p.n, text, tone: open.tone, diff: diffOf(before, snapshot(L)) };
+  L.last = res;
+  return res;
+}
+
+/* Going out on purpose, for a single man: the one bond with nobody in it yet. */
+ACTS.mingle = {
+  group: 'life', name: 'Put yourself out there', blurb: 'A night out. Maybe you meet someone.', cost: () => 0.05,
+  when: (L) => lifeOf(L).rel === 'single' && L.age >= 21,
+  run(L, r) {
+    if (ok(r, 0.6)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met {partner}.', 'good'); relate(L, 'partner', 30, 'You met on a night out.'); return '{partner} beats you at pool. You ask for a rematch. And a number.'; }
+    return 'Good music. Nobody you want to call tomorrow.';
+  },
+};
+
+// ─── what the money is for ──────────────────────────────────────────────────
+
+/* WEALTH (the BitLife plan, phase 3, the owner's call of 2026-11-24). Money
+   that buys things, and things that cost money to keep: homes, cars and toys,
+   people on the payroll, and money put to work. A lifestyle feeds the meters
+   every year, and a lifestyle past the paycheck ends in a fire sale.
+
+   The page reads `wealthOpen(L)` and calls `wealthAct(L, verb, id, arg)`.
+   Everything lives in `L.wealth` ({ own, staff, inv }), made the first time
+   something is bought, so a career that buys nothing is the career it was:
+   `wealthSeason` does nothing without it, and every draw is on its own stream
+   (wealth:...). Money is in millions, like L.cash.
+
+   Brands are never named: a car is a car. */
+
+/* THINGS. `keep` is the yearly cost as a share of the price; `hold` is how the
+   value moves a year (a home climbs, a car falls); `m` is what a year of
+   owning it does. The best of each kind counts once, not every one owned. */
+const THINGS = {
+  condo:    { kind: 'home', n: 'A downtown condo', blurb: 'Glass walls. A doorman who knows your name.', price: 0.5, keep: 0.03, hold: 1.03, m: { morale: 1 } },
+  house:    { kind: 'home', n: 'A house in the suburbs', blurb: 'A yard, a gate and a hoop in the driveway.', price: 1.8, keep: 0.03, hold: 1.04, m: { morale: 2 } },
+  mansion:  { kind: 'home', n: 'A mansion', blurb: 'Nine bedrooms. You have seen five.', price: 7, keep: 0.04, hold: 1.04, m: { morale: 3, fame: 1 } },
+  compound: { kind: 'home', n: 'A compound', blurb: 'A full court, a guest house and a wall.', price: 18, keep: 0.05, hold: 1.03, m: { morale: 4, fame: 2 } },
+  sports:   { kind: 'car', n: 'A sports car', blurb: 'Loud on purpose.', price: 0.3, keep: 0.04, hold: 0.85, m: { morale: 1 } },
+  supercar: { kind: 'car', n: 'A supercar', blurb: 'The doors open the wrong way. That is the point.', price: 1.4, keep: 0.05, hold: 0.85, m: { morale: 1, fame: 1 } },
+  fleet:    { kind: 'car', n: 'A garage of ten', blurb: 'One for each day, and three for no reason.', price: 5, keep: 0.06, hold: 0.82, m: { morale: 2, fame: 2 } },
+  chain:    { kind: 'toy', n: 'A chain with your number', blurb: 'Heavy. Worth it.', price: 0.25, keep: 0, hold: 0.9, m: { fame: 1 } },
+  boat:     { kind: 'toy', n: 'A yacht', blurb: 'The crew outnumbers the guests.', price: 22, keep: 0.1, hold: 0.9, m: { morale: 3, fame: 2 } },
+  jet:      { kind: 'toy', n: 'A private jet', blurb: 'No more middle seats. No more airports.', price: 45, keep: 0.08, hold: 0.92, m: { morale: 3, health: 2, fame: 2 } },
+};
+/* PEOPLE ON THE PAYROLL, paid every year until let go. */
+const STAFF = {
+  chef:     { n: 'A private chef', blurb: 'Every meal weighed and plated.', pay: 0.15, m: { health: 3 } },
+  stylist:  { n: 'A stylist', blurb: 'Tunnel walks become a second job.', pay: 0.1, m: { fame: 2 } },
+  security: { n: 'Security', blurb: 'Two large men and a plan.', pay: 0.2, m: {} },
+  adviser:  { n: 'A financial adviser', blurb: 'Says no for a living. Halves what a bad year costs.', pay: 0.25, m: {} },
+  crew:     { n: 'Your friends, on the payroll', blurb: 'Everybody eats. Not everybody works.', pay: 0.4, m: { morale: 4, trust: -1 } },
+};
+/* MONEY PUT TO WORK. `turn(r)` is what a year does to the value, as a
+   multiplier; `pays` is cash paid out each year as a share of the value. */
+const INVEST = {
+  fund:    { n: 'An index fund', blurb: 'Boring. That is the feature.', min: 0.2, turn: (r) => 1.02 + r() * 0.08 },
+  rental:  { n: 'Rental property', blurb: 'Buildings you will never visit.', min: 1, turn: (r) => 0.97 + r() * 0.13, pays: 0.03 },
+  eatery:  { n: 'A restaurant with your name on it', blurb: 'Your wings. Your face on the menu.', min: 0.5, turn: (r) => r() < 0.55 ? 1.05 : 0.75, pays: 0.08 },
+  startup: { n: 'A friend\'s startup', blurb: 'An app. He swears it is different.', min: 0.3, turn: (r) => { const x = r(); return x < 0.08 ? 4 : x < 0.3 ? 1.5 : x < 0.6 ? 1 : 0.45; } },
+  coins:   { n: 'Crypto', blurb: 'A coin with a dog on it.', min: 0.1, turn: (r) => { const x = r(); return x < 0.15 ? 3 : x < 0.4 ? 1.4 : x < 0.65 ? 0.8 : 0.35; } },
+};
+/* What a fire sale gets, and what selling on purpose costs. */
+const FIRE_SALE = 0.6, SELL_FEE = 0.06;
+/* Values keep cents of a million: at one decimal a condo never climbed. */
+const round2 = (x) => Math.round(x * 100) / 100;
+const wealthOf = (L) => L.wealth || null;
+const wealthMake = (L) => L.wealth || (L.wealth = { own: [], staff: {}, inv: {} });
+const thingKeep = (o) => round1(THINGS[o.id].price * THINGS[o.id].keep);
+const sellFor = (o) => round2(o.val * (1 - SELL_FEE));
+/* What a year of this life costs before a paycheck. */
+function upkeepOf(L) {
+  const W = wealthOf(L); if (!W) return 0;
+  let t = 0;
+  for (const o of W.own) t += thingKeep(o);
+  for (const k in W.staff) t += STAFF[k].pay;
+  return round1(t);
+}
+/* Cash, plus what is owned and invested at today's value. */
+function netWorth(L) {
+  const W = wealthOf(L); let t = L.cash;
+  if (W) { for (const o of W.own) t += o.val; for (const k in W.inv) t += W.inv[k].val; }
+  return round2(t);
+}
+
+/* The year settles (newYear): the lifestyle is paid for and does its work,
+   the money at work moves, and a man who cannot cover it sells in a hurry. */
+function wealthSeason(L, beats) {
+  const W = wealthOf(L); if (!W) return;
+  const cost = upkeepOf(L);
+  if (cost) L.cash = round1(L.cash - cost);
+  /* the best home, the best car and every toy do their work; staff too */
+  const best = {}, lift = {};
+  for (const o of W.own) { const T = THINGS[o.id]; if (T.kind === 'toy') { for (const k in T.m) lift[k] = (lift[k] || 0) + T.m[k]; } else if (!best[T.kind] || T.price > THINGS[best[T.kind]].price) best[T.kind] = o.id; }
+  for (const kd in best) { const m = THINGS[best[kd]].m; for (const k in m) lift[k] = (lift[k] || 0) + m[k]; }
+  for (const s in W.staff) { const m = STAFF[s].m; for (const k in m) lift[k] = (lift[k] || 0) + m[k]; }
+  bump(L, lift);
+  for (const o of W.own) o.val = round2(Math.max(0.01, o.val * THINGS[o.id].hold));
+  /* money at work */
+  let paid = 0;
+  for (const k of Object.keys(W.inv)) {
+    const v = W.inv[k], I = INVEST[k];
+    let x = I.turn(rngAt(L, 'wealth:inv:' + k));
+    if (x < 1 && W.staff.adviser) x = 1 - (1 - x) / 2;
+    const was = v.val;
+    v.val = round2(v.val * x);
+    if (I.pays && x >= 1) paid += v.val * I.pays;
+    if (v.val < 0.05) { delete W.inv[k]; beats.push({ kind: 'money', text: I.n + ' went to nothing.', tone: 'bad' }); logIt(L, I.n + ' went to nothing.', 'bad'); }
+    else if (x >= 2) { beats.push({ kind: 'money', text: I.n + ' took off. ' + money(was) + ' is now ' + money(v.val) + '.', tone: 'gold' }); logIt(L, I.n + ' took off.', 'gold'); }
+    else if (x <= 0.5) beats.push({ kind: 'money', text: I.n + ' had a bad year. ' + money(was) + ' is now ' + money(v.val) + '.', tone: 'bad' });
+  }
+  if (paid) L.cash = round1(L.cash + paid);
+  if (L.cash < 0) wealthCrash(L, beats);
+}
+/* Out of cash: the money at work comes out first, then things go at fire
+   sale prices, dearest first. If that is still not enough, he is broke: the
+   payroll walks and the papers find out. */
+function wealthCrash(L, beats) {
+  const W = wealthOf(L), sold = [];
+  for (const k of Object.keys(W.inv)) { if (L.cash >= 0) break; L.cash = round1(L.cash + W.inv[k].val * (1 - SELL_FEE)); sold.push(INVEST[k].n); delete W.inv[k]; }
+  W.own.sort((a, b) => b.val - a.val);
+  while (L.cash < 0 && W.own.length) { const o = W.own.shift(); L.cash = round1(L.cash + o.val * FIRE_SALE); sold.push(THINGS[o.id].n); }
+  if (sold.length) { beats.push({ kind: 'money', text: 'The bills came due. Sold in a hurry: ' + sold.length + (sold.length === 1 ? ' thing.' : ' things.'), tone: 'bad' }); bump(L, { morale: -5 }); }
+  if (L.cash < 0) {
+    L.cash = 0; W.staff = {};
+    L.flags.broke = L.year; tw(L).spent = (tw(L).spent || 0) + 2;
+    bump(L, { morale: -12, fame: 2 });
+    beats.push({ kind: 'money', text: 'Broke. Everything is gone, and everybody knows.', tone: 'bad' });
+    logIt(L, 'Went broke.', 'bad');
+  }
+}
+
+/* The money screen: what he has, what it costs to keep, and what is for sale. */
+function wealthOpen(L) {
+  if (L.retired || L.pending.length || isAm(L)) return null;
+  const W = wealthOf(L) || { own: [], staff: {}, inv: {} };
+  const has = {}; for (const o of W.own) has[o.id] = 1;
+  return {
+    cash: L.cash, worth: netWorth(L), upkeep: upkeepOf(L), broke: L.flags.broke || null,
+    own: W.own.map((o, i) => ({ i, id: o.id, kind: THINGS[o.id].kind, name: THINGS[o.id].n, y: o.y, paid: o.paid, val: o.val, keep: thingKeep(o), sell: sellFor(o) })),
+    staff: Object.keys(W.staff).map((k) => ({ id: k, name: STAFF[k].n, pay: STAFF[k].pay, since: W.staff[k] })),
+    inv: Object.keys(W.inv).map((k) => ({ id: k, name: INVEST[k].n, put: W.inv[k].put, val: W.inv[k].val, y: W.inv[k].y, out: round2(W.inv[k].val * (1 - SELL_FEE)) })),
+    shop: Object.keys(THINGS).filter((k) => !has[k]).map((k) => ({ id: k, kind: THINGS[k].kind, name: THINGS[k].n, blurb: THINGS[k].blurb, cost: THINGS[k].price, keep: round1(THINGS[k].price * THINGS[k].keep), ok: L.cash >= THINGS[k].price })),
+    hire: Object.keys(STAFF).filter((k) => !W.staff[k]).map((k) => ({ id: k, name: STAFF[k].n, blurb: STAFF[k].blurb, pay: STAFF[k].pay, ok: L.cash >= STAFF[k].pay })),
+    /* an amount is asked for; these are the least and the most */
+    invest: Object.keys(INVEST).map((k) => ({ id: k, name: INVEST[k].n, blurb: INVEST[k].blurb, min: INVEST[k].min, max: round1(Math.max(0, L.cash)), ok: L.cash >= INVEST[k].min })),
+  };
+}
+/* buy a thing, sell one (by its place in `own`), hire, fire, invest an
+   amount, cash an investment out. */
+function wealthAct(L, verb, id, arg) {
+  const V = wealthOpen(L); if (!V) return null;
+  const before = snapshot(L), W = wealthMake(L);
+  let title = '', text = '', tone = '';
+  if (verb === 'buy') {
+    const s = V.shop.find((x) => x.id === id); if (!s || !s.ok) return null;
+    L.cash = round1(L.cash - s.cost); W.own.push({ id, y: L.year, paid: s.cost, val: s.cost });
+    if (s.cost >= 0.5) tw(L).spent = (tw(L).spent || 0) + 1;
+    title = s.name; text = s.blurb; tone = 'gold';
+    if (s.cost >= 5) logIt(L, 'Bought ' + s.name.replace(/^A /, 'a ') + '.', 'gold');
+  } else if (verb === 'sell') {
+    const o = V.own.find((x) => x.i === +id); if (!o) return null;
+    W.own.splice(o.i, 1); L.cash = round1(L.cash + o.sell);
+    title = 'Sold'; text = o.name + ' goes for ' + money(o.sell) + '.';
+  } else if (verb === 'hire') {
+    const s = V.hire.find((x) => x.id === id); if (!s || !s.ok) return null;
+    L.cash = round1(L.cash - s.pay); W.staff[id] = L.year;
+    title = s.name; text = s.blurb;
+  } else if (verb === 'fire') {
+    if (!W.staff[id]) return null;
+    delete W.staff[id]; title = 'Let go'; text = STAFF[id].n + ' is off the payroll.';
+    if (id === 'crew') bump(L, { morale: -3 });
+  } else if (verb === 'invest') {
+    const s = V.invest.find((x) => x.id === id), amt = round1(+arg);
+    if (!s || !s.ok || !(amt >= s.min) || amt > L.cash) return null;
+    L.cash = round1(L.cash - amt);
+    const v = W.inv[id] || (W.inv[id] = { put: 0, val: 0, y: L.year });
+    v.put = round1(v.put + amt); v.val = round1(v.val + amt);
+    title = s.name; text = money(amt) + ' in. ' + s.blurb;
+  } else if (verb === 'cashout') {
+    const v = V.inv.find((x) => x.id === id); if (!v) return null;
+    delete W.inv[id]; L.cash = round1(L.cash + v.out);
+    title = 'Cashed out'; text = v.name + ' pays out ' + money(v.out) + '.'; tone = v.out >= v.put ? 'good' : 'bad';
+  } else return null;
+  const res = { title, label: title, text, tone, diff: diffOf(before, snapshot(L)) };
+  L.last = res;
+  return res;
+}
+
 // ─── more ways out ──────────────────────────────────────────────────────────
 
 /* ENDINGS, the owner's call of 2026-10-15 and 2026-10-16: a career is limitless
@@ -12894,7 +13343,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, personAct, bondsLeft, BONDS, BOND_MAX, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

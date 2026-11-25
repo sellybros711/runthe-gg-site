@@ -47,6 +47,8 @@ const BUNDLES = [
       'turns',         // answering a card, the step machine, things to do between cards
       'moves',         // your moves: the trade ask, the holdout, the supermax, the shoe, the body, the podcast
       'deals',         // endorsement offers from who you are, from pun brands
+      'bonds',         // the people you live with: acts on a person, a partner, a family
+      'wealth',        // what the money is for: homes, cars, a payroll, money at work, going broke
       'endings',       // more ways out: the career ending injury, on top, waived, the ten day, the finale
       'api',           // what the page reads, the generated road, a son, the public object
     ],

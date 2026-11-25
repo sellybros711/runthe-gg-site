@@ -1438,6 +1438,155 @@ section('19. deals from who you are, more ways out, and goals asked some years')
   ok(goals / seasons > 0.45 && goals / seasons < 0.85, `the goal is asked some years, not every year (${(goals / seasons).toFixed(2)} a season)`);
 }
 
+section('20. the people you live with: every act is open somewhere, does what it says, and they remember');
+{
+  /* Phase 2 of the BitLife plan (the owner's call, 2026-11-24). A bot that
+     lives with its people: half its free turns go to an act on somebody. */
+  const E = require('./engine.js');
+  const N = 160, seen = {}, bad = [], over = [], twice = [], order = [];
+  let acts = 0, divorces = 0, costOff = 0, kidsByAct = 0, gone = 0, mended = 0, ended = 0, noteMiss = 0, moved = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'bond' + i, league, start: i % 2 ? 'hs' : 'draft' });
+    const r = E.createSeededRNG(E.hashSeed('bond-p' + i));
+    let g = 0, yr = null, n = 0, who = {};
+    while (!L.retired && g++ < 9000) {
+      if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); continue; }
+      if (L.year !== yr) { yr = L.year; n = 0; who = {}; }
+      const cand = [];
+      for (const p of C.peopleOpen(L)) for (const a of p.acts) if (a.ok) cand.push([p, a]);
+      /* An act not seen yet goes first, so the rare ones are found. */
+      const fresh = cand.filter((c) => !seen[c[1].id]);
+      if (cand.length && r() < 0.55) {
+        const [p, a] = (fresh.length ? fresh : cand)[Math.floor(r() * (fresh.length ? fresh : cand).length)];
+        const cash0 = L.cash, rel0 = L.people[p.id].rel, notes0 = L.people[p.id].notes.length, wed = L.life && L.life.rel === 'married', kids0 = L.life ? L.life.kids : 0;
+        const res = C.personAct(L, p.id, a.id);
+        if (!res) { bad.push('refused an open act: ' + a.id); continue; }
+        acts++; seen[a.id] = (seen[a.id] || 0) + 1; n++;
+        if (who[p.id]) twice.push(p.id + ' in ' + L.year); who[p.id] = 1;
+        if (n > C.BOND_MAX) over.push(L.year);
+        if (DASH.test(res.text + res.title) || /undefined|NaN|\{[a-z]/.test(res.text + res.title)) bad.push(a.id + ': ' + res.text);
+        /* at the end of the meter there is nowhere left to move */
+        if (L.people[p.id].rel !== rel0 || Math.abs(rel0) === 100 || a.id === 'leave' || a.id === 'mend') moved++;
+        if (L.people[p.id].notes.length === notes0 && notes0 < 5) noteMiss++;
+        if (a.id === 'leave' && wed) { divorces++; if (Math.abs((cash0 - L.cash) - Math.round(Math.max(0, cash0) * 0.4 * 10) / 10) > 0.11) costOff++; }
+        if (a.id === 'family' && L.life.kids === kids0 + 1) kidsByAct++;
+        if (a.id === 'cut') gone++;
+        if (a.id === 'mend' && !L.people[p.id].gone) mended++;
+        /* nothing is open on somebody cut off but reaching out */
+        const after = C.peopleOpen(L).find((x) => x.id === p.id);
+        if (L.people[p.id].gone && after && after.acts.some((x) => x.id !== 'mend')) bad.push('an act on somebody cut off');
+      } else C.step(L);
+    }
+    if (L.retired) ended++;
+    /* met, engaged, married, a child: still in that order when asked for on purpose */
+    let met = false, eng = false, mar = false;
+    for (const e of L.log) {
+      if (/^Met /.test(e.t)) { met = true; eng = false; }
+      else if (/^Engaged to /.test(e.t)) { if (!met) order.push('engaged before meeting'); eng = true; met = false; }
+      else if (/^Married /.test(e.t)) { if (!eng) order.push('married without an engagement'); mar = true; eng = false; }
+      else if (/^Became a parent|^Welcomed kid/.test(e.t) && !mar) order.push('a child before a wedding');
+    }
+  }
+  const dark = Object.keys(C.BONDS).filter((k) => !seen[k]);
+  console.log(`  ${acts} acts over ${N} careers  ${Object.keys(seen).length} of ${Object.keys(C.BONDS).length} kinds  divorces ${divorces}  kids ${kidsByAct}  cut ${gone}  mended ${mended}`);
+  ok(dark.length === 0, `every act on a person is taken somewhere (${dark.join(', ') || 'all ' + Object.keys(C.BONDS).length})`);
+  ok(!bad.length, `every act reads clean and is taken when open (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!over.length && !twice.length, `a year holds ${C.BOND_MAX} acts and one a person (${over.length} over, ${twice.length} twice)`);
+  ok(moved === acts && noteMiss === 0, `every act moves the person and leaves a note on them (${moved} of ${acts}, ${noteMiss} without a note)`);
+  ok(divorces > 0 && costOff === 0, `a divorce costs the two fifths of the cash the engine takes (${divorces} divorces, ${costOff} off)`);
+  ok(kidsByAct > 0 && gone > 0 && mended > 0, `a family is started, somebody is cut off and somebody is won back (${kidsByAct}, ${gone}, ${mended})`);
+  ok(!order.length, `a life asked for on purpose keeps its order (${order.slice(0, 2).join(', ') || 'met, engaged, married, a child'})`);
+  ok(ended === N, `a career lived with its people still ends (${ended} of ${N})`);
+  /* A career that never opens the People screen is the career it was. */
+  const fp = (L) => JSON.stringify([L.history, L.log.length, L.cash, L.m]);
+  const plain = (seed, peek) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (!L.retired && g++ < 6000) { if (L.pending.length) C.choose(L, L.steps % L.pending[0].options.length); else { if (peek) C.peopleOpen(L); C.step(L); } } return fp(L); };
+  let same = 0; for (let i = 0; i < 12; i++) if (plain('bq' + i, false) === plain('bq' + i, true)) same++;
+  ok(same === 12, `reading the people changes nothing (${same} of 12 careers identical)`);
+}
+
+section('21. what the money is for: things, a payroll, money at work, and going broke');
+{
+  /* Phase 3 of the BitLife plan (the owner's call, 2026-11-24). */
+  const E = require('./engine.js');
+  const N = 120, seen = {}, bad = [], worthOff = [], sellOff = [];
+  let ended = 0, brokeN = 0, took = 0, lost = 0, acts = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'wealth' + i, league, start: i % 2 ? 'hs' : 'draft' });
+    const r = E.createSeededRNG(E.hashSeed('wealth-p' + i));
+    let g = 0;
+    while (!L.retired && g++ < 9000) {
+      if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); continue; }
+      const V = C.wealthOpen(L);
+      if (V && r() < 0.35) {
+        const c = [];
+        for (const s of V.shop) if (s.ok) c.push(['buy', s.id]);
+        for (const s of V.hire) if (s.ok) c.push(['hire', s.id]);
+        for (const s of V.invest) if (s.ok) c.push(['invest', s.id, Math.max(s.min, Math.round(V.cash * 0.3 * 10) / 10)]);
+        for (const o of V.own) if (r() < 0.2) c.push(['sell', o.i, null, o.sell]);
+        for (const o of V.inv) if (r() < 0.2) c.push(['cashout', o.id, null, o.out]);
+        for (const o of V.staff) if (r() < 0.1) c.push(['fire', o.id]);
+        const fresh = c.filter((x) => !seen[x[0] + ':' + (x[0] === 'sell' ? '' : x[1])]);
+        if (c.length) {
+          const x = (fresh.length ? fresh : c)[Math.floor(r() * (fresh.length ? fresh : c).length)];
+          const cash0 = L.cash;
+          const res = C.wealthAct(L, x[0], x[1], x[2]);
+          if (!res) { bad.push('refused an open act: ' + x[0] + ' ' + x[1]); continue; }
+          acts++; seen[x[0] + ':' + (x[0] === 'sell' ? '' : x[1])] = 1;
+          if (DASH.test(res.text + res.title) || /undefined|NaN|\{[a-z]/.test(res.text + res.title)) bad.push(x[0] + ': ' + res.text);
+          if ((x[0] === 'sell' || x[0] === 'cashout') && Math.abs((L.cash - cash0) - x[3]) > 0.051) sellOff.push(x[0] + ' ' + x[1] + ': ' + (L.cash - cash0).toFixed(2) + ' against ' + x[3]);
+          const W = L.wealth, sum = L.cash + W.own.reduce((t, o) => t + o.val, 0) + Object.values(W.inv).reduce((t, v) => t + v.val, 0);
+          if (Math.abs(sum - C.netWorth(L)) > 0.011) worthOff.push(sum + ' against ' + C.netWorth(L));
+          continue;
+        }
+      }
+      C.step(L);
+    }
+    if (L.retired) ended++;
+    if (L.flags.broke) brokeN++;
+    if (L.log.some((e) => / took off\.$/.test(e.t))) took++;
+    if (L.log.some((e) => / went to nothing\.$/.test(e.t))) lost++;
+  }
+  const want = [].concat(Object.keys(C.THINGS).map((k) => 'buy:' + k), Object.keys(C.STAFF).map((k) => 'hire:' + k), Object.keys(C.STAFF).map((k) => 'fire:' + k),
+    Object.keys(C.INVEST).map((k) => 'invest:' + k), Object.keys(C.INVEST).map((k) => 'cashout:' + k), ['sell:']);
+  const dark = want.filter((k) => !seen[k]);
+  console.log(`  ${acts} acts over ${N} careers  broke ${brokeN}  an investment took off in ${took}, went to nothing in ${lost}`);
+  ok(dark.length === 0, `everything for sale is bought, every hire made and let go, every investment made and cashed (${dark.join(', ') || 'all ' + want.length})`);
+  ok(!bad.length, `every act reads clean and is taken when open (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!sellOff.length, `a sale pays the price the screen showed (${sellOff.slice(0, 2).join(' | ') || 'every one'})`);
+  ok(!worthOff.length, `net worth is the cash plus what is owned and invested (${worthOff.slice(0, 2).join(' | ') || 'every time'})`);
+  ok(took > 0 && lost > 0, `money at work can take off and can go to nothing (${took}, ${lost})`);
+  ok(ended === N, `a career that spends still ends (${ended} of ${N})`);
+  /* THE UPKEEP ON THE SCREEN IS THE UPKEEP CHARGED, and the lifestyle does
+     its work. A career walked to a summer, given things and a payroll. */
+  const toOff = (seed) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (!L.retired && g++ < 3000 && !(L.phase === 'off' && !L.pending.length && L.history.length >= 2)) { if (L.pending.length) C.choose(L, 0); else C.step(L); } return L; };
+  {
+    const L = toOff('upkeep'); L.cash = 60;
+    for (const id of ['mansion', 'supercar', 'chain']) C.wealthAct(L, 'buy', id);
+    C.wealthAct(L, 'hire', 'chef'); C.wealthAct(L, 'hire', 'stylist');
+    const V = C.wealthOpen(L), cash0 = L.cash, m0 = Object.assign({}, L.m), val0 = L.wealth.own.map((o) => o.val);
+    L.m.morale = 50; L.m.fame = 50; L.m.health = 50;
+    C.step(L);
+    ok(Math.abs((cash0 - L.cash) - V.upkeep) < 0.051 && V.upkeep > 0, `a year of the lifestyle costs the upkeep the screen showed (${(cash0 - L.cash).toFixed(1)} against ${V.upkeep})`);
+    ok(L.m.morale > 50 && L.m.fame > 50 && L.m.health > 50, `a home lifts morale, a stylist fame and a chef health (${L.m.morale}, ${L.m.fame}, ${L.m.health})`);
+    ok(L.wealth.own[0].val > val0[0] && L.wealth.own[1].val < val0[1], 'a home gains value and a car loses it');
+  }
+  /* GOING BROKE. Things go at fire sale prices first; with nothing to sell,
+     the payroll walks and it is in the log. */
+  {
+    const L = toOff('firesale'); L.cash = 50; C.wealthAct(L, 'buy', 'jet'); L.cash = 0.5;
+    C.step(L);
+    ok(!L.flags.broke && L.wealth.own.length === 0 && L.cash > 0, `a man who cannot cover a jet sells it in a hurry and is not broke (${L.cash})`);
+    const B = toOff('broke'); B.cash = 5; C.wealthAct(B, 'hire', 'crew'); C.wealthAct(B, 'hire', 'adviser'); B.cash = 0.1;
+    C.step(B);
+    ok(B.flags.broke && B.cash === 0 && !Object.keys(B.wealth.staff).length && B.log.some((e) => e.t === 'Went broke.'), 'with nothing to sell he is broke: the payroll walks and the log says so');
+  }
+  /* A career that never opens the money screen is the career it was. */
+  const fp = (L) => JSON.stringify([L.history, L.log.length, L.cash, L.m]);
+  const plain = (seed, peek) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (!L.retired && g++ < 6000) { if (L.pending.length) C.choose(L, L.steps % L.pending[0].options.length); else { if (peek) C.wealthOpen(L); C.step(L); } } return fp(L); };
+  let same = 0; for (let i = 0; i < 12; i++) if (plain('wq' + i, false) === plain('wq' + i, true)) same++;
+  ok(same === 12, `reading the money changes nothing (${same} of 12 careers identical)`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');
@@ -2343,6 +2492,61 @@ async function browser() {
         }
         ok(n >= 20 && !off.length, `${tag}: after each of ${n} presses the next answer or button is on screen between the bars (${off.join('; ') || 'all'})`);
       } else ok(false, `${tag}: found a second career mid season`);
+      /* NO FULL REPAINT, AND MOTION THAT ASKS FIRST (batch 3). A tab switch
+         redraws nothing that did not change: his face in the app bar, the tab
+         bar, the player card and the meters are the same nodes after it. A
+         press keeps the face and the tab bar, and keeps the card whenever the
+         card did not change, never showing a stale overall. With reduced
+         motion nothing animates on a tab or a sheet; with motion on, a tab
+         fades (opacity only, so the fixed tray stays pinned to the window)
+         and a sheet rises. */
+      if (await find('mid')) {
+        await page.waitForTimeout(300);
+        const keep = await page.evaluate(async () => {
+          const q = (s) => document.querySelector(s), mark = () => [q('#cr-lookbtn'), q('.k-tabbar'), q('.cr-id'), q('.cr-meters')];
+          const bad = []; let m = mark();
+          for (const t of ['team', 'legacy', 'me', 'now']) {
+            q('#cr-t-' + t).click(); await new Promise((x) => setTimeout(x, 250));
+            const n = mark(); ['face', 'tab bar', 'card', 'meters'].forEach((w, i) => { if (!n[i] || n[i] !== m[i]) bad.push(t + ' ' + w); }); m = n;
+          }
+          return bad;
+        });
+        ok(keep.length === 0, `${tag}: switching tabs redraws nothing that did not change (${keep.slice(0, 3).join(', ') || 'face, tab bar, card and meters kept'})`);
+        const pr = { n: 0, face: 0, bar: 0, card: 0, stale: [] };
+        for (let i = 0; i < 16; i++) {
+          if (await page.$('#tkov:not([hidden]) #tk-go')) { await page.click('#tkov #tk-go').catch(() => {}); await page.waitForTimeout(150); continue; }
+          const before = await page.evaluate(() => { window.__m = [document.querySelector('#cr-lookbtn'), document.querySelector('.k-tabbar'), document.querySelector('.cr-id')]; return !!RTF_CAREER_UI.state().cur; });
+          const sel = (await page.$('.cr-choice')) ? '.cr-choice' : (await page.$('#cr-next')) ? '#cr-next' : null;
+          if (!before || !sel) break;
+          await page.waitForFunction((sel) => { const e = document.querySelector(sel); return e && !e.disabled; }, sel, { timeout: 3000 }).catch(() => {});
+          if (!(await tryPress(sel))) break;
+          await page.waitForTimeout(450);
+          const a = await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; if (!L) return null; const C = window.RTF_CAREER, m = window.__m;
+            return { face: document.querySelector('#cr-lookbtn') === m[0], bar: document.querySelector('.k-tabbar') === m[1], card: document.querySelector('.cr-id') === m[2],
+              ovr: (document.querySelector('#cr-ovr') || {}).textContent, eng: String(C.show(C.ovrOf(L))), team: L.team }; });
+          if (!a) break;
+          pr.n++; pr.face += a.face; pr.bar += a.bar; pr.card += a.card;
+          if (a.ovr !== a.eng && pr.stale.length < 3) pr.stale.push(a.ovr + ' for ' + a.eng);
+        }
+        ok(pr.n >= 10 && pr.face === pr.n && pr.bar === pr.n, `${tag}: across ${pr.n} presses his face and the tab bar are never redrawn (${pr.face} and ${pr.bar} kept)`);
+        ok(pr.n >= 10 && pr.card * 2 >= pr.n && !pr.stale.length, `${tag}: the player card is kept when it did not change, and never shows a stale overall (${pr.card} of ${pr.n} kept; ${pr.stale.join(', ') || 'none stale'})`);
+        const running = () => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('#s-car, #cr-sheet') && (a.effect.getComputedTiming().duration || 0) > 0)
+          .map((a) => ({ name: a.animationName || '', el: (a.effect.target.id || a.effect.target.className || '').toString().slice(0, 24), tf: JSON.stringify(a.effect.getKeyframes()).indexOf('transform') >= 0 })));
+        /* reduced motion (this context): nothing moves on a tab or a sheet */
+        await show('team'); const rmTab = await running(); await show('now');
+        await tryPress('#cr-lookbtn'); await page.waitForTimeout(40); const rmSheet = await running();
+        await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+        ok(rmTab.length === 0 && rmSheet.length === 0, `${tag}: with reduced motion a tab and a sheet arrive with no motion (${JSON.stringify(rmTab.concat(rmSheet)).slice(0, 120)})`);
+        /* motion on: a tab fades without a transform, a sheet rises */
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await tryPress('#cr-t-team'); await page.waitForTimeout(30); const onTab = await running();
+        await show('now');
+        await tryPress('#cr-lookbtn'); await page.waitForTimeout(30); const onSheet = await running();
+        await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        ok(onTab.some((x) => x.name === 'cr-tabin') && !onTab.some((x) => x.tf && /grid|cr-body/.test(x.el)), `${tag}: with motion on a tab fades in, opacity only (${onTab.map((x) => x.name).join(', ') || 'nothing ran'})`);
+        ok(onSheet.some((x) => x.name === 'k-sheet-up'), `${tag}: and a sheet rises (${onSheet.map((x) => x.name).join(', ') || 'nothing ran'})`);
+      } else ok(false, `${tag}: found a career for the repaint walk`);
       /* BACK STAYS IN CAREER (batch 2): a phone's back or the browser's
          closes the sheet, then steps back through the tabs, then holds on
          Now. It never leaves the game. And each tab keeps its scroll and its
