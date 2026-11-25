@@ -14,11 +14,15 @@
    were true of this career. Every figure on it is the engine's. */
 const RIBBONS = {
   banned:   { n: 'Banned', line: 'The league took your name off the wall.', test: (L) => !!L.flags.banned },
+  gone:     { n: 'Gone too soon', line: 'They still leave your locker the way it was.', test: (L) => !!L.flags.died },
   never:    { n: 'Almost', line: 'The league never called. You were this close.', test: (L, X) => X.seasons === 0 },
   goat:     { n: 'The GOAT debate', line: 'They argue about you in barbershops. They always will.', test: (L, X) => X.score >= 120 },
+  jail:     { n: 'Jailbird', line: 'Your mugshot outsold your jersey.', test: (L) => !!L.flags.jail },
   broke:    { n: 'Riches to rags', line: 'You made a fortune. You spent a bigger one.', test: (L) => !!L.flags.broke },
   dynasty:  { n: 'Dynasty', line: 'One ring is a great year. You built an era.', test: (L, X) => X.T.rings >= 3 },
   mogul:    { n: 'Mogul', line: 'The game paid you. Then the money did.', test: (L, X) => X.worth >= 400 },
+  roller:   { n: 'High roller', line: 'The house always wins. Except against you.', test: (L, X) => X.net >= HOUSE_NET },
+  second:   { n: 'Second act', line: 'You got clean. Then you got good again.', test: (L, X) => X.cleanYears >= 2 },
   heart:    { n: 'Heartbreaker', line: 'The lawyers knew you by first name.', test: (L, X) => X.div >= 2 },
   family:   { n: 'Family man', line: 'A full house, and you were home for it.', test: (L, X) => X.rel === 'married' && X.kids >= 3 && !X.div },
   whatif:   { n: 'What if', line: 'The talent was never the question. The body was.', test: (L, X) => !X.hof && (X.majors >= 2 || X.hurtOut) },
@@ -47,6 +51,9 @@ function ribbonFacts(L) {
     rel: f.rel, kids: f.kids || 0, div: f.div || 0,
     majors: (L.mem && L.mem['inj.majors'] && L.mem['inj.majors'].v) || 0, hurtOut: !!(L.mem && L.mem['end.injury']),
     hof: !L.flags.banned && (fin ? !!fin.hof : score >= 55),
+    net: L.wild ? L.wild.net : 0,
+    /* seasons played clean after a habit had hold of him and he went to rehab */
+    cleanYears: L.wild && L.wild.clean && recall(L, 'wild.hooked') && !Object.keys(L.wild.hook).length ? L.history.filter((h) => h.y > L.wild.clean).length : 0,
   };
 }
 function ribbonOf(L) {
@@ -66,7 +73,12 @@ function lifeFacts(L, X) {
   add(T.mvp, countWord(T.mvp, 'An MVP.', 'MVPs.'));
   add(T.rings, countWord(T.rings, 'A championship.', 'championships.'));
   add(T.fmvp, countWord(T.fmvp, 'A Finals MVP.', 'Finals MVPs.'));
+  add(L.flags.died, 'Died at ' + L.age + '.');
+  add(L.flags.jail, 'Did four months inside in ' + L.flags.jail + '.');
   add(L.flags.broke, 'Went broke in ' + L.flags.broke + '.');
+  add(L.wild && L.wild.clean, 'Went to rehab in ' + (L.wild && L.wild.clean) + '.');
+  add(X.net >= 1, 'Up ' + money(X.net) + ' gambling.');
+  add(X.net <= -1, 'Down ' + money(-X.net) + ' gambling.');
   add(X.div, countWord(X.div, 'One divorce.', 'divorces.'));
   add(T.star, countWord(T.star, 'An All-Star.', 'All-Star teams.'));
   add(T.dpoy, countWord(T.dpoy, 'Defensive Player of the Year.', 'Defensive Player of the Year awards.'));
@@ -77,6 +89,8 @@ function lifeFacts(L, X) {
   add(X.clubs >= 4, 'Played for ' + X.clubs + ' teams.');
   add(X.majors >= 2, X.majors + ' major injuries.');
   add(X.worth >= 100, 'Worth ' + money(X.worth) + ' at the end.');
+  add(L.later && (L.later.peak || L.later.job !== 'family'), L.later ? 'After the game: ' + LATER_JOBS[L.later.job].n[L.later.peak].toLowerCase() + '.' : '');
+  add(L.later && L.later.over, 'Lived to ' + (L.later && L.later.died) + '.');
   add(f.kids, lifeLine(L) + '.');
   add(H.length, H.length ? 'Best season: ' + Math.max(...H.map((h) => h.pts || 0)).toFixed(1) + ' points a game.' : '');
   add(T.earned >= 1, 'Earned ' + money(T.earned) + ' on the floor.');
