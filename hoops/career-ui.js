@@ -1137,6 +1137,7 @@ var CSS = [
 '.cr-yr-rec,.cr-yr-cash{display:grid;gap:6px;}',
 '.cr-yr-rec{grid-template-columns:minmax(0,2fr) minmax(0,3fr);}',
 '.cr-yr-cash{grid-template-columns:repeat(3,minmax(0,1fr));}',
+'.cr-yr-cash.two{grid-template-columns:repeat(2,minmax(0,1fr));}',
 '.cr-yr-rec > div,.cr-yr-cash > div{min-width:0;padding:7px 9px;background:rgba(143,160,214,.08);box-shadow:inset 2px 0 0 0 var(--k-team-ring);}',
 '.cr-yr-rec small,.cr-yr-cash small{display:block;font:800 9.5px/1.2 var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-2);}',
 '.cr-yr-rec b,.cr-yr-cash b{display:inline-block;margin-top:3px;font:800 17px/1.15 var(--k-f-text);color:#fff;}',
@@ -1164,6 +1165,65 @@ var CSS = [
 'body:has(#cr-sheet:not([hidden]) .cr-yr) .k-toasts{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 12px);}',
 /* one tap continues, and the button is always on the sheet however short the screen */
 '.cr-yr-foot{position:sticky;bottom:0;flex:0 0 auto;margin:0 calc(var(--k-s-4)*-1);padding:8px var(--k-s-4) calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(14,18,37,0),#0e1225 26%);}',
+/* ── people and money (the BitLife plan, phases 2 and 3) ── */
+'.cr-acts.cr-life{margin-top:4px;}',
+'.cr-acts .cr-lfbtn{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;font-size:13px;letter-spacing:.08em;}',
+'.cr-lfbtn i{min-width:22px;height:20px;padding:0 5px;font:400 9px/20px var(--k-f-pixel);font-style:normal;color:#f29ab0;background:#05070d;box-shadow:inset 0 0 0 2px #3a1f2a;}',
+'.cr-life-shut,.cr-w-broke{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:9px 10px;font:700 13.5px/1.35 var(--k-f-text);color:#ffd0a0;background:rgba(255,140,40,.1);box-shadow:inset 0 0 0 1px rgba(255,160,80,.45);}',
+'.cr-w-broke{color:#ffb4ad;background:rgba(255,80,70,.12);box-shadow:inset 0 0 0 2px rgba(255,107,107,.6);}.cr-w-broke b{color:#fff;}',
+'.cr-pp-head{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 10px;background:#05070d;box-shadow:inset 3px 0 0 #f29ab0;}',
+'.cr-pp-head p{margin:0;font:600 13.5px/1.3 var(--k-f-text);color:var(--k-ink-2);}.cr-pp-head b,.cr-pp-time b{color:#fff;}',
+'.cr-pp-pips{display:flex;gap:3px;}.cr-pp-pips i{width:12px;height:12px;background:#2a2136;box-shadow:inset 0 0 0 2px #4a3350;}.cr-pp-pips i.on{background:#f29ab0;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);}',
+'.cr-tabsec .cr-result,.cr-money .cr-result{margin:0 0 12px;}',
+'.cr-pplist,.cr-wlist{list-style:none;margin:0 0 4px;padding:0;display:grid;gap:6px;}',
+'#s-car .cr-pp{display:grid;grid-template-columns:36px minmax(0,1fr) 92px;gap:4px 10px;align-items:center;width:100%;min-height:60px;padding:9px 10px;border:0;text-align:left;cursor:pointer;color:var(--k-ink);font:inherit;background:#12172e;box-shadow:inset 0 0 0 2px #232a47;}',
+'#s-car .cr-pp:hover,#s-car .cr-pp:focus-visible{outline:none;box-shadow:inset 3px 0 0 #f29ab0,inset 0 0 0 2px #f29ab0;}',
+'#s-car .cr-pp:active{transform:translateY(1px);}',
+'.cr-ppt{min-width:0;}.cr-ppt b{display:block;font:800 14.5px/1.25 var(--k-f-text);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.cr-ppt small{display:block;font:600 12px/1.3 var(--k-f-text);color:var(--k-ink-3);}',
+'.cr-ppm{display:grid;gap:6px;justify-items:stretch;}.cr-ppm .cr-mvchip{justify-self:end;}',
+'.cr-mood{justify-self:end;padding:2px 6px;font:800 10.5px/1.4 var(--k-f-text);letter-spacing:.04em;color:var(--k-ink);background:rgba(143,160,214,.16);white-space:nowrap;}',
+'.cr-mood.good{color:#06130d;background:var(--k-good);}.cr-mood.bad{color:#fff;background:#a83a3a;}',
+'.cr-pp .note{grid-column:2/-1;font:500 12.5px/1.35 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-ppdone{margin-right:6px;padding:1px 5px;font:800 10px/1.4 var(--k-f-text);font-style:normal;letter-spacing:.04em;color:#ffd0a0;background:rgba(255,140,40,.12);box-shadow:inset 0 0 0 1px rgba(255,160,80,.45);}',
+'#s-car .cr-pp.is-used,#s-car .cr-pp.is-off{background:#0d1122;}#s-car .cr-pp.is-off{cursor:default;}',
+'.cr-pp-single .cr-ava{color:#f29ab0;}',
+'.cr-pphero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;margin:0 0 4px;}',
+'#cr-sheet .cr-ava{display:grid;place-items:center;font:400 10px var(--k-f-pixel);color:#fff;background:linear-gradient(180deg,#3a4677,#26305a);box-shadow:inset 0 0 0 2px #4a5c99,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#cr-sheet .cr-ava.good{background:linear-gradient(180deg,#2f8a63,#1d5c42);box-shadow:inset 0 0 0 2px #3ecf8e,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#cr-sheet .cr-ava.bad{background:linear-gradient(180deg,#8a3434,#5c1f1f);box-shadow:inset 0 0 0 2px #ff6b6b,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#cr-sheet .cr-ava.big{width:64px;height:64px;font-size:16px;}',
+'.cr-ppwho{min-width:0;}#cr-sheet .cr-ppwho h3{margin:0;font-size:30px;line-height:1;overflow-wrap:anywhere;}.cr-ppwho p{margin:4px 0 8px;font:600 13px/1.3 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-ppwho .cr-ppm{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;max-width:260px;}.cr-ppwho .cr-mood{justify-self:start;}',
+'.cr-ppnotes{margin:0;}.cr-ppnotes li{font-size:13.5px;}',
+'#s-car .cr-ppsheet .cr-sub{margin:16px 0 8px;}',
+'#cr-sheet .cr-pp-time{margin:0 0 10px!important;}',
+'.cr-palist{margin-bottom:12px;}',
+'.cr-pa.t-bad{--g:#ff6b6b;}.cr-pa.t-gold{--g:#ffd166;}',
+'.cr-pa:disabled{cursor:default;}',
+'@media (min-width:760px){#cr-sheet .k-sheet.cr-ppsheet{max-width:780px;}#cr-sheet .cr-palist{grid-template-columns:1fr 1fr;}}',
+'#s-car.cr-app .cr-money{display:none;}#s-car.cr-app[data-ctab="me"] .cr-money{display:block;}',
+'#s-car .cr-w-top{margin-bottom:12px;}#s-car .cr-w-top b{font-size:11px;}',
+'.cr-wtabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 4px;}',
+'.cr-wtab{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:46px;padding:0 2px;letter-spacing:.06em;}',
+'@media (max-width:479px){.cr-wtab .k-ico{display:none;}}',
+'.cr-wtab i{min-width:16px;height:16px;padding:0 3px;font:400 8px/16px var(--k-f-pixel);font-style:normal;color:#05070d;background:var(--k-ink-3);}',
+'.cr-wtab[aria-selected="true"] i{background:#ffd166;}',
+'#s-car .cr-w{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;min-height:60px;padding:9px 10px;border:0;text-align:left;cursor:pointer;color:var(--k-ink);font:inherit;background:#12172e;box-shadow:inset 0 0 0 2px #232a47;}',
+'#s-car .cr-w:hover,#s-car .cr-w:focus-visible{outline:none;box-shadow:inset 3px 0 0 #ffd166,inset 0 0 0 2px #ffd166;}',
+'#s-car .cr-w:active{transform:translateY(1px);}',
+'#s-car .cr-w.is-off{background:#0d1122;}#s-car .cr-w.is-off .cr-wic{filter:grayscale(1);opacity:.55;}#s-car .cr-w.is-off b{color:var(--k-ink-2);}',
+'.cr-wic{display:grid;place-items:center;width:36px;height:36px;background:#1d1a10;box-shadow:inset 0 0 0 2px rgba(255,209,102,.45),inset 0 -3px 0 rgba(0,0,0,.3);}',
+'.cr-wt{min-width:0;display:grid;gap:2px;justify-items:start;}.cr-wt b{font:800 14.5px/1.25 var(--k-f-text);color:#fff;}.cr-wt small{font:600 12px/1.35 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-wf{text-align:right;white-space:nowrap;}.cr-wf b{display:block;font:800 15px/1.2 var(--k-f-text);color:#ffd166;}.cr-wf small{display:block;font:600 11px/1.3 var(--k-f-text);color:var(--k-ink-3);}',
+'.cr-money .cr-sub{margin-top:14px;}',
+'@media (min-width:920px){.cr-wlist{grid-template-columns:1fr 1fr;}.cr-pplist{grid-template-columns:1fr 1fr;}}',
+'.cr-amt{margin:12px 0 0;padding:12px;background:#05070d;box-shadow:inset 3px 0 0 #ffd166;}',
+'.cr-amt-v{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}.cr-amt-v small{font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.06em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.cr-amt-v b{font:400 34px/1 var(--k-f-display);color:#ffd166;}',
+'.cr-amt-r{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:8px;align-items:center;margin:10px 0;}',
+'.cr-amt-r .cr-amt-b{min-width:0;min-height:48px;padding:0;font-size:20px;}',
+'.cr-amt-r input[type=range]{width:100%;height:44px;margin:0;accent-color:#ffd166;background:transparent;}',
+'.cr-amt-p{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}.cr-amt-p .k-btn{min-width:0;min-height:44px;padding:6px 4px;font-size:12px;}',
 '@media (min-width:640px){.cr-yr-st b{font-size:34px;}.cr-yr-line.sm .cr-yr-st b{font-size:15px;}.cr-yr-line.sm .cr-yr-st span{font-size:7px;}}',
 ].join('\n');
 (function(){
@@ -1639,7 +1699,6 @@ function wireBuild(){
     var gen = form.start !== 'hs';
     form = null;
     stage = { beats: [], result: null, reveal: gen, shades: true };
-    yearBase = yearMark(L);
     save();
     K.wipe();
     render();
@@ -1664,7 +1723,7 @@ var TIPS = {
   fame: ['Fame', 'How big your name is. It drives endorsements, All-Star votes and what the media asks you.'],
   trust: ['Coach', 'How much your coach believes in you. It decides your minutes and your role.'],
 };
-var METER_ICON = { health: 'heart', morale: 'face', fame: 'star', trust: 'whistle', cash: 'cash' };
+var METER_ICON = { health: 'heart', morale: 'face', fame: 'star', trust: 'whistle', cash: 'cash', bond: 'people' };
 
 function idCard(L){
   var v = C.view(L), k = C.colorsOf(L);
@@ -1955,6 +2014,13 @@ function stageHtml(L, fresh){
       out += '<button class="k-btn cr-mvbtn" id="cr-off" type="button">' + K.iconHtml('bolt', 2) + '<span>Your moves</span>'
         + (nm ? '<i aria-label="' + nm + ' you can make">' + nm + '</i>' : '') + '</button></div>';
     }
+    /* the life off the court, one tap from Now: his people and his money */
+    if (C.wealthOpen && C.wealthOpen(L)) {
+      var pl = C.peopleOpen(L).length ? C.bondsLeft(L) : 0;
+      out += '<div class="cr-acts cr-life"><button class="k-btn k-sec cr-lfbtn" id="cr-go-people" type="button">' + K.iconHtml('people', 2) + '<span>People</span>'
+        + (pl ? '<i aria-label="' + pl + ' left this year">' + pl + '</i>' : '') + '</button>'
+        + '<button class="k-btn k-sec cr-lfbtn" id="cr-go-money" type="button">' + K.iconHtml('cash', 2) + '<span>Money</span></button></div>';
+    }
     out += tk;
   }
   return '<div class="cr-stage" id="cr-stage">' + out + '</div>';
@@ -2036,19 +2102,281 @@ function picksHtml(L, c){
   return '<h3 class="cr-sub">Draft picks</h3><p class="k-small cr-picks">' + (P.have.length ? esc(P.have.join(' · ')) : 'None left.')
     + (P.owe.length ? '<br><span class="owe">Owed: ' + esc(P.owe.join(' · ')) + '</span>' : '') + '</p>';
 }
-/* The people a career has met, closest and furthest first. */
+/* ─── PEOPLE (career/bonds.js, the BitLife plan, phase 2) ─────────────────
+   Everybody in his life, by the engine's groups, the partner on top. A row is
+   a person: the mood the engine gives them, the meter, and the last thing
+   they remember. A tap opens the person: every act open on them, what it
+   costs and, when it cannot be taken, why. An act is C.personAct and nothing
+   else; what it said and what it moved is the receipt on top of the list.
+   EVERY FIGURE IS THE ENGINE'S: the acts left this year are C.bondsLeft of
+   C.BOND_MAX, a cost is the act's own, a mood is the word peopleOpen hands
+   over. People with nothing open on them (an old partner, somebody the
+   engine files under no group) are listed under the rest, to be read.
+
+   WHERE IT LIVES: Team, on the People tab that was there to be read. One
+   list of people, not two. A button on Now goes straight to it. */
+var PP_GROUPS = [['partner', 'Partner'], ['family', 'Family'], ['friend', 'Friends'], ['mate', 'Teammates'], ['press', 'Press'], ['foe', 'Rivals']];
+var PP_TONE = { Close: 'good', Good: 'good', Strained: 'bad', 'Bad blood': 'bad', 'Cut off': 'bad' };
+var PP_ICON = { time: 'clock', gift: 'bag', house: 'home', ask: 'cash', argue: 'angry', cut: 'lock', mend: 'heart', hang: 'people', train: 'dumbbell', callout: 'megaphone',
+  scoop: 'mic', freeze: 'close', trash: 'flame', peace: 'check', date: 'heart', propose: 'ring', elope: 'ring', family: 'sprout', fight: 'angry', leave: 'arrow' };
+function initials(n){ return String(n).split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0, 2).toUpperCase(); }
+function relBar(rel, word){
+  var w = Math.min(50, Math.abs(rel) / 2);
+  return '<div class="cr-rel" role="img" aria-label="' + esc((word ? word + ', ' : '') + rel) + '"><i class="' + (rel >= 0 ? 'up' : 'dn') + '" style="width:' + w + '%"></i></div>';
+}
+function lastNote(p){ var n = p.notes && p.notes.length ? p.notes[p.notes.length - 1] : null; return n ? n[0] + ': ' + n[1] : ''; }
+/* What a person is to him, in a word: a partner is where the two of them
+   stand (the engine's own word), everybody else the role they came with. */
+function roleWord(L, p){
+  if (p.group !== 'partner') return p.role;
+  var r = C.lifeOf ? C.lifeOf(L).rel : '';
+  return r ? r.charAt(0).toUpperCase() + r.slice(1) : p.role;
+}
+/* Why an act shows and cannot be taken: peopleOpen says ok is false for the
+   year's time, this person's turn, or the cash, in that order. */
+function bondWhy(L, p, a){
+  if (a.ok) return '';
+  if (C.bondsLeft(L) <= 0) return 'No time left this year';
+  if (p.used) return 'One act a person each year';
+  if (L.cash < a.cost) return 'Costs ' + money(a.cost) + '. You have ' + money(L.cash) + '.';
+  return 'Not open right now';
+}
+function lifeShut(L){ return L.pending.length ? 'A decision is waiting. Answer it first.' : C.isAm && C.isAm(L) ? 'This opens when you reach the league.' : ''; }
 function peopleHtml(L){
-  var P = Object.keys(L.people || {}).map(function(k){ return L.people[k]; });
-  if (!P.length) return '<p class="k-small">Nobody yet. Give it a season.</p>';
-  P.sort(function(a, b){ return Math.abs(b.rel) - Math.abs(a.rel) || b.met - a.met; });
-  return '<ul class="cr-ppl">' + P.slice(0, 24).map(function(p){
-    var w = Math.min(50, Math.abs(p.rel) / 2), last = p.notes && p.notes.length ? p.notes[p.notes.length - 1] : null;
-    var word = p.rel >= 60 ? 'Close' : p.rel >= 20 ? 'Good' : p.rel > -20 ? 'Fine' : p.rel > -60 ? 'Cold' : 'Bad blood';
-    var ini = String(p.n).split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
-    return '<li><span class="cr-ava ' + (p.rel >= 20 ? 'good' : p.rel <= -20 ? 'bad' : '') + '" aria-hidden="true">' + esc(ini) + '</span><div><b>' + esc(p.n) + '</b><small>' + esc(p.role) + ' · since ' + p.met + '</small></div>'
-      + '<div class="cr-rel" role="img" aria-label="' + esc(word) + ', ' + p.rel + '"><i class="' + (p.rel >= 0 ? 'up' : 'dn') + '" style="width:' + w + '%"></i></div>'
-      + (last ? '<div class="note">' + last[0] + ': ' + esc(last[1]) + '</div>' : '') + '</li>';
+  var all = Object.keys(L.people || {}).map(function(k){ return { id: k, p: L.people[k] }; });
+  var open = C.peopleOpen ? C.peopleOpen(L) : [], on = {};
+  open.forEach(function(p){ on[p.id] = 1; });
+  var mingle = C.actsOpen(L).filter(function(a){ return a.id === 'mingle'; })[0];
+  if (!all.length && !mingle) return '<p class="k-small">Nobody yet. Give it a season.</p>';
+  var out = '';
+  if (open.length || mingle) {
+    var left = C.bondsLeft(L), max = C.BOND_MAX, pips = '';
+    for (var i = 0; i < max; i++) pips += '<i' + (i < left ? ' class="on"' : '') + '></i>';
+    out += '<div class="cr-pp-head" id="cr-pp-head"><span class="cr-pp-pips" aria-hidden="true">' + pips + '</span>'
+      + '<p><b id="cr-pp-left">' + left + ' of ' + max + '</b> left this year. One a person.</p></div>';
+  } else {
+    var shut = lifeShut(L);
+    if (shut) out += '<p class="cr-life-shut" id="cr-pp-shut" role="note">' + K.iconHtml('lock', 2) + '<span>' + esc(shut) + '</span></p>';
+  }
+  if (stage.at === 'people') out += resultHtml(stage.result, true);
+  var row = function(p){
+    var tone = PP_TONE[p.mood] || '', note = lastNote(p);
+    return '<li><button type="button" class="cr-pp' + (p.used ? ' is-used' : '') + '" data-person="' + esc(p.id) + '" aria-label="' + esc(p.n + ', ' + roleWord(L, p) + '. ' + p.mood + '.') + '">'
+      + '<span class="cr-ava ' + tone + '" aria-hidden="true">' + esc(initials(p.n)) + '</span>'
+      + '<span class="cr-ppt"><b>' + esc(p.n) + '</b><small>' + esc(roleWord(L, p)) + ' · since ' + p.met + '</small></span>'
+      + '<span class="cr-ppm"><span class="cr-mood ' + tone + '">' + esc(p.mood) + '</span>' + relBar(p.rel, '') + '</span>'
+      + (note || p.used ? '<span class="note">' + (p.used ? '<i class="cr-ppdone">Done this year</i>' : '') + esc(note) + '</span>' : '') + '</button></li>';
+  };
+  if (mingle && !open.some(function(p){ return p.group === 'partner'; })) {
+    var why = moveWhy(L, mingle);
+    out += '<h3 class="cr-sub">Partner</h3><ul class="cr-pplist"><li><button type="button" class="cr-pp cr-pp-single' + (mingle.ok ? '' : ' is-off') + '" id="cr-pp-mingle"' + (mingle.ok ? '' : ' disabled') + '>'
+      + '<span class="cr-ava" aria-hidden="true">' + K.iconHtml('heart', 2) + '</span>'
+      + '<span class="cr-ppt"><b>' + esc(mingle.name) + '</b><small>' + esc(mingle.blurb) + '</small></span>'
+      + '<span class="cr-ppm"><span class="cr-mvchip">' + (mingle.cost ? esc(money(mingle.cost)) : 'Free') + '</span></span>'
+      + (why ? '<span class="note"><i class="cr-ppdone">' + esc(why) + '</i></span>' : '') + '</button></li></ul>';
+  }
+  PP_GROUPS.forEach(function(g){
+    var mine = open.filter(function(p){ return p.group === g[0]; });
+    if (mine.length) out += '<h3 class="cr-sub">' + g[1] + '</h3><ul class="cr-pplist" data-pgroup="' + g[0] + '">' + mine.map(row).join('') + '</ul>';
+  });
+  /* everybody else: there to be read */
+  var rest = all.filter(function(x){ return !on[x.id]; });
+  rest.sort(function(a, b){ return Math.abs(b.p.rel) - Math.abs(a.p.rel) || b.p.met - a.p.met; });
+  if (rest.length) out += (open.length ? '<h3 class="cr-sub">Also in your life</h3>' : '') + '<ul class="cr-ppl">' + rest.slice(0, 24).map(function(x){
+    var p = x.p, note = lastNote(p);
+    return '<li><span class="cr-ava ' + (p.rel >= 10 ? 'good' : p.rel <= -10 ? 'bad' : '') + '" aria-hidden="true">' + esc(initials(p.n)) + '</span><div><b>' + esc(p.n) + '</b><small>' + esc(p.role === 'Partner' ? 'Used to be together' : p.role) + ' · since ' + p.met + '</small></div>'
+      + relBar(p.rel, '') + (note ? '<div class="note">' + esc(note) + '</div>' : '') + '</li>';
   }).join('') + '</ul>';
+  return out;
+}
+/* ONE PERSON: who they are to him, what they remember, and what he can do. */
+function openPerson(pid){
+  var L = store().cur, p = L && C.peopleOpen(L).filter(function(x){ return x.id === pid; })[0];
+  if (!p) return;
+  var tone = PP_TONE[p.mood] || '', left = C.bondsLeft(L);
+  var notes = p.notes.slice().reverse().map(function(n){ return '<li><span class="yr">' + n[0] + '</span>' + esc(n[1]) + '</li>'; }).join('');
+  var acts = p.acts.map(function(a){
+    var why = bondWhy(L, p, a);
+    return '<li><button type="button" class="cr-mv cr-pa' + (a.ok ? '' : ' is-off') + (a.tone ? ' t-' + a.tone : '') + '" data-pact="' + a.id + '"' + (a.ok ? '' : ' disabled')
+      + ' aria-label="' + esc(a.name + '. ' + a.blurb + (why ? ' ' + why + '.' : '')) + '">'
+      + '<span class="cr-mvic">' + K.iconHtml(PP_ICON[a.id] || 'people', 4) + '</span>'
+      + '<span class="cr-mvt"><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + '</small><span class="cr-mvchips">' + (a.cost ? '<span class="cr-mvchip">' + esc(money(a.cost)) + '</span>' : '')
+      + (why ? '<span class="cr-mvchip why">' + esc(why) + '</span>' : '') + '</span></span></button></li>';
+  }).join('');
+  openSheet('<div class="cr-pphero"><span class="cr-ava big ' + tone + '" aria-hidden="true">' + esc(initials(p.n)) + '</span>'
+    + '<div class="cr-ppwho"><h3 class="k-h1" id="cr-pp-h">' + esc(p.n) + '</h3><p>' + esc(roleWord(L, p)) + ' · since ' + p.met + '</p>'
+    + '<div class="cr-ppm"><span class="cr-mood ' + tone + '" id="cr-pp-mood">' + esc(p.mood) + '</span>' + relBar(p.rel, p.mood) + '</div></div></div>'
+    + (notes ? '<h3 class="cr-sub">They remember</h3><ul class="cr-list cr-ppnotes">' + notes + '</ul>' : '')
+    + '<h3 class="cr-sub">What you can do</h3>'
+    + '<p class="cash cr-pp-time"><b id="cr-pa-left">' + left + ' of ' + C.BOND_MAX + '</b> left this year.' + (p.used ? ' You already made time for ' + esc(String(p.n).split(' ')[0]) + '.' : '') + '</p>'
+    + '<ul class="cr-mvlist cr-palist" style="--g:#f29ab0">' + acts + '</ul>'
+    + '<button class="k-btn k-sec k-block" id="cr-sheet-x" type="button">Close</button>', p.n, 'cr-ppsheet');
+  var sh = $('cr-sheet');
+  sh.querySelectorAll('[data-pact]').forEach(function(b){ b.onclick = function(){ doBond(pid, b.getAttribute('data-pact')); }; });
+  $('cr-sheet-x').onclick = closeOff;
+}
+/* The receipt is on the screen the act was made from, and on Now. */
+function lifeDone(at, res, before){
+  closeOff();
+  stage = { beats: [], result: res, draft: null, delta: before, at: at };
+  save();
+  render();
+  var el = at === 'people' ? document.querySelector('#s-car .cr-tabsec') : $('cr-money');
+  if (el) { var r = el.getBoundingClientRect(); if (r.top < 102 || r.top > window.innerHeight * 0.5) window.scrollTo({ top: Math.max(0, window.scrollY + r.top - 112), behavior: REDUCED ? 'auto' : 'smooth' }); }
+}
+function doBond(pid, aid){
+  var L = store().cur;
+  if (!L || !L.people[pid]) return;
+  var before = snap(L), rel0 = L.people[pid].rel;
+  var res = C.personAct(L, pid, aid);
+  if (!res) return;
+  /* what it did to the two of them goes first, in the person's name */
+  var d = L.people[pid] ? L.people[pid].rel - rel0 : 0;
+  var diff = (d ? [{ k: 'bond', label: 'With ' + String(res.who).split(' ')[0], d: d }] : []).concat(res.diff || []);
+  lifeDone('people', Object.assign({}, res, { label: res.title + ' · ' + res.who, diff: diff }), before);
+}
+function doMingle(){
+  var L = store().cur;
+  if (!L) return;
+  var before = snap(L), res = C.act(L, 'mingle');
+  if (res) lifeDone('people', res, before);
+}
+function goPeople(){
+  var L = store().cur;
+  if (!L) return;
+  if (ctab === 'team') { tab = 'people'; render(); window.scrollTo(0, 0); return; }
+  tabMem.team = { sub: 'people', y: 0 };
+  goTab('team');
+}
+
+/* ─── MONEY (career/wealth.js, the BitLife plan, phase 3) ─────────────────
+   What the money is for. On top, three figures: cash, net worth and what the
+   lifestyle costs a year. Under them three shelves, each what he has and
+   then what is for sale: things (homes, cars, toys), the payroll, and money
+   put to work. A row opens one decision (the price, the upkeep, what a sale
+   pays now, an amount to put in) and only its button runs C.wealthAct. The
+   receipt lands on top of the shelves. EVERY FIGURE IS C.wealthOpen's. When
+   he has gone broke it says so, in the year the engine wrote down.
+
+   WHERE IT LIVES: Player. It is his, like his ratings and his look, and the
+   bank was already there. A button on Now goes straight to it. */
+var W_TABS = [['things', 'Things', 'home'], ['staff', 'Payroll', 'people'], ['inv', 'Invest', 'chart']];
+var W_ICON = { home: 'home', car: 'bolt', chain: 'ring', boat: 'globe', jet: 'plane', chef: 'flame', stylist: 'shirt', security: 'shield', adviser: 'brain', crew: 'people',
+  fund: 'chart', rental: 'home', eatery: 'flame', startup: 'bulb', coins: 'cash' };
+var wTab = 'things';
+function wIcon(id, kind){ return W_ICON[id] || W_ICON[kind] || 'cash'; }
+function wRow(kind, id, icon, name, sub, fig, figWord, off){
+  return '<li><button type="button" class="cr-w' + (off ? ' is-off' : '') + '" data-deal="' + kind + '" data-id="' + esc(String(id)) + '" aria-label="' + esc(name + '. ' + fig + ' ' + figWord + '.' + (off ? ' ' + off : '')) + '">'
+    + '<span class="cr-wic">' + K.iconHtml(icon, 2) + '</span><span class="cr-wt"><b>' + esc(name) + '</b><small>' + esc(sub) + '</small>'
+    + (off ? '<span class="cr-mvchip why">' + esc(off) + '</span>' : '') + '</span>'
+    + '<span class="cr-wf"><b>' + esc(fig) + '</b><small>' + esc(figWord) + '</small></span></button></li>';
+}
+function short(L, need){ return 'Needs ' + money(need) + '. You have ' + money(L.cash) + '.'; }
+function moneyHtml(L){
+  var V = C.wealthOpen ? C.wealthOpen(L) : null;
+  var cash = V ? V.cash : L.cash, worth = V ? V.worth : C.netWorth(L), upkeep = V ? V.upkeep : C.upkeepOf(L), broke = V ? V.broke : (L.flags && L.flags.broke) || null;
+  var out = '<section class="k-panel cr-sec cr-money" id="cr-money" aria-label="Money"><h3 class="k-eyebrow">' + K.iconHtml('cash', 2) + 'Money</h3>';
+  if (broke) out += '<p class="cr-w-broke" id="cr-w-broke" role="note">' + K.iconHtml('down', 2) + '<span><b>You went broke in ' + broke + '.</b> Everything was sold. The payroll walked.</span></p>';
+  out += '<div class="cr-leg cr-w-top"><div><b id="cr-w-cash">' + esc(money(cash)) + '</b><span>Cash</span></div>'
+    + '<div><b id="cr-w-worth">' + esc(money(worth)) + '</b><span>Net worth</span></div>'
+    + '<div><b id="cr-w-upkeep">' + esc(money(upkeep)) + '</b><span>Upkeep a year</span></div></div>';
+  if (stage.at === 'money') out += resultHtml(stage.result, true);
+  if (!V) {
+    var shut = lifeShut(L);
+    return out + (shut ? '<p class="cr-life-shut" id="cr-w-shut" role="note">' + K.iconHtml('lock', 2) + '<span>' + esc(shut) + '</span></p>' : '') + '</section>';
+  }
+  var n = { things: V.own.length, staff: V.staff.length, inv: V.inv.length };
+  out += '<div class="k-tabs cr-wtabs" role="tablist" aria-label="Your money">' + W_TABS.map(function(t){
+    return '<button type="button" class="k-tab cr-wtab" role="tab" data-wtab="' + t[0] + '" aria-selected="' + (t[0] === wTab) + '">' + K.iconHtml(t[2], 2) + '<span>' + t[1] + '</span><i>' + n[t[0]] + '</i></button>';
+  }).join('') + '</div><div class="cr-wpane" role="tabpanel" data-wpane="' + wTab + '">';
+  var list = function(rows, none){ return rows.length ? '<ul class="cr-wlist">' + rows.join('') + '</ul>' : '<p class="k-small cr-dnone">' + none + '</p>'; };
+  if (wTab === 'things') {
+    out += '<h3 class="cr-sub">You own</h3>' + list(V.own.map(function(o){
+      return wRow('sell', o.i, wIcon(o.id, o.kind), o.name, 'Bought ' + o.y + ' for ' + money(o.paid) + ' · ' + money(o.keep) + ' a year', money(o.val), 'worth now');
+    }), 'Nothing yet.');
+    out += '<h3 class="cr-sub">For sale</h3>' + list(V.shop.map(function(o){
+      return wRow('buy', o.id, wIcon(o.id, o.kind), o.name, o.blurb, money(o.cost), money(o.keep) + ' a year', o.ok ? '' : short(L, o.cost));
+    }), 'You own all of it.');
+  } else if (wTab === 'staff') {
+    out += '<h3 class="cr-sub">On your payroll</h3>' + list(V.staff.map(function(o){
+      return wRow('fire', o.id, wIcon(o.id), o.name, 'Since ' + o.since, money(o.pay), 'a year');
+    }), 'Nobody yet.');
+    out += '<h3 class="cr-sub">Hire</h3>' + list(V.hire.map(function(o){
+      return wRow('hire', o.id, wIcon(o.id), o.name, o.blurb, money(o.pay), 'a year', o.ok ? '' : short(L, o.pay));
+    }), 'Everybody is hired.');
+  } else {
+    out += '<h3 class="cr-sub">Your money at work</h3>' + list(V.inv.map(function(o){
+      return wRow('cashout', o.id, wIcon(o.id), o.name, 'Put in ' + money(o.put) + ' · since ' + o.y, money(o.val), 'worth now');
+    }), 'Nothing put to work yet.');
+    out += '<h3 class="cr-sub">Put money in</h3>' + list(V.invest.map(function(o){
+      return wRow('invest', o.id, wIcon(o.id), o.name, o.blurb, money(o.min), 'the least', o.ok ? '' : short(L, o.min));
+    }), '');
+  }
+  return out + '</div></section>';
+}
+/* ONE DECISION about money: what it is, the figures that matter, one button. */
+var W_VERB = { buy: ['Buy', 'Bought '], sell: ['Sell', 'Sold'], hire: ['Hire', 'Hired '], fire: ['Let go', 'Let go'], invest: ['Invest', 'Put money in '], cashout: ['Cash out', 'Cashed out'] };
+function lowerFirst(t){ t = String(t); return t.charAt(0).toLowerCase() + t.slice(1); }
+function openDeal(verb, id){
+  var L = store().cur, V = L && C.wealthOpen(L);
+  if (!V) return;
+  var by = function(list, key){ return list.filter(function(x){ return String(x[key]) === String(id); })[0]; };
+  var o = verb === 'buy' ? by(V.shop, 'id') : verb === 'sell' ? by(V.own, 'i') : verb === 'hire' ? by(V.hire, 'id') : verb === 'fire' ? by(V.staff, 'id') : verb === 'invest' ? by(V.invest, 'id') : by(V.inv, 'id');
+  if (!o) return;
+  var fact = function(k, v, wide){ return '<div' + (wide ? ' class="wide"' : '') + '><dt>' + k + '</dt><dd>' + esc(v) + '</dd></div>'; };
+  var facts = '', why = '', ok = true, extra = '', go = W_VERB[verb][0];
+  if (verb === 'buy') { facts = fact('It costs', money(o.cost)) + fact('To keep, a year', money(o.keep)) + fact('In the bank', money(V.cash), 1); ok = o.ok; if (!ok) why = short(L, o.cost); }
+  else if (verb === 'sell') facts = fact('You paid', money(o.paid)) + fact('Worth now', money(o.val)) + fact('Selling pays', money(o.sell)) + fact('Saves a year', money(o.keep));
+  else if (verb === 'hire') { facts = fact('Costs now', money(o.pay)) + fact('Then every year', money(o.pay)) + fact('In the bank', money(V.cash), 1); ok = o.ok; if (!ok) why = short(L, o.pay); }
+  else if (verb === 'fire') facts = fact('Saves a year', money(o.pay)) + fact('On the payroll since', String(o.since));
+  else if (verb === 'cashout') facts = fact('You put in', money(o.put)) + fact('Worth now', money(o.val)) + fact('Cashing out pays', money(o.out), 1);
+  else {
+    ok = o.ok; if (!ok) why = short(L, o.min);
+    var held = by(V.inv, 'id');
+    facts = fact('The least', money(o.min)) + fact('In the bank', money(o.max)) + (held ? fact('Already in', money(held.val), 1) : '');
+    if (ok) extra = '<div class="cr-amt" id="cr-amt"><div class="cr-amt-v"><small>You put in</small><b id="cr-amt-v">' + esc(money(o.min)) + '</b></div>'
+      + '<div class="cr-amt-r"><button type="button" class="k-btn k-sec cr-amt-b" id="cr-amt-dn" aria-label="Less">-</button>'
+      + '<input type="range" id="cr-amt-in" min="' + o.min + '" max="' + o.max + '" step="0.1" value="' + o.min + '" aria-label="How much to put in">'
+      + '<button type="button" class="k-btn k-sec cr-amt-b" id="cr-amt-up" aria-label="More">+</button></div>'
+      + '<div class="cr-amt-p"><button type="button" class="k-btn k-sec" data-amt="min">Least</button><button type="button" class="k-btn k-sec" data-amt="half">Half</button><button type="button" class="k-btn k-sec" data-amt="max">All of it</button></div></div>';
+  }
+  var icon = wIcon(o.id, o.kind);
+  openSheet('<div class="cr-mvdec cr-wdec" style="--g:#ffd166"><div class="cr-mvband">' + K.iconHtml('cash', 2) + '<span>Money · ' + esc(go) + '</span></div>'
+    + '<div class="cr-mvdbody"><span class="cr-mvic big">' + K.iconHtml(icon, 6) + '</span><h3 class="k-h1" id="cr-w-h" tabindex="-1">' + esc(o.name) + '</h3>'
+    + (o.blurb ? '<p>' + esc(o.blurb) + '</p>' : '') + '<dl class="cr-mvfacts">' + facts + '</dl>' + extra
+    + (why ? '<p class="cr-mvwhy" role="note">' + K.iconHtml('lock', 2) + '<span>' + esc(why) + '</span></p>' : '') + '</div></div>'
+    + '<div class="cr-btnrow cr-mvgo"><button class="k-btn k-big" type="button" id="cr-w-go"' + (ok ? '' : ' disabled') + '>' + esc(go) + '</button>'
+    + '<button class="k-btn k-sec" type="button" id="cr-sheet-x">Back</button></div>', o.name, 'cr-wsheet');
+  $('cr-sheet-x').onclick = closeOff;
+  var amt = verb === 'invest' && ok ? o.min : null, inp = $('cr-amt-in');
+  if (inp) {
+    var r1 = function(x){ return Math.round(x * 10) / 10; };
+    var set = function(x){
+      amt = Math.max(o.min, Math.min(o.max, r1(x)));
+      inp.value = amt; $('cr-amt-v').textContent = money(amt); $('cr-w-go').textContent = go + ' ' + money(amt);
+    };
+    inp.oninput = function(){ set(+inp.value); };
+    $('cr-amt-dn').onclick = function(){ set(amt - (amt > 10 ? 1 : 0.1)); };
+    $('cr-amt-up').onclick = function(){ set(amt + (amt >= 10 ? 1 : 0.1)); };
+    $('cr-sheet').querySelectorAll('[data-amt]').forEach(function(b){ b.onclick = function(){ var k = b.getAttribute('data-amt'); set(k === 'min' ? o.min : k === 'max' ? o.max : Math.max(o.min, o.max / 2)); }; });
+    set(o.min);
+  }
+  $('cr-w-go').onclick = function(){ doWealth(verb, verb === 'sell' ? o.i : o.id, amt, o.name); };
+}
+function doWealth(verb, id, arg, name){
+  var L = store().cur;
+  if (!L) return;
+  var before = snap(L), res = C.wealthAct(L, verb, id, arg);
+  if (!res) return;
+  var w = W_VERB[verb][1];
+  lifeDone('money', Object.assign({}, res, { label: / $/.test(w) ? w + lowerFirst(name) : w }), before);
+}
+function goMoney(){
+  var L = store().cur;
+  if (!L) return;
+  if (ctab !== 'me') { tabMem.me = { y: 0 }; goTab('me'); }
+  var el = $('cr-money');
+  if (el) window.scrollTo(0, Math.max(0, window.scrollY + el.getBoundingClientRect().top - 112));
 }
 /* Where the career stands with the Hall, what it chased, what it keeps. */
 function legacyHtml(L){
@@ -2276,7 +2604,7 @@ function lifeView(L, d){
      an id or a class still finds it. Retire now is a row on Player. */
   var pageh = ctab === 'team' ? clubOf(L) : ctab === 'legacy' ? 'Legacy' : '';
   return '<div class="cr-grid">' + shadesHtml(L, d) + '<div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
-    + '<div class="cr-main">' + (pageh ? '<h2 class="k-h1 cr-pageh">' + esc(pageh) + '</h2>' : '') + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
+    + '<div class="cr-main">' + (pageh ? '<h2 class="k-h1 cr-pageh">' + esc(pageh) + '</h2>' : '') + stageHtml(L, !!d) + facts(L) + moneyHtml(L) + ratingsHtml(L, d) + tabsHtml(L)
     + meRows(L) + dockHtml(L) + '</div></div>';
 }
 /* WHO YOU ARE, one way everywhere: the club as the player card says it. */
@@ -2526,6 +2854,14 @@ function wireLife(L, d){
   }
   var off = $('cr-off');
   if (off) off.onclick = function(){ goTab('moves'); };
+  /* people and money */
+  var gp = $('cr-go-people'), gm = $('cr-go-money'), mg = $('cr-pp-mingle');
+  if (gp) gp.onclick = goPeople;
+  if (gm) gm.onclick = goMoney;
+  if (mg) mg.onclick = doMingle;
+  root.querySelectorAll('[data-person]').forEach(function(b){ b.onclick = function(){ openPerson(b.getAttribute('data-person')); }; });
+  root.querySelectorAll('[data-wtab]').forEach(function(b){ b.onclick = function(){ wTab = b.getAttribute('data-wtab'); render(); var t = root.querySelector('[data-wtab="' + wTab + '"]'); if (t) t.focus({ preventScroll: true }); }; });
+  root.querySelectorAll('[data-deal]').forEach(function(b){ b.onclick = function(){ openDeal(b.getAttribute('data-deal'), b.getAttribute('data-id')); }; });
   var q = $('cr-quit');
   if (q) q.onclick = function(){ openRetire(L); };
   K.wireTips(root);
@@ -2621,30 +2957,39 @@ function kbdFocus(){ var a = document.activeElement, r = $('s-car'); return !!(a
    year turns or the career ends. It is C.step repeated, so the career is the
    one a press a stretch would have played. What the press shows:
      the feed      the headlines of everything it played (beatsHtml)
-     the ticker    live for YOUR playoff games only. A stretch of the regular
-                   season, and a bracket you are not in, go by as the finished
+     the ticker    live for the playoffs: YOUR games at the speed they have
+                   always had, then the rest of the bracket, which always
+                   plays out, a little faster (the owner's call, 2026-11-25).
+                   A stretch of the regular season goes by as the finished
                    strip under the feed, with no overlay
      a scene       whatever big night it produced (a title, a trade, a first
                    All-Star), as before
      the year      when the year turned, the year summary, once, last
    A card waiting stops Age up in the engine, and the dock is not drawn while
    one waits, so a decision is never skipped. Saved after every press. */
-function viewAs(L, phase){ var V = Object.create(L); V.phase = phase; return V; }
+function viewAs(L, o){ var V = Object.create(L); for (var k in o) V[k] = o[k]; return V; }
+/* How much faster than your own games a bracket you are out of runs. */
+var REST_PACE = 1.5;
 /* The boards for a press that may have played several stretches. The ticker
    reads the season the engine left, so it is asked once for your playoff
    games (as the round press used to ask) and once for the bracket that
-   finished without you (as the press that filed the season used to). */
-function ticksFor(L, was, beats){
-  var TK = window.RTF_TICKER, out = { strip: [], live: null }, s = L.season, po = s && s.po;
+   finished without you (as the press that filed the season used to). `s0` is
+   the season the press began in: a press that also turned the year has left a
+   new one on the life, and the bracket to play out is the old one's. */
+var IN_SEASON = { pre: 1, early: 1, mid: 1, late: 1, po: 1 };
+function ticksFor(L, was, beats, s0){
+  var TK = window.RTF_TICKER, out = { strip: [], live: [] }, s = s0 || L.season, po = s && s.po;
   if (!TK || !s) return out;
   var get = function(life, before){ try { return TK.dataFor(life, before, beats); } catch (e) { return null; } };
-  if (po && (L.phase === 'po' || L.phase === 'off') && was.phase !== 'off') {
-    var mine = get(L.phase === 'po' ? L : viewAs(L, 'po'), { phase: was.phase === 'po' ? 'po' : 'late', poDone: was.poDone });
-    var rest = L.phase === 'off' ? get(L, { phase: 'po', poDone: was.poDone }) : null;
-    if (mine) { out.strip.push(mine); out.live = mine; }
-    if (rest) out.strip.push(rest);
+  var filed = L.season !== s || !IN_SEASON[L.phase];
+  if (po && (L.phase === 'po' || filed) && was.phase !== 'off') {
+    var mine = get(viewAs(L, { season: s, phase: 'po', stage: 'nba' }), { phase: was.phase === 'po' ? 'po' : 'late', poDone: was.poDone });
+    var rest = filed ? get(viewAs(L, { season: s, phase: 'off', stage: 'nba' }), { phase: 'po', poDone: was.poDone }) : null;
+    if (mine) { out.strip.push(mine); out.live.push({ d: mine, pace: 1 }); }
+    if (rest) { out.strip.push(rest); out.live.push({ d: rest, pace: REST_PACE }); }
     return out;
   }
+  if (L.season !== s) return out;
   var rs = get(L, was);
   if (rs) out.strip.push(rs);
   return out;
@@ -2654,12 +2999,12 @@ function doAge(){
   /* never under the year summary: a scripted or keyboard press on the button
      behind the sheet would play a year nobody saw */
   if (!L || yearOpen) return;
-  var before = snap(L), kb = kbdFocus();
+  var before = snap(L), kb = kbdFocus(), s0 = L.season;
   var was = { phase: L.phase, poDone: L.season && L.season.po ? L.season.po.results.length : 0 };
   var res = C.ageUp(L);
   stage = { beats: res.beats || [], result: null, draft: null, delta: before };
   var TK = window.RTF_TICKER, SC = window.RTF_SCENES;
-  var tk = ticksFor(L, was, res.beats);
+  var tk = ticksFor(L, was, res.beats, s0);
   stage.tick = tk.strip.length ? tk.strip : null;
   var d = (res.beats || []).filter(function(b){ return b.kind === 'draft' && b.pick; })[0];
   if (d) stage.draft = { pick: d.pick, team: d.team };
@@ -2674,8 +3019,14 @@ function doAge(){
      the card the new year opened with (in its scene, when it has one). */
   var after = yr ? function(){ openYear(yr, function(){ if (!scene({ beats: [] })) land(); }); } : land;
   var tell = function(){ if (!scene(res, yr ? { moment: true, then: after } : null)) after(); };
-  if (tk.live && TK && SC && SC.on()) { TK.play(tk.live, { done: tell }); return; }
-  tell();
+  /* the boards, one after another: yours, then the bracket playing out */
+  var boards = TK && SC && SC.on() ? tk.live.slice() : [];
+  var roll = function(){
+    var b = boards.shift();
+    if (!b) return tell();
+    TK.play(b.d, { done: roll, pace: b.pace });
+  };
+  roll();
 }
 
 /* ─── THE YEAR SUMMARY ────────────────────────────────────────────────────
@@ -2683,28 +3034,24 @@ function doAge(){
    like the back of a trading card: age and season, club and role, the line,
    the record and how the playoffs went, awards, the overall and its change,
    the money, and the four meters. One tap continues. EVERY FIGURE IS
-   C.yearSummary's. The overall is printed the way it is everywhere (C.show,
-   the 2K scale), and its change is the change in that printed number, taken
-   from the summary's own two overalls. What a meter and the bank moved over
-   the year is this page's: the summary carries where they stand, so the mark
-   taken at the last turn (or when the career was made) is what they are held
-   against, and with no mark (a career reloaded mid year) no change is shown
-   rather than a guess. */
-var yearBase = null, yearOpen = false;
-function yearMark(L){ return { L: L, y: L.year, m: Object.assign({}, L.m), cash: L.cash }; }
+   C.yearSummary's: the overall as it is printed everywhere and its change
+   (ovrShown, ovrShownChange), how the playoffs went in words (playoffsText),
+   net worth and what the lifestyle costs a year (worth, upkeep), and where
+   the meters and the bank stood when the year began (start), which is what a
+   change is held against. A save from before the engine marked the year has
+   no start, and shows no change rather than a guess. */
+var yearOpen = false;
 function yearOf(L){
-  var s = C.yearSummary ? C.yearSummary(L) : null, base = yearBase;
-  yearBase = yearMark(L);
+  var s = C.yearSummary ? C.yearSummary(L) : null;
   /* only the season that just closed: a year overseas files none */
   if (!s || s.y !== L.year - 1) return null;
-  return { s: s, first: L.history.length < 2, name: L.name, pos: L.pos, num: L.num, base: base && base.L === L && base.y === s.y ? base : null };
+  return { s: s, name: L.name, pos: L.pos, num: L.num, base: s.start ? { m: s.start.meters, cash: s.start.cash } : null };
 }
-var PO_WORDS = { Missed: 'Missed the playoffs', 'Play-in': 'Out in the play-in', R1: 'Out in the first round', R2: 'Out in the second round', CF: 'Out in the conference finals', Finals: 'Lost in the Finals', Champion: 'NBA champion' };
 var YR_METERS = [['health', 'Health'], ['morale', 'Morale'], ['fame', 'Fame'], ['trust', 'Coach']];
 function signed(n){ return (n > 0 ? '+' : '') + n; }
 function yearHtml(yr){
   var s = yr.s, ln = s.line, base = yr.base;
-  var ovr = C.show(s.ovr), dOvr = yr.first ? 0 : ovr - C.show(s.ovr - s.ovrChange);
+  var ovr = s.ovrShown, dOvr = s.ovrShownChange || 0;
   var champ = s.playoffs === 'Champion';
   var chip = function(d, unit){ return d ? '<b class="cr-yr-d ' + (d > 0 ? 'up' : 'down') + '">' + K.iconHtml(d > 0 ? 'up' : 'down', 2) + (unit === '$' ? money(Math.abs(d)) : Math.abs(d)) + '</b>' : ''; };
   /* what moved, in words, biggest first: the overall, then the meter that
@@ -2730,17 +3077,19 @@ function yearHtml(yr){
     + '<div class="cr-yr-who"><span class="k-eyebrow" id="cr-yr-season">' + esc(seasonTag(s.y)) + ' season</span><h3 class="k-h1" id="cr-yr-h">' + esc(yr.name) + '</h3>'
     + '<p id="cr-yr-club">' + esc(teamName(s.team)) + (s.role ? ' · ' + esc(s.role) : '') + '</p></div>'
     + '<div class="cr-yr-ovr" role="img" aria-label="Overall ' + ovr + (dOvr ? ', ' + (dOvr > 0 ? 'up ' : 'down ') + Math.abs(dOvr) : '') + '"><b id="cr-yr-ovr">' + ovr + '</b><small>OVR</small>' + chip(dOvr) + '</div></div>'
-    /* "A steady year" is only said when the page knows nothing moved: with no
-       mark to hold the meters against, the line is left out */
+    /* "A steady year" is only said when the engine marked where the year
+       began and nothing moved: with no mark, the line is left out */
     + (moved.length || base ? '<p class="cr-yr-moved" id="cr-yr-moved">' + (moved.length ? moved.map(function(x){ return '<span class="' + x.c + '">' + esc(x.t) + '</span>'; }).join(' ') : '<span>A steady year.</span>') + '</p>' : '')
     + '<div class="cr-yr-line" id="cr-yr-line">' + stat('PTS', one(ln.pts), 1) + stat('REB', one(ln.reb), 1) + stat('AST', one(ln.ast), 1) + '</div>'
     + '<div class="cr-yr-line sm">' + stat('GP', one(s.gp)) + stat('MIN', one(ln.min)) + stat('STL', one(ln.stl)) + stat('BLK', one(ln.blk)) + stat('FG%', one(ln.fgp)) + stat('3P%', one(ln.tpp)) + stat('FT%', one(ln.ftp)) + '</div>'
     + '<div class="cr-yr-rec' + (champ ? ' champ' : '') + '"><div><small>Record' + (s.seed ? ' <span>' + C.ordinal(s.seed) + ' seed</span>' : '') + '</small><b id="cr-yr-rec">' + s.record[0] + '-' + s.record[1] + '</b></div>'
-    + '<div><small>Playoffs</small><b id="cr-yr-po" class="w">' + (champ ? K.iconHtml('trophy', 2) : '') + esc(PO_WORDS[s.playoffs] || s.playoffs || '-') + '</b></div></div>'
+    + '<div><small>Playoffs</small><b id="cr-yr-po" class="w">' + (champ ? K.iconHtml('trophy', 2) : '') + esc(s.playoffsText || '-') + '</b></div></div>'
     + (aw ? '<div class="cr-yr-aw" id="cr-yr-aw">' + aw + '</div>' : '')
     + '<div class="cr-yr-cash"><div><small>Salary</small><b id="cr-yr-sal">' + money(s.salary) + '</b></div>'
     + '<div><small>Bank' + chip(dCash, '$') + '</small><b id="cr-yr-cash">' + money(s.cash) + '</b></div>'
     + '<div><small>Career earnings</small><b id="cr-yr-earned">' + money(s.earned) + '</b></div></div>'
+    + '<div class="cr-yr-cash two"><div><small>Net worth</small><b id="cr-yr-worth">' + money(s.worth) + '</b></div>'
+    + '<div><small>Upkeep a year</small><b id="cr-yr-upkeep">' + money(s.upkeep) + '</b></div></div>'
     + '<div class="cr-yr-meters" id="cr-yr-meters">' + meters + '</div>'
     + '<div class="cr-yr-foot"><button class="k-btn k-block k-big" id="cr-yr-go" type="button">Continue</button></div>';
 }
