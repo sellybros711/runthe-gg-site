@@ -1598,6 +1598,13 @@ if (failures.length) {
 console.log(`${passed} assertions passed.`);
 
 // ── 7. the page ────────────────────────────────────────────────────────────
+/* NAVIGATION ONLY (the BitLife pace, 2026-11-24). The main button is Age up
+   now, and when it turns the year the year summary is a sheet over the screen
+   that one tap continues. A walk that presses on taps it, the way a player
+   does, and says whether it did. What the button and the summary must be is
+   claimed in 7f; no walk's own claim moved. */
+function passYear(page) { return page.evaluate(() => { const g = document.querySelector('#cr-yr-go'); if (!g || g.getBoundingClientRect().height === 0) return false; g.click(); return true; }); }
+
 async function browser() {
   section('7. a whole career through the real page, on a phone');
   const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -1763,7 +1770,7 @@ async function browser() {
      thumb. Both used to answer cards nobody had read. Counted at C.choose. */
   {
     await page.evaluate(() => { const C = window.RTF_CAREER, o = C.choose; window.__chN = 0; window.__chO = o; C.choose = function(){ window.__chN++; return o.apply(this, arguments); }; });
-    const toCard = async () => { for (let i = 0; i < 80; i++) { if (await page.evaluate(() => !!RTF_CAREER_UI.state().cur.pending.length)) return true; await page.click('#cr-next'); } return false; };
+    const toCard = async () => { for (let i = 0; i < 80; i++) { if (await passYear(page)) continue; if (await page.evaluate(() => !!RTF_CAREER_UI.state().cur.pending.length)) return true; await page.click('#cr-next'); } return false; };
     if (await toCard()) {
       await page.waitForTimeout(400);
       await page.evaluate(() => { window.__chN = 0; for (let k = 0; k < 4; k++) document.dispatchEvent(new KeyboardEvent('keydown', { key: '1', repeat: k > 0, bubbles: true })); });
@@ -1803,6 +1810,7 @@ async function browser() {
     if (st.cut && st.cut.length && cutFacts.length < 3) cutFacts.push(st.cut.join(', '));
     if (st.stage) stagesSeen[st.stage] = 1;
     if (!st.cur) break;
+    if (await passYear(page)) continue;
     /* Once, mid-career: reload and land on the same card. */
     if (!reloaded && st.steps >= 12 && st.card) {
       reloaded = true;
@@ -2065,6 +2073,7 @@ async function browser() {
   await pathsWalk(b, serve);
   await deskWalk(b, serve);
   await appWalk(b, serve);
+  await ageWalk(b, serve);
   await b.close();
 
   /* PHASE E, through the page: the Vault, the share card, a son, and an Easy
@@ -2476,6 +2485,7 @@ async function browser() {
         for (let i = 0; i < 40; i++) {
           const tk = await page.$('#tkov:not([hidden]) #tk-go');
           if (tk) { await tk.click(); await page.waitForTimeout(120); continue; }
+          if (await passYear(page)) { await page.waitForTimeout(120); continue; }
           const sel = (await page.$('.cr-choice')) ? '.cr-choice' : (await page.$('#cr-next')) ? '#cr-next' : null;
           if (!sel || !(await page.evaluate(() => !!RTF_CAREER_UI.state().cur))) break;
           await page.waitForFunction((sel) => { const e = document.querySelector(sel); return e && !e.disabled; }, sel, { timeout: 3000 }).catch(() => {});
@@ -2513,7 +2523,9 @@ async function browser() {
         });
         ok(keep.length === 0, `${tag}: switching tabs redraws nothing that did not change (${keep.slice(0, 3).join(', ') || 'face, tab bar, card and meters kept'})`);
         const pr = { n: 0, face: 0, bar: 0, card: 0, stale: [] };
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 40 && pr.n < 16; i++) {
+          /* the year's summary is tapped through, as every walk does (Age up) */
+          if (await passYear(page)) { await page.waitForTimeout(150); continue; }
           if (await page.$('#tkov:not([hidden]) #tk-go')) { await page.click('#tkov #tk-go').catch(() => {}); await page.waitForTimeout(150); continue; }
           const before = await page.evaluate(() => { window.__m = [document.querySelector('#cr-lookbtn'), document.querySelector('.k-tabbar'), document.querySelector('.cr-id')]; return !!RTF_CAREER_UI.state().cur; });
           const sel = (await page.$('.cr-choice')) ? '.cr-choice' : (await page.$('#cr-next')) ? '#cr-next' : null;
@@ -2618,6 +2630,276 @@ async function browser() {
       await page.waitForTimeout(250);
       const home = await page.evaluate(() => { const a = document.querySelector('.appbar'), s = document.querySelector('#cr-shell'); return { bar: !!a && a.getBoundingClientRect().height > 0, shell: !!s && s.getBoundingClientRect().height + s.offsetHeight > 0 }; });
       ok(home.bar && !home.shell, `${tag}: on the front page the site's bar is back and the app shell is gone`);
+      ok(boom.length === 0, `${tag}: no page errors (${boom.join(' | ') || 'none'})`);
+      await ctx.close();
+    }
+  }
+
+  /* ── 7f. AGE UP AND THE YEAR SUMMARY (the BitLife pace, 2026-11-24) ───────
+     A year is one tap. The main button is Age up: one press is C.ageUp, which
+     plays the season on to the next decision, the turn of the year or the
+     end. What a press played is a short feed of headlines, not a line a beat.
+     When the year turns, the season that closed is one sheet, read like the
+     back of a trading card, and one tap continues. Every way this goes wrong
+     is silent: a button that still plays one stretch reads the same, a figure
+     typed twice drifts from the engine's, and a summary that a press slips
+     under plays a year nobody saw. So every figure on the sheet is held to
+     C.yearSummary, at a phone and at a desktop. The scenes half is in 7b. */
+  async function ageWalk(b, serve) {
+    section('7f. Age up and the year summary: a year a tap, the season on one card');
+    for (const [w, h, touch] of [[390, 844, true], [1440, 900, false]]) {
+      const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, reducedMotion: 'reduce', hasTouch: touch });
+      const page = await ctx.newPage();
+      const boom = [];
+      page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+      await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+      await page.route('**/*', serve);
+      await page.goto('http://local.test/hoops/how-to-play.html', { waitUntil: 'domcontentloaded' });
+      await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+      await page.evaluate(() => document.querySelector('#b-career').click());
+      await page.waitForSelector('#cr-go');
+      await page.click('#cr-go');
+      const tag = `${w}x${h}`;
+      const press = (sel) => touch ? page.tap(sel, { timeout: 4000 }) : page.click(sel, { timeout: 4000 });
+      const tryPress = async (sel) => { try { await press(sel); return true; } catch (e) { return false; } };
+      const armed = (sel) => page.waitForFunction((sel) => { const e = document.querySelector(sel); return e && !e.disabled; }, sel, { timeout: 3000 }).catch(() => {});
+      /* Every press of Age up and of the one-stretch step the page makes, and
+         what the last Age up handed back. */
+      await page.evaluate(() => {
+        const C = window.RTF_CAREER, age = C.ageUp, step = C.step;
+        window.__n = { age: 0, step: 0, last: null };
+        C.ageUp = function(L){ const r = age.apply(this, arguments); window.__n.age++; window.__n.last = { beats: r.beats.map((x) => ({ kind: x.kind, text: x.text })), steps: r.steps, blocked: r.blocked, turned: r.turned, retired: r.retired }; return r; };
+        C.step = function(){ window.__n.step++; return step.apply(this, arguments); };
+      });
+      /* A career is found by playing the engine (its own step, kept aside so
+         the count above is the page's presses only); then it is the page's. */
+      const find = (kind) => page.evaluate((kind) => {
+        const C = window.RTF_CAREER, st = RTF_CAREER_UI.state(), lg = st.cur.league;
+        const nba = (L) => L.team && L.stage === 'nba' && !L.pending.length;
+        const P = {
+          pre: (L) => nba(L) && L.history.length >= 2 && L.phase === 'pre',
+          champ: (L) => nba(L) && L.phase === 'off' && L.history.length >= 2 && L.history[L.history.length - 1].po === 'Champion' && L.history[L.history.length - 1].aw.length >= 2,
+          late: (L) => nba(L) && L.phase === 'late' && L.season && L.season.po && !L.season.po.out,
+        };
+        const was = window.__n.step;
+        try {
+          for (let i = 0; i < 300; i++) {
+            const L = C.newLife({ seed: 'age' + kind + i, league: lg, start: 'draft', pos: C.POS[i % 5] });
+            let g = 0;
+            while (!L.retired && g++ < 6000) {
+              if (P[kind](L)) { st.cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); window.scrollTo(0, 0); return true; }
+              if (L.pending.length) { const c = L.pending[0]; const k = c.options.findIndex((o) => /one more|keep playing|come back|ten day|overseas/i.test(o.label)); C.choose(L, k < 0 ? 0 : k); }
+              else C.step(L);
+            }
+          }
+          return false;
+        } finally { window.__n.step = was; }
+      }, kind);
+      /* What the sheet says, and what C.yearSummary says, side by side. The
+         engine's figures are formatted here by the engine's own functions. */
+      const sheet = () => page.evaluate(() => {
+        const C = window.RTF_CAREER, E = window.RTF_ENGINE, L = RTF_CAREER_UI.state().cur, s = C.yearSummary(L);
+        const sh = document.querySelector('#cr-sheet'), box = sh && sh.querySelector('.k-sheet'), go = document.querySelector('#cr-yr-go');
+        if (!sh || sh.hidden || !box || !go) return null;
+        const tx = (sel) => { const e = box.querySelector(sel); return e ? e.textContent.trim() : null; };
+        const money = (m) => m < 0 ? '-' + C.money(-m) : C.money(m);
+        const r = box.getBoundingClientRect(), g = go.getBoundingClientRect(), hit = document.elementFromPoint(g.left + g.width / 2, g.top + g.height / 2);
+        const line = {}; box.querySelectorAll('.cr-yr-st').forEach((e) => { line[e.querySelector('span').textContent] = e.querySelector('b').textContent; });
+        const meters = {}; box.querySelectorAll('.cr-yr-m').forEach((e) => { meters[e.getAttribute('data-m')] = { v: e.querySelector('.v').textContent, pips: e.querySelectorAll('.k-pips i.on').length, d: (e.querySelector(':scope > i') || {}).textContent || '' }; });
+        const chip = (sel) => { const e = box.querySelector(sel); return e ? (e.classList.contains('up') ? '+' : '-') + e.textContent.trim() : ''; };
+        const ovr = C.show(s.ovr), dOvr = L.history.length < 2 ? 0 : ovr - C.show(s.ovr - s.ovrChange);
+        return {
+          modal: box.getAttribute('role') === 'dialog' && box.getAttribute('aria-modal') === 'true' && box.classList.contains('cr-yr'),
+          fit: r.top >= 0 && r.bottom <= innerHeight + 0.5 && r.left >= 0 && r.right <= innerWidth + 0.5, box: [Math.round(r.top), Math.round(r.bottom)],
+          side: document.documentElement.scrollWidth - innerWidth,
+          /* a figure wider than the cell it sits in (his name is the one line that may end in an ellipsis) */
+          cut: [...box.querySelectorAll('.cr-yr-age, .cr-yr-ovr, .cr-yr-st, .cr-yr-rec > div, .cr-yr-cash > div, .cr-yr-m, .cr-yr-moved, #cr-yr-club')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent).slice(0, 3),
+          go: { h: Math.round(g.height), on: g.top >= r.top && g.bottom <= innerHeight + 0.5, mine: !!hit && go.contains(hit), focus: document.activeElement === go, text: go.textContent },
+          got: { age: tx('#cr-yr-age'), season: tx('#cr-yr-season'), club: tx('#cr-yr-club'), ovr: tx('#cr-yr-ovr'), dOvr: chip('.cr-yr-ovr .cr-yr-d'), rec: tx('#cr-yr-rec'), seed: tx('.cr-yr-rec span'), po: tx('#cr-yr-po'),
+            aw: [...box.querySelectorAll('#cr-yr-aw .k-tag')].map((e) => e.textContent), sal: tx('#cr-yr-sal'), cash: tx('#cr-yr-cash'), dCash: chip('.cr-yr-cash .cr-yr-d'), earned: tx('#cr-yr-earned'), line, meters, moved: tx('#cr-yr-moved') },
+          want: { age: String(s.age), season: (s.y - 1) + '-' + String(s.y).slice(2) + ' season', club: E.teamName(s.team) + (s.role ? ' · ' + s.role : ''), ovr: String(ovr), dOvr: dOvr ? (dOvr > 0 ? '+' : '-') + Math.abs(dOvr) : '',
+            rec: s.record[0] + '-' + s.record[1], seed: s.seed ? C.ordinal(s.seed) + ' seed' : null, po: s.playoffs, aw: s.awards.map((a) => C.AWARD_NAME[a] || a), sal: money(s.salary), cash: money(s.cash), earned: money(s.earned),
+            line: { PTS: String(s.line.pts), REB: String(s.line.reb), AST: String(s.line.ast), GP: String(s.gp), MIN: String(s.line.min), STL: String(s.line.stl), BLK: String(s.line.blk), 'FG%': String(s.line.fgp), '3P%': String(s.line.tpp), 'FT%': String(s.line.ftp) },
+            meters: s.meters, cashNum: s.cash },
+          y: s.y, year: L.year, steps: L.steps, name: tx('#cr-yr-h') === L.name,
+        };
+      });
+      const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+      /* the claims about a summary on screen, asked of each one the walk meets */
+      const holdSheet = (s, n) => {
+        ok(s.modal && s.y === s.year - 1 && s.name, `${tag}: when the year turns, the season that closed is one sheet over the screen, in his name (${n})`);
+        ok(s.fit && s.side <= 0 && !s.cut.length, `${tag}: it fits the screen, scrolls nowhere sideways and cuts no figure (${s.box.join(' to ')} of ${h}, ${s.side}px, ${s.cut.join(', ') || 'none cut'})`);
+        ok(s.go.h >= 44 && s.go.on && s.go.mine && s.go.focus && /continue/i.test(s.go.text), `${tag}: Continue is on the sheet, at least 44px tall, under nothing, and holds the focus (${s.go.h}px)`);
+        ok(s.got.age === s.want.age && s.got.season === s.want.season && s.got.club === s.want.club, `${tag}: age, season, club and role are C.yearSummary's (${s.got.age}, ${s.got.season}, ${s.got.club})`);
+        ok(same(s.got.line, s.want.line), `${tag}: the stat line is C.yearSummary's, all ten figures (${JSON.stringify(s.got.line)})`);
+        const po = s.got.po || '', raw = s.want.po;
+        const words = /^(R1|R2|CF)$/.test(raw) ? /round|conference/i.test(po) : po.toLowerCase().includes(raw.toLowerCase().replace(/^champion$/, 'champion'));
+        ok(s.got.rec === s.want.rec && s.got.seed === s.want.seed && words && / /.test(po), `${tag}: the record and the seed are C.yearSummary's, and the playoffs are told in words (${s.got.rec}, ${s.got.seed}, "${po}" for ${raw})`);
+        ok(same(s.got.aw, s.want.aw), `${tag}: the awards are the season's, by the engine's names (${s.got.aw.join(', ') || 'none'})`);
+        ok(s.got.ovr === s.want.ovr && s.got.dOvr === s.want.dOvr, `${tag}: the overall is the printed overall and its change is the change in that number (${s.got.ovr} ${s.got.dOvr || 'even'}, want ${s.want.ovr} ${s.want.dOvr || 'even'})`);
+        ok(s.got.sal === s.want.sal && s.got.cash === s.want.cash && s.got.earned === s.want.earned, `${tag}: salary, bank and career earnings are C.yearSummary's (${s.got.sal}, ${s.got.cash}, ${s.got.earned})`);
+        const mk = Object.keys(s.want.meters);
+        ok(mk.length === 4 && mk.every((k) => s.got.meters[k] && s.got.meters[k].v === String(s.want.meters[k]) && s.got.meters[k].pips === Math.round(Math.max(0, Math.min(100, s.want.meters[k])) / 10)), `${tag}: the four meters stand where C.yearSummary says (${mk.map((k) => k + ' ' + (s.got.meters[k] || {}).v).join(', ')})`);
+      };
+      const nextOn = () => page.evaluate(() => {
+        const e = document.querySelector('.cr-choice') || document.querySelector('#cr-next'); if (!e) return null;
+        const r = e.getBoundingClientRect(), ab = document.querySelector('.k-actx'), tb = document.querySelector('.k-tabbar');
+        const top = ab ? ab.getBoundingClientRect().bottom : 0, q = tb ? tb.getBoundingClientRect() : null, foot = q && q.width >= innerWidth - 1 ? q.top : innerHeight;
+        return r.top >= top - 1 && r.bottom <= foot + 0.5;
+      });
+      /* Play on to the turn of the year the way a player does: answer the
+         card, or Age up. Says how many of each, and whether Age up was ever
+         offered over a waiting card. */
+      const toTurn = async () => {
+        let ages = 0, cards = 0, over = 0;
+        for (let i = 0; i < 60; i++) {
+          if (await page.$('#cr-yr-go')) return { ages, cards, over, turned: true };
+          const st = await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; return L ? { card: L.pending.length, btn: !!document.querySelector('#cr-next'), opt: !!document.querySelector('.cr-choice') } : null; });
+          if (!st) break;
+          if (st.card && st.btn) over++;
+          const sel = st.opt ? '.cr-choice' : st.btn ? '#cr-next' : null;
+          if (!sel) break;
+          await armed(sel);
+          if (!(await tryPress(sel))) break;
+          if (st.opt) cards++; else ages++;
+          await page.waitForTimeout(380);
+        }
+        return { ages, cards, over, turned: !!(await page.$('#cr-yr-go')) };
+      };
+
+      /* THE BUTTON */
+      if (!(await find('pre'))) { ok(false, `${tag}: found a career at the start of a season`); await ctx.close(); continue; }
+      await page.waitForTimeout(300);
+      const btn = await page.evaluate(() => {
+        const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, e = document.querySelector('#cr-next');
+        if (!e) return null;
+        const wd = e.querySelector('.cr-age-w'), nx = e.querySelector('.cr-age-n'), r = e.getBoundingClientRect();
+        return { word: wd ? wd.textContent.trim() : e.textContent.trim(), next: nx ? nx.textContent.trim() : '', want: C.nextLabel(L), h: Math.round(r.height), cut: !!nx && nx.scrollWidth > nx.clientWidth + 1, steps: L.steps, year: L.year };
+      });
+      ok(btn && btn.word === 'Age up' && btn.next === btn.want && btn.next.length > 3 && !btn.cut && btn.h >= 48, `${tag}: the main button says Age up, and under it what comes first in the engine's words ("${btn && btn.word}", "${btn && btn.next}")`);
+      await armed('#cr-next');
+      await tryPress('#cr-next');
+      await page.waitForTimeout(450);
+      const one = await page.evaluate((KEY) => {
+        const L = RTF_CAREER_UI.state().cur, n = window.__n, last = n.last || { beats: [] };
+        const feed = document.querySelector('#cr-feed'), saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+        const head = feed ? [...feed.children].filter((e) => !e.classList.contains('cr-fold')).map((e) => e.textContent) : [];
+        const fold = feed ? [...feed.querySelectorAll('.cr-fold ul li')].map((e) => e.textContent) : [];
+        const recs = last.beats.filter((x) => x.kind === 'record'), news = last.beats.filter((x) => x.kind === 'news').map((x) => x.text);
+        const tk = document.querySelector('#tkov');
+        return { age: n.age, step: n.step, steps: L.steps, year: L.year, stop: L.pending.length ? 'a decision' : last.turned ? 'the turn of the year' : L.retired ? 'the end' : '', played: last.steps || 0,
+          saved: !!(saved && saved.cur && saved.cur.steps === L.steps), head, fold, beats: last.beats.length, texts: last.beats.map((x) => x.text).sort(),
+          rec: !recs.length || head.includes(recs[recs.length - 1].text), newsUp: news.filter((t) => head.includes(t)).length, onlyNews: news.length === last.beats.length,
+          card: !!document.querySelector('#cr-card .cr-choice'), btn: !!document.querySelector('#cr-next'), pending: L.pending.length, tk: !!tk && !tk.hidden };
+      }, 'rtf.life.v1');
+      ok(one.age === 1 && one.step === 0 && one.played >= 1 && one.steps === btn.steps + one.played, `${tag}: one press is one C.ageUp, and no press of the page's plays a single stretch (${one.age} Age up, ${one.step} step, ${one.played} stretches played)`);
+      ok(!!one.stop, `${tag}: it played on until ${one.stop || 'nothing: it stopped for no reason'}`);
+      ok(one.saved, `${tag}: the career is saved after the press`);
+      ok(one.beats > 0 && one.head.length >= 1 && one.head.length <= 6 && one.rec && (one.onlyNews || one.newsUp === 0), `${tag}: what it played is a short feed of headlines, the latest record among them and the league's news folded away (${one.head.length} lines of ${one.beats} beats)`);
+      ok(same(one.head.concat(one.fold).sort(), one.texts), `${tag}: and nothing is dropped: the headlines and the fold are every beat the press played (${one.head.length} and ${one.fold.length} of ${one.beats})`);
+      if (one.fold.length) {
+        await tryPress('#cr-feed .cr-fold summary');
+        await page.waitForTimeout(150);
+        const open = await page.evaluate(() => [...document.querySelectorAll('#cr-feed .cr-fold ul li')].every((e) => e.getBoundingClientRect().height > 0));
+        ok(open, `${tag}: the fold opens on a tap`);
+      }
+      ok(!one.tk, `${tag}: a stretch of the regular season plays with no overlay`);
+      ok(!one.pending || (one.card && !one.btn), `${tag}: a decision waiting stops Age up: the card is up and the button is gone`);
+
+      /* THE YEAR: on to the turn, then the summary */
+      const t1 = await toTurn();
+      ok(t1.turned && t1.over === 0, `${tag}: the year turns after ${t1.ages + 1} presses of Age up with ${t1.cards} decisions between them, and Age up is never offered over a waiting card (${t1.over})`);
+      await page.waitForTimeout(350);
+      const s1 = await sheet();
+      let mark = null;
+      if (s1) {
+        holdSheet(s1, 'the first');
+        /* this career was handed to the page mid life, so the page holds no
+           mark of where the year began: it shows where the meters stand and
+           guesses no change */
+        ok(Object.keys(s1.got.meters).every((k) => s1.got.meters[k].d === '') && s1.got.dCash === '', `${tag}: with no mark of where the year began, no change in a meter or the bank is guessed`);
+        mark = { m: s1.want.meters, cash: s1.want.cashNum };
+        /* a press that slips under the sheet plays nothing */
+        const under = await page.evaluate(() => {
+          const L = RTF_CAREER_UI.state().cur, a = { steps: L.steps, pending: L.pending.length, log: L.log.length };
+          const n = document.querySelector('#cr-next'), c = document.querySelector('.cr-choice');
+          if (n) n.click(); if (c) c.click();
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
+          return { same: L.steps === a.steps && L.pending.length === a.pending && L.log.length === a.log, up: !document.querySelector('#cr-sheet').hidden, had: !!(n || c) };
+        });
+        ok(under.same && under.up, `${tag}: a press that slips under the summary plays nothing and answers nothing`);
+        /* a toast used to land across the meters: a new club's welcome is
+           raised by the same press that turns the year */
+        const toast = await page.evaluate(() => {
+          window.RTF_KIT.toast('<span>Welcome to the club.</span>');
+          const all = document.querySelectorAll('.k-toasts .k-toast'), t = all[all.length - 1], s = document.querySelector('#cr-sheet .k-sheet');
+          if (!t || !s) return null;
+          const a = t.getBoundingClientRect(), b = s.getBoundingClientRect();
+          return { clear: a.height > 0 && (a.bottom <= b.top || a.top >= b.bottom || a.right <= b.left || a.left >= b.right), t: [Math.round(a.top), Math.round(a.bottom)], s: [Math.round(b.top), Math.round(b.bottom)] };
+        });
+        ok(toast && toast.clear, `${tag}: a toast that lands while the summary is up does not cover it (toast ${toast ? toast.t.join(' to ') : 'none'}, sheet ${toast ? toast.s.join(' to ') : 'none'})`);
+        await tryPress('#cr-yr-go');
+        await page.waitForTimeout(350);
+        const gone = await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur, sh = document.querySelector('#cr-sheet'); return { hidden: sh.hidden, empty: !document.querySelector('#cr-yr-go'), steps: L.steps, car: !!document.querySelector('#s-car.active') }; });
+        ok(gone.hidden && gone.empty && gone.steps === s1.steps && gone.car && (await nextOn()), `${tag}: one tap continues: the sheet is gone, nothing more was played, and the next answer or button is on screen between the bars`);
+      } else ok(false, `${tag}: the year summary came up when the year turned`);
+
+      /* THE NEXT YEAR: what moved, held against the mark of the last turn */
+      const t2 = await toTurn();
+      await page.waitForTimeout(350);
+      const s2 = t2.turned ? await sheet() : null;
+      if (s2 && mark) {
+        holdSheet(s2, 'the second');
+        const sg = (n) => (n > 0 ? '+' : '') + n;
+        const dm = Object.keys(mark.m).map((k) => ({ k, d: s2.want.meters[k] - mark.m[k] }));
+        ok(dm.every((x) => s2.got.meters[x.k].d === (x.d ? sg(x.d) : '')), `${tag}: a meter that moved over the year says by how much, against where it stood at the last turn (${dm.map((x) => x.k + ' ' + sg(x.d)).join(', ')})`);
+        const dc = Math.round((s2.want.cashNum - mark.cash) * 10) / 10;
+        const wantCash = await page.evaluate((dc) => dc ? (dc > 0 ? '+' : '-') + window.RTF_CAREER.money(Math.abs(dc)) : '', dc);
+        ok(s2.got.dCash === wantCash, `${tag}: and the bank says what the year added or took (${s2.got.dCash || 'even'}, want ${wantCash || 'even'})`);
+        const fell = dm.filter((x) => x.d < 0).sort((a, b) => a.d - b.d)[0], rose = dm.filter((x) => x.d > 0).sort((a, b) => b.d - a.d)[0];
+        const mv = s2.got.moved || '';
+        const says = (!s2.want.dOvr || new RegExp('Overall (up|down) ' + s2.want.dOvr.slice(1) + '\\.').test(mv)) && (!fell || mv.includes(' down ' + Math.abs(fell.d) + '.')) && (!rose || mv.includes(' up ' + rose.d + '.'));
+        ok(says && mv.length > 0, `${tag}: what moved is said in words on top: the overall, the meter that fell furthest and the one that rose furthest ("${mv}")`);
+        /* every way of closing it is the one tap: Escape on a keyboard, back on a phone */
+        if (touch) await page.evaluate(() => history.back()); else await page.keyboard.press('Escape');
+        await page.waitForTimeout(450);
+        const out = await page.evaluate(() => ({ hidden: document.querySelector('#cr-sheet').hidden, car: !!document.querySelector('#s-car.active'), steps: RTF_CAREER_UI.state().cur.steps }));
+        ok(out.hidden && out.car && out.steps === s2.steps && (await nextOn()), `${tag}: ${touch ? 'back' : 'Escape'} closes it too, stays in Career and plays nothing`);
+      } else ok(false, `${tag}: a second year turned and its summary came up`);
+
+      /* A TITLE YEAR: the awards and the playoffs line */
+      if (await find('champ')) {
+        await page.waitForTimeout(250);
+        await armed('#cr-next');
+        await tryPress('#cr-next');
+        await page.waitForTimeout(450);
+        const s3 = await sheet();
+        if (s3) {
+          holdSheet(s3, 'a title year');
+          ok(s3.want.aw.length >= 2 && /champion/i.test(s3.got.po), `${tag}: a title year wears its awards and says champion (${s3.got.aw.join(', ')}; "${s3.got.po}")`);
+          await tryPress('#cr-yr-go');
+          await page.waitForTimeout(250);
+        } else ok(false, `${tag}: one press from the summer of a title year turns it and shows the summary`);
+      } else ok(false, `${tag}: found a title year to age up from`);
+
+      /* THE BIG NIGHTS STILL PLAY LIVE, with scenes on: your playoff games
+         open the live ticker, and a stretch of the regular season does not.
+         Scripted presses here: a scene can be up over the button. */
+      await page.evaluate(() => {
+        localStorage.removeItem('rtf.scenes.v1');
+        const TK = window.RTF_TICKER, play = TK.play; window.__boards = [];
+        TK.play = function(d){ window.__boards.push(d ? d.kind : ''); return play.apply(this, arguments); };
+      });
+      if (await find('pre')) {
+        const rs = await page.evaluate(async () => { window.__boards.length = 0; const a = window.__n.age; document.querySelector('#cr-next').click(); await new Promise((r) => setTimeout(r, 400)); const t = document.querySelector('#tkov'); return { aged: window.__n.age - a, boards: window.__boards.slice(), tk: !!t && !t.hidden, on: window.RTF_SCENES.on() }; });
+        ok(rs.on && rs.aged === 1 && !rs.tk && rs.boards.length === 0, `${tag}: with scenes on, a stretch of the regular season still opens no live ticker (${rs.boards.join(', ') || 'none'})`);
+        await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; for (let k = 0; k < 30 && window.RTF_SCENES.isOpen(); k++) { const b = document.querySelector('#scov .sc-ch button') || document.querySelector('#scov .sc-skip'); if (b) b.click(); } });
+      } else ok(false, `${tag}: found a second career at the start of a season`);
+      if (await find('late')) {
+        const po = await page.evaluate(async () => { window.__boards.length = 0; const a = window.__n.age; document.querySelector('#cr-next').click(); await new Promise((r) => setTimeout(r, 400)); const t = document.querySelector('#tkov'); return { aged: window.__n.age - a, boards: window.__boards.slice(), tk: !!t && !t.hidden }; });
+        ok(po.aged === 1 && po.tk && po.boards.length === 1 && /^(po|pi)$/.test(po.boards[0]), `${tag}: and your playoff games still play on the live ticker (${po.boards.join(', ') || 'no board'})`);
+      } else ok(false, `${tag}: found a career with the playoffs ahead`);
       ok(boom.length === 0, `${tag}: no page errors (${boom.join(' | ') || 'none'})`);
       await ctx.close();
     }
@@ -2819,7 +3101,16 @@ async function scenesWalk(b, serve) {
 
   const seen = {}, rooms = {}, podium = [], jobs = [], looks = [], onStage = [];
   let roomBlur = null;
-  let presses = 0, choseInScene = 0, skipHeld = false, underneath = false, pressBefore = 0, movesPlayed = 0, ticks = 0, lastX = null;
+  let presses = 0, choseInScene = 0, skipHeld = false, underneath = false, pressBefore = 0, movesPlayed = 0, ticks = 0, lastX = null, years = 0;
+  /* 7f, counted on this walk because it is the one with scenes on: every
+     press of Age up, the seasons that closed on one, and which board each
+     live ticker was. */
+  await page.evaluate(() => {
+    const C = window.RTF_CAREER, TK = window.RTF_TICKER, age = C.ageUp, play = TK.play;
+    window.__age = { n: 0, closed: 0, boards: [] };
+    C.ageUp = function(L){ const r = age.apply(this, arguments); window.__age.n++; if (r.turned) { const s = C.yearSummary(L); if (s && s.y === L.year - 1) window.__age.closed++; } return r; };
+    TK.play = function(d){ window.__age.boards.push(d ? d.kind : ''); return play.apply(this, arguments); };
+  });
   await page.evaluate(() => { window.played = 0; });
   while (presses++ < 1400) {
     const st = await page.evaluate(() => {
@@ -2906,6 +3197,7 @@ async function scenesWalk(b, serve) {
        moment so a double tap cannot answer it unseen). element.click() does
        nothing on a disabled button, so the walk waits it out rather than
        spending a press on it, and does not count the wait. */
+    if (await passYear(page)) { presses--; years++; continue; }
     const r = await page.evaluate(() => { const c = document.querySelector('.cr-choice') || document.querySelector('#cr-next'); if (!c) return 'x'; if (c.disabled) return 'w'; c.click(); return c.id === 'cr-next' ? 'n' : 'c'; });
     if (r === 'w') { presses--; await page.waitForTimeout(120); continue; }
     if (r === 'x') { lastX = await page.evaluate(() => ({ html: document.body.innerText.slice(0, 300), scov: !!document.querySelector('#scov:not([hidden])'), tk: !!document.querySelector('#tkov:not([hidden])'), court: !!document.querySelector('.sc-court') })); break; }
@@ -2925,6 +3217,15 @@ async function scenesWalk(b, serve) {
   ok(choseInScene >= 1, `decisions are answered inside scenes (${choseInScene})`);
   ok(ticks >= 3, `the stretches of a season play on the live ticker (${ticks})`);
   ok(underneath, 'and the card a scene asks is on the plain screen underneath');
+  {
+    /* 7f, with scenes on: the main button is Age up, a stretch of the regular
+       season goes by with no overlay, and the year summary shows once for
+       every season that closed, after the scenes of that press. */
+    const age = await page.evaluate(() => window.__age);
+    ok(age.n > 0, `with scenes on, the main button plays C.ageUp (${age.n} presses)`);
+    ok(age.n > 0 && age.boards.filter((k) => k === 'rs').length === 0, `a stretch of the regular season never opens the live ticker (${age.boards.filter((k) => k === 'rs').length} of ${age.boards.length} boards)`);
+    ok(age.closed > 0 && years === age.closed, `the year summary shows once for every season that closed (${years} summaries, ${age.closed} seasons)`);
+  }
   const fin = await page.evaluate(() => RTF_CAREER_UI.state().last);
   ok(fin && fin.look && fin.look.hair === 'afro', 'the Hall card keeps the look');
   /* A TRADE'S GM IS NAMED ON HIS PLATE. The page plays a chained scene over
@@ -2969,6 +3270,7 @@ async function scenesWalk(b, serve) {
   ok(rv && want.split(' ').slice(0, 6).every((w) => rv.text.includes(w)), 'and it is the road the builder generated');
   let opened = false;
   for (let k = 0; k < 40; k++) {
+    if (await passYear(page)) continue;
     const r = await page.evaluate(() => { if (window.RTF_SCENES.isOpen()) return 'o'; const c = document.querySelector('.cr-choice'); if (c) { c.click(); return 'c'; } const n = document.querySelector('#cr-next'); if (n) { n.click(); return 'n'; } return 'x'; });
     if (r === 'o') { opened = true; break; }
     if (r === 'x') break;
