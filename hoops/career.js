@@ -12495,9 +12495,10 @@ const BONDS = {
   },
   house: {
     name: 'Buy a house', blurb: 'The one promise every rookie makes.', cost: () => 1.2, tone: 'gold',
-    on: (L, p) => !p.gone && isParent(p) && !p.house,
+    /* Mom's house is one promise, kept here or as the move (turns.js). */
+    on: (L, p) => !p.gone && isParent(p) && !p.house && !(p.role === 'Mom' && L.flags.momHouse),
     run(L, p) {
-      p.house = L.year; bondRel(p, 40); bump(L, { morale: 6 }); bondNote(L, p, 'You bought the house.');
+      p.house = L.year; if (p.role === 'Mom') L.flags.momHouse = true; bondRel(p, 40); bump(L, { morale: 6 }); bondNote(L, p, 'You bought the house.');
       logIt(L, 'Bought ' + p.n + ' a house.', 'gold');
       return p.n + ' walks every room twice. Then cries in the kitchen.';
     },
