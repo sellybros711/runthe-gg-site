@@ -71,7 +71,7 @@ export function newCourse(cfg, map, seed) {
   return {
     schema: cfg.schema, seed: seed | 0, name: 'Your Course', tier: 'muni',
     cash: cfg.economy.startCash, stars: cfg.stars.start, reviews: [], shiftsFiled: 0,
-    unlocks: {},
+    unlocks: {}, levels: {},
     holes: map.holes.map(h => ({ ord: h.ord, par: h.par, open: map.openAtStart.includes(h.ord),
       green: cfg.stars.greenStart, fairway: cfg.stars.fairwayStart }))
   };
@@ -80,6 +80,7 @@ export function newCourse(cfg, map, seed) {
 export function migrateCourse(c, cfg) {
   if (!c || typeof c !== 'object') return null;
   if (!c.schema) c.schema = 1;
+  if (!c.levels || typeof c.levels !== 'object') c.levels = {};   // a course from before upgrades had levels
   /* schema 1 is the first. A later schema adds its step here. */
   return c.schema === cfg.schema ? c : null;
 }
@@ -94,6 +95,59 @@ export const goalFor = (shiftNo, cfg) => {
   for (let i = 1; i < shiftNo; i++) g *= cfg.economy.goalGrowth;
   return Math.round(g / 10) * 10;
 };
+/* ---- levels: everything that can be upgraded ---- */
+
+/* Everything starts at level 1. The cart barn has no level until it is built. */
+export function levelOf(S, cfg, id) {
+  const u = cfg.economy.upgrades[id];
+  if (!u) return 1;
+  if (u.needs && (!S.pads[u.needs] || S.pads[u.needs].st !== 'done')) return 0;
+  const l = S.levels[id] | 0;
+  return l < 1 ? 1 : l > cfg.economy.upgradeMax ? cfg.economy.upgradeMax : l;
+}
+/* What the next level costs: the base, grown once for each level already bought, to the nearest $5. */
+export function upgradeCost(cfg, id, level) {
+  let c = cfg.economy.upgrades[id].cost;
+  for (let i = 1; i < level; i++) c *= cfg.economy.upgradeGrowth;
+  return Math.round(c / 5) * 5;
+}
+const extra = (S, cfg, id) => { const l = levelOf(S, cfg, id); return l > 1 ? l - 1 : 0; };
+/* The numbers the levels change, worked out when a shift starts and after each purchase. */
+function applyLevels(S, cfg) {
+  const u = cfg.economy.upgrades, sh = cfg.shift, g = cfg.golfers, e = id => extra(S, cfg, id);
+  S.fx = {
+    walk: sh.walk + u.boots.walk * e('boots'), cart: sh.cart + u.my_cart.cart * e('my_cart'), mower: sh.mower + u.shed.mower * e('shed'),
+    mow: Math.max(0.5, sh.rings.mow - u.shed.mow * e('shed')),
+    checkin: sh.rings.checkin * Math.max(0.2, 1 - u.shop.checkin * e('shop')),
+    sendoff: sh.rings.sendoff * Math.max(0.2, 1 - u.starter.sendoff * e('starter')),
+    patCounter: g.patience.counter + u.clubhouse.patience * e('clubhouse'),
+    patTee: g.patience.tee1 + u.starter.patience * e('starter'),
+    patCourse: g.patience.course + u.putting_green.patience * levelOf(S, cfg, 'putting_green'),
+    feeAll: 1 + u.shop.fee * e('shop'),
+    rental: u.cart_barn.rental * levelOf(S, cfg, 'cart_barn'),
+    pace: Math.max(0.4, g.cartFactor - u.cart_barn.pace * e('cart_barn')),
+    tipMax: cfg.economy.tipMax + u.clubhouse.tip * e('clubhouse'),
+    design: Math.min(1, cfg.stars.designNeutral + u.gardens.design * e('gardens')),
+    practice: u.putting_green.practice * levelOf(S, cfg, 'putting_green'),
+    snack: levelOf(S, cfg, 'snack_shack') ? cfg.economy.snackBase + u.snack_shack.snack * e('snack_shack') : 0,
+    range: levelOf(S, cfg, 'driving_range') ? cfg.economy.rangeBase + u.driving_range.range * e('driving_range') : 0
+  };
+}
+/* How each thing looks: -1 not built, else a tier that rises every cfg.economy.tierEvery levels. */
+export function looksOf(S, cfg, out) {
+  const every = cfg.economy.tierEvery;
+  for (const id in cfg.economy.upgrades) { const l = levelOf(S, cfg, id); out[id] = l === 0 ? -1 : Math.floor((l - 1) / every); }
+  for (const id in cfg.economy.pads) if (cfg.economy.pads[id].kind === 'unlock') out[id + ':st'] = S.pads[id].st;
+  return out;
+}
+/* What one golfer pays for the round: each hole's fee at its level, the shop's share on top, and the cart. */
+export function feeOf(S, ctx) {
+  const cfg = ctx.cfg, u = cfg.economy.upgrades;
+  let f = 0;
+  for (const ord of ctx.route.plan) { const up = u['hole_' + ord]; f += cfg.economy.feePerHole * (1 + (up ? up.fee * extra(S, cfg, 'hole_' + ord) : 0)); }
+  return f * S.fx.feeAll + (S.carts ? S.fx.rental : 0) + S.fx.practice + S.fx.range;
+}
+
 export function clockOf(S, cfg) {
   const sh = cfg.shift, r = sh.tick, dawn = sh.dawnS * r, open = sh.openS * r;
   let h;
@@ -117,9 +171,9 @@ export function startShift(course, cfg, map) {
     player: { x: map.start.x, y: map.start.y, vx: 0, vy: 0, mode: 'walk', dir: -1, gx: 0, gy: 0, go: false, clear: true },
     cart: { x: map.cartPark.x, y: map.cartPark.y }, mower: { x: map.mowerPark.x, y: map.mowerPark.y },
     groups: [], queue: [], teeQ: {}, busy: {}, lastTee: -100000,
-    pads: {}, plot: null, carts: course.unlocks.cart_barn === 'done',
+    pads: {}, plot: null, carts: course.unlocks.cart_barn === 'done', levels: Object.assign({}, course.levels), fx: null, padList: [],
     work: { id: null, t: 0 },
-    tally: { rounds: 0, golfers: 0, fees: 0, refunds: 0, tips: 0, spent: 0, walkOffs: 0, roundS: 0, low: 0, stuck: 0, cutOff: 0, aces: 0 },
+    tally: { rounds: 0, golfers: 0, fees: 0, refunds: 0, tips: 0, spent: 0, walkOffs: 0, roundS: 0, low: 0, stuck: 0, cutOff: 0, aces: 0, upgrades: 0, extras: 0 },
     log: [], pending: []
   };
   S.rng = S.seed;
@@ -129,9 +183,12 @@ export function startShift(course, cfg, map) {
     S.pads[id] = { st: u || 'open', t: 0 };
     if (cfg.economy.pads[id].kind === 'hole' && u === 'clearing') S.plot = makePlot(map, cfg.economy.pads[id].hole);
   }
-  /* The tee sheet: bookings scale with the star rating. */
+  applyLevels(S, cfg);
+  S.padList = padsOf(S, cfg, map, false);
+  /* The tee sheet: bookings scale with the star rating, and with the clubhouse. */
   const g = cfg.golfers;
-  const n = Math.max(2, Math.round(g.groupsDay1 * (1 + g.bookingsPerStar * (course.stars - cfg.stars.start))));
+  const n = Math.max(2, Math.round(g.groupsDay1 * (1 + g.bookingsPerStar * (course.stars - cfg.stars.start))
+    * (1 + cfg.economy.upgrades.parking.bookings * extra(S, cfg, 'parking'))));
   const span = (sh.lastTeeS - sh.firstTeeS) / Math.max(1, n - 1);
   for (let i = 0; i < n; i++) addGroup(S, cfg, Math.round((sh.dawnS + sh.firstTeeS + span * i + (rngNext(S) - 0.5) * span * 0.4) * r));
   /* A thin tee sheet lowers the goal: it is always within reach of good service. */
@@ -210,7 +267,7 @@ export function step(S, ctx) {
     const pad = S.pads[id];
     if (pad.st === 'building' && cfg.economy.pads[id].kind === 'unlock') {
       pad.t -= dt;
-      if (pad.t <= 0) { pad.st = 'done'; pad.t = 0; if (id === 'cart_barn') S.carts = true; if (ctx.fx) ctx.fx('built', ctx.map.pads[id].x, ctx.map.pads[id].y, id); }
+      if (pad.t <= 0) { pad.st = 'done'; pad.t = 0; if (id === 'cart_barn') S.carts = true; applyLevels(S, cfg); S.padList = padsOf(S, cfg, ctx.map, false); if (ctx.fx) ctx.fx('built', ctx.map.pads[id].x, ctx.map.pads[id].y, id); }
     }
   }
   S.tick++;
@@ -225,7 +282,7 @@ export function step(S, ctx) {
 
 function movePlayer(S, ctx, dt) {
   const p = S.player, sh = ctx.cfg.shift, map = ctx.map;
-  const speed = p.mode === 'cart' ? sh.cart : p.mode === 'mower' ? sh.mower : sh.walk;
+  const speed = p.mode === 'cart' ? S.fx.cart : p.mode === 'mower' ? S.fx.mower : S.fx.walk;
   let wx = 0, wy = 0;
   if (p.go) {
     const d = dist(p.x, p.y, p.gx, p.gy);
@@ -260,12 +317,12 @@ function movePlayer(S, ctx, dt) {
       const ord = S.open[i], gr = ctx.route.holes[ord].green;
       if (S.greens[ord] < 100 && dist(p.x, p.y, gr.x, gr.y) <= R) {
         S.mow[ord] += dt;
-        if (S.mow[ord] >= sh.rings.mow) { S.greens[ord] = 100; S.mow[ord] = 0; if (ctx.fx) ctx.fx('mown', gr.x, gr.y, ord); }
+        if (S.mow[ord] >= S.fx.mow) { S.greens[ord] = 100; S.mow[ord] = 0; if (ctx.fx) ctx.fx('mown', gr.x, gr.y, ord); }
       }
     }
     if (S.plot && S.plot.left > 0) {
       for (const q of S.plot.pts) if (!q.done && dist(p.x, p.y, q.x, q.y) < 3) { q.done = true; S.plot.left--; }
-      if (S.plot.left === 0) { for (const id in S.pads) if (S.pads[id].st === 'clearing') S.pads[id].st = 'building'; if (ctx.fx) ctx.fx('cleared', p.x, p.y, S.plot.ord); }
+      if (S.plot.left === 0) { for (const id in S.pads) if (S.pads[id].st === 'clearing') S.pads[id].st = 'building'; S.padList = padsOf(S, ctx.cfg, map, false); if (ctx.fx) ctx.fx('cleared', p.x, p.y, S.plot.ord); }
     }
   }
 }
@@ -303,18 +360,33 @@ function pushOut(p, box) {
 /* ---- stand-to-work rings ---- */
 
 /* Every ring on the property, and whether it has work right now. */
-export function stations(S, ctx, out) {
+export function stations(S, ctx, out, labels) {
   const map = ctx.map, sh = ctx.cfg.shift, pads = ctx.cfg.economy.pads;
   out.length = 0;
   const head = S.queue.length ? S.groups[S.queue[0] - 1] : null;
-  out.push({ id: 'checkin', x: map.counter.x, y: map.counter.y, r: sh.ringR, secs: sh.rings.checkin, can: !!head && head.st === 'queue' });
-  out.push({ id: 'sendoff', x: map.teeRing.x, y: map.teeRing.y, r: sh.ringR, secs: sh.rings.sendoff, can: !!unsent(S, ctx) });
+  out.push({ id: 'checkin', x: map.counter.x, y: map.counter.y, r: sh.ringR, secs: S.fx.checkin, can: !!head && head.st === 'queue' });
+  out.push({ id: 'sendoff', x: map.teeRing.x, y: map.teeRing.y, r: sh.ringR, secs: S.fx.sendoff, can: !!unsent(S, ctx) });
+  /* the pads change only when something is bought or built, so they are kept (padsOf) and only `can` is worked out here */
+  const list = labels ? padsOf(S, ctx.cfg, map, true) : S.padList;
+  for (let i = 0; i < list.length; i++) { const q = list[i]; q.can = q.st === 'open' && S.cash >= q.cost; out.push(q); }
+  return out;
+}
+/* Every pad as it stands now: the things to build, and a pad for each thing that levels up. */
+function padsOf(S, cfg, map, labels) {
+  const out = [], sh = cfg.shift, pads = cfg.economy.pads, ups = cfg.economy.upgrades, max = cfg.economy.upgradeMax;
   for (const id in pads) {
     const st = S.pads[id].st;
     if (st === 'open' || st === 'building' || st === 'clearing') {
-      out.push({ id, x: map.pads[id].x, y: map.pads[id].y, r: sh.padR, secs: sh.rings.pad, pad: true, st,
-        can: st === 'open' && S.cash >= pads[id].cost });
+      out.push({ id, x: map.pads[id].x, y: map.pads[id].y, r: sh.padR, secs: sh.rings.pad, pad: true, st, cost: pads[id].cost, can: false,
+        label: !labels ? '' : st === 'open' ? pads[id].name + ' ' + money(pads[id].cost) : st === 'clearing' ? pads[id].name + ': mow it clear' : pads[id].name + ': building' });
     }
+  }
+  for (const id in ups) {
+    const l = levelOf(S, cfg, id);
+    if (l === 0 || l >= max) continue;       // not built yet, or finished: no pad
+    const cost = upgradeCost(cfg, id, l);
+    out.push({ id: 'up:' + id, up: id, x: map.upgradePads[id].x, y: map.upgradePads[id].y, r: sh.padR, secs: sh.rings.pad, pad: true, st: 'open',
+      level: l, cost, can: false, label: !labels ? '' : ups[id].name + ' Lv ' + (l + 1) + ' · ' + money(cost) });
   }
   return out;
 }
@@ -329,8 +401,12 @@ function work(S, ctx, dt) {
   const p = S.player, w = S.work;
   let at = null;
   if (p.mode !== 'mower') {
-    stations(S, ctx, ST);
-    for (let i = 0; i < ST.length; i++) if (ST[i].can && dist(p.x, p.y, ST[i].x, ST[i].y) <= ST[i].r) { at = ST[i]; break; }
+    const map = ctx.map, sh = ctx.cfg.shift;
+    if (dist(p.x, p.y, map.counter.x, map.counter.y) <= sh.ringR || dist(p.x, p.y, map.teeRing.x, map.teeRing.y) <= sh.ringR) {
+      stations(S, ctx, ST);
+      for (let i = 0; i < 2; i++) if (ST[i].can && dist(p.x, p.y, ST[i].x, ST[i].y) <= ST[i].r) { at = ST[i]; break; }
+    }
+    if (!at) for (let i = 0; i < S.padList.length; i++) { const q = S.padList[i]; if (q.st === 'open' && S.cash >= q.cost && dist(p.x, p.y, q.x, q.y) <= q.r) { at = q; break; } }
   }
   if (!at) { w.id = null; w.t = 0; return; }
   if (w.id !== at.id) { w.id = at.id; w.t = 0; }
@@ -339,16 +415,24 @@ function work(S, ctx, dt) {
   w.id = null; w.t = 0;
   if (at.id === 'checkin') checkIn(S, ctx);
   else if (at.id === 'sendoff') { const g = unsent(S, ctx); if (g) { g.sent = true; g.adv = S.tick; if (ctx.fx) ctx.fx('sent', at.x, at.y, g.id); } }
+  else if (at.up) buyUpgrade(S, ctx, at);
   else buyPad(S, ctx, at.id);
 }
 function checkIn(S, ctx) {
   const cfg = ctx.cfg, g = S.groups[S.queue.shift() - 1], map = ctx.map;
-  g.paid = g.size * cfg.economy.feePerHole * ctx.route.plan.length;
+  g.paid = Math.round(g.size * feeOf(S, ctx));
   S.cash += g.paid; S.tally.fees += g.paid;
   g.check = S.tick; g.adv = S.tick; g.st = 'toTee'; g.ord = ctx.route.plan[0];
   g.path = map.waypoints.toTee.concat([ctx.route.holes[g.ord].wait]); g.pi = 0;
   if (ctx.fx) ctx.fx('cash', map.counter.x, map.counter.y, g.paid);
   requeue(S, ctx);
+}
+function buyUpgrade(S, ctx, at) {
+  if (S.cash < at.cost || at.st !== 'open') return;
+  S.cash -= at.cost; S.tally.spent += at.cost; S.tally.upgrades++;
+  S.levels[at.up] = at.level + 1;
+  applyLevels(S, ctx.cfg); S.padList = padsOf(S, ctx.cfg, ctx.map, false);
+  if (ctx.fx) ctx.fx('up', at.x, at.y, at.up);
 }
 function buyPad(S, ctx, id) {
   const pad = ctx.cfg.economy.pads[id];
@@ -356,6 +440,7 @@ function buyPad(S, ctx, id) {
   S.cash -= pad.cost; S.tally.spent += pad.cost;
   if (pad.kind === 'hole') { S.pads[id].st = 'clearing'; S.plot = makePlot(ctx.map, pad.hole); }
   else { S.pads[id].st = 'building'; S.pads[id].t = pad.buildS; }
+  S.padList = padsOf(S, ctx.cfg, ctx.map, false);
   if (ctx.fx) ctx.fx('pad', ctx.map.pads[id].x, ctx.map.pads[id].y, id);
 }
 
@@ -388,7 +473,11 @@ function release(S, g) {
 }
 function walkOff(S, g, ctx) {
   release(S, g); requeue(S, ctx);
-  if (g.paid) { S.cash -= g.paid; S.tally.refunds += g.paid; if (ctx.fx) ctx.fx('refund', g.x, g.y, g.paid); g.paid = 0; }
+  if (g.paid) {
+    /* a full refund, but never more than is in the till: cash cannot go below zero */
+    const back = g.paid < S.cash ? g.paid : S.cash;
+    S.cash -= back; S.tally.refunds += back; if (ctx.fx) ctx.fx('refund', g.x, g.y, back); g.paid = 0;
+  }
   S.tally.walkOffs++;
   S.reviews.push(ctx.cfg.stars.walkOffReview); S.stars = starsOf(S.reviews, ctx.cfg);
   if (ctx.fx) ctx.fx('walkoff', g.x, g.y, g.id);
@@ -401,7 +490,7 @@ function updateGroup(S, g, ctx, dt) {
   const cfg = ctx.cfg, gc = cfg.golfers, sh = cfg.shift, st = g.st;
   const speed = g.cart ? sh.golferCart : sh.golferWalk;
   if (st === 'toQueue') { if (walk(g, speed, dt)) { g.st = 'queue'; g.adv = S.tick; } }
-  else if (st === 'queue') { walk(g, speed, dt); g.wc += dt; if (g.wc >= gc.patience.counter) walkOff(S, g, ctx); }
+  else if (st === 'queue') { walk(g, speed, dt); g.wc += dt; if (g.wc >= S.fx.patCounter) walkOff(S, g, ctx); }
   else if (st === 'toTee' || st === 'toNext') {
     if (walk(g, speed, dt)) { g.st = 'teeWait'; g.adv = S.tick; S.teeQ[g.ord].push(g.id); }
   }
@@ -409,8 +498,8 @@ function updateGroup(S, g, ctx, dt) {
     const q = S.teeQ[g.ord], first = g.hi === 0;
     if (q[0] === g.id && !S.busy[g.ord] && (!first || g.sent)
       && (!first || S.tick - S.lastTee >= sh.teeGapS * sh.tick)) { q.shift(); teeOff(S, g, ctx); return; }
-    if (first) { g.wt += dt; if (g.wt >= gc.patience.tee1) walkOff(S, g, ctx); }
-    else { g.wo += dt; if (g.wo >= gc.patience.course) walkOff(S, g, ctx); }
+    if (first) { g.wt += dt; if (g.wt >= S.fx.patTee) walkOff(S, g, ctx); }
+    else { g.wo += dt; if (g.wo >= S.fx.patCourse) walkOff(S, g, ctx); }
   }
   else if (st === 'play') {
     const h = ctx.route.holes[g.ord];
@@ -438,7 +527,7 @@ function teeOff(S, g, ctx) {
     if (res.strokes === 1) S.tally.aces++;
   }
   g.scores.push(strokes);
-  const secs = gc.holeS[h.par] * gc.sizeFactor[g.size - 1] * gc.paceFactor[g.pace] * (g.cart ? gc.cartFactor : 1);
+  const secs = gc.holeS[h.par] * gc.sizeFactor[g.size - 1] * gc.paceFactor[g.pace] * (g.cart ? S.fx.pace : 1);
   g.t0 = S.tick; g.t1 = S.tick + Math.max(1, Math.round(secs * r));
   g.x = h.tee.x; g.y = h.tee.y;
   if (ctx.fx) ctx.fx('tee', h.tee.x, h.tee.y, g.id);
@@ -453,6 +542,12 @@ function holeOut(S, g, ctx) {
     leave(S, g, ctx, true);
     return;
   }
+  /* the turn: half way round, every golfer stops at the snack shack */
+  if (S.fx.snack > 0 && g.hi === (plan.length >> 1)) {
+    const sale = Math.round(g.size * S.fx.snack);
+    S.cash += sale; S.tally.extras += sale;
+    if (ctx.fx) ctx.fx('cash', ctx.map.snackShack.x, ctx.map.snackShack.y, sale);
+  }
   g.ord = plan[g.hi]; g.st = 'toNext'; g.path = [ctx.route.holes[g.ord].wait]; g.pi = 0;
 }
 /* A finished group passes the shop: the review, the tip, the day's numbers. */
@@ -461,10 +556,10 @@ function settle(S, g, ctx) {
   let cond = 0;
   for (const ord of S.open) cond += S.greens[ord];
   cond = cond / (S.open.length * 100);
-  const service = 1 - (g.wc / gc.patience.counter + g.wt / gc.patience.tee1) / 2;
-  const pace = 1 - g.wo / gc.patience.course;
-  const score = clamp(w.condition * cond + w.pace * pace + w.service * service + w.design * cfg.stars.designNeutral, 0, 1);
-  const tip = Math.round(g.paid * cfg.economy.tipMax * score);
+  const service = 1 - (g.wc / S.fx.patCounter + g.wt / S.fx.patTee) / 2;
+  const pace = 1 - g.wo / S.fx.patCourse;
+  const score = clamp(w.condition * cond + w.pace * pace + w.service * service + w.design * S.fx.design, 0, 1);
+  const tip = Math.round(g.paid * S.fx.tipMax * score);
   S.cash += tip; S.tally.tips += tip;
   S.reviews.push(Math.round((1 + 4 * score) * 10) / 10); S.stars = starsOf(S.reviews, cfg);
   S.tally.rounds++; S.tally.golfers += g.size; S.tally.roundS += (S.tick - g.check) / r;
@@ -483,20 +578,22 @@ export function endShift(S, ctx, course) {
   const cfg = ctx.cfg, t = S.tally;
   const result = {
     no: S.no, seed: S.seed, v: S.v, rounds: t.rounds, golfers: t.golfers,
-    cash: t.fees - t.refunds + t.tips, fees: t.fees - t.refunds, tips: t.tips, spent: t.spent,
-    walkOffs: t.walkOffs, avgRoundS: t.rounds ? Math.round(t.roundS / t.rounds * 10) / 10 : 0, low: t.low, aces: t.aces,
-    stars0: S.stars0, stars: S.stars, goal: S.goal, goalMet: t.fees - t.refunds + t.tips >= S.goal,
+    cash: t.fees - t.refunds + t.tips + t.extras, fees: t.fees - t.refunds, tips: t.tips, extras: t.extras, spent: t.spent,
+    upgrades: t.upgrades, walkOffs: t.walkOffs, avgRoundS: t.rounds ? Math.round(t.roundS / t.rounds * 10) / 10 : 0, low: t.low, aces: t.aces,
+    stars0: S.stars0, stars: S.stars, goal: S.goal, goalMet: t.fees - t.refunds + t.tips + t.extras >= S.goal,
     stuck: t.stuck, cutOff: t.cutOff, cashAfter: S.cash, ticks: S.tick
   };
   const next = JSON.parse(JSON.stringify(course));
+  next.levels = Object.assign({}, S.levels);
   next.cash = S.cash; next.reviews = S.reviews.slice(-cfg.stars.window); next.stars = S.stars; next.shiftsFiled = S.no;
   for (const id in S.pads) { const st = S.pads[id].st; if (st !== 'open') next.unlocks[id] = st === 'building' && cfg.economy.pads[id].kind === 'unlock' ? 'done' : st; }
   for (const h of next.holes) if (h.open) {
-    h.green = clamp(S.greens[h.ord] - cfg.stars.greenDecay, 0, 100);
+    const up = cfg.economy.upgrades['hole_' + h.ord];
+    h.green = clamp(S.greens[h.ord] - Math.max(0, cfg.stars.greenDecay - (up ? up.decay * extra(S, cfg, 'hole_' + h.ord) : 0)), 0, 100);
     h.fairway = clamp(h.fairway - cfg.stars.fairwayDecay, 0, 100);
   }
   /* Canonical: a course that came back from the database has its keys in another order. */
-  result.checksum = checksum(JSON.stringify([result, next.cash, next.stars, Object.keys(next.unlocks).sort().map(k => [k, next.unlocks[k]]),
+  result.checksum = checksum(JSON.stringify([result, next.cash, next.stars, Object.keys(next.unlocks).sort().map(k => [k, next.unlocks[k]]), Object.keys(next.levels).sort().map(k => [k, next.levels[k]]),
     next.holes.map(h => [h.ord, h.open, h.green, h.fairway])]));
   return { result, course: next };
 }
@@ -527,7 +624,7 @@ export function goalOf(S, ctx) {
   const head = S.queue.length ? S.groups[S.queue[0] - 1] : null;
   const atCounter = head && head.st === 'queue' ? head : null, atTee = unsent(S, ctx);
   let need = null;
-  if (atCounter && atTee) need = (gc.patience.counter - atCounter.wc) < (gc.patience.tee1 - atTee.wt) ? 'checkin' : 'sendoff';
+  if (atCounter && atTee) need = (S.fx.patCounter - atCounter.wc) < (S.fx.patTee - atTee.wt) ? 'checkin' : 'sendoff';
   else if (atCounter) need = 'checkin'; else if (atTee) need = 'sendoff';
   const spot = need === 'checkin' ? map.counter : need === 'sendoff' ? map.teeRing : null;
   if (p.mode === 'mower') {
@@ -549,20 +646,50 @@ export function goalOf(S, ctx) {
   if (S.phase === 'dawn') {
     for (const ord of S.open) if (S.greens[ord] < 100) return { key: 'mower', text: 'Greens need a cut. Walk to the mower.', x: S.mower.x, y: S.mower.y };
   }
-  for (const id in pads) if (S.pads[id].st === 'open' && S.cash >= pads[id].cost) {
+  /* Spending waits for a quiet moment: nobody at a station, walking to one, or due within upgradeQuietS. */
+  let quiet = !head;
+  const soonT = S.tick + cfg.economy.upgradeQuietS * cfg.shift.tick;
+  for (const g of S.groups) if (g.st === 'toTee' || (g.st === 'sched' && g.arrive < soonT) || (g.st === 'teeWait' && g.hi === 0 && !g.sent)) { quiet = false; break; }
+  if (quiet) for (const id in pads) if (S.pads[id].st === 'open' && S.cash >= pads[id].cost) {
     return { key: 'pad:' + id, text: 'Stand on the ' + pads[id].name + ' pad. ' + money(pads[id].cost) + '.', x: map.pads[id].x, y: map.pads[id].y };
   }
+  const ups = cfg.economy.upgrades;
+  let best = null, bestCost = 0, nextUp = null, nextCost = 0;
+  for (const id in ups) {
+    const l = levelOf(S, cfg, id);
+    if (l === 0 || l >= cfg.economy.upgradeMax) continue;
+    const c = upgradeCost(cfg, id, l);
+    if (c <= S.cash && (!best || c < bestCost)) { best = id; bestCost = c; }
+    if (!nextUp || c < nextCost) { nextUp = id; nextCost = c; }
+  }
+  if (best && quiet) return { key: 'up:' + best + ':' + levelOf(S, cfg, best), text: 'Upgrade the ' + ups[best].name + '. Stand on its pad. ' + money(bestCost) + '.', x: map.upgradePads[best].x, y: map.upgradePads[best].y };
   if (S.plot && S.plot.left > 0) return { key: 'mower2', text: 'Take the mower to hole ' + S.plot.ord + '.', x: S.mower.x, y: S.mower.y };
   for (const g of S.groups) if (g.st === 'toTee') return { key: 'totee', text: 'A group is walking to tee 1. Meet them.', x: map.teeRing.x, y: map.teeRing.y };
   if (head) return { key: 'wait', text: 'A group is walking in. Wait at the counter.', x: map.counter.x, y: map.counter.y };
   let next = null;
   for (const g of S.groups) if (g.st === 'sched' && (!next || g.arrive < next.arrive)) next = g;
   if (next) return { key: 'next', text: 'Next group soon. Wait at the counter.', x: map.counter.x, y: map.counter.y };
-  for (const id in pads) if (S.pads[id].st === 'open') {
-    const left = pads[id].cost - S.cash;
-    return { key: 'save:' + id, text: money(left) + ' to go for the ' + pads[id].name + '.', x: map.counter.x, y: map.counter.y };
-  }
+  let want = nextUp ? ups[nextUp].name : null, wantCost = nextCost;
+  for (const id in pads) if (S.pads[id].st === 'open' && (!want || pads[id].cost < wantCost)) { want = pads[id].name; wantCost = pads[id].cost; }
+  if (want) return { key: 'save:' + want, text: money(wantCost - S.cash) + ' to go for the ' + want + '.', x: map.counter.x, y: map.counter.y };
   return { key: 'closing', text: 'Last groups are finishing.', x: map.counter.x, y: map.counter.y };
+}
+
+/* Everything that can be bought, cheapest first, for the page's Course Book and the results card. */
+export function shopList(S, ctx) {
+  const cfg = ctx.cfg, map = ctx.map, out = [], pads = cfg.economy.pads, ups = cfg.economy.upgrades, max = cfg.economy.upgradeMax;
+  for (const id in pads) {
+    const st = S.pads[id].st;
+    if (st === 'open') out.push({ id, kind: 'build', name: pads[id].name, level: 0, max: 0, cost: pads[id].cost, x: map.pads[id].x, y: map.pads[id].y, can: S.cash >= pads[id].cost });
+  }
+  for (const id in ups) {
+    const l = levelOf(S, cfg, id);
+    if (l === 0) continue;
+    const cost = l >= max ? 0 : upgradeCost(cfg, id, l);
+    out.push({ id, kind: 'level', name: ups[id].name, level: l, max, cost, x: map.upgradePads[id].x, y: map.upgradePads[id].y, can: l < max && S.cash >= cost, done: l >= max });
+  }
+  out.sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || a.cost - b.cost);
+  return out;
 }
 
 /* The next groups on the tee sheet, for the HUD strip. */

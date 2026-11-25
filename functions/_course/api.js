@@ -29,7 +29,7 @@ export function toCourse(row) {
   return {
     schema: c.schema_version, seed: c.seed, name: c.name, tier: c.tier,
     cash: Number(c.cash), stars: Number(c.stars), reviews: Array.isArray(st.reviews) ? st.reviews : [], shiftsFiled: c.shifts_filed,
-    unlocks: st.unlocks || {},
+    unlocks: st.unlocks || {}, levels: st.levels || {},
     holes: row.holes.map(h => ({ ord: h.ord, par: h.par, open: h.open, green: Number(h.condition.green), fairway: Number(h.condition.fairway) }))
   };
 }
@@ -71,7 +71,7 @@ export async function handle({ method, sub, query, body, uid, country }, db, cfg
     filed = await db.file(uid, {
       no: r.no, seed: r.seed, v: r.v,
       result: { rounds: r.rounds, cash: r.cash, tips: r.tips, walk_offs: r.walkOffs, avg_round_s: r.avgRoundS, low_round: r.low || null },
-      cash: c.cash, stars: c.stars, state: { reviews: c.reviews, unlocks: c.unlocks },
+      cash: c.cash, stars: c.stars, state: { reviews: c.reviews, unlocks: c.unlocks, levels: c.levels },
       conditions: c.holes.filter(h => h.open).map(h => ({ ord: h.ord, condition: { green: h.green, fairway: h.fairway } })),
       checksum: r.checksum, verified: 'replay'
     });
