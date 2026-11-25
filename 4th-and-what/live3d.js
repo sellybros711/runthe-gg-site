@@ -12,8 +12,8 @@
  * STAGE 1 (the stadium): one field for every snap (both end zones, the
  * numbers, the hashes), stands of crowd on three sides under four light
  * towers, the line of scrimmage and the yellow line laid on the turf for the
- * snap, the broadcast camera behind the offense following the ball and
- * leaning in at the throw, the catch and the tackle, players built of a few
+ * snap, an All-22 camera high behind the offense that keeps all 22 men in
+ * the picture (the owner, 2026-11-25), players built of a few
  * rounded shapes in their team's colours with numbers, a soft shadow under
  * each, a leg and arm swing from how fast each man moves, and the ball.
  * Shadows are painted, not cast, so a phone keeps its frame rate.
@@ -35,6 +35,10 @@ const DNUM = { dl: [90, 94, 97, 99], lb: [50, 54, 56, 59], cb: [21, 24], s: [31,
 
 /* field yards to the world: x across, z = minus the yards downfield, y up; 1 unit = 1 yard */
 const wx = (x) => x - FIELD_W / 2, wz = (y) => -y;
+/* the All-22 camera: yards of width that always fit, the tilt down from level,
+   and how much bigger than life the men are drawn so they read from up there */
+const ACROSS = 33, TILT = 52 * Math.PI / 180, BIG = 1.4;
+const aimX = (bx) => (bx + FIELD_W / 2) / 2;
 
 let world = null;      /* the stadium, built once and shared by every canvas */
 const views = new WeakMap();
@@ -281,7 +285,7 @@ function makeCoach(W, res, opt) {
 function build() {
   if (world) return world;
   const S = new THREE.Scene();
-  S.background = new THREE.Color('#050b16'); S.fog = new THREE.Fog('#050b16', 120, 230);
+  S.background = new THREE.Color('#050b16'); S.fog = new THREE.Fog('#050b16', 170, 330);
   const F = fieldTexture();
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(F.w, F.l), new THREE.MeshLambertMaterial({ map: F.tex }));
   ground.rotation.x = -Math.PI / 2; ground.position.set(wx(F.cx), 0, wz(F.cy)); S.add(ground);
@@ -386,7 +390,7 @@ function show(canvas, res, ui) {
   if (!v) {
     const r = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
-    const cam = new THREE.PerspectiveCamera(46, 0.5, 0.5, 400);
+    const cam = new THREE.PerspectiveCamera(50, 0.5, 0.5, 500);
     v = { r, cam }; views.set(canvas, v);
   }
   const size = () => {
@@ -395,13 +399,18 @@ function show(canvas, res, ui) {
     v.r.setSize(w, h, false); v.cam.aspect = w / h; v.cam.updateProjectionMatrix();
   };
   size();
-  const frames = res.frames, ids = res.ids, rate = L.rater(res), SET = L.SET;
+  const frames = res.frames, ids = res.ids;
   W.los.position.z = wz(res.Y0); W.gain.visible = res.marker < 100; W.gain.position.z = wz(res.marker);
   const used = {};
-  ids.forEach((e, i) => { const m = W.men[i]; if (!m) return; m.e = e; m.G.visible = true; setNumber(m, numberOf(e, i, used), e.side === 'O' ? 'O' : 'D'); m.G.scale.setScalar(e.big ? 1.1 : 1); m.last = null; });
+  ids.forEach((e, i) => { const m = W.men[i]; if (!m) return; m.e = e; m.G.visible = true; setNumber(m, numberOf(e, i, used), e.side === 'O' ? 'O' : 'D'); m.G.scale.setScalar((e.big ? 1.1 : 1) * BIG); m.last = null; });
   for (let i = ids.length; i < W.men.length; i++) W.men[i].G.visible = false;
-  /* the camera, eased toward where it wants to be */
-  const C = { x: res.BX, y: res.Y0 + 1, d: 28, h: 19 };
+  /* the camera: All-22 (the owner, 2026-11-25: "I like the wider view better
+     ... that can see the full play develop. Like All-22"). High behind the
+     offense, looking down the field at 52 degrees, as far back as it takes to
+     fit ACROSS yards of width on this screen, so all 22 are in the picture
+     from the snap to the whistle. It holds still; it only drifts across a
+     little with the ball, and downfield when the ball goes deep. */
+  const C = { x: aimX(res.BX), y: res.Y0 + 12 };
   let lastT = null, lastDraw = null;
 
   /* the coach layer for this snap (ui.coach: { on, play, say }); the last one is cleared */
@@ -449,15 +458,11 @@ function show(canvas, res, ui) {
       else if (pre) W.ball.rotation.set(0, 0, 0);
     }
     W.ballShadow.position.set(wx(bx), 0.03, wz(by)); W.ballShadow.visible = bz > 0.3 && !F.a.held;
-    /* the broadcast camera: behind the offense, on the ball, leaning in when the play slows */
-    /* the snap's own wide look first (the whole formation), then on the ball,
-       closer once it is out of the pocket and closer still in the slow moments */
-    const slow = !pre && rate(Math.max(0, tt)) < 1, out = !pre && Math.abs(by - res.Y0) > 6;
-    const k = pre || lastDraw == null ? 1 : 1 - Math.exp(-Math.min(0.4, (now - lastDraw) / 1000) * 3.2); lastDraw = now;
-    const tx = pre ? res.BX : bx * 0.75 + res.BX * 0.25, ty = pre ? res.Y0 + 1 : Math.max(by, res.Y0) + 2;
-    const wantD = slow ? 22 : out ? 25 : 28, wantH = slow ? 13 : out ? 16 : 19;
-    C.x += (tx - C.x) * k; C.y += (ty - C.y) * k; C.d += (wantD - C.d) * k; C.h += (wantH - C.h) * k;
-    v.cam.position.set(wx(C.x), C.h, wz(C.y - C.d)); v.cam.lookAt(wx(C.x), 0, wz(C.y + 9));
+    const k = pre || lastDraw == null ? 1 : 1 - Math.exp(-Math.min(0.4, (now - lastDraw) / 1000) * 2.2); lastDraw = now;
+    const tx = pre ? aimX(res.BX) : aimX(res.BX) + (bx - res.BX) * 0.25, ty = pre ? res.Y0 + 12 : Math.max(res.Y0 + 12, by - 10);
+    C.x += (tx - C.x) * k; C.y += (ty - C.y) * k;
+    const D = Math.min(130, Math.max(45, ACROSS / (2 * Math.tan(v.cam.fov * Math.PI / 360) * v.cam.aspect)));
+    v.cam.position.set(wx(C.x), D * Math.sin(TILT), wz(C.y - D * Math.cos(TILT))); v.cam.lookAt(wx(C.x), 0, wz(C.y));
     if (coach) coach.update(tt, W.men);
     if (ui.pressure) ui.pressure(pre || res.isRun ? 0 : F.a.pressure);
     v.r.render(W.S, v.cam);
