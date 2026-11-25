@@ -87,7 +87,10 @@ const GOAT_AT = 145;
    (storyStretch); off is the chance of the summer's. An arc that is due takes
    the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
    late 1 and off 1 cards. */
-const PACE = { stretch: { pre: 0.12, early: 0.33, mid: 0.28, late: 0.27 }, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 3.5 };
+const PACE = { stretch: { pre: 0.12, early: 0.33, mid: 0.28, late: 0.27 }, second: 0.8, off: 0.9, team: 1, cap: { season: 2, off: 1 }, legend: 2, rep: 1.8 };
+/* rep: a story card's answer moves the reputation this much harder. With
+   half the cards each has to say more about who he is: at the old weight 289
+   of 300 careers ended "Still writing it". */
 /* team is how many of your club's cards a season (it was one a phase, about
    1.1 a season). cap is the story budget (queueEvents), one for the season and one for
    the summer: due arcs always, then your club's card and new events while
@@ -7530,12 +7533,14 @@ function traitSeason(L, beats) {
   if (L.m.fame >= 70) reveal(L, 'showman', 'The cameras find you. You find them back.', beats);
   if (L.rt.iq >= 78) reveal(L, 'filmJunkie', 'You know every play before the call.', beats);
   if (L.cash >= 25) reveal(L, 'saver', 'You still have most of what you made.', beats);
-  if ((T.spent || 0) >= 3) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
+  /* Two, not three, since the 10 to 15 minute career (2026-11-24): half the
+     cards, so a habit shows in fewer of them. The same for the locker room. */
+  if ((T.spent || 0) >= 2) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
   const clubs = new Set(L.history.map((h) => h.t)).size;
   if (L.history.length >= 6 && clubs === 1) reveal(L, 'loyal', 'Six seasons, one jersey.', beats);
   if (clubs >= 3) reveal(L, 'mercenary', 'Three jerseys. You go where it pays.', beats);
   const mates = Object.values(L.people || {}).filter((p) => p.role === 'Teammate' && p.rel >= 20).length;
-  if (mates >= 3) reveal(L, 'lockerVoice', 'Three teammates would run through a wall for you.', beats);
+  if (mates >= 2) reveal(L, 'lockerVoice', 'Two teammates would run through a wall for you.', beats);
 }
 
 /* SKILL BADGES are read off what you are, at the end of each season, and
@@ -11627,7 +11632,7 @@ function choose(L, i, extra) {
         /* A take runs its own answers and carries its own reputation. */
         const o = ev.takes[card.take - 1].options[i];
         text = o.run(L, rng) || '';
-        if (o.rep) moveRep(L, o.rep[0], o.rep[1]);
+        if (o.rep) moveRep(L, o.rep[0] * PACE.rep, o.rep[1] * PACE.rep);
         if (o.watch) watchMark(L, o.watch, beats);
       } else if (ev) {
         const o = ev.options[i];
@@ -11635,7 +11640,7 @@ function choose(L, i, extra) {
         text = o.run(L, rng) || '';
         applyRel(L, names);
         const rp = (EVENTS[card.id] || TEAM_EV[card.id]) && EVENT_REP[card.id] && EVENT_REP[card.id][i];
-        if (rp) moveRep(L, rp[0], rp[1]);
+        if (rp) moveRep(L, rp[0] * PACE.rep, rp[1] * PACE.rep);
       }
     }
   }
@@ -11713,7 +11718,7 @@ function step(L) {
       roleReview(L, beats, 'early');
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
-      queueEvents(L, 'early', storyStretch(L) === 'early' ? 1 : 0);
+      queueEvents(L, 'early', storyStretch(L, 'early') ? 1 : 0);
       break;
     }
     case 'early':
@@ -11727,7 +11732,7 @@ function step(L) {
       tradeDeadline(L, beats);
       L.season.race = mvpRace(L); debate(L);
       L.phase = 'mid';
-      queueEvents(L, 'mid', storyStretch(L) === 'mid' ? 1 : 0);
+      queueEvents(L, 'mid', storyStretch(L, 'mid') ? 1 : 0);
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
@@ -11751,7 +11756,7 @@ function step(L) {
       logIt(L, s.w + '-' + s.l + '. ' + seedTxt, s.seed <= 6 ? 'good' : '');
       pay(L, beats);
       L.phase = 'late';
-      queueEvents(L, 'late', storyStretch(L) === 'late' ? 1 : 0);
+      queueEvents(L, 'late', storyStretch(L, 'late') ? 1 : 0);
       break;
     }
     case 'late':
@@ -11933,18 +11938,22 @@ function newYear(L, beats) {
 }
 /* A summer with a club: the season is opened now, so whatever happens before
    it (the training card, a summer event, a camp injury) lands on it. */
-/* WHICH STRETCH OF THE SEASON GETS ITS STORY CARD (PACE.stretch). The season
-   deals one (queueEvents), and a first come draw gave it to the early stretch
-   nearly every year, so a card that only fits April or the playoffs was never
-   dealt. The stretch is drawn once a season; a rookie year has no preseason
-   draw. */
-function storyStretch(L) {
-  const f = L.flags.stretch;
-  if (f && f.y === L.year) return f.ph;
-  const keys = Object.keys(PACE.stretch).filter((k) => k !== 'pre' || L.seasonsDone > 0);
-  const ph = weighted(rngAt(L, 'pace:stretch'), keys, (k) => PACE.stretch[k]);
-  L.flags.stretch = { y: L.year, ph };
-  return ph;
+/* WHICH STRETCHES OF THE SEASON GET A STORY CARD (PACE.stretch). The season
+   deals up to two (queueEvents), and a first come draw gave them to the early
+   stretches nearly every year, so a card that only fits April or the playoffs
+   was never dealt. The stretches are drawn once a season; a rookie year has
+   no preseason draw. */
+function storyStretch(L, phase) {
+  let f = L.flags.stretch;
+  if (!f || f.y !== L.year) {
+    const keys = Object.keys(PACE.stretch).filter((k) => k !== 'pre' || L.seasonsDone > 0);
+    const r = rngAt(L, 'pace:stretch');
+    const a = weighted(r, keys, (k) => PACE.stretch[k]);
+    /* Most seasons deal a second, in another stretch (PACE.second). */
+    const b = r() < PACE.second ? weighted(r, keys.filter((k) => k !== a), (k) => PACE.stretch[k]) : null;
+    f = L.flags.stretch = { y: L.year, ph: b ? [a, b] : [a] };
+  }
+  return f.ph.indexOf(phase) >= 0;
 }
 function openYear(L) {
   if (!L.team) return;
@@ -11952,7 +11961,7 @@ function openYear(L) {
   L.pending.push(summerCard(L));
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
-  if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L) === 'pre' ? 1 : 0);
+  if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L, 'pre') ? 1 : 0);
   rollInjury(L, 'early', []);
 }
 

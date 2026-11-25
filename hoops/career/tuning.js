@@ -38,7 +38,10 @@ const GOAT_AT = 145;
    (storyStretch); off is the chance of the summer's. An arc that is due takes
    the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
    late 1 and off 1 cards. */
-const PACE = { stretch: { pre: 0.12, early: 0.33, mid: 0.28, late: 0.27 }, off: 0.9, team: 1, cap: { season: 1, off: 1 }, legend: 3.5 };
+const PACE = { stretch: { pre: 0.12, early: 0.33, mid: 0.28, late: 0.27 }, second: 0.8, off: 0.9, team: 1, cap: { season: 2, off: 1 }, legend: 2, rep: 1.8 };
+/* rep: a story card's answer moves the reputation this much harder. With
+   half the cards each has to say more about who he is: at the old weight 289
+   of 300 careers ended "Still writing it". */
 /* team is how many of your club's cards a season (it was one a phase, about
    1.1 a season). cap is the story budget (queueEvents), one for the season and one for
    the summer: due arcs always, then your club's card and new events while

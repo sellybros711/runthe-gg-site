@@ -989,12 +989,14 @@ function traitSeason(L, beats) {
   if (L.m.fame >= 70) reveal(L, 'showman', 'The cameras find you. You find them back.', beats);
   if (L.rt.iq >= 78) reveal(L, 'filmJunkie', 'You know every play before the call.', beats);
   if (L.cash >= 25) reveal(L, 'saver', 'You still have most of what you made.', beats);
-  if ((T.spent || 0) >= 3) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
+  /* Two, not three, since the 10 to 15 minute career (2026-11-24): half the
+     cards, so a habit shows in fewer of them. The same for the locker room. */
+  if ((T.spent || 0) >= 2) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
   const clubs = new Set(L.history.map((h) => h.t)).size;
   if (L.history.length >= 6 && clubs === 1) reveal(L, 'loyal', 'Six seasons, one jersey.', beats);
   if (clubs >= 3) reveal(L, 'mercenary', 'Three jerseys. You go where it pays.', beats);
   const mates = Object.values(L.people || {}).filter((p) => p.role === 'Teammate' && p.rel >= 20).length;
-  if (mates >= 3) reveal(L, 'lockerVoice', 'Three teammates would run through a wall for you.', beats);
+  if (mates >= 2) reveal(L, 'lockerVoice', 'Two teammates would run through a wall for you.', beats);
 }
 
 /* SKILL BADGES are read off what you are, at the end of each season, and
