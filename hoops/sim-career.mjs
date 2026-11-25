@@ -91,7 +91,7 @@ function policyPick(pol, L, c, r) {
 
 const JUNK = /\bundefined\b|\bNaN\b|\[object |\{[a-z0-9]+(?::(?:last|first))?\}/;
 
-function run(seed, start, pol, picks, legend, extra) {
+function run(seed, start, pol, picks, legend, extra, live) {
   const o = Object.assign({ seed, league, start, legend: legend !== false }, extra || {});
   const L = start === 'gen' ? C.generateRoad(o) : C.newLife(o);
   const r = E.createSeededRNG(E.hashSeed(seed + ':policy'));
@@ -107,7 +107,7 @@ function run(seed, start, pol, picks, legend, extra) {
       for (const x of C.continuity(L, c)) problems.push('continuity ' + x);
       const i = picks ? (picks[k++] || 0) % c.options.length : policyPick(pol, L, c, r);
       C.choose(L, i);
-    } else C.step(L);
+    } else { if (live) for (let q = 0; q < 12 && !L.pending.length && live(L); q++); if (!L.pending.length) C.step(L); }
   }
   if (!L.retired) problems.push('never retired');
   for (const x of C.continuityLog(L)) problems.push('continuity ' + x);
@@ -197,13 +197,30 @@ if (!SCRIPT && !ONLY) {
     try { const r = run('son' + i, i % 2 ? 'hs' : 'gen', pol, null, true, { parent: parentOf(dad), parentLeague: C.leagueEnd(dad) }); r.dad = dad; EX.sons.push(Object.assign(r, { pol })); }
     catch (e) { crashes++; if (crashes <= 3) console.error('crash son' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
   }
-  /* Every challenge, played as itself. */
+  /* Every challenge, played as itself. A challenge lived off the floor is
+     played by somebody who lives that way: he goes out, dates, proposes,
+     marries and starts a family, one act on his partner a year. And a
+     challenge about where you play is played by a man who asks to move. */
+  const CH_LIVE = {
+    /* Five teams is chased by asking out: a trade to a contender, a buyout, a ring chase. */
+    ch_suitcase(L) {
+      for (const w of ['contender', 'buyout', 'ringchase']) if (C.actsOpen(L).some((a) => a.id === w && a.ok)) return !!C.act(L, w);
+      return false;
+    },
+    ch_family(L) {
+      if (C.lifeOf(L).rel === 'single') return !!C.act(L, 'mingle');
+      const P = C.peopleOpen(L).find((p) => p.role === 'Partner');
+      if (!P) return false;
+      for (const w of ['family', 'elope', 'propose', 'date']) if (P.acts.some((a) => a.id === w && a.ok)) return !!C.personAct(L, P.id, w);
+      return false;
+    },
+  };
   for (const k of C.CHALLENGE_KEYS) {
     EX.ch[k] = [];
     for (let i = 0; i < Math.ceil(NE / 2); i++) {
       /* Played the way somebody chasing it would: a ring chaser looks ahead
          for the card that helps the team most. */
-      try { EX.ch[k].push(run('ch:' + k + i, 'gen', i % 2 ? 'ring' : POLICIES[i % POLICIES.length], null, true, { challenge: k, diff: 'easy' })); }
+      try { EX.ch[k].push(run('ch:' + k + i, 'gen', i % 2 ? 'ring' : POLICIES[i % POLICIES.length], null, true, { challenge: k, diff: 'easy' }, CH_LIVE[k])); }
       catch (e) { crashes++; }
     }
   }
@@ -317,6 +334,11 @@ const M = {
   'events never dealt': never.length,
   'unplanned repeats per career': results.reduce((s, x) => s + x.repeats.length, 0) / Math.max(1, n),
 };
+/* Replay (the BitLife plan, phase 7): the ribbon each career ended with. */
+const ribbonMix = {};
+for (const x of results) { const id = C.ribbonOf(x.L).id; ribbonMix[id] = (ribbonMix[id] || 0) + 1; }
+M['ribbons seen in the sweep'] = Object.keys(ribbonMix).length;
+M['the commonest ribbon %'] = 100 * Math.max(0, ...Object.values(ribbonMix)) / Math.max(1, n);
 /* Phase E, off the second sweep. */
 {
   const share = (a, f) => 100 * a.filter(f).length / Math.max(1, a.length);
@@ -389,6 +411,9 @@ const TARGETS = [
   ['E: sons who start after their father retired', 100, 100, 'E'],
   ['E: sons who name their father', 100, 100, 'E'],
   ['E: challenges met in the sweep', C.CHALLENGE_KEYS.length, Infinity, 'E'],
+  /* Four ribbons are lived for (broke, a second divorce, a full house, the villain); check-career chases those. */
+  ['ribbons seen in the sweep', C.RIBBON_KEYS.length - 4, Infinity, 'D'],
+  ['the commonest ribbon %', 0, 30, 'D'],
   ['E: stories with every chapter', 100, 100, 'E'],
 ];
 

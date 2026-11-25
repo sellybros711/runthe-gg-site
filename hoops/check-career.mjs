@@ -1587,6 +1587,91 @@ section('21. what the money is for: things, a payroll, money at work, and going 
   ok(same === 12, `reading the money changes nothing (${same} of 12 careers identical)`);
 }
 
+// ── 22. replay: the ribbon, the life card and five more challenges ────────
+section('22. replay: every life ends with one ribbon, the life fits on a card, and the new challenges can be met');
+{
+  /* Phase 7 of the BitLife plan (the owner's call, 2026-11-24). */
+  const E = require('./engine.js');
+  const partner = (L, wants) => { const P = C.peopleOpen(L).find((p) => p.role === 'Partner'); if (!P) return false; for (const w of wants) if (P.acts.some((a) => a.id === w && a.ok)) return !!C.personAct(L, P.id, w); return false; };
+  /* The bots somebody chasing a ribbon would be. Each answers true when it did something. */
+  const BOTS = {
+    family: (L) => C.lifeOf(L).rel === 'single' ? !!C.act(L, 'mingle') : partner(L, ['family', 'elope', 'propose', 'date']),
+    heart: (L) => C.lifeOf(L).rel === 'single' ? !!C.act(L, 'mingle') : partner(L, C.lifeOf(L).rel === 'married' ? ['leave'] : ['elope', 'propose', 'date']),
+    villain: (L) => { for (const P of C.peopleOpen(L)) for (const w of ['trash', 'freeze', 'callout']) if (P.acts.some((a) => a.id === w && a.ok)) return !!C.personAct(L, P.id, w); return false; },
+    broke: (L) => { const V = C.wealthOpen(L); if (!V) return false; const h = V.hire.find((x) => x.ok); if (h) return !!C.wealthAct(L, 'hire', h.id); const b = V.shop.filter((x) => x.ok).sort((a, b) => b.cost - a.cost)[0]; return b ? !!C.wealthAct(L, 'buy', b.id) : false; },
+  };
+  const play = (seed, bot, extra) => {
+    const L = C.generateRoad(Object.assign({ seed, league }, extra || {}));
+    const r = E.createSeededRNG(E.hashSeed('rb-p' + seed));
+    let g = 0, n = 0;
+    while (!L.retired && g++ < 9000) {
+      if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); n = 0; continue; }
+      if (bot && n++ < 12 && bot(L)) continue;
+      n = 0; C.step(L);
+    }
+    return L;
+  };
+  const JUNK22 = /\bundefined\b|\bNaN\b|\[object |\{[a-z]/;
+  const seen = {}, bad = [], moved = [], order = [];
+  let lives = 0;
+  const look = (L) => {
+    lives++;
+    const was = JSON.stringify(L);
+    const rb = C.ribbonOf(L), card = C.lifeCard(L);
+    if (JSON.stringify(L) !== was) moved.push(L.seed);
+    seen[rb.id] = (seen[rb.id] || 0) + 1;
+    if (!C.RIBBONS[rb.id] || !rb.name || !rb.line) bad.push('no ribbon: ' + L.seed);
+    const T = C.totals(L);
+    if (card.ribbon.id !== rb.id || card.verdict !== L.final.verdict || card.facts.length > 5 || (L.history.length && !card.facts.length)) bad.push('card off: ' + L.seed);
+    if (L.history.length) {
+      const st = Object.fromEntries(card.stats.map((x) => [x.k, x.v]));
+      if (st.Points !== T.pts.toLocaleString('en-US') || st.Rings !== String(T.rings) || st.Seasons !== String(L.history.length) || st.Worth !== C.money(C.netWorth(L))) bad.push('card numbers: ' + L.seed);
+      if (card.from !== L.history[0].y || card.to !== L.history[L.history.length - 1].y || card.teams.length !== new Set(L.history.map((h) => h.t).filter(Boolean)).size) bad.push('card years: ' + L.seed);
+    } else if (card.stats.length || card.from !== null) bad.push('a card with numbers for a man who never played: ' + L.seed);
+    const all = [card.text, rb.name, rb.line].concat(card.facts).join(' | ');
+    if (DASH.test(all) || JUNK22.test(all)) bad.push('card copy: ' + all.slice(0, 90));
+    if (card.text.split('\n').length < 3 || card.text.indexOf(L.name) !== 0) bad.push('share text: ' + L.seed);
+    return rb.id;
+  };
+  /* The plain careers, played on until every ribbon that needs no bot has shown. */
+  const NEED_BOT = ['broke', 'heart', 'family', 'villain'];
+  const natural = C.RIBBON_KEYS.filter((k) => NEED_BOT.indexOf(k) < 0);
+  let plain = 0;
+  const mix = {};
+  for (let i = 0; i < 700 && (i < 150 || natural.some((k) => !seen[k])); i++) { const id = look(play('rb' + i, null)); plain++; if (i < 150) mix[id] = (mix[id] || 0) + 1; }
+  const top = Object.keys(mix).sort((a, b) => mix[b] - mix[a])[0];
+  /* Somebody chasing one gets it. */
+  const got = {};
+  for (const k of NEED_BOT) { got[k] = 0; for (let i = 0; i < 20; i++) if (look(play('rb:' + k + i, BOTS[k])) === k) got[k]++; }
+  console.log(`  ${lives} lives  ${plain} plain  ribbons seen ${Object.keys(seen).length} of ${C.RIBBON_KEYS.length}  the commonest in 150: ${top} ${mix[top]}  chased: ${NEED_BOT.map((k) => k + ' ' + got[k] + '/20').join(', ')}`);
+  const dark = C.RIBBON_KEYS.filter((k) => !seen[k]);
+  ok(C.RIBBON_KEYS.length >= 20 && dark.length === 0, `every ribbon ends a life somewhere (${dark.join(', ') || 'all ' + C.RIBBON_KEYS.length})`);
+  ok(NEED_BOT.every((k) => got[k] >= 4), `a ribbon you live for can be chased: ${NEED_BOT.map((k) => k + ' ' + got[k]).join(', ')} of 20`);
+  ok(Object.keys(mix).length >= 12 && mix[top] <= 150 * 0.3, `150 plain careers spread over ${Object.keys(mix).length} ribbons and none takes three in ten (${top} ${mix[top]})`);
+  ok(!bad.length, `every life has a ribbon and a card whose numbers are the engine's (${bad.slice(0, 3).join(' | ') || lives + ' lives'})`);
+  ok(!moved.length, `reading the ribbon and the card changes nothing (${moved.length ? moved.slice(0, 3).join(', ') : 'every life identical'})`);
+  /* The first ribbon that fits is the ribbon, and the last fits everybody. */
+  {
+    const L = play('rb-order', null), keys = C.RIBBON_KEYS;
+    ok(C.RIBBONS[keys[keys.length - 1]].test(L, {}) === true, 'the last ribbon fits anybody');
+    const B = JSON.parse(JSON.stringify(L)); B.flags.banned = 1;
+    ok(C.ribbonOf(B).id === 'banned', 'a ban outranks everything else');
+  }
+  /* The five challenges of phase 7. */
+  const NEW = ['ch_roy', 'ch_old', 'ch_suitcase', 'ch_family', 'ch_mogul'];
+  ok(NEW.every((k) => C.CHALLENGES[k] && C.CHALLENGES[k].name && C.CHALLENGES[k].blurb), `five more challenges (${C.CHALLENGE_KEYS.length} in all)`);
+  {
+    let met = 0, said = 0;
+    for (let i = 0; i < 16; i++) { const L = play('ch-fam' + i, BOTS.family, { challenge: 'ch_family' }); const c = C.challengeOf(L); if (c.met) met++; if (typeof c.prog === 'string' && c.prog.length > 3) said++; }
+    ok(met >= 4 && said === 16, `Family man is met by a man who lives for it (${met} of 16) and always says where it stands`);
+    let div = null;
+    for (let i = 0; i < 20 && !div; i++) { const L = play('ch-div' + i, BOTS.heart, { challenge: 'ch_family' }); if (C.lifeOf(L).div) div = L; }
+    const c = div && C.challengeOf(div);
+    ok(!!c && !c.met && c.out && c.prog === 'Divorced', 'a divorce is counted, and it ends Family man');
+    ok(C.CHALLENGES.ch_mogul.blurb.indexOf(C.money(300)) > 0 || /\$\d+M/.test(C.CHALLENGES.ch_mogul.blurb), `Mogul says its own number ("${C.CHALLENGES.ch_mogul.blurb}")`);
+  }
+}
+
 if (!QUICK) await browser();
 
 console.log('');

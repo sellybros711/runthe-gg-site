@@ -50,6 +50,7 @@ const BUNDLES = [
       'bonds',         // the people you live with: acts on a person, a partner, a family
       'wealth',        // what the money is for: homes, cars, a payroll, money at work, going broke
       'endings',       // more ways out: the career ending injury, on top, waived, the ten day, the finale
+      'ribbons',       // replay: the one ribbon a life ends with, and the life on one card
       'api',           // what the page reads, the generated road, a son, the public object
     ],
     head: "'use strict';\n(function() {\n\n",
