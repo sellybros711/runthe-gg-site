@@ -2504,6 +2504,7 @@ async function browser() {
   await appWalk(b, serve);
   await ageWalk(b, serve);
   await lifeWalk(b, serve);
+  await screensWalk(b, serve);
   await b.close();
 
   /* PHASE E, through the page: the Vault, the share card, a son, and an Easy
@@ -3776,6 +3777,451 @@ async function browser() {
         ok(w8 && /decision is waiting/i.test(w8.money) && w8.deals === 0 && /decision is waiting/i.test(w8.people) && w8.persons === 0 && !w8.btns && w8.open === 0 && w8.V === null, `${tag}: while a decision waits both screens say so and offer nothing, as the engine has it (${w8 ? w8.deals + ' deals, ' + w8.persons + ' people' : 'no card came'})`);
       }
       } catch (e) { ok(false, `${tag}: the people and money walk ran to its end (${String(e && e.message || e).split('\n')[0].slice(0, 160)})`); }
+      ok(boom.length === 0, `${tag}: no page errors (${boom.join(' | ') || 'none'})`);
+      await ctx.close();
+    }
+  }
+
+  /* 7h. THE LIFE SCREENS (the BitLife plan, phases 4 to 7, the screens): the
+     wild side, replay, life after basketball and a childhood. The engine
+     holds what each does (sections 22 to 25). What a screen can lose is held
+     here, the way 7g holds People and Money: an act with no button, a figure
+     typed on the page, a gate that lets a free player through, a card that
+     reads like any other when it is an arrest. A bot lives lives in the
+     engine until what is wanted is true, hands the life to the page, and the
+     walk TAPS. After every tap the screen is held to the engine: C.wildOpen,
+     C.ribbonOf, C.lifeCard, C.laterOf, C.kidOf. Phone and desktop. */
+  async function screensWalk(b, serve) {
+    section('7h. the life screens: the wild side, the ribbon and the life card, the rest of a life, a childhood');
+    for (const [w, h, touch] of [[390, 844, true], [1440, 900, false]]) {
+      const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, reducedMotion: 'reduce', hasTouch: touch });
+      const page = await ctx.newPage();
+      const boom = [];
+      page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+      await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+      await page.route('**/*', serve);
+      await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+      await page.evaluate(() => document.querySelector('#b-career').click());
+      await page.waitForSelector('#cr-go');
+      const tag = `${w}x${h}`;
+      const press = (sel) => touch ? page.tap(sel, { timeout: 4000 }) : page.click(sel, { timeout: 4000 });
+      const tryPress = async (sel) => { try { await press(sel); return true; } catch (e) { return false; } };
+      const side = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+      const proSheet = () => page.evaluate(() => { const s = document.querySelector('#pro-sheet'); return !!s && !s.hidden; });
+      const shutPro = () => page.evaluate(() => { const x = document.querySelector('#pro-sheet [data-pro-x]'); if (x) x.click(); });
+      /* a screen that is not there fails its claims; it does not end the run */
+      try {
+      /* ── THE BUILDER: all the challenges, and From birth behind Pro ── */
+      await tryPress('[data-bstep="story"]');
+      await page.evaluate(() => { const d = document.querySelector('.cr-chal'); if (d) d.open = true; });
+      await page.waitForTimeout(150);
+      const keys = await page.evaluate(() => window.RTF_CAREER.CHALLENGE_KEYS.slice());
+      const chBad = [];
+      for (const k of keys) {
+        if (!(await tryPress('[data-ch="' + k + '"]'))) { chBad.push(k + ': could not be tapped'); continue; }
+        await page.waitForTimeout(60);
+        const c = await page.evaluate((k) => { const C = window.RTF_CAREER, e = document.querySelector('[data-ch="' + k + '"]'), r = e.getBoundingClientRect(), s = document.querySelector('.cr-chal summary');
+          return { on: e.getAttribute('aria-pressed') === 'true', ons: document.querySelectorAll('[data-ch][aria-pressed="true"]').length, text: e.textContent.includes(C.CHALLENGES[k].name) && e.textContent.includes(C.CHALLENGES[k].blurb), h: r.height, cut: e.scrollWidth > e.clientWidth + 1, sum: s.textContent.includes(C.CHALLENGES[k].name) }; }, k);
+        if (!c.on || c.ons !== 1 || !c.text || c.h < 44 || c.cut || !c.sum) chBad.push(k + ': ' + JSON.stringify(c));
+      }
+      const chN = await page.evaluate(() => ({ n: document.querySelectorAll('[data-ch]').length, chip: (document.querySelector('#cr-ch-n') || {}).textContent }));
+      ok(keys.length >= 16 && chN.n === keys.length + 1 && chN.chip === String(keys.length) && !chBad.length, `${tag}: the challenge picker shows every challenge the engine has, each with its name and what it asks, each one tap, and says how many (${chN.n - 1} of ${keys.length}${chBad.length ? '; ' + chBad.slice(0, 2).join(' | ') : ''})`);
+      await tryPress('[data-ch=""]');
+      await tryPress('[data-bstep="start"]');
+      await page.waitForTimeout(120);
+      const kb = await page.evaluate(() => { const C = window.RTF_CAREER, e = document.querySelector('[data-start="kid"]'), hs = document.querySelector('[data-start="hs"]');
+        return e ? { text: e.textContent, pro: !!e.querySelector('.cr-pro'), hsPro: !!hs.querySelector('.cr-pro'), locked: e.classList.contains('cr-locked'), n: C.KID.length, to: C.KID_AGES[C.KID_AGES.length - 1], h: e.getBoundingClientRect().height, first: document.querySelector('#cr-start [data-start]') === e } : null; });
+      ok(kb && /from birth/i.test(kb.text) && kb.pro && kb.hsPro && kb.locked && kb.text.includes(kb.n + ' moments') && kb.text.includes('birth to ' + kb.to) && kb.h >= 44 && kb.first, `${tag}: "From birth" is a start, first in the list, marked Pro like the high school start, and says how many moments and to what age in the engine's numbers (${kb ? kb.n + ' to ' + kb.to : 'no button'})`);
+      await tryPress('[data-start="kid"]');
+      await page.waitForTimeout(250);
+      const kg = { sheet: await proSheet(), on: await page.evaluate(() => document.querySelector('[data-start="kid"]').getAttribute('aria-pressed')) };
+      await shutPro();
+      ok(kg.sheet && kg.on === 'false', `${tag}: a free player who taps From birth gets the Pro sheet and the start does not change`);
+
+      /* a career, for the league every bot life is made in */
+      await press('#cr-go');
+      await page.waitForTimeout(250);
+      await page.evaluate(() => {
+        const C = window.RTF_CAREER, E = window.RTF_ENGINE, wa = C.wildAct, la = C.laterAge, ch = C.choose, ls = C.laterStart;
+        window.__lg = RTF_CAREER_UI.state().cur.league;
+        window.__calls = [];
+        window.__wa = wa;
+        C.wildAct = function(L, id, amt){ const cash = L.cash, r = wa.apply(this, arguments); window.__calls.push({ f: 'wild', id, amt: amt == null ? null : amt, cash, ok: !!r, text: r && r.text, more: r ? r.more : null, card: !!(r && r.card) }); return r; };
+        C.laterAge = function(L){ const r = la.apply(this, arguments); window.__calls.push({ f: 'later', ok: !!r, beats: r ? r.beats.map((x) => x.text) : null, over: !!(r && r.over), of: r && r.over ? C.laterOf(L) : null, rb: r && r.over ? C.ribbonOf(L) : null, lc: r && r.over ? C.lifeCard(L) : null }); return r; };
+        C.laterStart = function(L){ const r = ls.apply(this, arguments); window.__calls.push({ f: 'start', ok: !!r }); return r; };
+        C.choose = function(L, i){ const id = L.pending[0] && L.pending[0].id, r = ch.apply(this, arguments); window.__calls.push({ f: 'choose', i, id, ok: !!r, text: r && r.text }); return r; };
+        window.__ch = ch;
+        /* a life played by a bot, the way section 22 plays one */
+        window.__play = function(seed, bot){
+          const L = C.newLife({ seed, league: window.__lg, start: 'draft' }), r = E.createSeededRNG(E.hashSeed('p' + seed));
+          let g = 0, n = 0;
+          while (!L.retired && g++ < 9000) {
+            if (L.pending.length) { ch.call(C, L, Math.floor(r() * L.pending[0].options.length)); n = 0; continue; }
+            if (bot && n++ < 12 && bot(L)) continue;
+            n = 0; C.step(L);
+          }
+          return L;
+        };
+        const partner = (L, wants) => { const P = C.peopleOpen(L).find((p) => p.role === 'Partner'); if (!P) return false; for (const x of wants) if (P.acts.some((a) => a.id === x && a.ok)) return !!C.personAct(L, P.id, x); return false; };
+        const can = (L, id) => { const V = C.wildOpen(L); return V && V.acts.find((a) => a.id === id && a.ok); };
+        window.__bots = {
+          family: (L) => C.lifeOf(L).rel === 'single' ? !!C.act(L, 'mingle') : partner(L, ['family', 'elope', 'propose', 'date']),
+          gone: (L) => can(L, 'pills') ? !!wa.call(C, L, 'pills') : can(L, 'party') ? !!wa.call(C, L, 'party') : false,
+        };
+        window.__show = function(L){ const st = RTF_CAREER_UI.state(); st.cur = L; st.last = null; st.rest = null; RTF_CAREER_UI.paintPress({ beats: [], result: null }); window.scrollTo(0, 0); };
+      });
+
+      /* ── THE WILD SIDE ── */
+      /* What the sheet shows, and what C.wildOpen says, side by side. */
+      const wild = () => page.evaluate(() => {
+        const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, V = C.wildOpen(L), sh = document.querySelector('#cr-sheet'), tx = (s) => { const e = sh.querySelector(s); return e ? e.textContent : null; };
+        if (!V || sh.hidden || !sh.querySelector('#cr-wild')) return null;
+        const m = (x) => C.money(x), acts = [...sh.querySelectorAll('[data-wact]')], habs = [...sh.querySelectorAll('[data-habit]')], box = sh.querySelector('.k-sheet').getBoundingClientRect();
+        const n = { a: 0, s: 0, j: 0 }; V.record.forEach((r) => { if (r.what === 'arrest') n.a++; else if (r.what === 'jail') n.j++; else if (r.what !== 'rehab') n.s++; });
+        return { left: tx('#cr-wd-left'), wantLeft: V.left + ' of ' + V.of,
+          ids: acts.map((e) => e.getAttribute('data-wact')), want: V.acts.map((a) => a.id),
+          acts: acts.every((e, i) => { const a = V.acts[i]; return a && e.textContent.includes(a.name) && e.textContent.includes(a.blurb) && (a.amt || !a.cost || e.textContent.includes(m(a.cost))) && e.classList.contains('is-off') === !a.ok && (a.ok || !!e.querySelector('.why')); }),
+          small: acts.filter((e) => e.getBoundingClientRect().height < 44).length,
+          habs: habs.length === V.habits.length && habs.every((e, i) => { const x = V.habits[i]; return e.getAttribute('data-habit') === x.id && e.querySelector('.v').textContent === String(x.level) && e.classList.contains('is-hooked') === x.hooked && (!x.hooked || e.textContent.includes(String(x.since))); }),
+          net: tx('#cr-wd-net'), wantNet: V.net > 0 ? 'Up ' + m(V.net) : V.net < 0 ? 'Down ' + m(-V.net) : 'Even', heat: tx('#cr-wd-heat'), wantHeat: String(V.heat), owed: tx('#cr-wd-owed'), wantOwed: String(V.owed),
+          rec: [tx('#cr-wd-arr'), tx('#cr-wd-susp'), tx('#cr-wd-jail')].join(','), wantRec: [n.a, n.s, n.j].join(','), rows: sh.querySelectorAll('.cr-wd-reclist li').length, wantRows: V.record.length,
+          sit: tx('#cr-wd-sit'), wantSit: V.sitting ? String(V.sitting.until) : V.owed ? String(V.owed) : null, res: tx('.cr-result .k-what'), more: [...sh.querySelectorAll('.cr-wd-more li')].map((e) => e.textContent),
+          fit: box.left >= 0 && box.right <= innerWidth + 0.5 && box.bottom <= innerHeight + 0.5 };
+      });
+      const wildOk = (S) => S && S.left === S.wantLeft && same(S.ids, S.want) && S.acts && !S.small && S.habs && S.net === S.wantNet && S.heat === S.wantHeat && S.owed === S.wantOwed && S.rec === S.wantRec && S.rows === S.wantRows && (S.wantSit === null ? S.sit === null : !!S.sit && S.sit.includes(S.wantSit)) && S.fit;
+      /* THE BOT: a life until an act nobody has tapped yet is open. It goes
+         out itself now and then (the engine's own call, kept aside), which is
+         how a habit grows and rehab opens. */
+      const nextWild = () => page.evaluate(() => {
+        const C = window.RTF_CAREER, E = window.RTF_ENGINE, B = window.__wb || (window.__wb = { i: 0, L: null, seen: {} });
+        const want = C.WILD_KEYS.filter((k) => !B.seen[k]);
+        if (!want.length) return { done: true };
+        for (let g = 0; g < 300000; g++) {
+          if (!B.L || B.L.retired) { B.L = C.newLife({ seed: 'wd' + (B.i++), league: window.__lg, start: 'draft' }); B.r = E.createSeededRNG(E.hashSeed('wd-p' + B.i)); if (B.i > 300) break; }
+          const L = B.L, r = B.r;
+          if (L.pending.length) { window.__ch.call(C, L, Math.floor(r() * L.pending[0].options.length)); continue; }
+          const V = C.wildOpen(L);
+          const hit = V && V.acts.find((a) => a.ok && !B.seen[a.id]);
+          if (hit) { window.__show(L); return { id: hit.id, name: hit.name, amt: hit.amt, min: hit.min, left: V.left }; }
+          const a = V && V.acts.find((x) => x.ok && (x.id === 'party' || x.id === 'pills'));
+          if (a && r() < 0.6) window.__wa.call(C, L, a.id); else C.step(L);
+        }
+        return { done: false, dark: want };
+      });
+      const tapped = {}, wrong = [], sheetBad = [], decBad = [], afterBad = [];
+      let firstNow = null, way = 0;
+      for (let k = 0; k < 12; k++) {
+        const hit = await nextWild();
+        if (hit.done != null) { if (!hit.done) wrong.push('never open: ' + (hit.dark || []).join(',')); break; }
+        await page.waitForTimeout(150);
+        const now = await page.evaluate(() => { const C = window.RTF_CAREER, V = C.wildOpen(RTF_CAREER_UI.state().cur), e = document.querySelector('#cr-go-wild'); window.__calls.length = 0; return e ? { badge: (e.querySelector('i') || {}).textContent || '', left: V.left, h: e.getBoundingClientRect().height, people: !!document.querySelector('#cr-go-people'), money: !!document.querySelector('#cr-go-money') } : null; });
+        if (!firstNow) { firstNow = now; ok(now && now.h >= 44 && now.people && now.money && now.badge === String(now.left), `${tag}: Now has a Wild side button beside People and Money, at least 44px tall, counting the nights left this year (${now ? now.badge + ' for ' + now.left : 'no button'})`); }
+        const seen = (a) => page.evaluate((a) => { window.__wb.seen[a] = 1; const x = document.querySelector('#cr-sheet-x'); if (x && !document.querySelector('#cr-sheet').hidden) x.click(); }, a);
+        if (!(await tryPress('#cr-go-wild'))) { wrong.push(hit.id + ': no Wild side button'); await seen(hit.id); continue; }
+        await page.waitForTimeout(260);
+        const S = await wild();
+        if (!wildOk(S)) sheetBad.push(hit.id + ': ' + JSON.stringify(S).slice(0, 260));
+        if (!(await tryPress('#cr-sheet [data-wact="' + hit.id + '"]'))) { wrong.push(hit.id + ': its row could not be tapped'); await seen(hit.id); continue; }
+        await page.waitForTimeout(200);
+        /* the stake, three ways: a preset, the plus button, the slider's keys */
+        if (hit.amt) {
+          const how = way++ % 3;
+          if (how === 0) await tryPress('#cr-sheet [data-amt="half"]');
+          else if (how === 1) { for (let j = 0; j < 4; j++) await tryPress('#cr-amt-up'); }
+          else { await page.focus('#cr-amt-in'); for (let j = 0; j < 9; j++) await page.keyboard.press('ArrowRight'); }
+          await page.waitForTimeout(80);
+        }
+        const D = await page.evaluate((id) => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, V = C.wildOpen(L), a = V.acts.find((x) => x.id === id), sh = document.querySelector('#cr-sheet'), go = sh.querySelector('#cr-wd-go'), g = go.getBoundingClientRect(), inp = sh.querySelector('#cr-amt-in'), text = sh.querySelector('.k-sheet').textContent;
+          return { h: (sh.querySelector('#cr-wd-dh') || {}).textContent === a.name, blurb: text.includes(a.blurb), cost: a.amt ? text.includes(C.money(a.min)) : !a.cost || text.includes(C.money(a.cost)), bank: text.includes(C.money(L.cash)), nights: text.includes(V.left + ' of ' + V.of),
+            goOn: !go.disabled && g.height >= 44 && g.top >= 0 && g.bottom <= innerHeight + 0.5, go: go.textContent, amt: inp ? { v: +inp.value, min: +inp.min, max: +inp.max, shown: sh.querySelector('#cr-amt-v').textContent, wantMin: a.min, cash: L.cash, engMax: a.max } : null }; }, hit.id);
+        if (!D.h || !D.blurb || !D.cost || !D.bank || !D.nights || !D.goOn) decBad.push(hit.id + ': ' + JSON.stringify(D).slice(0, 200));
+        if (hit.amt && !(D.amt && D.amt.min === D.amt.wantMin && D.amt.max <= D.amt.cash + 1e-9 && D.amt.max <= D.amt.engMax + 1e-9 && D.amt.v > D.amt.min && D.amt.v <= D.amt.max && D.go.includes(D.amt.shown))) decBad.push(hit.id + ': the stake picker ' + JSON.stringify(D.amt));
+        await tryPress('#cr-wd-go');
+        await page.waitForTimeout(280);
+        const A = await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, sh = document.querySelector('#cr-sheet'), card = document.querySelector('#cr-card');
+          return { calls: window.__calls.filter((c) => c.f === 'wild'), hidden: sh.hidden, pending: L.pending.length ? L.pending[0].id : null, heavy: !!card && card.classList.contains('cr-heavy'), nowRes: (document.querySelector('#cr-stage .cr-result .k-what') || {}).textContent || null,
+            saved: (() => { try { const s = JSON.parse(localStorage.getItem('rtf.life.v1')); return !!(s && s.cur && s.cur.wild && s.cur.wild.n === L.wild.n && s.cur.cash === L.cash); } catch (e) { return false; } })() }; });
+        const c = A.calls[0];
+        if (A.calls.length === 1 && c.id === hit.id && c.ok && (hit.amt ? D.amt && Math.abs(c.amt - D.amt.v) < 1e-9 && c.amt <= c.cash : c.amt == null)) tapped[hit.id] = 1;
+        else wrong.push(hit.id + ': the tap called ' + JSON.stringify(A.calls).slice(0, 160));
+        if (c && c.ok) {
+          if (c.card) { if (!A.hidden || !A.pending || !A.saved || A.nowRes !== c.text) afterBad.push(hit.id + ' (a card): ' + JSON.stringify(A).slice(0, 200)); }
+          else {
+            const S2 = await wild();
+            if (!wildOk(S2) || S2.res !== c.text || !same(S2.more, c.more || []) || S2.left !== (hit.left - 1) + ' of ' + S2.wantLeft.split(' of ')[1] || !A.saved) afterBad.push(hit.id + ': ' + JSON.stringify({ ok: wildOk(S2), res: S2 && S2.res, text: c.text, left: S2 && S2.left, saved: A.saved }).slice(0, 220));
+          }
+        }
+        await seen(hit.id);
+      }
+      const allW = await page.evaluate(() => window.RTF_CAREER.WILD_KEYS.slice());
+      const darkW = allW.filter((a) => !tapped[a]);
+      ok(allW.length >= 5 && !darkW.length, `${tag}: every night on the wild side is reached by tapping Wild side, the night and its button (${allW.length - darkW.length} of ${allW.length}${darkW.length ? '; not tapped: ' + darkW.join(', ') : ''})`);
+      ok(!wrong.length, `${tag}: a tap is C.wildAct with that night, once, and a stake is the amount the picker shows, never more than the bank (${wrong.slice(0, 2).join(' | ') || 'every one'})`);
+      ok(!sheetBad.length, `${tag}: the sheet is C.wildOpen: the nights left, tonight's choices with a closed one saying why, each habit's level, the gambling net, the league's heat, games owed and the record (${sheetBad.slice(0, 1).join(' | ') || 'every sheet'})`);
+      ok(!decBad.length, `${tag}: a night opens one decision with the engine's price or least stake, the bank and the nights left on it, and a button on screen (${decBad.slice(0, 1).join(' | ') || 'every one'})`);
+      ok(!afterBad.length, `${tag}: after a night the sheet shows what happened in the engine's words with one night fewer, and the career is saved (${afterBad.slice(0, 1).join(' | ') || 'every night'})`);
+      /* hooked, sitting out, games owed, no nights left: said, in the engine's numbers */
+      {
+        const hk = await page.evaluate(() => {
+          const C = window.RTF_CAREER, E = window.RTF_ENGINE;
+          for (let i = 0; i < 200; i++) {
+            const L = C.newLife({ seed: 'hook' + i, league: window.__lg, start: 'draft' }), r = E.createSeededRNG(E.hashSeed('hk' + i));
+            let g = 0;
+            while (!L.retired && g++ < 6000) {
+              if (L.pending.length) { window.__ch.call(C, L, Math.floor(r() * L.pending[0].options.length)); continue; }
+              const V = C.wildOpen(L);
+              if (V && V.sitting && V.habits.some((x) => x.hooked) && V.record.length) { window.__show(L); return { until: V.sitting.until, since: V.habits.find((x) => x.hooked).since }; }
+              const a = V && V.acts.find((x) => x.ok && (x.id === 'pills' || x.id === 'party' || x.id === 'bookie'));
+              if (a) window.__wa.call(C, L, a.id, a.amt ? a.min : undefined); else C.step(L);
+            }
+          }
+          return null;
+        });
+        await page.waitForTimeout(150);
+        const nowSit = await page.evaluate(() => (document.querySelector('#cr-now-sit') || {}).textContent || '');
+        await tryPress('#cr-go-wild'); await page.waitForTimeout(260);
+        const S = await wild();
+        const red = await page.evaluate(() => { const e = document.querySelector('#cr-sheet .cr-wd-hab.is-hooked'), o = document.querySelector('#cr-sheet .cr-wd-hab:not(.is-hooked)'); return e && o ? { a: getComputedStyle(e.querySelector('.cr-wd-bar i')).backgroundColor, b: getComputedStyle(o.querySelector('.cr-wd-bar i')).backgroundColor, text: e.textContent } : null; });
+        ok(hk && wildOk(S) && nowSit.includes(String(hk.until)) && S.sit.includes(String(hk.until)) && red && red.a !== red.b && red.text.includes(String(hk.since)), `${tag}: a habit that has hold of him is a different colour and says since when, and a man sitting out is told so on Now and on the sheet, to the engine's game ("${nowSit}")`);
+        const owe = await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur; document.querySelector('#cr-sheet-x').click(); L.season.ban = null; L.wild.susp = 7; L.wild.n = C.WILD_MAX; RTF_CAREER_UI.paintPress({ beats: [], result: null }); const V = C.wildOpen(L); return { owed: V.owed, left: V.left, now: (document.querySelector('#cr-now-sit') || {}).textContent || '', badge: !!document.querySelector('#cr-go-wild i') }; });
+        await tryPress('#cr-go-wild'); await page.waitForTimeout(260);
+        const S3 = await wild();
+        const shut = await page.evaluate(() => { const b = [...document.querySelectorAll('#cr-sheet [data-wact]')]; return { n: b.length, why: b.every((e) => /no nights left/i.test((e.querySelector('.why') || {}).textContent || '')) }; });
+        await tryPress('#cr-sheet [data-wact]'); await page.waitForTimeout(200);
+        const dead = await page.evaluate(() => { const g = document.querySelector('#cr-wd-go'); window.__calls.length = 0; if (g) g.click(); return { off: !!g && g.disabled, calls: window.__calls.length }; });
+        ok(owe.owed === 7 && owe.now.includes('7') && !owe.badge && wildOk(S3) && S3.owed === '7' && shut.n > 0 && shut.why && dead.off && dead.calls === 0, `${tag}: games owed next season are said on Now and on the sheet, and with the year's nights spent every night is closed, says so, and its button does nothing ("${owe.now}")`);
+        await page.evaluate(() => { const x = document.querySelector('#cr-wd-back'); if (x) x.click(); const y = document.querySelector('#cr-sheet-x'); if (y) y.click(); });
+      }
+      /* the law and the league: a card, and a heavy one */
+      {
+        const hv = await page.evaluate(() => {
+          const C = window.RTF_CAREER, E = window.RTF_ENGINE, out = {};
+          for (let i = 0; i < 400 && (!out.wildarrest || !out.wildprobe); i++) {
+            const L = C.newLife({ seed: 'law' + i, league: window.__lg, start: 'draft' }), r = E.createSeededRNG(E.hashSeed('law' + i));
+            let g = 0;
+            while (!L.retired && g++ < 5000) {
+              if (L.pending.length) { const id = L.pending[0].id; if ((id === 'wildarrest' || id === 'wildprobe') && !out[id]) { out[id] = JSON.parse(JSON.stringify(L)); break; } window.__ch.call(C, L, Math.floor(r() * L.pending[0].options.length)); continue; }
+              const V = C.wildOpen(L), a = V && V.acts.find((x) => x.ok && (x.id === (i % 2 ? 'bookie' : 'party')));
+              if (a) window.__wa.call(C, L, a.id, a.amt ? a.min : undefined); else C.step(L);
+            }
+          }
+          window.__law = out;
+          return Object.keys(out);
+        });
+        const bad = [];
+        for (const id of ['wildarrest', 'wildprobe']) {
+          if (hv.indexOf(id) < 0) { bad.push(id + ': never dealt'); continue; }
+          await page.evaluate((id) => { const C = window.RTF_CAREER, L = C.migrate(window.__law[id]); L.league = window.__lg; window.__show(L); }, id);
+          await page.waitForTimeout(200);
+          const c = await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur, c = L.pending[0], e = document.querySelector('#cr-card'), plain = document.createElement('div'); const cs = getComputedStyle(e);
+            return { heavy: e.classList.contains('cr-heavy'), eye: (e.querySelector('.cr-hveye') || {}).textContent || '', title: e.querySelector('#cr-card-h').textContent === c.title, opts: [...e.querySelectorAll('.cr-choice .cr-ol')].map((x) => x.textContent), want: c.options.map((o) => o.label),
+              hints: [...e.querySelectorAll('.cr-choice')].every((x, i) => !c.options[i].hint || x.textContent.includes(c.options[i].hint)), edge: cs.getPropertyValue('--cr-edge').trim(), lights: getComputedStyle(e.querySelector('.cr-band'), '::after').height, wild: !!document.querySelector('#cr-go-wild'), small: [...e.querySelectorAll('.cr-choice')].filter((x) => x.getBoundingClientRect().height < 44).length }; });
+          if (!c.heavy || !/arrest|investigation/i.test(c.eye) || !c.title || !same(c.opts, c.want) || !c.hints || c.edge !== '#ff5a4e' || !(parseFloat(c.lights) > 0) || c.wild || c.small) bad.push(id + ': ' + JSON.stringify(c).slice(0, 200));
+          await page.evaluate(() => { window.__calls.length = 0; });
+          await tryPress('#cr-card .cr-choice[data-i="1"]'); await page.waitForTimeout(450);
+          const a = await page.evaluate(() => ({ calls: window.__calls.filter((x) => x.f === 'choose'), res: (document.querySelector('#cr-stage .cr-result .k-what') || {}).textContent || null, still: !!document.querySelector('#cr-card.cr-heavy') }));
+          if (!(a.calls.length === 1 && a.calls[0].id === id && a.calls[0].i === 1 && a.res === a.calls[0].text && !a.still)) bad.push(id + ': the answer ' + JSON.stringify(a).slice(0, 160));
+        }
+        ok(!bad.length, `${tag}: an arrest and an investigation are cards with every answer the engine gives, and they read as heavy: a red edge, a bar of lights, a line that says what this is; an answer is C.choose and its result is shown (${bad.slice(0, 2).join(' | ') || 'both'})`);
+      }
+      ok((await side()) <= 0, `${tag}: the wild side scrolls nowhere sideways (${await side()}px)`);
+
+      /* ── REPLAY: the ribbon, the life card, the shelf, the son ── */
+      const life = await page.evaluate(() => {
+        const C = window.RTF_CAREER;
+        for (let i = 0; i < 200; i++) {
+          const L = window.__play('son' + i, window.__bots.family);
+          if (!L.retired || L.flags.died || L.flags.banned || C.sonsOf(L) < 1 || L.history.length < 6 || !C.laterOf(L).can) continue;
+          const rb = C.ribbonOf(L), lc = C.lifeCard(L), fin = { verdict: L.final.verdict, score: L.final.score };
+          const st = RTF_CAREER_UI.state(); st.cur = L; st.last = null; st.rest = null;
+          window.__shared = []; window.RTF_PAGE.shareImage = (t, b) => { window.__shared.push({ t, size: b && b.size, type: b && b.type }); }; window.RTF_PAGE.shareText = (t) => { window.__shared.push({ t, size: 0 }); };
+          RTF_CAREER_UI.finish();
+          return { rb, lc, fin, sons: C.sonsOf(L), link: window.RTF_PAGE.SHARE_URL, keys: C.RIBBON_KEYS.slice(), names: C.RIBBON_KEYS.map((k) => C.RIBBONS[k].n), pts: C.totals(L).pts.toLocaleString('en-US'), age: L.age };
+        }
+        return null;
+      });
+      ok(!!life, `${tag}: found a finished life with a son to end through the page`);
+      await page.waitForTimeout(350);
+      const F = await page.evaluate(() => {
+        const q = (s) => document.querySelector(s), r = (s) => { const e = q(s); return e ? e.getBoundingClientRect() : null; }, t = (s) => { const e = q(s); return e ? e.textContent : null; };
+        const lc = q('#cr-lc'), st = JSON.parse(localStorage.getItem('rtf.life.v1'));
+        return { rib: q('#cr-rib') ? { id: q('#cr-rib').getAttribute('data-rib'), n: t('#cr-rib .cr-rib-n'), l: t('#cr-rib .cr-rib-l'), top: r('#cr-rib').top, h: r('#cr-rib').height, fs: parseFloat(getComputedStyle(q('#cr-rib .cr-rib-n')).fontSize) } : null,
+          v: r('.cr-final .v') ? { top: r('.cr-final .v').top, text: t('.cr-final .v') } : null,
+          lc: lc ? { id: lc.querySelector('.cr-lc-rib').getAttribute('data-rib'), n: lc.querySelector('.cr-lc-rib b').textContent, l: lc.querySelector('.cr-lc-rib span').textContent, name: lc.querySelector('.cr-lc-n').textContent, v: lc.querySelector('.cr-lc-v').textContent, sub: lc.querySelector('.cr-lc-sub').textContent,
+            stats: [...lc.querySelectorAll('.cr-lc-stats div')].map((e) => ({ k: e.querySelector('span').textContent, v: e.querySelector('b').textContent })), facts: [...lc.querySelectorAll('.cr-lc-facts li')].map((e) => e.textContent), l0: lc.getBoundingClientRect().left, r0: lc.getBoundingClientRect().right, cut: [...lc.querySelectorAll('b,li,h3')].filter((e) => e.scrollWidth > e.clientWidth + 1).length } : null,
+          heir: r('#cr-heir') ? { top: r('#cr-heir').top, h: r('#cr-son').height, text: t('#cr-heir'), pro: !!q('#cr-son .cr-pro') } : null, share: r('#cr-share') ? r('#cr-share').top : null, again: r('#cr-again') ? r('#cr-again').top : null,
+          later: q('#cr-later') ? { text: t('#cr-later'), pro: !!q('#cr-later .cr-pro'), h: r('#cr-later').height, box: t('#cr-ltbox') } : null,
+          found: [...document.querySelectorAll('.cr-found .k-tag')].map((e) => e.textContent), vault: st.vault, rest: !!st.rest, lastRib: st.last && st.last.ribbon ? st.last.ribbon.id : null, hofRib: st.hof[0] && st.hof[0].ribbon ? st.hof[0].ribbon.id : null, arcRib: st.arc[0] ? st.arc[0].rib : null };
+      });
+      ok(life && F.rib && F.v && F.rib.id === life.rb.id && F.rib.n === life.rb.name && F.rib.l === life.rb.line && F.rib.top < F.v.top && F.rib.h > 0 && F.rib.fs >= 28 && F.v.text === life.fin.verdict, `${tag}: the ribbon is the headline of the end screen, above the verdict, and it is C.ribbonOf's name and line (${F.rib ? F.rib.n : 'no ribbon'} over "${F.v ? F.v.text : ''}")`);
+      ok(life && F.lc && F.lc.id === life.lc.ribbon.id && F.lc.n === life.lc.ribbon.name && F.lc.l === life.lc.ribbon.line && F.lc.name === life.lc.name && F.lc.v === life.lc.verdict && same(F.lc.stats, life.lc.stats) && same(F.lc.facts, life.lc.facts) && F.lc.stats.length === 6 && F.lc.sub.includes('#' + life.lc.num) && F.lc.sub.includes(life.lc.from + '-' + life.lc.to), `${tag}: the life card is C.lifeCard: the ribbon, the name, the verdict, the six tiles and every line, figure for figure (${F.lc ? F.lc.stats.map((x) => x.v).join(' ') : 'no card'})`);
+      ok(F.lc && F.lc.l0 >= 0 && F.lc.r0 <= w + 0.5 && !F.lc.cut && (await side()) <= 0, `${tag}: the life card fits the screen, nothing on it cut, and the end screen scrolls nowhere sideways`);
+      ok(life && F.vault['b:' + life.rb.id] && F.lastRib === life.rb.id && F.hofRib === life.rb.id && F.arcRib === life.rb.id && F.found.indexOf('Ribbon: ' + life.rb.name) >= 0, `${tag}: the ribbon is kept in the Vault the way an ending is (b:${life ? life.rb.id : ''}), on the Hall card and the career's entry, and the end screen says it is new`);
+      ok(life && F.heir && F.share !== null && F.heir.top < F.share && F.heir.top < F.again && F.heir.h >= 44 && F.heir.pro && F.heir.text.includes(life.pts) && /play on as your son/i.test(F.heir.text), `${tag}: a man with a son is offered "Play on as your son" above Share and New career, marked Pro for a free player, with his father's points on it (${life ? life.pts : ''})`);
+      /* share: the text is the engine's, and the picture is the card */
+      {
+        await page.evaluate(() => { window.__shared.length = 0; });
+        await tryPress('#cr-lc-share'); await page.waitForTimeout(500);
+        await tryPress('#cr-share'); await page.waitForTimeout(500);
+        const sh = await page.evaluate(() => { const cv = RTF_CAREER_UI.drawLife(), d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, set = {}; for (let i = 0; i < d.length; i += 4 * 97) set[d[i] + ',' + d[i + 1] + ',' + d[i + 2]] = 1; return { list: window.__shared.slice(), w: cv.width, h: cv.height, colors: Object.keys(set).length, text: RTF_CAREER_UI.lifeShareText() }; });
+        const wantT = life ? life.lc.text + '\nLive your own NBA life: ' + life.link : '';
+        ok(life && sh.list.length === 2 && sh.list.every((x) => x.t === wantT && x.size > 1000 && x.type === 'image/png') && sh.text === wantT && sh.w === 540 && sh.h === 756 && sh.colors >= 12 && !DASH.test(wantT), `${tag}: Share (on the card and on the end screen) shares C.lifeCard's text with the link and a picture of the card, 540 by 756 and drawn (${sh.list.length} shares, ${sh.colors} colours)`);
+      }
+      /* the son and the rest of his life are Pro's: a free player sees both and gets the sheet */
+      {
+        await tryPress('#cr-son'); await page.waitForTimeout(250);
+        const a = { sheet: await proSheet(), final: await page.evaluate(() => !!document.querySelector('.cr-final') && !document.querySelector('#cr-go')) };
+        await shutPro();
+        ok(a.sheet && a.final, `${tag}: a free player who taps the son gets the Pro sheet and stays on the end screen`);
+        await page.evaluate(() => { window.__calls.length = 0; });
+        await tryPress('#cr-later'); await page.waitForTimeout(250);
+        const l = { sheet: await proSheet(), calls: await page.evaluate(() => window.__calls.filter((c) => c.f === 'start' || c.f === 'later').length), on: await page.evaluate(() => window.RTF_CAREER.laterOf(RTF_CAREER_UI.state().rest).on), view: await page.evaluate(() => !!document.querySelector('#cr-lt')) };
+        await shutPro();
+        ok(F.later && /live the rest of his life/i.test(F.later.text) && F.later.pro && F.later.h >= 44 && F.later.box.includes(String(life.age)) && F.rest && l.sheet && l.calls === 0 && !l.on && !l.view, `${tag}: a retired man is offered "Live the rest of his life", marked Pro; a free player who taps it gets the Pro sheet and the life is not started`);
+      }
+      /* the Vault's ribbon shelf */
+      {
+        await page.evaluate(() => RTF_CAREER_UI.openVault()); await page.waitForTimeout(250);
+        const V = await page.evaluate(() => { const st = RTF_CAREER_UI.state(), li = [...document.querySelectorAll('#cr-ribshelf [data-rib]')];
+          return { ids: li.map((e) => e.getAttribute('data-rib')).sort(), got: li.filter((e) => e.classList.contains('got')).map((e) => e.getAttribute('data-rib')), named: li.every((e) => e.querySelector('.n').textContent === window.RTF_CAREER.RIBBONS[e.getAttribute('data-rib')].n),
+            lines: li.every((e) => e.classList.contains('got') === !!e.querySelector('small') && (!e.querySelector('small') || e.querySelector('small').textContent === window.RTF_CAREER.RIBBONS[e.getAttribute('data-rib')].line)),
+            n: (document.querySelector('#cr-rib-n') || {}).textContent, have: Object.keys(st.vault).filter((k) => k.slice(0, 2) === 'b:').map((k) => k.slice(2)), first: li[0] && li[0].classList.contains('got'), small: li.filter((e) => e.getBoundingClientRect().height < 40).length,
+            sum: document.querySelector('.cr-vsum').textContent, tot: Object.keys(st.vault).length, entry: (document.querySelector('.cr-ribshelf') || {}).offsetHeight > 0 }; });
+        const sw = await side();
+        await page.evaluate(() => document.querySelector('[data-vtab="careers"]').click()); await page.waitForTimeout(150);
+        const ent = await page.evaluate(() => (document.querySelector('.cr-aentry') || {}).textContent || '');
+        ok(life && same(V.ids, life.keys.slice().sort()) && V.ids.length >= 26 && same(V.got.slice().sort(), V.have.slice().sort()) && V.got.indexOf(life.rb.id) >= 0 && V.named && V.lines && V.n === V.have.length + ' of ' + life.keys.length && V.first && !V.small && sw <= 0 && V.sum.includes(String(V.tot)) && ent.includes(life.rb.name), `${tag}: the Vault has a ribbon shelf: every ribbon the engine has, named, the found ones lit first with their line, "${V.n}", counted in what is found, and the career's entry says its ribbon`);
+        await page.evaluate(() => document.querySelector('#cr-vback').click()); await page.waitForTimeout(150);
+      }
+
+      /* ── LIFE AFTER BASKETBALL (Pro) ── */
+      {
+        await page.evaluate(() => { window.RTF_MODES_UI.proOpen = () => true; window.__calls.length = 0; window.scrollTo(0, 0); });
+        await tryPress('#cr-later'); await page.waitForTimeout(350);
+        const lt = () => page.evaluate(() => { const C = window.RTF_CAREER, R = RTF_CAREER_UI.state().rest, q = (s) => { const e = document.querySelector(s); return e ? e.textContent : null; };
+          if (!R || !document.querySelector('#cr-lt')) return null;
+          const V = C.laterOf(R), m = (x) => x < 0 ? '-' + C.money(-x) : C.money(x), go = document.querySelector('#cr-lt-go'), g = go ? go.getBoundingClientRect() : null, c = R.pending[0] || null;
+          return { on: V.on, age: q('#cr-lt-age') === String(V.age), title: q('#cr-lt-title') === V.title, pay: q('#cr-lt-pay') === m(V.pay), cash: q('#cr-lt-cash') === m(V.cash), worth: q('#cr-lt-worth') === m(V.worth), health: q('#cr-lt-health') === String(V.health), ageN: V.age,
+            go: go ? { text: go.textContent, h: g.height, seen: g.top >= 0 && g.bottom <= innerHeight + 0.5, step: go.textContent.includes(C.LATER_STEP + ' years') } : null, card: c ? { title: q('#cr-pgcard #cr-card-h') === c.title, opts: same2([...document.querySelectorAll('#cr-pgcard .cr-choice .cr-ol')].map((e) => e.textContent), c.options.map((o) => o.label)), small: [...document.querySelectorAll('#cr-pgcard .cr-choice')].filter((e) => e.getBoundingClientRect().height < 44).length, n: c.options.length } : null,
+            noCard: !document.querySelector('#cr-pgcard'), feed: [...document.querySelectorAll('#cr-lt-feed li')].map((e) => e.textContent), res: q('.cr-lt-res .k-what'), shell: getComputedStyle(document.querySelector('#cr-shell') || document.body).display, tabs: !!document.querySelector('#s-car.cr-app'), saved: (() => { try { const s = JSON.parse(localStorage.getItem('rtf.life.v1')); return !!(s.rest && s.rest.later && s.rest.age === R.age && s.rest.later.n === R.later.n); } catch (e) { return false; } })() };
+          function same2(a, b){ return JSON.stringify(a) === JSON.stringify(b); }
+        });
+        const figs = (S) => S && S.on && S.age && S.title && S.pay && S.cash && S.worth && S.health;
+        const S0 = await lt();
+        const st0 = await page.evaluate(() => window.__calls.filter((c) => c.f === 'start'));
+        ok(figs(S0) && st0.length === 1 && st0[0].ok && S0.saved && !S0.tabs && S0.go && S0.go.h >= 44 && S0.go.seen && S0.go.step && S0.noCard, `${tag}: with Pro the same button is C.laterStart, once: a screen with no tabs, his age, what he is called and what it pays, cash, net worth and health, all C.laterOf's, and one main button that says how many years a press is`);
+        const bad = [], seenCards = {};
+        let presses = 0, cards = 0, over = null;
+        for (let i = 0; i < 120 && !over; i++) {
+          const S = await lt();
+          if (!S) { bad.push('the screen went away at ' + i); break; }
+          if (!figs(S)) bad.push('figures at ' + i);
+          await page.evaluate(() => { window.__calls.length = 0; });
+          if (S.card) {
+            if (!S.card.title || !S.card.opts || S.card.small || S.go) bad.push('card at ' + i + ': ' + JSON.stringify(S.card));
+            const pick = i % S.card.n;
+            await page.waitForTimeout(340);
+            if (!(await tryPress('#cr-pgcard .cr-choice[data-i="' + pick + '"]'))) { bad.push('a card answer could not be tapped'); break; }
+            await page.waitForTimeout(160);
+            const a = await page.evaluate(() => window.__calls.slice()), S2 = await lt();
+            if (!(a.length === 1 && a[0].f === 'choose' && a[0].id === 'later' && a[0].i === pick && a[0].ok && S2 && S2.res === a[0].text && S2.saved)) bad.push('answer at ' + i + ': ' + JSON.stringify(a).slice(0, 120));
+            cards++;
+          } else {
+            await page.waitForTimeout(340);
+            if (!(await tryPress('#cr-lt-go'))) { bad.push('the button could not be tapped'); break; }
+            await page.waitForTimeout(160);
+            const a = await page.evaluate(() => window.__calls.slice());
+            if (!(a.length === 1 && a[0].f === 'later' && a[0].ok)) { bad.push('press at ' + i + ': ' + JSON.stringify(a).slice(0, 120)); break; }
+            presses++;
+            if (a[0].over) { over = a[0]; break; }
+            const S2 = await lt();
+            if (!S2 || !same(S2.feed, a[0].beats) || !S2.saved || S2.ageN !== S.ageN + (await page.evaluate(() => window.RTF_CAREER.LATER_STEP))) bad.push('after press ' + presses + ': feed ' + JSON.stringify(S2 && S2.feed).slice(0, 100));
+          }
+        }
+        ok(!bad.length && presses >= 3 && cards >= 1, `${tag}: one press is C.laterAge, once: the years go by, the beats are the feed, every figure moves with the engine, and a card the years deal is answered as a card, C.choose with that answer (${presses} presses, ${cards} cards${bad.length ? '; ' + bad.slice(0, 2).join(' | ') : ''})`);
+        await page.waitForTimeout(400);
+        const E2 = await page.evaluate(() => { const q = (s) => { const e = document.querySelector(s); return e ? e.textContent : null; }, lc = document.querySelector('#cr-lt-lc'), st = JSON.parse(localStorage.getItem('rtf.life.v1'));
+          return { end: !!document.querySelector('#cr-lt-end'), line: q('#cr-lt-line'), rib: q('#cr-lt-rib .cr-rib-n'), ribL: q('#cr-lt-rib .cr-rib-l'), facts: lc ? [...lc.querySelectorAll('.cr-lc-facts li')].map((e) => e.textContent) : null, stats: lc ? [...lc.querySelectorAll('.cr-lc-stats div')].map((e) => ({ k: e.querySelector('span').textContent, v: e.querySelector('b').textContent })) : null,
+            rest: st.rest, later: st.last.later, verdict: st.last.verdict, score: st.last.score, vault: st.vault, hofRib: st.hof[0].ribbon.id, go: !!document.querySelector('#cr-lt-go') }; });
+        ok(over && over.of && E2.end && E2.line === over.of.line && !!E2.line && E2.rib === over.rb.name && E2.ribL === over.rb.line && same(E2.facts, over.lc.facts) && same(E2.stats, over.lc.stats) && !E2.go && !DASH.test(E2.line), `${tag}: when it ends there is one last page: the engine's last line, the ribbon the whole life earned and the life card, read again off the life ("${E2.line}")`);
+        ok(over && E2.rest === null && E2.later && E2.later.line === over.of.line && E2.verdict === life.fin.verdict && E2.score === life.fin.score && E2.vault['b:' + over.rb.id] && E2.hofRib === over.rb.id, `${tag}: the life is kept on his card and leaves the slot, a new ribbon goes in the Vault, and the Hall verdict and score are the ones the career ended with`);
+        await page.evaluate(() => { window.__shared.length = 0; });
+        await tryPress('#cr-lt-share'); await page.waitForTimeout(500);
+        const sh2 = await page.evaluate(() => window.__shared.slice());
+        await tryPress('#cr-lt-card'); await page.waitForTimeout(250);
+        const back = await page.evaluate(() => ({ final: !!document.querySelector('.cr-final'), said: (document.querySelector('#cr-lt-said') || {}).textContent, btn: (document.querySelector('#cr-later') || {}).textContent || '', rib: (document.querySelector('#cr-rib .cr-rib-n') || {}).textContent }));
+        ok(over && sh2.length === 1 && sh2[0].t.indexOf(over.lc.text) === 0 && back.final && back.said === over.of.line && /last page/i.test(back.btn) && back.rib === over.rb.name, `${tag}: the last page shares the life card as it now reads, and his Hall card carries the last line and the way back to the page`);
+      }
+
+      /* ── GONE TOO SOON ── */
+      {
+        const gone = await page.evaluate(() => {
+          const C = window.RTF_CAREER;
+          for (let i = 0; i < 400; i++) {
+            const L = window.__play('gone' + i, window.__bots.gone);
+            if (!L.flags.died || L.history.length < 3) continue;
+            const o = { rb: C.ribbonOf(L), age: L.age, y: L.flags.died, can: C.laterOf(L).can, sons: C.sonsOf(L), after: L.final.after, blurb: L.final.blurb };
+            const st = RTF_CAREER_UI.state(); st.cur = L; st.last = null; st.rest = null;
+            RTF_CAREER_UI.finish();
+            return o;
+          }
+          return null;
+        });
+        await page.waitForTimeout(300);
+        const G = await page.evaluate(() => { const q = (s) => document.querySelector(s), st = JSON.parse(localStorage.getItem('rtf.life.v1')), card = q('#cr-gone');
+          return { card: !!card, h: (q('#cr-end-h') || {}).textContent, rib: (q('#cr-rib') || { getAttribute: () => '' }).getAttribute('data-rib'), when: (q('#cr-gone-when') || {}).textContent || '', rays: !!q('.cr-final .cr-rays'), foil: !!q('.cr-final .cr-foil'), gold: !!q('.cr-final.k-gold'), later: !!q('#cr-later'), rest: st.rest, text: card ? card.textContent : '', epi: (q('.cr-epi') || {}).textContent || '', son: !!q('#cr-heir'),
+            fig: card && card.querySelector('.rtf-baller') ? getComputedStyle(card.querySelector('.rtf-baller')).filter : '', scene: !!document.querySelector('.sc-root:not([hidden]), #rtf-scene:not([hidden])') }; });
+        ok(gone && G.card && /gone too soon/i.test(G.h) && G.rib === 'gone' && gone.rb.id === 'gone' && G.when.includes(String(gone.y)) && G.when.includes('Age ' + gone.age) && !G.rays && !G.foil && !G.gold && /grayscale/.test(G.fig) && !G.text.includes(gone.blurb) && G.epi.includes(gone.after), `${tag}: a man who died young has his own end: the Gone too soon ribbon, the year and his age, no gold, no rays, no foil, the figure greyed, and the verdict's quip left off (${G.when})`);
+        ok(gone && !gone.can && !G.later && G.rest === null && G.son === (gone.sons > 0), `${tag}: he has no life after basketball to live: no offer, nothing kept behind the card, and a son is still offered when he left one`);
+      }
+
+      /* ── A CHILDHOOD (Pro) ── */
+      {
+        await page.evaluate(() => { localStorage.removeItem('rtf.life.v1'); window.RTF_MODES_UI.proOpen = () => true; RTF_CAREER_UI.open(); });
+        await page.waitForSelector('#cr-go');
+        await tryPress('[data-bstep="start"]'); await tryPress('[data-start="kid"]'); await page.waitForTimeout(150);
+        const pv = await page.evaluate(() => ({ on: document.querySelector('[data-start="kid"]').getAttribute('aria-pressed'), go: document.querySelector('#cr-go').textContent, pro: !!document.querySelector('[data-start="kid"] .cr-pro') }));
+        await page.evaluate(() => { window.__calls.length = 0; });
+        await press('#cr-go'); await page.waitForTimeout(300);
+        const kid = () => page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, K = C.kidOf(L), c = L.pending[0], q = (s) => document.querySelector(s), root = q('#s-car'), opts = [...document.querySelectorAll('.cr-kid-o')], sh = q('#cr-shell');
+          if (L.stage !== 'kid' || !q('#cr-kid')) return null;
+          const age = q('#cr-kid-age');
+          return { i: K.i, of: K.of, age: age.textContent === String(K.age), ageSize: parseFloat(getComputedStyle(age).fontSize), dots: document.querySelectorAll('#cr-kid-dots i').length, done: document.querySelectorAll('#cr-kid-dots i.done').length, tag: q('#cr-kid-tag').textContent === c.scene, title: q('#cr-card-h').textContent === c.title, text: !c.text || q('.cr-kid-x').textContent === c.text,
+            opts: JSON.stringify(opts.map((e) => e.querySelector('b').textContent)) === JSON.stringify(c.options.map((o) => o.label)), hints: opts.every((e, j) => !c.options[j].hint || e.textContent.includes(c.options[j].hint)), n: opts.length, small: opts.filter((e) => e.getBoundingClientRect().height < 44).length, seen: opts.every((e) => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 0.5; }),
+            chrome: { shell: sh ? getComputedStyle(sh).display : 'none', app: root.classList.contains('cr-app'), meters: !!q('#s-car .k-meters'), next: !!q('#cr-next'), tabs: !!q('#s-car .cr-tabs'), money: /\$\d/.test(q('#cr-kid').textContent), ovr: /OVR/.test(q('#cr-kid').textContent), moves: !!q('#cr-off'), life: !!q('#cr-go-wild') || !!q('#cr-go-money') },
+            then: (q('#cr-kid-then') || {}).textContent || null, side: document.documentElement.scrollWidth - innerWidth, saved: (() => { try { const s = JSON.parse(localStorage.getItem('rtf.life.v1')); return s.cur.stage === 'kid' && s.cur.kid.i === K.i; } catch (e) { return false; } })() }; });
+        const K0 = await kid();
+        const clean = (S) => S && S.chrome.shell === 'none' && !S.chrome.app && !S.chrome.meters && !S.chrome.next && !S.chrome.tabs && !S.chrome.money && !S.chrome.ovr && !S.chrome.moves && !S.chrome.life;
+        ok(pv.on === 'true' && !pv.pro && /day one/i.test(pv.go) && K0 && K0.i === 0 && K0.saved, `${tag}: with Pro, From birth is chosen and the start button starts a life at its first page (start: 'kid')`);
+        ok(clean(K0) && K0.ageSize >= 80, `${tag}: a childhood has no app around it: no bar, no tabs, no meters, no money, no overall, no moves, and the age is the biggest thing on the page (${K0 ? K0.ageSize : 0}px)`);
+        const kbad = [], picks = [];
+        let pages = 0;
+        for (let i = 0; i < 12; i++) {
+          const S = await kid();
+          if (!S) break;
+          if (!S.age || S.dots !== S.of || S.done !== S.i || !S.tag || !S.title || !S.text || !S.opts || !S.hints || S.small || !S.seen || S.side > 0 || !clean(S) || !S.saved) kbad.push('page ' + S.i + ': ' + JSON.stringify(S).slice(0, 240));
+          const pick = (i * 2 + 1) % S.n;
+          await page.evaluate(() => { window.__calls.length = 0; });
+          await page.waitForTimeout(340);
+          if (!(await tryPress('.cr-kid-o[data-i="' + pick + '"]'))) { kbad.push('page ' + S.i + ': an answer could not be tapped'); break; }
+          await page.waitForTimeout(160);
+          const a = await page.evaluate(() => window.__calls.filter((c) => c.f === 'choose'));
+          if (!(a.length === 1 && a[0].id === 'kid' && a[0].i === pick && a[0].ok)) kbad.push('page ' + S.i + ': the tap called ' + JSON.stringify(a).slice(0, 120));
+          const S2 = await kid();
+          if (S2 && S2.then !== a[0].text) kbad.push('page ' + S.i + ': the caption is not what the answer said');
+          picks.push(pick); pages++;
+        }
+        const of = await page.evaluate(() => window.RTF_CAREER.KID.length);
+        ok(!kbad.length && pages === of && of >= 9, `${tag}: every page of the childhood is the engine's card: the age, the place, the moment and every answer, one tap each on screen, C.choose with that answer, and what it did is the caption on the next page (${pages} of ${of}${kbad.length ? '; ' + kbad.slice(0, 2).join(' | ') : ''})`);
+        await page.waitForTimeout(300);
+        const H = await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, K = C.kidOf(L), q = (s) => document.querySelector(s), sh = q('#cr-shell'), c = L.pending[0];
+          return { stage: L.stage, age: L.age, done: K.done, picks: K.picks, app: q('#s-car').classList.contains('cr-app'), shell: sh ? getComputedStyle(sh).display : 'none', kid: !!q('#cr-kid'), card: c ? q('#cr-card-h') && q('#cr-card-h').textContent === c.title : false, cardId: c ? c.id : null, tab: q('#s-car').getAttribute('data-ctab'), meters: !!q('#s-car .k-meters'),
+            res: (q('#cr-stage .cr-result .k-what') || {}).textContent || '', wipe: !!q('.k-wipe'), saved: (() => { try { const s = JSON.parse(localStorage.getItem('rtf.life.v1')); return s.cur.stage === L.stage && s.cur.kid.done === 1; } catch (e) { return false; } })() }; });
+        ok(H.stage === 'hs' && H.done && same(H.picks, picks) && !H.kid && H.app && H.shell !== 'none' && H.tab === 'now' && H.meters && H.card && H.cardId !== 'kid' && H.saved && !!H.res && (await side()) <= 0, `${tag}: the last answer hands the same life to the high school game with no step between: the app is up on Now, he is ${H.age}, his first card as a sophomore is on top, and the picks are the ones tapped`);
+      }
+      } catch (e) { ok(false, `${tag}: the life screens walk ran to its end (${String(e && e.message || e).split('\n')[0].slice(0, 160)})`); }
       ok(boom.length === 0, `${tag}: no page errors (${boom.join(' | ') || 'none'})`);
       await ctx.close();
     }
