@@ -12498,8 +12498,11 @@ const bondRel = (p, d) => { p.rel = clamp(p.rel + d, -100, 100); };
 const withNow = (L, p) => p.role === 'Partner' && lifeOf(L).rel !== 'single' && p.n === say(L, '{partner}');
 const paired = (L, st) => (L, p) => withNow(L, p) && [].concat(st).indexOf(lifeOf(L).rel) >= 0;
 /* It ends: the same bookkeeping the breakup card does. */
-function partnerLeaves(L) { const f = lifeOf(L); f.rel = 'single'; f.pn = (f.pn || 0) + 1; }
+function partnerLeaves(L) { const f = lifeOf(L); if (f.rel === 'married') f.div = (f.div || 0) + 1; f.rel = 'single'; f.pn = (f.pn || 0) + 1; }
 
+/* The three loud ones (freezing out the press, trash talk, a call out that
+   goes badly) are public, so they move the reputation too: a man who wants
+   to be the villain can be one on purpose (phase 7, the Villain ribbon). */
 /* Each act: who it is for (`on`), what it costs, and what it does. `run`
    returns the line the screen shows; `tone` colors it. */
 const BONDS = {
@@ -12579,7 +12582,7 @@ const BONDS = {
     name: 'Call him out', blurb: 'In front of the room.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'mate',
     run(L, p, r) {
       if (ok(r, 0.45 + L.m.trust / 400)) { bondRel(p, 6); bump(L, { trust: 3 }); bondNote(L, p, 'You called him out. He heard it.'); return p.n + ' nods. He needed to hear it from you.'; }
-      bondRel(p, -18); bump(L, { morale: -2, trust: -1 }); bondNote(L, p, 'You called him out. It went badly.');
+      bondRel(p, -18); bump(L, { morale: -2, trust: -1 }); moveRep(L, -1, -3); bondNote(L, p, 'You called him out. It went badly.');
       return p.n + ' does not take it well. The room goes quiet.';
     },
   },
@@ -12590,12 +12593,12 @@ const BONDS = {
   },
   freeze: {
     name: 'Freeze them out', blurb: 'No quotes. No eye contact.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'press',
-    run(L, p) { bondRel(p, -15); bump(L, { fame: -1 }); bondNote(L, p, 'You froze them out.'); return p.n + ' asks three questions. You answer none.'; },
+    run(L, p) { bondRel(p, -15); bump(L, { fame: -1 }); moveRep(L, -3, -2); bondNote(L, p, 'You froze them out.'); return p.n + ' asks three questions. You answer none.'; },
   },
   // ── rivals ──
   trash: {
     name: 'Talk trash', blurb: 'Loud enough to get back to him.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'foe',
-    run(L, p) { bondRel(p, -12); bump(L, { fame: 3 }); bondNote(L, p, 'You talked trash. It got back.'); return 'It is everywhere by lunch. ' + p.n + ' has seen it.'; },
+    run(L, p) { bondRel(p, -12); bump(L, { fame: 3 }); moveRep(L, -3, -3); bondNote(L, p, 'You talked trash. It got back.'); return 'It is everywhere by lunch. ' + p.n + ' has seen it.'; },
   },
   peace: {
     name: 'Bury it', blurb: 'Life is long. The league is small.', on: (L, p) => BOND_GROUP[p.role] === 'foe' && p.rel < 20,
@@ -12998,6 +13001,111 @@ function tenDay(L, beats, rng) {
   return said('You keep your bag packed until March. Nobody calls.', 'bad');
 }
 
+// ─── the ribbon and the life card ───────────────────────────────────────────
+
+/* REPLAY (the BitLife plan, phase 7, the owner's call of 2026-11-24). Every
+   life ends with ONE ribbon: the thing it will be remembered for. They are
+   tried in this order and the first that fits is the ribbon, so the rare and
+   the strange outrank the merely good, and the last one fits everybody.
+
+   A ribbon is read off the finished life and never stored: `ribbonOf(L)` is
+   the same answer every time, a save is the save it was, and a career from
+   before this has a ribbon too. `X` is what every test reads (ribbonFacts).
+
+   `lifeCard(L)` is the whole life on one card, for the end screen and for
+   sharing: the ribbon, the verdict, the numbers and up to five lines that
+   were true of this career. Every figure on it is the engine's. */
+const RIBBONS = {
+  banned:   { n: 'Banned', line: 'The league took your name off the wall.', test: (L) => !!L.flags.banned },
+  never:    { n: 'Almost', line: 'The league never called. You were this close.', test: (L, X) => X.seasons === 0 },
+  goat:     { n: 'The GOAT debate', line: 'They argue about you in barbershops. They always will.', test: (L, X) => X.score >= 120 },
+  broke:    { n: 'Riches to rags', line: 'You made a fortune. You spent a bigger one.', test: (L) => !!L.flags.broke },
+  dynasty:  { n: 'Dynasty', line: 'One ring is a great year. You built an era.', test: (L, X) => X.T.rings >= 3 },
+  mogul:    { n: 'Mogul', line: 'The game paid you. Then the money did.', test: (L, X) => X.worth >= 400 },
+  heart:    { n: 'Heartbreaker', line: 'The lawyers knew you by first name.', test: (L, X) => X.div >= 2 },
+  family:   { n: 'Family man', line: 'A full house, and you were home for it.', test: (L, X) => X.rel === 'married' && X.kids >= 3 && !X.div },
+  whatif:   { n: 'What if', line: 'The talent was never the question. The body was.', test: (L, X) => !X.hof && (X.majors >= 2 || X.hurtOut) },
+  onecity:  { n: 'One city', line: 'One jersey, start to finish. They don\'t make them like you.', test: (L, X) => X.seasons >= 10 && X.clubs === 1 },
+  suitcase: { n: 'Suitcase', line: 'You knew every equipment manager in the league.', test: (L, X) => X.clubs >= 5 },
+  legend:   { n: 'Legend', line: 'Springfield has your jacket size.', test: (L, X) => X.hof },
+  villain:  { n: 'Villain', line: 'They booed you in thirty arenas. You loved every one.', test: (L, X) => X.persona === 'Villain' || X.persona === 'Loose cannon' },
+  face:     { n: 'Face of the league', line: 'Your jersey was in every gym in the country.', test: (L, X) => X.persona === 'Face of the league' },
+  champ:    { n: 'Champion', line: 'You have a ring. Nobody can take that back.', test: (L, X) => X.T.rings >= 1 },
+  iron:     { n: 'Iron man', line: 'You showed up. Every night, for years.', test: (L, X) => X.T.gp >= 1150 },
+  star:     { n: 'All-Star', line: 'For a while you were one of the best alive.', test: (L, X) => X.T.star >= 1 },
+  coffee:   { n: 'Cup of coffee', line: 'You made the league. It didn\'t last long.', test: (L, X) => X.seasons <= 4 },
+  fan:      { n: 'Fan favorite', line: 'Not the best player. The one they loved.', test: (L, X) => X.persona === 'Fan favorite' || X.persona === 'Showman' },
+  paid:     { n: 'Got paid', line: 'No rings, no trophies. A very nice house.', test: (L, X) => X.T.earned >= 150 },
+  pro:      { n: 'Pro\'s pro', line: 'Coaches wanted twelve of you.', test: (L, X) => X.persona === 'Pro\'s pro' || X.persona === 'Quiet assassin' },
+  role:     { n: 'Role player', line: 'You did your job. That is rarer than it sounds.', test: () => true },
+};
+const RIBBON_KEYS = Object.keys(RIBBONS);
+/* What a ribbon reads. The Hall verdict is the one the career ended on when
+   it has ended, so the ribbon and the Hall card never disagree. */
+function ribbonFacts(L) {
+  const T = totals(L), score = L.history.length ? legacyScore(T) : 0, f = lifeOf(L);
+  const fin = L.final && L.final.ending;
+  return {
+    T, score, seasons: L.history.length, clubs: clubsOf(L), persona: personaOf(L), worth: netWorth(L),
+    rel: f.rel, kids: f.kids || 0, div: f.div || 0,
+    majors: (L.mem && L.mem['inj.majors'] && L.mem['inj.majors'].v) || 0, hurtOut: !!(L.mem && L.mem['end.injury']),
+    hof: !L.flags.banned && (fin ? !!fin.hof : score >= 55),
+  };
+}
+function ribbonOf(L) {
+  const X = ribbonFacts(L);
+  const id = RIBBON_KEYS.find((k) => RIBBONS[k].test(L, X));
+  return { id, name: RIBBONS[id].n, line: RIBBONS[id].line };
+}
+
+/* THE LIFE CARD. `facts` are tried in order and the first five that are true
+   are kept, so a card leads with what was rare about this life. */
+const commaNum = (n) => Math.round(n).toLocaleString('en-US');
+const countWord = (n, one, many) => n === 1 ? one : NUMWORDS[n] ? NUMWORDS[n] + ' ' + many : n + ' ' + many;
+function lifeFacts(L, X) {
+  const T = X.T, H = L.history, out = [], f = lifeOf(L);
+  const add = (on, t) => { if (on) out.push(t); };
+  add(L.flags.banned, 'Banned from the league for life.');
+  add(T.mvp, countWord(T.mvp, 'An MVP.', 'MVPs.'));
+  add(T.rings, countWord(T.rings, 'A championship.', 'championships.'));
+  add(T.fmvp, countWord(T.fmvp, 'A Finals MVP.', 'Finals MVPs.'));
+  add(L.flags.broke, 'Went broke in ' + L.flags.broke + '.');
+  add(X.div, countWord(X.div, 'One divorce.', 'divorces.'));
+  add(T.star, countWord(T.star, 'An All-Star.', 'All-Star teams.'));
+  add(T.dpoy, countWord(T.dpoy, 'Defensive Player of the Year.', 'Defensive Player of the Year awards.'));
+  add(T.roy, 'Rookie of the Year.');
+  add(L.draft && L.draft.pick, L.draft && L.draft.pick ? 'The ' + ordinal(L.draft.pick) + ' pick in the draft.' : '');
+  add(H.length && L.draft && !L.draft.pick, 'Went undrafted. Made it anyway.');
+  add(X.seasons >= 10 && X.clubs === 1, 'One team for ' + X.seasons + ' seasons.');
+  add(X.clubs >= 4, 'Played for ' + X.clubs + ' teams.');
+  add(X.majors >= 2, X.majors + ' major injuries.');
+  add(X.worth >= 100, 'Worth ' + money(X.worth) + ' at the end.');
+  add(f.kids, lifeLine(L) + '.');
+  add(H.length, H.length ? 'Best season: ' + Math.max(...H.map((h) => h.pts || 0)).toFixed(1) + ' points a game.' : '');
+  add(T.earned >= 1, 'Earned ' + money(T.earned) + ' on the floor.');
+  add(!H.length, 'Never played an NBA game.');
+  return out.slice(0, 5);
+}
+function lifeCard(L) {
+  const X = ribbonFacts(L), T = X.T, H = L.history, rb = ribbonOf(L);
+  const fin = L.final || legacy(L);
+  const teams = []; for (const h of H) if (h.t && teams.indexOf(h.t) < 0) teams.push(h.t);
+  const from = H.length ? H[0].y : null, to = H.length ? H[H.length - 1].y : null;
+  const stats = H.length ? [
+    { k: 'Seasons', v: String(H.length) }, { k: 'Games', v: commaNum(T.gp) }, { k: 'Points', v: commaNum(T.pts) },
+    { k: 'Rings', v: String(T.rings) }, { k: 'All-Star', v: String(T.star) }, { k: 'Worth', v: money(X.worth) },
+  ] : [];
+  const facts = lifeFacts(L, X);
+  const head = L.name + (from ? ' · ' + (from === to ? from : from + '-' + to) : '');
+  const text = [head, rb.name + ': ' + rb.line, fin.verdict + (H.length ? ' · ' + commaNum(T.pts) + ' points · ' + T.rings + (T.rings === 1 ? ' ring' : ' rings') : '')]
+    .concat(facts.slice(0, 3)).join('\n');
+  return {
+    name: L.name, num: L.num, pos: L.pos, nick: L.nick || null, from, to, teams, last: teams.length ? teams[teams.length - 1] : null,
+    ribbon: rb, verdict: fin.verdict, blurb: fin.blurb, score: fin.score || 0, persona: personaOf(L),
+    stats, facts, life: lifeLine(L), ending: fin.ending ? fin.ending.names.slice(0, 3) : [], over: !!L.retired, text,
+  };
+}
+
 // ─── public ─────────────────────────────────────────────────────────────────
 
 /* The one copy of the Career board's name rule (130's p_player check): a
@@ -13107,6 +13215,7 @@ function roadView(L) {
    career ends, and a challenge met is kept in the Vault. */
 const regGames = (L) => L.history.reduce((n, h) => n + (h.gp || 0), 0);
 const clubsOf = (L) => new Set(L.history.map((h) => h.t)).size;
+const MOGUL_WORTH = 300;
 const CHALLENGES = {
   ch_city: { name: 'One city', blurb: 'Play twelve seasons and every one for the same team.',
     test: (L) => L.history.length >= 12 && clubsOf(L) === 1, out: (L) => clubsOf(L) > 1,
@@ -13129,6 +13238,19 @@ const CHALLENGES = {
     test: (L) => regGames(L) >= 1200, prog: (L) => regGames(L).toLocaleString('en-US') + ' of 1,200 games' },
   ch_hard: { name: 'The hard way', blurb: 'On Hard, make the Hall of Fame.', diff: 'hard',
     test: (L) => !!(L.final && L.final.ending && L.final.ending.hof), prog: (L) => L.retired ? (L.final && L.final.ending && L.final.ending.hof ? 'Done' : 'Not in') : 'The voters decide at the end' },
+  /* Phase 7 of the BitLife plan: five more, two of them lived off the floor. */
+  ch_roy: { name: 'Instant impact', blurb: 'Win Rookie of the Year.',
+    test: (L) => totals(L).roy >= 1, out: (L) => L.history.length >= 1 && !totals(L).roy,
+    prog: (L) => totals(L).roy ? 'Done' : L.history.length ? 'The rookie year is gone' : 'The rookie year is ahead' },
+  ch_old: { name: 'Father Time', blurb: 'Play a season at 36 or older.',
+    test: (L) => L.history.some((h) => h.age >= 36), prog: (L) => L.history.some((h) => h.age >= 36) ? 'Done' : 'You are ' + L.age },
+  ch_suitcase: { name: 'Suitcase', blurb: 'Play for five teams.',
+    test: (L) => clubsOf(L) >= 5, prog: (L) => clubsOf(L) + ' of 5 teams' },
+  ch_family: { name: 'Family man', blurb: 'Get married and raise three kids. No divorce.',
+    test: (L) => lifeOf(L).rel === 'married' && lifeOf(L).kids >= 3 && !lifeOf(L).div, out: (L) => !!lifeOf(L).div,
+    prog: (L) => lifeOf(L).div ? 'Divorced' : (lifeOf(L).rel === 'married' ? 'Married' : 'Not married') + ', ' + lifeOf(L).kids + ' of 3 kids' },
+  ch_mogul: { name: 'Mogul', blurb: 'Retire worth ' + money(MOGUL_WORTH) + '.',
+    test: (L) => !!L.retired && netWorth(L) >= MOGUL_WORTH, prog: (L) => 'Worth ' + money(netWorth(L)) + ' of ' + money(MOGUL_WORTH) },
 };
 const CHALLENGE_KEYS = Object.keys(CHALLENGES);
 /* A challenge that starts you low on the board does it once, at the combine. */
@@ -13343,7 +13465,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, personAct, bondsLeft, BONDS, BOND_MAX, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

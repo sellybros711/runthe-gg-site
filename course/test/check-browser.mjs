@@ -10,8 +10,9 @@
  *   one thumb plays it: a drag walks, a tap travels, WASD on a desktop,
  *   walking into the cart rides it and Leave gets out
  *   a whole shift, played by the goal line bot, ends on the results card
- *   under 150 draw calls and 100,000 triangles, every control 44 by 44
- *   the first load is under 2 MB and playable in under 3 s on a 4G link
+ *   under 150 draw calls and 100,000 triangles with the real models in, every control 44 by 44
+ *   what it takes to start playing is under 2 MB and under 3 s on a 4G link;
+ *   the model packs load behind that and are counted apart
  *   a guest's course is on the device; a refresh mid-shift starts that day again
  *   a guest's shift sends nothing; a signed in shift is filed once, and a
  *   second device gets the course
@@ -35,10 +36,11 @@ const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable
 async function open(ctxOpts, { signedAs = null, throttle = false, url = base } = {}) {
   const context = await browser.newContext(ctxOpts);
   const page = await context.newPage();
-  const errors = [], sizes = { bytes: 0, files: [] };
+  const errors = [], sizes = { bytes: 0, art: 0, files: [] };
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on('pageerror', e => errors.push(String(e.message)));
-  page.on('response', async r => { try { const b = await r.body(); sizes.bytes += b.length; sizes.files.push([r.url().replace(/^https?:\/\/[^/]+/, ''), b.length]); } catch (e) {} });
+  /* the model packs load behind the game: they are counted apart from what it takes to start playing */
+  page.on('response', async r => { try { const b = await r.body(), u = r.url().replace(/^https?:\/\/[^/]+/, ''); if (/\/course\/models\//.test(u)) sizes.art += b.length; else { sizes.bytes += b.length; sizes.files.push([u, b.length]); } } catch (e) {} });
   /* the sign in scripts and the CDN are not this game's to test; a stand-in says who is signed in */
   await page.route(/cdn\.jsdelivr\.net|supabase\.co|\/arcade\/auth(-ui)?\.js/, r => r.abort());
   await page.addInitScript(id => {
@@ -66,14 +68,18 @@ for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 84
   const phone = !!vp.isMobile;
   const { context, page, errors, sizes, bootMs } = await open(vp, { throttle: phone });
   if (phone) {
-    notes.push('first load ' + (sizes.bytes / 1024).toFixed(0) + ' KB in ' + sizes.files.length + ' files, playable in ' + bootMs + ' ms on a 9 Mbps link with 150 ms latency');
-    ok(sizes.bytes < 2e6, name + ': the first load is ' + sizes.bytes + ' bytes, over 2 MB');
+    notes.push('to start playing: ' + (sizes.bytes / 1024).toFixed(0) + ' KB in ' + sizes.files.length + ' files, playable in ' + bootMs + ' ms on a 9 Mbps link with 150 ms latency');
+    ok(sizes.bytes < 2e6, name + ': what it takes to start playing is ' + sizes.bytes + ' bytes, over 2 MB');
     /* 3 s is the target. A CI runner draws with a software renderer on two shared cores, so its
        start says little about a phone: there the limit is 6 s, and the 3 s is held on a dev machine. */
     const limit = process.env.CI ? 6000 : 3000;
     ok(bootMs < limit, name + ': playable in ' + bootMs + ' ms, over ' + limit / 1000 + ' s on 4G');
     const cdp = await context.newCDPSession(page); await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   }
+  /* the art lands behind the game and must not break it; from here on the check plays with the real models */
+  const art = await page.evaluate(() => window.__course.art);
+  ok(art === true, name + ': the model packs did not load');
+  if (phone) { notes.push('the model packs: ' + (sizes.art / 1024).toFixed(0) + ' KB, loaded after the game is playable'); ok(sizes.art > 0 && sizes.art < 2.2e6, name + ': the model packs are ' + sizes.art + ' bytes'); }
   /* straight into day 1: no guide, no card, the goal line says what to do */
   const first = await page.evaluate(() => ({ menu: document.getElementById('menu').classList.contains('on'), how: document.getElementById('how').hidden,
     results: document.getElementById('results').classList.contains('on'), goal: document.getElementById('goalText').textContent, day: document.getElementById('dayLabel').textContent,

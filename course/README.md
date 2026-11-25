@@ -22,6 +22,7 @@ tester gate, noindexed, linked from nowhere, off the home page and the newslette
 | `sim.js` | the simulation: one state object on a fixed tick, a command queue, the route graph, the watchdog, the economy, `replay()`, the goal line |
 | `bot.js` | a player who only follows the goal line. The headless script, the tests and the browser check drive shifts with it |
 | `render.js` | the renderer. three.js lives behind this one file: one static mesh, instanced golfers, no allocation in `draw()` |
+| `models/`, `build/models.mjs` | the art: five packs of Kenney's CC0 models (trees, cars, buildings, golf pieces, animated people), and the script that packs them from the kits. The game starts on coded shapes and swaps to the models when they land |
 | `input.js` | one thumb: drag for a joystick, tap to travel, WASD |
 | `store.js` | where a course is kept: the device first, the account when signed in, a guest's shifts claimed on sign in |
 | `analytics.js` | first party events to `/api/course/e`, off in the EU, the UK and Switzerland, inert under a browser driver |
