@@ -3005,8 +3005,8 @@
       "sha": "ee81c089f0451aa9"
     },
     "../ticker.js": {
-      "v": "3",
-      "sha": "0e1ab395c9ef60e4"
+      "v": "4",
+      "sha": "28cbe9284386587c"
     }
   },
   "hoops/index.html": {
@@ -3115,8 +3115,8 @@
       "sha": "ee81c089f0451aa9"
     },
     "ticker.js": {
-      "v": "3",
-      "sha": "0e1ab395c9ef60e4"
+      "v": "4",
+      "sha": "28cbe9284386587c"
     },
     "stage3d.js": {
       "v": "1",
@@ -3151,8 +3151,8 @@
       "sha": "14d401c9313d16be"
     },
     "career-ui.js": {
-      "v": "68",
-      "sha": "3beca083afaf26f5"
+      "v": "69",
+      "sha": "6e8e7c353949289f"
     }
   },
   "ideas/index.html": {

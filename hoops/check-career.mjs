@@ -2437,6 +2437,7 @@ async function browser() {
   await deskWalk(b, serve);
   await appWalk(b, serve);
   await ageWalk(b, serve);
+  await lifeWalk(b, serve);
   await b.close();
 
   /* PHASE E, through the page: the Vault, the share card, a son, and an Easy
@@ -3007,7 +3008,16 @@ async function browser() {
      is silent: a button that still plays one stretch reads the same, a figure
      typed twice drifts from the engine's, and a summary that a press slips
      under plays a year nobody saw. So every figure on the sheet is held to
-     C.yearSummary, at a phone and at a desktop. The scenes half is in 7b. */
+     C.yearSummary, at a phone and at a desktop: the overall as printed and its
+     change (ovrShown, ovrShownChange), the playoffs in the engine's words
+     (playoffsText), net worth and upkeep, and what a meter and the bank moved
+     against where the engine says the year began (start). The scenes half is
+     in 7b.
+
+     THE BRACKET ALWAYS PLAYS OUT (the owner's call, 2026-11-25). Your playoff
+     games open the live ticker at the speed they always had; the rest of the
+     bracket, and a bracket you are not in, open it too and run faster. A
+     stretch of the regular season opens nothing. */
   async function ageWalk(b, serve) {
     section('7f. Age up and the year summary: a year a tap, the season on one card');
     for (const [w, h, touch] of [[390, 844, true], [1440, 900, false]]) {
@@ -3032,6 +3042,7 @@ async function browser() {
       await page.evaluate(() => {
         const C = window.RTF_CAREER, age = C.ageUp, step = C.step;
         window.__n = { age: 0, step: 0, last: null };
+        window.__age0 = age;
         C.ageUp = function(L){ const r = age.apply(this, arguments); window.__n.age++; window.__n.last = { beats: r.beats.map((x) => ({ kind: x.kind, text: x.text })), steps: r.steps, blocked: r.blocked, turned: r.turned, retired: r.retired }; return r; };
         C.step = function(){ window.__n.step++; return step.apply(this, arguments); };
       });
@@ -3044,7 +3055,17 @@ async function browser() {
           pre: (L) => nba(L) && L.history.length >= 2 && L.phase === 'pre',
           champ: (L) => nba(L) && L.phase === 'off' && L.history.length >= 2 && L.history[L.history.length - 1].po === 'Champion' && L.history[L.history.length - 1].aw.length >= 2,
           late: (L) => nba(L) && L.phase === 'late' && L.season && L.season.po && !L.season.po.out,
+          /* a year that misses the playoffs outright, and one that makes them and goes out (a copy is aged up to see) */
+          miss: (L) => nba(L) && L.phase === 'late' && L.history.length >= 1 && L.season && L.season.po && L.season.po.out && L.season.seed > 10,
+          exit: (L) => {
+            if (!(nba(L) && L.phase === 'late' && L.history.length >= 1 && L.season && L.season.po && !L.season.po.out && L.season.seed <= 6)) return false;
+            const T = JSON.parse(JSON.stringify(L));
+            try { age0(T); } catch (e) { return false; }
+            const r = T.season && T.season.po ? T.season.po.results : [];
+            return T.phase === 'off' && r.length > 0 && !r[r.length - 1].won && r[r.length - 1].round < 3;
+          },
         };
+        const age0 = window.__age0;
         const was = window.__n.step;
         try {
           for (let i = 0; i < 300; i++) {
@@ -3071,7 +3092,11 @@ async function browser() {
         const line = {}; box.querySelectorAll('.cr-yr-st').forEach((e) => { line[e.querySelector('span').textContent] = e.querySelector('b').textContent; });
         const meters = {}; box.querySelectorAll('.cr-yr-m').forEach((e) => { meters[e.getAttribute('data-m')] = { v: e.querySelector('.v').textContent, pips: e.querySelectorAll('.k-pips i.on').length, d: (e.querySelector(':scope > i') || {}).textContent || '' }; });
         const chip = (sel) => { const e = box.querySelector(sel); return e ? (e.classList.contains('up') ? '+' : '-') + e.textContent.trim() : ''; };
-        const ovr = C.show(s.ovr), dOvr = L.history.length < 2 ? 0 : ovr - C.show(s.ovr - s.ovrChange);
+        const ovr = s.ovrShown, dOvr = s.ovrShownChange;
+        /* what moved, against where the engine says the year began */
+        const st0 = s.start, dNum = {}, dM = {};
+        for (const k of Object.keys(s.meters)) { dNum[k] = st0 ? s.meters[k] - st0.meters[k] : 0; dM[k] = dNum[k] ? (dNum[k] > 0 ? '+' : '') + dNum[k] : ''; }
+        const dc = st0 ? Math.round((s.cash - st0.cash) * 10) / 10 : 0;
         return {
           modal: box.getAttribute('role') === 'dialog' && box.getAttribute('aria-modal') === 'true' && box.classList.contains('cr-yr'),
           fit: r.top >= 0 && r.bottom <= innerHeight + 0.5 && r.left >= 0 && r.right <= innerWidth + 0.5, box: [Math.round(r.top), Math.round(r.bottom)],
@@ -3080,9 +3105,11 @@ async function browser() {
           cut: [...box.querySelectorAll('.cr-yr-age, .cr-yr-ovr, .cr-yr-st, .cr-yr-rec > div, .cr-yr-cash > div, .cr-yr-m, .cr-yr-moved, #cr-yr-club')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent).slice(0, 3),
           go: { h: Math.round(g.height), on: g.top >= r.top && g.bottom <= innerHeight + 0.5, mine: !!hit && go.contains(hit), focus: document.activeElement === go, text: go.textContent },
           got: { age: tx('#cr-yr-age'), season: tx('#cr-yr-season'), club: tx('#cr-yr-club'), ovr: tx('#cr-yr-ovr'), dOvr: chip('.cr-yr-ovr .cr-yr-d'), rec: tx('#cr-yr-rec'), seed: tx('.cr-yr-rec span'), po: tx('#cr-yr-po'),
-            aw: [...box.querySelectorAll('#cr-yr-aw .k-tag')].map((e) => e.textContent), sal: tx('#cr-yr-sal'), cash: tx('#cr-yr-cash'), dCash: chip('.cr-yr-cash .cr-yr-d'), earned: tx('#cr-yr-earned'), line, meters, moved: tx('#cr-yr-moved') },
+            aw: [...box.querySelectorAll('#cr-yr-aw .k-tag')].map((e) => e.textContent), sal: tx('#cr-yr-sal'), cash: tx('#cr-yr-cash'), dCash: chip('.cr-yr-cash .cr-yr-d'), earned: tx('#cr-yr-earned'),
+            worth: tx('#cr-yr-worth'), upkeep: tx('#cr-yr-upkeep'), line, meters, moved: tx('#cr-yr-moved') },
           want: { age: String(s.age), season: (s.y - 1) + '-' + String(s.y).slice(2) + ' season', club: E.teamName(s.team) + (s.role ? ' · ' + s.role : ''), ovr: String(ovr), dOvr: dOvr ? (dOvr > 0 ? '+' : '-') + Math.abs(dOvr) : '',
-            rec: s.record[0] + '-' + s.record[1], seed: s.seed ? C.ordinal(s.seed) + ' seed' : null, po: s.playoffs, aw: s.awards.map((a) => C.AWARD_NAME[a] || a), sal: money(s.salary), cash: money(s.cash), earned: money(s.earned),
+            rec: s.record[0] + '-' + s.record[1], seed: s.seed ? C.ordinal(s.seed) + ' seed' : null, po: s.playoffsText, poRaw: s.playoffs, aw: s.awards.map((a) => C.AWARD_NAME[a] || a), sal: money(s.salary), cash: money(s.cash), earned: money(s.earned),
+            worth: money(s.worth), upkeep: money(s.upkeep), worthSum: Math.abs(s.worth - C.netWorth(L)) < 0.011 && s.upkeep === C.upkeepOf(L), started: !!st0, dNum, dM, dCash: dc ? (dc > 0 ? '+' : '-') + C.money(Math.abs(dc)) : '',
             line: { PTS: String(s.line.pts), REB: String(s.line.reb), AST: String(s.line.ast), GP: String(s.gp), MIN: String(s.line.min), STL: String(s.line.stl), BLK: String(s.line.blk), 'FG%': String(s.line.fgp), '3P%': String(s.line.tpp), 'FT%': String(s.line.ftp) },
             meters: s.meters, cashNum: s.cash },
           y: s.y, year: L.year, steps: L.steps, name: tx('#cr-yr-h') === L.name,
@@ -3096,12 +3123,13 @@ async function browser() {
         ok(s.go.h >= 44 && s.go.on && s.go.mine && s.go.focus && /continue/i.test(s.go.text), `${tag}: Continue is on the sheet, at least 44px tall, under nothing, and holds the focus (${s.go.h}px)`);
         ok(s.got.age === s.want.age && s.got.season === s.want.season && s.got.club === s.want.club, `${tag}: age, season, club and role are C.yearSummary's (${s.got.age}, ${s.got.season}, ${s.got.club})`);
         ok(same(s.got.line, s.want.line), `${tag}: the stat line is C.yearSummary's, all ten figures (${JSON.stringify(s.got.line)})`);
-        const po = s.got.po || '', raw = s.want.po;
-        const words = /^(R1|R2|CF)$/.test(raw) ? /round|conference/i.test(po) : po.toLowerCase().includes(raw.toLowerCase().replace(/^champion$/, 'champion'));
-        ok(s.got.rec === s.want.rec && s.got.seed === s.want.seed && words && / /.test(po), `${tag}: the record and the seed are C.yearSummary's, and the playoffs are told in words (${s.got.rec}, ${s.got.seed}, "${po}" for ${raw})`);
+        const po = s.got.po || '';
+        ok(s.got.rec === s.want.rec && s.got.seed === s.want.seed && po === s.want.po && / /.test(po), `${tag}: the record and the seed are C.yearSummary's, and the playoffs are told in the engine's words (${s.got.rec}, ${s.got.seed}, "${po}" for ${s.want.poRaw})`);
         ok(same(s.got.aw, s.want.aw), `${tag}: the awards are the season's, by the engine's names (${s.got.aw.join(', ') || 'none'})`);
-        ok(s.got.ovr === s.want.ovr && s.got.dOvr === s.want.dOvr, `${tag}: the overall is the printed overall and its change is the change in that number (${s.got.ovr} ${s.got.dOvr || 'even'}, want ${s.want.ovr} ${s.want.dOvr || 'even'})`);
+        ok(s.got.ovr === s.want.ovr && s.got.dOvr === s.want.dOvr, `${tag}: the overall is the engine's printed overall and its change is the engine's (${s.got.ovr} ${s.got.dOvr || 'even'}, want ${s.want.ovr} ${s.want.dOvr || 'even'})`);
         ok(s.got.sal === s.want.sal && s.got.cash === s.want.cash && s.got.earned === s.want.earned, `${tag}: salary, bank and career earnings are C.yearSummary's (${s.got.sal}, ${s.got.cash}, ${s.got.earned})`);
+        ok(s.got.worth === s.want.worth && s.got.upkeep === s.want.upkeep && s.want.worthSum, `${tag}: net worth and the yearly upkeep are on it, and they are C.yearSummary's (${s.got.worth}, ${s.got.upkeep})`);
+        ok(Object.keys(s.want.dM).every((k) => s.got.meters[k] && s.got.meters[k].d === s.want.dM[k]) && s.got.dCash === s.want.dCash, `${tag}: what a meter and the bank moved is held against where the engine says the year began (${Object.keys(s.want.dM).map((k) => k + ' ' + (s.want.dM[k] || 'even')).join(', ')}; bank ${s.want.dCash || 'even'})`);
         const mk = Object.keys(s.want.meters);
         ok(mk.length === 4 && mk.every((k) => s.got.meters[k] && s.got.meters[k].v === String(s.want.meters[k]) && s.got.meters[k].pips === Math.round(Math.max(0, Math.min(100, s.want.meters[k])) / 10)), `${tag}: the four meters stand where C.yearSummary says (${mk.map((k) => k + ' ' + (s.got.meters[k] || {}).v).join(', ')})`);
       };
@@ -3175,14 +3203,11 @@ async function browser() {
       ok(t1.turned && t1.over === 0, `${tag}: the year turns after ${t1.ages + 1} presses of Age up with ${t1.cards} decisions between them, and Age up is never offered over a waiting card (${t1.over})`);
       await page.waitForTimeout(350);
       const s1 = await sheet();
-      let mark = null;
       if (s1) {
         holdSheet(s1, 'the first');
-        /* this career was handed to the page mid life, so the page holds no
-           mark of where the year began: it shows where the meters stand and
-           guesses no change */
-        ok(Object.keys(s1.got.meters).every((k) => s1.got.meters[k].d === '') && s1.got.dCash === '', `${tag}: with no mark of where the year began, no change in a meter or the bank is guessed`);
-        mark = { m: s1.want.meters, cash: s1.want.cashNum };
+        /* this career was handed to the page mid life: the mark of where the
+           year began is the engine's, on the life, so the change is still told */
+        ok(s1.want.started, `${tag}: a career handed to the page mid life still knows where its year began`);
         /* a press that slips under the sheet plays nothing */
         const under = await page.evaluate(() => {
           const L = RTF_CAREER_UI.state().cur, a = { steps: L.steps, pending: L.pending.length, log: L.log.length };
@@ -3212,14 +3237,9 @@ async function browser() {
       const t2 = await toTurn();
       await page.waitForTimeout(350);
       const s2 = t2.turned ? await sheet() : null;
-      if (s2 && mark) {
+      if (s2) {
         holdSheet(s2, 'the second');
-        const sg = (n) => (n > 0 ? '+' : '') + n;
-        const dm = Object.keys(mark.m).map((k) => ({ k, d: s2.want.meters[k] - mark.m[k] }));
-        ok(dm.every((x) => s2.got.meters[x.k].d === (x.d ? sg(x.d) : '')), `${tag}: a meter that moved over the year says by how much, against where it stood at the last turn (${dm.map((x) => x.k + ' ' + sg(x.d)).join(', ')})`);
-        const dc = Math.round((s2.want.cashNum - mark.cash) * 10) / 10;
-        const wantCash = await page.evaluate((dc) => dc ? (dc > 0 ? '+' : '-') + window.RTF_CAREER.money(Math.abs(dc)) : '', dc);
-        ok(s2.got.dCash === wantCash, `${tag}: and the bank says what the year added or took (${s2.got.dCash || 'even'}, want ${wantCash || 'even'})`);
+        const dm = Object.keys(s2.want.dNum).map((k) => ({ k, d: s2.want.dNum[k] }));
         const fell = dm.filter((x) => x.d < 0).sort((a, b) => a.d - b.d)[0], rose = dm.filter((x) => x.d > 0).sort((a, b) => b.d - a.d)[0];
         const mv = s2.got.moved || '';
         const says = (!s2.want.dOvr || new RegExp('Overall (up|down) ' + s2.want.dOvr.slice(1) + '\\.').test(mv)) && (!fell || mv.includes(' down ' + Math.abs(fell.d) + '.')) && (!rose || mv.includes(' up ' + rose.d + '.'));
@@ -3233,6 +3253,8 @@ async function browser() {
 
       /* A TITLE YEAR: the awards and the playoffs line */
       if (await find('champ')) {
+        /* a save from before the engine marked the year: no mark on the life */
+        await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; delete L.flags.yearMark; delete L.flags.yearWas; });
         await page.waitForTimeout(250);
         await armed('#cr-next');
         await tryPress('#cr-next');
@@ -3241,6 +3263,7 @@ async function browser() {
         if (s3) {
           holdSheet(s3, 'a title year');
           ok(s3.want.aw.length >= 2 && /champion/i.test(s3.got.po), `${tag}: a title year wears its awards and says champion (${s3.got.aw.join(', ')}; "${s3.got.po}")`);
+          ok(!s3.want.started && Object.keys(s3.got.meters).every((k) => s3.got.meters[k].d === '') && s3.got.dCash === '', `${tag}: a save from before the year was marked guesses no change in a meter or the bank`);
           await tryPress('#cr-yr-go');
           await page.waitForTimeout(250);
         } else ok(false, `${tag}: one press from the summer of a title year turns it and shows the summary`);
@@ -3252,8 +3275,12 @@ async function browser() {
       await page.evaluate(() => {
         localStorage.removeItem('rtf.scenes.v1');
         const TK = window.RTF_TICKER, play = TK.play; window.__boards = [];
-        TK.play = function(d){ window.__boards.push(d ? d.kind : ''); return play.apply(this, arguments); };
+        window.__paces = []; window.__missed = [];
+        TK.play = function(d, o){ window.__boards.push(d ? d.kind : ''); window.__paces.push(o && o.pace > 0 ? o.pace : 1); window.__missed.push(!!(d && d.missed)); return play.apply(this, arguments); };
       });
+      const boardsNow = () => page.evaluate(() => { const t = document.querySelector('#tkov'); return { boards: window.__boards.slice(), paces: window.__paces.slice(), missed: window.__missed.slice(), tk: !!t && !t.hidden, pace: t ? +t.getAttribute('data-pace') : 0, lab: t && t.querySelector('.tk-lab') ? t.querySelector('.tk-lab').textContent : '' }; });
+      const ageNow = () => page.evaluate(async () => { window.__boards.length = 0; window.__paces.length = 0; window.__missed.length = 0; const a = window.__n.age; document.querySelector('#cr-next').click(); await new Promise((r) => setTimeout(r, 400)); return window.__n.age - a; });
+      const closeBoard = () => page.evaluate(async () => { const g = document.querySelector('#tkov:not([hidden]) #tk-go'); if (!g) return false; g.click(); await new Promise((r) => setTimeout(r, 150)); return true; });
       if (await find('pre')) {
         const rs = await page.evaluate(async () => { window.__boards.length = 0; const a = window.__n.age; document.querySelector('#cr-next').click(); await new Promise((r) => setTimeout(r, 400)); const t = document.querySelector('#tkov'); return { aged: window.__n.age - a, boards: window.__boards.slice(), tk: !!t && !t.hidden, on: window.RTF_SCENES.on() }; });
         ok(rs.on && rs.aged === 1 && !rs.tk && rs.boards.length === 0, `${tag}: with scenes on, a stretch of the regular season still opens no live ticker (${rs.boards.join(', ') || 'none'})`);
@@ -3263,6 +3290,426 @@ async function browser() {
         const po = await page.evaluate(async () => { window.__boards.length = 0; const a = window.__n.age; document.querySelector('#cr-next').click(); await new Promise((r) => setTimeout(r, 400)); const t = document.querySelector('#tkov'); return { aged: window.__n.age - a, boards: window.__boards.slice(), tk: !!t && !t.hidden }; });
         ok(po.aged === 1 && po.tk && po.boards.length === 1 && /^(po|pi)$/.test(po.boards[0]), `${tag}: and your playoff games still play on the live ticker (${po.boards.join(', ') || 'no board'})`);
       } else ok(false, `${tag}: found a career with the playoffs ahead`);
+      await page.evaluate(() => { for (let k = 0; k < 8; k++) { const g = document.querySelector('#tkov:not([hidden]) #tk-go'); if (g) g.click(); } });
+      /* A BRACKET YOU ARE NOT IN. The year misses the playoffs: one press, and
+         the bracket plays out on the live ticker without you, faster. */
+      if (await find('miss')) {
+        const aged = await ageNow(), m = await boardsNow();
+        ok(aged === 1 && m.tk && m.boards.length === 1 && m.boards[0] === 'rest' && m.missed[0] && /without you/i.test(m.lab), `${tag}: a bracket you are not in opens the live ticker and plays out (${m.boards.join(', ') || 'no board'}; "${m.lab}")`);
+        ok(m.paces[0] > 1 && m.pace === m.paces[0], `${tag}: and it runs faster than your own games (${m.paces[0]} times the pace)`);
+        await closeBoard();
+        const shut = await boardsNow();
+        ok(!shut.tk && shut.boards.length === 1, `${tag}: one tap on Continue closes it, and nothing else plays`);
+      } else ok(false, `${tag}: found a year that misses the playoffs`);
+      /* THE REST OF THE BRACKET. You make the playoffs and go out: your games
+         first at their own speed, then the bracket plays on, faster. */
+      if (await find('exit')) {
+        const aged = await ageNow(), a = await boardsNow();
+        ok(aged === 1 && a.tk && a.boards.length === 1 && /^(po|pi)$/.test(a.boards[0]) && a.paces[0] === 1 && a.pace === 1, `${tag}: out of the playoffs, your games play first, at the speed they always had (${a.boards.join(', ') || 'no board'}, pace ${a.paces.join(', ')})`);
+        await closeBoard();
+        const r = await boardsNow();
+        ok(r.tk && r.boards.length === 2 && r.boards[1] === 'rest' && !r.missed[1], `${tag}: then the rest of the bracket plays out on the live ticker (${r.boards.join(', ')}; "${r.lab}")`);
+        ok(r.paces[1] > r.paces[0] && r.pace === r.paces[1], `${tag}: faster than your own games (${r.paces[1]} against ${r.paces[0]})`);
+        await closeBoard();
+        const end = await boardsNow();
+        ok(!end.tk && end.boards.length === 2, `${tag}: and that is all of it: two boards, then the screen`);
+      } else ok(false, `${tag}: found a year that makes the playoffs and goes out`);
+      /* FASTER IS MEASURED, with motion on (a board with reduced motion is
+         finished at once and waits for nothing). The page is opened again with
+         motion on; the board the page plays for a missed year is played twice
+         more, at your own games' pace and at the pace the page asked for, and
+         every wait between beats is read. */
+      if (touch) {
+        await page.evaluate(() => { for (let k = 0; k < 8; k++) { const g = document.querySelector('#tkov:not([hidden]) #tk-go'); if (g) g.click(); } });
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+        await page.evaluate(() => document.querySelector('#b-career').click());
+        await page.waitForSelector('#s-car.active #cr-body', { timeout: 15000 });
+        const sp = await page.evaluate(async () => {
+          const C = window.RTF_CAREER, TK = window.RTF_TICKER, st = RTF_CAREER_UI.state(), lg = st.cur && st.cur.league;
+          if (!lg) return { err: 'no career came back' };
+          let hit = null;
+          for (let i = 0; i < 300 && !hit; i++) {
+            const L = C.newLife({ seed: 'agemiss' + i, league: lg, start: 'draft', pos: C.POS[i % 5] });
+            let g = 0;
+            while (!L.retired && g++ < 6000) {
+              if (L.team && L.stage === 'nba' && !L.pending.length && L.phase === 'late' && L.history.length >= 1 && L.season && L.season.po && L.season.po.out && L.season.seed > 10) { hit = L; break; }
+              if (L.pending.length) C.choose(L, 0); else C.step(L);
+            }
+          }
+          if (!hit) return { err: 'no missed year found' };
+          /* the walk's pages open with scenes off; the broadcast needs them on */
+          localStorage.removeItem('rtf.scenes.v1');
+          st.cur = hit; RTF_CAREER_UI.paintPress({ beats: [], result: null });
+          const play = TK.play; let got = null;
+          TK.play = function(d, o){ if (!got) got = { d, pace: o && o.pace }; return play.apply(this, arguments); };
+          document.querySelector('#cr-next').click();
+          await new Promise((r) => setTimeout(r, 300));
+          TK.play = play;
+          const t = document.querySelector('#tkov'), live = !!t && !t.hidden && /live/i.test((t.querySelector('.tk-live') || {}).textContent || '');
+          if (!got) return { err: 'no board played' };
+          /* every wait the board asks the clock for, run at once */
+          const waits = (pace) => {
+            const real = window.setTimeout, out = [];
+            window.setTimeout = function(fn, ms){ out.push(ms || 0); if (out.length < 400) fn(); return 0; };
+            let lv; try { lv = play.call(TK, got.d, pace ? { pace } : {}); } finally { window.setTimeout = real; }
+            if (lv) lv.close();
+            return out;
+          };
+          const own = waits(0), fast = waits(got.pace);
+          return { kind: got.d.kind, pace: got.pace, live, own, fast, reduced: matchMedia('(prefers-reduced-motion:reduce)').matches };
+        });
+        const sum = (a) => a.slice(1).reduce((t, x) => t + x, 0);
+        ok(sp && !sp.err && !sp.reduced && sp.kind === 'rest' && sp.live && sp.own.length > 3 && sp.own.length === sp.fast.length, `${tag}: with motion on, the bracket you are not in plays beat by beat (${sp && sp.err ? sp.err : sp.own.length + ' beats'})`);
+        ok(sp && !sp.err && sp.pace > 1 && sp.fast.slice(1).every((x, i) => x <= sp.own[i + 1]) && sum(sp.fast) < sum(sp.own) && Math.abs(sum(sp.own) / sum(sp.fast) - sp.pace) < 0.01,
+          `${tag}: and every wait in it is shorter than at your own games' pace (${sp && !sp.err ? Math.round(sum(sp.fast)) + 'ms against ' + Math.round(sum(sp.own)) + 'ms, ' + sp.pace + ' times' : 'not measured'})`);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+      }
+      ok(boom.length === 0, `${tag}: no page errors (${boom.join(' | ') || 'none'})`);
+      await ctx.close();
+    }
+  }
+
+  /* 7g. PEOPLE AND MONEY (the BitLife plan, phases 2 and 3, the screens).
+     The engine has twenty acts on a person and six verbs on the money
+     (sections 20 and 21). A screen can lose any of them silently: an act with
+     no button is content nobody sees, a price typed on the page drifts from
+     the price charged, and a button that says Buy and hires is a bug nobody
+     reports. So a bot lives a career in the engine until an act it has not
+     tapped yet is open, hands that life to the page, and the walk TAPS it:
+     People on Now, the person, the act. Then everything for sale is bought,
+     everybody hired, every investment made with the amount picker, and all of
+     it sold, let go and cashed out again, by tapping. After every tap the
+     figures on screen are held to C.peopleOpen and C.wealthOpen. Phone and
+     desktop. */
+  async function lifeWalk(b, serve) {
+    section('7g. people and money: every act reachable by tapping, every figure the engine\'s');
+    for (const [w, h, touch] of [[390, 844, true], [1440, 900, false]]) {
+      const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, reducedMotion: 'reduce', hasTouch: touch });
+      const page = await ctx.newPage();
+      const boom = [];
+      page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+      await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+      await page.route('**/*', serve);
+      await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+      await page.evaluate(() => document.querySelector('#b-career').click());
+      await page.waitForSelector('#cr-go');
+      await page.click('#cr-go');
+      const tag = `${w}x${h}`;
+      /* a screen that is not there fails its claims; it does not end the run */
+      try {
+      const press = (sel) => touch ? page.tap(sel, { timeout: 4000 }) : page.click(sel, { timeout: 4000 });
+      const tryPress = async (sel) => { try { await press(sel); return true; } catch (e) { return false; } };
+      const side = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      /* Every call the page makes on the engine's two screens. */
+      await page.evaluate(() => {
+        const C = window.RTF_CAREER, pa = C.personAct, wa = C.wealthAct, act = C.act;
+        window.__calls = [];
+        C.personAct = function(L, pid, aid){ const r = pa.apply(this, arguments); window.__calls.push({ f: 'person', pid, aid, ok: !!r, text: r && r.text, who: r && r.who, diff: r ? r.diff : null }); return r; };
+        C.wealthAct = function(L, verb, id, arg){ const r = wa.apply(this, arguments); window.__calls.push({ f: 'wealth', verb, id: String(id), arg: arg == null ? null : arg, ok: !!r, text: r && r.text, diff: r ? r.diff : null }); return r; };
+        C.act = function(L, id){ const r = act.apply(this, arguments); window.__calls.push({ f: 'move', id, ok: !!r, text: r && r.text }); return r; };
+        window.__pa = pa; window.__bot = { i: 0, L: null, seen: {} };
+      });
+      /* THE BOT: a life lived in the engine until an act nobody has tapped
+         yet is open on somebody. It acts on people itself now and then (the
+         engine's own call, kept aside), which is how a person gets cut off, a
+         partner met and a wedding reached. */
+      const nextAct = () => page.evaluate(() => {
+        const C = window.RTF_CAREER, E = window.RTF_ENGINE, B = window.__bot, st = RTF_CAREER_UI.state();
+        const lg = (B.L || st.cur).league;
+        const want = Object.keys(C.BONDS).concat('mingle').filter((k) => !B.seen[k]);
+        if (!want.length) return { done: true };
+        for (let guard = 0; guard < 400000; guard++) {
+          if (!B.L || B.L.retired) { B.L = C.newLife({ seed: 'life' + (B.i++), league: lg, start: 'draft' }); B.r = E.createSeededRNG(E.hashSeed('life-p' + B.i)); B.g = 0; if (B.i > 400) return { done: false, dark: want }; }
+          const L = B.L, r = B.r;
+          if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); continue; }
+          const open = C.peopleOpen(L);
+          const mingle = C.actsOpen(L).find((a) => a.id === 'mingle' && a.ok);
+          if (mingle && !B.seen.mingle) { st.cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); window.scrollTo(0, 0); return { aid: 'mingle' }; }
+          let hit = null;
+          for (const p of open) for (const a of p.acts) if (a.ok && !B.seen[a.id] && !hit) hit = { pid: p.id, aid: a.id, n: p.n, name: a.name, cost: a.cost, group: p.group };
+          if (hit) { st.cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); window.scrollTo(0, 0); return hit; }
+          /* live with them a little, so the rare acts open */
+          const cand = [];
+          for (const p of open) for (const a of p.acts) if (a.ok) cand.push([p.id, a.id]);
+          if (cand.length && r() < 0.5) { const c = cand[Math.floor(r() * cand.length)]; window.__pa.call(C, L, c[0], c[1]); }
+          else C.step(L);
+        }
+        return { done: false, dark: want };
+      });
+      /* What the People screen shows, and what the engine says, side by side. */
+      const people = () => page.evaluate(() => {
+        const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, open = C.peopleOpen(L);
+        const rows = [...document.querySelectorAll('#s-car [data-person]')].filter((e) => e.getBoundingClientRect().height > 0);
+        const vis = (e) => !!e && e.getBoundingClientRect().height > 0;
+        const last = (p) => p.notes.length ? p.notes[p.notes.length - 1][0] + ': ' + p.notes[p.notes.length - 1][1] : '';
+        const left = document.querySelector('#cr-pp-left');
+        return {
+          tab: document.querySelector('#s-car').getAttribute('data-ctab'), sub: (document.querySelector('#s-car [data-tab][aria-selected="true"]') || { getAttribute: () => '' }).getAttribute('data-tab'),
+          ids: rows.map((e) => e.getAttribute('data-person')), want: open.map((p) => p.id),
+          groups: [...document.querySelectorAll('#s-car [data-pgroup]')].map((e) => e.getAttribute('data-pgroup')), wantGroups: [...new Set(open.map((p) => p.group))],
+          moods: rows.map((e) => e.querySelector('.cr-mood').textContent), wantMoods: open.map((p) => p.mood),
+          notes: rows.map((e) => { const n = e.querySelector('.note'); if (!n) return ''; const c = n.cloneNode(true); const d = c.querySelector('.cr-ppdone'); if (d) d.remove(); return c.textContent; }), wantNotes: open.map(last),
+          used: rows.map((e) => !!e.querySelector('.cr-ppdone')), wantUsed: open.map((p) => p.used),
+          small: rows.filter((e) => e.getBoundingClientRect().height < 44).length,
+          left: left && vis(left) ? left.textContent : null, wantLeft: C.bondsLeft(L) + ' of ' + C.BOND_MAX,
+          first: open.length ? open[0].group : '', partner: open.some((p) => p.group === 'partner'),
+          badge: (document.querySelector('#cr-go-people i') || {}).textContent || '',
+        };
+      });
+      const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+      const toNow = async () => { await page.evaluate(() => { const t = document.querySelector('#cr-t-now'); if (t && t.getAttribute('aria-current') !== 'page') t.click(); window.scrollTo(0, 0); }); await page.waitForTimeout(120); };
+
+      /* ── PEOPLE ── */
+      const tapped = {}, miss = [], wrong = [], listBad = [], sheetBad = [], recBad = [];
+      let first = null, n = 0, lastHit = null;
+      for (let k = 0; k < 40; k++) {
+        const hit = await nextAct();
+        if (hit.done != null) { if (!hit.done) miss.push(...(hit.dark || [])); break; }
+        lastHit = hit;
+        await page.waitForTimeout(150);
+        const before = await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur; window.__calls.length = 0; return { left: C.bondsLeft(L), badge: (document.querySelector('#cr-go-people i') || {}).textContent || '', btn: !!document.querySelector('#cr-go-people'), open: C.peopleOpen(L).length }; });
+        if (!first) {
+          first = before;
+          ok(before.btn && (await page.evaluate(() => { const e = document.querySelector('#cr-go-people').getBoundingClientRect(), m = document.querySelector('#cr-go-money').getBoundingClientRect(); return e.height >= 44 && m.height >= 44 && e.width > 0 && m.width > 0; })), `${tag}: Now has a People button and a Money button, each at least 44px tall`);
+          ok(before.badge === (before.open ? String(before.left) : ''), `${tag}: the People button counts the acts left this year, C.bondsLeft (${before.badge} for ${before.left})`);
+        }
+        if (!(await tryPress('#cr-go-people'))) { wrong.push(hit.aid + ': no People button'); await page.evaluate((a) => { window.__bot.seen[a] = 1; }, hit.aid); continue; }
+        await page.waitForTimeout(280);
+        const P = await people();
+        if (P.tab !== 'team' || P.sub !== 'people') listBad.push(hit.aid + ': landed on ' + P.tab + '/' + P.sub);
+        if (!same(P.ids, P.want)) listBad.push(hit.aid + ': the list is not peopleOpen');
+        if (!same(P.moods, P.wantMoods) || !same(P.notes, P.wantNotes) || !same(P.used, P.wantUsed)) listBad.push(hit.aid + ': a mood, a note or a done mark is off');
+        if (!same(P.groups, P.wantGroups) || (P.partner && P.groups[0] !== 'partner')) listBad.push(hit.aid + ': groups ' + P.groups.join(','));
+        if (P.left !== P.wantLeft || P.small) listBad.push(hit.aid + ': left "' + P.left + '" want "' + P.wantLeft + '", ' + P.small + ' short rows');
+        if (hit.aid === 'mingle') {
+          const m = await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, a = C.actsOpen(L).find((x) => x.id === 'mingle'), e = document.querySelector('#cr-pp-mingle'); return e ? { text: e.textContent, name: a.name, cost: C.money(a.cost), h: e.getBoundingClientRect().height } : null; });
+          if (!m || !m.text.includes(m.name) || !m.text.includes(m.cost) || m.h < 44) sheetBad.push('mingle: the single man\'s row is not the move');
+          await tryPress('#cr-pp-mingle');
+          await page.waitForTimeout(250);
+          const c = await page.evaluate(() => ({ calls: window.__calls.slice(), rec: (document.querySelector('.cr-tabsec .cr-result .k-what') || {}).textContent || '' }));
+          if (c.calls.length === 1 && c.calls[0].f === 'move' && c.calls[0].id === 'mingle' && c.calls[0].ok) { tapped.mingle = 1; if (c.rec !== c.calls[0].text) recBad.push('mingle: receipt'); }
+          else wrong.push('mingle: ' + JSON.stringify(c.calls));
+          await page.evaluate(() => { window.__bot.seen.mingle = 1; });
+          await toNow();
+          continue;
+        }
+        if (!(await tryPress('[data-person="' + hit.pid + '"]'))) { wrong.push(hit.aid + ': no row for ' + hit.pid); await page.evaluate((a) => { window.__bot.seen[a] = 1; }, hit.aid); await toNow(); continue; }
+        await page.waitForTimeout(280);
+        /* the person: every act the engine lists, its cost, and what is closed */
+        const S = await page.evaluate((pid) => {
+          const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, p = C.peopleOpen(L).find((x) => x.id === pid), sh = document.querySelector('#cr-sheet');
+          const btns = [...sh.querySelectorAll('[data-pact]')], box = sh.querySelector('.k-sheet').getBoundingClientRect();
+          return { up: !sh.hidden, h: (sh.querySelector('#cr-pp-h') || {}).textContent, n: p.n, mood: (sh.querySelector('#cr-pp-mood') || {}).textContent, wantMood: p.mood,
+            ids: btns.map((e) => e.getAttribute('data-pact')), want: p.acts.map((a) => a.id),
+            names: btns.every((e, i) => p.acts[i] && e.textContent.includes(p.acts[i].name) && e.textContent.includes(p.acts[i].blurb)),
+            costs: btns.every((e, i) => p.acts[i] && (!p.acts[i].cost || e.textContent.includes(C.money(p.acts[i].cost)))),
+            shut: btns.every((e, i) => p.acts[i] && e.disabled === !p.acts[i].ok && (p.acts[i].ok || !!e.querySelector('.cr-mvchip.why'))),
+            small: btns.filter((e) => e.getBoundingClientRect().height < 44).length, fit: box.left >= 0 && box.right <= innerWidth + 0.5 && box.bottom <= innerHeight + 0.5,
+            left: (sh.querySelector('#cr-pa-left') || {}).textContent, wantLeft: C.bondsLeft(L) + ' of ' + C.BOND_MAX, notes: sh.querySelectorAll('.cr-ppnotes li').length, wantNotes: p.notes.length };
+        }, hit.pid);
+        if (!S.up || S.h !== S.n || S.mood !== S.wantMood || !same(S.ids, S.want) || !S.names || !S.costs || !S.shut || S.small || !S.fit || S.left !== S.wantLeft || S.notes !== S.wantNotes) sheetBad.push(hit.aid + ': ' + JSON.stringify(S).slice(0, 220));
+        const rel0 = await page.evaluate((pid) => RTF_CAREER_UI.state().cur.people[pid].rel, hit.pid);
+        if (!(await tryPress('#cr-sheet [data-pact="' + hit.aid + '"]'))) { wrong.push(hit.aid + ': its button could not be tapped'); await page.evaluate((a) => { window.__bot.seen[a] = 1; const x = document.querySelector('#cr-sheet-x'); if (x) x.click(); }, hit.aid); await toNow(); continue; }
+        await page.waitForTimeout(300);
+        const R = await page.evaluate((o) => {
+          const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, c = window.__calls.slice(), rec = document.querySelector('.cr-tabsec .cr-result');
+          const rows = rec ? [...rec.querySelectorAll('ul li')].map((e) => e.querySelector('span').textContent + ' ' + e.querySelector('b').textContent) : [];
+          const p = L.people[o.pid], left = document.querySelector('#cr-pp-left');
+          return { calls: c, hidden: document.querySelector('#cr-sheet').hidden, rec: rec ? rec.querySelector('.k-what').textContent : null, you: rec ? rec.querySelector('.cr-you').textContent : '', rows,
+            dRel: p ? p.rel - o.rel0 : 0, left: left ? left.textContent : null, wantLeft: C.bondsLeft(L) + ' of ' + C.BOND_MAX, bonds: C.bondsLeft(L), tab: document.querySelector('#s-car').getAttribute('data-ctab'),
+            saved: (() => { try { const s = JSON.parse(localStorage.getItem('rtf.life.v1')); return !!(s && s.cur && s.cur.flags && s.cur.flags.bonds && s.cur.flags.bonds.n === L.flags.bonds.n); } catch (e) { return false; } })() };
+        }, { pid: hit.pid, rel0 });
+        const call = R.calls[0];
+        if (R.calls.length === 1 && call.f === 'person' && call.pid === hit.pid && call.aid === hit.aid && call.ok) tapped[hit.aid] = 1;
+        else wrong.push(hit.aid + ': the tap called ' + JSON.stringify(R.calls).slice(0, 160));
+        if (call && call.ok) {
+          const sg = (x) => (x > 0 ? '+' : '') + x;
+          const wantRows = (R.dRel ? ['With ' + String(call.who).split(' ')[0] + ' ' + sg(R.dRel)] : []).length + (call.diff || []).length;
+          if (R.rec !== call.text || !R.hidden || !R.you.includes(hit.name) || !R.you.includes(call.who) || R.rows.length !== wantRows || (R.dRel && !R.rows[0].endsWith(sg(R.dRel)))
+            || R.left !== R.wantLeft || R.bonds !== before.left - 1 || R.tab !== 'team' || !R.saved) recBad.push(hit.aid + ': ' + JSON.stringify({ rec: R.rec, text: call.text, you: R.you, rows: R.rows, want: wantRows, left: R.left, wl: R.wantLeft, saved: R.saved }).slice(0, 260));
+        }
+        n++;
+        await page.evaluate((a) => { window.__bot.seen[a] = 1; }, hit.aid);
+        await toNow();
+      }
+      const all = await page.evaluate(() => Object.keys(window.RTF_CAREER.BONDS).concat('mingle'));
+      const dark = all.filter((a) => !tapped[a]);
+      ok(dark.length === 0 && all.length >= 21, `${tag}: every act on a person is reached by tapping People, the person and the act, and going out is one tap for a single man (${all.length - dark.length} of ${all.length}${dark.length ? '; not tapped: ' + dark.join(', ') : ''})`);
+      ok(!wrong.length && !miss.length, `${tag}: a tap on an act is C.personAct with that person and that act, once (${wrong.concat(miss).slice(0, 2).join(' | ') || 'every one'})`);
+      ok(!listBad.length, `${tag}: People is everyone C.peopleOpen lists, by group with a partner on top, each with the engine's mood and their last note, and it says how many acts are left (${listBad.slice(0, 2).join(' | ') || n + ' screens'})`);
+      ok(!sheetBad.length, `${tag}: a person's sheet lists every act open on them with its cost, and a closed one is disabled and says why (${sheetBad.slice(0, 1).join(' | ') || 'every sheet'})`);
+      ok(!recBad.length, `${tag}: after an act the sheet closes on its result: the engine's line, what it moved, one act fewer left, and the career saved (${recBad.slice(0, 1).join(' | ') || 'every act'})`);
+      /* one a person, and no time left: said, not guessed */
+      {
+        await toNow();
+        const z = await page.evaluate(() => {
+          const C = window.RTF_CAREER, B = window.__bot;
+          /* a life with two people open and a full year in hand */
+          for (let g = 0; g < 200000; g++) {
+            const L = B.L;
+            if (!L || L.retired) { B.L = C.newLife({ seed: 'life-z' + (B.i++), league: RTF_CAREER_UI.state().cur.league, start: 'draft' }); continue; }
+            if (L.pending.length) { C.choose(L, 0); continue; }
+            const open = C.peopleOpen(L);
+            if (open.length >= 2 && C.bondsLeft(L) === C.BOND_MAX && open[0].acts.some((a) => a.ok) && open[1].acts.some((a) => a.ok)) { RTF_CAREER_UI.state().cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); return { a: open[0].id, b: open[1].id, act: open[0].acts.find((a) => a.ok).id }; }
+            C.step(L);
+          }
+          return null;
+        });
+        if (z) {
+          await tryPress('#cr-go-people'); await page.waitForTimeout(250);
+          await tryPress('[data-person="' + z.a + '"]'); await page.waitForTimeout(250);
+          await tryPress('#cr-sheet [data-pact="' + z.act + '"]'); await page.waitForTimeout(280);
+          await tryPress('[data-person="' + z.a + '"]'); await page.waitForTimeout(250);
+          const again = await page.evaluate(() => { const b = [...document.querySelectorAll('#cr-sheet [data-pact]')]; return { n: b.length, shut: b.every((e) => e.disabled), why: b.every((e) => /one act a person/i.test((e.querySelector('.why') || {}).textContent || '')) }; });
+          ok(again.n > 0 && again.shut && again.why, `${tag}: somebody already acted on this year is closed, and the sheet says one act a person (${again.n} acts)`);
+          await page.evaluate(() => { document.querySelector('#cr-sheet-x').click(); const L = RTF_CAREER_UI.state().cur; L.flags.bonds.n = window.RTF_CAREER.BOND_MAX; RTF_CAREER_UI.paintPress({ beats: [], result: null }); });
+          await tryPress('#cr-go-people'); await page.waitForTimeout(250);
+          await tryPress('[data-person="' + z.b + '"]'); await page.waitForTimeout(250);
+          const none = await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, b = [...document.querySelectorAll('#cr-sheet [data-pact]')]; return { left: C.bondsLeft(L), n: b.length, shut: b.every((e) => e.disabled), why: b.every((e) => /no time left/i.test((e.querySelector('.why') || {}).textContent || '')), head: (document.querySelector('#cr-pa-left') || {}).textContent, badge: !!document.querySelector('#cr-go-people i') }; });
+          ok(none.left === 0 && none.n > 0 && none.shut && none.why && none.head === '0 of ' + (await page.evaluate(() => window.RTF_CAREER.BOND_MAX)), `${tag}: with the year's time spent every act is closed and says so (${none.head})`);
+          await page.evaluate(() => document.querySelector('#cr-sheet-x').click());
+        } else ok(false, `${tag}: found a life with two people and a full year`);
+      }
+
+      /* ── MONEY ── */
+      await toNow();
+      /* a man with money, in the league, nothing bought yet */
+      const rich = await page.evaluate(() => {
+        const C = window.RTF_CAREER, st = RTF_CAREER_UI.state();
+        for (let i = 0; i < 60; i++) {
+          const L = C.newLife({ seed: 'rich' + i, league: st.cur.league, start: 'draft' });
+          let g = 0;
+          while (!L.retired && g++ < 3000) {
+            if (L.team && L.stage === 'nba' && !L.pending.length && L.phase === 'mid' && L.history.length >= 2 && C.wealthOpen(L)) { L.cash = 400; st.cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); window.scrollTo(0, 0); window.__calls.length = 0; return true; }
+            if (L.pending.length) C.choose(L, 0); else C.step(L);
+          }
+        }
+        return false;
+      });
+      ok(rich, `${tag}: found a career in the league to spend in`);
+      const goMoney = await tryPress('#cr-go-money');
+      await page.waitForTimeout(300);
+      /* The screen against C.wealthOpen: the three figures, and every row of
+         the shelf that is up. */
+      const money = () => page.evaluate(() => {
+        const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, V = C.wealthOpen(L), sec = document.querySelector('#cr-money');
+        const m = (x) => x < 0 ? '-' + C.money(-x) : C.money(x), tx = (s) => { const e = sec.querySelector(s); return e ? e.textContent : null; };
+        const r = sec.getBoundingClientRect(), bar = document.querySelector('.k-actx'), top = bar ? bar.getBoundingClientRect().bottom : 0;
+        const pane = (sec.querySelector('[data-wpane]') || { getAttribute: () => '' }).getAttribute('data-wpane');
+        const rows = [...sec.querySelectorAll('[data-deal]')].map((e) => ({ verb: e.getAttribute('data-deal'), id: e.getAttribute('data-id'), text: e.textContent, fig: e.querySelector('.cr-wf b').textContent, sub: e.querySelector('.cr-wf small').textContent, off: e.classList.contains('is-off'), h: e.getBoundingClientRect().height, cut: e.scrollWidth > e.clientWidth + 1 }));
+        const want = !V ? [] : pane === 'things' ? V.own.map((o) => ({ verb: 'sell', id: String(o.i), fig: m(o.val), has: [o.name, m(o.paid), m(o.keep), String(o.y)], off: false })).concat(V.shop.map((o) => ({ verb: 'buy', id: o.id, fig: m(o.cost), has: [o.name, o.blurb, m(o.keep)], off: !o.ok })))
+          : pane === 'staff' ? V.staff.map((o) => ({ verb: 'fire', id: o.id, fig: m(o.pay), has: [o.name, String(o.since)], off: false })).concat(V.hire.map((o) => ({ verb: 'hire', id: o.id, fig: m(o.pay), has: [o.name, o.blurb], off: !o.ok })))
+          : V.inv.map((o) => ({ verb: 'cashout', id: o.id, fig: m(o.val), has: [o.name, m(o.put), String(o.y)], off: false })).concat(V.invest.map((o) => ({ verb: 'invest', id: o.id, fig: m(o.min), has: [o.name, o.blurb], off: !o.ok })));
+        const rowsOk = rows.length === want.length && rows.every((x, i) => x.verb === want[i].verb && x.id === want[i].id && x.fig === want[i].fig && x.off === want[i].off && want[i].has.every((t) => x.text.includes(t)));
+        const tabs = [...sec.querySelectorAll('[data-wtab]')].map((e) => e.querySelector('i').textContent).join(',');
+        return { tab: document.querySelector('#s-car').getAttribute('data-ctab'), seen: r.height > 0 && r.top < innerHeight && r.top >= top - 2, cash: tx('#cr-w-cash'), worth: tx('#cr-w-worth'), upkeep: tx('#cr-w-upkeep'),
+          want: V ? { cash: m(V.cash), worth: m(V.worth), upkeep: m(V.upkeep) } : null, pane, rowsOk, n: rows.length, small: rows.filter((x) => x.h < 44).length, cut: rows.filter((x) => x.cut).length,
+          tabs, wantTabs: V ? [V.own.length, V.staff.length, V.inv.length].join(',') : '', rec: tx('.cr-result .k-what'), broke: tx('#cr-w-broke'), shut: tx('#cr-w-shut') };
+      });
+      const figs = (M) => M.want && M.cash === M.want.cash && M.worth === M.want.worth && M.upkeep === M.want.upkeep;
+      const M0 = await money();
+      ok(goMoney && M0.tab === 'me' && M0.seen, `${tag}: Money on Now lands on Player with the money on screen under the bar`);
+      ok(figs(M0) && M0.tabs === M0.wantTabs, `${tag}: cash, net worth and the yearly upkeep are on top, and they are C.wealthOpen's (${M0.cash}, ${M0.worth}, ${M0.upkeep})`);
+      const shelfBad = [], dealBad = [], figBad = [], done = {};
+      const shelf = async (t) => { await tryPress('[data-wtab="' + t + '"]'); await page.waitForTimeout(160); const M = await money(); if (M.pane !== t || !M.rowsOk || M.small || M.cut || !figs(M) || M.tabs !== M.wantTabs) shelfBad.push(t + ': ' + JSON.stringify({ pane: M.pane, rows: M.rowsOk, n: M.n, small: M.small, cut: M.cut, figs: figs(M), tabs: M.tabs })); return M; };
+      /* One decision: tap the row, read the sheet against the engine, tap the
+         button, and hold the call and the screen after it. */
+      const deal = async (verb, id, pick) => {
+        await page.evaluate(() => { window.__calls.length = 0; });
+        if (!(await tryPress('#cr-money [data-deal="' + verb + '"][data-id="' + id + '"]'))) { dealBad.push(verb + ' ' + id + ': no row to tap'); return; }
+        await page.waitForTimeout(220);
+        if (pick) await pick();
+        const D = await page.evaluate((o) => {
+          const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, V = C.wealthOpen(L), sh = document.querySelector('#cr-sheet'), m = (x) => C.money(x), go = document.querySelector('#cr-w-go');
+          const f = (l, k) => l.find((x) => String(x[k]) === o.id);
+          const it = o.verb === 'buy' ? f(V.shop, 'id') : o.verb === 'sell' ? f(V.own, 'i') : o.verb === 'hire' ? f(V.hire, 'id') : o.verb === 'fire' ? f(V.staff, 'id') : o.verb === 'invest' ? f(V.invest, 'id') : f(V.inv, 'id');
+          const has = o.verb === 'buy' ? [m(it.cost), m(it.keep), m(V.cash)] : o.verb === 'sell' ? [m(it.paid), m(it.val), m(it.sell)] : o.verb === 'hire' ? [m(it.pay), m(V.cash)] : o.verb === 'fire' ? [m(it.pay)] : o.verb === 'invest' ? [m(it.min), m(it.max)] : [m(it.put), m(it.val), m(it.out)];
+          const text = sh.querySelector('.k-sheet').textContent, box = sh.querySelector('.k-sheet').getBoundingClientRect(), g = go.getBoundingClientRect();
+          const inp = document.querySelector('#cr-amt-in');
+          return { up: !sh.hidden, name: (document.querySelector('#cr-w-h') || {}).textContent === it.name, has: has.every((t) => text.includes(t)), go: go.textContent, goOn: !go.disabled && g.height >= 44 && g.bottom <= innerHeight + 0.5 && g.top >= 0,
+            fit: box.left >= 0 && box.right <= innerWidth + 0.5 && box.bottom <= innerHeight + 0.5, amt: inp ? { v: +inp.value, min: +inp.min, max: +inp.max, shown: document.querySelector('#cr-amt-v').textContent, wantMin: it.min, wantMax: it.max } : null,
+            pays: o.verb === 'sell' ? it.sell : o.verb === 'cashout' ? it.out : null, cash: L.cash };
+        }, { verb, id: String(id) });
+        if (!D.up || !D.name || !D.has || !D.goOn || !D.fit) dealBad.push(verb + ' ' + id + ': the sheet ' + JSON.stringify(D).slice(0, 200));
+        if (verb === 'invest' && !(D.amt && D.amt.min === D.amt.wantMin && D.amt.max === D.amt.wantMax && D.amt.v >= D.amt.min && D.amt.v <= D.amt.max && D.go.includes(D.amt.shown))) dealBad.push('invest ' + id + ': the picker ' + JSON.stringify(D.amt));
+        await tryPress('#cr-w-go');
+        await page.waitForTimeout(260);
+        const A = await page.evaluate(() => ({ calls: window.__calls.slice(), hidden: document.querySelector('#cr-sheet').hidden, cash: RTF_CAREER_UI.state().cur.cash, saved: (() => { try { return JSON.parse(localStorage.getItem('rtf.life.v1')).cur.cash === RTF_CAREER_UI.state().cur.cash; } catch (e) { return false; } })() }));
+        const c = A.calls[0], M = await money();
+        if (!(A.calls.length === 1 && c.f === 'wealth' && c.verb === verb && c.id === String(id) && c.ok && A.hidden && A.saved)) dealBad.push(verb + ' ' + id + ': the tap called ' + JSON.stringify(A.calls).slice(0, 160));
+        else done[verb + ':' + (verb === 'sell' ? '' : id)] = 1;
+        if (verb === 'invest' && c && !(D.amt && Math.abs(c.arg - D.amt.v) < 1e-9 && Math.abs((D.cash - A.cash) - D.amt.v) < 0.051)) dealBad.push('invest ' + id + ': put in ' + (c && c.arg) + ', the picker said ' + (D.amt && D.amt.v));
+        if (D.pays != null && Math.abs((A.cash - D.cash) - D.pays) > 0.051) dealBad.push(verb + ' ' + id + ': paid ' + (A.cash - D.cash).toFixed(2) + ', the sheet said ' + D.pays);
+        if (!figs(M) || !M.rowsOk || M.tabs !== M.wantTabs || (c && M.rec !== c.text)) figBad.push(verb + ' ' + id + ': ' + JSON.stringify({ figs: figs(M), rows: M.rowsOk, tabs: M.tabs, rec: M.rec, text: c && c.text }).slice(0, 200));
+      };
+      const ids = await page.evaluate(() => { const C = window.RTF_CAREER; return { things: Object.keys(C.THINGS), staff: Object.keys(C.STAFF), inv: Object.keys(C.INVEST) }; });
+      await shelf('things');
+      for (const id of ids.things) await deal('buy', id);
+      await shelf('staff');
+      for (const id of ids.staff) await deal('hire', id);
+      await shelf('inv');
+      /* the amount picker, three ways: a preset, the slider's keys, the plus button */
+      let way = 0;
+      for (const id of ids.inv) {
+        const k = way++ % 3;
+        await deal('invest', id, async () => {
+          if (k === 0) await tryPress('#cr-sheet [data-amt="half"]');
+          else if (k === 1) { await page.focus('#cr-amt-in'); for (let j = 0; j < 7; j++) await page.keyboard.press('ArrowRight'); }
+          else { for (let j = 0; j < 3; j++) await tryPress('#cr-amt-up'); }
+          await page.waitForTimeout(80);
+        });
+      }
+      const full = await shelf('inv');
+      const owned = await page.evaluate(() => { const V = window.RTF_CAREER.wealthOpen(RTF_CAREER_UI.state().cur); return { own: V.own.length, staff: V.staff.length, inv: V.inv.length, upkeep: V.upkeep, worth: V.worth, cash: V.cash }; });
+      ok(owned.own === ids.things.length && owned.staff === ids.staff.length && owned.inv === ids.inv.length && owned.upkeep > 0, `${tag}: everything for sale is bought, everybody hired and every investment made, by tapping (${owned.own} things, ${owned.staff} on the payroll, ${owned.inv} investments, ${full.upkeep} a year)`);
+      for (const id of ids.inv) await deal('cashout', id);
+      await shelf('staff');
+      for (const id of ids.staff) await deal('fire', id);
+      await shelf('things');
+      for (let j = 0; j < ids.things.length; j++) await deal('sell', 0);
+      const empty = await page.evaluate(() => { const V = window.RTF_CAREER.wealthOpen(RTF_CAREER_UI.state().cur); return V.own.length + V.staff.length + V.inv.length; });
+      const wantDone = [].concat(ids.things.map((k) => 'buy:' + k), ids.staff.map((k) => 'hire:' + k), ids.staff.map((k) => 'fire:' + k), ids.inv.map((k) => 'invest:' + k), ids.inv.map((k) => 'cashout:' + k), ['sell:']);
+      const darkW = wantDone.filter((k) => !done[k]);
+      ok(darkW.length === 0 && empty === 0, `${tag}: and all of it is sold, let go and cashed out again, by tapping: every verb on every thing (${wantDone.length - darkW.length} of ${wantDone.length}${darkW.length ? '; not done: ' + darkW.slice(0, 4).join(', ') : ''})`);
+      ok(!dealBad.length, `${tag}: a row opens one decision with the engine's figures on it, and its button is C.wealthAct with that verb and that thing, once; an investment puts in the amount the picker shows and a sale pays what the sheet said (${dealBad.slice(0, 2).join(' | ') || 'every one'})`);
+      ok(!shelfBad.length, `${tag}: each shelf lists what C.wealthOpen lists, what he has and then what is for sale, every figure the engine's, no row under 44px or cut (${shelfBad.slice(0, 1).join(' | ') || 'three shelves'})`);
+      ok(!figBad.length, `${tag}: after every one the three figures, the shelf and the receipt are the engine's (${figBad.slice(0, 1).join(' | ') || 'every time'})`);
+      ok((await side()) <= 0, `${tag}: the money screen scrolls nowhere sideways (${await side()}px)`);
+      /* short of cash: closed, and it says what it needs */
+      {
+        await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; L.cash = 0.2; RTF_CAREER_UI.paintPress({ beats: [], result: null }); document.querySelector('#cr-money').scrollIntoView(); });
+        const M = await shelf('things');
+        const poor = await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, V = C.wealthOpen(L); return V.shop.filter((o) => !o.ok).every((o) => { const e = document.querySelector('[data-deal="buy"][data-id="' + o.id + '"]'); return e && e.classList.contains('is-off') && e.textContent.includes('Needs ' + C.money(o.cost)) && e.textContent.includes('You have ' + C.money(L.cash)); }) && V.shop.some((o) => !o.ok); });
+        await tryPress('#cr-money [data-deal="buy"][data-id="jet"]'); await page.waitForTimeout(220);
+        const shut = await page.evaluate(() => { const g = document.querySelector('#cr-w-go'), y = document.querySelector('#cr-sheet .cr-mvwhy'); window.__calls.length = 0; if (g) g.click(); return { off: !!g && g.disabled, why: y ? y.textContent : '', calls: window.__calls.length }; });
+        ok(M.rowsOk && poor && shut.off && /needs/i.test(shut.why) && shut.calls === 0, `${tag}: short of cash, a thing is closed, says what it needs and what he has, and its button buys nothing ("${shut.why}")`);
+        await page.evaluate(() => document.querySelector('#cr-sheet-x').click());
+      }
+      /* broke is said plainly, in the year the engine wrote down */
+      {
+        const br = await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; const none = !document.querySelector('#cr-w-broke'); L.flags.broke = L.year - 1; RTF_CAREER_UI.paintPress({ beats: [], result: null }); const e = document.querySelector('#cr-w-broke'); return { none, text: e ? e.textContent : '', y: String(window.RTF_CAREER.wealthOpen(L).broke), seen: !!e && e.getBoundingClientRect().height > 0 }; });
+        ok(br.none && br.seen && /broke/i.test(br.text) && br.text.includes(br.y), `${tag}: a man who went broke is told so plainly, with the year, and nobody else is ("${br.text}")`);
+        await page.evaluate(() => { delete RTF_CAREER_UI.state().cur.flags.broke; });
+      }
+      /* a card waiting: both screens say so and offer nothing */
+      {
+        const w8 = await page.evaluate(async () => {
+          const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur;
+          for (let g = 0; g < 400 && !L.pending.length && !L.retired; g++) C.step(L);
+          if (!L.pending.length) return null;
+          RTF_CAREER_UI.paintPress({ beats: [], result: null });
+          const m = document.querySelector('#cr-w-shut'), deals = document.querySelectorAll('#cr-money [data-deal]').length, btns = !!document.querySelector('#cr-go-people') || !!document.querySelector('#cr-go-money');
+          document.querySelector('#cr-t-team').click(); await new Promise((r) => setTimeout(r, 200));
+          const t = document.querySelector('[data-tab="people"]'); if (t) t.click(); await new Promise((r) => setTimeout(r, 200));
+          const p = document.querySelector('#cr-pp-shut');
+          return { money: m ? m.textContent : '', deals, btns, people: p ? p.textContent : '', persons: document.querySelectorAll('#s-car [data-person]').length, open: C.peopleOpen(L).length, V: C.wealthOpen(L) };
+        });
+        ok(w8 && /decision is waiting/i.test(w8.money) && w8.deals === 0 && /decision is waiting/i.test(w8.people) && w8.persons === 0 && !w8.btns && w8.open === 0 && w8.V === null, `${tag}: while a decision waits both screens say so and offer nothing, as the engine has it (${w8 ? w8.deals + ' deals, ' + w8.persons + ' people' : 'no card came'})`);
+      }
+      } catch (e) { ok(false, `${tag}: the people and money walk ran to its end (${String(e && e.message || e).split('\n')[0].slice(0, 160)})`); }
       ok(boom.length === 0, `${tag}: no page errors (${boom.join(' | ') || 'none'})`);
       await ctx.close();
     }
@@ -3470,9 +3917,9 @@ async function scenesWalk(b, serve) {
      live ticker was. */
   await page.evaluate(() => {
     const C = window.RTF_CAREER, TK = window.RTF_TICKER, age = C.ageUp, play = TK.play;
-    window.__age = { n: 0, closed: 0, boards: [] };
+    window.__age = { n: 0, closed: 0, boards: [], paces: [], missed: 0 };
     C.ageUp = function(L){ const r = age.apply(this, arguments); window.__age.n++; if (r.turned) { const s = C.yearSummary(L); if (s && s.y === L.year - 1) window.__age.closed++; } return r; };
-    TK.play = function(d){ window.__age.boards.push(d ? d.kind : ''); return play.apply(this, arguments); };
+    TK.play = function(d, o){ window.__age.boards.push(d ? d.kind : ''); window.__age.paces.push(o && o.pace > 0 ? o.pace : 1); if (d && d.missed) window.__age.missed++; return play.apply(this, arguments); };
   });
   await page.evaluate(() => { window.played = 0; });
   while (presses++ < 1400) {
@@ -3578,7 +4025,17 @@ async function scenesWalk(b, serve) {
   ok(jobs.length === 0, `no plate names a person by job alone (${jobs.slice(0, 2).join(', ') || 'none'})`);
   ok(rooms['rm-draft'] && rooms['rm-press'] && rooms['rm-arena'], `the draft stage, the press room and the arena all appear (${Object.keys(rooms).join(', ')})`);
   ok(choseInScene >= 1, `decisions are answered inside scenes (${choseInScene})`);
-  ok(ticks >= 3, `the stretches of a season play on the live ticker (${ticks})`);
+  {
+    /* THE PLAYOFFS PLAY ON THE LIVE TICKER: your games and the rest of the
+       bracket (the owner's call, 2026-11-25). Every board the walk met is
+       counted by what it was. */
+    const age = await page.evaluate(() => window.__age);
+    const mine = age.boards.filter((k) => k === 'po' || k === 'pi').length, rest = age.boards.filter((k) => k === 'rest').length;
+    ok(ticks >= 3 && mine >= 1 && rest >= 1 && mine + rest === age.boards.length, `the playoffs play on the live ticker: your games and the rest of the bracket (${mine} boards of yours, ${rest} of the bracket playing out, ${ticks} presses)`);
+    const own = age.paces.filter((p, i) => age.boards[i] !== 'rest'), out = age.paces.filter((p, i) => age.boards[i] === 'rest');
+    ok(rest >= 1 && own.every((p) => p === 1) && out.every((p) => p > 1), `your games keep their speed and the bracket playing out runs faster (${[...new Set(own)].join(', ') || 'none'} against ${[...new Set(out)].join(', ') || 'none'})`);
+    ok(rest >= 1 && rest >= age.missed, `a bracket you are not in opens the live ticker too (${age.missed} of the ${rest} played without you from the start)`);
+  }
   ok(underneath, 'and the card a scene asks is on the plain screen underneath');
   {
     /* 7f, with scenes on: the main button is Age up, a stretch of the regular
