@@ -1438,6 +1438,72 @@ section('19. deals from who you are, more ways out, and goals asked some years')
   ok(goals / seasons > 0.45 && goals / seasons < 0.85, `the goal is asked some years, not every year (${(goals / seasons).toFixed(2)} a season)`);
 }
 
+section('20. the people you live with: every act is open somewhere, does what it says, and they remember');
+{
+  /* Phase 2 of the BitLife plan (the owner's call, 2026-11-24). A bot that
+     lives with its people: half its free turns go to an act on somebody. */
+  const E = require('./engine.js');
+  const N = 160, seen = {}, bad = [], over = [], twice = [], order = [];
+  let acts = 0, divorces = 0, costOff = 0, kidsByAct = 0, gone = 0, mended = 0, ended = 0, noteMiss = 0, moved = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'bond' + i, league, start: i % 2 ? 'hs' : 'draft' });
+    const r = E.createSeededRNG(E.hashSeed('bond-p' + i));
+    let g = 0, yr = null, n = 0, who = {};
+    while (!L.retired && g++ < 9000) {
+      if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); continue; }
+      if (L.year !== yr) { yr = L.year; n = 0; who = {}; }
+      const cand = [];
+      for (const p of C.peopleOpen(L)) for (const a of p.acts) if (a.ok) cand.push([p, a]);
+      /* An act not seen yet goes first, so the rare ones are found. */
+      const fresh = cand.filter((c) => !seen[c[1].id]);
+      if (cand.length && r() < 0.55) {
+        const [p, a] = (fresh.length ? fresh : cand)[Math.floor(r() * (fresh.length ? fresh : cand).length)];
+        const cash0 = L.cash, rel0 = L.people[p.id].rel, notes0 = L.people[p.id].notes.length, wed = L.life && L.life.rel === 'married', kids0 = L.life ? L.life.kids : 0;
+        const res = C.personAct(L, p.id, a.id);
+        if (!res) { bad.push('refused an open act: ' + a.id); continue; }
+        acts++; seen[a.id] = (seen[a.id] || 0) + 1; n++;
+        if (who[p.id]) twice.push(p.id + ' in ' + L.year); who[p.id] = 1;
+        if (n > C.BOND_MAX) over.push(L.year);
+        if (DASH.test(res.text + res.title) || /undefined|NaN|\{[a-z]/.test(res.text + res.title)) bad.push(a.id + ': ' + res.text);
+        /* at the end of the meter there is nowhere left to move */
+        if (L.people[p.id].rel !== rel0 || Math.abs(rel0) === 100 || a.id === 'leave' || a.id === 'mend') moved++;
+        if (L.people[p.id].notes.length === notes0 && notes0 < 5) noteMiss++;
+        if (a.id === 'leave' && wed) { divorces++; if (Math.abs((cash0 - L.cash) - Math.round(Math.max(0, cash0) * 0.4 * 10) / 10) > 0.11) costOff++; }
+        if (a.id === 'family' && L.life.kids === kids0 + 1) kidsByAct++;
+        if (a.id === 'cut') gone++;
+        if (a.id === 'mend' && !L.people[p.id].gone) mended++;
+        /* nothing is open on somebody cut off but reaching out */
+        const after = C.peopleOpen(L).find((x) => x.id === p.id);
+        if (L.people[p.id].gone && after && after.acts.some((x) => x.id !== 'mend')) bad.push('an act on somebody cut off');
+      } else C.step(L);
+    }
+    if (L.retired) ended++;
+    /* met, engaged, married, a child: still in that order when asked for on purpose */
+    let met = false, eng = false, mar = false;
+    for (const e of L.log) {
+      if (/^Met /.test(e.t)) { met = true; eng = false; }
+      else if (/^Engaged to /.test(e.t)) { if (!met) order.push('engaged before meeting'); eng = true; met = false; }
+      else if (/^Married /.test(e.t)) { if (!eng) order.push('married without an engagement'); mar = true; eng = false; }
+      else if (/^Became a parent|^Welcomed kid/.test(e.t) && !mar) order.push('a child before a wedding');
+    }
+  }
+  const dark = Object.keys(C.BONDS).filter((k) => !seen[k]);
+  console.log(`  ${acts} acts over ${N} careers  ${Object.keys(seen).length} of ${Object.keys(C.BONDS).length} kinds  divorces ${divorces}  kids ${kidsByAct}  cut ${gone}  mended ${mended}`);
+  ok(dark.length === 0, `every act on a person is taken somewhere (${dark.join(', ') || 'all ' + Object.keys(C.BONDS).length})`);
+  ok(!bad.length, `every act reads clean and is taken when open (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!over.length && !twice.length, `a year holds ${C.BOND_MAX} acts and one a person (${over.length} over, ${twice.length} twice)`);
+  ok(moved === acts && noteMiss === 0, `every act moves the person and leaves a note on them (${moved} of ${acts}, ${noteMiss} without a note)`);
+  ok(divorces > 0 && costOff === 0, `a divorce costs the two fifths of the cash the engine takes (${divorces} divorces, ${costOff} off)`);
+  ok(kidsByAct > 0 && gone > 0 && mended > 0, `a family is started, somebody is cut off and somebody is won back (${kidsByAct}, ${gone}, ${mended})`);
+  ok(!order.length, `a life asked for on purpose keeps its order (${order.slice(0, 2).join(', ') || 'met, engaged, married, a child'})`);
+  ok(ended === N, `a career lived with its people still ends (${ended} of ${N})`);
+  /* A career that never opens the People screen is the career it was. */
+  const fp = (L) => JSON.stringify([L.history, L.log.length, L.cash, L.m]);
+  const plain = (seed, peek) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (!L.retired && g++ < 6000) { if (L.pending.length) C.choose(L, L.steps % L.pending[0].options.length); else { if (peek) C.peopleOpen(L); C.step(L); } } return fp(L); };
+  let same = 0; for (let i = 0; i < 12; i++) if (plain('bq' + i, false) === plain('bq' + i, true)) same++;
+  ok(same === 12, `reading the people changes nothing (${same} of 12 careers identical)`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');
