@@ -228,7 +228,7 @@ function yearSummary(L) {
     ovr: h.ovr, ovrChange: p ? h.ovr - p.ovr : 0,
     record: [h.w, h.l], seed: h.seed, playoffs: h.po, awards: (h.aw || []).slice(),
     line: { min: h.min, pts: h.pts, reb: h.reb, ast: h.ast, stl: h.stl, blk: h.blk, fgp: h.fgp, tpp: h.tpp, ftp: h.ftp },
-    salary: h.sal, cash: L.cash, earned: L.earned, meters: Object.assign({}, L.m),
+    salary: h.sal, cash: L.cash, earned: L.earned, worth: netWorth(L), upkeep: upkeepOf(L), meters: Object.assign({}, L.m),
   };
 }
 function recordBeat(L, when) {
@@ -332,6 +332,8 @@ function newYear(L, beats) {
   if (L.flags.banned) { retire(L, beats, 'Banned for life at ' + L.age + '.'); return; }
   L.age++;
   L.year++;
+  /* The lifestyle is paid for and the money at work moves (wealth.js). */
+  wealthSeason(L, beats);
   if (L.season) L.season = null;
   if (L.contract && L.contract.next && L.contract.years <= L.contract.total) {
     L.contract.salary = L.contract.next;
