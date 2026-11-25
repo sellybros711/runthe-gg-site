@@ -1,0 +1,153 @@
+{
+ "_about": "Positions the owner set by hand (2026-11-23, through the Run The Diamond Agent) for batters in a season Lahman has not published yet who have no earlier Lahman season to borrow from. build_positions.py reads an entry only when Lahman has no row for that player-season, so the first rebuild after Lahman publishes replaces every one with the real thing. Keyed season, then the pool's Baseball-Reference id. pp is the primary position; ep is sorted and ';'-joined, with OF when any of LF/CF/RF is in it.",
+ "2026": {
+  "antonsa01": {
+   "pp": "LF",
+   "ep": "2B;LF;OF"
+  },
+  "arroymi01": {
+   "pp": "2B",
+   "ep": "2B;LF;OF"
+  },
+  "batembr01": {
+   "pp": "CF",
+   "ep": "CF;OF"
+  },
+  "bazzatr01": {
+   "pp": "2B",
+   "ep": "2B"
+  },
+  "bengeca01": {
+   "pp": "RF",
+   "ep": "CF;LF;OF;RF"
+  },
+  "bernale01": {
+   "pp": "C",
+   "ep": "1B;C"
+  },
+  "boltehe01": {
+   "pp": "CF",
+   "ep": "CF;LF;OF;RF"
+  },
+  "carrico01": {
+   "pp": "CF",
+   "ep": "CF;OF;SS"
+  },
+  "clarkma04": {
+   "pp": "CF",
+   "ep": "CF;OF"
+  },
+  "coxjo01": {
+   "pp": "CF",
+   "ep": "2B;CF;LF;OF"
+  },
+  "delauch01": {
+   "pp": "RF",
+   "ep": "DH;OF;RF"
+  },
+  "eldribr01": {
+   "pp": "1B",
+   "ep": "1B;DH"
+  },
+  "ewingaj01": {
+   "pp": "CF",
+   "ep": "CF;LF;OF;RF"
+  },
+  "florera03": {
+   "pp": "1B",
+   "ep": "1B;C"
+  },
+  "griffko01": {
+   "pp": "SS",
+   "ep": "CF;OF;SS"
+  },
+  "jarviji01": {
+   "pp": "SS",
+   "ep": "2B;SS"
+  },
+  "jonessp01": {
+   "pp": "CF",
+   "ep": "CF;LF;OF;RF"
+  },
+  "kurodjo01": {
+   "pp": "3B",
+   "ep": "2B;3B;SS"
+  },
+  "laralu01": {
+   "pp": "RF",
+   "ep": "CF;OF;RF"
+  },
+  "leeha02": {
+   "pp": "2B",
+   "ep": "2B;3B"
+  },
+  "lombage02": {
+   "pp": "SS",
+   "ep": "3B;SS"
+  },
+  "mackjo02": {
+   "pp": "C",
+   "ep": "C"
+  },
+  "malgebe01": {
+   "pp": "RF",
+   "ep": "CF;LF;OF;RF"
+  },
+  "mcgonke01": {
+   "pp": "3B",
+   "ep": "3B;SS"
+  },
+  "murakmu01": {
+   "pp": "1B",
+   "ep": "1B;DH"
+  },
+  "okamoka01": {
+   "pp": "3B",
+   "ep": "1B;3B"
+  },
+  "petertr01": {
+   "pp": "LF",
+   "ep": "CF;LF;OF;RF"
+  },
+  "prattco01": {
+   "pp": "SS",
+   "ep": "2B;SS"
+  },
+  "ramirpe01": {
+   "pp": "2B",
+   "ep": "2B;3B"
+  },
+  "rodriem01": {
+   "pp": "LF",
+   "ep": "CF;LF;OF;RF"
+  },
+  "rumfitj01": {
+   "pp": "1B",
+   "ep": "1B;DH"
+  },
+  "susacda01": {
+   "pp": "C",
+   "ep": "C"
+  },
+  "valdees01": {
+   "pp": "RF",
+   "ep": "1B;LF;OF;RF"
+  },
+  "valenbr01": {
+   "pp": "C",
+   "ep": "C"
+  },
+  "valened01": {
+   "pp": "C",
+   "ep": "C;DH"
+  },
+  "waldsry01": {
+   "pp": "LF",
+   "ep": "CF;LF;OF"
+  },
+  "wethejj01": {
+   "pp": "2B",
+   "ep": "2B;SS"
+  }
+ }
+}

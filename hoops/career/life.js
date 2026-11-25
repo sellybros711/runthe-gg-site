@@ -32,7 +32,8 @@ function newLife(opts) {
   const bg = BACKGROUNDS[bgKey];
   /* `start: 'hs'` begins as a fifteen year old sophomore. Anything else is
      draft night, with the background standing in for the road. */
-  const road = o.start === 'hs';
+  /* `start: 'kid'` is the same sophomore with a childhood played first (childhood.js). */
+  const road = o.start === 'hs' || o.start === 'kid';
   const league = o.league || { latest: 2026, net: normaliseNets({}), stars: {} };
   const L = {
     v: LIFE_VERSION, seed,
@@ -145,6 +146,7 @@ function newLife(opts) {
     queueEvents(L, 'hs_sum', 1, AM_EVENTS);
     sayShades(L);
     sayAll(L);
+    if (o.start === 'kid') { startChildhood(L); sayAll(L); }
     return L;
   }
   logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. ' + bg.name + '. Age ' + L.age + '.', 'gold');

@@ -16,7 +16,8 @@
  *
  * It is a broadcast, so it only plays with scenes on, and reduced motion
  * shows the finished board at once. window.RTF_TICKER: play(data, opts),
- * strip(data), dataFor(L, before).
+ * strip(data), dataFor(L, before). opts.done() runs when the board is closed;
+ * opts.pace (1 when left out) runs a board faster than your own games.
  */
 (function(){
 'use strict';
@@ -565,7 +566,12 @@ function play(d, opts){
   ov.style.setProperty('--c2', d.c2 || '#fff');
   ov.hidden = false;
   document.documentElement.style.overflow = 'hidden';
-  if (d.kind !== 'rs' && d.bk) return playRun(d, opts);
+  /* `opts.pace` is how fast this board runs before the speed buttons: 1 is
+     your own games, and a bracket you are out of is asked for a little faster
+     (the owner's call, 2026-11-25). It is on the overlay for a check to read. */
+  var pace = opts.pace > 0 ? +opts.pace : 1;
+  ov.setAttribute('data-pace', String(pace));
+  if (d.kind !== 'rs' && d.bk) return playRun(d, opts, pace);
   ov.className = 'tk';
   var speed = 1, i = 0, timer = 0, ended = false;
   var rs = d.kind === 'rs';
@@ -616,7 +622,7 @@ function play(d, opts){
     show(g);
     var key = rs ? g.key : (g.series && (i === items.length || items[i].series !== g.series));
     var base = rs ? 150 : 520;
-    timer = setTimeout(step, (key ? base * 7 : base) / speed);
+    timer = setTimeout(step, (key ? base * 7 : base) / (speed * pace));
   }
   function end(){
     if (ended) return;
@@ -647,7 +653,8 @@ function play(d, opts){
 /* The big boards share one clock: each item is a beat with its own wait,
    and Skip plays every beat left at once, the waits before a big game
    (`pre`) dropped. */
-function playRun(d, opts){
+function playRun(d, opts, pace){
+  pace = pace > 0 ? pace : 1;
   var speed = 1, i = 0, timer = 0, ended = false, items = [];
   var ctl = { run: function(list){ items = list; } };
   playBig(d, opts, ctl);
@@ -657,7 +664,7 @@ function playRun(d, opts){
     if (i >= items.length) return end();
     var it = items[i++];
     it.fn();
-    timer = setTimeout(step, (it.ms || 0) / speed);
+    timer = setTimeout(step, (it.ms || 0) / (speed * pace));
   }
   function end(){
     if (ended) return;

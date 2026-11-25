@@ -201,12 +201,29 @@ function queueEvents(L, phase, n, pool) {
   const due = dueArcs(L, phase);
   /* Two arcs can be due in one slot (an April with a farewell and a
      label to answer); both are dealt, each taking a place. */
-  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); }
+  /* THE SEASON'S STORY BUDGET (PACE.cap, the 10 to 15 minute career): an NBA
+     year deals at most this many story cards. An arc that is due is always
+     dealt, so a story never breaks off; your club's card and a new event only
+     while there is room. The amateur years keep their own pace. */
+  const nba = pool !== AM_ALL;
+  /* Two budgets: the season's and the summer's. The summer is where a life
+     happens (a baby, a breakup, a legend's night), and it comes last in the
+     year, so one shared budget left it nothing. */
+  const half = phase === 'off' ? 'off' : 'season';
+  const yk = L.year + ':' + half;
+  /* The draft (predraft, dn) comes once, before the first season, and keeps
+     its own pace: it spent the rookie year's budget before it began. */
+  const budgeted = nba && phase !== 'predraft' && phase !== 'dn';
+  const yr = budgeted ? (L.flags.evYear && L.flags.evYear.y === yk ? L.flags.evYear : (L.flags.evYear = { y: yk, n: 0 })) : null;
+  const cap = PACE.cap[half];
+  const room = () => !yr || yr.n < cap;
+  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); if (yr) yr.n++; }
   /* Then whatever your club gave the career to answer (teamDue). */
-  if (pool !== AM_ALL) {
+  if (nba && room()) {
     const tid = teamDue(L, phase);
-    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); }
+    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); yr.n++; }
   }
+  if (yr) n = Math.min(n, Math.max(0, cap - yr.n));
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
     /* On a story career the old recurring cards (a slump, a night out) give
@@ -214,13 +231,16 @@ function queueEvents(L, phase, n, pool) {
     /* A life off the floor keeps its pace: meeting someone, a proposal, a
        wedding, a baby. Damping those left a sweep of 600 with eleven weddings,
        so on a story career they are dealt a little more often, not less. */
-    const damp = ((x) => (LIFE_CYCLE[x] ? 1.8 : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1));
+    /* With one story card a season, a legend's night (switch on) is weighted
+       up (PACE.legend), so it is still met as often as it was. */
+    const damp = ((x) => (LIFE_CYCLE[x] ? PACE.life : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1) * (yr && pool[x].legend ? PACE.legend : 1));
     const id = weighted(rng, ids, (x) => pool[x].weight(L) * damp(x));
     if (!id) return;
     used[id] = 1;
     if (pool[id].once) once[id] = 1;
     (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
     dealCard(L, phase, pool[id]);
+    if (yr) yr.n++;
   }
 }
 
@@ -969,12 +989,14 @@ function traitSeason(L, beats) {
   if (L.m.fame >= 70) reveal(L, 'showman', 'The cameras find you. You find them back.', beats);
   if (L.rt.iq >= 78) reveal(L, 'filmJunkie', 'You know every play before the call.', beats);
   if (L.cash >= 25) reveal(L, 'saver', 'You still have most of what you made.', beats);
-  if ((T.spent || 0) >= 3) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
+  /* Two, not three, since the 10 to 15 minute career (2026-11-24): half the
+     cards, so a habit shows in fewer of them. The same for the locker room. */
+  if ((T.spent || 0) >= 2) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
   const clubs = new Set(L.history.map((h) => h.t)).size;
   if (L.history.length >= 6 && clubs === 1) reveal(L, 'loyal', 'Six seasons, one jersey.', beats);
   if (clubs >= 3) reveal(L, 'mercenary', 'Three jerseys. You go where it pays.', beats);
   const mates = Object.values(L.people || {}).filter((p) => p.role === 'Teammate' && p.rel >= 20).length;
-  if (mates >= 3) reveal(L, 'lockerVoice', 'Three teammates would run through a wall for you.', beats);
+  if (mates >= 2) reveal(L, 'lockerVoice', 'Two teammates would run through a wall for you.', beats);
 }
 
 /* SKILL BADGES are read off what you are, at the end of each season, and

@@ -21,5 +21,7 @@
   "soccer_h2h_report": { "kind": "event", "note": "once per side per head to head match" },
   "soccer_h2h_submit_draft": { "kind": "event", "note": "once per side per head to head draft" },
   "stumpire_save_play": { "kind": "event", "note": "one write per move, each carrying a new version (functions/_stumpire/api.js), so the state always changes" },
-  "stumpire_save_play_v2": { "kind": "event", "note": "as stumpire_save_play" }
+  "stumpire_save_play_v2": { "kind": "event", "note": "as stumpire_save_play" },
+
+  "course_shift_file": { "kind": "event", "note": "Run The Course (187): one filed shift. The shift number must be the next one, so a resend writes nothing, and a hole's condition is only rewritten when it is distinct. Opening the game (course_open) writes only on the first visit." }
 }

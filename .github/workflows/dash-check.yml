@@ -27,6 +27,9 @@ on:
       - '4th-and-what/**'
       - 'guides/**'
       - 'shut-the-door/**'
+      - 'course/**'
+      - 'functions/_course/**'
+      - 'functions/api/course/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   push:
@@ -44,6 +47,9 @@ on:
       - '4th-and-what/**'
       - 'guides/**'
       - 'shut-the-door/**'
+      - 'course/**'
+      - 'functions/_course/**'
+      - 'functions/api/course/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   workflow_dispatch: {}

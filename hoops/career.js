@@ -65,8 +65,9 @@
    playoff impact in a series: 3.5 left the ring share at 18.0% after step 6,
    the bottom of the owner's 18 to 30% band; 3.0 lands it at 21.5% with every
    other band in (2.5 read 25.3% but left a card never dealt). The owner's
-   call to rebalance, 2026-10-17. */
-const BAL = { star: 4, dec: 1.4, poTax: 3.0, maxAge: 38, tired: 31 };
+   call to rebalance, 2026-10-17. star went 4 to 3.8 with the 10 to 15 minute
+   career (2026-11-24): fewer cards, fewer lifts, and All-Star read 19.8%. */
+const BAL = { star: 3.8, dec: 1.4, poTax: 3.0, maxAge: 38, tired: 31 };
 /* First ballot is 85, the score VERDICTS and the cr-ballot badge already call
    First ballot. At 95 a career between them read "First ballot" on its Hall
    card and "Hall of Famer, in time" as its ending, and first ballot ran 4.7%
@@ -76,6 +77,27 @@ const HOF_AT = [85, 60, 44];
    3,000 rare-ending careers, the floor of its 0.3 to 1% band; 150 read 0.5%
    and 145 reads 0.6%, the middle (2026-10-17). */
 const GOAT_AT = 145;
+
+// ── pace (turns, season) ──
+
+/* A CAREER PLAYS IN 10 TO 15 MINUTES (the owner's call, 2026-11-24: BitLife
+   for an NBA player). An NBA season dealt about ten cards, five of them from
+   the story draws below, and a career read 6,700 words. The season's
+   story card goes to one stretch a year, drawn with the stretch weights
+   (storyStretch); off is the chance of the summer's. An arc that is due takes
+   the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
+   late 1 and off 1 cards. */
+const PACE = { stretch: { pre: 0.2, early: 0.28, mid: 0.26, late: 0.26 }, second: 1, off: 0.95, team: 1, cap: { season: 2, off: 1 }, legend: 2.5, life: 3.5, rep: 1.8 };
+/* life: meeting someone, a proposal, a wedding and a baby are weighted this
+   much (they were 1.8): a life off the floor is what the game is, and at
+   1.8 a tenth of careers married. */
+/* rep: a story card's answer moves the reputation this much harder. With
+   half the cards each has to say more about who he is: at the old weight 289
+   of 300 careers ended "Still writing it". */
+/* team is how many of your club's cards a season (it was one a phase, about
+   1.1 a season). cap is the story budget (queueEvents), one for the season and one for
+   the summer: due arcs always, then your club's card and new events while
+   there is room. */
 
 // ── growth, decline and the summer (season, events) ──
 
@@ -2533,7 +2555,8 @@ function newLife(opts) {
   const bg = BACKGROUNDS[bgKey];
   /* `start: 'hs'` begins as a fifteen year old sophomore. Anything else is
      draft night, with the background standing in for the road. */
-  const road = o.start === 'hs';
+  /* `start: 'kid'` is the same sophomore with a childhood played first (childhood.js). */
+  const road = o.start === 'hs' || o.start === 'kid';
   const league = o.league || { latest: 2026, net: normaliseNets({}), stars: {} };
   const L = {
     v: LIFE_VERSION, seed,
@@ -2646,6 +2669,7 @@ function newLife(opts) {
     queueEvents(L, 'hs_sum', 1, AM_EVENTS);
     sayShades(L);
     sayAll(L);
+    if (o.start === 'kid') { startChildhood(L); sayAll(L); }
     return L;
   }
   logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. ' + bg.name + '. Age ' + L.age + '.', 'gold');
@@ -3175,6 +3199,8 @@ function newSeason(L) {
     used: {}, acts: {}, allstar: false, awards: [], po: null, notes: [], role: null,
     startOvr: ovrOf(L), startTeam: L.team, asked: {},
   };
+  /* Games the league or a judge still holds are served first (wild.js). */
+  wildTipoff(L);
 }
 
 /* The overall you play at this season: the real number, plus how you feel. */
@@ -3447,7 +3473,8 @@ function playChunk(L, chunk, beats) {
   const box = s.box = [];
   for (let g = from; g <= to; g++) {
     const home = g % 2 === 0;
-    const hurt = s.injury && g >= s.injury.from && g < s.injury.until;
+    /* Hurt, or sat down by the league or a judge (wild.js). */
+    const hurt = (s.injury && g >= s.injury.from && g < s.injury.until) || sitting(s, g);
     const rest = !hurt && s.mods.rest > 0 && rng() < s.mods.rest;
     let net = net0;
     if (!hurt && !rest) {
@@ -3737,6 +3764,7 @@ function playoffImpact(L) {
   const role = s.role || roleOf(L);
   const playMin = Math.min(40, role.min + (role.starter ? 3 : 1));
   if (s.injury && s.injury.until > GAMES + 4) return 0;
+  if (s.ban && s.ban.until > GAMES) return 0;
   return impact(L, playMin) + s.mods.win + (trait(L, 'bigStage') ? 0.8 : 0);
 }
 /* A series that does not involve you, in one go. The score comes back too,
@@ -4061,6 +4089,7 @@ function queueMoment(L, chunk) {
   const s = L.season, role = s.role || roleOf(L);
   if (role.min < 18) return;
   if (s.injury && s.g >= s.injury.from && s.g < s.injury.until) return;
+  if (sitting(s, s.g)) return;
   const rng = rngAt(L, 'moment:' + chunk);
   if (rng() >= MOMENT_P) return;
   const id = weighted(rng, (Object.keys(MOMENTS)), (k) => MOMENTS[k].w(L));
@@ -4594,7 +4623,7 @@ function offseason(L, beats) {
   }
   /* Something off the court, most summers, and now and then the brands. */
   brandCard(L);
-  queueEvents(L, 'off', 1);
+  queueEvents(L, 'off', rngAt(L, 'n:off')() < PACE.off ? 1 : 0);
 }
 /* The answers to no offer this summer (choose() runs them). */
 ANSWER.nooffer = function(L, card, i, opt, rng, beats, touch, touches) {
@@ -5322,12 +5351,7 @@ const EVENTS = {
     title: '{partner} wants to talk about kids',
     text: (L) => lifeOf(L).kids ? 'Another one? The house is already loud.' : 'You always said you wanted a big family.',
     options: [
-      { label: 'Start a family', hint: 'Grow the house', run: (L) => {
-        const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 });
-        /* A story career knows boy or girl, because only a son can be played next. */
-        const boy = kidIsSon(L, f.kids - 1); if (Number.isFinite(f.sons) && boy) f.sons++;
-        logIt(L, (f.kids === 1 ? 'Became a parent. ' : 'Welcomed kid number ' + f.kids + '. ') + (boy ? 'A boy.' : 'A girl.'), 'good');
-        return (f.kids === 1 ? 'A baby ' : 'Kid number ' + f.kids + ', a baby ') + (boy ? 'boy' : 'girl') + ' by next summer. ' + (f.kids === 1 ? 'You learn to sleep in two-hour pieces.' : 'The house gets louder.'); } },
+      { label: 'Start a family', hint: 'Grow the house', run: (L) => startFamily(L) },
       { label: 'Wait until you retire', hint: 'Career first', run: (L) => { bump(L, { morale: -2 }); return 'You agree to wait. Mostly.'; } },
     ],
   },
@@ -5579,6 +5603,15 @@ const rivalOn = (L) => !!(L.rival && !L.rival.retired);
    them has a generated name ({partner}, keyed on `pn`, so a new relationship
    is a new person), and every one moves morale
    more than it moves anything about basketball, which is the BitLife half. */
+/* A child arrives: the baby card's answer, and the same thing asked for on
+   purpose (bonds.js). */
+function startFamily(L) {
+  const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 });
+  /* A story career knows boy or girl, because only a son can be played next. */
+  const boy = kidIsSon(L, f.kids - 1); if (Number.isFinite(f.sons) && boy) f.sons++;
+  logIt(L, (f.kids === 1 ? 'Became a parent. ' : 'Welcomed kid number ' + f.kids + '. ') + (boy ? 'A boy.' : 'A girl.'), 'good');
+  return (f.kids === 1 ? 'A baby ' : 'Kid number ' + f.kids + ', a baby ') + (boy ? 'boy' : 'girl') + ' by next summer. ' + (f.kids === 1 ? 'You learn to sleep in two-hour pieces.' : 'The house gets louder.');
+}
 function lifeOf(L) { return L.life || (L.life = { rel: 'single', kids: 0, since: 0 }); }
 function lifeLine(L) {
   const f = lifeOf(L);
@@ -6373,7 +6406,7 @@ function eventful(L) {
    The summer was made occasional too and went back to every year: a summer
    not asked cost the sweep's ring share (19.5% to 17.3%) however the quiet
    summer was chosen, so the owner's fallback stands. */
-const ASK_P = 0.5;
+const ASK_P = 0.25;  // 0.5 until the 10 to 15 minute career (2026-11-24)
 const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
@@ -6726,12 +6759,29 @@ function queueEvents(L, phase, n, pool) {
   const due = dueArcs(L, phase);
   /* Two arcs can be due in one slot (an April with a farewell and a
      label to answer); both are dealt, each taking a place. */
-  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); }
+  /* THE SEASON'S STORY BUDGET (PACE.cap, the 10 to 15 minute career): an NBA
+     year deals at most this many story cards. An arc that is due is always
+     dealt, so a story never breaks off; your club's card and a new event only
+     while there is room. The amateur years keep their own pace. */
+  const nba = pool !== AM_ALL;
+  /* Two budgets: the season's and the summer's. The summer is where a life
+     happens (a baby, a breakup, a legend's night), and it comes last in the
+     year, so one shared budget left it nothing. */
+  const half = phase === 'off' ? 'off' : 'season';
+  const yk = L.year + ':' + half;
+  /* The draft (predraft, dn) comes once, before the first season, and keeps
+     its own pace: it spent the rookie year's budget before it began. */
+  const budgeted = nba && phase !== 'predraft' && phase !== 'dn';
+  const yr = budgeted ? (L.flags.evYear && L.flags.evYear.y === yk ? L.flags.evYear : (L.flags.evYear = { y: yk, n: 0 })) : null;
+  const cap = PACE.cap[half];
+  const room = () => !yr || yr.n < cap;
+  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); if (yr) yr.n++; }
   /* Then whatever your club gave the career to answer (teamDue). */
-  if (pool !== AM_ALL) {
+  if (nba && room()) {
     const tid = teamDue(L, phase);
-    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); }
+    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); yr.n++; }
   }
+  if (yr) n = Math.min(n, Math.max(0, cap - yr.n));
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
     /* On a story career the old recurring cards (a slump, a night out) give
@@ -6739,13 +6789,16 @@ function queueEvents(L, phase, n, pool) {
     /* A life off the floor keeps its pace: meeting someone, a proposal, a
        wedding, a baby. Damping those left a sweep of 600 with eleven weddings,
        so on a story career they are dealt a little more often, not less. */
-    const damp = ((x) => (LIFE_CYCLE[x] ? 1.8 : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1));
+    /* With one story card a season, a legend's night (switch on) is weighted
+       up (PACE.legend), so it is still met as often as it was. */
+    const damp = ((x) => (LIFE_CYCLE[x] ? PACE.life : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1) * (yr && pool[x].legend ? PACE.legend : 1));
     const id = weighted(rng, ids, (x) => pool[x].weight(L) * damp(x));
     if (!id) return;
     used[id] = 1;
     if (pool[id].once) once[id] = 1;
     (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
     dealCard(L, phase, pool[id]);
+    if (yr) yr.n++;
   }
 }
 
@@ -7494,12 +7547,14 @@ function traitSeason(L, beats) {
   if (L.m.fame >= 70) reveal(L, 'showman', 'The cameras find you. You find them back.', beats);
   if (L.rt.iq >= 78) reveal(L, 'filmJunkie', 'You know every play before the call.', beats);
   if (L.cash >= 25) reveal(L, 'saver', 'You still have most of what you made.', beats);
-  if ((T.spent || 0) >= 3) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
+  /* Two, not three, since the 10 to 15 minute career (2026-11-24): half the
+     cards, so a habit shows in fewer of them. The same for the locker room. */
+  if ((T.spent || 0) >= 2) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
   const clubs = new Set(L.history.map((h) => h.t)).size;
   if (L.history.length >= 6 && clubs === 1) reveal(L, 'loyal', 'Six seasons, one jersey.', beats);
   if (clubs >= 3) reveal(L, 'mercenary', 'Three jerseys. You go where it pays.', beats);
   const mates = Object.values(L.people || {}).filter((p) => p.role === 'Teammate' && p.rel >= 20).length;
-  if (mates >= 3) reveal(L, 'lockerVoice', 'Three teammates would run through a wall for you.', beats);
+  if (mates >= 2) reveal(L, 'lockerVoice', 'Two teammates would run through a wall for you.', beats);
 }
 
 /* SKILL BADGES are read off what you are, at the end of each season, and
@@ -9643,6 +9698,10 @@ function teamDue(L, phase) {
   if (!it) it = teamSeasonWatch(L, phase);
   L.flags.tw = (L.flags.tw || []).filter((x) => !(x.y === L.year && x.ph === phase));
   if (!it) return null;
+  /* One of your club's cards a season (PACE.team, the 10 to 15 minute career):
+     the first watch that comes up is answered, the rest go to the feed. */
+  if ((L.flags.twYear || []).filter((y) => y === L.year).length >= PACE.team) return null;
+  L.flags.twYear = (L.flags.twYear || []).filter((y) => y >= L.year - 1).concat([L.year]);
   const ids = TEAM_KINDS[it.k];
   const r = rngAt(L, 'tw:' + phase);
   const n = (id) => ((L.evlog || {})[id] || []).length;
@@ -11246,7 +11305,7 @@ story({
     tag: 'Agent\'s office', t: 'Your contract runs out in June.', x: '{agent} says every playoff game is worth money now.',
     o: [O('Block it out', { trust: 2 }, 'Basketball now. Money in July.', { sub: 'Basketball first' }),
       O('Go over the numbers', { morale: -2, fame: 1 }, 'He walks you through it. You sleep worse.', { sub: 'Know what\'s at stake' })] },
-  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 3,
+  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 12,
     tag: 'Training staff', t: 'Rest all the way to Game 1?', x: '{gm} wants you off the court until Saturday. No practice at all.',
     o: [O('Take the days off', { health: 10 }, 'Three days in the cold tub. You feel brand new.', { sub: 'Get your legs back' }),
       O('Practice anyway', { health: -4, eth: 2, trust: -2 }, 'You shoot alone at night. Nothing happens. This time.', { sub: 'Stay sharp' })] },
@@ -11587,7 +11646,7 @@ function choose(L, i, extra) {
         /* A take runs its own answers and carries its own reputation. */
         const o = ev.takes[card.take - 1].options[i];
         text = o.run(L, rng) || '';
-        if (o.rep) moveRep(L, o.rep[0], o.rep[1]);
+        if (o.rep) moveRep(L, o.rep[0] * PACE.rep, o.rep[1] * PACE.rep);
         if (o.watch) watchMark(L, o.watch, beats);
       } else if (ev) {
         const o = ev.options[i];
@@ -11595,7 +11654,7 @@ function choose(L, i, extra) {
         text = o.run(L, rng) || '';
         applyRel(L, names);
         const rp = (EVENTS[card.id] || TEAM_EV[card.id]) && EVENT_REP[card.id] && EVENT_REP[card.id][i];
-        if (rp) moveRep(L, rp[0], rp[1]);
+        if (rp) moveRep(L, rp[0] * PACE.rep, rp[1] * PACE.rep);
       }
     }
   }
@@ -11673,7 +11732,7 @@ function step(L) {
       roleReview(L, beats, 'early');
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
-      queueEvents(L, 'early', 1 + (rngAt(L, 'n:early')() < (0.35) ? 1 : 0));
+      queueEvents(L, 'early', storyStretch(L, 'early') ? 1 : 0);
       break;
     }
     case 'early':
@@ -11687,7 +11746,7 @@ function step(L) {
       tradeDeadline(L, beats);
       L.season.race = mvpRace(L); debate(L);
       L.phase = 'mid';
-      queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < (0.3) ? 1 : 0));
+      queueEvents(L, 'mid', storyStretch(L, 'mid') ? 1 : 0);
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
@@ -11711,7 +11770,7 @@ function step(L) {
       logIt(L, s.w + '-' + s.l + '. ' + seedTxt, s.seed <= 6 ? 'good' : '');
       pay(L, beats);
       L.phase = 'late';
-      queueEvents(L, 'late', 1);
+      queueEvents(L, 'late', storyStretch(L, 'late') ? 1 : 0);
       break;
     }
     case 'late':
@@ -11748,6 +11807,60 @@ function step(L) {
   headlines(L, beats);
   sayAll(L, beats);
   return { beats };
+}
+/* THE YEAR IN ONE TAP (the BitLife plan, phase 1, 2026-11-24). Age up plays
+   the season on until a card needs an answer, the year turns or the career
+   ends, and hands every beat back at once, so the page can show a year as one
+   screen rather than a press a stretch. It is step, repeated: nothing in it
+   draws, so a career aged up is the career stepped. */
+function ageUp(L) {
+  const beats = [], log = [], y0 = L.year;
+  let steps = 0, closed = null;
+  while (!L.retired && !L.pending.length && steps < 24) {
+    /* What the page's ticker asks about a stretch: where the season stood
+       before the step, and the beats that step made. */
+    const was = { phase: L.phase, poDone: L.season && L.season.po ? L.season.po.results.length : 0 };
+    /* The season a press closes is gone once the year turns; the page still plays its bracket. */
+    if (L.season) closed = L.season;
+    const r = step(L);
+    steps++;
+    log.push({ phase: was.phase, poDone: was.poDone, beats: r.beats || [] });
+    for (const b of r.beats || []) beats.push(b);
+    if (L.year !== y0) break;
+  }
+  return { beats, steps, log, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0, closed: L.year !== y0 ? closed : null };
+}
+/* How a season ended, in words. */
+const PO_WORDS = { Missed: 'Missed the playoffs', 'Play-in': 'Out in the play-in', R1: 'Out in the first round', R2: 'Out in the second round',
+  CF: 'Out in the conference finals', Finals: 'Lost the Finals', Champion: 'NBA champion' };
+/* Where the year began, marked when it turns (newYear), so the summary can
+   say what moved even after a reload. */
+function markYear(L) {
+  /* the year that just closed keeps its mark, because the summary is read
+     after the turn */
+  if (L.flags.yearMark) L.flags.yearWas = L.flags.yearMark;
+  L.flags.yearMark = { y: L.year, m: Object.assign({}, L.m), cash: L.cash, ovr: show(ovrOf(L)) };
+}
+/* The year as the summary screen reads it: the season that just closed, how
+   his overall moved, the money and the meters. Null before a season is
+   played, and null for a year with no NBA season (overseas, the road). */
+function yearSummary(L) {
+  const H = L.history, h = H[H.length - 1];
+  if (!h || h.y < L.year - 1) return null;
+  const p = H[H.length - 2], mk = [L.flags.yearMark, L.flags.yearWas].find((x) => x && x.y === h.y) || null;
+  const now = show(ovrOf(L));
+  return {
+    y: h.y, age: h.age, team: h.t, role: h.role, gp: h.gp,
+    ovr: h.ovr, ovrChange: p ? h.ovr - p.ovr : 0,
+    /* the overall as it is printed everywhere, today, and its change since
+       the year began (the summer's work included) */
+    ovrShown: now, ovrShownChange: mk ? now - mk.ovr : p ? show(h.ovr) - show(p.ovr) : 0,
+    record: [h.w, h.l], seed: h.seed, playoffs: h.po, playoffsText: PO_WORDS[h.po] || h.po, awards: (h.aw || []).slice(),
+    line: { min: h.min, pts: h.pts, reb: h.reb, ast: h.ast, stl: h.stl, blk: h.blk, fgp: h.fgp, tpp: h.tpp, ftp: h.ftp },
+    salary: h.sal, cash: L.cash, earned: L.earned, worth: netWorth(L), upkeep: upkeepOf(L), meters: Object.assign({}, L.m),
+    /* where the year began, when it was marked: null on a save from before */
+    start: mk ? { meters: Object.assign({}, mk.m), cash: mk.cash } : null,
+  };
 }
 function recordBeat(L, when) {
   const s = L.season, pg = perGame(s);
@@ -11850,6 +11963,11 @@ function newYear(L, beats) {
   if (L.flags.banned) { retire(L, beats, 'Banned for life at ' + L.age + '.'); return; }
   L.age++;
   L.year++;
+  /* The lifestyle is paid for and the money at work moves (wealth.js). */
+  wealthSeason(L, beats);
+  /* The habits take their share and the league remembers (wild.js). It can end here. */
+  wildSeason(L, beats);
+  if (L.retired) return;
   if (L.season) L.season = null;
   if (L.contract && L.contract.next && L.contract.years <= L.contract.total) {
     L.contract.salary = L.contract.next;
@@ -11858,18 +11976,36 @@ function newYear(L, beats) {
   if (L.contract && L.contract.years <= 0) L.contract = null;
   beats.push({ kind: 'year', text: 'The ' + (L.year - 1) + '-' + String(L.year).slice(2) + ' season. You are ' + L.age + '.', tone: '' });
   driftLeague(L, beats);
+  markYear(L);
   L.phase = 'pre';
   openYear(L);
 }
 /* A summer with a club: the season is opened now, so whatever happens before
    it (the training card, a summer event, a camp injury) lands on it. */
+/* WHICH STRETCHES OF THE SEASON GET A STORY CARD (PACE.stretch). The season
+   deals up to two (queueEvents), and a first come draw gave them to the early
+   stretches nearly every year, so a card that only fits April or the playoffs
+   was never dealt. The stretches are drawn once a season; a rookie year has
+   no preseason draw. */
+function storyStretch(L, phase) {
+  let f = L.flags.stretch;
+  if (!f || f.y !== L.year) {
+    const keys = Object.keys(PACE.stretch).filter((k) => k !== 'pre' || L.seasonsDone > 0);
+    const r = rngAt(L, 'pace:stretch');
+    const a = weighted(r, keys, (k) => PACE.stretch[k]);
+    /* Most seasons deal a second, in another stretch (PACE.second). */
+    const b = r() < PACE.second ? weighted(r, keys.filter((k) => k !== a), (k) => PACE.stretch[k]) : null;
+    f = L.flags.stretch = { y: L.year, ph: b ? [a, b] : [a] };
+  }
+  return f.ph.indexOf(phase) >= 0;
+}
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
   L.pending.push(summerCard(L));
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
-  if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
+  if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L, 'pre') ? 1 : 0);
   rollInjury(L, 'early', []);
 }
 
@@ -12337,6 +12473,989 @@ function dealsSeason(L, beats) {
 /* For the Hall card: the brands that sold your face. */
 const dealNames = (L) => (L.deals || []).filter((x) => !x.dropped).map((x) => x.n);
 
+// ─── the people you live with ───────────────────────────────────────────────
+
+/* BONDS (the BitLife plan, phase 2, the owner's call of 2026-11-24). Every
+   invented person in the ledger (story-engine.js) is somebody you can act on:
+   spend time, send money, ask for money, have it out, cut them off, make
+   peace. A partner is dated, proposed to, married, given a family or left.
+   They remember: every act moves the person's meter and leaves a note on
+   them, and the cards that read a meter (relOf) read these too.
+
+   The page reads `peopleOpen(L)` and calls `personAct(L, personId, actId)`,
+   the way it reads actsOpen and act. Nothing here is dealt: a career that
+   never opens the People screen plays exactly as it did, and every draw is on
+   its own stream (bond:person:act:year).
+
+   Real people are never in the ledger, so none of this touches a real man. */
+
+/* How much of a year goes to people: acts a season, and one a person. */
+const BOND_MAX = 4;
+const BOND_GROUP = {
+  Partner: 'partner',
+  Mom: 'family', Dad: 'family', Cousin: 'family',
+  'Friend from home': 'friend', 'College roommate': 'friend', 'Old teammate': 'friend', 'High school coach': 'friend',
+  'AAU coach': 'friend', 'Kid from your camp': 'friend', Superfan: 'friend', 'Streetball legend': 'friend', Trainer: 'friend',
+  Teammate: 'mate', 'Co-star': 'mate',
+  'Beat writer': 'press', 'TV critic': 'press',
+  'Draft-class rival': 'foe', Nemesis: 'foe', 'Rival from camp': 'foe',
+};
+const BOND_ORDER = ['partner', 'family', 'friend', 'mate', 'press', 'foe'];
+const bondMood = (p) => p.gone ? 'Cut off' : p.rel >= 40 ? 'Close' : p.rel >= 10 ? 'Good' : p.rel > -10 ? 'Neutral' : p.rel > -40 ? 'Strained' : 'Bad blood';
+const isParent = (p) => p.role === 'Mom' || p.role === 'Dad';
+const bondNote = (L, p, t) => { p.notes.push([L.year, t]); if (p.notes.length > 5) p.notes.shift(); };
+const bondRel = (p, d) => { p.rel = clamp(p.rel + d, -100, 100); };
+/* The person you are with now. An old partner stays in the ledger under the
+   same role, and nothing here acts on them. */
+const withNow = (L, p) => p.role === 'Partner' && lifeOf(L).rel !== 'single' && p.n === say(L, '{partner}');
+const paired = (L, st) => (L, p) => withNow(L, p) && [].concat(st).indexOf(lifeOf(L).rel) >= 0;
+/* It ends: the same bookkeeping the breakup card does. */
+function partnerLeaves(L) { const f = lifeOf(L); if (f.rel === 'married') f.div = (f.div || 0) + 1; f.rel = 'single'; f.pn = (f.pn || 0) + 1; }
+
+/* The three loud ones (freezing out the press, trash talk, a call out that
+   goes badly) are public, so they move the reputation too: a man who wants
+   to be the villain can be one on purpose (phase 7, the Villain ribbon). */
+/* Each act: who it is for (`on`), what it costs, and what it does. `run`
+   returns the line the screen shows; `tone` colors it. */
+const BONDS = {
+  time: {
+    name: 'Spend time together', blurb: 'A weekend. No cameras.', on: (L, p) => !p.gone && /^(family|friend)$/.test(BOND_GROUP[p.role]),
+    run(L, p, r) {
+      bondRel(p, 10); bump(L, { morale: 3 }); bondNote(L, p, 'You made the time.');
+      return pick(r, ['A whole weekend with ' + p.n + '. The phone stays in the car.', p.n + ' cooks. You do the dishes. Nobody talks about basketball.', 'You and ' + p.n + ' talk until the sun comes up.']);
+    },
+  },
+  gift: {
+    name: 'Send something nice', blurb: 'They will know it is from you.', cost: () => 0.1,
+    on: (L, p) => !p.gone && /^(family|friend)$/.test(BOND_GROUP[p.role]),
+    run(L, p, r) {
+      bondRel(p, 14); bondNote(L, p, 'You sent a gift.');
+      return pick(r, [p.n + ' calls to say thank you. Twice.', 'It shows up with a bow on it. ' + p.n + ' sends a photo.', p.n + ' says it is too much. ' + p.n + ' keeps it.']);
+    },
+  },
+  house: {
+    name: 'Buy a house', blurb: 'The one promise every rookie makes.', cost: () => 1.2, tone: 'gold',
+    /* Mom's house is one promise, kept here or as the move (turns.js). */
+    on: (L, p) => !p.gone && isParent(p) && !p.house && !(p.role === 'Mom' && L.flags.momHouse),
+    run(L, p) {
+      p.house = L.year; if (p.role === 'Mom') L.flags.momHouse = true; bondRel(p, 40); bump(L, { morale: 6 }); bondNote(L, p, 'You bought the house.');
+      logIt(L, 'Bought ' + p.n + ' a house.', 'gold');
+      return p.n + ' walks every room twice. Then cries in the kitchen.';
+    },
+  },
+  ask: {
+    name: 'Ask for money', blurb: 'Pride is cheaper than rent.',
+    on: (L, p) => !p.gone && /^(family|friend)$/.test(BOND_GROUP[p.role]) && L.cash < 0.5,
+    run(L, p, r) {
+      if (ok(r, 0.35 + p.rel / 120)) { bump(L, { cash: 0.2, morale: -2 }); bondRel(p, -6); bondNote(L, p, 'You asked for money. They gave it.'); return p.n + ' sends it the same day. No questions.'; }
+      bump(L, { morale: -4 }); bondRel(p, -10); bondNote(L, p, 'You asked for money. They said no.');
+      return p.n + ' says no. It is a short call.';
+    },
+  },
+  argue: {
+    name: 'Have it out', blurb: 'Say the thing you have been holding.', tone: 'bad',
+    on: (L, p) => !p.gone && !withNow(L, p) && !!BOND_GROUP[p.role],
+    run(L, p, r) {
+      bondRel(p, -18); bump(L, { morale: -2 }); watchMark(L, 'hot', []); bondNote(L, p, 'You had it out.');
+      return pick(r, ['It gets loud. ' + p.n + ' hangs up first.', 'You say all of it. ' + p.n + ' says some back.', p.n + ' walks out before you finish.']);
+    },
+  },
+  cut: {
+    name: 'Cut them off', blurb: 'No calls. No tickets. Done.', tone: 'bad',
+    on: (L, p) => !p.gone && /^(family|friend)$/.test(BOND_GROUP[p.role]),
+    run(L, p) {
+      p.gone = L.year; p.rel = -100; bump(L, { morale: BOND_GROUP[p.role] === 'family' ? -8 : -3 }); bondNote(L, p, 'You cut them off.');
+      logIt(L, 'Cut ' + p.n + ' off.', 'bad');
+      return 'You block the number. ' + p.n + ' finds out from somebody else.';
+    },
+  },
+  mend: {
+    name: 'Reach out', blurb: 'It has been a while.',
+    on: (L, p) => !!p.gone && L.year > p.gone,
+    run(L, p, r) {
+      if (ok(r, 0.5)) { delete p.gone; p.rel = -20; bump(L, { morale: 5 }); bondNote(L, p, 'You reached out. They answered.'); logIt(L, 'Made up with ' + p.n + '.', 'good'); return p.n + ' picks up on the second ring. It is a start.'; }
+      bump(L, { morale: -3 }); bondNote(L, p, 'You reached out. Nothing.');
+      return 'It rings out. ' + p.n + ' does not call back.';
+    },
+  },
+  // ── teammates ──
+  hang: {
+    name: 'Take him to dinner', blurb: 'Your treat.', on: (L, p) => BOND_GROUP[p.role] === 'mate',
+    run(L, p, r) {
+      bondRel(p, 10); bump(L, { morale: 2 }); bondNote(L, p, 'Dinner was on you.');
+      return pick(r, [p.n + ' orders for the table. You pay. Worth it.', 'Three hours at a steakhouse with ' + p.n + '. He is funnier than you knew.']);
+    },
+  },
+  train: {
+    name: 'Work out together', blurb: 'Six in the morning. Bring him.', on: (L, p) => BOND_GROUP[p.role] === 'mate',
+    run(L, p) { bondRel(p, 8); bump(L, { trust: 1, eth: 1 }); bondNote(L, p, 'You put in the work together.'); return 'You and ' + p.n + ' are in the gym before the lights are on.'; },
+  },
+  callout: {
+    name: 'Call him out', blurb: 'In front of the room.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'mate',
+    run(L, p, r) {
+      if (ok(r, 0.45 + L.m.trust / 400)) { bondRel(p, 6); bump(L, { trust: 3 }); bondNote(L, p, 'You called him out. He heard it.'); return p.n + ' nods. He needed to hear it from you.'; }
+      bondRel(p, -18); bump(L, { morale: -2, trust: -1 }); moveRep(L, -1, -3); bondNote(L, p, 'You called him out. It went badly.');
+      return p.n + ' does not take it well. The room goes quiet.';
+    },
+  },
+  // ── the press ──
+  scoop: {
+    name: 'Give an exclusive', blurb: 'One story. Your words.', on: (L, p) => BOND_GROUP[p.role] === 'press',
+    run(L, p) { bondRel(p, 12); bump(L, { fame: 2 }); bondNote(L, p, 'You gave the exclusive.'); return p.n + ' gets the story first. It reads the way you told it.'; },
+  },
+  freeze: {
+    name: 'Freeze them out', blurb: 'No quotes. No eye contact.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'press',
+    run(L, p) { bondRel(p, -15); bump(L, { fame: -1 }); moveRep(L, -3, -2); bondNote(L, p, 'You froze them out.'); return p.n + ' asks three questions. You answer none.'; },
+  },
+  // ── rivals ──
+  trash: {
+    name: 'Talk trash', blurb: 'Loud enough to get back to him.', tone: 'bad', on: (L, p) => BOND_GROUP[p.role] === 'foe',
+    run(L, p) { bondRel(p, -12); bump(L, { fame: 3 }); moveRep(L, -3, -3); bondNote(L, p, 'You talked trash. It got back.'); return 'It is everywhere by lunch. ' + p.n + ' has seen it.'; },
+  },
+  peace: {
+    name: 'Bury it', blurb: 'Life is long. The league is small.', on: (L, p) => BOND_GROUP[p.role] === 'foe' && p.rel < 20,
+    run(L, p, r) {
+      if (ok(r, 0.5)) { bondRel(p, 25); bump(L, { morale: 2 }); bondNote(L, p, 'You buried it.'); return 'You and ' + p.n + ' shake on it. Mostly meant.'; }
+      bondRel(p, -5); bondNote(L, p, 'You tried to bury it. No.');
+      return p.n + ' leaves you on read.';
+    },
+  },
+  // ── your partner ──
+  date: {
+    name: 'Date night', blurb: 'Phones in the glove box.', cost: () => 0.05, on: paired(null, ['dating', 'engaged', 'married']),
+    run(L, p, r) {
+      bondRel(p, 10); bump(L, { morale: 4 }); bondNote(L, p, 'Date night.');
+      return pick(r, ['Dinner, then a walk. ' + p.n + ' laughs at all of it.', 'You cook. It is bad. ' + p.n + ' eats it anyway.', 'Courtside is your office. Tonight you two sit in the cheap seats at a movie.']);
+    },
+  },
+  propose: {
+    name: 'Propose', blurb: 'There is a ring in your pocket.', tone: 'gold', on: (L, p) => withNow(L, p) && lifeOf(L).rel === 'dating' && L.year - lifeOf(L).since >= 1,
+    run(L, p, r) {
+      if (ok(r, 0.55 + p.rel / 250)) { lifeOf(L).rel = 'engaged'; bondRel(p, 25); bump(L, { morale: 10 }); bondNote(L, p, 'You proposed. Yes.'); logIt(L, 'Engaged to {partner}.', 'good'); return 'Yes, before you finish the question.'; }
+      bondRel(p, -10); bump(L, { morale: -6 }); bondNote(L, p, 'You proposed. Not yet.');
+      return '"Not yet," ' + p.n + ' says. The ring goes back in the drawer.';
+    },
+  },
+  elope: {
+    name: 'Elope', blurb: 'Just the two of you. This week.', cost: () => 0.1, tone: 'gold', on: paired(null, 'engaged'),
+    run(L, p) { lifeOf(L).rel = 'married'; bondRel(p, 20); bump(L, { morale: 10 }); bondNote(L, p, 'You eloped.'); logIt(L, 'Married {partner}.', 'gold'); return 'A courthouse, two witnesses and a taco truck. Perfect.'; },
+  },
+  family: {
+    name: 'Start a family', blurb: 'Grow the house.', on: (L, p) => withNow(L, p) && lifeOf(L).rel === 'married' && lifeOf(L).kids < 4 && L.age <= 38,
+    run(L, p) { bondRel(p, 15); bondNote(L, p, 'You grew the family.'); return startFamily(L); },
+  },
+  fight: {
+    name: 'Pick a fight', blurb: 'You know which button.', tone: 'bad', on: paired(null, ['dating', 'engaged', 'married']),
+    run(L, p) {
+      bondRel(p, -25); bump(L, { morale: -4 }); watchMark(L, 'hot', []); bondNote(L, p, 'A bad fight.');
+      /* Enough of these and they go: said at once, not left for a card. */
+      if (p.rel <= -40) {
+        const wed = lifeOf(L).rel === 'married';
+        if (wed) { const cost = round1(Math.max(0, L.cash) * 0.4); bump(L, { cash: -cost, morale: -8 }); logIt(L, 'Divorced {partner}. It cost ' + money(cost) + '.', 'bad'); }
+        partnerLeaves(L);
+        return wed ? p.n + ' packs a bag and calls a lawyer.' : p.n + ' packs a bag. That is that.';
+      }
+      return 'Doors slam. ' + p.n + ' sleeps in the other room.';
+    },
+  },
+  leave: {
+    name: (L) => lifeOf(L).rel === 'married' ? 'File for divorce' : 'End it', blurb: (L) => lifeOf(L).rel === 'married' ? 'It will cost you.' : 'Walk away clean.', tone: 'bad',
+    on: paired(null, ['dating', 'engaged', 'married']),
+    takes: (L) => lifeOf(L).rel === 'married' ? round1(Math.max(0, L.cash) * 0.4) : 0,
+    run(L, p) {
+      if (lifeOf(L).rel === 'married') {
+        const cost = round1(Math.max(0, L.cash) * 0.4);
+        bump(L, { cash: -cost, morale: -12 }); p.rel = -40; bondNote(L, p, 'You filed for divorce.');
+        logIt(L, 'Divorced {partner}. It cost ' + money(cost) + '.', 'bad');
+        partnerLeaves(L);
+        return 'The lawyers do the talking. ' + p.n + ' keeps the house.';
+      }
+      bump(L, { morale: -6 }); p.rel = -20; bondNote(L, p, 'You ended it.'); partnerLeaves(L);
+      return 'You say it plainly. ' + p.n + ' already knew.';
+    },
+  },
+};
+const bondText = (L, v) => typeof v === 'function' ? v(L) : v;
+const bondUsed = (L) => (L.flags.bonds && L.flags.bonds.y === L.year) ? L.flags.bonds : { y: L.year, n: 0, who: {} };
+
+/* Everybody you can act on now, each with the acts open on them. An act is
+   listed when it fits the person; `ok` says whether it can be taken (the
+   year's time, one act a person, the cash). */
+function peopleOpen(L) {
+  if (L.retired || L.pending.length || isAm(L)) return [];
+  const used = bondUsed(L), out = [];
+  for (const id in L.people || {}) {
+    const p = L.people[id], g = BOND_GROUP[p.role];
+    if (!g) continue;
+    const acts = Object.keys(BONDS).filter((k) => BONDS[k].on(L, p)).map((k) => {
+      const a = BONDS[k], cost = a.cost ? a.cost(L, p) : 0;
+      /* `why` names what closes it (the year's time, this person already, the cash); `takes` is
+         what it will cost beyond the price, when that is known before it is done. */
+      const why = used.n >= BOND_MAX ? 'year' : used.who[id] ? 'person' : L.cash < cost ? 'cash' : null;
+      return { id: k, name: bondText(L, a.name), blurb: bondText(L, a.blurb), cost, takes: a.takes ? a.takes(L, p) : 0, tone: a.tone || '', ok: !why, why };
+    });
+    if (!acts.length) continue;
+    out.push({ id, group: g, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice(), used: !!used.who[id], acts });
+  }
+  return out.sort((a, b) => BOND_ORDER.indexOf(a.group) - BOND_ORDER.indexOf(b.group) || b.rel - a.rel || (a.id < b.id ? -1 : 1));
+}
+/* Everybody in the ledger, acted on or not, with the same mood word: for the
+   people the screen lists who have no act open (an old partner, a GM). */
+function peopleAll(L) {
+  return Object.keys(L.people || {}).map((id) => { const p = L.people[id]; return { id, group: BOND_GROUP[p.role] || null, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice() }; });
+}
+/* How much of the year is left for people. */
+const bondsLeft = (L) => Math.max(0, BOND_MAX - bondUsed(L).n);
+function personAct(L, pid, aid) {
+  const who = peopleOpen(L).find((x) => x.id === pid), open = who && who.acts.find((x) => x.id === aid);
+  if (!open || !open.ok) return null;
+  const p = L.people[pid], a = BONDS[aid];
+  const used = L.flags.bonds = bondUsed(L);
+  used.n++; used.who[pid] = 1;
+  const before = snapshot(L);
+  if (open.cost) { L.cash = round1(L.cash - open.cost); if (open.cost >= 0.5) tw(L).spent = (tw(L).spent || 0) + 1; }
+  const text = say(L, a.run(L, p, rngAt(L, 'bond:' + pid + ':' + aid)));
+  sayAll(L);
+  const res = { title: open.name, label: open.name, who: p.n, text, tone: open.tone, diff: diffOf(before, snapshot(L)), rel: { from: who.rel, to: p.rel, mood: bondMood(p) } };
+  L.last = res;
+  return res;
+}
+
+/* Going out on purpose, for a single man: the one bond with nobody in it yet. */
+ACTS.mingle = {
+  group: 'life', name: 'Put yourself out there', blurb: 'A night out. Maybe you meet someone.', cost: () => 0.05,
+  when: (L) => lifeOf(L).rel === 'single' && L.age >= 21,
+  run(L, r) {
+    if (ok(r, 0.6)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met {partner}.', 'good'); relate(L, 'partner', 30, 'You met on a night out.'); return '{partner} beats you at pool. You ask for a rematch. And a number.'; }
+    return 'Good music. Nobody you want to call tomorrow.';
+  },
+};
+
+// ─── what the money is for ──────────────────────────────────────────────────
+
+/* WEALTH (the BitLife plan, phase 3, the owner's call of 2026-11-24). Money
+   that buys things, and things that cost money to keep: homes, cars and toys,
+   people on the payroll, and money put to work. A lifestyle feeds the meters
+   every year, and a lifestyle past the paycheck ends in a fire sale.
+
+   The page reads `wealthOpen(L)` and calls `wealthAct(L, verb, id, arg)`.
+   Everything lives in `L.wealth` ({ own, staff, inv }), made the first time
+   something is bought, so a career that buys nothing is the career it was:
+   `wealthSeason` does nothing without it, and every draw is on its own stream
+   (wealth:...). Money is in millions, like L.cash.
+
+   Brands are never named: a car is a car. */
+
+/* THINGS. `keep` is the yearly cost as a share of the price; `hold` is how the
+   value moves a year (a home climbs, a car falls); `m` is what a year of
+   owning it does. The best of each kind counts once, not every one owned. */
+const THINGS = {
+  condo:    { kind: 'home', n: 'A downtown condo', blurb: 'Glass walls. A doorman who knows your name.', price: 0.5, keep: 0.03, hold: 1.03, m: { morale: 1 } },
+  house:    { kind: 'home', n: 'A house in the suburbs', blurb: 'A yard, a gate and a hoop in the driveway.', price: 1.8, keep: 0.03, hold: 1.04, m: { morale: 2 } },
+  mansion:  { kind: 'home', n: 'A mansion', blurb: 'Nine bedrooms. You have seen five.', price: 7, keep: 0.04, hold: 1.04, m: { morale: 3, fame: 1 } },
+  compound: { kind: 'home', n: 'A compound', blurb: 'A full court, a guest house and a wall.', price: 18, keep: 0.05, hold: 1.03, m: { morale: 4, fame: 2 } },
+  sports:   { kind: 'car', n: 'A sports car', blurb: 'Loud on purpose.', price: 0.3, keep: 0.04, hold: 0.85, m: { morale: 1 } },
+  supercar: { kind: 'car', n: 'A supercar', blurb: 'The doors open the wrong way. That is the point.', price: 1.4, keep: 0.05, hold: 0.85, m: { morale: 1, fame: 1 } },
+  fleet:    { kind: 'car', n: 'A garage of ten', blurb: 'One for each day, and three for no reason.', price: 5, keep: 0.06, hold: 0.82, m: { morale: 2, fame: 2 } },
+  chain:    { kind: 'toy', n: 'A chain with your number', blurb: 'Heavy. Worth it.', price: 0.25, keep: 0, hold: 0.9, m: { fame: 1 } },
+  boat:     { kind: 'toy', n: 'A yacht', blurb: 'The crew outnumbers the guests.', price: 22, keep: 0.1, hold: 0.9, m: { morale: 3, fame: 2 } },
+  jet:      { kind: 'toy', n: 'A private jet', blurb: 'No more middle seats. No more airports.', price: 45, keep: 0.08, hold: 0.92, m: { morale: 3, health: 2, fame: 2 } },
+};
+/* PEOPLE ON THE PAYROLL, paid every year until let go. */
+const STAFF = {
+  chef:     { n: 'A private chef', blurb: 'Every meal weighed and plated.', pay: 0.15, m: { health: 3 } },
+  stylist:  { n: 'A stylist', blurb: 'Tunnel walks become a second job.', pay: 0.1, m: { fame: 2 } },
+  security: { n: 'Security', blurb: 'Two large men and a plan.', pay: 0.2, m: {} },
+  adviser:  { n: 'A financial adviser', blurb: 'Says no for a living. Halves what a bad year costs.', pay: 0.25, m: {} },
+  crew:     { n: 'Your friends, on the payroll', blurb: 'Everybody eats. Not everybody works.', pay: 0.4, m: { morale: 4, trust: -1 } },
+};
+/* MONEY PUT TO WORK. `turn(r)` is what a year does to the value, as a
+   multiplier; `pays` is cash paid out each year as a share of the value. */
+const INVEST = {
+  fund:    { n: 'An index fund', blurb: 'Boring. That is the feature.', min: 0.2, turn: (r) => 1.02 + r() * 0.08 },
+  rental:  { n: 'Rental property', blurb: 'Buildings you will never visit.', min: 1, turn: (r) => 0.97 + r() * 0.13, pays: 0.03 },
+  eatery:  { n: 'A restaurant with your name on it', blurb: 'Your wings. Your face on the menu.', min: 0.5, turn: (r) => r() < 0.55 ? 1.05 : 0.75, pays: 0.08 },
+  startup: { n: 'A friend\'s startup', blurb: 'An app. He swears it is different.', min: 0.3, turn: (r) => { const x = r(); return x < 0.08 ? 4 : x < 0.3 ? 1.5 : x < 0.6 ? 1 : 0.45; } },
+  coins:   { n: 'Crypto', blurb: 'A coin with a dog on it.', min: 0.1, turn: (r) => { const x = r(); return x < 0.15 ? 3 : x < 0.4 ? 1.4 : x < 0.65 ? 0.8 : 0.35; } },
+};
+/* What a fire sale gets, and what selling on purpose costs. */
+const FIRE_SALE = 0.6, SELL_FEE = 0.06;
+/* Values keep cents of a million: at one decimal a condo never climbed. */
+const round2 = (x) => Math.round(x * 100) / 100;
+const wealthOf = (L) => L.wealth || null;
+const wealthMake = (L) => L.wealth || (L.wealth = { own: [], staff: {}, inv: {} });
+/* To the thousand: at one decimal of a million a condo cost nothing to keep. */
+const round3 = (x) => Math.round(x * 1000) / 1000;
+const thingKeep = (o) => round3(THINGS[o.id].price * THINGS[o.id].keep);
+const sellFor = (o) => round2(o.val * (1 - SELL_FEE));
+/* What a year of this life costs before a paycheck. */
+function upkeepOf(L) {
+  const W = wealthOf(L); if (!W) return 0;
+  let t = 0;
+  for (const o of W.own) t += thingKeep(o);
+  for (const k in W.staff) t += STAFF[k].pay;
+  return round3(t);
+}
+/* Cash, plus what is owned and invested at today's value. */
+function netWorth(L) {
+  const W = wealthOf(L); let t = L.cash;
+  if (W) { for (const o of W.own) t += o.val; for (const k in W.inv) t += W.inv[k].val; }
+  return round2(t);
+}
+
+/* The year settles (newYear): the lifestyle is paid for and does its work,
+   the money at work moves, and a man who cannot cover it sells in a hurry. */
+function wealthSeason(L, beats) {
+  const W = wealthOf(L); if (!W) return;
+  const cost = upkeepOf(L);
+  if (cost) L.cash = round2(L.cash - cost);
+  /* the best home, the best car and every toy do their work; staff too */
+  const best = {}, lift = {};
+  for (const o of W.own) { const T = THINGS[o.id]; if (T.kind === 'toy') { for (const k in T.m) lift[k] = (lift[k] || 0) + T.m[k]; } else if (!best[T.kind] || T.price > THINGS[best[T.kind]].price) best[T.kind] = o.id; }
+  for (const kd in best) { const m = THINGS[best[kd]].m; for (const k in m) lift[k] = (lift[k] || 0) + m[k]; }
+  for (const s in W.staff) { const m = STAFF[s].m; for (const k in m) lift[k] = (lift[k] || 0) + m[k]; }
+  bump(L, lift);
+  for (const o of W.own) o.val = round2(Math.max(0.01, o.val * THINGS[o.id].hold));
+  /* money at work */
+  let paid = 0;
+  for (const k of Object.keys(W.inv)) {
+    const v = W.inv[k], I = INVEST[k];
+    let x = I.turn(rngAt(L, 'wealth:inv:' + k));
+    if (x < 1 && W.staff.adviser) x = 1 - (1 - x) / 2;
+    const was = v.val;
+    v.val = round2(v.val * x);
+    if (I.pays && x >= 1) paid += v.val * I.pays;
+    if (v.val < 0.05) { delete W.inv[k]; beats.push({ kind: 'money', text: I.n + ' went to nothing.', tone: 'bad' }); logIt(L, I.n + ' went to nothing.', 'bad'); }
+    else if (x >= 2) { beats.push({ kind: 'money', text: I.n + ' took off. ' + money(was) + ' is now ' + money(v.val) + '.', tone: 'gold' }); logIt(L, I.n + ' took off.', 'gold'); }
+    else if (x <= 0.5) beats.push({ kind: 'money', text: I.n + ' had a bad year. ' + money(was) + ' is now ' + money(v.val) + '.', tone: 'bad' });
+  }
+  if (paid) L.cash = round1(L.cash + paid);
+  if (L.cash < 0) wealthCrash(L, beats);
+}
+/* Out of cash: the money at work comes out first, then things go at fire
+   sale prices, dearest first. If that is still not enough, he is broke: the
+   payroll walks and the papers find out. */
+function wealthCrash(L, beats) {
+  const W = wealthOf(L), sold = [];
+  for (const k of Object.keys(W.inv)) { if (L.cash >= 0) break; L.cash = round1(L.cash + W.inv[k].val * (1 - SELL_FEE)); sold.push(INVEST[k].n); delete W.inv[k]; }
+  W.own.sort((a, b) => b.val - a.val);
+  while (L.cash < 0 && W.own.length) { const o = W.own.shift(); L.cash = round1(L.cash + o.val * FIRE_SALE); sold.push(THINGS[o.id].n); }
+  if (sold.length) { beats.push({ kind: 'money', text: 'The bills came due. Sold in a hurry: ' + sold.length + (sold.length === 1 ? ' thing.' : ' things.'), tone: 'bad' }); bump(L, { morale: -5 }); }
+  if (L.cash < 0) {
+    L.cash = 0; W.staff = {};
+    L.flags.broke = L.year; tw(L).spent = (tw(L).spent || 0) + 2;
+    bump(L, { morale: -12, fame: 2 });
+    beats.push({ kind: 'money', text: 'Broke. Everything is gone, and everybody knows.', tone: 'bad' });
+    logIt(L, 'Went broke.', 'bad');
+  }
+}
+
+/* The money screen: what he has, what it costs to keep, and what is for sale. */
+function wealthOpen(L) {
+  if (L.retired || L.pending.length || isAm(L)) return null;
+  const W = wealthOf(L) || { own: [], staff: {}, inv: {} };
+  const has = {}; for (const o of W.own) has[o.id] = 1;
+  return {
+    cash: L.cash, worth: netWorth(L), upkeep: upkeepOf(L),
+    /* `broke` is the year while he still has next to nothing; `wasBroke` is the year for good. */
+    broke: L.flags.broke && netWorth(L) < 1 ? L.flags.broke : null, wasBroke: L.flags.broke || null,
+    own: W.own.map((o, i) => ({ i, id: o.id, kind: THINGS[o.id].kind, name: THINGS[o.id].n, y: o.y, paid: o.paid, val: o.val, keep: thingKeep(o), sell: sellFor(o) })),
+    staff: Object.keys(W.staff).map((k) => ({ id: k, name: STAFF[k].n, pay: STAFF[k].pay, since: W.staff[k] })),
+    inv: Object.keys(W.inv).map((k) => ({ id: k, name: INVEST[k].n, put: W.inv[k].put, val: W.inv[k].val, y: W.inv[k].y, out: round2(W.inv[k].val * (1 - SELL_FEE)) })),
+    shop: Object.keys(THINGS).filter((k) => !has[k]).map((k) => ({ id: k, kind: THINGS[k].kind, name: THINGS[k].n, blurb: THINGS[k].blurb, cost: THINGS[k].price, keep: round3(THINGS[k].price * THINGS[k].keep), ok: L.cash >= THINGS[k].price })),
+    hire: Object.keys(STAFF).filter((k) => !W.staff[k]).map((k) => ({ id: k, name: STAFF[k].n, blurb: STAFF[k].blurb, pay: STAFF[k].pay, ok: L.cash >= STAFF[k].pay })),
+    /* an amount is asked for; these are the least and the most */
+    invest: Object.keys(INVEST).map((k) => ({ id: k, name: INVEST[k].n, blurb: INVEST[k].blurb, min: INVEST[k].min, max: round1(Math.max(0, L.cash)), ok: L.cash >= INVEST[k].min })),
+  };
+}
+/* buy a thing, sell one (by its place in `own`), hire, fire, invest an
+   amount, cash an investment out. */
+function wealthAct(L, verb, id, arg) {
+  const V = wealthOpen(L); if (!V) return null;
+  const before = snapshot(L), W = wealthMake(L);
+  let title = '', text = '', tone = '';
+  if (verb === 'buy') {
+    const s = V.shop.find((x) => x.id === id); if (!s || !s.ok) return null;
+    L.cash = round1(L.cash - s.cost); W.own.push({ id, y: L.year, paid: s.cost, val: s.cost });
+    if (s.cost >= 0.5) tw(L).spent = (tw(L).spent || 0) + 1;
+    title = s.name; text = s.blurb; tone = 'gold';
+    if (s.cost >= 5) logIt(L, 'Bought ' + s.name.replace(/^A /, 'a ') + '.', 'gold');
+  } else if (verb === 'sell') {
+    const o = V.own.find((x) => x.i === +id); if (!o) return null;
+    W.own.splice(o.i, 1); L.cash = round1(L.cash + o.sell);
+    title = 'Sold'; text = o.name + ' goes for ' + money(o.sell) + '.';
+  } else if (verb === 'hire') {
+    const s = V.hire.find((x) => x.id === id); if (!s || !s.ok) return null;
+    L.cash = round1(L.cash - s.pay); W.staff[id] = L.year;
+    title = s.name; text = s.blurb;
+  } else if (verb === 'fire') {
+    if (!W.staff[id]) return null;
+    delete W.staff[id]; title = 'Let go'; text = STAFF[id].n + ' is off the payroll.';
+    if (id === 'crew') bump(L, { morale: -3 });
+  } else if (verb === 'invest') {
+    const s = V.invest.find((x) => x.id === id), amt = round1(+arg);
+    if (!s || !s.ok || !(amt >= s.min) || amt > L.cash) return null;
+    L.cash = round1(L.cash - amt);
+    const v = W.inv[id] || (W.inv[id] = { put: 0, val: 0, y: L.year });
+    v.put = round1(v.put + amt); v.val = round1(v.val + amt);
+    title = s.name; text = money(amt) + ' in. ' + s.blurb;
+  } else if (verb === 'cashout') {
+    const v = V.inv.find((x) => x.id === id); if (!v) return null;
+    delete W.inv[id]; L.cash = round1(L.cash + v.out);
+    title = 'Cashed out'; text = v.name + ' pays out ' + money(v.out) + '.'; tone = v.out >= v.put ? 'good' : 'bad';
+  } else return null;
+  const res = { title, label: title, text, tone, diff: diffOf(before, snapshot(L)) };
+  L.last = res;
+  return res;
+}
+
+// ─── before the league: a childhood ─────────────────────────────────────────
+
+/* CHILDHOOD (the BitLife plan, phase 5, the owner's call of 2026-11-24: "The
+   pro version can include childhood"). `start: 'kid'` is the high school
+   start with nine cards in front of it, birth to fourteen: where he is from,
+   the first ball, who taught him, the first team, the other sport, school,
+   the travel team, the wrong crowd, the last summer. A year or two a card,
+   so a childhood is a minute.
+
+   The sophomore he becomes is the one `start: 'hs'` would have made off the
+   same seed, SHAPED and not strengthened: every answer gives two points to
+   one rating and takes one from each of two others, so the ratings add up to
+   what they did. What else an answer moves (work ethic, a body that lasts,
+   the people at home) is small, and it is remembered (`kid.*`) for the cards
+   that come later.
+
+   While it plays, `L.stage` is 'kid', one card is always waiting, and the
+   high school year is held in `L.kid` until the last card is answered. */
+const KID_AGES = [0, 3, 5, 7, 8, 10, 12, 13, 14];
+const kidO = (label, hint, up, down, more, text, mem) => ({ label, hint, up, down, more: more || {}, text, mem: mem || null });
+const KID = [
+  { tag: 'Day one', t: (L) => 'Born in {town}.', x: () => '{mom} says you came out reaching for something. {dad} put a ball in the crib that night.',
+    o: [kidO('Grow up', 'A few years go by', null, null, {}, 'You learn to walk by chasing things that roll.')] },
+  { tag: 'The living room', t: () => 'A ball rolls across the floor.', x: () => 'It\'s bigger than your head. Everybody is watching what you do with it.',
+    o: [kidO('Bounce it', 'Again. And again.', 'pla', ['reb', 'def'], {}, 'You bounce it until the neighbors knock. Then some more.', ['ball', 'bounced it']),
+      kidO('Throw it at the lamp', 'You have a target', 'sho', ['pla', 'def'], {}, 'The lamp doesn\'t make it. {mom} is more impressed than angry.', ['ball', 'threw it']),
+      kidO('Run off with it', 'Catch me', 'ath', ['iq', 'sho'], {}, 'Nobody in the house can catch you. Nobody ever will.', ['ball', 'ran'])] },
+  { tag: 'The driveway', t: () => 'Who teaches you the game?', x: () => 'There\'s a hoop, a cracked driveway and a lot of daylight.',
+    o: [kidO('{dad}, every evening', 'Form first. Fun later.', 'sho', ['ath', 'fin'], { eth: 3, rel: ['dad', 12, 'Taught you to shoot in the driveway.'] }, 'Elbow in. Follow through. One hundred makes before dinner.', ['teacher', 'dad']),
+      kidO('The big kids at the park', 'Nobody calls fouls', 'def', ['sho', 'pla'], { dur: 2 }, 'You lose every game for a year. Then you stop losing.', ['teacher', 'park']),
+      kidO('Nobody. Just you.', 'Hours alone with a ball', 'pla', ['iq', 'reb'], { eth: 2, morale: -2 }, 'You invent moves nobody taught you. Some of them even work.', ['teacher', 'self'])] },
+  { tag: 'The rec league', t: () => 'Your first real team.', x: () => 'The jerseys hang to your knees. The coach asks what you want to play.',
+    o: [kidO('Bring the ball up', 'Run the show', 'pla', ['reb', 'fin'], {}, 'You point where people should go. They go.', ['first', 'guard']),
+      kidO('Stand under the basket', 'Get every rebound', 'reb', ['pla', 'sho'], {}, 'Nine rebounds a game. Half of them off your own misses.', ['first', 'big']),
+      kidO('Shoot every time', 'Somebody has to score', 'fin', ['pla', 'def'], { fame: 1 }, 'Twenty of your team\'s twenty-four. The other parents have opinions.', ['first', 'scorer'])] },
+  { tag: 'Sign-up day', t: () => 'One more sport?', x: () => '{mom} has the forms on the kitchen table. Pick one or none.',
+    o: [kidO('Soccer', 'Run all day', 'ath', ['reb', 'sho'], { dur: 3 }, 'You never stop running. Your lungs remember it for twenty years.', ['sport', 'soccer']),
+      kidO('Football', 'Hit somebody', 'def', ['pla', 'sho'], { dur: -3 }, 'You learn you like contact. Your knees learn something too.', ['sport', 'football']),
+      kidO('Chess club', 'Think three moves ahead', 'iq', ['ath', 'reb'], {}, 'You see the board. Later you\'ll see the floor the same way.', ['sport', 'chess']),
+      kidO('Only basketball', 'Why would I do anything else?', 'sho', ['ath', 'iq'], { eth: 2 }, 'Same gym, same ball, every day of the year.', ['sport', 'hoops'])] },
+  { tag: 'Fifth grade', t: () => 'Homework or the park?', x: () => 'The streetlights come on at seven. The math is due tomorrow.',
+    o: [kidO('Homework first', 'Then the park', 'iq', ['fin', 'pla'], { eth: 3, rel: ['mom', 8, 'You did the homework first.'] }, '{mom} checks it. Then she rebounds for you until dark.', ['school', 'books']),
+      kidO('The park. Always the park.', 'Math can wait', 'fin', ['iq', 'def'], { eth: -2, rel: ['mom', -6, 'You skipped the homework.'] }, 'You\'re the best ten year old at the park. Your teacher writes a note home.', ['school', 'park'])] },
+  { tag: 'A phone call', t: () => 'A travel team wants you.', x: () => 'Tournaments in four states. It costs more than the rent. {mom} says she\'ll find a way.',
+    o: [kidO('Go', 'Play the best kids in the country', 'fin', ['reb', 'def'], { fame: 3, rel: ['mom', 10, 'She worked doubles for your travel team.'] }, '{mom} picks up a second job. You don\'t find out for years.', ['aau', 'went']),
+      kidO('Stay with your friends', 'Your team, your town', 'pla', ['fin', 'ath'], { morale: 4, rel: ['friend', 15, 'You stayed on the town team with him.'] }, 'You win the town league by forty. {friend} never forgets you stayed.', ['aau', 'stayed'])] },
+  { tag: 'Behind the corner store', t: () => 'Your friends have a plan.', x: () => 'It involves the corner store and nobody paying. They look at you.',
+    o: [kidO('Go along', 'Everybody else is', 'ath', ['iq', 'pla'], { eth: -3, rel: ['friend', 8, 'You went along with it.'] }, 'You run faster than the owner. You don\'t feel fast.', ['crowd', 'along']),
+      kidO('Walk away', 'Not today', 'iq', ['ath', 'fin'], { eth: 2 }, 'You go shoot instead. They call you soft for a week.', ['crowd', 'walked']),
+      kidO('Talk them out of it', 'You are the loud one', 'pla', ['def', 'reb'], { eth: 1, rel: ['friend', 4, 'You talked him out of it.'] }, 'It takes ten minutes and one good joke. Nobody goes in.', ['crowd', 'talked'])] },
+  { tag: 'The last summer', t: () => 'High school starts in the fall.', x: () => 'One summer left to be a kid. What do you do with it?',
+    o: [kidO('Live in the gym', 'Six hours a day', 'sho', ['pla', 'reb'], { eth: 3, health: -3 }, 'The janitor gives you a key. You stop needing daylight.', ['summer', 'gym']),
+      kidO('Grow into your body', 'Eat, sleep, lift', 'reb', ['pla', 'fin'], { dur: 3 }, 'Two inches and fifteen pounds. Your shoes stop fitting in July.', ['summer', 'body']),
+      kidO('Be a kid', 'Pool, bikes, nothing', 'ath', ['sho', 'iq'], { morale: 6 }, 'The best summer of your life. You\'ll think about it in hotel rooms.', ['summer', 'kid'])] },
+];
+function kidCard(L, i) {
+  const k = KID[i];
+  return {
+    id: 'kid', kind: 'event', key: 'kid:' + i, eyebrow: 'Age ' + KID_AGES[i] + ' · ' + k.tag, scene: k.tag,
+    title: k.t(L), text: k.x(L), ctx: { i },
+    options: k.o.map((o) => ({ label: o.label, hint: o.hint })),
+  };
+}
+/* Put the nine cards in front of a made sophomore (newLife). */
+function startChildhood(L) {
+  L.kid = { i: 0, age: L.age, year: L.year, stage: L.stage, pending: L.pending, log: L.log, picks: [] };
+  L.stage = 'kid';
+  L.age = KID_AGES[0];
+  L.year = L.kid.year - (L.kid.age - L.age);
+  L.log = [];
+  L.pending = [kidCard(L, 0)];
+  logIt(L, 'Born in {town}.', '');
+}
+ANSWER.kid = function(L, card, i) {
+  const K = L.kid, idx = card.ctx.i, o = KID[idx].o[i];
+  K.picks.push(i);
+  /* A point moves only when both ends can take it, so the ratings add up to what they did. */
+  if (o.up) for (const d of o.down) if (L.rt[d] > 25 && L.rt[o.up] < 88) { L.rt[d]--; L.rt[o.up]++; }
+  const m = Object.assign({}, o.more), rel = m.rel; delete m.rel;
+  bump(L, m);
+  if (rel) relate(L, rel[0], rel[1], rel[2]);
+  if (o.mem) remember(L, 'kid.' + o.mem[0], o.mem[1]);
+  if (idx + 1 < KID.length) {
+    K.i = idx + 1;
+    L.age = KID_AGES[K.i];
+    L.year = K.year - (K.age - L.age);
+    L.pending.push(kidCard(L, K.i));
+  } else {
+    /* Fifteen: the sophomore the road made, with a childhood behind him. */
+    L.age = K.age; L.year = K.year; L.stage = K.stage;
+    L.log = L.log.concat(K.log);
+    L.pending = L.pending.concat(K.pending);
+    L.kid = { done: 1, picks: K.picks };
+  }
+  return said(o.text, '');
+};
+/* Where a childhood stands, for the screen. */
+function kidOf(L) {
+  if (!L.kid) return null;
+  if (L.kid.done) return { done: true, picks: L.kid.picks.slice() };
+  return { done: false, i: L.kid.i, of: KID.length, age: L.age, picks: L.kid.picks.slice() };
+}
+
+// ─── the wild side ──────────────────────────────────────────────────────────
+
+/* THE WILD SIDE (the BitLife plan, phase 4, the owner's call of 2026-11-24:
+   "Anything BitLife does", jail, addiction and a life that can end early).
+   Things a man does on purpose away from the floor, and what they cost him:
+   the tables, a bet with a bookie, a big night out, pills for the pain, and
+   rehab. A habit grows with use and can take hold. The league and the law
+   answer: a scandal, a failed test, an investigation, an arrest, a
+   suspension, time inside. The worst of it can end a life.
+
+   The page reads `wildOpen(L)` and calls `wildAct(L, id, amount)`. Everything
+   lives in `L.wild`, made the first time something is done, so a career that
+   never goes out is the career it was: `wildSeason` and `wildTipoff` do
+   nothing without it, and every draw is on its own stream (wild:...).
+
+   A betting line on YOUR OWN game is the bookie arc in stories.js and is the
+   only thing that bans a man for life. A bet here is on somebody else's game:
+   against league rules, and it draws heat, not a ban. Nobody real is named. */
+const WILD_MAX = 3;            // nights a year
+const HOOKED_AT = 60;          // a habit this strong has hold of you
+const HABITS = { bet: 'gambling', drink: 'drinking', pills: 'painkillers' };
+const JAIL_GAMES = 60, TEST_GAMES = 25, PROBE_GAMES = 10, DENY_GAMES = 40, PLEA_GAMES = 10, REHAB_GAMES = 15;
+const OVERDOSE_P = 0.05, CRASH_P = 0.01;
+const wildOf = (L) => L.wild || null;
+const wildMake = (L) => L.wild || (L.wild = { heat: 0, hab: { bet: 0, drink: 0, pills: 0 }, hook: {}, rec: [], net: 0, susp: 0, y: L.year, n: 0, used: {} });
+const wildYear = (W, L) => { if (W.y !== L.year) { W.y = L.year; W.n = 0; W.used = {}; } return W; };
+const hooked = (L, k) => !!(L.wild && L.wild.hook[k]);
+const hasStaff = (L, k) => !!(L.wealth && L.wealth.staff && L.wealth.staff[k]);
+/* A habit grows, and past the line it has hold of him. */
+function habitUp(L, k, by, out) {
+  const W = wildMake(L);
+  W.hab[k] = clamp(W.hab[k] + by, 0, 100);
+  W.used[k] = 1;
+  if (W.hab[k] >= HOOKED_AT && !W.hook[k]) {
+    W.hook[k] = L.year;
+    remember(L, 'wild.hooked', k);
+    logIt(L, k === 'bet' ? 'The tables have a hold on you.' : k === 'drink' ? 'The drinking is a problem now.' : 'You need the pills now.', 'bad');
+    if (out) out.push(k === 'bet' ? 'You can\'t stop thinking about the next bet.' : k === 'drink' ? 'One drink is never one drink anymore.' : 'The bottle is empty a week early.');
+  }
+}
+/* Games the league or a judge takes. In a season they start now; in the
+   summer they are served from opening night (wildTipoff). */
+function sitOut(L, games, why) {
+  const W = wildMake(L), s = L.season;
+  W.rec.push({ y: L.year, what: why, g: games });
+  if (s && IN_SEASON.indexOf(L.phase) >= 0 && s.g < GAMES) {
+    const from = Math.max(s.g + 1, s.ban ? s.ban.until : 0);
+    s.ban = { from: s.ban ? s.ban.from : from, until: from + games, why };
+    if (s.ban.until > GAMES + 1) { W.susp += s.ban.until - (GAMES + 1); s.ban.until = GAMES + 1; }
+  } else W.susp += games;
+}
+/* Opening night (newSeason): what is still owed is served first. */
+function wildTipoff(L) {
+  const W = wildOf(L); if (!W || !W.susp || !L.season) return;
+  const g = Math.min(W.susp, JAIL_GAMES);
+  L.season.ban = { from: 1, until: 1 + g, why: 'owed' };
+  W.susp = 0;
+}
+const sitting = (s, g) => !!(s && s.ban && g >= s.ban.from && g < s.ban.until);
+
+/* THE END. Rare, and only down a road he chose. The career closes where it
+   stood: the numbers are kept, the Hall still votes, a son can still play. */
+function wildDeath(L, beats, how) {
+  L.flags.died = L.year;
+  remember(L, 'wild.died', how);
+  const t = 'Gone at ' + L.age + '. ' + how;
+  beats.push({ kind: 'retire', text: t, tone: 'bad' });
+  logIt(L, t, 'bad');
+  L.pending = [];
+  L.final = legacy(L);
+  L.final.after = 'The league holds a moment of silence on opening night.';
+  L.retired = true;
+  L.phase = 'retired';
+}
+
+/* An arrest is a card: how he answers it is most of what it costs. */
+function arrestCard(L, kind) {
+  const W = wildMake(L);
+  W.rec.push({ y: L.year, what: 'arrest' });
+  remember(L, 'wild.arrest', kind);
+  logIt(L, kind === 'dui' ? 'Arrested for driving drunk.' : 'Arrested after a fight outside a club.', 'bad');
+  bump(L, { trust: -8, morale: -6 }); moveRep(L, -5, -6);
+  const fee = round1(Math.max(0.5, L.cash * 0.05));
+  return {
+    id: 'wildarrest', kind: 'event', key: 'wildarrest:' + L.year + ':' + W.rec.length, eyebrow: 'The county courthouse', scene: 'A holding cell',
+    title: kind === 'dui' ? 'They pulled you over at 3 a.m.' : 'It started with a shove outside the club.',
+    text: kind === 'dui' ? 'You blew twice the limit. Your mugshot is online before sunrise. {agent:first} wants to know how you want to play this.' : 'Somebody got hurt. There is video. {agent:first} wants to know how you want to play this.',
+    ctx: { kind, fee },
+    options: [
+      { label: 'Hire the best lawyer in town', hint: money(fee) + '. Good odds.' },
+      { label: 'Plead guilty', hint: 'Probation. The league sits you ' + PLEA_GAMES + ' games.' },
+      { label: 'Fight it yourself', hint: 'Free. Risky.' },
+    ],
+  };
+}
+ANSWER.wildarrest = function(L, card, i, opt, rng) {
+  const jail = () => {
+    L.flags.jail = L.year; remember(L, 'wild.jail', L.year);
+    sitOut(L, JAIL_GAMES, 'jail');
+    bump(L, { trust: -20, morale: -15, health: -6, fame: 4 }); moveRep(L, -8, -10);
+    for (const x of dealsNow(L)) { x.until = L.year - 1; x.dropped = L.year; }
+    logIt(L, 'Sentenced to four months. The league adds nothing. It did not need to.', 'bad');
+  };
+  if (i === 0) {
+    L.cash = round1(L.cash - Math.min(card.ctx.fee, Math.max(0, L.cash)));
+    if (ok(rng, 0.7)) { bump(L, { morale: 4 }); return said('Charges dropped on a technicality. The lawyer sends a bill and a fruit basket.', 'good'); }
+    sitOut(L, TEST_GAMES, 'probation'); bump(L, { trust: -6 });
+    return said('Even the best lawyer can\'t beat the video. Probation, and the league sits you ' + TEST_GAMES + ' games.', 'bad');
+  }
+  if (i === 1) {
+    sitOut(L, PLEA_GAMES, 'probation'); bump(L, { cash: -Math.min(0.1, Math.max(0, L.cash)), trust: 2 }); moveRep(L, 1, 3);
+    return said('You stand up and say you did it. Probation, a fine and ' + PLEA_GAMES + ' games. People respect the apology.', '');
+  }
+  if (ok(rng, 0.3)) { bump(L, { fame: 3, morale: 5 }); return said('You talk for twenty minutes. Somehow the judge buys it.', 'good'); }
+  jail();
+  return said('The judge is not a fan. Four months inside. You miss ' + JAIL_GAMES + ' games.', 'bad');
+};
+/* The league asks questions about the betting. */
+function probeCard(L) {
+  return {
+    id: 'wildprobe', kind: 'event', key: 'wildprobe:' + L.year, eyebrow: 'League security', scene: 'A conference room in New York',
+    title: 'The league knows about the bets.', text: 'Two investigators, one folder. They have dates, amounts and a name. They want to hear it from you.',
+    options: [
+      { label: 'Tell them everything', hint: 'A fine and ' + PROBE_GAMES + ' games' },
+      { label: 'Deny all of it', hint: 'Maybe nothing. Maybe much worse.' },
+    ],
+  };
+}
+ANSWER.wildprobe = function(L, card, i, opt, rng) {
+  const W = wildMake(L);
+  if (i === 0) {
+    W.heat = 0; sitOut(L, PROBE_GAMES, 'betting'); bump(L, { cash: -Math.min(0.5, Math.max(0, L.cash)), trust: -4 }); moveRep(L, -2, 1);
+    logIt(L, 'Suspended ' + PROBE_GAMES + ' games for betting on league games.', 'bad');
+    return said('You tell them all of it. ' + PROBE_GAMES + ' games and a fine. {commish} calls it a second chance.', '');
+  }
+  if (ok(rng, 0.5)) { W.heat = Math.max(0, W.heat - 20); return said('They close the folder. "For now," one of them says.', 'good'); }
+  W.heat = 0; sitOut(L, DENY_GAMES, 'betting'); bump(L, { cash: -Math.min(2, Math.max(0, L.cash)), trust: -12 }); moveRep(L, -6, -8);
+  logIt(L, 'Suspended ' + DENY_GAMES + ' games for betting on league games, and for lying about it.', 'bad');
+  return said('They had the bookie\'s phone the whole time. ' + DENY_GAMES + ' games, a big fine, and nobody believes you now.', 'bad');
+};
+
+/* WHAT HE CAN DO. `amt` marks an act that asks how much. `run` returns the
+   lines the screen shows; a card it leaves in L.pending is shown after. */
+const WILD = {
+  casino: {
+    name: 'A night at the tables', blurb: 'Pick a number. Win it or lose it.', amt: true, min: 0.05,
+    when: (L) => L.age >= 21,
+    run(L, r, amt, out) {
+      const W = wildMake(L), win = ok(r, 0.46);
+      L.cash = round1(L.cash + (win ? amt : -amt)); W.net = round2(W.net + (win ? amt : -amt));
+      habitUp(L, 'bet', 10, out);
+      if (win && amt >= 1) logIt(L, 'Won ' + money(amt) + ' at the tables.', 'gold');
+      if (!win && amt >= 1) logIt(L, 'Lost ' + money(amt) + ' at the tables.', 'bad');
+      bump(L, { morale: win ? 5 : -4 });
+      return win ? 'Black. Again. You walk out up ' + money(amt) + '.' : 'The dealer flips a king. ' + money(amt) + ' is gone before the drinks come.';
+    },
+  },
+  bookie: {
+    name: 'Bet on a game', blurb: 'Not yours. Still against the rules.', amt: true, min: 0.05,
+    when: (L) => L.stage === 'nba',
+    run(L, r, amt, out) {
+      const W = wildMake(L), win = ok(r, 0.5), pay = round2(amt * 0.9);
+      L.cash = round1(L.cash + (win ? pay : -amt)); W.net = round2(W.net + (win ? pay : -amt));
+      W.heat = clamp(W.heat + 15, 0, 100);
+      habitUp(L, 'bet', 12, out);
+      remember(L, 'wild.bookie', L.year);
+      return win ? 'The underdog covers. {bookie:first} pays out ' + money(pay) + ' in a gym bag.' : 'A buzzer beater the wrong way. You owe {bookie:first} ' + money(amt) + '.';
+    },
+  },
+  party: {
+    name: 'A big night out', blurb: 'A table, a tab and no curfew.', cost: 0.02,
+    when: (L) => L.age >= 21,
+    run(L, r, amt, out) {
+      const W = wildMake(L), guard = hasStaff(L, 'security') ? 0.5 : 1;
+      bump(L, { morale: 8, health: -3, fame: 2 });
+      habitUp(L, 'drink', 10, out);
+      if (ok(rngAt(L, 'wild:arrest:' + L.year + ':' + W.n), (0.03 + W.hab.drink * 0.0012) * guard)) {
+        L.pending.push(arrestCard(L, ok(r, 0.6) ? 'dui' : 'fight'));
+        return 'The night goes long. Then it goes wrong.';
+      }
+      if (ok(rngAt(L, 'wild:leak:' + L.year + ':' + W.n), 0.12 * guard)) {
+        bump(L, { trust: -6 }); moveRep(L, -4, -4);
+        logIt(L, 'A video from the club leaked.', 'bad');
+        return 'Somebody filmed all of it. The video is everywhere by breakfast.';
+      }
+      return pick(r, ['Bottles, sparklers and a DJ who knows your name. You sleep until two.', 'The whole team shows up. Nobody remembers the bill.', 'You close the place down. Practice is in five hours.']);
+    },
+  },
+  pills: {
+    name: 'Take something for the pain', blurb: 'The knees stop talking for a while.',
+    when: (L) => L.stage === 'nba' && L.m.health < 80,
+    run(L, r, amt, out) {
+      bump(L, { health: 12 });
+      habitUp(L, 'pills', 18, out);
+      return 'Two pills from a bottle with no label. Nothing hurts for the first time in months.';
+    },
+  },
+  rehab: {
+    name: 'Check into rehab', blurb: 'Thirty days. No phone.', cost: 0.25,
+    when: (L) => { const W = wildOf(L); return !!W && (W.hab.bet >= 30 || W.hab.drink >= 30 || W.hab.pills >= 30); },
+    run(L, r, amt, out) {
+      const W = wildMake(L), had = Object.keys(W.hook).length > 0;
+      W.hab = { bet: 0, drink: 0, pills: 0 }; W.hook = {};
+      W.clean = L.year; remember(L, 'wild.rehab', L.year);
+      if (L.season && IN_SEASON.indexOf(L.phase) >= 0 && L.phase !== 'pre') sitOut(L, REHAB_GAMES, 'rehab');
+      bump(L, { health: 8, morale: had ? 6 : 2, trust: 3 }); moveRep(L, 2, 5);
+      logIt(L, 'Checked into rehab.', 'good');
+      return had ? 'Thirty days of group, bad coffee and the truth. You walk out lighter.' : 'You went before it got bad. The counselor says that almost never happens.';
+    },
+  },
+};
+const WILD_KEYS = Object.keys(WILD);
+
+/* The screen: what is open tonight, how strong each habit is, and the record. */
+function wildOpen(L) {
+  if (L.retired || L.pending.length || isAm(L)) return null;
+  const W = L.wild ? wildYear(L.wild, L) : { heat: 0, hab: { bet: 0, drink: 0, pills: 0 }, hook: {}, rec: [], net: 0, susp: 0, n: 0 };
+  const left = Math.max(0, WILD_MAX - W.n);
+  return {
+    left, of: WILD_MAX, heat: W.heat, net: W.net, owed: W.susp,
+    sitting: L.season && L.season.ban && L.season.g < L.season.ban.until - 1 ? { until: L.season.ban.until - 1, why: L.season.ban.why } : null,
+    habits: Object.keys(HABITS).map((k) => ({ id: k, name: HABITS[k], level: W.hab[k], hooked: !!W.hook[k], since: W.hook[k] || null })),
+    record: W.rec.slice(),
+    acts: WILD_KEYS.filter((k) => WILD[k].when(L)).map((k) => {
+      const a = WILD[k], cost = a.cost || 0, min = a.min || 0;
+      return { id: k, name: a.name, blurb: a.blurb, cost, amt: !!a.amt, min, max: a.amt ? round1(Math.max(0, L.cash)) : 0, ok: left > 0 && L.cash >= Math.max(cost, min) };
+    }),
+  };
+}
+function wildAct(L, id, amount) {
+  const V = wildOpen(L), open = V && V.acts.find((x) => x.id === id);
+  if (!open || !open.ok) return null;
+  const a = WILD[id], amt = a.amt ? round2(+amount) : 0;
+  if (a.amt && (!(amt >= open.min) || amt > L.cash)) return null;
+  const W = wildYear(wildMake(L), L);
+  W.n++;
+  const before = snapshot(L), out = [];
+  if (open.cost) L.cash = round1(L.cash - open.cost);
+  const text = say(L, a.run(L, rngAt(L, 'wild:' + id + ':' + L.year + ':' + W.n), amt, out));
+  sayAll(L);
+  const res = { title: a.name, label: a.name, text, more: out.map((t) => say(L, t)), tone: '', card: L.pending.length > 0, diff: diffOf(before, snapshot(L)) };
+  L.last = res;
+  return res;
+}
+
+/* THE YEAR SETTLES (newYear). A habit left alone fades; one that has hold of
+   him takes its share. The league tests, asks and remembers. */
+function wildSeason(L, beats) {
+  const W = wildOf(L); if (!W) return;
+  const r = (k) => rngAt(L, 'wild:year:' + k);
+  const say1 = (t, tone) => { beats.push({ kind: 'wild', text: say(L, t), tone: tone || 'bad' }); };
+  if (W.hook.bet) {
+    const lost = round1(Math.max(0, L.cash) * (0.15 + r('bet')() * 0.2));
+    if (lost >= 0.1) { L.cash = round1(L.cash - lost); W.net = round2(W.net - lost); say1('You lost ' + money(lost) + ' at the tables this year. You stopped counting in March.'); logIt(L, 'Lost ' + money(lost) + ' gambling.', 'bad'); }
+    bump(L, { morale: -4 });
+  }
+  if (W.hook.drink) {
+    bump(L, { health: -8, trust: -6, morale: -3 });
+    say1('The drinking shows. The whole gym smells it at shootaround.');
+    if (ok(r('dui'), 0.2 * (hasStaff(L, 'security') ? 0.5 : 1))) {
+      if (ok(r('crash'), CRASH_P / 0.2)) { wildDeath(L, beats, 'A car, a wet road and a night that went too long.'); return; }
+      L.pending.push(arrestCard(L, 'dui'));
+    }
+  }
+  if (W.hook.pills) {
+    bump(L, { health: -10, ath: -1, morale: -4 });
+    say1('The pills run your day now. You count them twice.');
+    if (ok(r('od'), OVERDOSE_P)) { wildDeath(L, beats, 'An overdose, alone in a hotel room.'); return; }
+    if (ok(r('test'), 0.3)) { sitOut(L, TEST_GAMES, 'test'); bump(L, { trust: -8 }); moveRep(L, -3, -5); say1('A failed drug test. The league sits you ' + TEST_GAMES + ' games.'); logIt(L, 'Suspended ' + TEST_GAMES + ' games for a failed drug test.', 'bad'); }
+  }
+  if (W.heat >= 30 && !L.pending.some((c) => c.id === 'wildarrest') && ok(r('probe'), W.heat / 150)) L.pending.push(probeCard(L));
+  /* What was left alone this year fades. What has hold of him does not. */
+  for (const k in W.hab) if (!W.hook[k] && !(W.y === L.year - 1 && W.used[k])) W.hab[k] = Math.max(0, W.hab[k] - 8);
+  W.heat = Math.max(0, W.heat - 10);
+}
+
+// ─── after the whistle: the rest of a life ──────────────────────────────────
+
+/* LIFE AFTER BASKETBALL (the BitLife plan, phase 6, the owner's call of
+   2026-11-24: "The pro version can include childhood and after basketball
+   life"). The career ends as it always did: the after card, the epilogue,
+   `L.retired`, the Hall card, the board. Nothing here touches any of that.
+
+   This is what can be played AFTER: `laterStart(L)` opens the rest of the
+   life on a retired man, in the job his after card chose. `laterAge(L)` is
+   one press, four years: the job pays, the lifestyle is paid for and the
+   money moves (wealth.js, a year at a time, so a fortune can still be
+   lost), the body ages, and one card is dealt, from the job or from life.
+   It ends when he does. `laterOf(L)` is the screen and the last page.
+
+   Everything lives in `L.later`. A life that never starts it is the save it
+   was. Every draw is on its own stream (later:...). */
+const LATER_STEP = 4;
+/* Three rungs a job: what he is called, and what a year pays (millions). */
+const LATER_JOBS = {
+  head_coach: { n: ['Head coach', 'Playoff coach', 'Championship coach'], pay: [4, 7, 10], skill: (L) => L.rt.iq },
+  assistant: { n: ['Assistant coach', 'Lead assistant', 'Head coach'], pay: [0.5, 1, 4], skill: (L) => L.rt.iq },
+  gm: { n: ['Scout', 'General manager', 'Executive of the Year'], pay: [0.3, 3, 6], skill: (L) => L.rt.iq },
+  owner: { n: ['Minority owner', 'Team governor', 'Owner of a champion'], pay: [2, 6, 12], skill: (L) => 40 + Math.min(40, L.cash) },
+  broadcast: { n: ['Studio analyst', 'Lead analyst', 'The voice of the Finals'], pay: [1, 4, 8], skill: (L) => L.m.fame },
+  league: { n: ['League office', 'Vice president', 'Deputy commissioner'], pay: [0.6, 1.5, 4], skill: (L) => L.m.trust },
+  college: { n: ['College coach', 'Tournament coach', 'National champion coach'], pay: [1, 3, 6], skill: (L) => L.rt.iq },
+  hs: { n: ['High school coach', 'State champion coach', 'The gym has your name'], pay: [0.06, 0.08, 0.1], skill: (L) => L.eth },
+  business: { n: ['Businessman', 'Chief executive', 'Tycoon'], pay: [1, 5, 15], skill: (L) => L.rt.iq },
+  actor: { n: ['Bit parts', 'Leading man', 'Award winner'], pay: [0.5, 4, 10], skill: (L) => L.m.fame },
+  politics: { n: ['City council', 'Mayor', 'Congressman'], pay: [0.1, 0.2, 0.2], skill: (L) => repOf(L).resp },
+  podcast: { n: ['Podcaster', 'A top ten show', 'A media company'], pay: [0.5, 3, 8], skill: (L) => L.m.fame },
+  family: { n: ['At home', 'Coach of the kids\' team', 'Grandfather'], pay: [0, 0, 0], skill: (L) => L.m.morale },
+};
+const LATER_JOB_KEYS = Object.keys(LATER_JOBS);
+const laterJob = (L) => LATER_JOBS[L.later.job];
+const laterTitle = (L) => laterJob(L).n[L.later.rung];
+const lo = (label, hint, run) => ({ label, hint, run });
+const up = (L) => { const P = L.later; if (P.rung < 2) { P.rung++; P.peak = Math.max(P.peak, P.rung); logIt(L, 'Now: ' + laterTitle(L) + '.', 'gold'); return true; } return false; };
+/* LIFE'S CARDS. One a press at most, each once, in the order they are due. */
+const LATER_EV = {
+  climb: { when: (L) => L.later.rung < 2 && L.later.job !== 'family', again: true, tag: 'The next job',
+    t: (L) => 'A bigger chair is open.', x: (L) => 'They want ' + laterJob(L).n[L.later.rung + 1].toLowerCase().replace(/^a /, '') + '. It is yours to chase.',
+    o: [lo('Go for it', 'Bet on yourself', (L, r) => { if (ok(r, 0.35 + (laterJob(L).skill(L) - 50) / 120)) { up(L); bump(L, { morale: 6 }); return 'You get it. The first call is to {mom}.'; } bump(L, { morale: -5 }); return 'They go another way. You find out from a reporter.'; }),
+      lo('Stay where you are', 'You like this chair', (L) => { bump(L, { morale: 2, health: 2 }); return 'You stay. You sleep fine.'; }),
+      lo('Walk away from all of it', 'Go home', (L) => { L.later.job = 'family'; L.later.rung = 0; logIt(L, 'Walked away and went home.', ''); bump(L, { morale: 4, health: 3 }); return 'You clean out the office in one box.'; })] },
+  hall: { when: (L) => !!(L.final && L.final.ending && L.final.ending.hof) && L.later.n >= 1, tag: 'Springfield',
+    t: () => 'The Hall of Fame calls.', x: () => 'You have five minutes at the podium and thirty years to cover.',
+    o: [lo('Thank everybody', 'Names, all of them', (L) => { bump(L, { morale: 8 }); moveRep(L, 2, 4); return 'You go eleven minutes over. Nobody minds.'; }),
+      lo('Settle some scores', 'You kept a list', (L) => { bump(L, { fame: 5, morale: 4 }); moveRep(L, -2, -4); return 'Three names. The clip runs for a week.'; })] },
+  scare: { when: (L) => L.age >= 48, tag: 'The doctor', t: () => 'The doctor wants to talk.', x: () => 'Your heart, your knees and thirty years of airplane food.',
+    o: [lo('Change how you live', 'Walks. Vegetables. Sleep.', (L) => { bump(L, { health: 12, morale: -2 }); return 'You hate every salad. Your numbers look ten years younger.'; }),
+      lo('Keep living', 'You only get one', (L) => { bump(L, { health: -8, morale: 4 }); return 'You nod, take the pamphlet and order the steak.'; })] },
+  loan: { when: (L) => L.cash >= 1, tag: 'An old teammate', t: () => 'An old teammate needs money.', x: () => 'He was a starter once. He is asking quietly.',
+    o: [lo('Write the check', 'No questions', (L) => { const c = round1(Math.min(L.cash * 0.1, 2)); bump(L, { cash: -c, morale: 5 }); moveRep(L, 0, 3); return 'You send ' + money(c) + '. He cries on the phone.'; }),
+      lo('Give him a job', 'Something to do', (L) => { bump(L, { morale: 4, trust: 2 }); return 'He runs your camps now. He is good at it.'; }),
+      lo('Say no', 'It never ends with one', (L) => { bump(L, { morale: -3 }); return 'He says he understands. He doesn\'t call again.'; })] },
+  book: { when: (L) => L.m.fame >= 35, tag: 'A publisher', t: () => 'They want your story.', x: () => 'A book. Your name on the cover. How honest do you want to be?',
+    o: [lo('Tell all of it', 'Every locker room', (L) => { bump(L, { cash: 2, fame: 6 }); moveRep(L, 2, -4); return 'A bestseller. Four old teammates stop returning calls.'; }),
+      lo('Keep it clean', 'A nice book', (L) => { bump(L, { cash: 0.5, fame: 2 }); return 'It sells fine at airports.'; }),
+      lo('Pass', 'Some things stay in the room', (L) => { moveRep(L, 0, 3); return 'You keep the stories. They keep their value.'; })] },
+  kid: { when: (L) => sonsOf(L) >= 1 && L.later.n >= 1, tag: 'Your son', t: () => 'Your son wants to play.', x: () => 'He has your shoulders and your stubbornness. He wants you to train him.',
+    o: [lo('Train him yourself', 'Every morning', (L) => { bump(L, { morale: 8 }); L.later.heir = 2; return 'Six a.m., the same gym. He complains exactly like you did.'; }),
+      lo('Let him find his own way', 'No shadow', (L) => { bump(L, { morale: 3 }); L.later.heir = 1; return 'You watch from the top row and say nothing. It is the hardest thing you have done.'; })] },
+  statue: { when: (L) => !!(L.final && L.final.jersey) && L.later.n >= 2, tag: 'Your old club', t: () => 'They want to build a statue.', x: () => 'Bronze, outside the arena. They ask which pose.',
+    o: [lo('The jumper', 'The one everybody remembers', (L) => { bump(L, { fame: 6, morale: 10 }); return 'Kids touch its shoe for luck on the way in.'; }),
+      lo('Say no to a statue', 'Name a court for kids', (L) => { bump(L, { morale: 8 }); moveRep(L, 3, 5); return 'Twelve courts in twelve neighborhoods. Your name is on all of them.'; })] },
+  mentor: { when: (L) => L.later.n >= 1, tag: 'A phone call', t: () => 'A young star wants advice.', x: () => 'He is twenty-two and everybody tells him yes. He asks you what you would do over.',
+    o: [lo('Tell him the truth', 'All of it', (L) => { bump(L, { morale: 5 }); moveRep(L, 1, 4); return 'You talk for three hours. He writes things down.'; }),
+      lo('Tell him to enjoy it', 'It goes fast', (L) => { bump(L, { morale: 3 }); return 'You tell him it goes fast. He doesn\'t believe you. Nobody does.'; })] },
+  reunion: { when: (L) => L.age >= 50 && L.history.length >= 6, tag: 'The reunion', t: () => 'Your old team is getting together.', x: () => 'Twenty years since that season. Somebody rented a gym.',
+    o: [lo('Go, and play', 'One more run', (L, r) => { if (ok(r, 0.6)) { bump(L, { morale: 10, health: -3 }); return 'You hit the first shot. You need ice for a week.'; } bump(L, { morale: 4, health: -10 }); return 'A hamstring, on the second possession. Everybody laughs. You don\'t.'; }),
+      lo('Go, and watch', 'Bring the photos', (L) => { bump(L, { morale: 7 }); return 'The stories get better every year. So do the stats.'; })] },
+  give: { when: (L) => L.cash >= 20, tag: 'What it is all for', t: () => 'What do you do with the money?', x: (L) => 'You have ' + money(L.cash) + ' and more years behind you than ahead.',
+    o: [lo('Give most of it away', 'Schools, gyms, the old neighborhood', (L) => { const c = round1(L.cash * 0.6); bump(L, { cash: -c, morale: 12 }); moveRep(L, 5, 8); L.later.gave = round1((L.later.gave || 0) + c); logIt(L, 'Gave away ' + money(c) + '.', 'gold'); return money(c) + ' to the places that made you. A school is named for {mom}.'; }),
+      lo('Leave it to the family', 'They will be fine forever', (L) => { bump(L, { morale: 5 }); return 'The lawyers draw it up. Thanksgiving gets tense.'; }),
+      lo('Spend it', 'You earned it', (L) => { const c = round1(L.cash * 0.3); bump(L, { cash: -c, morale: 8, health: -2 }); return 'A boat, a vineyard and a year you barely remember. ' + money(c) + ' well spent.'; })] },
+  grand: { when: (L) => lifeOf(L).kids >= 1 && L.age >= 55, tag: 'The hospital', t: () => 'You are a grandfather.', x: () => 'Seven pounds, and already long fingers. Everybody looks at you.',
+    o: [lo('Put a ball in the crib', 'Family tradition', (L) => { bump(L, { morale: 10 }); return 'Your kid rolls their eyes. The ball stays.'; }),
+      lo('Just hold the baby', 'Nothing else matters', (L) => { bump(L, { morale: 9, health: 2 }); return 'You hold on for an hour. Nobody asks for a turn.'; })] },
+  film: { when: (L) => L.history.length >= 8 && L.later.n >= 2, tag: 'A film crew', t: () => 'They want to make a documentary.', x: () => 'Ten hours on your career. They want the old footage and the old arguments.',
+    o: [lo('Give them everything', 'The good and the bad', (L) => { bump(L, { fame: 8, cash: 1 }); moveRep(L, 3, 2); return 'A new generation finds your highlights. Your jersey sells again.'; }),
+      lo('Only on your terms', 'You get final cut', (L) => { bump(L, { fame: 4, cash: 1.5 }); moveRep(L, 0, -3); return 'It makes you look great. The reviews notice.'; }),
+      lo('Turn it down', 'Let the games speak', (L) => { bump(L, { morale: 3 }); return 'They make it anyway, with people who barely knew you.'; })] },
+  kidsteam: { when: (L) => L.later.job === 'family' && L.later.rung < 2, again: true, tag: 'The rec center', t: (L) => L.later.rung ? 'The family needs you around more.' : 'The kids\' team needs a coach.', x: (L) => L.later.rung ? 'Birthdays, recitals, a lot of driving. They want you at all of it.' : 'Nine year olds. No defense. A parent asks if you know anything about basketball.',
+    o: [lo('Say yes', 'All in', (L) => { up(L); bump(L, { morale: 8 }); return 'You draw up one play. They run it wrong. You have never been happier.'; }),
+      lo('Not this year', 'You like your quiet', (L) => { bump(L, { morale: 1, health: 2 }); return 'You watch from a lawn chair instead.'; })] },
+  truce: { when: (L) => !!L.rival && L.age >= 45, tag: 'An old rival', t: () => '{rival} calls.', x: () => 'Twenty years of not speaking. He is in town and wants dinner.',
+    o: [lo('Go to dinner', 'Life is short', (L) => { bump(L, { morale: 8 }); moveRep(L, 2, 3); return 'By dessert you are arguing about one play from one game. Laughing, this time.'; }),
+      lo('Let it ring', 'Some things stay', (L) => { bump(L, { morale: -2, fame: 1 }); return 'You let it ring. You think about it for a month.'; })] },
+  street: { when: (L) => L.m.fame >= 30 && L.later.n >= 3, tag: 'City hall', t: () => '{town} wants to name a street for you.', x: () => 'The block you grew up on. There is a ceremony and a very large pair of scissors.',
+    o: [lo('Show up and cut the ribbon', 'Bring the whole family', (L) => { bump(L, { morale: 9, fame: 2 }); return 'Your name on a green sign. {mom} would have taken a hundred photos.'; }),
+      lo('Ask them to name it for your mother', 'She did the driving', (L) => { bump(L, { morale: 10 }); moveRep(L, 2, 5); return 'Her name goes up instead. That is the one you visit.'; })] },
+  venture: { when: (L) => L.cash >= 2, tag: 'A pitch', t: () => 'A friend has a business idea.', x: (L) => 'He needs ' + money(round1(Math.min(5, L.cash * 0.2))) + '. He has a slideshow.',
+    o: [lo('Put the money in', 'He is good for it. Probably.', (L, r) => { const c = round1(Math.min(5, L.cash * 0.2)); if (ok(r, 0.4)) { bump(L, { cash: c * 2, morale: 5 }); return 'It works. You triple your money and never hear the end of it.'; } bump(L, { cash: -c, morale: -4 }); return 'It closes in a year. ' + money(c) + ' gone, and one friendship with it.'; }),
+      lo('Pass', 'You have seen this movie', (L) => { bump(L, { morale: 1 }); return 'You pass. He finds the money somewhere else.'; })] },
+};
+const LATER_EV_KEYS = Object.keys(LATER_EV);
+function laterCard(L, id) {
+  const e = LATER_EV[id];
+  return { id: 'later', kind: 'event', key: 'later:' + id + ':' + L.later.n, eyebrow: 'Age ' + L.age + ' · ' + e.tag, scene: e.tag, title: e.t(L), text: e.x(L), ctx: { ev: id }, options: e.o.map((o) => ({ label: o.label, hint: o.hint })) };
+}
+ANSWER.later = function(L, card, i, opt, rng) {
+  return said(LATER_EV[card.ctx.ev].o[i].run(L, rng) || '', '');
+};
+/* Can the rest of the life be opened? A man who died young has none. */
+const laterCan = (L) => !!(L.retired && L.final && !L.flags.died && !L.later);
+function laterStart(L) {
+  if (!laterCan(L)) return null;
+  const path = L.final.path && LATER_JOBS[L.final.path] ? L.final.path : 'family';
+  L.later = { job: path, rung: 0, peak: 0, n: 0, from: L.age, seen: {}, over: false };
+  /* The playing is over and the body gets some of itself back. */
+  bump(L, { health: 15 });
+  logIt(L, 'After basketball: ' + laterTitle(L).toLowerCase() + '.', '');
+  return laterOf(L);
+}
+/* How likely the next four years are his last. */
+const LATER_OLD = 50, LATER_LAST = 96;
+const laterEndP = (L) => L.age >= LATER_LAST ? 1 : L.age < LATER_OLD ? 0 : clamp((L.age - 58) / 90 + Math.max(0, 50 - L.m.health) / 120, 0, 0.9);
+/* One press: four years. */
+function laterAge(L) {
+  const P = L.later;
+  if (!P || P.over) return null;
+  if (L.pending.length) return { beats: [], blocked: true };
+  const beats = [], r = (k) => rngAt(L, 'later:' + k + ':' + P.n);
+  const cash0 = L.cash;
+  for (let y = 0; y < LATER_STEP; y++) {
+    L.age++; L.year++;
+    L.cash = round1(L.cash + laterJob(L).pay[P.rung]);
+    wealthSeason(L, beats);
+  }
+  P.n++;
+  bump(L, { health: -(3 + Math.floor(r('body')() * 4)) - (L.age >= 70 ? 3 : 0) });
+  beats.unshift({ kind: 'year', text: 'You are ' + L.age + '. ' + laterTitle(L) + '.', tone: '' });
+  if (Math.abs(L.cash - cash0) >= 0.1) beats.push({ kind: 'money', text: (L.cash >= cash0 ? 'Up ' : 'Down ') + money(Math.abs(L.cash - cash0)) + ' over four years.', tone: L.cash >= cash0 ? 'good' : 'bad' });
+  /* A job does its own climbing some years, without being asked. */
+  if (P.job !== 'family' && P.rung < 2 && ok(r('rise'), 0.12 + (laterJob(L).skill(L) - 50) / 300) && up(L)) beats.push({ kind: 'job', text: 'A promotion: ' + laterTitle(L).toLowerCase() + '.', tone: 'gold' });
+  /* Drawn bare: `ok` never lets a chance be nought, and a young man's is. */
+  if (r('end')() < laterEndP(L)) {
+    P.over = true; P.died = L.age;
+    const t = 'Died at ' + L.age + '. ' + (lifeOf(L).kids ? 'The family was there.' : 'The old gym flew its flag low.');
+    beats.push({ kind: 'retire', text: t, tone: 'gold' });
+    logIt(L, t, 'gold');
+  } else {
+    const due = LATER_EV_KEYS.filter((k) => (LATER_EV[k].again ? P.seen[k] !== P.n - 1 : !P.seen[k]) && LATER_EV[k].when(L));
+    if (due.length) { const k = due[Math.floor(r('card')() * due.length)]; P.seen[k] = P.n; L.pending.push(laterCard(L, k)); }
+  }
+  sayAll(L, beats);
+  return { beats, over: P.over, blocked: L.pending.length > 0 };
+}
+/* The screen, and the last page. */
+function laterOf(L) {
+  const P = L.later;
+  if (!P) return { can: laterCan(L), on: false };
+  return {
+    can: false, on: true, over: P.over, age: L.age, died: P.died || null, job: P.job, title: laterTitle(L), best: laterJob(L).n[P.peak], peak: P.peak,
+    pay: laterJob(L).pay[P.rung], cash: L.cash, worth: netWorth(L), health: L.m.health, years: L.age - P.from, gave: P.gave || 0,
+    line: P.over ? laterLine(L) : null,
+  };
+}
+/* What the stone says. */
+function laterLine(L) {
+  const P = L.later, parts = [L.name + ', ' + P.died + '.'];
+  parts.push(P.job === 'family' && !P.peak ? 'Went home and stayed.' : 'After the game: ' + laterJob(L).n[P.peak].toLowerCase() + '.');
+  if (P.gave) parts.push('Gave away ' + money(P.gave) + '.');
+  if (lifeOf(L).kids) parts.push(lifeLine(L) + '.');
+  return parts.join(' ');
+}
+
 // ─── more ways out ──────────────────────────────────────────────────────────
 
 /* ENDINGS, the owner's call of 2026-10-15 and 2026-10-16: a career is limitless
@@ -12454,6 +13573,125 @@ function tenDay(L, beats, rng) {
   return said('You keep your bag packed until March. Nobody calls.', 'bad');
 }
 
+// ─── the ribbon and the life card ───────────────────────────────────────────
+
+/* REPLAY (the BitLife plan, phase 7, the owner's call of 2026-11-24). Every
+   life ends with ONE ribbon: the thing it will be remembered for. They are
+   tried in this order and the first that fits is the ribbon, so the rare and
+   the strange outrank the merely good, and the last one fits everybody.
+
+   A ribbon is read off the finished life and never stored: `ribbonOf(L)` is
+   the same answer every time, a save is the save it was, and a career from
+   before this has a ribbon too. `X` is what every test reads (ribbonFacts).
+
+   `lifeCard(L)` is the whole life on one card, for the end screen and for
+   sharing: the ribbon, the verdict, the numbers and up to five lines that
+   were true of this career. Every figure on it is the engine's. */
+const RIBBONS = {
+  banned:   { n: 'Banned', line: 'The league took your name off the wall.', test: (L) => !!L.flags.banned },
+  gone:     { n: 'Gone too soon', line: 'They still leave your locker the way it was.', test: (L) => !!L.flags.died },
+  never:    { n: 'Almost', line: 'The league never called. You were this close.', test: (L, X) => X.seasons === 0 },
+  goat:     { n: 'The GOAT debate', line: 'They argue about you in barbershops. They always will.', test: (L, X) => X.score >= 120 },
+  jail:     { n: 'Jailbird', line: 'Your mugshot outsold your jersey.', test: (L) => !!L.flags.jail },
+  broke:    { n: 'Riches to rags', line: 'You made a fortune. You spent a bigger one.', test: (L) => !!L.flags.broke },
+  dynasty:  { n: 'Dynasty', line: 'One ring is a great year. You built an era.', test: (L, X) => X.T.rings >= 3 },
+  mogul:    { n: 'Mogul', line: 'The game paid you. Then the money did.', test: (L, X) => X.worth >= 400 },
+  roller:   { n: 'High roller', line: 'The house always wins. Except against you.', test: (L, X) => X.net >= HOUSE_NET },
+  second:   { n: 'Second act', line: 'You got clean. Then you got good again.', test: (L, X) => X.cleanYears >= 2 },
+  heart:    { n: 'Heartbreaker', line: 'The lawyers knew you by first name.', test: (L, X) => X.div >= 2 },
+  family:   { n: 'Family man', line: 'A full house, and you were home for it.', test: (L, X) => X.rel === 'married' && X.kids >= 3 && !X.div },
+  whatif:   { n: 'What if', line: 'The talent was never the question. The body was.', test: (L, X) => !X.hof && (X.majors >= 2 || X.hurtOut) },
+  onecity:  { n: 'One city', line: 'One jersey, start to finish. They don\'t make them like you.', test: (L, X) => X.seasons >= 10 && X.clubs === 1 },
+  suitcase: { n: 'Suitcase', line: 'You knew every equipment manager in the league.', test: (L, X) => X.clubs >= 5 },
+  legend:   { n: 'Legend', line: 'Springfield has your jacket size.', test: (L, X) => X.hof },
+  villain:  { n: 'Villain', line: 'They booed you in thirty arenas. You loved every one.', test: (L, X) => X.persona === 'Villain' || X.persona === 'Loose cannon' },
+  face:     { n: 'Face of the league', line: 'Your jersey was in every gym in the country.', test: (L, X) => X.persona === 'Face of the league' },
+  champ:    { n: 'Champion', line: 'You have a ring. Nobody can take that back.', test: (L, X) => X.T.rings >= 1 },
+  iron:     { n: 'Iron man', line: 'You showed up. Every night, for years.', test: (L, X) => X.T.gp >= 1150 },
+  star:     { n: 'All-Star', line: 'For a while you were one of the best alive.', test: (L, X) => X.T.star >= 1 },
+  coffee:   { n: 'Cup of coffee', line: 'You made the league. It didn\'t last long.', test: (L, X) => X.seasons <= 4 },
+  fan:      { n: 'Fan favorite', line: 'Not the best player. The one they loved.', test: (L, X) => X.persona === 'Fan favorite' || X.persona === 'Showman' },
+  paid:     { n: 'Got paid', line: 'No rings, no trophies. A very nice house.', test: (L, X) => X.T.earned >= 150 },
+  pro:      { n: 'Pro\'s pro', line: 'Coaches wanted twelve of you.', test: (L, X) => X.persona === 'Pro\'s pro' || X.persona === 'Quiet assassin' },
+  role:     { n: 'Role player', line: 'You did your job. That is rarer than it sounds.', test: () => true },
+};
+const RIBBON_KEYS = Object.keys(RIBBONS);
+/* What a ribbon reads. The Hall verdict is the one the career ended on when
+   it has ended, so the ribbon and the Hall card never disagree. */
+function ribbonFacts(L) {
+  const T = totals(L), score = L.history.length ? legacyScore(T) : 0, f = lifeOf(L);
+  const fin = L.final && L.final.ending;
+  return {
+    T, score, seasons: L.history.length, clubs: clubsOf(L), persona: personaOf(L), worth: netWorth(L),
+    rel: f.rel, kids: f.kids || 0, div: f.div || 0,
+    majors: (L.mem && L.mem['inj.majors'] && L.mem['inj.majors'].v) || 0, hurtOut: !!(L.mem && L.mem['end.injury']),
+    hof: !L.flags.banned && (fin ? !!fin.hof : score >= 55),
+    net: L.wild ? L.wild.net : 0,
+    /* seasons played clean after a habit had hold of him and he went to rehab */
+    cleanYears: L.wild && L.wild.clean && recall(L, 'wild.hooked') && !Object.keys(L.wild.hook).length ? L.history.filter((h) => h.y > L.wild.clean).length : 0,
+  };
+}
+function ribbonOf(L) {
+  const X = ribbonFacts(L);
+  const id = RIBBON_KEYS.find((k) => RIBBONS[k].test(L, X));
+  return { id, name: RIBBONS[id].n, line: RIBBONS[id].line };
+}
+
+/* THE LIFE CARD. `facts` are tried in order and the first five that are true
+   are kept, so a card leads with what was rare about this life. */
+const commaNum = (n) => Math.round(n).toLocaleString('en-US');
+const countWord = (n, one, many) => n === 1 ? one : NUMWORDS[n] ? NUMWORDS[n] + ' ' + many : n + ' ' + many;
+function lifeFacts(L, X) {
+  const T = X.T, H = L.history, out = [], f = lifeOf(L);
+  const add = (on, t) => { if (on) out.push(t); };
+  add(L.flags.banned, 'Banned from the league for life.');
+  add(T.mvp, countWord(T.mvp, 'An MVP.', 'MVPs.'));
+  add(T.rings, countWord(T.rings, 'A championship.', 'championships.'));
+  add(T.fmvp, countWord(T.fmvp, 'A Finals MVP.', 'Finals MVPs.'));
+  add(L.flags.died, 'Died at ' + L.age + '.');
+  add(L.flags.jail, 'Did four months inside in ' + L.flags.jail + '.');
+  add(L.flags.broke, 'Went broke in ' + L.flags.broke + '.');
+  add(L.wild && L.wild.clean, 'Went to rehab in ' + (L.wild && L.wild.clean) + '.');
+  add(X.net >= 1, 'Up ' + money(X.net) + ' gambling.');
+  add(X.net <= -1, 'Down ' + money(-X.net) + ' gambling.');
+  add(X.div, countWord(X.div, 'One divorce.', 'divorces.'));
+  add(T.star, countWord(T.star, 'An All-Star.', 'All-Star teams.'));
+  add(T.dpoy, countWord(T.dpoy, 'Defensive Player of the Year.', 'Defensive Player of the Year awards.'));
+  add(T.roy, 'Rookie of the Year.');
+  add(L.draft && L.draft.pick, L.draft && L.draft.pick ? 'The ' + ordinal(L.draft.pick) + ' pick in the draft.' : '');
+  add(H.length && L.draft && !L.draft.pick, 'Went undrafted. Made it anyway.');
+  add(X.seasons >= 10 && X.clubs === 1, 'One team for ' + X.seasons + ' seasons.');
+  add(X.clubs >= 4, 'Played for ' + X.clubs + ' teams.');
+  add(X.majors >= 2, X.majors + ' major injuries.');
+  add(X.worth >= 100, 'Worth ' + money(X.worth) + ' at the end.');
+  add(L.later && (L.later.peak || L.later.job !== 'family'), L.later ? 'After the game: ' + LATER_JOBS[L.later.job].n[L.later.peak].toLowerCase() + '.' : '');
+  add(L.later && L.later.over, 'Lived to ' + (L.later && L.later.died) + '.');
+  add(f.kids, lifeLine(L) + '.');
+  add(H.length, H.length ? 'Best season: ' + Math.max(...H.map((h) => h.pts || 0)).toFixed(1) + ' points a game.' : '');
+  add(T.earned >= 1, 'Earned ' + money(T.earned) + ' on the floor.');
+  add(!H.length, 'Never played an NBA game.');
+  return out.slice(0, 5);
+}
+function lifeCard(L) {
+  const X = ribbonFacts(L), T = X.T, H = L.history, rb = ribbonOf(L);
+  const fin = L.final || legacy(L);
+  const teams = []; for (const h of H) if (h.t && teams.indexOf(h.t) < 0) teams.push(h.t);
+  const from = H.length ? H[0].y : null, to = H.length ? H[H.length - 1].y : null;
+  const stats = H.length ? [
+    { k: 'Seasons', v: String(H.length) }, { k: 'Games', v: commaNum(T.gp) }, { k: 'Points', v: commaNum(T.pts) },
+    { k: 'Rings', v: String(T.rings) }, { k: 'All-Star', v: String(T.star) }, { k: 'Worth', v: money(X.worth) },
+  ] : [];
+  const facts = lifeFacts(L, X);
+  const head = L.name + (from ? ' · ' + (from === to ? from : from + '-' + to) : '');
+  const text = [head, rb.name + ': ' + rb.line, fin.verdict + (H.length ? ' · ' + commaNum(T.pts) + ' points · ' + T.rings + (T.rings === 1 ? ' ring' : ' rings') : '')]
+    .concat(facts.slice(0, 3)).join('\n');
+  return {
+    name: L.name, num: L.num, pos: L.pos, nick: L.nick || null, from, to, teams, last: teams.length ? teams[teams.length - 1] : null,
+    ribbon: rb, verdict: fin.verdict, blurb: fin.blurb, score: fin.score || 0, persona: personaOf(L),
+    stats, facts, life: lifeLine(L), ending: fin.ending ? fin.ending.names.slice(0, 3) : [], over: !!L.retired, text,
+  };
+}
+
 // ─── public ─────────────────────────────────────────────────────────────────
 
 /* The one copy of the Career board's name rule (130's p_player check): a
@@ -12563,6 +13801,7 @@ function roadView(L) {
    career ends, and a challenge met is kept in the Vault. */
 const regGames = (L) => L.history.reduce((n, h) => n + (h.gp || 0), 0);
 const clubsOf = (L) => new Set(L.history.map((h) => h.t)).size;
+const MOGUL_WORTH = 300, HOUSE_NET = 5;
 const CHALLENGES = {
   ch_city: { name: 'One city', blurb: 'Play twelve seasons and every one for the same team.',
     test: (L) => L.history.length >= 12 && clubsOf(L) === 1, out: (L) => clubsOf(L) > 1,
@@ -12585,6 +13824,25 @@ const CHALLENGES = {
     test: (L) => regGames(L) >= 1200, prog: (L) => regGames(L).toLocaleString('en-US') + ' of 1,200 games' },
   ch_hard: { name: 'The hard way', blurb: 'On Hard, make the Hall of Fame.', diff: 'hard',
     test: (L) => !!(L.final && L.final.ending && L.final.ending.hof), prog: (L) => L.retired ? (L.final && L.final.ending && L.final.ending.hof ? 'Done' : 'Not in') : 'The voters decide at the end' },
+  /* Phase 7 of the BitLife plan: five more, two of them lived off the floor. */
+  ch_roy: { name: 'Instant impact', blurb: 'Win Rookie of the Year.',
+    test: (L) => totals(L).roy >= 1, out: (L) => L.history.length >= 1 && !totals(L).roy,
+    prog: (L) => totals(L).roy ? 'Done' : L.history.length ? 'The rookie year is gone' : 'The rookie year is ahead' },
+  ch_old: { name: 'Father Time', blurb: 'Play a season at 36 or older.',
+    test: (L) => L.history.some((h) => h.age >= 36), prog: (L) => L.history.some((h) => h.age >= 36) ? 'Done' : 'You are ' + L.age },
+  ch_suitcase: { name: 'Suitcase', blurb: 'Play for five teams.',
+    test: (L) => clubsOf(L) >= 5, prog: (L) => clubsOf(L) + ' of 5 teams' },
+  ch_family: { name: 'Family man', blurb: 'Get married and raise three kids. No divorce.',
+    test: (L) => lifeOf(L).rel === 'married' && lifeOf(L).kids >= 3 && !lifeOf(L).div, out: (L) => !!lifeOf(L).div,
+    prog: (L) => lifeOf(L).div ? 'Divorced' : (lifeOf(L).rel === 'married' ? 'Married' : 'Not married') + ', ' + lifeOf(L).kids + ' of 3 kids' },
+  ch_mogul: { name: 'Mogul', blurb: 'Retire worth ' + money(MOGUL_WORTH) + '.',
+    test: (L) => !!L.retired && netWorth(L) >= MOGUL_WORTH, prog: (L) => 'Worth ' + money(netWorth(L)) + ' of ' + money(MOGUL_WORTH) },
+  /* Phase 4: two from the wild side. */
+  ch_clean: { name: 'Clean slate', blurb: 'Go to rehab. Then make an All-Star team.',
+    test: (L) => !!(L.wild && L.wild.clean) && L.history.some((h) => h.y > L.wild.clean && (h.aw || []).indexOf('star') >= 0),
+    prog: (L) => !(L.wild && L.wild.clean) ? 'No rehab yet' : L.history.some((h) => h.y > L.wild.clean && (h.aw || []).indexOf('star') >= 0) ? 'Done' : 'Clean since ' + L.wild.clean + '. No All-Star yet' },
+  ch_house: { name: 'House money', blurb: 'Retire up ' + money(HOUSE_NET) + ' at gambling.',
+    test: (L) => !!L.retired && !!L.wild && L.wild.net >= HOUSE_NET, prog: (L) => { const n = L.wild ? L.wild.net : 0; return (n >= 0 ? 'Up ' + money(n) : 'Down ' + money(-n)) + ' of ' + money(HOUSE_NET); } },
 };
 const CHALLENGE_KEYS = Object.keys(CHALLENGES);
 /* A challenge that starts you low on the board does it once, at the combine. */
@@ -12799,7 +14057,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

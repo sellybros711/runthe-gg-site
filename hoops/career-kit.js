@@ -1266,7 +1266,7 @@ function dialog(scrim, opts){
   function out(e){ if (e.target === scrim && !o.flat) close(); }
   scrim.addEventListener('keydown', key);
   scrim.addEventListener('click', out);
-  api = { close: close, drop: drop, scrim: scrim };
+  api = { close: close, drop: drop, scrim: scrim, flat: !!o.flat };
   scrim.__kd = api; DLG.push(api);
   var first = focusables()[0];
   if (first) first.focus();
@@ -1274,11 +1274,23 @@ function dialog(scrim, opts){
   return { close: close };
 }
 
+/* The dialog on top, for a back button: closes it and says so, or says there
+   was none. A flat one (a screen between the bars) is the caller's to close. */
+function closeTop(o){
+  for (var i = DLG.length - 1; i >= 0; i--) {
+    var d = DLG[i];
+    if (d.scrim.hidden) { d.drop(); continue; }
+    if (d.flat && !(o && o.flat)) return false;
+    d.close(); return true;
+  }
+  return false;
+}
+
 var API = {
   API_VERSION: API_VERSION, T: T, CSS: CSS,
   mix: mix, contrast: contrast, ramp: ramp, teamVars: teamVars, theme: theme,
   crowd: crowd, wood: wood, brick: brick, room: room, icon: icon, img: img, iconHtml: iconHtml, badgeHtml: badgeHtml, ICONS_L: Object.keys(ICONS_L), ICONS: Object.keys(ICONS), ICON16: Object.keys(ICON16), icon16: icon16,
-  pips: pips, bar: bar, tickerHtml: tickerHtml, wireTips: wireTips, countUp: countUp, toast: toast, lane: lane, closeX: closeX, wipe: wipe, dialog: dialog, reduced: reduced, inject: inject,
+  pips: pips, bar: bar, tickerHtml: tickerHtml, wireTips: wireTips, countUp: countUp, toast: toast, lane: lane, closeX: closeX, wipe: wipe, dialog: dialog, closeTop: closeTop, reduced: reduced, inject: inject,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;
 if (typeof window !== 'undefined'){ window.RTF_KIT = API; inject(); }

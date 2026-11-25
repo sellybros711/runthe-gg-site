@@ -107,6 +107,7 @@ function roadView(L) {
    career ends, and a challenge met is kept in the Vault. */
 const regGames = (L) => L.history.reduce((n, h) => n + (h.gp || 0), 0);
 const clubsOf = (L) => new Set(L.history.map((h) => h.t)).size;
+const MOGUL_WORTH = 300, HOUSE_NET = 5;
 const CHALLENGES = {
   ch_city: { name: 'One city', blurb: 'Play twelve seasons and every one for the same team.',
     test: (L) => L.history.length >= 12 && clubsOf(L) === 1, out: (L) => clubsOf(L) > 1,
@@ -129,6 +130,25 @@ const CHALLENGES = {
     test: (L) => regGames(L) >= 1200, prog: (L) => regGames(L).toLocaleString('en-US') + ' of 1,200 games' },
   ch_hard: { name: 'The hard way', blurb: 'On Hard, make the Hall of Fame.', diff: 'hard',
     test: (L) => !!(L.final && L.final.ending && L.final.ending.hof), prog: (L) => L.retired ? (L.final && L.final.ending && L.final.ending.hof ? 'Done' : 'Not in') : 'The voters decide at the end' },
+  /* Phase 7 of the BitLife plan: five more, two of them lived off the floor. */
+  ch_roy: { name: 'Instant impact', blurb: 'Win Rookie of the Year.',
+    test: (L) => totals(L).roy >= 1, out: (L) => L.history.length >= 1 && !totals(L).roy,
+    prog: (L) => totals(L).roy ? 'Done' : L.history.length ? 'The rookie year is gone' : 'The rookie year is ahead' },
+  ch_old: { name: 'Father Time', blurb: 'Play a season at 36 or older.',
+    test: (L) => L.history.some((h) => h.age >= 36), prog: (L) => L.history.some((h) => h.age >= 36) ? 'Done' : 'You are ' + L.age },
+  ch_suitcase: { name: 'Suitcase', blurb: 'Play for five teams.',
+    test: (L) => clubsOf(L) >= 5, prog: (L) => clubsOf(L) + ' of 5 teams' },
+  ch_family: { name: 'Family man', blurb: 'Get married and raise three kids. No divorce.',
+    test: (L) => lifeOf(L).rel === 'married' && lifeOf(L).kids >= 3 && !lifeOf(L).div, out: (L) => !!lifeOf(L).div,
+    prog: (L) => lifeOf(L).div ? 'Divorced' : (lifeOf(L).rel === 'married' ? 'Married' : 'Not married') + ', ' + lifeOf(L).kids + ' of 3 kids' },
+  ch_mogul: { name: 'Mogul', blurb: 'Retire worth ' + money(MOGUL_WORTH) + '.',
+    test: (L) => !!L.retired && netWorth(L) >= MOGUL_WORTH, prog: (L) => 'Worth ' + money(netWorth(L)) + ' of ' + money(MOGUL_WORTH) },
+  /* Phase 4: two from the wild side. */
+  ch_clean: { name: 'Clean slate', blurb: 'Go to rehab. Then make an All-Star team.',
+    test: (L) => !!(L.wild && L.wild.clean) && L.history.some((h) => h.y > L.wild.clean && (h.aw || []).indexOf('star') >= 0),
+    prog: (L) => !(L.wild && L.wild.clean) ? 'No rehab yet' : L.history.some((h) => h.y > L.wild.clean && (h.aw || []).indexOf('star') >= 0) ? 'Done' : 'Clean since ' + L.wild.clean + '. No All-Star yet' },
+  ch_house: { name: 'House money', blurb: 'Retire up ' + money(HOUSE_NET) + ' at gambling.',
+    test: (L) => !!L.retired && !!L.wild && L.wild.net >= HOUSE_NET, prog: (L) => { const n = L.wild ? L.wild.net : 0; return (n >= 0 ? 'Up ' + money(n) : 'Down ' + money(-n)) + ' of ' + money(HOUSE_NET); } },
 };
 const CHALLENGE_KEYS = Object.keys(CHALLENGES);
 /* A challenge that starts you low on the board does it once, at the combine. */
@@ -343,7 +363,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

@@ -35,6 +35,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { checkLeague } from './build/check-league.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -51,9 +52,9 @@ const PHASE = arg('phase', '0');
 const PHASES = ['0', 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
 const due = (p) => PHASES.indexOf(p) <= PHASES.indexOf(PHASE);
 
-/* The league the game seeds: today's rosters when the repo has them. */
-const ROSTERS_FILE = new URL('./data/rosters.json', import.meta.url);
-const league = C.seedLeague(ROWS, C.withRatings(fs.existsSync(ROSTERS_FILE) ? JSON.parse(fs.readFileSync(ROSTERS_FILE, 'utf8')) : null, (() => { const f = new URL('./data/ratings.json', import.meta.url); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; })()));
+/* The league the checks play: a frozen copy of the rosters (build/check-league.mjs),
+   so the weekly roster refresh never moves a band. */
+const league = checkLeague(C, ROWS);
 /* An en or em dash in copy, built from its code points so this file carries none. */
 const DASH = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -90,7 +91,7 @@ function policyPick(pol, L, c, r) {
 
 const JUNK = /\bundefined\b|\bNaN\b|\[object |\{[a-z0-9]+(?::(?:last|first))?\}/;
 
-function run(seed, start, pol, picks, legend, extra) {
+function run(seed, start, pol, picks, legend, extra, live) {
   const o = Object.assign({ seed, league, start, legend: legend !== false }, extra || {});
   const L = start === 'gen' ? C.generateRoad(o) : C.newLife(o);
   const r = E.createSeededRNG(E.hashSeed(seed + ':policy'));
@@ -106,7 +107,7 @@ function run(seed, start, pol, picks, legend, extra) {
       for (const x of C.continuity(L, c)) problems.push('continuity ' + x);
       const i = picks ? (picks[k++] || 0) % c.options.length : policyPick(pol, L, c, r);
       C.choose(L, i);
-    } else C.step(L);
+    } else { if (live) for (let q = 0; q < 12 && !L.pending.length && live(L); q++); if (!L.pending.length) C.step(L); }
   }
   if (!L.retired) problems.push('never retired');
   for (const x of C.continuityLog(L)) problems.push('continuity ' + x);
@@ -172,6 +173,10 @@ function parentOf(L) {
     rings: T.rings, star: T.star, hof: !!(f.ending && f.ending.hof), clubs: [...new Set(H.map((h) => h.t))], jersey: f.jersey || null,
     gen: (L.parent && L.parent.gen + 1) || 1, end: H[H.length - 1].y, age: H[H.length - 1].age };
 }
+/* What those careers were dealt, for "events never dealt": at about two
+   story cards a season (the 10 to 15 minute career) a card behind a narrow
+   gate comes a few times in 3,000 careers, and 1,000 met it by luck. */
+const rareSeen = {};
 const EX = { gen: { easy: [], normal: [], hard: [] }, sons: [], ch: {} };
 if (!SCRIPT && !ONLY) {
   const NE = Math.max(120, Math.ceil(N / 5));
@@ -192,13 +197,44 @@ if (!SCRIPT && !ONLY) {
     try { const r = run('son' + i, i % 2 ? 'hs' : 'gen', pol, null, true, { parent: parentOf(dad), parentLeague: C.leagueEnd(dad) }); r.dad = dad; EX.sons.push(Object.assign(r, { pol })); }
     catch (e) { crashes++; if (crashes <= 3) console.error('crash son' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
   }
-  /* Every challenge, played as itself. */
+  /* Every challenge, played as itself. A challenge lived off the floor is
+     played by somebody who lives that way: he goes out, dates, proposes,
+     marries and starts a family, one act on his partner a year. And a
+     challenge about where you play is played by a man who asks to move. */
+  const canWild = (L, id) => { const V = C.wildOpen(L); return V && V.acts.find((a) => a.id === id && a.ok); };
+  const CH_LIVE = {
+    /* Clean slate: nights out until rehab is on offer, rehab, then basketball. */
+    ch_clean(L) {
+      if (L.wild && L.wild.clean) return false;
+      if (canWild(L, 'rehab')) return !!C.wildAct(L, 'rehab');
+      return canWild(L, 'party') ? !!C.wildAct(L, 'party') : false;
+    },
+    /* House money: a quarter of the cash on the tables until he is up, then rehab before it has hold of him. */
+    ch_house(L) {
+      const W = L.wild;
+      if (W && W.net >= 5) return W.hab.bet >= 30 && canWild(L, 'rehab') ? !!C.wildAct(L, 'rehab') : false;
+      const a = canWild(L, 'casino');
+      return a ? !!C.wildAct(L, 'casino', Math.max(a.min, Math.round(a.max * 25) / 100)) : false;
+    },
+    /* Five teams is chased by asking out: a trade to a contender, a buyout, a ring chase. */
+    ch_suitcase(L) {
+      for (const w of ['contender', 'buyout', 'ringchase']) if (C.actsOpen(L).some((a) => a.id === w && a.ok)) return !!C.act(L, w);
+      return false;
+    },
+    ch_family(L) {
+      if (C.lifeOf(L).rel === 'single') return !!C.act(L, 'mingle');
+      const P = C.peopleOpen(L).find((p) => p.role === 'Partner');
+      if (!P) return false;
+      for (const w of ['family', 'elope', 'propose', 'date']) if (P.acts.some((a) => a.id === w && a.ok)) return !!C.personAct(L, P.id, w);
+      return false;
+    },
+  };
   for (const k of C.CHALLENGE_KEYS) {
     EX.ch[k] = [];
     for (let i = 0; i < Math.ceil(NE / 2); i++) {
       /* Played the way somebody chasing it would: a ring chaser looks ahead
          for the card that helps the team most. */
-      try { EX.ch[k].push(run('ch:' + k + i, 'gen', i % 2 ? 'ring' : POLICIES[i % POLICIES.length], null, true, { challenge: k, diff: 'easy' })); }
+      try { EX.ch[k].push(run('ch:' + k + i, 'gen', i % 2 ? 'ring' : POLICIES[i % POLICIES.length], null, true, { challenge: k, diff: 'easy' }, CH_LIVE[k])); }
       catch (e) { crashes++; }
     }
   }
@@ -208,6 +244,20 @@ const secs = ((Date.now() - t0) / 1000).toFixed(1);
 
 /* ─── measure ─────────────────────────────────────────────────────────── */
 
+/* The ending a career was given; a career from before Phase D has none. */
+const endOf = (x) => (x.L.final && x.L.final.ending) || { hof: C.legacy(x.L).score >= 55, tier: C.legacy(x.L).score >= 85 ? 'hof_first' : '', outcomes: [], secret: null };
+/* THE RARE ENDINGS ARE COUNTED ON MORE CAREERS (the owner's call,
+   2026-10-16). A band under one percent read off 1,000 careers turns on two
+   or three of them: the GOAT ending read 0.1% to 0.3% on careers whose best
+   legacies were unchanged. Its band stays where it was; it is counted over
+   the first sweep plus RARE_X times as many careers again, on their own
+   seeds, keeping only the ending of each. */
+const RARE_X = 2;
+const rareEnds = results.map(endOf);
+if (!SCRIPT && !ONLY) for (let i = 0; i < N * RARE_X; i++) {
+  const pol = POLICIES[i % POLICIES.length];
+  try { const x = run('rare' + i, i % 2 ? 'hs' : 'draft', pol); rareEnds.push(endOf(x)); for (const id in x.seen) rareSeen[id] = 1; } catch (e) { crashes++; if (crashes <= 3) console.error('crash rare' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
+}
 const n = results.length;
 const pct = (x) => (100 * x / Math.max(1, n));
 const ev = {};
@@ -216,7 +266,7 @@ for (const x of results) for (const id in x.seen) { ev[id] = ev[id] || { careers
 const exSeen = {};
 for (const x of exAll) for (const id in x.seen) exSeen[id] = 1;
 const allIds = new Set(Object.keys(C.EVENTS).concat(Object.keys(C.AM_EVENTS || {}), Object.keys(C.STORY_EV || {}), Object.keys(C.ARC_EVENTS || {})));
-let never = [...allIds].filter((id) => !ev[id] && !exSeen[id]);
+let never = [...allIds].filter((id) => !ev[id] && !exSeen[id] && !rareSeen[id]);
 /* A son's card the sons sweep missed is played on before it is called never
    dealt. leg_rafters needs a son who lands on his father's club in his first
    three seasons, so 400 sons on today's rosters can meet none (the
@@ -248,26 +298,12 @@ const overlap = 100 * ov / Math.max(1, pairs);
 const distinct = results.reduce((s, x) => s + Object.keys(x.seen).length, 0) / Math.max(1, n);
 
 const count = (f) => results.filter(f).length;
-/* The ending a career was given; a career from before Phase D has none. */
-const endOf = (x) => (x.L.final && x.L.final.ending) || { hof: C.legacy(x.L).score >= 55, tier: C.legacy(x.L).score >= 85 ? 'hof_first' : '', outcomes: [], secret: null };
 /* The legend switch, off: a smaller sweep that must never meet one. */
 const OFF = [];
 if (!SCRIPT && !ONLY) for (let i = 0; i < Math.min(300, Math.ceil(N / 10)); i++) {
   try { OFF.push(run('off' + i, i % 2 ? 'hs' : 'draft', 'random', null, false)); } catch (e) { crashes++; }
 }
 const T = (x) => C.totals(x.L);
-/* THE RARE ENDINGS ARE COUNTED ON MORE CAREERS (the owner's call,
-   2026-10-16). A band under one percent read off 1,000 careers turns on two
-   or three of them: the GOAT ending read 0.1% to 0.3% on careers whose best
-   legacies were unchanged. Its band stays where it was; it is counted over
-   the first sweep plus RARE_X times as many careers again, on their own
-   seeds, keeping only the ending of each. */
-const RARE_X = 2;
-const rareEnds = results.map(endOf);
-if (!SCRIPT && !ONLY) for (let i = 0; i < N * RARE_X; i++) {
-  const pol = POLICIES[i % POLICIES.length];
-  try { rareEnds.push(endOf(run('rare' + i, i % 2 ? 'hs' : 'draft', pol))); } catch (e) { crashes++; if (crashes <= 3) console.error('crash rare' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
-}
 const rarePct = (f) => 100 * rareEnds.filter(f).length / Math.max(1, rareEnds.length);
 const hs = results.filter((x) => routeOf(x.L).start === 'hs');
 const routes = {}, slots = {}, pros = {}, verdicts = {};
@@ -312,6 +348,11 @@ const M = {
   'events never dealt': never.length,
   'unplanned repeats per career': results.reduce((s, x) => s + x.repeats.length, 0) / Math.max(1, n),
 };
+/* Replay (the BitLife plan, phase 7): the ribbon each career ended with. */
+const ribbonMix = {};
+for (const x of results) { const id = C.ribbonOf(x.L).id; ribbonMix[id] = (ribbonMix[id] || 0) + 1; }
+M['ribbons seen in the sweep'] = Object.keys(ribbonMix).length;
+M['the commonest ribbon %'] = 100 * Math.max(0, ...Object.values(ribbonMix)) / Math.max(1, n);
 /* Phase E, off the second sweep. */
 {
   const share = (a, f) => 100 * a.filter(f).length / Math.max(1, a.length);
@@ -369,7 +410,9 @@ const TARGETS = [
   ['endings in the catalog', 30, Infinity, 'D'],
   ['endings met in the sweep', 30, Infinity, 'D'],
   ['legend events met in the sweep', 20, Infinity, 'D'],
-  ['distinct events per career', 70, 110, 'D'],
+  /* 70 to 110 until the owner's 10 to 15 minute career (2026-11-24), which
+     deals about two story cards a season: the owner set 45 to 80. */
+  ['distinct events per career', 45, 80, 'D'],
   ["two careers' event overlap", 0, 50, 'D'],
   ['median NBA seasons', 11, 14, 'C'],
   ['events never dealt', 0, 0, '0'],
@@ -382,6 +425,10 @@ const TARGETS = [
   ['E: sons who start after their father retired', 100, 100, 'E'],
   ['E: sons who name their father', 100, 100, 'E'],
   ['E: challenges met in the sweep', C.CHALLENGE_KEYS.length, Infinity, 'E'],
+  /* Eight ribbons are lived for (broke, a second divorce, a full house, the villain, and the four
+     from the wild side); check-career chases those. */
+  ['ribbons seen in the sweep', C.RIBBON_KEYS.length - 8, Infinity, 'D'],
+  ['the commonest ribbon %', 0, 30, 'D'],
   ['E: stories with every chapter', 100, 100, 'E'],
 ];
 

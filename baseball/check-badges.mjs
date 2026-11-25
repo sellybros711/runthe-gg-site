@@ -372,11 +372,23 @@ const SKILL = {
      October, three Octobers in a row, ten Survivor seasons, every mode played. */
   wildcard_title: 'seed_wildcard',
   mode_division_title: 'mode_division_oct',
-  mode_staff_title: 'mode_staff_oct',
   mode_trade_title: 'mode_trade_oct',
-  oct_streak_5: 'oct_streak_3',
   mode_survivor_oct: 'mode_survivor_10',
   all_modes_oct: 'all_modes',
+  /* THE OWNER'S POSITIONS FOR 37 ROOKIES (2026-11-23) moved it a sixth time. Those
+     men had been wildcards who could play any spot, and now play their own. Measured
+     at 200 drafts a bot, the careful drafter's rating barely moved (81.9 to 82.1) and
+     the draft's gap stayed inside its noise, so this is the borderline again, not the
+     balance. A Staff title and a five-year October streak light in quick now and came
+     off. Five went the other way, each anchored on the rung below it that lights:
+     110 wins on 105, five titles on three, eight from one club on four, the family
+     link on the team-mates link, a Decades title on a Decades October. The FULL
+     sweep lights all of them. */
+  win_110: 'win_105',
+  title_5: 'title_3',
+  one_franchise_8: 'one_franchise_4',
+  family: 'link_teammates',
+  mode_era_title: 'mode_era_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,
