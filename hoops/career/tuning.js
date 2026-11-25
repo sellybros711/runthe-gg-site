@@ -16,8 +16,9 @@
    playoff impact in a series: 3.5 left the ring share at 18.0% after step 6,
    the bottom of the owner's 18 to 30% band; 3.0 lands it at 21.5% with every
    other band in (2.5 read 25.3% but left a card never dealt). The owner's
-   call to rebalance, 2026-10-17. */
-const BAL = { star: 4, dec: 1.4, poTax: 3.0, maxAge: 38, tired: 31 };
+   call to rebalance, 2026-10-17. star went 4 to 3.8 with the 10 to 15 minute
+   career (2026-11-24): fewer cards, fewer lifts, and All-Star read 19.8%. */
+const BAL = { star: 3.8, dec: 1.4, poTax: 3.0, maxAge: 38, tired: 31 };
 /* First ballot is 85, the score VERDICTS and the cr-ballot badge already call
    First ballot. At 95 a career between them read "First ballot" on its Hall
    card and "Hall of Famer, in time" as its ending, and first ballot ran 4.7%
@@ -27,6 +28,27 @@ const HOF_AT = [85, 60, 44];
    3,000 rare-ending careers, the floor of its 0.3 to 1% band; 150 read 0.5%
    and 145 reads 0.6%, the middle (2026-10-17). */
 const GOAT_AT = 145;
+
+// ── pace (turns, season) ──
+
+/* A CAREER PLAYS IN 10 TO 15 MINUTES (the owner's call, 2026-11-24: BitLife
+   for an NBA player). An NBA season dealt about ten cards, five of them from
+   the story draws below, and a career read 6,700 words. The season's
+   story card goes to one stretch a year, drawn with the stretch weights
+   (storyStretch); off is the chance of the summer's. An arc that is due takes
+   the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
+   late 1 and off 1 cards. */
+const PACE = { stretch: { pre: 0.2, early: 0.28, mid: 0.26, late: 0.26 }, second: 1, off: 0.95, team: 1, cap: { season: 2, off: 1 }, legend: 2.5, life: 3.5, rep: 1.8 };
+/* life: meeting someone, a proposal, a wedding and a baby are weighted this
+   much (they were 1.8): a life off the floor is what the game is, and at
+   1.8 a tenth of careers married. */
+/* rep: a story card's answer moves the reputation this much harder. With
+   half the cards each has to say more about who he is: at the old weight 289
+   of 300 careers ended "Still writing it". */
+/* team is how many of your club's cards a season (it was one a phase, about
+   1.1 a season). cap is the story budget (queueEvents), one for the season and one for
+   the summer: due arcs always, then your club's card and new events while
+   there is room. */
 
 // ── growth, decline and the summer (season, events) ──
 

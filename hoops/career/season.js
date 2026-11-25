@@ -1872,7 +1872,7 @@ function offseason(L, beats) {
   }
   /* Something off the court, most summers, and now and then the brands. */
   brandCard(L);
-  queueEvents(L, 'off', 1);
+  queueEvents(L, 'off', rngAt(L, 'n:off')() < PACE.off ? 1 : 0);
 }
 /* The answers to no offer this summer (choose() runs them). */
 ANSWER.nooffer = function(L, card, i, opt, rng, beats, touch, touches) {

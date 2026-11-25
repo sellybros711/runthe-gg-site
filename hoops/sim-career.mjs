@@ -173,6 +173,10 @@ function parentOf(L) {
     rings: T.rings, star: T.star, hof: !!(f.ending && f.ending.hof), clubs: [...new Set(H.map((h) => h.t))], jersey: f.jersey || null,
     gen: (L.parent && L.parent.gen + 1) || 1, end: H[H.length - 1].y, age: H[H.length - 1].age };
 }
+/* What those careers were dealt, for "events never dealt": at about two
+   story cards a season (the 10 to 15 minute career) a card behind a narrow
+   gate comes a few times in 3,000 careers, and 1,000 met it by luck. */
+const rareSeen = {};
 const EX = { gen: { easy: [], normal: [], hard: [] }, sons: [], ch: {} };
 if (!SCRIPT && !ONLY) {
   const NE = Math.max(120, Math.ceil(N / 5));
@@ -209,6 +213,20 @@ const secs = ((Date.now() - t0) / 1000).toFixed(1);
 
 /* ─── measure ─────────────────────────────────────────────────────────── */
 
+/* The ending a career was given; a career from before Phase D has none. */
+const endOf = (x) => (x.L.final && x.L.final.ending) || { hof: C.legacy(x.L).score >= 55, tier: C.legacy(x.L).score >= 85 ? 'hof_first' : '', outcomes: [], secret: null };
+/* THE RARE ENDINGS ARE COUNTED ON MORE CAREERS (the owner's call,
+   2026-10-16). A band under one percent read off 1,000 careers turns on two
+   or three of them: the GOAT ending read 0.1% to 0.3% on careers whose best
+   legacies were unchanged. Its band stays where it was; it is counted over
+   the first sweep plus RARE_X times as many careers again, on their own
+   seeds, keeping only the ending of each. */
+const RARE_X = 2;
+const rareEnds = results.map(endOf);
+if (!SCRIPT && !ONLY) for (let i = 0; i < N * RARE_X; i++) {
+  const pol = POLICIES[i % POLICIES.length];
+  try { const x = run('rare' + i, i % 2 ? 'hs' : 'draft', pol); rareEnds.push(endOf(x)); for (const id in x.seen) rareSeen[id] = 1; } catch (e) { crashes++; if (crashes <= 3) console.error('crash rare' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
+}
 const n = results.length;
 const pct = (x) => (100 * x / Math.max(1, n));
 const ev = {};
@@ -217,7 +235,7 @@ for (const x of results) for (const id in x.seen) { ev[id] = ev[id] || { careers
 const exSeen = {};
 for (const x of exAll) for (const id in x.seen) exSeen[id] = 1;
 const allIds = new Set(Object.keys(C.EVENTS).concat(Object.keys(C.AM_EVENTS || {}), Object.keys(C.STORY_EV || {}), Object.keys(C.ARC_EVENTS || {})));
-let never = [...allIds].filter((id) => !ev[id] && !exSeen[id]);
+let never = [...allIds].filter((id) => !ev[id] && !exSeen[id] && !rareSeen[id]);
 /* A son's card the sons sweep missed is played on before it is called never
    dealt. leg_rafters needs a son who lands on his father's club in his first
    three seasons, so 400 sons on today's rosters can meet none (the
@@ -249,26 +267,12 @@ const overlap = 100 * ov / Math.max(1, pairs);
 const distinct = results.reduce((s, x) => s + Object.keys(x.seen).length, 0) / Math.max(1, n);
 
 const count = (f) => results.filter(f).length;
-/* The ending a career was given; a career from before Phase D has none. */
-const endOf = (x) => (x.L.final && x.L.final.ending) || { hof: C.legacy(x.L).score >= 55, tier: C.legacy(x.L).score >= 85 ? 'hof_first' : '', outcomes: [], secret: null };
 /* The legend switch, off: a smaller sweep that must never meet one. */
 const OFF = [];
 if (!SCRIPT && !ONLY) for (let i = 0; i < Math.min(300, Math.ceil(N / 10)); i++) {
   try { OFF.push(run('off' + i, i % 2 ? 'hs' : 'draft', 'random', null, false)); } catch (e) { crashes++; }
 }
 const T = (x) => C.totals(x.L);
-/* THE RARE ENDINGS ARE COUNTED ON MORE CAREERS (the owner's call,
-   2026-10-16). A band under one percent read off 1,000 careers turns on two
-   or three of them: the GOAT ending read 0.1% to 0.3% on careers whose best
-   legacies were unchanged. Its band stays where it was; it is counted over
-   the first sweep plus RARE_X times as many careers again, on their own
-   seeds, keeping only the ending of each. */
-const RARE_X = 2;
-const rareEnds = results.map(endOf);
-if (!SCRIPT && !ONLY) for (let i = 0; i < N * RARE_X; i++) {
-  const pol = POLICIES[i % POLICIES.length];
-  try { rareEnds.push(endOf(run('rare' + i, i % 2 ? 'hs' : 'draft', pol))); } catch (e) { crashes++; if (crashes <= 3) console.error('crash rare' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
-}
 const rarePct = (f) => 100 * rareEnds.filter(f).length / Math.max(1, rareEnds.length);
 const hs = results.filter((x) => routeOf(x.L).start === 'hs');
 const routes = {}, slots = {}, pros = {}, verdicts = {};
@@ -370,7 +374,9 @@ const TARGETS = [
   ['endings in the catalog', 30, Infinity, 'D'],
   ['endings met in the sweep', 30, Infinity, 'D'],
   ['legend events met in the sweep', 20, Infinity, 'D'],
-  ['distinct events per career', 70, 110, 'D'],
+  /* 70 to 110 until the owner's 10 to 15 minute career (2026-11-24), which
+     deals about two story cards a season: the owner set 45 to 80. */
+  ['distinct events per career', 45, 80, 'D'],
   ["two careers' event overlap", 0, 50, 'D'],
   ['median NBA seasons', 11, 14, 'C'],
   ['events never dealt', 0, 0, '0'],
