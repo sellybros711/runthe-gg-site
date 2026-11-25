@@ -7,14 +7,14 @@
  * NOTHING OPENS A GUIDE BY ITSELF. A first visit goes straight into day 1,
  * and the goal line (part of the HUD) says the next thing to do. How it
  * works is behind a button in the menu. */
-import { CONFIG, GAME } from './config.js?v=3';
-import { MAP } from './map.js?v=3';
-import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations, looksOf, shopList } from './sim.js?v=3';
-import { makeBot } from './bot.js?v=3';
-import { createStore } from './store.js?v=3';
+import { CONFIG, GAME } from './config.js?v=4';
+import { MAP } from './map.js?v=4';
+import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations, looksOf, shopList } from './sim.js?v=4';
+import { makeBot } from './bot.js?v=4';
+import { createStore } from './store.js?v=4';
 import { createAnalytics } from './analytics.js?v=1';
 import { createInput } from './input.js?v=1';
-import { createRenderer } from './render.js?v=3';
+import { createRenderer } from './render.js?v=4';
 
 const $ = id => document.getElementById(id);
 const money = n => (n < 0 ? '-$' + (-n).toLocaleString('en-US') : '$' + n.toLocaleString('en-US'));
