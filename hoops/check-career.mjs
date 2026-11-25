@@ -1587,6 +1587,72 @@ section('21. what the money is for: things, a payroll, money at work, and going 
   ok(same === 12, `reading the money changes nothing (${same} of 12 careers identical)`);
 }
 
+// ── 21b. what the People and Money screens asked the engine for ───────────
+section('21b. what the screens asked for: why an act is closed, what it did to the person, a condo that costs something');
+{
+  const E = require('./engine.js');
+  const L = C.newLife({ seed: 'asks', league, start: 'draft' });
+  let g = 0; while (g++ < 4000 && !(L.stage === 'nba' && L.history.length >= 2 && L.phase === 'off' && !L.pending.length)) { if (L.pending.length) C.choose(L, 0); else C.step(L); }
+  L.cash = 20;
+  const P = C.peopleOpen(L), all = C.peopleAll(L);
+  ok(all.length >= P.length && all.every((x) => typeof x.mood === 'string' && x.mood.length > 2) && all.length === Object.keys(L.people).length, `everybody in the ledger has a mood word, act or no act (${all.length} people, ${P.length} with an act)`);
+  const who = P.find((x) => x.acts.some((a) => a.ok)), a0 = who.acts.find((a) => a.ok);
+  ok(who.acts.every((a) => a.ok ? a.why === null : ['year', 'person', 'cash'].indexOf(a.why) >= 0), 'an open act has no reason; a closed one names its reason');
+  const res = C.personAct(L, who.id, a0.id);
+  ok(res && res.rel && res.rel.from === who.rel && res.rel.to === L.people[who.id].rel && typeof res.rel.mood === 'string', `an act says what it did to the person (${res && res.rel && res.rel.from} to ${res && res.rel && res.rel.to})`);
+  const again = C.peopleOpen(L).find((x) => x.id === who.id);
+  ok(again.acts.length > 0 && again.acts.every((a) => !a.ok && a.why === 'person'), 'after it, every act on that person is closed, and says the person is why');
+  L.cash = 0;
+  const poor = C.peopleOpen(L).reduce((t, x) => t.concat(x.id === who.id ? [] : x.acts.filter((a) => a.cost > 0)), []);
+  ok(poor.length > 0 && poor.every((a) => !a.ok && a.why === 'cash'), 'short of the price, the cash is why');
+  /* A divorce says what it will take before it is filed. */
+  {
+    let M = null;
+    for (let i = 0; i < 40 && !M; i++) {
+      const X = C.generateRoad({ seed: 'asks-m' + i, league }); const r = E.createSeededRNG(i + 1); let n = 0, k = 0;
+      while (!X.retired && k++ < 9000 && !M) {
+        if (X.pending.length) { C.choose(X, Math.floor(r() * X.pending[0].options.length)); n = 0; continue; }
+        if (C.lifeOf(X).rel === 'married' && X.cash >= 2) { M = X; break; }
+        const pp = C.peopleOpen(X).find((p) => p.role === 'Partner'), w = pp && ['elope', 'propose', 'date'].find((id) => pp.acts.some((a) => a.id === id && a.ok));
+        if (n++ < 6 && (C.lifeOf(X).rel === 'single' ? C.act(X, 'mingle') : w && C.personAct(X, pp.id, w))) continue;
+        n = 0; C.step(X);
+      }
+    }
+    const pp = M && C.peopleOpen(M).find((p) => p.role === 'Partner'), lv = pp && pp.acts.find((a) => a.id === 'leave');
+    const c0 = M ? M.cash : 0; if (lv && lv.ok) C.personAct(M, pp.id, 'leave');
+    ok(!!lv && lv.takes > 0 && (!lv.ok || Math.abs((c0 - M.cash) - lv.takes) < 0.051), `a divorce says what it will take, and takes it (${lv && lv.takes})`);
+  }
+  /* A condo costs something to keep, and broke is not forever. */
+  {
+    const X = C.newLife({ seed: 'asks-w', league, start: 'draft' });
+    let k = 0; while (k++ < 4000 && !(X.stage === 'nba' && X.history.length >= 1 && X.phase === 'off' && !X.pending.length)) { if (X.pending.length) C.choose(X, 0); else C.step(X); }
+    X.cash = 3;
+    const shop = C.wealthOpen(X).shop;
+    ok(shop.every((x) => C.THINGS[x.id].keep === 0 || x.keep > 0), `nothing with upkeep shows a keep of nought (the condo: ${shop.find((x) => x.id === 'condo').keep})`);
+    C.wealthAct(X, 'buy', 'condo');
+    const V = C.wealthOpen(X), cash0 = X.cash, y0 = X.year;
+    ok(V.upkeep > 0 && V.own[0].keep === V.upkeep, `a condo alone has an upkeep (${V.upkeep})`);
+    while (k++ < 8000 && X.year === y0 && !X.retired) { if (X.pending.length) C.choose(X, 0); else C.step(X); }
+    X.flags.broke = X.year; X.cash = 0.2; X.wealth.own = [];
+    const B = C.wealthOpen(X) || (function() { while (X.pending.length) C.choose(X, 0); return C.wealthOpen(X); })();
+    ok(B && B.broke === X.year && B.wasBroke === X.year, 'broke shows while he has next to nothing');
+    X.cash = 30;
+    const R = C.wealthOpen(X);
+    ok(R && R.broke === null && R.wasBroke === X.year, 'a man who rebuilt is not broke now, and the year he was is kept');
+  }
+  /* The season a press closes comes back with the press. */
+  {
+    const X = C.newLife({ seed: 'asks-c', league, start: 'draft' });
+    let k = 0, got = 0, bad = 0, turns = 0;
+    while (k++ < 600 && !X.retired && turns < 4) {
+      if (X.pending.length) { C.choose(X, 0); continue; }
+      const had = X.season, a = C.ageUp(X);
+      if (a.turned) { turns++; if (X.history.length) { if (a.closed && a.closed.year === X.year - 1) got++; else bad++; } } else if (a.closed !== null) bad++;
+    }
+    ok(got >= 2 && bad === 0, `the press that turns the year hands back the season it closed (${got} of ${turns})`);
+  }
+}
+
 // ── 22. replay: the ribbon, the life card and five more challenges ────────
 section('22. replay: every life ends with one ribbon, the life fits on a card, and the new challenges can be met');
 {
