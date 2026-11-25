@@ -26,6 +26,12 @@ export const MAP = {
     cart_barn: { x: 17, y: -6 },
     hole_4: { x: -6, y: 15 }
   },
+  /* one pad for each thing that levels up, beside the thing itself */
+  upgradePads: {
+    boots: { x: -2, y: -15.5 }, shop: { x: 10, y: 1.5 }, starter: { x: 3, y: 19.5 }, shed: { x: -19, y: 3 },
+    my_cart: { x: 15.5, y: -13 }, hole_1: { x: 15, y: 30 }, hole_2: { x: 63, y: 45.5 }, hole_3: { x: 35, y: 12.5 },
+    cart_barn: { x: 24, y: -6 }, clubhouse: { x: -10, y: -3 }
+  },
   snackShack: { x: 26, y: -12 },              // at the turn, between 9 and 10
   range: { x: -44, y: -22, w: 34, d: 22 },
   road: { x: 100, w: 5 },

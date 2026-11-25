@@ -7,14 +7,14 @@
  * NOTHING OPENS A GUIDE BY ITSELF. A first visit goes straight into day 1,
  * and the goal line (part of the HUD) says the next thing to do. How it
  * works is behind a button in the menu. */
-import { CONFIG, GAME } from './config.js?v=1';
-import { MAP } from './map.js?v=1';
-import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations } from './sim.js?v=1';
-import { makeBot } from './bot.js?v=1';
-import { createStore } from './store.js?v=1';
+import { CONFIG, GAME } from './config.js?v=2';
+import { MAP } from './map.js?v=2';
+import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations } from './sim.js?v=2';
+import { makeBot } from './bot.js?v=2';
+import { createStore } from './store.js?v=2';
 import { createAnalytics } from './analytics.js?v=1';
 import { createInput } from './input.js?v=1';
-import { createRenderer } from './render.js?v=1';
+import { createRenderer } from './render.js?v=2';
 
 const $ = id => document.getElementById(id);
 const money = n => (n < 0 ? '-$' + (-n).toLocaleString('en-US') : '$' + n.toLocaleString('en-US'));
@@ -46,6 +46,7 @@ function fx(type, x, y, n) {
   if (type === 'cash' || type === 'tip') { if (n > 0) floatText(x, y, '+' + money(n)); if (navigator.vibrate) navigator.vibrate(12); }
   else if (type === 'refund') floatText(x, y, money(-n), true);
   else if (type === 'pad') { floatText(x, y, money(-cfg.economy.pads[n].cost), true); analytics.track('pad_buy', { id: n }); if (R) R.rebuild(S, ctx); }
+  else if (type === 'up') { floatText(x, y, cfg.economy.upgrades[n].name + ' Lv ' + S.levels[n]); analytics.track('upgrade', { id: n, level: S.levels[n] }); if (navigator.vibrate) navigator.vibrate(20); if (R) R.rebuild(S, ctx); }
   else if (type === 'built' || type === 'cleared') { if (R) R.rebuild(S, ctx); banner(type === 'built' ? cfg.economy.pads[n].name + ' is open' : 'Plot cleared'); }
   else if (type === 'walkoff') floatText(x, y, 'Walked off', true);
   else if (type === 'mown') floatText(x, y, 'Green ' + n + ' cut');
@@ -75,7 +76,7 @@ function finish() {
   const tag = document.createElement('span'); tag.className = 'tag' + (r.goalMet ? '' : ' miss'); tag.textContent = r.goalMet ? 'Goal met' : 'Goal missed';
   $('resGoal').append(tag, ' ' + money(r.cash) + ' of ' + money(r.goal));
   const rows = [['Rounds played', r.rounds], ['Average round', r.rounds ? mm + ':' + (ss < 10 ? '0' : '') + ss : '-'], ['Cash earned', money(r.cash)], ['Tips', money(r.tips)],
-    ['Star rating', r.stars.toFixed(2) + ' (' + (ds >= 0 ? '+' : '') + ds.toFixed(2) + ')'], ['Lowest round', r.low || '-'], ['Walk offs', r.walkOffs]];
+    ['Star rating', r.stars.toFixed(2) + ' (' + (ds >= 0 ? '+' : '') + ds.toFixed(2) + ')'], ['Lowest round', r.low || '-'], ['Walk offs', r.walkOffs], ['Upgrades bought', r.upgrades]];
   const box = $('resRows'); box.textContent = '';
   for (const [k, v] of rows) { const a = document.createElement('span'), b = document.createElement('span'); a.textContent = k; b.textContent = v; box.append(a, b); }
   $('resSave').textContent = debug ? 'Debug tools were on. This day was not saved.' : 'Saving.';

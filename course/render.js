@@ -115,8 +115,8 @@ export function createRenderer(canvas, map, cfg) {
   const flat = g => { g.rotateX(-Math.PI / 2); return g; };
   const lam = o => new THREE.MeshLambertMaterial(o);
   const greens = instanced(flat(new THREE.CircleGeometry(1, 28)), lam({}), 18, scene);
-  const rings = instanced(flat(new THREE.RingGeometry(0.84, 1, 36)), new THREE.MeshBasicMaterial({}), 24, scene);
-  const fills = instanced(flat(new THREE.CircleGeometry(1, 28)), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.55, depthWrite: false }), 40, scene);
+  const rings = instanced(flat(new THREE.RingGeometry(0.84, 1, 36)), new THREE.MeshBasicMaterial({}), 48, scene);
+  const fills = instanced(flat(new THREE.CircleGeometry(1, 28)), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.55, depthWrite: false }), 64, scene);
   const shadows = instanced(flat(new THREE.CircleGeometry(1, 16)), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.16, depthWrite: false }), 120, scene);
   const bodies = instanced(new THREE.CapsuleGeometry(0.34, 0.5, 3, 8), lam({}), 96, scene);
   const heads = instanced(new THREE.SphereGeometry(0.4, 10, 8), lam({}), 96, scene);
@@ -148,7 +148,7 @@ export function createRenderer(canvas, map, cfg) {
 
   /* ---- labels: every sign and pad on one canvas, one mesh ---- */
   function buildLabels(S, ctx) {
-    const CW = 256, CH = 64, cols = 4, cv = document.createElement('canvas'); cv.width = CW * cols; cv.height = CH * 8;
+    const CW = 256, CH = 64, cols = 4, cv = document.createElement('canvas'); cv.width = CW * cols; cv.height = CH * 10;
     const g = cv.getContext('2d'), pos = [], uv = [];
     let n = 0;
     function add(text, x, y, w, stand, dark) {
@@ -167,11 +167,8 @@ export function createRenderer(canvas, map, cfg) {
     const money = v => '$' + v.toLocaleString('en-US'), pads = cfg.economy.pads;
     add('Check in', map.counter.x, map.counter.y - 3.3, 5, false, true);
     add('Tee ' + ctx.route.first, map.teeRing.x - 4.6, map.teeRing.y, 4, false, true);
-    for (const id in pads) {
-      const st = S.pads[id].st, p = map.pads[id];
-      if (st === 'done') continue;
-      add(st === 'open' ? pads[id].name + ' ' + money(pads[id].cost) : st === 'clearing' ? pads[id].name + ': mow it clear' : pads[id].name + ': building', p.x, p.y - 3.6, 7, false, false);
-    }
+    /* every pad says what it is, its next level and its price (the sim words it) */
+    for (const st of stationsOf(S, ctx, [], true)) if (st.pad && st.label) add(st.label, st.x, st.y - 3.6, 7.5, false, st.st === 'max');
     for (const h of map.holes) {
       if (S.open.includes(h.ord)) continue;
       const pad = pads['hole_' + h.ord], later = cfg.later.unlocks['hole_' + h.ord];
@@ -279,8 +276,8 @@ export function createRenderer(canvas, map, cfg) {
   let face = 0;
   let nRing = 0, nFill = 0, nShadow = 0, nBody = 0, nBall = 0;
   function put(mesh, i, x, y, h, sx, sy, sz, color) { M.makeScale(sx, sy, sz); M.setPosition(x, h, -y); mesh.setMatrixAt(i, M); if (color) mesh.setColorAt(i, color); }
-  function ring(x, y, r, color, h) { if (nRing < 24) put(rings, nRing++, x, y, h || 0.09, r, 1, r, color); }
-  function fill(x, y, r, color) { if (nFill < 40 && r > 0.01) put(fills, nFill++, x, y, 0.08, r, 1, r, color); }
+  function ring(x, y, r, color, h) { if (nRing < 48) put(rings, nRing++, x, y, h || 0.09, r, 1, r, color); }
+  function fill(x, y, r, color) { if (nFill < 64 && r > 0.01) put(fills, nFill++, x, y, 0.08, r, 1, r, color); }
   function shadow(x, y, r) { if (nShadow < 120) put(shadows, nShadow++, x, y, 0.05, r, 1, r, null); }
   function golfer(x, y, h, shirt, squash) {
     if (nBody >= 96) return;
@@ -312,7 +309,7 @@ export function createRenderer(canvas, map, cfg) {
       const gr = ctx.route.holes[ord].green, c = S.greens[ord] / 100;
       col.copy(cBad).lerp(cGood, c);
       put(greens, ng++, gr.x, gr.y, 0.06, map.draw.greenR, 1, map.draw.greenR, col);
-      if (S.greens[ord] < 100 && (S.phase === 'dawn' || p.mode === 'mower')) { ring(gr.x, gr.y, map.draw.greenR + 0.35, cAccent); fill(gr.x, gr.y, (map.draw.greenR + 0.3) * S.mow[ord] / sh.rings.mow, cAccent); }
+      if (S.greens[ord] < 100 && (S.phase === 'dawn' || p.mode === 'mower')) { ring(gr.x, gr.y, map.draw.greenR + 0.35, cAccent); fill(gr.x, gr.y, (map.draw.greenR + 0.3) * Math.min(1, S.mow[ord] / S.fx.mow), cAccent); }
     }
     greens.count = ng;
 
@@ -322,7 +319,7 @@ export function createRenderer(canvas, map, cfg) {
       const s = ST[i], active = s.can;
       const pulse = active ? 1 + Math.sin(time * 5) * 0.05 : 1;
       ring(s.x, s.y, s.r * pulse, active ? cAccent : cGrey);
-      if (s.pad) fill(s.x, s.y, s.r * 0.8, active ? cAccent : cGrey);
+      if (s.pad && s.st !== 'max') fill(s.x, s.y, s.r * 0.8, active ? cAccent : cGrey);
       if (S.work.id === s.id) fill(s.x, s.y, s.r * Math.min(1, S.work.t / s.secs), cAccent);
     }
     if (goal && goal.key !== 'park' && goal.key !== 'done') { const r = 1.1 + (time * 1.3 % 1) * 1.2; ring(goal.x, goal.y, r, cWhite, 0.13); }
@@ -373,8 +370,8 @@ export function createRenderer(canvas, map, cfg) {
       for (let m = 0; m < g.size; m++) golfer(gx + OFF[m][0], gy + OFF[m][1], walking ? Math.abs(Math.sin(time * 10 + m * 1.7)) * 0.12 : 0, SHIRTS[(g.look + m) % 6], 1);
       /* the patience ring: it empties, and turns from green to red */
       let left = -1;
-      if (g.st === 'queue') left = 1 - g.wc / cfg.golfers.patience.counter;
-      else if (g.st === 'teeWait') left = g.hi === 0 ? 1 - g.wt / cfg.golfers.patience.tee1 : 1 - g.wo / cfg.golfers.patience.course;
+      if (g.st === 'queue') left = 1 - g.wc / S.fx.patCounter;
+      else if (g.st === 'teeWait') left = g.hi === 0 ? 1 - g.wt / S.fx.patTee : 1 - g.wo / cfg.golfers.patience.course;
       if (left >= 0) {
         col.copy(left > 0.5 ? cOk : left > 0.25 ? cWarn : cBadc);
         ring(gx, gy, 1.9, col, 0.11); fill(gx, gy, 1.85 * Math.max(0, left), col);

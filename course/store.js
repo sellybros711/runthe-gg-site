@@ -16,7 +16,7 @@
  * keeps it: the server's copy wins.
  *
  * A day played with a debug tool is never saved, here or anywhere. */
-import { newCourse, migrateCourse } from './sim.js?v=1';
+import { newCourse, migrateCourse } from './sim.js?v=2';
 
 export const KEY = 'rtc_course_v1';
 export const QUEUE_MAX = 30;

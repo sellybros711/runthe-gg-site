@@ -10,7 +10,7 @@
 export const GAME = Object.freeze({ name: 'Run The Course', slug: 'course', logo: '/course/logo.svg' });
 
 export const CONFIG = {
-  version: 1,
+  version: 2,
   schema: 1,
 
   shift: {
@@ -53,6 +53,24 @@ export const CONFIG = {
     pads: {
       cart_barn: { name: 'Cart Barn', cost: 60, buildS: 10, kind: 'unlock' },
       hole_4: { name: 'Hole 4', cost: 1000, buildS: 1800, kind: 'hole', hole: 4 }
+    },
+    /* Everything that levels up. Each has its own pad. Everything starts at level 1;
+       a level costs `cost` times `growth` for each level already bought, to the
+       nearest $5. Each effect below is what ONE level adds. `needs` names a pad
+       that must be built first. */
+    upgradeMax: 10, upgradeGrowth: 1.45,
+    upgradeQuietS: 12,         // the goal line only sends you to a pad when no group needs you for this long
+    upgrades: {
+      boots:     { name: 'Boots',       cost: 20, walk: 0.25 },                      // your walking speed, units a second
+      shop:      { name: 'Pro Shop',    cost: 25, checkin: 0.07, fee: 0.04 },        // check in that share faster; every fee that share higher
+      starter:   { name: 'Starter Box', cost: 30, sendoff: 0.08, patience: 2 },      // send off faster; groups wait longer on tee 1, seconds
+      shed:      { name: 'Mower Shed',  cost: 30, mow: 0.2, mower: 0.4 },            // seconds less to cut a green; mower speed
+      my_cart:   { name: 'Your Cart',   cost: 35, cart: 0.6 },                       // your cart's speed
+      hole_1:    { name: 'Hole 1',      cost: 40, hole: 1, fee: 0.08, decay: 1.5 },  // that hole's fee that share higher; its green wears less a day
+      hole_2:    { name: 'Hole 2',      cost: 40, hole: 2, fee: 0.08, decay: 1.5 },
+      hole_3:    { name: 'Hole 3',      cost: 40, hole: 3, fee: 0.08, decay: 1.5 },
+      cart_barn: { name: 'Cart Barn',   cost: 50, needs: 'cart_barn', rental: 0.5, pace: 0.02 },   // dollars a golfer for the cart; holes play that share faster
+      clubhouse: { name: 'Clubhouse',   cost: 60, bookings: 0.06, patience: 2 }      // that share more groups booked; groups wait longer at the counter
     }
   },
 
