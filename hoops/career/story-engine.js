@@ -233,7 +233,7 @@ function queueEvents(L, phase, n, pool) {
        so on a story career they are dealt a little more often, not less. */
     /* With one story card a season, a legend's night (switch on) is weighted
        up (PACE.legend), so it is still met as often as it was. */
-    const damp = ((x) => (LIFE_CYCLE[x] ? 1.8 : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1) * (yr && pool[x].legend ? PACE.legend : 1));
+    const damp = ((x) => (LIFE_CYCLE[x] ? PACE.life : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1) * (yr && pool[x].legend ? PACE.legend : 1));
     const id = weighted(rng, ids, (x) => pool[x].weight(L) * damp(x));
     if (!id) return;
     used[id] = 1;

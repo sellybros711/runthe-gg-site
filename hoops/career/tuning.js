@@ -38,7 +38,10 @@ const GOAT_AT = 145;
    (storyStretch); off is the chance of the summer's. An arc that is due takes
    the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
    late 1 and off 1 cards. */
-const PACE = { stretch: { pre: 0.12, early: 0.33, mid: 0.28, late: 0.27 }, second: 0.8, off: 0.9, team: 1, cap: { season: 2, off: 1 }, legend: 2, rep: 1.8 };
+const PACE = { stretch: { pre: 0.2, early: 0.28, mid: 0.26, late: 0.26 }, second: 1, off: 0.95, team: 1, cap: { season: 2, off: 1 }, legend: 2, life: 3.5, rep: 1.8 };
+/* life: meeting someone, a proposal, a wedding and a baby are weighted this
+   much (they were 1.8): a life off the floor is what the game is, and at
+   1.8 a tenth of careers married. */
 /* rep: a story card's answer moves the reputation this much harder. With
    half the cards each has to say more about who he is: at the old weight 289
    of 300 careers ended "Still writing it". */
