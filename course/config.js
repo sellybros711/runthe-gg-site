@@ -18,7 +18,7 @@ export const CONFIG = {
     dawnS: 30,                // the mowing phase before the gates open
     openS: 210,               // gates open, 7:00 to 19:00 in game
     closeMaxS: 150,           // after closing, groups still out get this long to finish
-    lastTeeS: 110,            // no tee time later than this into the open phase
+    lastTeeS: 130,            // no tee time later than this into the open phase
     firstTeeS: 6,
     clockOpen: 7, clockClose: 19,
     walk: 4, mower: 6, cart: 11,          // units a second
@@ -27,7 +27,7 @@ export const CONFIG = {
     carry: 2,
     rings: { checkin: 2.5, sendoff: 1, mow: 3, pad: 1.5 },
     ringR: 2.2, padR: 2.4, enterR: 1.5, leaveR: 2.6,
-    teeGapS: 15,              // minimum gap between groups on tee 1
+    teeGapS: 15,              // minimum gap between groups sent off tee 1
     watchdogS: 75             // a group that has not advanced in this long is moved on
   },
 

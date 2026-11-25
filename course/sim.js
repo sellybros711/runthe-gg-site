@@ -114,7 +114,7 @@ export function startShift(course, cfg, map) {
     cash: course.cash, cash0: course.cash, goal: goalFor(no, cfg),
     stars: course.stars, stars0: course.stars, reviews: course.reviews.slice(),
     open, greens: {}, mow: {},
-    player: { x: map.start.x, y: map.start.y, vx: 0, vy: 0, mode: 'walk', dir: -1, gx: 0, gy: 0, go: false, clear: true, face: 4 },
+    player: { x: map.start.x, y: map.start.y, vx: 0, vy: 0, mode: 'walk', dir: -1, gx: 0, gy: 0, go: false, clear: true },
     cart: { x: map.cartPark.x, y: map.cartPark.y }, mower: { x: map.mowerPark.x, y: map.mowerPark.y },
     groups: [], queue: [], teeQ: {}, busy: {}, lastTee: -100000,
     pads: {}, plot: null, carts: course.unlocks.cart_barn === 'done',
@@ -408,7 +408,7 @@ function updateGroup(S, g, ctx, dt) {
   else if (st === 'teeWait') {
     const q = S.teeQ[g.ord], first = g.hi === 0;
     if (q[0] === g.id && !S.busy[g.ord] && (!first || g.sent)
-      && (g.ord !== ctx.route.first || S.tick - S.lastTee >= sh.teeGapS * sh.tick)) { q.shift(); teeOff(S, g, ctx); return; }
+      && (!first || S.tick - S.lastTee >= sh.teeGapS * sh.tick)) { q.shift(); teeOff(S, g, ctx); return; }
     if (first) { g.wt += dt; if (g.wt >= gc.patience.tee1) walkOff(S, g, ctx); }
     else { g.wo += dt; if (g.wo >= gc.patience.course) walkOff(S, g, ctx); }
   }
@@ -428,7 +428,7 @@ function updateGroup(S, g, ctx, dt) {
 function teeOff(S, g, ctx) {
   const cfg = ctx.cfg, gc = cfg.golfers, h = ctx.route.holes[g.ord], r = cfg.shift.tick;
   S.busy[g.ord] = g.id; g.st = 'play'; g.adv = S.tick; g.cart = S.carts;
-  if (g.ord === ctx.route.first) S.lastTee = S.tick;
+  if (g.hi === 0) S.lastTee = S.tick;
   const geom = ctx.geoms[g.ord];
   g.shots = [];
   const strokes = [];
@@ -495,7 +495,9 @@ export function endShift(S, ctx, course) {
     h.green = clamp(S.greens[h.ord] - cfg.stars.greenDecay, 0, 100);
     h.fairway = clamp(h.fairway - cfg.stars.fairwayDecay, 0, 100);
   }
-  result.checksum = checksum(JSON.stringify([result, next.cash, next.stars, next.unlocks, next.holes]));
+  /* Canonical: a course that came back from the database has its keys in another order. */
+  result.checksum = checksum(JSON.stringify([result, next.cash, next.stars, Object.keys(next.unlocks).sort().map(k => [k, next.unlocks[k]]),
+    next.holes.map(h => [h.ord, h.open, h.green, h.fairway])]));
   return { result, course: next };
 }
 
@@ -530,14 +532,16 @@ export function goalOf(S, ctx) {
   const spot = need === 'checkin' ? map.counter : need === 'sendoff' ? map.teeRing : null;
   if (p.mode === 'mower') {
     if (spot) {
-      if (dist(p.x, p.y, spot.x, spot.y) < 6) return { key: 'park', text: 'Leave the mower. Tap Leave.', x: p.x, y: p.y, act: 'exit' };
-      return { key: 'park:' + need, text: need === 'checkin' ? 'A group is at the counter. Drive back.' : 'A group is on tee 1. Drive over.', x: spot.x + 3, y: spot.y - 1 };
+      /* park clear of the ring and of the walk between the stations */
+      const px = need === 'checkin' ? map.mowerHome.x : spot.x - 4.5, py = need === 'checkin' ? map.mowerHome.y : spot.y + 3;
+      if (dist(p.x, p.y, px, py) < 1.5) return { key: 'park', text: 'Leave the mower. Tap Leave.', x: p.x, y: p.y, act: 'exit' };
+      return { key: 'park:' + need, text: need === 'checkin' ? 'A group is at the counter. Drive back.' : 'A group is on tee 1. Drive over.', x: px, y: py };
     }
     /* greens in hole order: the loop ends at the green nearest the shop */
     for (const ord of S.open) if (S.greens[ord] < 100) { const g = ctx.route.holes[ord].green; return { key: 'mow:' + ord, text: 'Mow green ' + ord + '. Park on it.', x: g.x, y: g.y }; }
     if (S.plot && S.plot.left > 0) { const q = S.plot.pts.find(v => !v.done); return { key: 'clear:' + S.plot.left, text: 'Mow the overgrowth on hole ' + S.plot.ord + '.', x: q.x, y: q.y }; }
-    if (dist(p.x, p.y, map.counter.x, map.counter.y) < 7) return { key: 'park', text: 'Greens are cut. Tap Leave.', x: p.x, y: p.y, act: 'exit' };
-    return { key: 'home', text: 'Greens are cut. Drive back to the shop.', x: map.counter.x + 3, y: map.counter.y - 2 };
+    if (dist(p.x, p.y, map.mowerHome.x, map.mowerHome.y) < 1.5) return { key: 'park', text: 'Greens are cut. Tap Leave.', x: p.x, y: p.y, act: 'exit' };
+    return { key: 'home', text: 'Greens are cut. Drive back to the shop.', x: map.mowerHome.x, y: map.mowerHome.y };
   }
   if (S.done) return { key: 'done', text: 'The day is done.', x: p.x, y: p.y };
   if (need === 'checkin') return { key: 'checkin', text: 'Check in the group. Stand at the counter.', x: map.counter.x, y: map.counter.y };

@@ -60,8 +60,8 @@ test('nobody at the controls: every group walks off, nothing sticks, the shift s
 });
 
 test('the goal line alone gets a new player through the first shift, goal met', () => {
-  for (const seed of [1, 2, 3, 4, 5, 6]) {
-    const { end } = play(newCourse(CONFIG, MAP, seed));
+  for (let i = 1; i <= 120; i++) {
+    const seed = i * 7919, { end } = play(newCourse(CONFIG, MAP, seed));
     assert.ok(end.result.goalMet, 'seed ' + seed + ' earned $' + end.result.cash + ' against $' + end.result.goal);
     assert.ok(end.result.rounds >= 2);
   }
@@ -106,14 +106,14 @@ test('opening hole 4 needs no engine change: golfers play it', () => {
   assert.ok(S.groups.some(g => g.scores.length === 6 && g.tot), 'a group finished a six hole round over four holes');
 });
 
-test('one group to a hole, and a gap on tee 1', () => {
+test('one group to a hole, and a gap between groups sent off tee 1', () => {
   let lastTee = -1e9;
   const seen = new Set();
   play(newCourse(CONFIG, MAP, 5), CONFIG, (S, ctx) => {
     makeBotOnce(S, ctx);
     const on = {};
     for (const g of S.groups) if (g.st === 'play') { assert.ok(!on[g.ord], 'two groups on hole ' + g.ord); on[g.ord] = 1;
-      if (g.ord === 1 && !seen.has(g.id + ':' + g.hi)) { seen.add(g.id + ':' + g.hi); assert.ok(g.t0 - lastTee >= CONFIG.shift.teeGapS * CONFIG.shift.tick, 'tee 1 gap'); lastTee = g.t0; } }
+      if (g.hi === 0 && !seen.has(g.id)) { seen.add(g.id); assert.ok(g.t0 - lastTee >= CONFIG.shift.teeGapS * CONFIG.shift.tick, 'tee 1 gap'); lastTee = g.t0; } }
   });
 });
 const bots = new WeakMap();

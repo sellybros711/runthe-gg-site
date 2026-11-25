@@ -19,6 +19,7 @@ export const MAP = {
   shed: { x: -13, y: 8, w: 5, d: 4, h: 3 },
   mowerPark: { x: -12, y: 3 },
   cartPark: { x: 10, y: -10 },
+  mowerHome: { x: 6.5, y: -13.5 },            // where the goal line parks the mower by the shop, off every walking line
   teeRing: { x: 6.6, y: 14 },                 // the ring beside tee 1
   teeWait: { dx: 2.6, dy: -2.2 },             // where a waiting group stands, off the tee
   pads: {
