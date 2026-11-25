@@ -290,7 +290,7 @@ addEventListener('pagehide', () => analytics.last());
 
 /* For the checks (test/check-browser.mjs). Nothing on the page calls it. */
 window.__course = {
-  game: GAME, state: () => S, ctx: () => ctx, info: () => (R ? R.info() : null), store,
+  game: GAME, state: () => S, ctx: () => ctx, info: () => (R ? R.info() : null), store, art: R ? R.artReady : Promise.resolve(false),
   auto(on) { bot = on ? makeBot() : null; }, scale(n) { scale = n; },
   summary: () => ({ no: S.no, tick: S.tick, phase: S.phase, done: S.done, ended, cash: S.cash, goal: goal && goal.text, mode: S.player.mode, fps })
 };
