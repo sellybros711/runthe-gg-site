@@ -851,7 +851,7 @@ are where the number has to land; outside the band is a failure.
 | a secret ending | 1 to 4% |
 | a legend event (switch on) | 30 to 45% of careers see at least one |
 | a legend event (switch off) | exactly 0% |
-| distinct events per career | 70 to 110 |
+| distinct events per career | 45 to 80 (70 to 110 until the owner's 10 to 15 minute career, 2026-11-24) |
 | any one event dealt twice in a career (non-recurring) | 0 |
 | recurring events per career | each at most its cap |
 | two random careers' event overlap | under 50% (today: 76%) |

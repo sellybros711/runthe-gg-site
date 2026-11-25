@@ -65,8 +65,9 @@
    playoff impact in a series: 3.5 left the ring share at 18.0% after step 6,
    the bottom of the owner's 18 to 30% band; 3.0 lands it at 21.5% with every
    other band in (2.5 read 25.3% but left a card never dealt). The owner's
-   call to rebalance, 2026-10-17. */
-const BAL = { star: 4, dec: 1.4, poTax: 3.0, maxAge: 38, tired: 31 };
+   call to rebalance, 2026-10-17. star went 4 to 3.8 with the 10 to 15 minute
+   career (2026-11-24): fewer cards, fewer lifts, and All-Star read 19.8%. */
+const BAL = { star: 3.8, dec: 1.4, poTax: 3.0, maxAge: 38, tired: 31 };
 /* First ballot is 85, the score VERDICTS and the cr-ballot badge already call
    First ballot. At 95 a career between them read "First ballot" on its Hall
    card and "Hall of Famer, in time" as its ending, and first ballot ran 4.7%
@@ -76,6 +77,27 @@ const HOF_AT = [85, 60, 44];
    3,000 rare-ending careers, the floor of its 0.3 to 1% band; 150 read 0.5%
    and 145 reads 0.6%, the middle (2026-10-17). */
 const GOAT_AT = 145;
+
+// ── pace (turns, season) ──
+
+/* A CAREER PLAYS IN 10 TO 15 MINUTES (the owner's call, 2026-11-24: BitLife
+   for an NBA player). An NBA season dealt about ten cards, five of them from
+   the story draws below, and a career read 6,700 words. The season's
+   story card goes to one stretch a year, drawn with the stretch weights
+   (storyStretch); off is the chance of the summer's. An arc that is due takes
+   the slot first. The draws were pre 0.6, early 1 plus 0.35, mid 1 plus 0.3,
+   late 1 and off 1 cards. */
+const PACE = { stretch: { pre: 0.2, early: 0.28, mid: 0.26, late: 0.26 }, second: 1, off: 0.95, team: 1, cap: { season: 2, off: 1 }, legend: 2.5, life: 3.5, rep: 1.8 };
+/* life: meeting someone, a proposal, a wedding and a baby are weighted this
+   much (they were 1.8): a life off the floor is what the game is, and at
+   1.8 a tenth of careers married. */
+/* rep: a story card's answer moves the reputation this much harder. With
+   half the cards each has to say more about who he is: at the old weight 289
+   of 300 careers ended "Still writing it". */
+/* team is how many of your club's cards a season (it was one a phase, about
+   1.1 a season). cap is the story budget (queueEvents), one for the season and one for
+   the summer: due arcs always, then your club's card and new events while
+   there is room. */
 
 // ── growth, decline and the summer (season, events) ──
 
@@ -4594,7 +4616,7 @@ function offseason(L, beats) {
   }
   /* Something off the court, most summers, and now and then the brands. */
   brandCard(L);
-  queueEvents(L, 'off', 1);
+  queueEvents(L, 'off', rngAt(L, 'n:off')() < PACE.off ? 1 : 0);
 }
 /* The answers to no offer this summer (choose() runs them). */
 ANSWER.nooffer = function(L, card, i, opt, rng, beats, touch, touches) {
@@ -6373,7 +6395,7 @@ function eventful(L) {
    The summer was made occasional too and went back to every year: a summer
    not asked cost the sweep's ring share (19.5% to 17.3%) however the quiet
    summer was chosen, so the owner's fallback stands. */
-const ASK_P = 0.5;
+const ASK_P = 0.25;  // 0.5 until the 10 to 15 minute career (2026-11-24)
 const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
@@ -6726,12 +6748,29 @@ function queueEvents(L, phase, n, pool) {
   const due = dueArcs(L, phase);
   /* Two arcs can be due in one slot (an April with a farewell and a
      label to answer); both are dealt, each taking a place. */
-  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); }
+  /* THE SEASON'S STORY BUDGET (PACE.cap, the 10 to 15 minute career): an NBA
+     year deals at most this many story cards. An arc that is due is always
+     dealt, so a story never breaks off; your club's card and a new event only
+     while there is room. The amateur years keep their own pace. */
+  const nba = pool !== AM_ALL;
+  /* Two budgets: the season's and the summer's. The summer is where a life
+     happens (a baby, a breakup, a legend's night), and it comes last in the
+     year, so one shared budget left it nothing. */
+  const half = phase === 'off' ? 'off' : 'season';
+  const yk = L.year + ':' + half;
+  /* The draft (predraft, dn) comes once, before the first season, and keeps
+     its own pace: it spent the rookie year's budget before it began. */
+  const budgeted = nba && phase !== 'predraft' && phase !== 'dn';
+  const yr = budgeted ? (L.flags.evYear && L.flags.evYear.y === yk ? L.flags.evYear : (L.flags.evYear = { y: yk, n: 0 })) : null;
+  const cap = PACE.cap[half];
+  const room = () => !yr || yr.n < cap;
+  for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); if (yr) yr.n++; }
   /* Then whatever your club gave the career to answer (teamDue). */
-  if (pool !== AM_ALL) {
+  if (nba && room()) {
     const tid = teamDue(L, phase);
-    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); }
+    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); yr.n++; }
   }
+  if (yr) n = Math.min(n, Math.max(0, cap - yr.n));
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
     /* On a story career the old recurring cards (a slump, a night out) give
@@ -6739,13 +6778,16 @@ function queueEvents(L, phase, n, pool) {
     /* A life off the floor keeps its pace: meeting someone, a proposal, a
        wedding, a baby. Damping those left a sweep of 600 with eleven weddings,
        so on a story career they are dealt a little more often, not less. */
-    const damp = ((x) => (LIFE_CYCLE[x] ? 1.8 : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1));
+    /* With one story card a season, a legend's night (switch on) is weighted
+       up (PACE.legend), so it is still met as often as it was. */
+    const damp = ((x) => (LIFE_CYCLE[x] ? PACE.life : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1) * (yr && pool[x].legend ? PACE.legend : 1));
     const id = weighted(rng, ids, (x) => pool[x].weight(L) * damp(x));
     if (!id) return;
     used[id] = 1;
     if (pool[id].once) once[id] = 1;
     (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
     dealCard(L, phase, pool[id]);
+    if (yr) yr.n++;
   }
 }
 
@@ -7494,12 +7536,14 @@ function traitSeason(L, beats) {
   if (L.m.fame >= 70) reveal(L, 'showman', 'The cameras find you. You find them back.', beats);
   if (L.rt.iq >= 78) reveal(L, 'filmJunkie', 'You know every play before the call.', beats);
   if (L.cash >= 25) reveal(L, 'saver', 'You still have most of what you made.', beats);
-  if ((T.spent || 0) >= 3) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
+  /* Two, not three, since the 10 to 15 minute career (2026-11-24): half the
+     cards, so a habit shows in fewer of them. The same for the locker room. */
+  if ((T.spent || 0) >= 2) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
   const clubs = new Set(L.history.map((h) => h.t)).size;
   if (L.history.length >= 6 && clubs === 1) reveal(L, 'loyal', 'Six seasons, one jersey.', beats);
   if (clubs >= 3) reveal(L, 'mercenary', 'Three jerseys. You go where it pays.', beats);
   const mates = Object.values(L.people || {}).filter((p) => p.role === 'Teammate' && p.rel >= 20).length;
-  if (mates >= 3) reveal(L, 'lockerVoice', 'Three teammates would run through a wall for you.', beats);
+  if (mates >= 2) reveal(L, 'lockerVoice', 'Two teammates would run through a wall for you.', beats);
 }
 
 /* SKILL BADGES are read off what you are, at the end of each season, and
@@ -9643,6 +9687,10 @@ function teamDue(L, phase) {
   if (!it) it = teamSeasonWatch(L, phase);
   L.flags.tw = (L.flags.tw || []).filter((x) => !(x.y === L.year && x.ph === phase));
   if (!it) return null;
+  /* One of your club's cards a season (PACE.team, the 10 to 15 minute career):
+     the first watch that comes up is answered, the rest go to the feed. */
+  if ((L.flags.twYear || []).filter((y) => y === L.year).length >= PACE.team) return null;
+  L.flags.twYear = (L.flags.twYear || []).filter((y) => y >= L.year - 1).concat([L.year]);
   const ids = TEAM_KINDS[it.k];
   const r = rngAt(L, 'tw:' + phase);
   const n = (id) => ((L.evlog || {})[id] || []).length;
@@ -11246,7 +11294,7 @@ story({
     tag: 'Agent\'s office', t: 'Your contract runs out in June.', x: '{agent} says every playoff game is worth money now.',
     o: [O('Block it out', { trust: 2 }, 'Basketball now. Money in July.', { sub: 'Basketball first' }),
       O('Go over the numbers', { morale: -2, fame: 1 }, 'He walks you through it. You sleep worse.', { sub: 'Know what\'s at stake' })] },
-  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 3,
+  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 12,
     tag: 'Training staff', t: 'Rest all the way to Game 1?', x: '{gm} wants you off the court until Saturday. No practice at all.',
     o: [O('Take the days off', { health: 10 }, 'Three days in the cold tub. You feel brand new.', { sub: 'Get your legs back' }),
       O('Practice anyway', { health: -4, eth: 2, trust: -2 }, 'You shoot alone at night. Nothing happens. This time.', { sub: 'Stay sharp' })] },
@@ -11587,7 +11635,7 @@ function choose(L, i, extra) {
         /* A take runs its own answers and carries its own reputation. */
         const o = ev.takes[card.take - 1].options[i];
         text = o.run(L, rng) || '';
-        if (o.rep) moveRep(L, o.rep[0], o.rep[1]);
+        if (o.rep) moveRep(L, o.rep[0] * PACE.rep, o.rep[1] * PACE.rep);
         if (o.watch) watchMark(L, o.watch, beats);
       } else if (ev) {
         const o = ev.options[i];
@@ -11595,7 +11643,7 @@ function choose(L, i, extra) {
         text = o.run(L, rng) || '';
         applyRel(L, names);
         const rp = (EVENTS[card.id] || TEAM_EV[card.id]) && EVENT_REP[card.id] && EVENT_REP[card.id][i];
-        if (rp) moveRep(L, rp[0], rp[1]);
+        if (rp) moveRep(L, rp[0] * PACE.rep, rp[1] * PACE.rep);
       }
     }
   }
@@ -11673,7 +11721,7 @@ function step(L) {
       roleReview(L, beats, 'early');
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
-      queueEvents(L, 'early', 1 + (rngAt(L, 'n:early')() < (0.35) ? 1 : 0));
+      queueEvents(L, 'early', storyStretch(L, 'early') ? 1 : 0);
       break;
     }
     case 'early':
@@ -11687,7 +11735,7 @@ function step(L) {
       tradeDeadline(L, beats);
       L.season.race = mvpRace(L); debate(L);
       L.phase = 'mid';
-      queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < (0.3) ? 1 : 0));
+      queueEvents(L, 'mid', storyStretch(L, 'mid') ? 1 : 0);
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
@@ -11711,7 +11759,7 @@ function step(L) {
       logIt(L, s.w + '-' + s.l + '. ' + seedTxt, s.seed <= 6 ? 'good' : '');
       pay(L, beats);
       L.phase = 'late';
-      queueEvents(L, 'late', 1);
+      queueEvents(L, 'late', storyStretch(L, 'late') ? 1 : 0);
       break;
     }
     case 'late':
@@ -11748,6 +11796,36 @@ function step(L) {
   headlines(L, beats);
   sayAll(L, beats);
   return { beats };
+}
+/* THE YEAR IN ONE TAP (the BitLife plan, phase 1, 2026-11-24). Age up plays
+   the season on until a card needs an answer, the year turns or the career
+   ends, and hands every beat back at once, so the page can show a year as one
+   screen rather than a press a stretch. It is step, repeated: nothing in it
+   draws, so a career aged up is the career stepped. */
+function ageUp(L) {
+  const beats = [], y0 = L.year;
+  let steps = 0;
+  while (!L.retired && !L.pending.length && steps < 24) {
+    const r = step(L);
+    steps++;
+    for (const b of r.beats || []) beats.push(b);
+    if (L.year !== y0) break;
+  }
+  return { beats, steps, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0 };
+}
+/* The year as the summary screen reads it: the last season played, how his
+   overall moved, the money and the meters. Null before a season is played. */
+function yearSummary(L) {
+  const H = L.history, h = H[H.length - 1];
+  if (!h) return null;
+  const p = H[H.length - 2];
+  return {
+    y: h.y, age: h.age, team: h.t, role: h.role, gp: h.gp,
+    ovr: h.ovr, ovrChange: p ? h.ovr - p.ovr : 0,
+    record: [h.w, h.l], seed: h.seed, playoffs: h.po, awards: (h.aw || []).slice(),
+    line: { min: h.min, pts: h.pts, reb: h.reb, ast: h.ast, stl: h.stl, blk: h.blk, fgp: h.fgp, tpp: h.tpp, ftp: h.ftp },
+    salary: h.sal, cash: L.cash, earned: L.earned, meters: Object.assign({}, L.m),
+  };
 }
 function recordBeat(L, when) {
   const s = L.season, pg = perGame(s);
@@ -11863,13 +11941,30 @@ function newYear(L, beats) {
 }
 /* A summer with a club: the season is opened now, so whatever happens before
    it (the training card, a summer event, a camp injury) lands on it. */
+/* WHICH STRETCHES OF THE SEASON GET A STORY CARD (PACE.stretch). The season
+   deals up to two (queueEvents), and a first come draw gave them to the early
+   stretches nearly every year, so a card that only fits April or the playoffs
+   was never dealt. The stretches are drawn once a season; a rookie year has
+   no preseason draw. */
+function storyStretch(L, phase) {
+  let f = L.flags.stretch;
+  if (!f || f.y !== L.year) {
+    const keys = Object.keys(PACE.stretch).filter((k) => k !== 'pre' || L.seasonsDone > 0);
+    const r = rngAt(L, 'pace:stretch');
+    const a = weighted(r, keys, (k) => PACE.stretch[k]);
+    /* Most seasons deal a second, in another stretch (PACE.second). */
+    const b = r() < PACE.second ? weighted(r, keys.filter((k) => k !== a), (k) => PACE.stretch[k]) : null;
+    f = L.flags.stretch = { y: L.year, ph: b ? [a, b] : [a] };
+  }
+  return f.ph.indexOf(phase) >= 0;
+}
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
   L.pending.push(summerCard(L));
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
-  if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
+  if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L, 'pre') ? 1 : 0);
   rollInjury(L, 'early', []);
 }
 
@@ -12799,7 +12894,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,
