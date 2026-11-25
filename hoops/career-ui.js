@@ -1088,6 +1088,77 @@ var CSS = [
 '#cr-sheet.cr-flat #cr-sheet-x{display:none;}',
 '@media (min-width:920px){#cr-sheet.cr-flat{left:88px;}#cr-sheet.cr-flat .k-sheet{max-width:960px;padding-left:24px;padding-right:24px;}',
 '  #cr-sheet.cr-flat .cr-mvlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}}',
+/* AGE UP: the word, and under it what comes first */
+'#s-car .cr-age{flex-direction:column;gap:6px;padding-top:11px;padding-bottom:10px;}',
+'#s-car .cr-age .cr-age-w{display:inline-flex;align-items:center;gap:10px;font-size:20px;line-height:1;letter-spacing:.12em;}',
+'#s-car .cr-age .cr-age-n{display:block;max-width:100%;font:700 12px/1.2 var(--k-f-text);letter-spacing:.02em;text-transform:none;text-shadow:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+/* the feed's fold: the league's news and the lines past the headlines */
+'#s-car .cr-beats li.cr-fold{padding-top:0;padding-bottom:0;}',
+'#s-car .cr-beats li.cr-fold:before{top:17px;background:#11162b;box-shadow:inset 0 0 0 2px var(--k-ink-3),0 0 0 3px #11162b;}',
+'.cr-fold summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;list-style:none;font:800 11px/1.2 var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-fold summary::-webkit-details-marker{display:none;}',
+'.cr-fold summary b{margin-left:auto;color:var(--k-accent);}',
+'.cr-fold details[open] summary .op,.cr-fold details:not([open]) summary .cl{display:none;}',
+'.cr-fold ul{list-style:none;margin:0;padding:0 0 8px;}',
+'#s-car .cr-beats .cr-fold ul li{padding:5px 0;font-size:13.5px;color:var(--k-ink-2);font-weight:400;animation:none;}',
+'#s-car .cr-beats .cr-fold ul li:before,#s-car .cr-beats .cr-fold ul li::after{display:none;}',
+/* THE YEAR SUMMARY: the back of a trading card, in the club the year was played for */
+'#cr-sheet .k-sheet.cr-yr{display:flex;flex-direction:column;gap:10px;padding-top:0;padding-bottom:0;}',
+'.cr-yr-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;margin:0 calc(var(--k-s-4)*-1);padding:14px var(--k-s-4) 12px;',
+'  background:linear-gradient(180deg,var(--k-team-1) 0%,var(--k-team-1) 58%,rgba(0,0,0,.28) 100%),var(--k-team-1);color:var(--k-team-on);box-shadow:inset 0 -3px 0 0 var(--k-team-2);}',
+'.cr-yr-age{display:flex;flex-direction:column;align-items:center;min-width:58px;padding:6px 8px 4px;background:rgba(5,7,13,.78);color:#fff;box-shadow:0 0 0 2px var(--k-team-2);}',
+'.cr-yr-age small,.cr-yr-ovr small{font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.08em;text-transform:uppercase;color:#c9d2e3;}',
+'.cr-yr-age b{font:400 34px/1 var(--k-f-display);}',
+'.cr-yr-who{min-width:0;}',
+'#cr-sheet .cr-yr-who .k-eyebrow{margin:0 0 4px;color:inherit;font-size:8px;}',
+'#cr-sheet .k-sheet.cr-yr .cr-yr-who h3{margin:0;font-size:26px;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-yr-who p{margin:5px 0 0;font:700 12.5px/1.25 var(--k-f-text);}',
+'.cr-yr-ovr{position:relative;display:flex;flex-direction:column;align-items:center;min-width:58px;padding:6px 8px 4px;background:rgba(5,7,13,.78);color:var(--k-gold);box-shadow:0 0 0 2px var(--k-gold);}',
+'.cr-yr-ovr > b:first-child{font:400 34px/1 var(--k-f-display);}',
+'.cr-yr-d{display:inline-flex;align-items:center;gap:3px;font:800 12px/1 var(--k-f-text);}',
+'.cr-yr-d.up{color:var(--k-good);}.cr-yr-d.down{color:var(--k-bad);}',
+'.cr-yr-ovr .cr-yr-d{margin-top:3px;font-size:13px;}',
+'.cr-yr-moved{margin:0;font:700 14.5px/1.35 var(--k-f-text);color:var(--k-ink);}',
+'.cr-yr-moved .up{color:var(--k-good);}.cr-yr-moved .down{color:var(--k-bad);}',
+'.cr-yr-line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}',
+'.cr-yr-line.sm{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}',
+'.cr-yr-st{display:flex;flex-direction:column;align-items:center;min-width:0;padding:8px 2px 6px;background:rgba(143,160,214,.08);box-shadow:inset 0 2px 0 0 var(--k-team-ring);}',
+'.cr-yr-st b{font:400 30px/1 var(--k-f-display);color:#fff;}',
+'.cr-yr-st span{margin-top:4px;font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.06em;color:var(--k-ink-2);}',
+'.cr-yr-line.sm .cr-yr-st{padding:6px 0 4px;box-shadow:none;}',
+'.cr-yr-line.sm .cr-yr-st b{font:800 13px/1.1 var(--k-f-text);}',
+'.cr-yr-line.sm .cr-yr-st span{font-size:6px;}',
+'.cr-yr-rec,.cr-yr-cash{display:grid;gap:6px;}',
+'.cr-yr-rec{grid-template-columns:minmax(0,2fr) minmax(0,3fr);}',
+'.cr-yr-cash{grid-template-columns:repeat(3,minmax(0,1fr));}',
+'.cr-yr-rec > div,.cr-yr-cash > div{min-width:0;padding:7px 9px;background:rgba(143,160,214,.08);box-shadow:inset 2px 0 0 0 var(--k-team-ring);}',
+'.cr-yr-rec small,.cr-yr-cash small{display:block;font:800 9.5px/1.2 var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-yr-rec b,.cr-yr-cash b{display:inline-block;margin-top:3px;font:800 17px/1.15 var(--k-f-text);color:#fff;}',
+'.cr-yr-rec b.w{display:flex;align-items:center;gap:6px;font-size:14.5px;line-height:1.2;}',
+'.cr-yr-rec small span{margin-left:5px;letter-spacing:.04em;color:var(--k-ink);white-space:nowrap;}',
+'.cr-yr-rec.champ > div{box-shadow:inset 2px 0 0 0 var(--k-gold);}.cr-yr-rec.champ b.w{color:var(--k-gold);}',
+'.cr-yr-cash small .cr-yr-d{margin-left:6px;font-size:11px;letter-spacing:0;vertical-align:-1px;}',
+/* a short phone: the same card, closer set, so the meters clear the button */
+'@media (max-height:700px){#cr-sheet .k-sheet.cr-yr{gap:6px;}.cr-yr-head{padding-top:10px;padding-bottom:8px;}.cr-yr-age b,.cr-yr-ovr > b:first-child{font-size:28px;}',
+'  .cr-yr-st{padding:6px 2px 4px;}.cr-yr-st b{font-size:25px;}.cr-yr-rec > div,.cr-yr-cash > div{padding:5px 8px;}.cr-yr-m{padding:5px 7px;}.cr-yr-foot{padding-top:4px;}}',
+'.cr-yr-aw{display:flex;flex-wrap:wrap;gap:8px 10px;padding:2px;}',
+'.cr-yr-meters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}',
+'.cr-yr-m{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:3px 6px;padding:7px 8px;background:rgba(143,160,214,.08);}',
+'.cr-yr-m .k{font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.04em;color:var(--k-ink-2);overflow:hidden;white-space:nowrap;}',
+'.cr-yr-m .v{font:400 10px/1 var(--k-f-pixel);color:#fff;}',
+'.cr-yr-m i{min-width:26px;text-align:right;font:800 12px/1 var(--k-f-text);font-style:normal;}',
+'.cr-yr-m i.up{color:var(--k-good);}.cr-yr-m i.down{color:var(--k-bad);}',
+'.cr-yr-m .k-pips{grid-column:1 / -1;display:flex;gap:1px;}',
+'.cr-yr-m .k-pips i{flex:1 1 0;min-width:0;height:8px;background:var(--k-panel-3);}',
+'.cr-yr-m .k-pips i.on{background:var(--k-pip,var(--k-good));}',
+'.cr-yr-m.is-down{box-shadow:inset 0 0 0 2px rgba(255,107,107,.55);}',
+'.cr-yr-m.is-up .k-pips{animation:k-pulse-up 900ms steps(6) 1;}.cr-yr-m.is-down .k-pips{animation:k-pulse-down 900ms steps(6) 1;}',
+'@media (prefers-reduced-motion:reduce){.cr-yr-m.is-up .k-pips,.cr-yr-m.is-down .k-pips{animation:none;}}',
+/* a toast that lands while the year is up (a new club's welcome) goes above the card, not across its meters */
+'body:has(#cr-sheet:not([hidden]) .cr-yr) .k-toasts{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 12px);}',
+/* one tap continues, and the button is always on the sheet however short the screen */
+'.cr-yr-foot{position:sticky;bottom:0;flex:0 0 auto;margin:0 calc(var(--k-s-4)*-1);padding:8px var(--k-s-4) calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(14,18,37,0),#0e1225 26%);}',
+'@media (min-width:640px){.cr-yr-st b{font-size:34px;}.cr-yr-line.sm .cr-yr-st b{font-size:15px;}.cr-yr-line.sm .cr-yr-st span{font-size:7px;}}',
 ].join('\n');
 (function(){
   if (document.getElementById('cr-css')) return;
@@ -1562,6 +1633,7 @@ function wireBuild(){
     var gen = form.start !== 'hs';
     form = null;
     stage = { beats: [], result: null, reveal: gen, shades: true };
+    yearBase = yearMark(L);
     save();
     K.wipe();
     render();
@@ -1773,11 +1845,42 @@ function fitTray(){
 }
 var trayRO = window.ResizeObserver ? new ResizeObserver(function(){ fitTray(); }) : null;
 window.addEventListener('resize', function(){ if (onScreen && onScreen()) fitTray(); });
+/* THE YEAR'S TEXT (the BitLife pace, 2026-11-24). One press of Age up can play
+   several stretches, so what comes back is a year of beats, not a stretch of
+   them. The feed is the headlines: the record as it stands (the latest, not
+   one a stretch), your role, an award, a trade, an injury. News from around
+   the league folds under them, and so does anything past FEED_MAX lines, with
+   the toned beats (gold, good, bad) kept ahead of the plain ones. Nothing is
+   dropped: the fold opens. */
+var FEED_MAX = 6;
+function feedOf(list){
+  var lastRec = -1;
+  list.forEach(function(b, i){ if (b.kind === 'record') lastRec = i; });
+  var head = [], more = [];
+  list.forEach(function(b, i){
+    if (b.kind === 'news' || (b.kind === 'record' && i !== lastRec)) more.push(b);
+    else head.push(b);
+  });
+  if (head.length > FEED_MAX) {
+    var keep = [];
+    head.forEach(function(b, i){ if (b.tone || b.kind === 'record' || b.kind === 'year') keep.push(i); });
+    head.forEach(function(b, i){ if (keep.indexOf(i) < 0) keep.push(i); });
+    keep = keep.slice(0, FEED_MAX);
+    var out = [];
+    head.forEach(function(b, i){ if (keep.indexOf(i) >= 0) out.push(b); else more.push(b); });
+    head = out;
+  }
+  /* a press that was only news leads with the first of it */
+  if (!head.length && more.length) head.push(more.shift());
+  return { head: head, more: more };
+}
 function beatsHtml(list, fresh){
   if (!list || !list.length) return '';
-  return '<ul class="k-panel k-tight cr-beats' + (fresh ? ' k-in' : '') + '">' + list.map(function(b, i){
-    return '<li class="' + (b.tone || '') + '" style="animation-delay:' + (REDUCED ? 0 : i * 90) + 'ms">' + esc(b.text) + '</li>';
-  }).join('') + '</ul>';
+  var f = feedOf(list);
+  var li = function(b, i){ return '<li class="' + (b.tone || '') + '" style="animation-delay:' + (REDUCED ? 0 : i * 90) + 'ms">' + esc(b.text) + '</li>'; };
+  var fold = f.more.length ? '<li class="cr-fold" style="animation-delay:' + (REDUCED ? 0 : f.head.length * 90) + 'ms"><details><summary><span>' + f.more.length + ' more</span><b class="op">Show</b><b class="cl">Hide</b></summary><ul>'
+    + f.more.map(function(b){ return li(b, 0); }).join('') + '</ul></details></li>' : '';
+  return '<ul class="k-panel k-tight cr-beats' + (fresh ? ' k-in' : '') + '" id="cr-feed">' + f.head.map(li).join('') + fold + '</ul>';
 }
 /* The receipt: what you chose, what happened, and what it moved. */
 function resultHtml(r, fresh){
@@ -1834,7 +1937,7 @@ function stageHtml(L, fresh){
   out += resultHtml(stage.result, fresh);
   out += beatsHtml(stage.beats, fresh);
   if (L.pending.length) out += cardHtml(L, L.pending[0], fresh);
-  var tk = stage.tick && window.RTF_TICKER ? window.RTF_TICKER.strip(stage.tick) : '';
+  var tk = stage.tick && window.RTF_TICKER ? [].concat(stage.tick).map(function(t){ return window.RTF_TICKER.strip(t); }).join('') : '';
   if (L.pending.length) out += tk;
   else {
     var acts = C.actsOpen(L);
@@ -1854,12 +1957,16 @@ function btnAct(acts, id){
   var a = acts.filter(function(x){ return x.id === id; })[0];
   return '<button class="k-btn k-sec" data-act="' + id + '"' + (a.ok ? '' : ' disabled') + '>' + esc(a.name) + (a.used ? ' (done)' : '') + '</button>';
 }
-/* The one action when nothing is asked, where the thumb is. */
+/* The one action when nothing is asked, where the thumb is. AGE UP: one press
+   plays the season on to the next decision, the turn of the year or the end
+   (doAge). The line under the word says what comes first, in the engine's own
+   words. The id is the one the button has always had. */
 function dockHtml(L){
   if (L.pending.length) return '';
   var lab = C.nextLabel(L);
   if (!lab) return '';
-  return '<div class="cr-dock" id="cr-dock"><button class="k-btn k-block k-big cr-next" id="cr-next">' + esc(lab) + '</button></div>';
+  return '<div class="cr-dock" id="cr-dock"><button class="k-btn k-block k-big cr-next cr-age" id="cr-next" type="button">'
+    + '<span class="cr-age-w">' + K.iconHtml('up', 2) + 'Age up</span><small class="cr-age-n">' + esc(lab) + '</small></button></div>';
 }
 
 /* The ratings are a fold on a phone, so the decision card and the season
@@ -2335,7 +2442,7 @@ function wireLife(L, d){
     b.onclick = w === 'look' ? function(){ openLook(); } : w === 'locker' ? function(){ openLocker('shop'); } : toggleSound;
   });
   var nx = $('cr-next');
-  if (nx) nx.onclick = function(){ doStep(); };
+  if (nx) nx.onclick = function(){ doAge(); };
   root.querySelectorAll('.cr-choice').forEach(function(b){
     b.onclick = function(){ doChoose(+b.getAttribute('data-i')); };
   });
@@ -2446,31 +2553,158 @@ function arm(){
   }, ARM_MS);
 }
 function kbdFocus(){ var a = document.activeElement, r = $('s-car'); return !!(a && r && r.contains(a) && a.matches && a.matches(':focus-visible')); }
-function doStep(){
+/* ─── AGE UP (the BitLife pace, the owner's call of 2026-11-24) ───────────
+   One press is C.ageUp: the season plays on until a decision is waiting, the
+   year turns or the career ends. It is C.step repeated, so the career is the
+   one a press a stretch would have played. What the press shows:
+     the feed      the headlines of everything it played (beatsHtml)
+     the ticker    live for YOUR playoff games only. A stretch of the regular
+                   season, and a bracket you are not in, go by as the finished
+                   strip under the feed, with no overlay
+     a scene       whatever big night it produced (a title, a trade, a first
+                   All-Star), as before
+     the year      when the year turned, the year summary, once, last
+   A card waiting stops Age up in the engine, and the dock is not drawn while
+   one waits, so a decision is never skipped. Saved after every press. */
+function viewAs(L, phase){ var V = Object.create(L); V.phase = phase; return V; }
+/* The boards for a press that may have played several stretches. The ticker
+   reads the season the engine left, so it is asked once for your playoff
+   games (as the round press used to ask) and once for the bracket that
+   finished without you (as the press that filed the season used to). */
+function ticksFor(L, was, beats){
+  var TK = window.RTF_TICKER, out = { strip: [], live: null }, s = L.season, po = s && s.po;
+  if (!TK || !s) return out;
+  var get = function(life, before){ try { return TK.dataFor(life, before, beats); } catch (e) { return null; } };
+  if (po && (L.phase === 'po' || L.phase === 'off') && was.phase !== 'off') {
+    var mine = get(L.phase === 'po' ? L : viewAs(L, 'po'), { phase: was.phase === 'po' ? 'po' : 'late', poDone: was.poDone });
+    var rest = L.phase === 'off' ? get(L, { phase: 'po', poDone: was.poDone }) : null;
+    if (mine) { out.strip.push(mine); out.live = mine; }
+    if (rest) out.strip.push(rest);
+    return out;
+  }
+  var rs = get(L, was);
+  if (rs) out.strip.push(rs);
+  return out;
+}
+function doAge(){
   var L = store().cur;
-  if (!L) return;
+  /* never under the year summary: a scripted or keyboard press on the button
+     behind the sheet would play a year nobody saw */
+  if (!L || yearOpen) return;
   var before = snap(L), kb = kbdFocus();
   var was = { phase: L.phase, poDone: L.season && L.season.po ? L.season.po.results.length : 0 };
-  var res = C.step(L);
+  var res = C.ageUp(L);
   stage = { beats: res.beats || [], result: null, draft: null, delta: before };
   var TK = window.RTF_TICKER, SC = window.RTF_SCENES;
-  stage.tick = TK ? TK.dataFor(L, was, res.beats) : null;
+  var tk = ticksFor(L, was, res.beats);
+  stage.tick = tk.strip.length ? tk.strip : null;
   var d = (res.beats || []).filter(function(b){ return b.kind === 'draft' && b.pick; })[0];
   if (d) stage.draft = { pick: d.pick, team: d.team };
   if (L.retired) return finish();
+  /* the year, read at its turn: a card answered in a scene after this moves
+     the bank and the meters, and the summary is of the year that closed */
+  var yr = res.turned ? yearOf(L) : null;
   save();
   render();
-  /* A stretch of games goes by on the live ticker first, then whatever
-     moment it produced is told. */
-  if (stage.tick && TK && SC && SC.on()) {
-    TK.play(stage.tick, { done: function(){ if (!scene(res)) { scrollStage(); refocus(kb); if (!kb) arm(); } } });
-    return;
-  }
-  if (!scene(res)) { scrollStage(); refocus(kb); if (!kb) arm(); }
+  var land = function(){ scrollStage(); refocus(kb); if (!kb) arm(); };
+  /* The year turned: the big night first, then the summary, and only then
+     the card the new year opened with (in its scene, when it has one). */
+  var after = yr ? function(){ openYear(yr, function(){ if (!scene({ beats: [] })) land(); }); } : land;
+  var tell = function(){ if (!scene(res, yr ? { moment: true, then: after } : null)) after(); };
+  if (tk.live && TK && SC && SC.on()) { TK.play(tk.live, { done: tell }); return; }
+  tell();
+}
+
+/* ─── THE YEAR SUMMARY ────────────────────────────────────────────────────
+   When Age up turns the year, the season that closed is one screen, read
+   like the back of a trading card: age and season, club and role, the line,
+   the record and how the playoffs went, awards, the overall and its change,
+   the money, and the four meters. One tap continues. EVERY FIGURE IS
+   C.yearSummary's. The overall is printed the way it is everywhere (C.show,
+   the 2K scale), and its change is the change in that printed number, taken
+   from the summary's own two overalls. What a meter and the bank moved over
+   the year is this page's: the summary carries where they stand, so the mark
+   taken at the last turn (or when the career was made) is what they are held
+   against, and with no mark (a career reloaded mid year) no change is shown
+   rather than a guess. */
+var yearBase = null, yearOpen = false;
+function yearMark(L){ return { L: L, y: L.year, m: Object.assign({}, L.m), cash: L.cash }; }
+function yearOf(L){
+  var s = C.yearSummary ? C.yearSummary(L) : null, base = yearBase;
+  yearBase = yearMark(L);
+  /* only the season that just closed: a year overseas files none */
+  if (!s || s.y !== L.year - 1) return null;
+  return { s: s, first: L.history.length < 2, name: L.name, pos: L.pos, num: L.num, base: base && base.L === L && base.y === s.y ? base : null };
+}
+var PO_WORDS = { Missed: 'Missed the playoffs', 'Play-in': 'Out in the play-in', R1: 'Out in the first round', R2: 'Out in the second round', CF: 'Out in the conference finals', Finals: 'Lost in the Finals', Champion: 'NBA champion' };
+var YR_METERS = [['health', 'Health'], ['morale', 'Morale'], ['fame', 'Fame'], ['trust', 'Coach']];
+function signed(n){ return (n > 0 ? '+' : '') + n; }
+function yearHtml(yr){
+  var s = yr.s, ln = s.line, base = yr.base;
+  var ovr = C.show(s.ovr), dOvr = yr.first ? 0 : ovr - C.show(s.ovr - s.ovrChange);
+  var champ = s.playoffs === 'Champion';
+  var chip = function(d, unit){ return d ? '<b class="cr-yr-d ' + (d > 0 ? 'up' : 'down') + '">' + K.iconHtml(d > 0 ? 'up' : 'down', 2) + (unit === '$' ? money(Math.abs(d)) : Math.abs(d)) + '</b>' : ''; };
+  /* what moved, in words, biggest first: the overall, then the meter that
+     fell furthest and the one that rose furthest */
+  var moved = [];
+  if (dOvr) moved.push({ t: 'Overall ' + (dOvr > 0 ? 'up ' : 'down ') + Math.abs(dOvr) + '.', c: dOvr > 0 ? 'up' : 'down' });
+  var md = base ? YR_METERS.map(function(m){ return { k: m[0], n: m[1], d: s.meters[m[0]] - base.m[m[0]] }; }) : [];
+  var fell = md.filter(function(x){ return x.d < 0; }).sort(function(a, b){ return a.d - b.d; })[0];
+  var rose = md.filter(function(x){ return x.d > 0; }).sort(function(a, b){ return b.d - a.d; })[0];
+  if (fell) moved.push({ t: fell.n + ' down ' + Math.abs(fell.d) + '.', c: 'down' });
+  if (rose) moved.push({ t: rose.n + ' up ' + rose.d + '.', c: 'up' });
+  var dCash = base ? Math.round((s.cash - base.cash) * 10) / 10 : 0;
+  var stat = function(k, v, big){ return '<div class="cr-yr-st' + (big ? ' big' : '') + '"><b>' + v + '</b><span>' + k + '</span></div>'; };
+  var one = function(n){ return n == null ? '-' : n; };
+  var aw = (s.awards || []).map(function(a){ return tag(C.AWARD_NAME[a] || a, 'k-gold'); }).join('');
+  var meters = YR_METERS.map(function(m){
+    var v = s.meters[m[0]], d = base ? v - base.m[m[0]] : 0;
+    return '<div class="cr-yr-m cr-m-' + m[0] + (d > 0 ? ' is-up' : d < 0 ? ' is-down' : '') + '" data-m="' + m[0] + '">' + K.iconHtml(METER_ICON[m[0]], 2) + '<span class="k">' + m[1] + '</span>'
+      + '<b class="v">' + v + '</b>' + (d ? '<i class="' + (d > 0 ? 'up' : 'down') + '">' + signed(d) + '</i>' : '') + '<span class="k-pips">' + K.pips(v) + '</span></div>';
+  }).join('');
+  return '<div class="cr-yr-head' + (champ ? ' champ' : '') + '">'
+    + '<div class="cr-yr-age"><small>Age</small><b id="cr-yr-age">' + s.age + '</b></div>'
+    + '<div class="cr-yr-who"><span class="k-eyebrow" id="cr-yr-season">' + esc(seasonTag(s.y)) + ' season</span><h3 class="k-h1" id="cr-yr-h">' + esc(yr.name) + '</h3>'
+    + '<p id="cr-yr-club">' + esc(teamName(s.team)) + (s.role ? ' · ' + esc(s.role) : '') + '</p></div>'
+    + '<div class="cr-yr-ovr" role="img" aria-label="Overall ' + ovr + (dOvr ? ', ' + (dOvr > 0 ? 'up ' : 'down ') + Math.abs(dOvr) : '') + '"><b id="cr-yr-ovr">' + ovr + '</b><small>OVR</small>' + chip(dOvr) + '</div></div>'
+    /* "A steady year" is only said when the page knows nothing moved: with no
+       mark to hold the meters against, the line is left out */
+    + (moved.length || base ? '<p class="cr-yr-moved" id="cr-yr-moved">' + (moved.length ? moved.map(function(x){ return '<span class="' + x.c + '">' + esc(x.t) + '</span>'; }).join(' ') : '<span>A steady year.</span>') + '</p>' : '')
+    + '<div class="cr-yr-line" id="cr-yr-line">' + stat('PTS', one(ln.pts), 1) + stat('REB', one(ln.reb), 1) + stat('AST', one(ln.ast), 1) + '</div>'
+    + '<div class="cr-yr-line sm">' + stat('GP', one(s.gp)) + stat('MIN', one(ln.min)) + stat('STL', one(ln.stl)) + stat('BLK', one(ln.blk)) + stat('FG%', one(ln.fgp)) + stat('3P%', one(ln.tpp)) + stat('FT%', one(ln.ftp)) + '</div>'
+    + '<div class="cr-yr-rec' + (champ ? ' champ' : '') + '"><div><small>Record' + (s.seed ? ' <span>' + C.ordinal(s.seed) + ' seed</span>' : '') + '</small><b id="cr-yr-rec">' + s.record[0] + '-' + s.record[1] + '</b></div>'
+    + '<div><small>Playoffs</small><b id="cr-yr-po" class="w">' + (champ ? K.iconHtml('trophy', 2) : '') + esc(PO_WORDS[s.playoffs] || s.playoffs || '-') + '</b></div></div>'
+    + (aw ? '<div class="cr-yr-aw" id="cr-yr-aw">' + aw + '</div>' : '')
+    + '<div class="cr-yr-cash"><div><small>Salary</small><b id="cr-yr-sal">' + money(s.salary) + '</b></div>'
+    + '<div><small>Bank' + chip(dCash, '$') + '</small><b id="cr-yr-cash">' + money(s.cash) + '</b></div>'
+    + '<div><small>Career earnings</small><b id="cr-yr-earned">' + money(s.earned) + '</b></div></div>'
+    + '<div class="cr-yr-meters" id="cr-yr-meters">' + meters + '</div>'
+    + '<div class="cr-yr-foot"><button class="k-btn k-block k-big" id="cr-yr-go" type="button">Continue</button></div>';
+}
+/* The summary is a sheet like every other (focus goes in, Escape, back and
+   the scrim close it), and every way of closing it is the one tap that
+   continues. */
+function openYear(yr, then){
+  var sh = $('cr-sheet');
+  if (!sh || !yr) { if (then) then(); return; }
+  var k = skin(yr.s.team), box = sh.querySelector('.in');
+  box.className = 'k-sheet in cr-yr';
+  box.innerHTML = yearHtml(yr);
+  box.scrollTop = 0;
+  sh.classList.remove('cr-flat');
+  if (k) K.theme(box, k.primary, k.secondary);
+  yearOpen = true;
+  dlg = K.dialog(sh, { label: 'Your ' + seasonTag(yr.s.y) + ' season', onClose: function(){
+    /* the sheet is every sheet's: leave it empty and in no club's colours */
+    dlg = null; yearOpen = false; box.removeAttribute('style'); box.className = 'k-sheet in'; box.innerHTML = '';
+    if (then) then();
+  } });
+  $('cr-yr-go').onclick = closeOff;
 }
 function doChoose(i){
   var L = store().cur;
-  if (!L) return;
+  /* the card the new year opened with is answered after the summary, not under it */
+  if (!L || yearOpen) return;
   var before = snap(L), kb = kbd || kbdFocus();
   kbd = false;
   var res = C.choose(L, i);
@@ -2489,11 +2723,16 @@ function doChoose(i){
    or skipped leaves the plain card there to answer. A card is put in a scene
    once, and not again after a reload. */
 var seenCard = {};
-function scene(res){
+/* `o.moment` tells the moment and leaves the card on the table for later
+   (the year summary comes between them); `o.then` runs when the scene ends. */
+function scene(res, o){
   var SC = window.RTF_SCENES, L = store().cur;
   if (!SC || !SC.on() || !L) return false;
   var beats;
-  try { beats = SC.chain(L, res, seenCard); } catch (e) { return false; }
+  try {
+    if (o && o.moment) { var pick = SC.pickScene(res, L); beats = pick ? SC.build(L, pick, null).beats : []; }
+    else beats = SC.chain(L, res, seenCard);
+  } catch (e) { return false; }
   if (!beats || !beats.length) return false;
   var b = SC.build(L, null, null);
   try {
@@ -2521,6 +2760,7 @@ function scene(res){
         var L2 = store().cur;
         if (L2 && L2.retired) { finish(); return; }
         render();
+        if (o && o.then) { o.then(); return; }
         scrollStage();
       },
     });
