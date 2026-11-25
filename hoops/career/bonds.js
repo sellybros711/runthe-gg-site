@@ -186,6 +186,7 @@ const BONDS = {
   leave: {
     name: (L) => lifeOf(L).rel === 'married' ? 'File for divorce' : 'End it', blurb: (L) => lifeOf(L).rel === 'married' ? 'It will cost you.' : 'Walk away clean.', tone: 'bad',
     on: paired(null, ['dating', 'engaged', 'married']),
+    takes: (L) => lifeOf(L).rel === 'married' ? round1(Math.max(0, L.cash) * 0.4) : 0,
     run(L, p) {
       if (lifeOf(L).rel === 'married') {
         const cost = round1(Math.max(0, L.cash) * 0.4);
@@ -213,12 +214,20 @@ function peopleOpen(L) {
     if (!g) continue;
     const acts = Object.keys(BONDS).filter((k) => BONDS[k].on(L, p)).map((k) => {
       const a = BONDS[k], cost = a.cost ? a.cost(L, p) : 0;
-      return { id: k, name: bondText(L, a.name), blurb: bondText(L, a.blurb), cost, tone: a.tone || '', ok: used.n < BOND_MAX && !used.who[id] && L.cash >= cost };
+      /* `why` names what closes it (the year's time, this person already, the cash); `takes` is
+         what it will cost beyond the price, when that is known before it is done. */
+      const why = used.n >= BOND_MAX ? 'year' : used.who[id] ? 'person' : L.cash < cost ? 'cash' : null;
+      return { id: k, name: bondText(L, a.name), blurb: bondText(L, a.blurb), cost, takes: a.takes ? a.takes(L, p) : 0, tone: a.tone || '', ok: !why, why };
     });
     if (!acts.length) continue;
     out.push({ id, group: g, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice(), used: !!used.who[id], acts });
   }
   return out.sort((a, b) => BOND_ORDER.indexOf(a.group) - BOND_ORDER.indexOf(b.group) || b.rel - a.rel || (a.id < b.id ? -1 : 1));
+}
+/* Everybody in the ledger, acted on or not, with the same mood word: for the
+   people the screen lists who have no act open (an old partner, a GM). */
+function peopleAll(L) {
+  return Object.keys(L.people || {}).map((id) => { const p = L.people[id]; return { id, group: BOND_GROUP[p.role] || null, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice() }; });
 }
 /* How much of the year is left for people. */
 const bondsLeft = (L) => Math.max(0, BOND_MAX - bondUsed(L).n);
@@ -232,7 +241,7 @@ function personAct(L, pid, aid) {
   if (open.cost) { L.cash = round1(L.cash - open.cost); if (open.cost >= 0.5) tw(L).spent = (tw(L).spent || 0) + 1; }
   const text = say(L, a.run(L, p, rngAt(L, 'bond:' + pid + ':' + aid)));
   sayAll(L);
-  const res = { title: open.name, label: open.name, who: p.n, text, tone: open.tone, diff: diffOf(before, snapshot(L)) };
+  const res = { title: open.name, label: open.name, who: p.n, text, tone: open.tone, diff: diffOf(before, snapshot(L)), rel: { from: who.rel, to: p.rel, mood: bondMood(p) } };
   L.last = res;
   return res;
 }

@@ -11815,18 +11815,20 @@ function step(L) {
    draws, so a career aged up is the career stepped. */
 function ageUp(L) {
   const beats = [], log = [], y0 = L.year;
-  let steps = 0;
+  let steps = 0, closed = null;
   while (!L.retired && !L.pending.length && steps < 24) {
     /* What the page's ticker asks about a stretch: where the season stood
        before the step, and the beats that step made. */
     const was = { phase: L.phase, poDone: L.season && L.season.po ? L.season.po.results.length : 0 };
+    /* The season a press closes is gone once the year turns; the page still plays its bracket. */
+    if (L.season) closed = L.season;
     const r = step(L);
     steps++;
     log.push({ phase: was.phase, poDone: was.poDone, beats: r.beats || [] });
     for (const b of r.beats || []) beats.push(b);
     if (L.year !== y0) break;
   }
-  return { beats, steps, log, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0 };
+  return { beats, steps, log, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0, closed: L.year !== y0 ? closed : null };
 }
 /* How a season ended, in words. */
 const PO_WORDS = { Missed: 'Missed the playoffs', 'Play-in': 'Out in the play-in', R1: 'Out in the first round', R2: 'Out in the second round',
@@ -12659,6 +12661,7 @@ const BONDS = {
   leave: {
     name: (L) => lifeOf(L).rel === 'married' ? 'File for divorce' : 'End it', blurb: (L) => lifeOf(L).rel === 'married' ? 'It will cost you.' : 'Walk away clean.', tone: 'bad',
     on: paired(null, ['dating', 'engaged', 'married']),
+    takes: (L) => lifeOf(L).rel === 'married' ? round1(Math.max(0, L.cash) * 0.4) : 0,
     run(L, p) {
       if (lifeOf(L).rel === 'married') {
         const cost = round1(Math.max(0, L.cash) * 0.4);
@@ -12686,12 +12689,20 @@ function peopleOpen(L) {
     if (!g) continue;
     const acts = Object.keys(BONDS).filter((k) => BONDS[k].on(L, p)).map((k) => {
       const a = BONDS[k], cost = a.cost ? a.cost(L, p) : 0;
-      return { id: k, name: bondText(L, a.name), blurb: bondText(L, a.blurb), cost, tone: a.tone || '', ok: used.n < BOND_MAX && !used.who[id] && L.cash >= cost };
+      /* `why` names what closes it (the year's time, this person already, the cash); `takes` is
+         what it will cost beyond the price, when that is known before it is done. */
+      const why = used.n >= BOND_MAX ? 'year' : used.who[id] ? 'person' : L.cash < cost ? 'cash' : null;
+      return { id: k, name: bondText(L, a.name), blurb: bondText(L, a.blurb), cost, takes: a.takes ? a.takes(L, p) : 0, tone: a.tone || '', ok: !why, why };
     });
     if (!acts.length) continue;
     out.push({ id, group: g, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice(), used: !!used.who[id], acts });
   }
   return out.sort((a, b) => BOND_ORDER.indexOf(a.group) - BOND_ORDER.indexOf(b.group) || b.rel - a.rel || (a.id < b.id ? -1 : 1));
+}
+/* Everybody in the ledger, acted on or not, with the same mood word: for the
+   people the screen lists who have no act open (an old partner, a GM). */
+function peopleAll(L) {
+  return Object.keys(L.people || {}).map((id) => { const p = L.people[id]; return { id, group: BOND_GROUP[p.role] || null, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice() }; });
 }
 /* How much of the year is left for people. */
 const bondsLeft = (L) => Math.max(0, BOND_MAX - bondUsed(L).n);
@@ -12705,7 +12716,7 @@ function personAct(L, pid, aid) {
   if (open.cost) { L.cash = round1(L.cash - open.cost); if (open.cost >= 0.5) tw(L).spent = (tw(L).spent || 0) + 1; }
   const text = say(L, a.run(L, p, rngAt(L, 'bond:' + pid + ':' + aid)));
   sayAll(L);
-  const res = { title: open.name, label: open.name, who: p.n, text, tone: open.tone, diff: diffOf(before, snapshot(L)) };
+  const res = { title: open.name, label: open.name, who: p.n, text, tone: open.tone, diff: diffOf(before, snapshot(L)), rel: { from: who.rel, to: p.rel, mood: bondMood(p) } };
   L.last = res;
   return res;
 }
@@ -12773,7 +12784,9 @@ const FIRE_SALE = 0.6, SELL_FEE = 0.06;
 const round2 = (x) => Math.round(x * 100) / 100;
 const wealthOf = (L) => L.wealth || null;
 const wealthMake = (L) => L.wealth || (L.wealth = { own: [], staff: {}, inv: {} });
-const thingKeep = (o) => round1(THINGS[o.id].price * THINGS[o.id].keep);
+/* To the thousand: at one decimal of a million a condo cost nothing to keep. */
+const round3 = (x) => Math.round(x * 1000) / 1000;
+const thingKeep = (o) => round3(THINGS[o.id].price * THINGS[o.id].keep);
 const sellFor = (o) => round2(o.val * (1 - SELL_FEE));
 /* What a year of this life costs before a paycheck. */
 function upkeepOf(L) {
@@ -12781,7 +12794,7 @@ function upkeepOf(L) {
   let t = 0;
   for (const o of W.own) t += thingKeep(o);
   for (const k in W.staff) t += STAFF[k].pay;
-  return round1(t);
+  return round3(t);
 }
 /* Cash, plus what is owned and invested at today's value. */
 function netWorth(L) {
@@ -12795,7 +12808,7 @@ function netWorth(L) {
 function wealthSeason(L, beats) {
   const W = wealthOf(L); if (!W) return;
   const cost = upkeepOf(L);
-  if (cost) L.cash = round1(L.cash - cost);
+  if (cost) L.cash = round2(L.cash - cost);
   /* the best home, the best car and every toy do their work; staff too */
   const best = {}, lift = {};
   for (const o of W.own) { const T = THINGS[o.id]; if (T.kind === 'toy') { for (const k in T.m) lift[k] = (lift[k] || 0) + T.m[k]; } else if (!best[T.kind] || T.price > THINGS[best[T.kind]].price) best[T.kind] = o.id; }
@@ -12843,11 +12856,13 @@ function wealthOpen(L) {
   const W = wealthOf(L) || { own: [], staff: {}, inv: {} };
   const has = {}; for (const o of W.own) has[o.id] = 1;
   return {
-    cash: L.cash, worth: netWorth(L), upkeep: upkeepOf(L), broke: L.flags.broke || null,
+    cash: L.cash, worth: netWorth(L), upkeep: upkeepOf(L),
+    /* `broke` is the year while he still has next to nothing; `wasBroke` is the year for good. */
+    broke: L.flags.broke && netWorth(L) < 1 ? L.flags.broke : null, wasBroke: L.flags.broke || null,
     own: W.own.map((o, i) => ({ i, id: o.id, kind: THINGS[o.id].kind, name: THINGS[o.id].n, y: o.y, paid: o.paid, val: o.val, keep: thingKeep(o), sell: sellFor(o) })),
     staff: Object.keys(W.staff).map((k) => ({ id: k, name: STAFF[k].n, pay: STAFF[k].pay, since: W.staff[k] })),
     inv: Object.keys(W.inv).map((k) => ({ id: k, name: INVEST[k].n, put: W.inv[k].put, val: W.inv[k].val, y: W.inv[k].y, out: round2(W.inv[k].val * (1 - SELL_FEE)) })),
-    shop: Object.keys(THINGS).filter((k) => !has[k]).map((k) => ({ id: k, kind: THINGS[k].kind, name: THINGS[k].n, blurb: THINGS[k].blurb, cost: THINGS[k].price, keep: round1(THINGS[k].price * THINGS[k].keep), ok: L.cash >= THINGS[k].price })),
+    shop: Object.keys(THINGS).filter((k) => !has[k]).map((k) => ({ id: k, kind: THINGS[k].kind, name: THINGS[k].n, blurb: THINGS[k].blurb, cost: THINGS[k].price, keep: round3(THINGS[k].price * THINGS[k].keep), ok: L.cash >= THINGS[k].price })),
     hire: Object.keys(STAFF).filter((k) => !W.staff[k]).map((k) => ({ id: k, name: STAFF[k].n, blurb: STAFF[k].blurb, pay: STAFF[k].pay, ok: L.cash >= STAFF[k].pay })),
     /* an amount is asked for; these are the least and the most */
     invest: Object.keys(INVEST).map((k) => ({ id: k, name: INVEST[k].n, blurb: INVEST[k].blurb, min: INVEST[k].min, max: round1(Math.max(0, L.cash)), ok: L.cash >= INVEST[k].min })),
@@ -14042,7 +14057,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

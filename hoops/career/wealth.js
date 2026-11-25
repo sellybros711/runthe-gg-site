@@ -51,7 +51,9 @@ const FIRE_SALE = 0.6, SELL_FEE = 0.06;
 const round2 = (x) => Math.round(x * 100) / 100;
 const wealthOf = (L) => L.wealth || null;
 const wealthMake = (L) => L.wealth || (L.wealth = { own: [], staff: {}, inv: {} });
-const thingKeep = (o) => round1(THINGS[o.id].price * THINGS[o.id].keep);
+/* To the thousand: at one decimal of a million a condo cost nothing to keep. */
+const round3 = (x) => Math.round(x * 1000) / 1000;
+const thingKeep = (o) => round3(THINGS[o.id].price * THINGS[o.id].keep);
 const sellFor = (o) => round2(o.val * (1 - SELL_FEE));
 /* What a year of this life costs before a paycheck. */
 function upkeepOf(L) {
@@ -59,7 +61,7 @@ function upkeepOf(L) {
   let t = 0;
   for (const o of W.own) t += thingKeep(o);
   for (const k in W.staff) t += STAFF[k].pay;
-  return round1(t);
+  return round3(t);
 }
 /* Cash, plus what is owned and invested at today's value. */
 function netWorth(L) {
@@ -73,7 +75,7 @@ function netWorth(L) {
 function wealthSeason(L, beats) {
   const W = wealthOf(L); if (!W) return;
   const cost = upkeepOf(L);
-  if (cost) L.cash = round1(L.cash - cost);
+  if (cost) L.cash = round2(L.cash - cost);
   /* the best home, the best car and every toy do their work; staff too */
   const best = {}, lift = {};
   for (const o of W.own) { const T = THINGS[o.id]; if (T.kind === 'toy') { for (const k in T.m) lift[k] = (lift[k] || 0) + T.m[k]; } else if (!best[T.kind] || T.price > THINGS[best[T.kind]].price) best[T.kind] = o.id; }
@@ -121,11 +123,13 @@ function wealthOpen(L) {
   const W = wealthOf(L) || { own: [], staff: {}, inv: {} };
   const has = {}; for (const o of W.own) has[o.id] = 1;
   return {
-    cash: L.cash, worth: netWorth(L), upkeep: upkeepOf(L), broke: L.flags.broke || null,
+    cash: L.cash, worth: netWorth(L), upkeep: upkeepOf(L),
+    /* `broke` is the year while he still has next to nothing; `wasBroke` is the year for good. */
+    broke: L.flags.broke && netWorth(L) < 1 ? L.flags.broke : null, wasBroke: L.flags.broke || null,
     own: W.own.map((o, i) => ({ i, id: o.id, kind: THINGS[o.id].kind, name: THINGS[o.id].n, y: o.y, paid: o.paid, val: o.val, keep: thingKeep(o), sell: sellFor(o) })),
     staff: Object.keys(W.staff).map((k) => ({ id: k, name: STAFF[k].n, pay: STAFF[k].pay, since: W.staff[k] })),
     inv: Object.keys(W.inv).map((k) => ({ id: k, name: INVEST[k].n, put: W.inv[k].put, val: W.inv[k].val, y: W.inv[k].y, out: round2(W.inv[k].val * (1 - SELL_FEE)) })),
-    shop: Object.keys(THINGS).filter((k) => !has[k]).map((k) => ({ id: k, kind: THINGS[k].kind, name: THINGS[k].n, blurb: THINGS[k].blurb, cost: THINGS[k].price, keep: round1(THINGS[k].price * THINGS[k].keep), ok: L.cash >= THINGS[k].price })),
+    shop: Object.keys(THINGS).filter((k) => !has[k]).map((k) => ({ id: k, kind: THINGS[k].kind, name: THINGS[k].n, blurb: THINGS[k].blurb, cost: THINGS[k].price, keep: round3(THINGS[k].price * THINGS[k].keep), ok: L.cash >= THINGS[k].price })),
     hire: Object.keys(STAFF).filter((k) => !W.staff[k]).map((k) => ({ id: k, name: STAFF[k].n, blurb: STAFF[k].blurb, pay: STAFF[k].pay, ok: L.cash >= STAFF[k].pay })),
     /* an amount is asked for; these are the least and the most */
     invest: Object.keys(INVEST).map((k) => ({ id: k, name: INVEST[k].n, blurb: INVEST[k].blurb, min: INVEST[k].min, max: round1(Math.max(0, L.cash)), ok: L.cash >= INVEST[k].min })),
