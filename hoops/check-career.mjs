@@ -1504,6 +1504,89 @@ section('20. the people you live with: every act is open somewhere, does what it
   ok(same === 12, `reading the people changes nothing (${same} of 12 careers identical)`);
 }
 
+section('21. what the money is for: things, a payroll, money at work, and going broke');
+{
+  /* Phase 3 of the BitLife plan (the owner's call, 2026-11-24). */
+  const E = require('./engine.js');
+  const N = 120, seen = {}, bad = [], worthOff = [], sellOff = [];
+  let ended = 0, brokeN = 0, took = 0, lost = 0, acts = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'wealth' + i, league, start: i % 2 ? 'hs' : 'draft' });
+    const r = E.createSeededRNG(E.hashSeed('wealth-p' + i));
+    let g = 0;
+    while (!L.retired && g++ < 9000) {
+      if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); continue; }
+      const V = C.wealthOpen(L);
+      if (V && r() < 0.35) {
+        const c = [];
+        for (const s of V.shop) if (s.ok) c.push(['buy', s.id]);
+        for (const s of V.hire) if (s.ok) c.push(['hire', s.id]);
+        for (const s of V.invest) if (s.ok) c.push(['invest', s.id, Math.max(s.min, Math.round(V.cash * 0.3 * 10) / 10)]);
+        for (const o of V.own) if (r() < 0.2) c.push(['sell', o.i, null, o.sell]);
+        for (const o of V.inv) if (r() < 0.2) c.push(['cashout', o.id, null, o.out]);
+        for (const o of V.staff) if (r() < 0.1) c.push(['fire', o.id]);
+        const fresh = c.filter((x) => !seen[x[0] + ':' + (x[0] === 'sell' ? '' : x[1])]);
+        if (c.length) {
+          const x = (fresh.length ? fresh : c)[Math.floor(r() * (fresh.length ? fresh : c).length)];
+          const cash0 = L.cash;
+          const res = C.wealthAct(L, x[0], x[1], x[2]);
+          if (!res) { bad.push('refused an open act: ' + x[0] + ' ' + x[1]); continue; }
+          acts++; seen[x[0] + ':' + (x[0] === 'sell' ? '' : x[1])] = 1;
+          if (DASH.test(res.text + res.title) || /undefined|NaN|\{[a-z]/.test(res.text + res.title)) bad.push(x[0] + ': ' + res.text);
+          if ((x[0] === 'sell' || x[0] === 'cashout') && Math.abs((L.cash - cash0) - x[3]) > 0.051) sellOff.push(x[0] + ' ' + x[1] + ': ' + (L.cash - cash0).toFixed(2) + ' against ' + x[3]);
+          const W = L.wealth, sum = L.cash + W.own.reduce((t, o) => t + o.val, 0) + Object.values(W.inv).reduce((t, v) => t + v.val, 0);
+          if (Math.abs(sum - C.netWorth(L)) > 0.011) worthOff.push(sum + ' against ' + C.netWorth(L));
+          continue;
+        }
+      }
+      C.step(L);
+    }
+    if (L.retired) ended++;
+    if (L.flags.broke) brokeN++;
+    if (L.log.some((e) => / took off\.$/.test(e.t))) took++;
+    if (L.log.some((e) => / went to nothing\.$/.test(e.t))) lost++;
+  }
+  const want = [].concat(Object.keys(C.THINGS).map((k) => 'buy:' + k), Object.keys(C.STAFF).map((k) => 'hire:' + k), Object.keys(C.STAFF).map((k) => 'fire:' + k),
+    Object.keys(C.INVEST).map((k) => 'invest:' + k), Object.keys(C.INVEST).map((k) => 'cashout:' + k), ['sell:']);
+  const dark = want.filter((k) => !seen[k]);
+  console.log(`  ${acts} acts over ${N} careers  broke ${brokeN}  an investment took off in ${took}, went to nothing in ${lost}`);
+  ok(dark.length === 0, `everything for sale is bought, every hire made and let go, every investment made and cashed (${dark.join(', ') || 'all ' + want.length})`);
+  ok(!bad.length, `every act reads clean and is taken when open (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!sellOff.length, `a sale pays the price the screen showed (${sellOff.slice(0, 2).join(' | ') || 'every one'})`);
+  ok(!worthOff.length, `net worth is the cash plus what is owned and invested (${worthOff.slice(0, 2).join(' | ') || 'every time'})`);
+  ok(took > 0 && lost > 0, `money at work can take off and can go to nothing (${took}, ${lost})`);
+  ok(ended === N, `a career that spends still ends (${ended} of ${N})`);
+  /* THE UPKEEP ON THE SCREEN IS THE UPKEEP CHARGED, and the lifestyle does
+     its work. A career walked to a summer, given things and a payroll. */
+  const toOff = (seed) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (!L.retired && g++ < 3000 && !(L.phase === 'off' && !L.pending.length && L.history.length >= 2)) { if (L.pending.length) C.choose(L, 0); else C.step(L); } return L; };
+  {
+    const L = toOff('upkeep'); L.cash = 60;
+    for (const id of ['mansion', 'supercar', 'chain']) C.wealthAct(L, 'buy', id);
+    C.wealthAct(L, 'hire', 'chef'); C.wealthAct(L, 'hire', 'stylist');
+    const V = C.wealthOpen(L), cash0 = L.cash, m0 = Object.assign({}, L.m), val0 = L.wealth.own.map((o) => o.val);
+    L.m.morale = 50; L.m.fame = 50; L.m.health = 50;
+    C.step(L);
+    ok(Math.abs((cash0 - L.cash) - V.upkeep) < 0.051 && V.upkeep > 0, `a year of the lifestyle costs the upkeep the screen showed (${(cash0 - L.cash).toFixed(1)} against ${V.upkeep})`);
+    ok(L.m.morale > 50 && L.m.fame > 50 && L.m.health > 50, `a home lifts morale, a stylist fame and a chef health (${L.m.morale}, ${L.m.fame}, ${L.m.health})`);
+    ok(L.wealth.own[0].val > val0[0] && L.wealth.own[1].val < val0[1], 'a home gains value and a car loses it');
+  }
+  /* GOING BROKE. Things go at fire sale prices first; with nothing to sell,
+     the payroll walks and it is in the log. */
+  {
+    const L = toOff('firesale'); L.cash = 50; C.wealthAct(L, 'buy', 'jet'); L.cash = 0.5;
+    C.step(L);
+    ok(!L.flags.broke && L.wealth.own.length === 0 && L.cash > 0, `a man who cannot cover a jet sells it in a hurry and is not broke (${L.cash})`);
+    const B = toOff('broke'); B.cash = 5; C.wealthAct(B, 'hire', 'crew'); C.wealthAct(B, 'hire', 'adviser'); B.cash = 0.1;
+    C.step(B);
+    ok(B.flags.broke && B.cash === 0 && !Object.keys(B.wealth.staff).length && B.log.some((e) => e.t === 'Went broke.'), 'with nothing to sell he is broke: the payroll walks and the log says so');
+  }
+  /* A career that never opens the money screen is the career it was. */
+  const fp = (L) => JSON.stringify([L.history, L.log.length, L.cash, L.m]);
+  const plain = (seed, peek) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (!L.retired && g++ < 6000) { if (L.pending.length) C.choose(L, L.steps % L.pending[0].options.length); else { if (peek) C.wealthOpen(L); C.step(L); } } return fp(L); };
+  let same = 0; for (let i = 0; i < 12; i++) if (plain('wq' + i, false) === plain('wq' + i, true)) same++;
+  ok(same === 12, `reading the money changes nothing (${same} of 12 careers identical)`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');
