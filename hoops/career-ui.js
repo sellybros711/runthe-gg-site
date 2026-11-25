@@ -1086,6 +1086,12 @@ var CSS = [
 '#cr-sheet.cr-flat[hidden]{display:none;}',
 '#cr-sheet.cr-flat .k-sheet{max-width:560px;max-height:none;overflow:visible;margin:0 auto;box-shadow:none;animation:none;background:none;}',
 '#cr-sheet.cr-flat #cr-sheet-x{display:none;}',
+/* motion (batch 3): a tab fades in; the Moves screen fades in; the grid keeps
+   its class through a patch, so the fade is removed when it ends */
+'#cr-body > .cr-grid.cr-tabin{animation:cr-tabin 140ms var(--k-e-quick) both;}',
+'@keyframes cr-tabin{from{opacity:.25;}to{opacity:1;}}',
+'#cr-sheet.cr-flat .k-sheet{animation:cr-tabin 140ms var(--k-e-quick) both;}',
+'@media (prefers-reduced-motion:reduce){#cr-body > .cr-grid.cr-tabin,#cr-sheet.cr-flat .k-sheet{animation:none;}}',
 '@media (min-width:920px){#cr-sheet.cr-flat{left:88px;}#cr-sheet.cr-flat .k-sheet{max-width:960px;padding-left:24px;padding-right:24px;}',
 '  #cr-sheet.cr-flat .cr-mvlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}}',
 /* AGE UP: the word, and under it what comes first */
@@ -2344,10 +2350,58 @@ function shellHtml(L){
     + '<div class="k-waitbar" id="cr-wait" role="status"' + (wait ? '' : ' hidden') + '>' + (wait ? '<div class="k-wt"><small>A decision is waiting</small><span>' + esc(L.pending[0].title) + '</span></div>'
       + '<button class="k-btn" type="button" id="cr-wait-go">Answer</button>' : '') + '</div>';
 }
+/* NO FULL REPAINT (batch 3). The career screen and the shell are drawn as
+   strings, as always, but put on the page by parts: a part whose markup did
+   not change keeps its node, so the player, his face, the meters and the tab
+   bar do not flash or restart on a press or a tab switch, and only what moved
+   is new. A part is keyed by its id or its last cr- or k- class; the grid, its
+   two columns, the app bar and the tab bar are opened up and patched inside.
+   A part is compared with the markup it was drawn from (__kh), never with the
+   live page, which scripts change after (a fitted font size, an open fold). */
+var PATCH_OPEN = { 'cr-grid': 1, 'cr-side': 1, 'cr-main': 1, 'k-abar': 1, 'k-tabbar': 1 };
+var PATCH_RUNTIME = { 'cr-tabin': 1, 'k-more-r': 1, 'is-open': 1 };
+function partKey(el){
+  if (el.id) return '#' + el.id;
+  var cl = (el.getAttribute('class') || '').split(/\s+/).filter(function(c){ return !PATCH_RUNTIME[c]; });
+  for (var i = 0; i < cl.length; i++) if (PATCH_OPEN[cl[i]]) return cl[i];
+  var cr = cl.filter(function(c){ return /^cr-/.test(c); }), k = cl.filter(function(c){ return /^k-/.test(c); });
+  return cr.length ? cr[cr.length - 1] : k.length ? k[k.length - 1] : el.tagName;
+}
+/* A live figure gets a fresh id every time it is drawn (baller.js live());
+   the id alone is not a change, and the kept canvas goes on breathing. An id
+   that is drawn and not kept expires on its own. */
+function partHtml(el){ return el.outerHTML.replace(/ data-live="L\d+"/g, ''); }
+function stampParts(p){
+  for (var i = 0; i < p.children.length; i++) { var c = p.children[i]; if (PATCH_OPEN[partKey(c)]) { c.__kh = null; stampParts(c); } else c.__kh = partHtml(c); }
+}
+function patchParts(oldP, newP){
+  var olds = [].slice.call(oldP.children), news = [].slice.call(newP.children);
+  var out = news.map(function(n){
+    var k = partKey(n), o = null;
+    for (var i = 0; i < olds.length; i++) if (olds[i] && partKey(olds[i]) === k) { o = olds[i]; olds[i] = null; break; }
+    if (o && PATCH_OPEN[k] && o.tagName === n.tagName) {
+      if (o.getAttribute('class') !== n.getAttribute('class')) o.setAttribute('class', n.getAttribute('class') || '');
+      patchParts(o, n); return o;
+    }
+    var h = PATCH_OPEN[k] ? null : partHtml(n);
+    if (o && h !== null && o.__kh === h) return o;
+    if (o) o.remove();
+    if (PATCH_OPEN[k]) stampParts(n); else n.__kh = h;
+    return n;
+  });
+  olds.forEach(function(o){ if (o) o.remove(); });
+  out.forEach(function(el, i){ if (oldP.children[i] !== el) oldP.insertBefore(el, oldP.children[i] || null); });
+}
+function patchHtml(host, html){
+  if (!host.__life || !host.firstElementChild) { host.innerHTML = html; stampParts(host); host.__life = true; return; }
+  var t = document.createElement('div'); t.innerHTML = html;
+  patchParts(host, t);
+}
 function paintShell(L){
   var sh = shellEl(), k = C.colorsOf(L);
   K.theme(sh, k.primary, k.secondary);
-  sh.innerHTML = shellHtml(L);
+  sh.__life = !!sh.firstElementChild;
+  patchHtml(sh, shellHtml(L));
   sh.querySelectorAll('[data-ctab]').forEach(function(b){ b.onclick = function(){ goTab(b.getAttribute('data-ctab')); }; });
   var lb = $('cr-lookbtn'); if (lb) lb.onclick = function(){ openLook(); };
   var sn = $('cr-sound'); if (sn) sn.onclick = toggleSound;
@@ -2359,6 +2413,14 @@ function applyTab(){
   var root = $('s-car'), L = store().cur;
   if (root) root.setAttribute('data-ctab', ctab);
   if (L) paintShell(L);
+}
+/* A tab arrives on a short fade of what it shows, opacity alone: a transform
+   on an ancestor would pin the fixed tray to it. None with reduced motion. */
+function tabIn(){
+  if (window.matchMedia ? window.matchMedia('(prefers-reduced-motion:reduce)').matches : REDUCED) return;
+  var g = document.querySelector('#cr-body > .cr-grid');
+  if (!g) return;
+  g.classList.remove('cr-tabin'); void g.offsetWidth; g.classList.add('cr-tabin');
 }
 function goTab(t, back){
   var L = store().cur;
@@ -2376,6 +2438,7 @@ function goTab(t, back){
   else tab = 'log';
   render();
   window.scrollTo(0, m.y || 0);
+  tabIn();
   if (kb) { var b = $('cr-t-' + t); if (b) b.focus({ preventScroll: true }); }
 }
 
@@ -3670,16 +3733,16 @@ function render(){
   root.classList.toggle('cr-app', app);
   root.setAttribute('data-ctab', app ? ctab : '');
   if (app && onScreen()) guard();
-  if (view === 'vault') { body.innerHTML = vaultView(); wireVault(); }
+  if (view === 'vault') { body.__life = false; body.innerHTML = vaultView(); wireVault(); }
   else if (st.cur) {
     var d = stage.delta || null;
     stage.delta = null;
-    body.innerHTML = lifeView(st.cur, d);
+    patchHtml(body, lifeView(st.cur, d));
     paintShell(st.cur);
     wireLife(st.cur, d);
   }
-  else if (st.last) { body.innerHTML = finalView(st.last); wireFinal(st.last); }
-  else { body.innerHTML = buildView(); wireBuild(); }
+  else if (st.last) { body.__life = false; body.innerHTML = finalView(st.last); wireFinal(st.last); }
+  else { body.__life = false; body.innerHTML = buildView(); wireBuild(); }
   fitFacts(body);
   stickFit();
   /* The chip in the top bar says who you are mid-career and nothing otherwise:
