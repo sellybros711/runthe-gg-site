@@ -81,6 +81,12 @@ begin
     for each row execute function handle_new_user();
   insert into auth.users (id, raw_user_meta_data) values (signup, '{"username":"BoldCoach21"}'::jsonb);
   if (select username from profiles where id = signup) is not null then raise exception 'sign-up kept a guest style name'; end if;
+  insert into auth.users (id, raw_user_meta_data) values ('74747474-7474-4474-8474-747474747474', null);
+  if not exists (select 1 from profiles where id = '74747474-7474-4474-8474-747474747474' and username is null) then
+    raise exception 'sign-up with no username made no profile'; end if;
+  insert into auth.users (id, raw_user_meta_data) values ('75757575-7575-4575-8575-757575757575', '{"username":"realplayer9"}'::jsonb);
+  if (select username from profiles where id = '75757575-7575-4575-8575-757575757575') is distinct from 'realplayer9' then
+    raise exception 'sign-up lost an ordinary name'; end if;
 end $$;
 
 \echo 'usernames not guest names: all claims hold'

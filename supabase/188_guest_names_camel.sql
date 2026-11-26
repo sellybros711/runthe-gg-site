@@ -23,6 +23,10 @@
 -- KEEP IN STEP WITH arcade/board.js (ADJ, NOUN, generatedName). The lists and
 -- the arithmetic must match, or the page cannot find its own row to mark
 -- "(you)". scripts/check-arcade-names.mjs fails if they drift.
+--
+-- 190 reads the two word lists out of this function's text (its first two
+-- array literals) to refuse usernames in the guest style. Keep the lists as
+-- the first two arrays, or that guard goes quietly off.
 
 create or replace function public.rtg_guest_name(p uuid)
 returns text

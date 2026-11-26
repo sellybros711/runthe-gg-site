@@ -30,7 +30,9 @@
 
 -- ---------- 1) the pattern ----------------------------------------------------
 -- The two generators' word lists, read from their own source text: the first
--- array literal in a function is its adjectives, the second its nouns.
+-- array literal in a function is its adjectives, the second its nouns. If a
+-- generator is rewritten with another array before its lists, this guard goes
+-- quietly off (it fails open, never blocks a name), so 188 points here.
 create or replace function public.guest_name_words()
 returns table(adj text[], noun text[])
 language sql stable security definer set search_path = public, pg_catalog as $$
@@ -43,7 +45,7 @@ language sql stable security definer set search_path = public, pg_catalog as $$
         join pg_namespace s on s.oid = p.pronamespace and s.nspname = 'public'
         cross join lateral (
           select x.k, x.m[1] as lit
-            from regexp_matches(p.prosrc, 'array\[([^\]]+)\]', 'g') with ordinality as x(m, k)
+            from regexp_matches(p.prosrc, 'array\[([^\]]+)\]', 'gi') with ordinality as x(m, k)
         ) m
         cross join lateral regexp_split_to_table(m.lit, '\s*,\s*') as raw
         cross join lateral (select btrim(raw, E' \n\t''') as w) ww
@@ -113,10 +115,18 @@ grant  execute on function set_username(text) to authenticated;
 create or replace function handle_new_user()
 returns trigger
 language plpgsql security definer set search_path = public as $$
-declare uname text := nullif(new.raw_user_meta_data->>'username','');
+declare
+  uname text := nullif(new.raw_user_meta_data->>'username','');
+  guestish boolean := false;
 begin
+  -- The guest check can never stop a sign-up: on any error it counts as no.
+  begin
+    guestish := coalesce(public.username_guest_like(uname), false);
+  exception when others then
+    guestish := false;
+  end;
   if uname is not null and username_ok(uname)
-     and not public.username_guest_like(uname)
+     and not guestish
      and not exists (select 1 from profiles where username = uname) then
     insert into profiles (id, username) values (new.id, uname)
       on conflict (id) do nothing;
