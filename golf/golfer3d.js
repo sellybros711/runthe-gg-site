@@ -1160,6 +1160,8 @@
      own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
   const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
     ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppinvisible:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'}, ppemeraldspecs:{as:'shades',frame:'%',lens:'Q'},
+    // the Clockmaker’s Loupe (Frost Hollow): Drosselmeyer’s watchmaker’s eyeglass, one round glass in a brass rim
+    pploupe:{as:'monocle',frame:'g',lens:'E'},
     // the Glacier Glasses (the Himalayas): an old climber's round glacier glasses, dark lenses in a brass wire rim, leather side shields
     ppglacier:{as:'round',frame:'%',lens:'Q',strap:'&'},
     // the Frosted Specs (the Season 3 Tour Pass): round wire frames rimed with frost, pale ice lenses
@@ -2043,6 +2045,10 @@
     // the Bourdon Ball: the bronze of a great bell, warm and burnished, its two raised bands round it and a sheen up its shoulder
     // the Piece of Eight Ball: an old Spanish silver dollar gilded with the sea's years, its cross of the arms in relief and a milled
     // rim round its equator
+    // the Nutcracker Ball: Hoffmann's Nutcracker, his violet hussar's jacket with its rows of white braid across it and a gold
+    // button at each end
+    ppnutcracker:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const br=Math.abs(((p[2]+1)*3.5)%1-0.5);
+      if(br<0.11&&Math.abs(p[2])<0.75){ if(Math.abs(p[1])>0.55&&p[0]>0) return {c:P.b,gloss:3}; return {c:P.h,gloss:2}; } return {c:p[0]+p[2]>0.6?P.h:P.C,gloss:3}; } },
     // the Full Moon Ball: the Werewolf's full moon, pale and bright, its grey seas and a few craters with their pale rims
     ppfullmoon:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const cr=[[0.5,0.3,0.8],[-0.6,0.5,0.6],[0.2,-0.8,0.55],[-0.3,-0.4,-0.85],[0.8,-0.2,-0.5]];
       for(const q of cr){ const d=Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]); if(d<0.16) return {c:P.b,gloss:2}; if(d<0.21) return {c:P.h,gloss:3}; }

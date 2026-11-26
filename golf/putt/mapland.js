@@ -38,6 +38,7 @@ var PAL={
   clubhouse:{ g:['#5f9e45','#6cae4f','#79bb58','#86c663'], sp:[['#f6e8a8',.008],['#ffffff',.006]], tree:'round', leaf:['#24552a','#2f6d33','#3f8a3e','#5aa84c'], trunk:'#5a3d26', path:['#d9caa0','#e6d9b4'], water:['#2e6f9e','#3e86b8','#5aa3d3','#cfeaf7'], shadow:.62 },
   haunted:{ g:['#24223a','#2b2843','#322e4c','#3a3556'], sp:[['#4f4868',.03],['#5d3a5a',.008]], tree:'dead', leaf:['#0f1519','#172126','#22313a','#2f4249'], trunk:'#1a1418', path:['#6e6185','#82749a'], water:['#1f4a4a','#2a6058','#3a7a68','#7fb59a'], shadow:.55, fog:'#8a6fb8' },
   monster:{ g:['#22303a','#283840','#2e4046','#36484c'], sp:[['#4a4a62',.02],['#5a5a7a',.006]], tree:'dead', leaf:['#0f1519','#172126','#22313a','#2f4249'], trunk:'#1a1418', path:['#6e6a7a','#82808e'], water:['#1e3448','#24405a','#3a5a78','#5a86a4'], shadow:.55, fog:'#7a7ab8' },
+  frost:{ g:['#b8c8dc','#c6d4e4','#d4e0ee','#e2eaf4'], sp:[['#ffffff',.02],['#9fe8c8',.004]], tree:'pine', leaf:['#173d30','#21503e','#2c644d','#3b7a5c'], snow:'#f6f9fd', trunk:'#3a2a1e', path:['#8a9cb4','#9aacc2'], water:['#14304e','#1e4468','#3a6a94','#a6d3f0'], shadow:.6, fog:'#9fe8c8' },
   winter:{ g:['#d4e1ee','#dde8f3','#e7eff8','#f3f7fc'], sp:[['#c2d0e0',.02],['#ffffff',.02]], tree:'pine', leaf:['#173d30','#21503e','#2c644d','#3b7a5c'], snow:'#f6f9fd', trunk:'#4a3626', path:['#a9b9ca','#bccad8'], water:['#8cc0e2','#a3cdea','#c0def3','#eaf5fc'], shadow:.72 },
   beach:{ g:['#e2c47c','#eacf8c','#f1da9c','#f6e5b6'], sp:[['#fff6dc',.02],['#c9a964',.012]], tree:'palm', leaf:['#256b31','#2f8139','#3f9a46','#5bb352'], trunk:'#8a6a3e', path:['#8f6539','#a8794a'], water:['#165f86','#1f7aa6','#2e95c2','#55b6db'], shadow:.7 },
   tour:{ g:['#3f7f37','#468a3c','#4f9643','#59a24a'], sp:[['#e9f0c0',.004]], tree:'round', leaf:['#1d4a24','#265c2c','#327236','#428a41'], trunk:'#4a3220', path:['#c7b88f','#d6c8a0'], water:['#2b6a95','#357fae','#4d97c6','#cfe8f5'], shadow:.62 },
@@ -235,6 +236,23 @@ WORLD.monster=function(P,th,seed){
   for(var yy=24;yy<P.h;yy+=44){ var lx=P.pathX(yy); if(lx!=null)lamp(P,lx-6,yy,1); }
   for(var k=0;k<4;k++){ var p=spot(P,P.w*(.2+.6*hash(k,3,seed)),P.h*hash(k,4,seed),4,4,6,tk); if(p){ P.ell(p[0]+2,p[1]+2,1.6,1.4,function(a,b){ P.set(a,b,hex('#e8781f')); }); } }
   fog(P,th.fog,9,.4);
+};
+/* Frost Hollow (the Members Tour): deep snow under the northern lights, a frozen river with skating marks winding across, the Snow
+   Queen's palace of driven snow with its windows lit green, a little town of snowy roofs, snowy firs, street lamps along the path,
+   and snow falling */
+WORLD.frost=function(P,th,seed){
+  var tk=[], ry=P.h*.55;
+  var river=function(x,y){ var cy=ry+Math.sin(x*.045+.7)*9+fbm(x*.04,0,7)*6; return (5-Math.abs(y-cy))/5; };
+  water(P,th,function(x,y){ return P.pathD(x,y)<5?-1:river(x,y); },7,false);
+  for(var i=0;i<70;i++){ var x=hash(i,3,seed)*P.w, y=ry+(hash(i,4,seed)-.5)*16; if(river(x,y)>.2)P.set(x|0,y|0,hex('#e6f6fe')); }   // the ice and its skating marks
+  for(var y0=0;y0<P.h;y0++)for(var x0=0;x0<P.w;x0++)if(P.pathD(x0,y0)<4&&river(x0,y0)>-.3)P.set(x0,y0,hex((x0+y0)%3?'#c8d6e6':'#a8bacd'));   // the path crosses on the ice
+  var c=spot(P,P.w*.7,P.h*.16,24,16,8,tk); if(c)building(P,c[0],c[1]+10,24,16,{ wall:'#e4ecf6', roof:'#ffffff', win:'#9fe8c8', snow:'#ffffff', glow:1 });
+  var t1=spot(P,P.w*.24,P.h*.3,14,10,8,tk); if(t1)building(P,t1[0],t1[1],14,10,{ wall:'#7a4e30', roof:'#f3f7fc', win:'#ffd77a', snow:'#ffffff', glow:1 });
+  var t2=spot(P,P.w*.3,P.h*.82,12,9,8,tk); if(t2)building(P,t2[0],t2[1],12,9,{ wall:'#6a4026', roof:'#e7eff8', win:'#ffd77a', snow:'#ffffff', glow:1 });
+  forest(P,th,function(x,y){ var n=fbm(x*.045,y*.045,14); return n>.6?.8:x<P.vx0-4||x>P.vx1+4?.92:.04; },seed+11,function(x,y){ return P.pathD(x,y)<8||river(x,y)>-.2||P.clear(x,y,tk); },8,6);
+  for(var yy=24;yy<P.h;yy+=44){ var lx=P.pathX(yy); if(lx!=null)lamp(P,lx-6,yy,1); }
+  for(var y2=0;y2<P.h;y2++)for(var x2=0;x2<P.w;x2++)if(hash(x2,y2,seed+77)<.004)P.set(x2,y2,[255,255,255]);   // falling snow
+  fog(P,th.fog,9,.25);
 };
 WORLD.winter=function(P,th,seed){
   var tk=[];

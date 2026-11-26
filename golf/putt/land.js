@@ -277,6 +277,52 @@ window.RTT_PUTT_LAND = (function(){
     };
   };
 
+  /* ---------------- FROST HOLLOW (the Members Tour): the Snow Queen's palace behind the hole, its halls of driven snow round topped
+     and drifted and their windows of ice lit green by the northern lights, a path trodden in the snow up from the tee, snowy firs,
+     a frozen pond with a few reeds through the ice, and street lamps along the path. Andersen's palace is snow, never crystal: an
+     original place, nothing from any film. */
+  BUILD.frost = function(L){
+    var C = L.C, E = L.E, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
+    var hall = spotRect(14, 5, function(x, y){ return north(x, y) * 1.5 - Math.abs(x - L.cx) * 0.25; });
+    var pond = spot(2.6, function(x, y){ return -Math.abs(y - L.cy) * 0.3 + Math.abs(x - L.cx) * 0.4; });
+    var tee = C.tee, door = hall ? [hall.x, hall.y + hall.d / 2] : null;
+    var paths = [L.route([tee[0] + (tee[0] < L.cx ? -1 : 1) * 0.5, E[3] + 1], [tee[0], P1[1] + 1.4], seed, 1.5)];
+    if (door) paths.push(L.route([door[0], door[1] + 0.2], [tee[0], P1[1] + 1.4], seed + 3, 1.2));
+    var firs = []; for (var i = 0; i < 22; i++){ var t = spot(1.0 + hash(i, seed, 4) * 0.7, function(x, y){ return north(x, y) * 0.7 + Math.min(L.far(x, y), 5) * 0.5 + L.side(x) * 4; }); if (t) firs.push(t); }
+    var lamps = [], pp = paths[paths.length - 1];
+    for (i = 1; i < pp.length - 1; i += 2){ var p = pp[i], q = pp[i + 1], dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1, sd = i % 4 === 1 ? 1 : -1, lx = p[0] - dy / l * 1.3 * sd, ly = p[1] + dx / l * 1.3 * sd; if (clearAt(lx, ly) > 0.8) lamps.push([lx, ly]); }
+    var dP = paths.map(function(q){ return L.dist(q); });
+    function onPath(x, y){ for (var k = 0; k < dP.length; k++) if (dP[k](x, y) < (k ? 0.7 : 0.85)) return true; return false; }
+    function pondD(x, y){ return pond ? 1 - Math.hypot((x - pond.x) / pond.r, (y - pond.y) / (pond.r * 0.75)) + (fbm(x * 0.6, y * 0.6, seed + 9) - 0.5) * 0.4 : -1; }
+    return {
+      h:function(x, y){ var z = (fbm(x * 0.06, y * 0.06, seed) - 0.45) * 2.6 * sm(1.5, 7, clearAt(x, y));
+        if (hall){ var ddx = Math.max(0, Math.abs(x - hall.x) - hall.w / 2), ddy = Math.max(0, Math.abs(y - hall.y) - hall.d / 2), d = Math.hypot(ddx, ddy); z = z * sm(0, 3, d) + 0.4 * (1 - sm(0, 3, d)); }
+        var b = pondD(x, y); if (b > 0) z = Math.min(z, -0.08); else if (b > -0.25) z = Math.min(z, 0.05 + b);
+        if (onPath(x, y)) z -= 0.06; return z; },
+      mat:function(x, y){ var b = pondD(x, y); if (b > 0) return ['ice', { dep:b }]; if (onPath(x, y)) return ['trod']; return ['snow']; },
+      build:function(B){
+        if (hall){ var x0 = hall.x - hall.w / 2, y0 = hall.y - hall.d / 2 + 0.6, y1 = hall.y + hall.d / 2 - 0.6, zb = B.gz(hall.x, hall.y), WH = 6.2;
+          var domes = [[hall.x, WH, hall.w * 0.22], [x0 + hall.w * 0.18, WH * 0.72, hall.w * 0.16], [x0 + hall.w * 0.82, WH * 0.8, hall.w * 0.16]];
+          B.solid(x0 - 0.5, y0 - 0.5, zb - 0.2, x0 + hall.w + 0.5, y1 + 0.5, zb + WH + 0.4, function(px, py, pz){ var tt = pz - zb;
+            for (var k = 0; k < 3; k++){ var D = domes[k], r = Math.hypot((px - D[0]) / D[2], tt / D[1]); if (r >= 1) continue;
+              if (py > y1 - 0.35 && Math.abs(px - D[0]) < 0.6 && tt < D[1] * 0.3) return k ? '#1e3450' : '#14243a';   // a door of cutting wind
+              if (py > y1 - 0.35 && Math.abs(((px - D[0]) * 0.8 + 20) % 1.4 - 0.7) < 0.2 && Math.abs(tt - D[1] * 0.56) < 0.4) return (Math.floor(tt * 3 + px) % 2) ? '#9fe8c8' : '#cfeafa';   // windows of ice, lit green
+              if (r > 0.92) return tt > D[1] * 0.55 ? '#ffffff' : '#dfe8f2'; var dr = vn(px * 1.3, tt * 1.1, seed + k); return dr > 0.66 ? '#ffffff' : dr < 0.3 ? '#cddcec' : '#eaf0f8'; }
+            if (tt < 1.6 && py > y0 && py < y1 && px > x0 && px < x0 + hall.w){ var dd = vn(px * 0.9, py * 0.9, seed + 7); return tt < 0.6 + dd * 1.0 ? (dd > 0.6 ? '#ffffff' : '#e4ecf6') : null; }   // the drifts banked between the halls
+            return null; }); }
+        firs.forEach(function(t, i){ pineAt(B, t.x, t.y, t.r * 0.8, i + seed); });
+        if (pond) for (var k2 = 0; k2 < 5; k2++){ var ra = hash(k2, seed, 31) * 6.28, rr = pond.r * (0.55 + hash(k2, seed, 32) * 0.3), rx = pond.x + Math.cos(ra) * rr, ry = pond.y + Math.sin(ra) * rr * 0.75, rz = B.gz(rx, ry);
+          B.solid(rx - 0.2, ry - 0.2, rz, rx + 0.2, ry + 0.2, rz + 1.1, function(px, py, pz){ return Math.hypot(px - rx, py - ry) < 0.05 + (hash(px * 30 | 0, py * 30 | 0, 3) < 0.3 ? 0.04 : 0) ? (pz - rz > 0.85 ? '#6a4a2a' : '#b8a878') : null; }); }   // a few frozen reeds
+        lamps.forEach(function(l){ lamp(B, l[0], l[1], '#1e2230', '#ffd27a'); });
+      },
+      fill:{ on:['snow'], trees:0.5, lows:0.28, tree:function(B, x, y, i){ pineAt(B, x, y, 0.8 + hash(i, seed, 24) * 0.6, i); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 25); if (k < 0.55) bush(B, x, y, 0.42, ['#f6f9fd', '#e4edf6', '#2a6450']); else if (k < 0.8) rockAt(B, x, y, 0.38, ['#e4edf6', '#8a8f99']); else pineAt(B, x, y, 0.35, i); } },
+      gain:1.2, fog:function(x, y){ return fbm(x * 0.11 + y * 0.03, y * 0.18, seed + 21); }, fogCol:'#9fe8c8',
+      mats:{ snow:['#dfe8f4', '#eef4fa', '#cfdcea', 0.16], trod:['#b8c8dc', '#c6d4e4', '#a8bad0', 0.25],
+        ice:['#a8d0ec', '#d8eefa', '#8ac0e4', 0.08, function(c, R){ return R((c.dep || 0) < 0.12 ? '#8ac0e4' : (((c.ti * 3 + c.tj * 7) % 23) === 0 ? '#d8eefa' : '#a8d0ec')); }] }
+    };
+  };
+
   /* ---------------- SEASHELL SHORES: the shore behind the hole, a lighthouse on the point, dunes and a boardwalk in front */
   BUILD.beach = function(L){
     var E = L.E, P0 = L.P0, seed = L.seed, clearAt = L.clearAt, spot = L.spot;
