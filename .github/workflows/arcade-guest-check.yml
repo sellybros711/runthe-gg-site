@@ -2,10 +2,12 @@ name: Arcade guest board check
 
 # A guest's run reaches the arcade's daily board through /api/arcade-guest and
 # supabase/185, never through a Supabase anonymous sign-in. This runs the
-# Function with Supabase faked, and 185 against a real Postgres.
+# Function with Supabase faked, and 185 against a real Postgres. It also holds
+# the guest name generator (188) to its copy in arcade/board.js.
 #
 # Runnable locally:
 #   node scripts/check-arcade-guest.mjs
+#   node scripts/check-arcade-names.mjs
 #   (the SQL half: see the header of supabase/test/arcade_guest_server_test.sql)
 #
 # No secrets, no network, no deploy.
@@ -18,6 +20,10 @@ on:
       - 'supabase/185_arcade_guest_runs_server.sql'
       - 'supabase/test/arcade_guest_server_test.sql'
       - 'scripts/check-arcade-guest.mjs'
+      - 'supabase/188_guest_names_camel.sql'
+      - 'supabase/test/guest_names_test.sql'
+      - 'arcade/board.js'
+      - 'scripts/check-arcade-names.mjs'
       - '.github/workflows/arcade-guest-check.yml'
   push:
     branches: [main]
@@ -27,6 +33,10 @@ on:
       - 'supabase/185_arcade_guest_runs_server.sql'
       - 'supabase/test/arcade_guest_server_test.sql'
       - 'scripts/check-arcade-guest.mjs'
+      - 'supabase/188_guest_names_camel.sql'
+      - 'supabase/test/guest_names_test.sql'
+      - 'arcade/board.js'
+      - 'scripts/check-arcade-names.mjs'
       - '.github/workflows/arcade-guest-check.yml'
   workflow_dispatch: {}
 
@@ -45,6 +55,8 @@ jobs:
           node-version: '22'
       - name: The Function, with Supabase faked
         run: node scripts/check-arcade-guest.mjs
+      - name: The guest name generator, page and SQL alike
+        run: node scripts/check-arcade-names.mjs
       - name: Start Postgres
         run: |
           sudo systemctl start postgresql.service
@@ -62,3 +74,5 @@ jobs:
             $P -f supabase/$f.sql
           done
           $P -f supabase/test/arcade_guest_server_test.sql
+      - name: supabase/188, the guest name style, against a real Postgres
+        run: psql -X -q -v ON_ERROR_STOP=1 -d gst -f supabase/test/guest_names_test.sql
