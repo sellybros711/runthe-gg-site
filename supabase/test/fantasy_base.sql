@@ -15,6 +15,11 @@ create table auth.session (uid uuid);
 create or replace function auth.uid() returns uuid
   language sql stable security definer as $$ select uid from auth.session limit 1 $$;
 grant usage on schema auth to anon, authenticated;
+/* auth.jwt() as Supabase has it: the caller's claims. Empty unless a test sets them, which is
+   a full account or the server. 186 reads is_anonymous from it (contests_need_account_test). */
+create table auth.claims (c jsonb);
+create or replace function auth.jwt() returns jsonb
+  language sql stable as $$ select coalesce((select c from auth.claims limit 1), '{}'::jsonb) $$;
 
 create or replace function public.become(p uuid) returns void
   language sql as $$ delete from auth.session; insert into auth.session values (p); $$;
