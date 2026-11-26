@@ -140,7 +140,10 @@ const BASE = {};
     ok(!!chip, 'the read chip is up in flight' + (chip ? ': ' + JSON.stringify(chip) : ''));
     if (chip && pop) ok(chip.y + chip.h <= pop.y || chip.y >= pop.y + pop.h || chip.x + chip.w <= pop.x || chip.x >= pop.x + pop.w, 'the chip and the caption do not touch');
     ok(Math.abs(out.timing - BASE[seed]) < 50, 'tap to result is the board\'s: ' + Math.round(out.timing) + ' ms against ' + Math.round(BASE[seed]) + ' ms');
-    ok(kind === 'win' ? Math.abs(out.timing - 9200) < 300 : Math.abs(out.timing - 8300) < 300, 'and the retry is as fast as before (' + (kind === 'win' ? '9.2' : '8.3') + ' s)');
+    /* the starter's own length on these seeds, on page time: 9.2 and 8.3 s
+       until 2026-11-26, 8.7 and 7.8 since the Pin-down rolls O5 and the read
+       takes the ball to him (a slow beat at the read included) */
+    ok(kind === 'win' ? Math.abs(out.timing - 8700) < 300 : Math.abs(out.timing - 7800) < 300, 'and the retry is as fast as before (' + (kind === 'win' ? '8.7' : '7.8') + ' s)');
     ok(await page.isVisible('#sheet.on') && await page.isVisible('#court'), 'the card comes up on the court');
   }
   // back to the clipboard: the 3D goes with the court

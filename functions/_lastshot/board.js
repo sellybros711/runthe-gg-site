@@ -20,6 +20,7 @@ import { fitView, sizeCanvas, courtLines } from './view.js';
 import { COURT, dist } from './court-geo.js';
 import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf, beatOf, framesOf, stepsBefore, stepsThrough, addToFrame } from './playbook.js';
 import { startSpots, targetFor } from './defense.js';
+import { optionsOf } from './reads.js';
 
 const HIT = 3.4;          // feet: how close a tap must land to a player
 const MIN_ROUTE = 2.5;    // feet: shorter than this is a tap, not a route
@@ -189,6 +190,9 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
       drawO(ctx, V.px(start[id]), id, { ball: id === holder0, picked: pickFrom === id });
     }
     if (holder !== holder0 && !shooterOf(p)) ring(ctx, V.px(now[holder]), '#E8742A');
+    /* the scoring options (reads.js), numbered where each one catches it, on
+       the frame where the play ends. Drawn only: nothing to tap. */
+    if (beat >= lastBeat() && p.steps.length) for (const o of optionsOf(S, p)) badge(ctx, V.px(o.at), o.n, o.call);
     ui.changed(p, { beat, frames: frameCount });
   }
 
@@ -345,6 +349,14 @@ function drawO(ctx, p, id, o = {}) {
   if (o.ball && !o.ghost) { ctx.fillStyle = '#E8742A'; ctx.beginPath(); ctx.arc(p.x + 10, p.y - 10, 5, 0, Math.PI * 2); ctx.fill(); }
   ctx.globalAlpha = 1;
   if (o.picked) ring(ctx, p, '#E8742A');
+}
+/* An option's number, up and left of where he ends (the ball dot sits up and right). */
+function badge(ctx, p, n, call) {
+  const x = p.x - 14, y = p.y - 14;
+  ctx.fillStyle = call ? '#E8742A' : '#22324d'; ctx.strokeStyle = '#fbfaf6'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = '800 11px Outfit, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(n), x, y + 0.5);
 }
 function ring(ctx, p, c) { ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, 17, 0, Math.PI * 2); ctx.stroke(); }
 function drawX(ctx, p) {
