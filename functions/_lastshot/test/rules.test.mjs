@@ -24,6 +24,9 @@ const PIN = [
 ];
 // O2 to the block, a two
 const TWO = [{ kind: 'move', who: 'O2', pts: [P(30, 12)] }, { kind: 'pass', from: 'O1', to: 'O2' }, { kind: 'shoot', who: 'O2' }];
+// O1 takes it to the block himself: a play with no action has no other
+// option to read (reads.js), so it is a two every time
+const TWO_SELF = [{ kind: 'move', who: 'O1', pts: [P(28, 12)] }, { kind: 'shoot', who: 'O1' }];
 
 function runs(sc, play, n = 300, opt) {
   const out = [];
@@ -53,7 +56,7 @@ test('down 3: a made two is not enough', () => {
 
 test('down 2: a two at the horn goes to overtime, a coin flip', () => {
   const sc = scenarioFor(SC, { down: 2 });
-  const late = runs(sc, { spots: spots(), steps: TWO, goAt: 5 }, 500).filter(r => r.shot && r.shot.made && r.shotAt < sc.winWindow);
+  const late = runs(sc, { spots: spots(), steps: TWO_SELF, goAt: 6 }, 500).filter(r => r.shot && r.shot.made && r.shotAt < sc.winWindow);
   assert.ok(late.length > 50, 'late made twos ' + late.length);
   for (const r of late) { assert.equal(r.how, 'ot'); assert.equal(r.ot.after, 'end'); assert.equal(r.us, r.them); }
   const won = late.filter(r => r.outcome === 'win').length / late.length;
@@ -66,7 +69,7 @@ test('down 2: a two at the horn goes to overtime, a coin flip', () => {
 
 test('tied with time left: their ball, then a loss or overtime', () => {
   const sc = scenarioFor(SC, { down: 2 });
-  const early = runs(sc, { spots: spots(), steps: TWO }, 500).filter(r => r.shot && r.shot.made && r.shotAt >= sc.winWindow);
+  const early = runs(sc, { spots: spots(), steps: TWO_SELF }, 500).filter(r => r.shot && r.shot.made && r.shotAt >= sc.winWindow);
   assert.ok(early.length > 20);
   for (const r of early) {
     assert.ok(r.answer, 'their ball');

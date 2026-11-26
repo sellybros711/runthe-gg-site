@@ -15,6 +15,17 @@
  * ball and the rim. Nobody helps off the SG. The helper's own man is the one
  * left open, which is the whole point of a drive and kick.
  *
+ * THE TAG (2026-11-26). A cutter coming free (on the move, his own man
+ * tagGap feet or more behind him and trailing, not sat rim side, after
+ * tagDelay) gets a tag from the
+ * nearest defender within tagReach: never the man on the ball, never the
+ * one on the SG, never a man going under (that concedes the jumper on
+ * purpose). The tagger steps into the cutter's path, tagOff feet off him
+ * rim side, until the cutter's own man is back (tagHold seconds after) or
+ * the ball goes to the tagger's own man, who is the one left open. That is
+ * what the read (sim.js, reads.js) sees: the primary covered, the tagger's
+ * man free. A zone does not tag: it sits.
+ *
  * ONE SCREEN SCHEME is rolled per possession and revealed on the result. Each
  * has a strength and a price:
  *   switch  the screener's man takes the cutter. No gap at the screen, but
@@ -47,7 +58,7 @@ import { isAreaZone } from './scenario.js';
 export const ZONE_SHAPES = Object.freeze({
   zone23: { X1: { x: 18, y: 21 }, X2: { x: 32, y: 21 }, X3: { x: 10, y: 9 }, X4: { x: 40, y: 9 }, X5: { x: 25, y: 7 } },
   zone131: { X1: { x: 25, y: 29 }, X2: { x: 39, y: 18 }, X3: { x: 11, y: 18 }, X4: { x: 25, y: 16 }, X5: { x: 25, y: 5.5 } },
-  zone32: { X1: { x: 25, y: 27 }, X2: { x: 39, y: 20 }, X3: { x: 11, y: 20 }, X4: { x: 19, y: 8 }, X5: { x: 31, y: 8 } }
+  zone32: { X1: { x: 25, y: 27 }, X2: { x: 39, y: 20 }, X3: { x: 12, y: 19 }, X4: { x: 19, y: 8 }, X5: { x: 31, y: 8 } }
 });
 
 /* Where a zone defender stands. Sets x.man to the man he has, so help, the
@@ -94,6 +105,10 @@ export function targetFor(x, st, T) {
   if (x.freezeT > 0 && x.pos) return { ...x.pos };
   if (isAreaZone(st.scheme) && !(st.help && st.help.x === x.id)) return zoneTarget(x, st, T);
   if (st.help && st.help.x === x.id) return { ...st.help.spot };
+  if (st.tag && st.tag.x === x.id && st.tag.spot) {
+    const f = st.ball.flight;
+    if (!(f && !f.lost && f.to === x.man)) return { ...st.tag.spot };
+  }
   if (x.showT > 0 && x.showOn) return showSpot(st, x.showOn);
 
   const man = st.O[x.man], b = ballPos(st);
@@ -149,7 +164,56 @@ export function screens(st, T) {
     x.freezeT = Math.max(0, (x.freezeT || 0) - dt);
   }
   helpCheck(st, T, dt);
+  tagCheck(st, T, dt);
   return null;
+}
+
+function tagCheck(st, T, dt) {
+  if (!(T.tagGap > 0) || isAreaZone(st.scheme) || st.shot) { st.tag = null; st.tagT = 0; return; }
+  const H = st.ball.holder, fl = st.ball.flight;
+  // the cutter coming free the most
+  let best = null, bg = 0;
+  if (H) for (const id of Object.keys(st.O)) {
+    const o = st.O[id];
+    // a cutter, not a screener on his way to set one
+    if (id === H || !o.path.length || o.pending || (o.spd || 0) < (T.tagSpeed ?? 6)) continue;
+    const xc = defenderOf(st, id);
+    // only a man trailing him: going under, or a switch that sits rim side, is a choice, not a beat
+    if (!xc || xc.underT > 0 || dist(xc.pos, COURT.RIM) < toRim(o.pos) - 1) continue;
+    const g = dist(xc.pos, o.pos);
+    if (g >= T.tagGap && g > bg) { bg = g; best = id; }
+  }
+  const tg = st.tag;
+  if (tg) {
+    const xc = defenderOf(st, tg.on), back = xc && dist(xc.pos, st.O[tg.on].pos) < (T.tagBack ?? 3.5);
+    const toMine = fl && !fl.lost && st.X.some(x => x.id === tg.x && x.man === fl.to);
+    if (toMine) { st.tag = null; st.tagT = 0; return; }
+    if (best && best !== tg.on && bg > dist(defenderOf(st, tg.on).pos, st.O[tg.on].pos)) { st.tag = null; st.tagT = 0; }
+    else if (back) tg.left -= dt; else tg.left = T.tagHold ?? 0.6;
+    if (!st.tag || tg.left <= 0) { st.tag = null; st.tagT = 0; }
+    else { tg.spot = tagSpot(st, tg.on, T); return; }
+  }
+  if (!best) { st.tagT = 0; return; }
+  st.tagT = (st.tagT || 0) + dt;
+  if (st.tagT < (T.tagDelay ?? 0.15)) return;
+  const xc = defenderOf(st, best), xh = defenderOf(st, H), C = st.O[best].pos;
+  // the screener's man has the screener (he shows, or switches): the tag comes from elsewhere
+  const scr = (st.uses || []).filter(u => u.cutter === best).map(u => u.screener);
+  let who = null, wd = T.tagReach ?? 14;
+  for (const x of st.X) {
+    if (x === xc || x === xh || st.O[x.man].arch === 'SG' || scr.includes(x.man) || (st.help && st.help.x === x.id)) continue;
+    const d = dist(x.pos, C);
+    if (d < wd) { wd = d; who = x; }
+  }
+  if (who) st.tag = { x: who.id, on: best, left: T.tagHold ?? 0.6, spot: tagSpot(st, best, T) };
+}
+
+/* In the cutter's path: tagOff feet off him toward the rim, a beat ahead of
+   where he is heading. */
+function tagSpot(st, oid, T) {
+  const o = st.O[oid], v = o.vel || { x: 0, y: 0 }, R = COURT.RIM;
+  const a = { x: o.pos.x + v.x * 0.25, y: o.pos.y + v.y * 0.25 }, L = toRim(a) || 1, g = Math.min(T.tagOff ?? 2.5, L * 0.6);
+  return { x: a.x + (R.x - a.x) / L * g, y: a.y + (R.y - a.y) / L * g };
 }
 
 function helpCheck(st, T, dt) {
@@ -157,9 +221,22 @@ function helpCheck(st, T, dt) {
   let att = null, A = null;
   if (st.ball.holder) { att = st.ball.holder; A = st.O[att].pos; }
   else if (fl && !fl.lost) { att = fl.to; A = fl.b; }
-  const xd = att ? defenderOf(st, att) : null;
-  const inside = A && toRim(A) <= (T.helpZone ?? 13);
-  const beaten = inside && xd && (xd.holdT > 0 || xd.freezeT > 0 || dist(xd.pos, R) > toRim(A) - 0.5 || dist(xd.pos, A) > 5);
+  const lost = (x, P) => x.holdT > 0 || x.freezeT > 0 || dist(x.pos, R) > toRim(P) - 0.5 || dist(x.pos, P) > 5;
+  let xd = att ? defenderOf(st, att) : null;
+  let inside = A && toRim(A) <= (T.helpZone ?? 13);
+  /* THE LOW MAN TAGS THE ROLL (2026-11-26): with the ball outside, a man
+     rolling or cutting inside helpZone with his own defender lost draws the
+     help before the pass, as a coach teaches it. His man is the one left. */
+  if (!inside && st.ball.holder && (T.rollHelp ?? true)) {
+    let bd = Infinity;
+    for (const id of Object.keys(st.O)) {
+      const o = st.O[id], xo = defenderOf(st, id);
+      if (id === st.ball.holder || !o.path.length || o.pending || (o.spd || 0) < 6 || !xo) continue;
+      const d = toRim(o.pos);
+      if (d <= (T.helpZone ?? 13) && d < bd && lost(xo, o.pos)) { bd = d; att = id; A = o.pos; xd = xo; inside = true; }
+    }
+  }
+  const beaten = inside && xd && lost(xd, A);
   if (!beaten || st.shot) { st.helpT = 0; st.help = null; return; }
   st.helpT = (st.helpT || 0) + dt;
   if (st.helpT < (T.helpDelay ?? 0.25)) return;
