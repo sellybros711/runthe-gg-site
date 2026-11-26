@@ -330,9 +330,9 @@ for (const [label, viewport] of [['phone', { width: 390, height: 844 }], ['deskt
   }
   ok(seen.every(x => x.isClubSpin && /^\d{4}s$/.test(x.era) && x.n >= 6 && x.open >= 1), `${label}: eleven spins, each a club and a decade with a man to draft`);
   ok(seen.every(x => x.header === `${x.club.toUpperCase()} ${x.era}`), `${label}: the squad header names the club and decade (${seen[0].header})`);
-  const picks = await page.evaluate(() => gs.picks.map(pk => ({ k: RTPClub.personKey(pk.player), id: pk.player.player_id, real: !!playerById(pk.player.player_id) })));
+  const picks = await page.evaluate(() => gs.picks.map(pk => ({ k: RTPClub.personKey(pk.player), id: pk.player.player_id, real: !!playerById(pk.player.player_id) || (/^Q\d+$/.test(pk.player.player_id) && pk.player.club_side.rated === 'rule') })));
   ok(new Set(picks.map(p => p.k)).size === 11, `${label}: eleven different men drafted`);
-  ok(picks.every(p => p.real), `${label}: every pick is a real player id the boards can resolve`);
+  ok(picks.every(p => p.real), `${label}: every pick is a World Cup player's id or a club pool man's (the two kinds the season board accepts)`);
   // the reveal, then the season
   await page.waitForFunction(() => { const b = document.getElementById('btn-reveal-go'); return b && b.classList.contains('show'); }, null, { timeout: 60000 });
   said.push(await visibleText(page));
