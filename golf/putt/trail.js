@@ -82,9 +82,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', lochness:'lanterns', himalayas:'lanterns', pacific:'lanterns', bigtop:'lanterns', london:'gas lamps', notredame:'candles', treasure:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns', monster:'candles' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', crystara:'beacons', jellara:'lanterns', oz:'lanterns', cyclops:'braziers', medusa:'braziers', underworld:'braziers', olympus:'braziers', wonderland:'lanterns', lookingglass:'lanterns', beanstalk:'lanterns', mississippi:'lanterns', lochness:'lanterns', himalayas:'lanterns', pacific:'lanterns', bigtop:'lanterns', london:'gas lamps', notredame:'candles', treasure:'lanterns', candy:'lanterns', haunted:'candles', harvest:'lanterns', monster:'candles', frost:'lanterns' };
 var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], crystara:['#9ff0ff', '#ffffff'], jellara:['#ff8ad0', '#fff0f8'], oz:['#5affa0', '#eafff2'], cyclops:['#ffb050', '#fff2c8'], medusa:['#9affc8', '#eafff4'], underworld:['#b8a8ff', '#f0ecff'], olympus:['#ffd860', '#fffbe8'], wonderland:['#ff9ab8', '#fff0f4'], lookingglass:['#c8d8ff', '#ffffff'], beanstalk:['#ffe08a', '#fffbe8'], mississippi:['#ffd860', '#fff6dc'], lochness:['#ffe08a', '#fffbe8'], himalayas:['#ffc860', '#fff6dc'], pacific:['#ffb050', '#fff2c8'], bigtop:['#ffd860', '#fffbe8'], london:['#ffe6a0', '#fffaf0'], notredame:['#ffd890', '#fff4e0'], treasure:['#ffd070', '#fff4d8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', lochness:'rock', himalayas:'rocksnow', pacific:'rock', bigtop:'rock', london:'rock', notredame:'rock', treasure:'rock', volcano:'rockdark', haunted:'rockdark', monster:'rockdark' };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', crystara:'rockcrys', jellara:'rockjel', oz:'rock', cyclops:'rock', medusa:'rock', underworld:'rockdark', olympus:'rock', wonderland:'rock', lookingglass:'rock', beanstalk:'rock', mississippi:'rock', lochness:'rock', himalayas:'rocksnow', pacific:'rock', bigtop:'rock', london:'rock', notredame:'rock', treasure:'rock', volcano:'rockdark', haunted:'rockdark', monster:'rockdark', frost:'rocksnow' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -262,7 +262,12 @@ var KIT = {
   // the moat for the water and the Golem's wet clay for the slow ground
   monster:{ g:['#2e4a3a', '#36543e', '#284234', 0.2], p:['#6e6a7a', '#7e7a8a', '#5e5a6a'], paved:true, tree:['dead', 'pine', 'dead'], leaves:['#1e3a2e', '#24443a', '#183026'], bark:'#2e2a2e',
     low:['mcurnlow', 'mcarmourlow', 'rockdark'], brk:'pumpkin', haz:'slow', hazC:['#9a6a44', '#7a5236'], waterC:['#1e3448', '#5a86a4'], seaC:['#1e3448', '#5a86a4'], bogC:['#9a6a44', '#7a5236'], lm:['mcTowerLm', 'mcGateLm', 'mcOakLm'], wall:['#8a8698', '#3a3646'],
-    npc:{ skin:'light', polo:'navy', hat:'black', pants:'grey', hair:'grey', hairStyle:'short', cap:false, gender:'female' }, who:'the housekeeper' }
+    npc:{ skin:'light', polo:'navy', hat:'black', pants:'grey', hair:'grey', hairStyle:'short', cap:false, gender:'female' }, who:'the housekeeper' },
+  // Frost Hollow: deep snow under the northern lights, a path trodden through it, snowy firs, street lamps and a sled left by the
+  // path, open water for the water and deep snow for the slow ground
+  frost:{ g:['#e4ecf6', '#f0f5fb', '#d4e0ee', 0.18], p:['#b8c8dc', '#c8d6e6', '#a6b8ce'], paved:false, tree:['pine', 'pine', 'pine'], leaves:['#1e4a3a', '#245440', '#183e30'], bark:'#3a2a1e', snow:true,
+    low:['fhlamplow', 'bushsnow', 'fhsledlow', 'rocksnow'], brk:'ice', haz:'slow', hazC:['#f4f8fc', '#d8e4f0'], waterC:['#14304e', '#6aa8d8'], seaC:['#14304e', '#6aa8d8'], bogC:['#f4f8fc', '#d8e4f0'], lm:['fhPalaceLm', 'fhClockLm', 'fhNutLm'], wall:['#e4ecf6', '#7a90a8'],
+    npc:{ skin:'light', polo:'red', hat:'navy', pants:'navy', hair:'brown', hairStyle:'short', cap:true, gender:'male' }, who:'the lamplighter' }
 };
 /* A WORLD'S WALKS TRAVEL WITH ITS HOLES. Pirate Cove's holes go beach, town, jungle, Skull Rock, cove (land.js), and the walks
    between them go the same way: putt.js names the stop (spec.kitAs), and the walk is planned with that stop's kit. Only the
@@ -941,8 +946,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { mcurnlow:0.6, mcarmourlow:0.6, tirocklow:0.8, tikeglow:0.5, tidriftlow:0.9, ndpostlow:0.5, ndbasketlow:0.7, ndwelllow:0.9, ldlamplow:0.6, ldbarrellow:0.8, ldpillarlow:0.7, btdrumlow:0.8, btballlow:0.8, btpinslow:0.7, pffernlow:1, pfstumplow:0.9, pfmosslow:1, bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6, lnheatherlow:0.6, lnboulderlow:0.8, hmrocklow:0.8, hmjuniperlow:0.7 };
-var LOWH = { mcurnlow:1.3, mcarmourlow:2.6, tirocklow:1.1, tikeglow:0.9, tidriftlow:0.5, ndpostlow:1.2, ndbasketlow:0.9, ndwelllow:1.4, ldlamplow:2.6, ldbarrellow:1.2, ldpillarlow:1.7, btdrumlow:1.1, btballlow:1.5, btpinslow:1.3, pffernlow:1.4, pfstumplow:1.1, pfmosslow:1.2, bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3, lnheatherlow:1.1, lnboulderlow:1.2, hmrocklow:1.2, hmjuniperlow:1.3 };
+var LOWR = { fhlamplow:0.5, fhsledlow:0.9, mcurnlow:0.6, mcarmourlow:0.6, tirocklow:0.8, tikeglow:0.5, tidriftlow:0.9, ndpostlow:0.5, ndbasketlow:0.7, ndwelllow:0.9, ldlamplow:0.6, ldbarrellow:0.8, ldpillarlow:0.7, btdrumlow:0.8, btballlow:0.8, btpinslow:0.7, pffernlow:1, pfstumplow:0.9, pfmosslow:1, bush:1.1, rockice:1, rockcrys:1, rockjel:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1, sheep:0.8, mstatue:0.7, ushade:0.6, ocloud:1.1, wrose:1, wmush:0.8, lglily:0.8, lgpawnlow:0.7, bnbeanlow:0.7, bnsacklow:0.7, bncabbage:1, msreedlow:0.6, msbarrellow:0.6, lnheatherlow:0.6, lnboulderlow:0.8, hmrocklow:0.8, hmjuniperlow:0.7 };
+var LOWH = { fhlamplow:2.8, fhsledlow:0.5, mcurnlow:1.3, mcarmourlow:2.6, tirocklow:1.1, tikeglow:0.9, tidriftlow:0.5, ndpostlow:1.2, ndbasketlow:0.9, ndwelllow:1.4, ldlamplow:2.6, ldbarrellow:1.2, ldpillarlow:1.7, btdrumlow:1.1, btballlow:1.5, btpinslow:1.3, pffernlow:1.4, pfstumplow:1.1, pfmosslow:1.2, bush:1.8, rockice:1.3, rockcrys:1.6, rockjel:1.2, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6, sheep:1.3, mstatue:2.4, ushade:2.2, ocloud:1.6, wrose:1.6, wmush:1.8, lglily:1.8, lgpawnlow:1.9, bnbeanlow:1.9, bnsacklow:1.5, bncabbage:1.3, msreedlow:2, msbarrellow:1.3, lnheatherlow:1.1, lnboulderlow:1.2, hmrocklow:1.2, hmjuniperlow:1.3 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -962,7 +967,7 @@ var CHEST_SAY = {
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
   volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'], crystara:['A chest, grown over with crystal.'], wonderland:['A chest under the roses. Nobody painted it red.'], jellara:['A chest, set in the jelly. It wobbles.'], oz:['A chest, dropped here by the cyclone.'], cyclops:['A sea chest, washed up from some wreck.'], medusa:['A chest of stone. Somebody left it a long time ago.'], underworld:['A chest by the river. Somebody could not pay the fare.'], olympus:['A chest of bronze. Hephaestus made it, by the look of it.'], lookingglass:['A chest. Its lock is on the other side.'], beanstalk:['A chest, as big as a giant’s boot.'], mississippi:['A chest, washed up on the bank.'], lochness:['A chest, half sunk in the heather.'], himalayas:['A chest, frozen into the snow. Somebody left it on the way up.'], pacific:['A chest under the ferns. Moss all over it.'], bigtop:['A strongbox off the show wagon. Still locked.'], london:['A strongbox. Somebody left it in a hurry.'], notredame:['A chest under the bell frame. It hums when the bells ring.'], treasure:['A sea chest. Somebody painted an X on the lid.'],
-  haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'], monster:['A chest from the castle. The lid creaks.'] };
+  haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'], monster:['A chest from the castle. The lid creaks.'], frost:['A chest in the snow. Its lock is frozen.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
   school:'Kids say there\'s a secret hole on this trail. Don\'t tell the principal.',
@@ -1474,6 +1479,7 @@ var LIFE = {
   haunted:{ fly:['bat', 5], ghosts:2, mote:['firefly', 8] },
   harvest:{ fly:['crow', 3], mote:['leaf', 16] },
   monster:{ fly:['bat', 4], mote:[['firefly', 10], ['leaf', 6]] },
+  frost:{ fly:['crow', 2], mote:['snow', 50] },
   school:{ fly:['song', 4], mote:[['leaf', 10], ['butter', 6]] },
   iceage:{ mote:['snow', 60], fly:['crow', 2] },
   moon:{ fly:['drone', 2], mote:['spark', 30] },
@@ -6681,6 +6687,192 @@ Object.assign(FOLK3D, {
     if (d < 0.24){ if (u > 0.16 && Math.abs(av - 0.08) < 0.032 && Math.abs(t - 2.53) < 0.028) return '#2a1a10';
       if (u > 0.17 && av < 0.05 && Math.abs(t - 2.42) < 0.013) return '#b0505a';
       return u < -0.04 || t > 2.64 || (av > 0.19 && u < 0.1) ? '#6a4224' : skin; }
+    return null; } }
+});
+/* ---- Frost Hollow (the Members Tour): a snowy hollow on a long winter night, the walk a path trodden in the snow, snowy firs along
+   it, street lamps and a sled left by the path, the Snow Queen's palace of driven snow with its halls lit green by the northern
+   lights, Drosselmeyer's tall clock with the owl on its top, and the great Nutcracker standing guard. Andersen's palace is snow, not
+   crystal: "the walls of the palace were of driving snow, and the windows and doors of cutting winds". */
+// a street lamp, an iron post and its warm glass, a cap of snow on top
+BUILD.fhlamplow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + 2.8, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, py - y);
+    if (tt < 0.25) return r < 0.28 ? '#1e2230' : null; if (tt < 2.0) return r < 0.08 ? '#2a2e3e' : null;
+    if (tt < 2.5) return r < 0.24 ? (r < 0.19 && Math.abs(px - x) > 0.04 && Math.abs(py - y) > 0.04 ? '#ffd27a' : '#1e2230') : null;
+    return r < 0.3 - (tt - 2.5) * 0.6 ? (tt > 2.6 ? '#f4f8fc' : '#1e2230') : null; }, 0.125); };
+// a wooden sled left in the snow, its red slats and curled runners
+BUILD.fhsledlow = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.solid(x - 0.9, y - 0.5, zb, x + 0.9, y + 0.5, zb + 0.6, function(px, py, pz){ var tt = pz - zb, dx = px - x, dy = py - y;
+    if (Math.abs(Math.abs(dy) - 0.3) < 0.05 && Math.abs(dx) < 0.7 && tt < 0.12) return '#3a2a1e';   // the runners
+    if (Math.abs(Math.abs(dy) - 0.3) < 0.05 && dx > 0.6 && dx < 0.8 && tt < 0.4 && Math.hypot(dx - 0.6, tt - 0.25) < 0.2 && Math.hypot(dx - 0.6, tt - 0.25) > 0.1) return '#3a2a1e';
+    if (tt > 0.16 && tt < 0.28 && Math.abs(dx) < 0.65 && Math.abs(dy) < 0.36) return Math.abs(((dx + 1) * 4) % 1 - 0.5) < 0.08 ? '#5a3a20' : '#c8302a';   // the slats
+    if (tt > 0.28 && tt < 0.36 && Math.abs(dx) < 0.62 && Math.abs(dy) < 0.32 && hash(px * 8 | 0, py * 8 | 0, 3) < 0.4) return '#f4f8fc';
+    return Math.abs(Math.abs(dx) - 0.45) < 0.05 && Math.abs(Math.abs(dy) - 0.3) < 0.05 && tt < 0.18 ? '#3a2a1e' : null; }, 0.125); };
+// the Snow Queen's palace: halls of driven snow, round topped and drifted, their windows of clear ice, lit green and pale blue by the
+// northern lights, and the frozen lake before its door
+BUILD.fhPalaceLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2, hd = t.d / 2 - 0.2; if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null;
+  var halls = [[0, t.h], [-hw * 0.62, t.h * 0.72], [hw * 0.62, t.h * 0.78]], best = null;
+  for (var k = 0; k < 3; k++){ var cx = halls[k][0], H = halls[k][1], R = hw * (k ? 0.34 : 0.42), r = Math.hypot((dx - cx) / R, tt / H * 1.05); if (r < 1 && (Math.abs(dy) < hd * (k ? 0.8 : 1))){ best = [k, r, cx, H, R]; break; } }
+  if (!best) return null; var k2 = best[0], r2 = best[1], cx2 = best[2], H2 = best[3];
+  if (dy > hd - 0.5 && Math.abs(dx - cx2) < 0.5 && tt < H2 * 0.32) return '#14243a';   // a door of cutting wind
+  if (dy > hd * (k2 ? 0.8 : 1) - 0.5 && Math.abs(((dx - cx2) * 1.2 + 9) % 1.6 - 0.8) < 0.22 && Math.abs(tt - H2 * 0.55) < 0.45) return (Math.floor(tt * 3 + dx) % 2) ? '#9fe8c8' : '#cfeafa';   // its windows of ice, lit by the lights
+  if (r2 > 0.9) return tt > H2 * 0.6 ? '#ffffff' : '#dfe8f2'; var drift = vn(dx * 1.4, tt * 1.1, i + 5); return drift > 0.66 ? '#ffffff' : drift < 0.3 ? '#cddcec' : '#eaf0f8'; }); };
+// Drosselmeyer's tall clock, as Hoffmann tells it: a case of dark wood, its brass face and pendulum, and on top the gilt owl whose
+// wings come down over the clock as it strikes
+BUILD.fhClockLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.3, hd = t.d / 2 - 0.3, H = t.h - 1.4;
+  if (tt < H){ if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null; var face = Math.hypot(dx, tt - H + 1.1);
+    if (dy > hd - 0.2 && face < 0.85){ if (face > 0.72) return '#8a6a20'; if (Math.abs(dx) < 0.05 && tt > H - 1.1 && tt < H - 0.5) return '#14141c'; if (Math.abs(tt - H + 1.1) < 0.05 && dx > 0 && dx < 0.4) return '#14141c'; return '#f4ecd8'; }   // the face and its hands
+    if (dy > hd - 0.2 && Math.abs(dx) < 0.45 && tt > 0.6 && tt < H - 2.2){ if (Math.hypot(dx, tt - 1.0) < 0.3) return '#d8b048'; if (Math.abs(dx) < 0.04) return '#b8902a'; return '#1e140c'; }   // the pendulum in its glass
+    if (Math.abs(dx) > hw - 0.15 || tt < 0.4 || Math.abs(tt - H + 2.0) < 0.12) return '#3a2214'; return (Math.floor(tt * 2) % 2) ? '#5a3420' : '#4a2a18'; }
+  var ow = Math.hypot(dx / 0.7, dy / 0.6, (tt - H - 0.6) / 0.7); if (ow < 1){ if (dy > 0.3 && Math.abs(Math.abs(dx) - 0.22) < 0.1 && Math.abs(tt - H - 0.85) < 0.1) return '#14141c';   // the owl's eyes
+    return Math.abs(dx) > 0.45 ? '#b8902a' : '#d8b048'; } return null; }); };
+// the great Nutcracker standing guard, as Hoffmann drew him in words: a big head on a little body, a white beard, a violet hussar's
+// jacket with white braid, a little cloak of wood on his back, a cap on his head and the great jaw that cracks the nuts
+BUILD.fhNutLm = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var H = t.h, s = H / 8, r = Math.hypot(dx, dy);
+  if (tt < s * 0.6) return r < s * 1.2 ? '#1a1410' : null;   // his boots on their base
+  if (tt < s * 2.4) return Math.hypot(Math.abs(dx) - s * 0.35, dy) < s * 0.32 ? '#5a2a86' : null;   // violet breeches
+  if (tt < s * 4.6){ if (r > s * 0.85) return dy < -s * 0.6 && r < s * 1.0 ? '#8a6a3a' : null; if (dy > 0 && Math.abs(dx) < s * 0.08) return '#ffffff'; if (dy > s * 0.5 && Math.abs(((tt / s) * 3) % 1 - 0.5) < 0.12) return '#f4f0e6'; return '#7a3aa8'; }   // the jacket, its braid, the cloak of wood
+  var hd = Math.hypot(dx / (s * 1.05), dy / (s * 1.05), (tt - s * 5.6) / (s * 1.05));
+  if (hd < 1){ if (dy > s * 0.6 && Math.abs(Math.abs(dx) - s * 0.35) < s * 0.12 && Math.abs(tt - s * 6.0) < s * 0.12) return '#14141c';   // his eyes
+    if (dy > s * 0.4 && tt < s * 5.3) return Math.abs(tt - s * 5.05) < s * 0.06 ? '#14141c' : '#ffffff';   // the jaw and the white beard
+    return dy > s * 0.2 && tt > s * 5.3 && tt < s * 5.8 ? '#f0c8a8' : '#e8b898'; }
+  if (tt < s * 7.6 && Math.hypot(dx, dy) < s * 0.95 - (tt - s * 6.5) * 0.3) return Math.abs(tt - s * 6.7) < s * 0.08 ? '#d8b048' : '#14141c';   // his cap
+  return null; }); };
+LMSIZE.fhPalaceLm = [16, 7, 12]; LMSIZE.fhClockLm = [3.4, 2.4, 10]; LMSIZE.fhNutLm = [3.6, 3.6, 9];
+/* THE FOLK OF FROST HOLLOW (the Members Tour), each from its public domain book and never a film's or a later staging's look.
+   Drosselmeyer as Hoffmann wrote him (1816): small and lean, his face all wrinkles, a black patch over his right eye, a white wig
+   of spun glass and a yellow coat, his little box of tools under his arm. Kai as Andersen wrote him (1844) and Pedersen drew him: a
+   boy in a short coat and a knitted cap, his little sled in his hand. Gerda: a little girl in a hood and a short cloak, a fur muff
+   from the princess, and her red shoes. The Robber Girl: as broad as Gerda but darker, black eyes and black hair, a rough jacket
+   and a red cap (no knife). Marie of Hoffmann: a little girl of seven in a white frock with a blue sash. The Mouse King: a grey
+   mouse standing up, SEVEN heads, a little gold crown on each, as the book has him. The Nutcracker: the big head and little body,
+   white beard, violet hussar's jacket with white braid, a little wooden cloak and a cap, his great jaw. Jack Frost of the folklore
+   and the Victorian picture books: an elfin boy all of frost, pale blue skin, white hair in icicles, a white tunic cut in points
+   like frost leaves, pointed shoes (never the modern film's hoodie and staff). And the Snow Queen as Andersen tells it and Pedersen
+   drew her: tall, slender and dazzling white, a long white gown of gauze under a blue white cloak of snow, a tall crown of icicles,
+   silver hair loose behind, eyes like two stars. No fitted ice gown, no braid, no snowflake cape, no film's look. */
+Object.assign(FOLK3D, {
+  drosselmeyer:{ r:0.9, h:3.3, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.12 && el3(u, av, t, 0.07, 0.11, 0.05, 0.17, 0.08, 0.06) <= 1) return '#14141a';   // buckled shoes
+    if (cap3(u, av, t, [0, 0.11, 0.1], [0, 0.11, 0.55], 0.07)) return '#e8e4d8';   // white stockings
+    if (cap3(u, av, t, [0, 0.11, 0.52], [0, 0.12, 1.0], 0.09)) return '#1e1e24';   // black breeches
+    if (el3(u, v, t, 0.08, -0.36, 1.25, 0.16, 0.1, 0.12) <= 1) return Math.abs(t - 1.25) < 0.03 ? '#d8b048' : '#5a3420';   // his box of tools
+    if (t >= 0.9 && t < 2.15 && el3(u, v, t, 0, 0, 1.5, 0.24, 0.29, 0.66) <= 1){ if (u > 0.17 && av < 0.04) return t > 1.9 ? '#f4f0e6' : '#b8902a'; return (Math.floor(t * 9) + Math.floor(v * 7)) % 5 ? '#e8c030' : '#d8a820'; }   // the yellow coat, its buttons, his neckcloth
+    if (cap3(u, av, t, [0, 0.29, 2.0], [0.1, 0.33, 1.32], 0.07)) return '#e8c030';
+    if (el3(u, av, t, 0.1, 0.34, 1.26, 0.05, 0.05, 0.05) <= 1) return '#e8c8a8';
+    var d = Math.hypot(u, v, t - 2.42);
+    if (d < 0.22){ if (u > 0.14 && v > 0 && Math.abs(v - 0.08) < 0.06 && Math.abs(t - 2.46) < 0.06) return '#0e0e12';   // the black patch over his right eye
+      if (u > 0.15 && v < 0 && Math.abs(v + 0.08) < 0.03 && Math.abs(t - 2.46) < 0.03) return '#1a1410';
+      if (u > 0.14 && Math.abs(t - 2.36 - av * 0.6) < 0.012) return '#b88a6a';   // the wrinkles
+      return u < -0.04 || t > 2.56 ? (hash((u * 40) | 0, (v * 40 + t * 40) | 0, 9) < 0.5 ? '#ffffff' : '#dfe8f2') : '#e8c8a8'; }   // the white wig of glass threads
+    if (el3(u, v, t, -0.06, 0, 2.36, 0.18, 0.24, 0.16) <= 1) return hash((u * 40) | 0, (v * 40 + t * 40) | 0, 9) < 0.5 ? '#ffffff' : '#cfe0f0';
+    return null; } },
+  kai:{ r:0.8, h:2.8, k:1.15, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.12 && el3(u, av, t, 0.06, 0.11, 0.05, 0.15, 0.08, 0.06) <= 1) return '#3a2a1e';   // boots
+    if (cap3(u, av, t, [0, 0.11, 0.1], [0, 0.11, 0.8], 0.085)) return '#3a4a6a';   // trousers
+    if (t >= 0.7 && t < 1.75 && el3(u, v, t, 0, 0, 1.22, 0.21, 0.26, 0.55) <= 1) return u > 0.16 && av < 0.03 ? '#2a1a10' : (Math.floor(t * 8) % 3 ? '#8a4a2a' : '#7a3e22');   // a short brown coat
+    if (cap3(u, av, t, [0, 0.26, 1.66], [0.12, 0.3, 1.1], 0.065)) return '#8a4a2a';
+    if (el3(u, av, t, 0.12, 0.31, 1.05, 0.05, 0.05, 0.05) <= 1) return '#c8302a';   // red mittens
+    if (cap3(u, v, t, [0.16, 0.32, 1.02], [0.6, 0.36, 0.1], 0.02)) return '#7a5a3a';   // the sled's rope
+    if (el3(u, v, t, 0.74, 0.4, 0.12, 0.42, 0.18, 0.06) <= 1) return Math.abs(((u + 1) * 5) % 1 - 0.5) < 0.1 ? '#5a3a20' : '#c8302a';   // his little sled
+    var d = Math.hypot(u, v, t - 1.98);
+    if (d < 0.21){ if (u > 0.15 && Math.abs(av - 0.08) < 0.035 && Math.abs(t - 2.0) < 0.035) return '#1a1410'; return u < -0.05 ? '#6a4a2a' : '#f0d0b4'; }
+    if (t >= 2.05 && Math.hypot(u, v) < 0.22 - (t - 2.05) * 0.4 && t < 2.42) return Math.abs(t - 2.1) < 0.04 ? '#f4f0e6' : '#2a5a9a';   // the knitted cap
+    if (Math.hypot(u, v, t - 2.44) < 0.06) return '#f4f0e6';   // its bobble
+    return null; } },
+  gerda:{ r:0.8, h:2.7, k:1.2, at:function(u, v, t){ var av = Math.abs(v), rr = Math.hypot(u, v);
+    if (t < 0.12 && el3(u, av, t, 0.06, 0.1, 0.05, 0.15, 0.07, 0.06) <= 1) return '#c8201a';   // her red shoes
+    if (cap3(u, av, t, [0, 0.1, 0.1], [0, 0.1, 0.5], 0.06)) return '#e8e0d0';
+    if (t >= 0.45 && t < 1.7 && rr < 0.17 + (1.7 - t) * 0.16) return (Math.floor(t * 8) + Math.floor((v + 1) * 6)) % 4 ? '#2e5a8a' : '#264c76';   // her dress and short cloak
+    if (el3(u, v, t, 0.2, 0, 1.12, 0.12, 0.2, 0.1) <= 1) return hash((u * 30) | 0, (v * 30 + t * 30) | 0, 4) < 0.5 ? '#e8dcc4' : '#c8b898';   // the fur muff
+    if (cap3(u, av, t, [0, 0.24, 1.6], [0.16, 0.18, 1.14], 0.055)) return '#2e5a8a';
+    var d = Math.hypot(u, v, t - 1.92);
+    if (d < 0.2){ if (u > 0.14 && Math.abs(av - 0.075) < 0.035 && Math.abs(t - 1.94) < 0.035) return '#1a1410'; if (u > 0.08) return '#f0d0b4'; return '#a8302a'; }
+    if (Math.hypot(u + 0.02, v, t - 1.96) < 0.25 && u < 0.1) return '#a8302a';   // her red hood
+    if (el3(u, av, t, -0.06, 0.12, 1.66, 0.06, 0.06, 0.16) <= 1) return '#d8a850';   // fair plaits under it
+    return null; } },
+  robbergirl:{ r:0.85, h:2.8, k:1.15, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.14 && el3(u, av, t, 0.07, 0.12, 0.06, 0.17, 0.09, 0.07) <= 1) return '#2a1e14';   // heavy boots
+    if (cap3(u, av, t, [0, 0.12, 0.12], [0, 0.12, 0.75], 0.08)) return '#4a3a2a';
+    if (t >= 0.55 && t < 1.15 && Math.hypot(u, v) < 0.3 - (t - 0.55) * 0.12) return (Math.floor(t * 6) + Math.floor(v * 6)) % 3 ? '#6a2a20' : '#5a2218';   // a short skirt
+    if (t >= 1.05 && t < 1.8 && el3(u, v, t, 0, 0, 1.42, 0.22, 0.27, 0.42) <= 1) return u > 0.15 && av < 0.03 ? '#c8a040' : (hash((u * 12) | 0, (t * 12) | 0, 6) < 0.15 ? '#3a2a1e' : '#5a4a32');   // the rough jacket
+    if (cap3(u, av, t, [0, 0.27, 1.72], [0.1, 0.3, 1.15], 0.07)) return '#5a4a32';
+    if (el3(u, av, t, 0.1, 0.31, 1.1, 0.05, 0.05, 0.05) <= 1) return '#c89a78';
+    var d = Math.hypot(u, v, t - 2.04);
+    if (d < 0.21){ if (u > 0.14 && Math.abs(av - 0.08) < 0.04 && Math.abs(t - 2.06) < 0.04) return '#0e0a08';   // black eyes
+      return u < -0.04 || t > 2.17 ? '#14100c' : '#c89a78'; }   // dark skin, black hair
+    if (el3(u, v, t, -0.12, 0, 1.86, 0.1, 0.2, 0.2) <= 1) return '#14100c';
+    if (t >= 2.14 && t < 2.3 && Math.hypot(u - 0.02, v) < 0.23) return '#c8201a';   // a red cap
+    return null; } },
+  marie:{ r:0.8, h:2.6, k:1.2, at:function(u, v, t){ var av = Math.abs(v), rr = Math.hypot(u, v);
+    if (t < 0.1 && el3(u, av, t, 0.06, 0.1, 0.05, 0.14, 0.07, 0.05) <= 1) return '#14141a';   // little black shoes
+    if (cap3(u, av, t, [0, 0.1, 0.08], [0, 0.1, 0.5], 0.055)) return '#f4f0e6';
+    if (t >= 0.45 && t < 1.55 && rr < 0.15 + (1.55 - t) * 0.2) return Math.abs(t - 1.28) < 0.06 ? '#3a6ab8' : (Math.floor(t * 10) % 4 ? '#fbf8f0' : '#eae4d6');   // the white frock, its blue sash
+    if (cap3(u, av, t, [0, 0.21, 1.5], [0.14, 0.24, 1.05], 0.05)) return '#fbf8f0';
+    if (el3(u, av, t, 0.15, 0.24, 1.0, 0.045, 0.045, 0.045) <= 1) return '#f0d0b4';
+    var d = Math.hypot(u, v, t - 1.8);
+    if (d < 0.19){ if (u > 0.13 && Math.abs(av - 0.07) < 0.03 && Math.abs(t - 1.82) < 0.03) return '#1a1410'; return u < -0.03 || t > 1.9 ? '#8a5a2a' : '#f0d0b4'; }
+    if (el3(u, v, t, -0.1, 0, 1.6, 0.08, 0.18, 0.22) <= 1) return '#8a5a2a';   // brown curls
+    if (el3(u, v, t, -0.04, 0, 1.97, 0.06, 0.16, 0.04) <= 1) return '#3a6ab8';   // a blue ribbon
+    return null; } },
+  mouseking:{ r:1.0, h:3.0, at:function(u, v, t){ var av = Math.abs(v), fur = hash((u * 25) | 0, (v * 25 + t * 25) | 0, 33);
+    if (t < 0.12 && el3(u, av, t, 0.1, 0.14, 0.05, 0.18, 0.08, 0.06) <= 1) return '#d8a8a0';   // pink feet
+    if (cap3(u, v, t, [-0.24, 0, 0.3], [-0.7, 0.1, 0.06], 0.035)) return '#d8a8a0';   // his tail
+    if (t >= 0.1 && t < 1.9 && el3(u, v, t, 0, 0, 1.0, 0.32, 0.36, 0.9) <= 1) return u > 0.24 && Math.abs(t - 1.2) < 0.4 ? '#c8c0b8' : (fur < 0.5 ? '#7a7880' : '#6a6870');   // the grey mouse, his pale belly
+    if (cap3(u, av, t, [0, 0.34, 1.6], [0.2, 0.42, 1.1], 0.07)) return '#7a7880';
+    if (el3(u, av, t, 0.22, 0.44, 1.05, 0.05, 0.05, 0.05) <= 1) return '#d8a8a0';
+    // the seven heads, each with its little gold crown
+    var H7 = [[0.06, 0, 2.2], [0.04, -0.22, 2.1], [0.04, 0.22, 2.1], [0, -0.34, 1.86], [0, 0.34, 1.86], [-0.06, -0.14, 2.4], [-0.06, 0.14, 2.4]];
+    for (var k = 0; k < 7; k++){ var c = H7[k], d = Math.hypot(u - c[0], v - c[1], t - c[2]);
+      if (d < 0.12){ if (u - c[0] > 0.08 && Math.abs(Math.abs(v - c[1]) - 0.045) < 0.025 && Math.abs(t - c[2] - 0.02) < 0.025) return '#0e0e12'; return fur < 0.5 ? '#8a8890' : '#7a7880'; }
+      if (el3(u, v, t, c[0] + 0.14, c[1], c[2] - 0.03, 0.05, 0.035, 0.035) <= 1) return '#d8a8a0';   // its snout
+      if (Math.abs(t - c[2] - 0.13) < 0.035 && Math.hypot(u - c[0], v - c[1]) < 0.08) return '#e8c040';   // its crown
+      if (t > c[2] + 0.13 && t < c[2] + 0.2 && Math.hypot(u - c[0], v - c[1]) < 0.08 && Math.floor(Math.atan2(v - c[1], u - c[0]) * 2.5 + 8) % 2) return '#e8c040';
+      if (el3(u, Math.abs(v - c[1]), t, c[0] - 0.02, 0.1, c[2] + 0.08, 0.02, 0.05, 0.05) <= 1) return '#c89a98'; }   // its round ears
+    return null; } },
+  nutcracker:{ r:0.9, h:3.3, at:function(u, v, t){ var av = Math.abs(v);
+    if (t < 0.16 && el3(u, av, t, 0.07, 0.12, 0.07, 0.17, 0.09, 0.08) <= 1) return '#14141a';   // the finest boots
+    if (cap3(u, av, t, [0, 0.12, 0.14], [0, 0.12, 0.9], 0.09)) return t < 0.4 ? '#14141a' : '#5a2a86';   // violet breeches
+    if (u < -0.12 && t >= 0.8 && t < 1.85 && el3(u, v, t, -0.16, 0, 1.35, 0.1, 0.3, 0.5) <= 1) return Math.floor(t * 10) % 2 ? '#8a6a3a' : '#7a5a30';   // the little cloak of wood
+    if (t >= 0.8 && t < 1.85 && el3(u, v, t, 0, 0, 1.32, 0.22, 0.27, 0.54) <= 1){ if (u > 0.15 && av < 0.03) return '#ffffff'; if (u > 0.12 && Math.abs(((t * 6) % 1) - 0.5) < 0.12 && av < 0.14) return '#f4f0e6'; return '#7a3aa8'; }   // the violet hussar's jacket, its white braid
+    if (cap3(u, av, t, [0, 0.27, 1.76], [0.1, 0.32, 1.2], 0.075)) return '#7a3aa8';
+    if (el3(u, av, t, 0.1, 0.33, 1.14, 0.05, 0.05, 0.05) <= 1) return '#f4f0e6';   // white gloves
+    var d = Math.hypot(u, v, t - 2.28);   // the big head on the little body
+    if (d < 0.36){ if (u > 0.26 && Math.abs(av - 0.12) < 0.05 && Math.abs(t - 2.38) < 0.05) return Math.abs(av - 0.12) < 0.02 ? '#14141a' : '#ffffff';   // round staring eyes
+      if (u > 0.2 && t < 2.18){ if (Math.abs(t - 2.1) < 0.03 && av < 0.2) return '#14141a'; return '#ffffff'; }   // the great jaw and his white beard
+      if (u > 0.3 && av < 0.05 && Math.abs(t - 2.27) < 0.06) return '#e09a8a'; return u < -0.1 ? '#ffffff' : '#f0c8a8'; }   // a white wig behind
+    if (t >= 2.58 && t < 2.9 && Math.hypot(u, v) < 0.3 - (t - 2.58) * 0.4) return Math.abs(t - 2.62) < 0.035 ? '#d8b048' : '#14141a';   // his cap
+    return null; } },
+  jackfrost:{ r:0.85, h:2.9, k:1.1, at:function(u, v, t){ var av = Math.abs(v), fr = hash((u * 30) | 0, (v * 30 + t * 30) | 0, 71);
+    if (t < 0.12 && el3(u, av, t, 0.1, 0.11, 0.05, 0.2, 0.07, 0.05) <= 1) return '#cfeafa';   // pointed shoes of ice
+    if (cap3(u, av, t, [0, 0.11, 0.1], [0, 0.11, 0.85], 0.075)) return '#b8dcf4';   // pale blue legs
+    if (t >= 0.7 && t < 1.85 && el3(u, v, t, 0, 0, 1.3, 0.22, 0.27, 0.6) <= 1){ var pt = t < 0.95 && Math.abs(((Math.atan2(v, u) * 4 / Math.PI) % 1 + 1) % 1 - 0.5) > (t - 0.7) * 1.8; if (pt) return null;   // the tunic cut in points
+      return fr < 0.2 ? '#ffffff' : (Math.floor(t * 8) % 2 ? '#e6f6fe' : '#d2ecfa'); }   // white, glittering with frost
+    if (cap3(u, av, t, [0, 0.27, 1.75], [0.16, 0.34, 1.3], 0.06)) return '#e6f6fe';
+    if (el3(u, av, t, 0.17, 0.35, 1.25, 0.045, 0.045, 0.045) <= 1) return '#b8dcf4';
+    var d = Math.hypot(u, v, t - 2.08);
+    if (d < 0.2){ if (u > 0.14 && Math.abs(av - 0.075) < 0.035 && Math.abs(t - 2.1) < 0.035) return '#2a6ab8'; if (u > 0.15 && av < 0.05 && Math.abs(t - 2.0) < 0.012) return '#6aa8d8'; return u < -0.06 ? '#ffffff' : '#cfe6f6'; }   // pale blue face, a sly smile
+    for (var k = 0; k < 7; k++){ var a = k * 0.9 - 2.7, sx = Math.cos(a) * 0.14 - 0.04, sy = Math.sin(a) * 0.17; if (cap3(u, v, t, [sx, sy, 2.18], [sx * 1.5 - 0.04, sy * 1.45, 2.36 + (k % 2) * 0.06], 0.045)) return k % 2 ? '#ffffff' : '#e6f6fe'; }   // white hair in icicles
+    return null; } },
+  snowqueen:{ r:1.0, h:4.7, k:1.1, at:function(u, v, t){ var av = Math.abs(v), rr = Math.hypot(u, v), sn = hash((u * 28) | 0, (v * 28 + t * 28) | 0, 87);
+    // the long cloak of snow, blue white and shaded darker behind, falling from her shoulders to a train on the ground
+    if (u < 0.06 && t < 2.6 && rr < 0.24 + (2.6 - t) * 0.16 && rr > 0.12 + (2.6 - t) * 0.08 - 0.06){ if (rr > 0.2 + (2.6 - t) * 0.16) return '#7a9cc8'; return u < -0.12 ? (sn < 0.2 ? '#b8cce6' : '#9ab4d8') : '#cfe0f4'; }
+    // her gown of white gauze, long and straight to the ground, a line of ice down its front
+    if (t < 2.45 && rr < 0.2 + (2.45 - t) * 0.07){ if (u > 0.14 && av < 0.03 && t > 0.3) return '#8ac8f0'; return sn < 0.15 ? '#ffffff' : (u > 0.05 ? '#f6f9fd' : '#dfe8f4'); }
+    // her arms in long white sleeves, one hand out before her, one at her side
+    if (cap3(u, v, t, [0, 0.27, 2.35], [0.34, 0.36, 1.85], 0.07)) return '#e6eef8';
+    if (cap3(u, v, t, [0, -0.27, 2.35], [0.06, -0.33, 1.62], 0.07)) return '#e6eef8';
+    if (el3(u, v, t, 0.4, 0.37, 1.8, 0.06, 0.05, 0.06) <= 1 || el3(u, v, t, 0.07, -0.34, 1.55, 0.05, 0.05, 0.06) <= 1) return '#f6eef0';   // white hands
+    if (t >= 2.4 && t < 2.62 && rr < 0.26){ if (u > 0.2 && av < 0.05 && Math.abs(t - 2.52) < 0.05) return '#4ab0f0'; return sn < 0.5 ? '#ffffff' : '#dce8f4'; }   // the snow fur at her throat, a clasp of blue ice
+    var d = Math.hypot(u, v * 1.05, (t - 2.86) * 0.95);
+    if (d < 0.25){ if (u > 0.15 && Math.abs(av - 0.09) < 0.04 && Math.abs(t - 2.92) < 0.04) return Math.abs(av - 0.09) < 0.015 && Math.abs(t - 2.92) < 0.015 ? '#ffffff' : '#1e4a98';   // eyes like two bright stars
+      if (u > 0.15 && av < 0.05 && Math.abs(t - 2.76) < 0.015) return '#c88a98';   // pale lips
+      if (u > 0.17 && av < 0.02 && t > 2.8 && t < 2.88) return '#e8d8dc';
+      return u > -0.04 ? '#fff4f2' : '#7f92b4'; }   // white as ice; her silver hair behind
+    if (u < 0.04 && el3(u, v, t, -0.1, 0, 2.62, 0.15, 0.27, 0.45) <= 1) return '#7f92b4';   // pale silver hair, loose down her back
+    // a tall crown of icicles, each spike tipped white, a blue band at its foot
+    if (t >= 3.08 && t < 3.16 && Math.hypot(u, v) < 0.22 && Math.hypot(u, v) > 0.12) return '#4a8ad0';
+    if (t >= 3.16 && t < 3.7){ var a = Math.atan2(v, u), sp = Math.abs(((a / (Math.PI / 4)) % 1 + 1) % 1 - 0.5), tall = Math.floor(((a + 7) / (Math.PI / 4))) % 2 ? 0.52 : 0.34, hh = (t - 3.16) / tall, rc = Math.hypot(u, v);
+      if (rc < 0.22 && rc > 0.12 && hh < 1 && sp < 0.24 * (1 - hh)) return hh > 0.75 ? '#ffffff' : (u > 0 ? '#a6d8f6' : '#6aa8d8'); }
     return null; } }
 });
 // a figure's build, facing f, turned 53 degrees toward the camera

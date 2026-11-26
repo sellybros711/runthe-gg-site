@@ -531,7 +531,7 @@ if (!QUICK){
     const SRC = fs.readFileSync(new URL('./putt.js', import.meta.url), 'utf8'), behind = /data-case>Open the casebook</.test(SRC) && (SRC.match(/caseSheet\(\)/g) || []).length === 3;
     claim(CB[0] === 'london' && all.length >= 4 && new Set(all).size === all.length && !out.length && notAlbum && behind,
       `London's casebook holds ${all.length} clues, each on its own walk and none on a gym's, picked up as clues and kept apart from the Expedition album, and it opens only from its button in the Bag` + (out.length ? ' (' + out.join(', ') + ')' : '')); }
-  claim(TB.levels.length === 27 && TB.worlds.length === 3 && TB.per === 9 && TB.members && TB.worlds[2].id === 'monster', `the Members Tour is 27 holes in ${TB.worlds.length} worlds of ${TB.per}, Monster Castle the third`);
+  claim(TB.levels.length === 36 && TB.worlds.length === 4 && TB.per === 9 && TB.members && TB.worlds[2].id === 'monster' && TB.worlds[3].id === 'frost', `the Members Tour is 36 holes in ${TB.worlds.length} worlds of ${TB.per}, Monster Castle the third and Frost Hollow the fourth`);
   claim(TM.worlds.every(W => P.CAL_THEMES.indexOf(W.theme) < 0), 'the main tour wears none of the calendar themes, which belong to the passes (' + TM.worlds.map(W => W.theme).join(', ') + ')');
   for (const TR of [TM, TB]){
     claim(TR.levels.every((L, i) => !!L.sig === ((i + 1) % TR.per === 0)), `${TR.name}: the last hole of each world, and only it, is a signature hole`);
@@ -829,6 +829,25 @@ if (!QUICK){
     const TSRC = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8'), folk = Object.values(P.FOLK.monster || {}).map(f => f.id).concat([P.GREETERS.monster.folk]);
     const drawn = folk.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), bad = ['frankenstein', 'dracula', 'lugosi', 'orlok'].filter(x => new RegExp(x, 'i').test(JSON.stringify(P.FOLK.monster) + JSON.stringify(P.GREETERS.monster)));
     claim(folk.length === 8 && new Set(folk).size === 8 && drawn.length === 8 && !bad.length, `Monster Castle's host and its seven monsters each have a model of their own in trail.js (${drawn.join(', ')}), and none is Frankenstein's creature or Dracula`); }
+  /* FROST HOLLOW IS ITS OWN TOO, held to Monster Castle's bar: one winter idea a hole, every moving or wet piece the engine has
+     counted, at most two a hole, par 3 and a par 4 signature. No trick or treat (Hallows Night's), its own two members-only rewards,
+     and the Champion's Jacket still Harvest Moon's. Its host and its eight folk each have a model of their own, drawn from Andersen,
+     Hoffmann and the folklore: nothing named from the 2013 film, and none of the holiday folk, who stand by the Daily's page only
+     (whether they go on the Members Tour is the owner's call). */
+  { const w = TB.worlds.findIndex(W => W.id === 'frost'), K = TB.per, mw = [], pars = [];
+    const moving = n => { const C = P.buildLevel(n, 'members'); return C.movers.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.rivers || []).length + (C.mill ? 1 : 0) + C.zones.filter(z => z.m === M.WATER).length
+      + (C.belts || []).length + (C.ferries || []).length + (C.devils || []).length + (C.beams || []).length + (C.hops || []).length + (C.cyclones || []).length + (C.eyes || []).length + (C.gazes || []).length + (C.lethes || []).length + (C.bolts || []).length
+      + (C.stalks || []).length + (C.drifts || []).length + (C.wakes || []).length + (C.yetis || []).length + (C.skids || []).length + (C.wires || []).length + (C.tides || []).length + (C.bells || []).length + (C.quicks || []).length + (C.wells || []).length + (C.floats || []).length + (C.hazes || []).length; };
+    for (let n = w * K + 1; n <= w * K + K; n++){ mw.push(moving(n)); pars.push(TB.levels[n - 1].par + (TB.levels[n - 1].sig ? 's' : '')); }
+    const sigOk = TB.levels.slice(w * K, w * K + K).every(L => L.par <= (L.sig ? 4 : 3)) && TB.levels[w * K + K - 1].sig;
+    claim(w === 3 && mw.every(k => k <= 2) && sigOk, `Frost Hollow: one winter idea a hole, at most two moving or wet pieces of any kind (${mw.join(' ')}), par 3 and a par 4 signature (${pars.join(' ')})`);
+    const Pm = Cn.members, rw = [Pm.sigReward[w], Pm.worldReward[w]], allRw = Pm.sigReward.concat(Pm.worldReward);
+    claim(Cn.members.treat.w !== w && rw.every(r => r && /Members only/.test(r)) && new Set(allRw).size === allRw.length && Pm.finishW === 1 && P.TOURS.members.worlds[Pm.finishW].id === 'harvest',
+      `Frost Hollow pays its own two members-only rewards (${rw.join(', ')}), no trick or treat, and the Champion's Jacket stays Harvest Moon's`);
+    const TSRC = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8'), folk = Object.values(P.FOLK.frost || {}).map(f => f.id).concat([P.GREETERS.frost.folk]);
+    const drawn = folk.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), said = JSON.stringify(P.FOLK.frost) + JSON.stringify(P.GREETERS.frost) + JSON.stringify(TB.names.slice(w * K, w * K + K));
+    const bad = ['elsa', 'anna', 'olaf', 'kristoff', 'sven', 'arendelle', 'santa', 'claus', 'krampus'].filter(x => new RegExp('\\b' + x + '\\b', 'i').test(said)), hol = folk.filter(id => P.HOLIDAY_FOLK[id]);
+    claim(folk.length === 9 && new Set(folk).size === 9 && drawn.length === 9 && !bad.length && !hol.length, `Frost Hollow's host and its eight folk each have a model of their own in trail.js (${drawn.join(', ')}), none named from a film and none of the holiday folk` + (bad.length || hol.length ? ' (' + bad.concat(hol).join(', ') + ')' : '')); }
   head(`4. ${DAYS} DAILY HOLES FROM TODAY`);
   const day0 = new Date(Date.UTC(2026, 9, 1));
   const themesSeen = new Set();
@@ -1742,9 +1761,11 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
       out.greeters = []; for (let w = 0; w < 32; w++){ let P = window.RTT_PUTT._trailPlan(w * 18); if (P.spec.space) P = window.RTT_PUTT._trailPlan(w * 18, 'main', true); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }   // a space world's greeter is on its landed walk
-      for (let w = 0; w < 3; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      for (let w = 0; w < window.RTT_PUTT.TOURS.members.worlds.length; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       // Monster Castle's monsters stand on its walks in place of the local, one to a walk, and say their own lines
       out.folk = []; for (let f = 19; f < 27; f++){ const P = window.RTT_PUTT._trailPlan(f, 'members'); out.folk.push(P.spec.folk ? P.spec.folk.id + (P.items.some(t => t.k === 'npc') ? '' : '?') : '-'); }
+      // and Frost Hollow's folk of the old winter tales, one to a walk, the Snow Queen on the walk to her own palace
+      out.frost = []; for (let f = 28; f < 36; f++){ const P = window.RTT_PUTT._trailPlan(f, 'members'); out.frost.push(P.spec.folk ? P.spec.folk.id + (P.items.some(t => t.k === 'npc') ? '' : '?') : '-'); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       out.secrets = []; out.secretElse = []; out.secretAt = [];
       for (let w = 0; w < 32; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
@@ -1760,8 +1781,9 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     /* seventeen walks can hold one (never the first), and there are more worlds than that, so a walk comes round again only once
        every other walk has had its turn: any seventeen worlds in a row hold their secrets on seventeen different walks */
     claim(wo.secretAt.every(k => k > 1 && k <= 18) && wo.secretAt.every((k, w) => wo.secretAt.slice(Math.max(0, w - 16), w).indexOf(k) < 0), `the secrets sit on a different walk in each run of seventeen worlds, never a world's first (${wo.secretAt.join(' ')})`);
-    claim(wo.greeters.every(Boolean) && wo.notMid, `all thirty-two worlds and the three Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
+    claim(wo.greeters.every(Boolean) && wo.notMid, `all thirty-two worlds and the four Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
     claim(wo.folk.join() === 'zombie,invisible,hyde,vampire,werewolf,golem,horseman,-', `Monster Castle's monsters stand on its walks, one to a walk (${wo.folk.join(' ')})`);
+    claim(wo.frost.join() === 'kai,gerda,robbergirl,marie,mouseking,nutcracker,jackfrost,snowqueen', `Frost Hollow's folk stand on its walks, one to a walk, the Snow Queen on the walk to her palace (${wo.frost.join(' ')})`);
     // THE HOLES AT EACH END OF A WALK ARE THE REAL HOLES: the one you just played behind you, the next one past the arch,
     // each drawn from its own compiled course, with its cup where the course puts it
     const ft = await pg.evaluate(() => { const P = window.RTT_PUTT._trailPlan(17), f = P.feet || [];
@@ -2129,7 +2151,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     // Members world (here, the map: this section runs map first), and walking up to a hole opens a sheet that
     // sells nothing for coins and sends the player to the free tour
     await pg.click('.pp-tabs [data-tab="members"]'); await pg.waitForSelector('.pp-mem .pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 9 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === window.RTT_PUTT.TOURS.members.worlds.length - 1 && !/Harvest Moon|Monster Castle/.test(document.querySelector('.pp-map').innerText)), 'without a pass the Members tab still shows Hallows Night: its nine holes and their signature hole, and every later world under cloud, unnamed');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 9 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === window.RTT_PUTT.TOURS.members.worlds.length - 1 && !/Harvest Moon|Monster Castle|Frost Hollow/.test(document.querySelector('.pp-map').innerText)), 'without a pass the Members tab still shows Hallows Night: its nine holes and their signature hole, and every later world under cloud, unnamed');
     await pg.click('.pp-mem .pp-map [data-lv="1"]'); await pg.waitForSelector('.pp-memsh');
     const ms = await pg.textContent('.pp-memsh');
     claim(/Members only/.test(await pg.evaluate(() => JSON.stringify(window.RTT_PUTT.PAY.members))) && /Get Tour Pass/.test(ms) && !/\d+ coins? to (buy|unlock)/i.test(ms) && /Putt Putt Tour is free/.test(ms) && !!(await pg.$('.pp-memsh [data-main]')) && await pg.evaluate(() => window.RTT_PUTT._state().screen !== 'play'), 'a hole on Hallows Night without a pass opens a sheet about the Tour Pass that also offers the free tour, and the hole does not start');
@@ -2187,7 +2209,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       return out; });
     claim(!!v3, 'the 3D hole module loaded');
     if (v3){
-      claim(v3.n === 72 + 576 + 27 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
+      claim(v3.n === 72 + 576 + 36 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
       claim(v3.off.length === 0, 'the projection puts open carpet on carpet in every picture, so the ball rolls on what is drawn' + (v3.off.length ? ': ' + v3.off.slice(0, 4).join('; ') : ''));
       claim(v3.sliceDiff === 0 && v3.slices > 20, `rendered a little at a time (${v3.slices} steps) it is the same picture, pixel for pixel` + (v3.sliceDiff ? ': ' + v3.sliceDiff + ' differ' : ''));
       claim(v3.med < 600, `a hole renders in ${v3.med}ms at the median (${v3.max}ms the slowest), on this machine`);

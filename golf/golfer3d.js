@@ -1160,6 +1160,8 @@
      own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
   const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
     ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppinvisible:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'}, ppemeraldspecs:{as:'shades',frame:'%',lens:'Q'},
+    // the Clockmaker’s Loupe (Frost Hollow): Drosselmeyer’s watchmaker’s eyeglass, one round glass in a brass rim
+    pploupe:{as:'monocle',frame:'g',lens:'E'},
     // the Glacier Glasses (the Himalayas): an old climber's round glacier glasses, dark lenses in a brass wire rim, leather side shields
     ppglacier:{as:'round',frame:'%',lens:'Q',strap:'&'},
     // the Frosted Specs (the Season 3 Tour Pass): round wire frames rimed with frost, pale ice lenses
@@ -2043,6 +2045,10 @@
     // the Bourdon Ball: the bronze of a great bell, warm and burnished, its two raised bands round it and a sheen up its shoulder
     // the Piece of Eight Ball: an old Spanish silver dollar gilded with the sea's years, its cross of the arms in relief and a milled
     // rim round its equator
+    // the Nutcracker Ball: Hoffmann's Nutcracker, his violet hussar's jacket with its rows of white braid across it and a gold
+    // button at each end
+    ppnutcracker:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const br=Math.abs(((p[2]+1)*3.5)%1-0.5);
+      if(br<0.11&&Math.abs(p[2])<0.75){ if(Math.abs(p[1])>0.55&&p[0]>0) return {c:P.b,gloss:3}; return {c:P.h,gloss:2}; } return {c:p[0]+p[2]>0.6?P.h:P.C,gloss:3}; } },
     // the Full Moon Ball: the Werewolf's full moon, pale and bright, its grey seas and a few craters with their pale rims
     ppfullmoon:{ f:(p,P)=>{ if(Math.hypot(p[0]+0.35,p[1]-0.4,p[2]-0.75)<0.18) return {c:P.W,gloss:3}; const cr=[[0.5,0.3,0.8],[-0.6,0.5,0.6],[0.2,-0.8,0.55],[-0.3,-0.4,-0.85],[0.8,-0.2,-0.5]];
       for(const q of cr){ const d=Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]); if(d<0.16) return {c:P.b,gloss:2}; if(d<0.21) return {c:P.h,gloss:3}; }
@@ -2301,11 +2307,13 @@
     club:{K:6,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, shirt:{K:3,EL:8,aim:200,only:'shirt'}, pants:{K:3,EL:12,aim:200,only:'pants'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
   function menu(look,aimDeg,o){ MO={K:o.K||3,EL:o.EL!=null?o.EL:2,phase:o.phase||0,only:o.only||'',part:o.part||''};
     try{ return draw(look,aimDeg,'walk','ws').cv; } finally{ MO=null; } }
-  const pcache=new Map();
+  /* the menu pictures, kept until there are PCACHE_MAX of them. It was 400, and the closet draws every item once: with 402 items
+     (Frost Hollow's two) the cache emptied itself part way through, and a tile asked for after that waited for a fresh picture. */
+  const PCACHE_MAX=1200, pcache=new Map();
   const picKey=(look,part)=>part+'|'+lookKey(look);
   function crop(cv,x,y,w,h){ const c=document.createElement('canvas'); c.width=Math.max(1,w); c.height=Math.max(1,h); c.getContext('2d').drawImage(cv,x,y,w,h,0,0,w,h); return c; }
   function pic(look,part){ const k=picKey(look,part); if(pcache.has(k)) return pcache.get(k);
-    if(part==='ball'){ const r=ballPic(look.ball); if(pcache.size>400) pcache.clear(); pcache.set(k,r); return r; }
+    if(part==='ball'){ const r=ballPic(look.ball); if(pcache.size>PCACHE_MAX) pcache.clear(); pcache.set(k,r); return r; }
     const o=PIC[part]; if(!o) return null;
     // a cape's tile is drawn from behind
     const cv=menu(look,part==='top'&&look.top==='cape'?20:o.aim,Object.assign({part},o)), W=cv.width, H=cv.height, d=cv.getContext('2d').getImageData(0,0,W,H).data, A=(x,y)=>d[(y*W+x)*4+3]>8;
@@ -2320,7 +2328,7 @@
       else if(part==='club'&&!NOVELTY[look.club]&&look.club!=='pu_magicwand'){ const h=y1-y0; c=crop(cv,x0,y0+Math.round(h*0.66),x1-x0+1,Math.round(h*0.34)+1); }   // the head of the club
       else c=crop(cv,x0,y0,x1-x0+1,y1-y0+1);
       r={url:c.toDataURL('image/png'),w:c.width,h:c.height}; }
-    if(pcache.size>400) pcache.clear(); pcache.set(k,r); return r; }
+    if(pcache.size>PCACHE_MAX) pcache.clear(); pcache.set(k,r); return r; }
   /* A BALL IN 3D, for its tile: a lit sphere wearing the ball's own art (its outline and shading characters are
      the base colour, since the light now does that job), sat on a white tee. */
   function ballPic(id){ const map=typeof PXG_BALL!=='undefined'&&PXG_BALL[id], pal=typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[id];
