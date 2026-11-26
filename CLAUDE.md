@@ -86,8 +86,10 @@ goes on the home page and not before. Addresses live in `newsletter_subscribers`
 
 The owner's call (2026-11-26). The owner decides, the hub chat keeps the owner organized, and each
 agent works in its own chat. The hub's session id is at the top of `agents/hub/hub-waiting-on-owner.md`
-in the knowledge base. Send it one short message (`send_message`, one to three lines, no reply
-expected) when you:
+in the knowledge base. This is for work the owner brings to you directly, in your own chat: the hub
+cannot see that chat. Work the hub sent you needs no extra report; answer the hub as usual. For
+the owner's direct work, send the hub one short message (`send_message`, one to three lines, no
+reply expected) when you:
 
 - start a piece of work (what, and who asked)
 - open a site PR (number, what it does, whether it needs SQL or a setting)
