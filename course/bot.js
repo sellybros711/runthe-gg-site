@@ -5,13 +5,19 @@
  * script, the tests and the browser check all drive a shift with it, which
  * is how "a new player finishes the first shift guided only by the goal
  * line" is held: if the goal line stops being enough, the bot fails first. */
-import { command, goalOf } from './sim.js?v=4';
+import { command, goalOf } from './sim.js?v=5';
 
 export function makeBot() {
   let key = null, gx = 0, gy = 0;
   return function bot(S, ctx) {
     const g = goalOf(S, ctx);
     if (g.act === 'exit') { if (S.player.mode !== 'walk') command(S, 'exit'); key = null; return; }
+    if (g.act === 'end') { if (key !== 'end') { key = 'end'; command(S, 'end'); } return; }
+    /* a purchase: walk onto the place's pad, then buy from its card */
+    if (g.act === 'buy' && (S.player.x - g.x) * (S.player.x - g.x) + (S.player.y - g.y) * (S.player.y - g.y) < 2.2) {
+      if (key !== g.key + '!') { key = g.key + '!'; command(S, 'buy', g.kind, g.id); }
+      return;
+    }
     const moved = (g.x - gx) * (g.x - gx) + (g.y - gy) * (g.y - gy) > 0.25;
     if (g.key !== key || moved || (!S.player.go && S.tick % 10 === 0 && (S.player.x - g.x) * (S.player.x - g.x) + (S.player.y - g.y) * (S.player.y - g.y) > 1)) {
       key = g.key; gx = g.x; gy = g.y;
