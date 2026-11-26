@@ -82,6 +82,24 @@ is not enough.
 `scripts/newsletter/README.md` is the runbook. A game goes on `scripts/newsletter/games.json` the day it
 goes on the home page and not before. Addresses live in `newsletter_subscribers`, never in `profiles`.
 
+## Tell the hub
+
+The owner's call (2026-11-26). The owner decides, the hub chat keeps the owner organized, and each
+agent works in its own chat. The hub's session id is at the top of `agents/hub/hub-waiting-on-owner.md`
+in the knowledge base. Send it one short message (`send_message`, one to three lines, no reply
+expected) when you:
+
+- start a piece of work (what, and who asked)
+- open a site PR (number, what it does, whether it needs SQL or a setting)
+- have a PR green and ready, or see one merge or close
+- **hear a decision from the owner in your own chat** (the decision, in the owner's words)
+- need the owner (the question and the choices, in one line)
+- are blocked or stopping (on what)
+
+Finish one piece of work before starting the next. A one-off chat with no agent role, and a
+scheduled run that finds nothing, send nothing. The full rule is in the knowledge base,
+`agents/README.md`.
+
 ## The knowledge base
 
 Long-term knowledge lives in a separate private repo, `sellybros711/runthe-gg-kb` (an Obsidian
