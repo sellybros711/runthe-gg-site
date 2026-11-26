@@ -276,7 +276,7 @@ if (run('guest')) {
         'flag on: one post to the server, with a device id and no token', JSON.stringify(posts));
       R.ok(o.rec && o.rec.device === body.device && o.rec.uid === GUEST_UID, 'flag on: the browser keeps its device id and the board id the server gave it', JSON.stringify(o.rec));
       R.ok(/Top 20%/.test(o.rank), 'flag on: placed against the field, counted in once (8th of 40)', o.rank);
-      R.ok(/You.re on today.s board as [A-Z][a-z]+ [A-Z][a-z ]+ \d{3}\./.test(o.note) && /free account/.test(o.note), 'flag on: says which name they are on the board as, and offers to keep it', o.note);
+      R.ok(/You.re on today.s board as [A-Z][a-z]+[A-Z][a-z]+\d{2}\./.test(o.note) && /free account/.test(o.note), 'flag on: says which name they are on the board as, and offers to keep it', o.note);
     } else if (flag === 'guestboard') {
       R.ok(posts.length === 1, 'refused (the IP cap): one try, no retry loop', String(posts.length));
       R.ok(/on this device only/.test(o.note) && !/board/.test(o.note), 'refused: the note does not claim the board', o.note);
