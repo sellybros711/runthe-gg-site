@@ -443,7 +443,14 @@
     function landmark(dx, dy) { return { x: clamp(BX + dx, 1, FIELD_W - 1), y: Math.min(109.5, Y0 + dy) }; }
     /* an underneath dropper defends the sticks: no deeper than sticks past the
        marker, no shallower than floor */
-    var under = function (dy) { return T.zone.sticks ? Math.min(dy, Math.max(T.zone.floor, distance + T.zone.sticks)) : dy; };
+    var under = function (dy) {
+      var d0 = T.zone.sticks ? Math.min(dy, Math.max(T.zone.floor, distance + T.zone.sticks)) : dy;
+      /* and on long yardage he sinks toward the sticks (since 2026-11-26: before,
+         this only ever made him shallower, so on 4th and 15 the hook defenders
+         sat at 6 yards and a dig at 18 ran free), never past sinkCap, under the
+         safeties */
+      return T.zone.sinkCap ? Math.max(d0, Math.min(distance + T.zone.sticks - T.zone.sink, T.zone.sinkCap)) : d0;
+    };
     function takeNearest(list, pt, pref) {
       var best = null, bs = 1e9;
       list.forEach(function (d) {
@@ -823,12 +830,19 @@
           }
         }
         else if (collapsed) {
-          /* the pocket is gone: the best option if a throw to him is still worth it, else the checkdown */
-          var B2 = mostOpen(), outlet = B2 && value(B2) >= T.read.worth ? B2 : C2;
+          /* the pocket is gone: the best option if a throw to him is still worth it,
+             else the checkdown if it is a ball he can catch (read.dump), else he
+             is sacked, or on 4th down forces it, or throws it away (before 2026-11-26 any play with two reads
+             always dumped it off, so a pass was never sacked: the NFL sacks 6 to 14%
+             of 4th down passes) */
+          var B2 = mostOpen(), outlet = B2 && value(B2) >= T.read.worth ? B2 : C2 && value(C2) >= T.read.dump ? C2 : null;
           if (outlet) { windup = { to: outlet, at: Math.max(t + T.read.release * 0.6, pa ? pa.fake : 0), primary: false, look: options.indexOf(outlet.id) }; say(t, 'checkdown', outlet === C2 ? 'Checks it down.' : 'Finds the open man.', { to: outlet.id }); }
           else {
-            collapseFate = rnd() < T.sackShare ? 'sack' : 'throwaway';
-            if (collapseFate === 'sack') {
+            /* on 4th down a throwaway loses the ball as surely as a sack, so the
+               QB who is not sacked throws it up to his best option anyway */
+            collapseFate = rnd() < T.sackShare ? 'sack' : S.down === 4 && B2 ? 'force' : 'throwaway';
+            if (collapseFate === 'force') { windup = { to: B2, at: Math.max(t + T.read.release * 0.6, pa ? pa.fake : 0), primary: false, look: options.indexOf(B2.id), forced: true }; say(t, 'checkdown', 'Throws it up for grabs.', { to: B2.id }); collapseFate = null; }
+            else if (collapseFate === 'sack') {
               var bs2 = 1e9; rushers.forEach(function (d) { var s = dist(d, QB); if (s < bs2) { bs2 = s; sacker = d; } });
             } else { say(t, 'throwaway', 'Throws it away.'); finish(t + 0.6, 'throwaway', 'nobody'); }
           }
@@ -1011,7 +1025,7 @@
             var deepest = null, col = null, cs = 1e9;
             receivers.forEach(function (r) {
               var off = Math.abs(r.x - d.mark.x);
-              if (off < d.width * T.zone.reach && r.y > d.mark.y - T.zone.threat && (!deepest || r.y > deepest.y)) deepest = r;
+              if (off < Math.min(d.width * T.zone.reach, T.zone.reachMax || 1e9) && r.y > d.mark.y - T.zone.threat && (!deepest || r.y > deepest.y)) deepest = r;
               if (off < d.width && r.y > d.mark.y - T.zone.threat && 100 - r.y < cs) { cs = 100 - r.y; col = r; }
             });
             var dy3 = deepest && t > T.zone.react ? deepest.y + T.zone.cushion + Math.max(0, deepest.vy) * T.zone.bail : d.mark.y;
@@ -1208,7 +1222,8 @@
       formation: setDef.id, isRun: isRun, call: call, callName: callName(call), callLine: callLine(call),
       pocket: Math.round(Tp * 100) / 100, outcome: outcome, win: win, title: title,
       yards: shown, spotY: spotY, spot: spotY != null ? spotName(spotY) : null, reason: reason,
-      throwInfo: throwInfo ? { dist: Math.round(throwInfo.dist * 10) / 10, sep: throwInfo.sep != null ? Math.round(throwInfo.sep * 10) / 10 : null, p: throwInfo.p != null ? Math.round(throwInfo.p * 1000) / 1000 : null, to: thrownTo ? thrownTo.id : null, primary: throwInfo.primary, look: throwInfo.look, board: throwInfo.board } : null,
+      throwInfo: throwInfo ? { dist: Math.round(throwInfo.dist * 10) / 10, sep: throwInfo.sep != null ? Math.round(throwInfo.sep * 10) / 10 : null, p: throwInfo.p != null ? Math.round(throwInfo.p * 1000) / 1000 : null, to: thrownTo ? thrownTo.id : null, primary: throwInfo.primary, look: throwInfo.look, board: throwInfo.board,
+        airYards: Math.round((throwInfo.to.y - Y0) * 10) / 10 } : null,
       options: options.slice(),
       events: events, ids: E.map(function (e) { return { id: e.id, side: e.side, role: e.role, big: e.role === 'ol' || e.role === 'dl', label: e.label || '' }; }),
       motion: ctx.motion, playAction: !!pa, plans: plansOf(ctx),

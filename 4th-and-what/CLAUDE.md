@@ -97,13 +97,17 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   at one at a time and throws to him when he is open and the throw is worth it (`value`: the catch's
   own chance, less for a catch short of the sticks, nothing `read.yac` yards short); he moves on when
   the route is done or the look runs out. With every look taken, or when the pocket goes, he throws
-  to the best option if it is worth it, else the last read is the checkdown. `throwInfo.look` and
+  to the best option if it is worth it, else to the last read if that ball is catchable (`read.dump`),
+  else he is sacked (`sackShare`) or, on 4th down, throws it up to his best option (a throwaway loses
+  the ball as surely). A pass can be sacked: never always dump it off. `throwInfo.look` and
   `throwInfo.board` (every option's separation at the throw) feed the Coach view and the card's options row.
 - **Every number in copy comes from the engine** (the distance, the yards, the spot, the pocket
   time). Write the sentence without the number otherwise.
 - **A retune is three things:** the change in `config.js`, `node 4th-and-what/build/tune.mjs 300`,
   and the new rates in the vault's `4th-and-what-formulas.md`. The engine test holds the rates
-  within a band of real 4th down conversion.
+  within a band of real 4th down conversion. The targets are the NFL's, measured (the owner,
+  2026-11-26: "retune to the real rates"): `build/real-rates.mjs` reads nflverse play by play, and
+  `TARGET` in `tune.mjs` and the engine test is what it printed. Never type a target by hand.
 - **Playbooks need a Run The Games account** (the owner's call, 2026-10-30). They live in the
   shared cloud saves (`ps_saves`, game `fourth_and_what`: slot `index` and one `b-<id>` a book),
   with a local copy for speed. No new table. A snap's stats are not an edit (2026-11-16): a snap of a saved play
