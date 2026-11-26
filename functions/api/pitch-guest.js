@@ -2,7 +2,7 @@
  *
  * A guest's finished Daily Challenge onto Run The Pitch's daily board under a
  * generated name, and, once that device signs in, the guest's days onto the
- * account. No Supabase anonymous sign-in is involved (supabase/188, and
+ * account. No Supabase anonymous sign-in is involved (supabase/189, and
  * functions/_pitchguest/core.js for the why).
  *
  *   POST { device, player_ids[11], progress, result, furthest, slots, theme }

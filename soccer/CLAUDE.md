@@ -23,7 +23,7 @@ A small fix that only touches code can go ahead without it.
 ```
 node soccer/check-db-reads.mjs                what a finished game reads; no poll while hidden (CI: soccer-checks)
 node soccer/check-guest-daily.mjs             a guest's Daily: the Function, then the page (--quick: the Function only)
-psql -d sdg -f supabase/test/soccer_daily_guest_test.sql    188 against a real Postgres (createdb sdg first)
+psql -d sdg -f supabase/test/soccer_daily_guest_test.sql    189 against a real Postgres (createdb sdg first)
 node soccer/check-club.mjs                    the club side: names, squads, balance, a whole club run (--quick, --names)
 node scripts/check-dashes.mjs soccer/<file>    soccer/ is not in GUARDED yet: check what you touch
 node scripts/check-cachebust.mjs               gameLogic.js and the assets the page pins
@@ -79,7 +79,7 @@ node scripts/check-home-games.mjs              the home page card
   server keeps the first attempt of the day (`submit_daily`). Nothing on the page may let a later
   attempt replace it.
 - **Guests play it, under a generated name** (the owner's call, 2026-11-26). A guest's result goes
-  through `/api/pitch-guest` (a Function with the service role, `supabase/188`), never an anonymous
+  through `/api/pitch-guest` (a Function with the service role, `supabase/189`), never an anonymous
   sign-in. The page sends eleven ids and never a score. Guest days live in `soccer_daily_guest`
   (no foreign key), the board reads the `daily_board` view, and a sign-in moves the days onto the
   account (`claimGuestDaily`). A guest gets no streak, badge or profile, and enters no contest.

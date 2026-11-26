@@ -1,5 +1,5 @@
 /* A guest's Daily Challenge on Run The Pitch's daily board, with no Supabase
- * anonymous sign-in (supabase/188). The route is functions/api/pitch-guest.js;
+ * anonymous sign-in (supabase/189). The route is functions/api/pitch-guest.js;
  * this file is the part a test can run in Node.
  *
  * Files under a "_" folder are not routed by Cloudflare Pages.

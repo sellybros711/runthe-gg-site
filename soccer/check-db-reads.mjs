@@ -65,7 +65,7 @@ await page.route('**/*', async (route) => {
     const rows = [{ player_ids: ['ARG_1986_10', 'BRA_1970_10'], overall: 84, progress: 3 }];
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) });
   }
-  if (p === '/rest/v1/daily_results' || p === '/rest/v1/daily_board') {   // a count: 7 beat us when filtered, 40 today (daily_board is accounts and guests, 188)
+  if (p === '/rest/v1/daily_results' || p === '/rest/v1/daily_board') {   // a count: 7 beat us when filtered, 40 today (daily_board is accounts and guests, 189)
     const n = u.search.includes('or=') ? 7 : 40;
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'content-range': `0-0/${n}` }, body: '[]' });
   }

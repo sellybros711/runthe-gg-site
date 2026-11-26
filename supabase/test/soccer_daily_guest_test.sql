@@ -1,15 +1,15 @@
 -- ---------------------------------------------------------------------------
 -- soccer_daily_guest_test.sql : a guest's Daily reaches the day's board through
--- the server under a generated name, and follows the device onto an account (188).
+-- the server under a generated name, and follows the device onto an account (189).
 --
 --   createdb sdg
 --   psql -d sdg -f supabase/test/soccer_daily_guest_test.sql
 --
 -- It builds its own base (roles, auth.users, profiles, wc_players), applies
--- 12_daily_challenge.sql, then 188 twice (it must be safe to re-run).
+-- 12_daily_challenge.sql, then 189 twice (it must be safe to re-run).
 --
 -- The claims: only the service role can call the guest functions and nobody
--- reads the guest table; an account's Daily scores exactly as it did before 188
+-- reads the guest table; an account's Daily scores exactly as it did before 189
 -- and a guest with the same eleven scores the same; a guest row makes no auth
 -- user, profile or streak; the name is two words and two digits and never an
 -- account's; ten players, a duplicate, an unknown id and an account's own id are
@@ -56,7 +56,7 @@ insert into public.wc_players values ('STAR', 99, 'FWD', false, '');
 
 \i supabase/12_daily_challenge.sql
 
--- An account's Daily BEFORE 188, to hold submit_daily to the same score after it.
+-- An account's Daily BEFORE 189, to hold submit_daily to the same score after it.
 insert into auth.users values ('cccccccc-3333-4333-8333-333333333333'), ('dddddddd-4444-4444-8444-444444444444');
 insert into public.profiles (id, username, flag) values
   ('cccccccc-3333-4333-8333-333333333333', 'RealPlayer', 'USA'),
@@ -67,8 +67,8 @@ select overall as before_overall from daily_results where id = :before_id \gset
 create temp table before as select :before_overall::numeric as overall;
 delete from daily_results; update profiles set current_streak = 0, longest_streak = 0, last_played_date = null;
 
-\i supabase/188_soccer_daily_guest.sql
-\i supabase/188_soccer_daily_guest.sql
+\i supabase/189_soccer_daily_guest.sql
+\i supabase/189_soccer_daily_guest.sql
 
 create or replace function pg_temp.must_fail(sql text, what text) returns void language plpgsql as $$
 begin
@@ -76,12 +76,12 @@ begin
   raise exception 'should have failed: %', what;
 end $$;
 
--- same eleven, same account path, after 188
+-- same eleven, same account path, after 189
 select submit_daily(array['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10','STAR'], 4, 'Quarter-Finalists', 'Quarter-final', null, 'The 90s') as after_id \gset
 select (overall = :before_overall) as same_score, overall from daily_results where id = :after_id \gset
 \if :same_score
 \else
-  \echo 'FAIL: submit_daily scores differently after 188'
+  \echo 'FAIL: submit_daily scores differently after 189'
   \quit 1
 \endif
 delete from daily_results; update profiles set current_streak = 0, longest_streak = 0, last_played_date = null;

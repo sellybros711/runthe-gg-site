@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Run The Pitch: a guest plays the Daily Challenge (supabase/188, /api/pitch-guest).
+/* Run The Pitch: a guest plays the Daily Challenge (supabase/189, /api/pitch-guest).
  *
  *   node soccer/check-guest-daily.mjs            the Function, then a guest's Daily in Chromium
  *   node soccer/check-guest-daily.mjs --quick    the Function only, no browser
@@ -16,7 +16,7 @@
  *     for an account; the home button reads Played; a replay says the first attempt counted
  *   - a guest row on the board carries a "guest" tag
  *   - signing in claims the guest's days with the account's token, once
- *   - with the Function missing or 188 not run, a guest still plays and sees a rank
+ *   - with the Function missing or 189 not run, a guest still plays and sees a rank
  *
  * The SQL half is supabase/test/soccer_daily_guest_test.sql against a real Postgres.
  */
@@ -217,10 +217,10 @@ const playDaily = (page) => page.evaluate(async () => {
   await ctx.close();
 }
 {
-  // 188 not run: no daily_board, so the page falls back to daily_results
+  // 189 not run: no daily_board, so the page falls back to daily_results
   const { ctx, page, rest, errors } = await open({ board: false });
   const a = await playDaily(page);
-  ok(a.lb && a.lb.rank === 5 && a.lb.total === 30 && rest.some(r => r.startsWith('/rest/v1/daily_results?')), 'before 188 is run the rank falls back to daily_results');
+  ok(a.lb && a.lb.rank === 5 && a.lb.total === 30 && rest.some(r => r.startsWith('/rest/v1/daily_results?')), 'before 189 is run the rank falls back to daily_results');
   const rows = await page.evaluate(async () => (await fetchDailyBoard(10)).length);
   ok(rows === 4 && errors.length === 0, 'and the board list falls back too');
   await ctx.close();

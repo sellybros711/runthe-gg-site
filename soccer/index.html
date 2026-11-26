@@ -8323,11 +8323,11 @@ function startDailyChallenge(){
 // ---- a guest's Daily ----------------------------------------------------------
 // A guest's finished Daily goes on the day's board under a generated name
 // ("SillyStriker46"), through /api/pitch-guest (functions/api/pitch-guest.js,
-// supabase/188). No anonymous sign-in: the page keeps a random device id, the
+// supabase/189). No anonymous sign-in: the page keeps a random device id, the
 // server derives the guest from it, works the score out from the eleven ids,
 // and keeps the first attempt of the day. When this browser signs in, the
 // guest's days move onto the account and the board shows its name in that spot.
-// Everything here fails soft: with the Function or 188 missing, a guest still
+// Everything here fails soft: with the Function or 189 missing, a guest still
 // plays and sees a rank, exactly as before.
 const GUEST_DEVICE_KEY='rtp_guest_device', GUEST_DAILY_KEY='rtp_guest_daily';
 const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -8408,7 +8408,7 @@ async function submitDailyRow(progress){
 }
 
 // Read today's daily board (named rows only; names are server-attributed).
-// daily_board (supabase/188) is accounts and guests on one board. Until 188 is
+// daily_board (supabase/189) is accounts and guests on one board. Until 189 is
 // run it does not exist, and the page falls back to daily_results for the visit.
 let DAILY_SRC='daily_board';
 async function fetchDailyBoard(limit){
@@ -8434,7 +8434,7 @@ async function fetchDailyRank(overall, progress){
   const ask=()=>{ const base=`${SUPABASE_URL}/rest/v1/${DAILY_SRC}?select=id&limit=1&date=eq.${utcDateStr()}`;
     return Promise.all([fetch(base+'&or='+orF, hdr), fetch(base, hdr)]); };
   let [b,t]=await ask();
-  if((!b.ok || !t.ok) && DAILY_SRC==='daily_board'){ DAILY_SRC='daily_results'; [b,t]=await ask(); }   // before 188
+  if((!b.ok || !t.ok) && DAILY_SRC==='daily_board'){ DAILY_SRC='daily_results'; [b,t]=await ask(); }   // before 189
   if(!b.ok || !t.ok) throw new Error('daily rank failed');
   const rank=sbCount(b)+1;
   return { rank, total: Math.max(sbCount(t), rank) };
