@@ -3427,6 +3427,10 @@
     "/gameLogic.js": {
       "v": "0.0.32",
       "sha": "201097f19827a3c0"
+    },
+    "/soccer/club.js": {
+      "v": "1",
+      "sha": "6e13b36ad48ae1ee"
     }
   },
   "wrestling/booking/index.html": {

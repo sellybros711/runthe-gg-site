@@ -9,6 +9,13 @@
     try{ t=localStorage.getItem('rtp-theme'); }catch(e){}
     if(t!=='light') document.documentElement.classList.add('dark');
   })();
+  // The club side's preview switch: /soccer/?club=1 opens its door on this device, ?club=0 closes it.
+  (function(){
+    try{
+      var m=/[?&]club=([01])(?:&|$)/.exec(location.search);
+      if(m){ if(m[1]==='1') localStorage.setItem('rtp_club_preview','1'); else localStorage.removeItem('rtp_club_preview'); }
+    }catch(e){}
+  })();
 </script>
 <script>
   // Friendly mode parameter, must run first, before any library, any
@@ -910,6 +917,14 @@
     vertical-align:-0.13em;flex:0 0 auto;}
   .flag-ico.lg{width:2.05em;height:1.38em;border-radius:4px;border-width:1.5px;}
   .flag-none{background-image:repeating-linear-gradient(45deg,#cfc8ba 0 5px,#bdb6a7 5px 10px);}
+  /* The club side: a club is three plain letters on a plain chip, never a crest. */
+  .flag-ico.club-ico{background:#1b2a52;color:#F3E7CF;display:inline-flex;align-items:center;justify-content:center;
+    font-family:Archivo,sans-serif;font-weight:900;font-size:.5em;line-height:1;letter-spacing:.2px;overflow:hidden;
+    vertical-align:middle;text-indent:0;}
+  .reel-item .reel-club{font-family:Anton,sans-serif;font-size:30px;line-height:1.02;letter-spacing:.5px;text-transform:uppercase;
+    text-align:center;padding:0 10px;color:var(--ink);overflow-wrap:anywhere;}
+  .pcard .club-wcs{font-size:11px;font-weight:700;opacity:.8;margin:2px 0 4px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .club-home-btn{background:#1b2a52;color:#fff;border:2px solid var(--gold);}
   /* hero soccer-ball mark */
   .ball-svg{width:62px;height:62px;display:inline-block;}
   /* reel + reveal use a larger flat flag */
@@ -3673,6 +3688,12 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="btn-sub">Draft a squad &amp; win the World Cup</span>
       </button>
 
+      <!-- The club side's door. A preview: shown only after /soccer/?club=1 (see THE CLUB SIDE). -->
+      <button id="btn-club" class="btn big home-primary club-home-btn" style="display:none">
+        <span class="btn-label">Club Draft</span>
+        <span class="btn-sub">Preview · Draft a club XI &amp; win The Club Cup</span>
+      </button>
+
       <!-- Daily Challenge: one themed draft a day, same for everyone -->
       <button id="btn-daily" class="btn big home-primary daily-home-btn" style="display:none">
         <span class="btn-label">Daily Challenge</span>
@@ -4637,6 +4658,8 @@ window.GA_ID='G-L29P5MRWKE';
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
 <script src="/gameLogic.js?v=0.0.32"></script>
+<!-- The club side: Club Draft and The Club Cup (soccer/club.js, checked by soccer/check-club.mjs). -->
+<script src="/soccer/club.js?v=1"></script>
 <!-- The player dataset is fetched async by boot() (data/players_all.json), so it
      no longer blocks first paint. The players_all.js wrapper is loaded on demand
      only as a file:// fallback (see loadEmbeddedPlayers). -->
@@ -4697,6 +4720,7 @@ const flagImg = (c,w=160) =>
 // designed flat-flag chip used everywhere a nation is shown (replaces emoji flags)
 function flagChip(country, cls){
   const url=flagImg(country,160);
+  if(!url && CLUB && CLUB.names.has(country)) return clubChip(country, cls);
   const klass='flag-ico'+(cls?' '+cls:'')+(url?'':' flag-none');
   return `<span class="${klass}"${url?` style="background-image:url('${url}')"`:''} role="img" aria-label="${country||''}"></span>`;
 }
@@ -4791,6 +4815,61 @@ function saveDraftPref(){
 // shapes that emerge are exactly: 3-5-2, 3-4-3, 3-3-4, 3-2-5, 4-4-2, 4-3-3,
 // 4-2-4, 5-3-2, 5-2-3 (DEF 3-5, MID 2-5, FWD 2-5, outfield = 10).
 const FULL_OPEN_SLOTS = ['GK','DEF','DEF','DEF','MID','MID','FWD','FWD','FLEX','FLEX','FLEX'];
+
+// ============================================================
+//  THE CLUB SIDE (Club Draft and The Club Cup)
+// ============================================================
+// Run The Pitch has two sides (the owner's call, 2026-11-26): a club side and a
+// World Cup side. A club draft is a normal draft whose state carries gs.club:
+// the wheel lands on a club and a decade (soccer/club.js builds those from the
+// World Cup data), and the run is The Club Cup against other club sides.
+// Everything else (slots, re-spins, Easy and Hard, the reveal, the sim) is the
+// World Cup side's own code, asked isClub() where the two differ.
+//
+// STEP 1 IS A PREVIEW. The door shows only after /soccer/?club=1 (remembered on
+// the device; ?club=0 closes it). A club run is not sent to any board: its own
+// boards are the next step. Nothing here changes the World Cup side.
+let CLUB = null;          // { units, byKey, names, wcScale }, built on first use
+let sideClub = false;     // which side the setup screen is starting a draft for
+function isClub(){ return !!(gs && gs.club); }
+function clubPreviewOn(){ try{ return localStorage.getItem('rtp_club_preview')==='1'; }catch(e){ return false; } }
+function clubData(){
+  if(CLUB) return CLUB;
+  const all=[];
+  G.getAllCountries().forEach(c=>G.getYearsForCountry(c).forEach(y=>{ G.getSquad(c,y).forEach(p=>all.push(p)); }));
+  const units=RTPClub.build(all), byKey={}, wc={};
+  units.forEach(u=>{ byKey[u.club+'|'+u.era]=u; });
+  // the World Cup opponent pool's ratings: the scale the cup's sides are placed on
+  all.forEach(p=>{ if(p.team_overall!=null && p.year!==2026) wc[p.country+'|'+p.year]=p.team_overall; });
+  CLUB={ units, byKey, names:new Set(units.map(u=>u.club)), wcScale:Object.values(wc) };
+  return CLUB;
+}
+// The cup's words in copy the two sides share ("World Cup winners" and the like).
+function cw(s){ return isClub() ? RTPClub.cupWords(s) : s; }
+// A club's chip: three plain letters. Never a crest (the owner's ruling).
+function clubChip(club, cls){
+  return `<span class="flag-ico club-ico${cls?' '+cls:''}" role="img" aria-label="${escapeHtml(club||'')}">${escapeHtml(RTPClub.chip(club))}</span>`;
+}
+// One man is one pick on the club side, whichever decade or shirt he turns up in.
+function clubPickedPeople(){ return new Set(gs.picks.map(pk=>RTPClub.personKey(pk.player))); }
+// The wheel only lands where there is a man left to draft, never on the same
+// club and decade twice running.
+function clubSpinUnit(){
+  const people=clubPickedPeople(), cur=gs.currentSpin;
+  const open=u=>u.squad.some(p=>!people.has(RTPClub.personKey(p)) && eligibleSlotsFor(p).length>0);
+  return RTPClub.spin(clubData().units, u=>!(cur && cur.country===u.club && cur.year===u.era) && open(u))
+      || RTPClub.spin(clubData().units, open);
+}
+function clubConfirm(club, era){
+  const u=clubData().byKey[club+'|'+era];
+  return { ...gs, phase:'SELECTING', currentSpin:{ country:u.club, year:u.era, squad:u.squad, club:true } };
+}
+// The sides met in the cup, on the World Cup pool's rating scale (see club.js).
+function clubOpponentPool(){
+  const d=clubData();
+  return RTPClub.opponents(d.units, d.wcScale).map(o=>Object.assign({}, o, getOpponentPositionalRatings(o.squad, o.teamOverall)));
+}
+function startClubSetup(){ sideClub=true; goToDraftSetup(); }
 const FULL_FLOORS = { DEF:3, MID:2, FWD:2 };
 const FULL_POS_CAP = 5;
 // Per-position cap (fixed + flex). Forwards are limited to 4; DEF/MID to 5.
@@ -4977,6 +5056,12 @@ function showScreen(name){
   document.body.classList.toggle('home-mode', name==='home');
   document.body.classList.toggle('sim-mode', name==='sim');
   document.body.classList.toggle('profile-mode', name==='profile');
+  // The masthead's line names the side being played. (The full two-sides masthead is a later step.)
+  { const ed=document.querySelector('.masthead .edition');
+    if(ed){
+      const club = name==='setup' ? sideClub : (isClub() && ['home','select','sim','reveal','report'].includes(name));
+      ed.textContent = club ? 'Club Side' : 'World Cup Game';
+    } }
   // Hide the mobile ad strip on the full-viewport / sensitive screens (sim,
   // results/share, draft select, pitch reveal). Additive, no game logic touched.
   document.body.classList.toggle('rtp-hide-ads',
@@ -5079,6 +5164,8 @@ async function boot(){
   b.disabled = false;
   const bLabel = b.querySelector('.btn-label');
   if(bLabel) bLabel.textContent = 'START WORLD CUP'; else b.textContent = 'START WORLD CUP';
+  const bc = $('btn-club');
+  if(bc && clubPreviewOn()){ bc.style.display=''; }   // the club side's preview door
   const bd = $('btn-daily');
   if(bd){ bd.style.display=''; }   // Daily Challenge is live
   const bdb = $('btn-daily-board');
@@ -5240,6 +5327,7 @@ function goToHome(){
   b.disabled=false;
   b.textContent='Spin the Wheel';
   $('btn-start-wc').style.display='none';
+  { const t=$('btn-start-wc').lastChild; if(t && t.nodeType===3) t.textContent = isClub() ? ' Start the Cup' : ' Start World Cup'; }
   $('pitch-result').classList.remove('show');
   showScreen('home');   // make the pitch visible first so labels can be measured
   updatePitch();
@@ -5256,6 +5344,9 @@ function startSpin(){
     const pair = DAILY.seq[Math.min(DAILY.idx, DAILY.seq.length-1)];
     DAILY.idx++;
     year = pair.year; country = pair.country;
+  }else if(isClub()){
+    const u=clubSpinUnit();
+    year = u.era; country = u.club;
   }else{
     year=G.spinYearFirst();
     country=G.spinCountryFromYear(year);
@@ -5286,6 +5377,14 @@ function pickRandomCountry(){return allCountries[Math.floor(Math.random()*allCou
 const COUNTRY_ROW=128, YEAR_ROW=92, DECOYS=34;
 function buildCountryStrip(target, animate){
   const strip=$('reel-country'); const items=[];
+  if(isClub()){   // club names in plain text where the flags would be
+    const names=[...clubData().names], any=()=>names[Math.floor(Math.random()*names.length)];
+    for(let i=0;i<DECOYS;i++) items.push(any());
+    items.push(target); items.push(any()); items.push(any());
+    strip.innerHTML=items.map(c=>`<div class="reel-item"><span class="reel-club">${escapeHtml(c)}</span></div>`).join('');
+    strip._targetIndex=DECOYS;
+    return;
+  }
   for(let i=0;i<DECOYS;i++) items.push(pickRandomCountry());
   items.push(target); // target at index DECOYS
   items.push(pickRandomCountry()); items.push(pickRandomCountry());
@@ -5297,7 +5396,8 @@ function buildCountryStrip(target, animate){
 }
 function buildYearStrip(target, animate){
   const strip=$('reel-year'); const items=[];
-  const decoyYears=[1930,1950,1966,1970,1986,1990,1998,2006,2010,2014,2018,2026];
+  const decoyYears=isClub() ? ['1960s','1970s','1980s','1990s','2000s','2010s','2020s']
+                            : [1930,1950,1966,1970,1986,1990,1998,2006,2010,2014,2018,2026];
   for(let i=0;i<DECOYS;i++) items.push(decoyYears[Math.floor(Math.random()*decoyYears.length)]);
   items.push(target);
   items.push(decoyYears[0]); items.push(decoyYears[1]);
@@ -5337,7 +5437,9 @@ async function doSpinAnim(country, year){
   buildCountryStrip(country,true);        // build the nation reel only now, as it starts spinning
   await spinStrip($('reel-country'),COUNTRY_ROW,spinDur(1700));
   pulseReel($('reel-country'));           // nation settles → flash the window
-  $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
+  $('landed-name').innerHTML = isClub()
+    ? `${escapeHtml(country)} <span class="yr">${year}</span>`
+    : `${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
 }
 
 // fresh spin: animate, then confirm + glide into selection
@@ -5405,7 +5507,7 @@ async function doCountryRespin(){
 
 function resolveSpin(country, year){
   pendingCountry=country; pendingYear=year;
-  gs = G.confirmSpin(gs, country, year);
+  gs = isClub() ? clubConfirm(country, year) : G.confirmSpin(gs, country, year);
   ga('spin_completed',{nation:country,year:year,round:(gs&&gs.picks?gs.picks.length:0)+1,is_daily:!!(gs&&gs.daily),draft_type:draftType,game_mode:gameMode});
   // brief beat so the landed result registers, then glide into the roster
   setTimeout(goToSelect, 650);
@@ -5829,6 +5931,7 @@ function showPitchResult(){
   box.scrollIntoView({behavior:'smooth',block:'center'});
   // reveal the Start World Cup button once the rating has landed
   const wc=$('btn-start-wc');
+  { const t=wc.lastChild; if(t && t.nodeType===3) t.textContent = isClub() ? ' Start the Cup' : ' Start World Cup'; }
   wc.style.display='';
   wc.disabled=false;
   setTimeout(()=>wc.scrollIntoView({behavior:'smooth',block:'center'}), dur+200);
@@ -5892,10 +5995,11 @@ function tournamentFinish(squad){
 
 function paintSquad(){
   const {country,year,squad}=gs.currentSpin;
-  $('select-flag').innerHTML=flagChip(country,'lg');
+  $('select-flag').innerHTML = isClub() ? clubChip(country,'lg') : flagChip(country,'lg');
   $('select-country').textContent=`${country.toUpperCase()} ${year}`;
-  // how this nation finished that World Cup (badge, top-right of the header)
-  const fin=tournamentFinish(squad);
+  // how this nation finished that World Cup (badge, top-right of the header).
+  // A club and a decade has no single finish, so the club side shows none.
+  const fin=isClub() ? null : tournamentFinish(squad);
   const fb=$('select-finish');
   if(fin){ fb.innerHTML=emToSvg(fin.label); fb.className='finish-badge'+(fin.cls?' '+fin.cls:''); fb.style.display=''; }
   else   { fb.style.display='none'; }
@@ -6052,6 +6156,10 @@ function renderGrid(squad){
   draftPosFilter='ALL';   // each new nation/round starts unfiltered
   // players already drafted this game can't be picked again
   const pickedIds = new Set(gs.picks.map(pk=>pk.player.player_id));
+  if(isClub()){   // one man, one pick: his other World Cups and other clubs count as drafted too
+    const people=clubPickedPeople();
+    squad.forEach(p=>{ if(people.has(RTPClub.personKey(p))) pickedIds.add(p.player_id); });
+  }
   const available = p => eligibleSlotsFor(p).length>0 && !pickedIds.has(p.player_id);
   // sort: available first, then grouped by position. EASY orders each position by
   // overall (high→low); HARD is a blind pick, so it orders each position
@@ -6091,6 +6199,7 @@ function renderGrid(squad){
         <span class="posbadge ${p.position}">${p.position}</span>
       </div>
       ${statHtml}
+      ${p.club_side?`<div class="club-wcs" title="World Cups he went to from this club">${flagChip(p.country)} ${escapeHtml(p.country)} · WC ${p.club_side.wcs.map(y=>"'"+String(y).slice(2)).join(' ')}</div>`:''}
       <div class="pbottom">
         ${cardStatBlock(p)}
         ${cardBottomRight(p, taken)}
@@ -6354,7 +6463,7 @@ function runRevealOverlay(){
   tlab.style.display='none';
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
   // friendly challenger continues to the share screen; everyone else simulates
-  go.textContent = (friendlyMode && friendlyRole==='challenger') ? 'CONTINUE →' : 'START WORLD CUP';
+  go.textContent = (friendlyMode && friendlyRole==='challenger') ? 'CONTINUE →' : (isClub() ? 'START THE CUP' : 'START WORLD CUP');
 
   ov.classList.toggle('full', isFullDraft());
   // Reveal in pitch order, attackers first (top) down to the keeper last. Each
@@ -8413,6 +8522,11 @@ function renderDailyList(rows){
 async function fillRankBadge(overall, progress){
   const el = $('res-rank-line'); if(!el) return;
   if(gs && gs.daily) return fillDailyRankBadge(overall, progress); // daily → its own board
+  if(isClub()){   // step 1: a club run is sent to no board. Its own boards are the next step.
+    el.className='res-rank';
+    el.textContent='Club Draft preview. This run is not ranked yet.';
+    return;
+  }
   if(gs.result._lb){ // already computed (e.g. re-render), just show it
     renderRankLine(el, gs.result._lb.rank, gs.result._lb.total);
     return;
@@ -8569,7 +8683,7 @@ function goToResults(){
     const hookEl=$('res-redraft-hook'), againBtn=$('res-again');
     if(!hookEl||!againBtn) return;
     if(champ){
-      hookEl.innerHTML='🏆 <b>World Cup won.</b> Can you go back-to-back?';
+      hookEl.innerHTML=cw('🏆 <b>World Cup won.</b> Can you go back-to-back?');
       againBtn.textContent='Re-draft, defend your title →';
       return;
     }
@@ -8606,6 +8720,9 @@ function goToResults(){
   { const rh=$('res-home'); if(rh) rh.addEventListener('click', ()=>{ if(typeof friendlyReset==='function') friendlyReset(); showScreen('start'); }); }
   $('res-boxscores').addEventListener('click', openBoxScores);
   const isDaily = !!(gs && gs.daily);
+  if(isClub()){   // step 1: no club board, share card or challenge link yet (they are World Cup worded)
+    ['res-share','res-beatmine','res-leaderboard','rate-link-results'].forEach(id=>{ const b=$(id); if(b) b.style.display='none'; });
+  }
   $('res-leaderboard').addEventListener('click', ()=> isDaily ? openDailyBoard() : openEntryModal(roundName, r.teamOverall, color));
   $('rate-link-results').addEventListener('click', ()=>openRatingForm());
   { const fb=$('fb-link-results'); if(fb) fb.addEventListener('click', ()=>openFeedbackForm()); }
@@ -8617,7 +8734,7 @@ function goToResults(){
 
   // Always-on add-to-leaderboard prompt after a 1s beat. Daily games open the
   // daily board instead (handled inside fillDailyRankBadge), so skip here.
-  if(!isDaily) setTimeout(()=>openEntryModal(roundName, r.teamOverall, color), 1000);
+  if(!isDaily && !isClub()) setTimeout(()=>openEntryModal(roundName, r.teamOverall, color), 1000);
 }
 
 // Falling confetti for a World Cup win.
@@ -8697,7 +8814,7 @@ function openProfile(p){
   const details=[
     detail('Age at tournament', p.age_at_tournament),
     detail('Birth year', p.birth_year),
-    detail('Club', p.club_at_tournament),
+    detail('Club', RTPClub.clubName(p.club_at_tournament) || p.club_at_tournament),   // the club's name without a brand (club.js NAMES)
     detail('Career caps', p.appearances),
     detail("Ballon d'Or", p.ballon_dor),
   ].join('');
@@ -9489,7 +9606,7 @@ function goToDraftSetup(){
   ga('game_setup_opened',{draft_type:draftType,game_mode:gameMode});
 }
 // kept under the old name so existing callers (btn-start, fx-solo) still work
-function goToDraftTypeSelect(){ goToDraftSetup(); }
+function goToDraftTypeSelect(){ sideClub=false; goToDraftSetup(); }   // every caller of this name is the World Cup side
 
 function newGame(){
   const lastMode = gameMode; // remember before goToDraftSetup resets it
@@ -9506,7 +9623,8 @@ function newGame(){
 // ============================================================
 //  WIRING
 // ============================================================
-$('btn-start').addEventListener('click',goToDraftTypeSelect);
+$('btn-start').addEventListener('click',()=>{ sideClub=false; goToDraftTypeSelect(); });
+{ const bc=$('btn-club'); if(bc) bc.addEventListener('click', startClubSetup); }
 // Home-screen leaderboard view: opens the existing leaderboard board in view-only
 // mode (board visible, score-entry UI hidden). Does not change leaderboard behaviour.
 $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
@@ -9597,6 +9715,7 @@ $('btn-setup-go').addEventListener('click',()=>{
   gs = (draftType==='full')
     ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full: (gameMode==='easy'?2:1) } })
     : G.createGameState();
+  if(sideClub){ gs.club=true; clubData(); ga('club_draft_started',{draft_type:draftType,game_mode:gameMode}); }
   goToHome();
 });
 
@@ -9655,6 +9774,12 @@ $('btn-start-wc').addEventListener('click',()=>{ $('btn-start-wc').disabled=true
 
 $('btn-respin-full').addEventListener('click',()=>{
   if(gs.respins.full<=0) return;
+  if(isClub()){   // a new club and decade; the engine's re-spin only knows nations
+    const u=clubSpinUnit(); if(!u) return;
+    gs={ ...clubConfirm(u.club, u.era), respins:{ ...gs.respins, full:gs.respins.full-1 } };
+    doRespin();
+    return;
+  }
   const {state}=G.useFullRespin(gs);
   gs=state;
   doRespin();   // animates BOTH the nation and year wheels
@@ -11244,7 +11369,7 @@ function simOutcome(r){
 }
 
 // ---- flavour text generators (make every run feel different) ----
-const pickOne = arr => arr[Math.floor(Math.random()*arr.length)];
+const pickOne = arr => cw(arr[Math.floor(Math.random()*arr.length)]);   // cw: the cup's words on the club side
 const shuffle = arr => [...arr].sort(()=>Math.random()-0.5);
 
 // a weighted-random outfield player (keeps GK out of attacking lines)
@@ -11929,12 +12054,12 @@ const COUNTRY_CODE3 = {
   "Turkey":"TUR","Ukraine":"UKR","United Arab Emirates":"UAE","United States":"USA","Uruguay":"URU",
   "Uzbekistan":"UZB","Wales":"WAL","West Germany":"FRG","Yugoslavia":"YUG","Zaire":"ZAI"
 };
-const code3 = c => COUNTRY_CODE3[c] || (c || '').slice(0,3).toUpperCase();
+const code3 = c => COUNTRY_CODE3[c] || ((CLUB && CLUB.names.has(c)) ? RTPClub.chip(c) : (c || '').slice(0,3).toUpperCase());
 
 function makeScoreboard(opp, opts={}){
   const youLabel = opts.youLabel || 'YOU';
   const oppLabel = opts.oppLabel || code3(opp.country);
-  const tournament = opts.tournament || 'FIFA WORLD CUP';
+  const tournament = opts.tournament || cw('FIFA WORLD CUP');
   const oppFlag = (opts.oppFlag!==undefined) ? opts.oppFlag : flagChip(opp.country,'sb-flag');
   const youFlag = (opts.youFlag!==undefined) ? opts.youFlag : SB_BALL;
   const wrap=document.createElement('div');
@@ -12801,7 +12926,7 @@ async function playMatchAnimation(m, card, isFinal, opts){
 function buildSummaryCard(){
   const r=simResult;
   const oc = simOutcome(r);
-  const emoji = oc.emoji, headline = oc.label;
+  const emoji = oc.emoji, headline = cw(oc.label);
 
   const rows = r.matches.map(m=>{
     const won=m.winner==='user';
@@ -12939,7 +13064,7 @@ async function runSimulationScreen(){
   const userSquad = gs.picks.map(p=>p.player);
   const userOverall = gs.result.teamOverall;
   const userRatings = getUserPositionalRatings(gs.picks);
-  const pool = buildOpponentPool(null, null);
+  const pool = isClub() ? clubOpponentPool() : buildOpponentPool(null, null);
 
   simResult = simulateTournament(userSquad, userOverall, pool, userRatings);
 
