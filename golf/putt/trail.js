@@ -6852,17 +6852,26 @@ Object.assign(FOLK3D, {
     if (d < 0.2){ if (u > 0.14 && Math.abs(av - 0.075) < 0.035 && Math.abs(t - 2.1) < 0.035) return '#2a6ab8'; if (u > 0.15 && av < 0.05 && Math.abs(t - 2.0) < 0.012) return '#6aa8d8'; return u < -0.06 ? '#ffffff' : '#cfe6f6'; }   // pale blue face, a sly smile
     for (var k = 0; k < 7; k++){ var a = k * 0.9 - 2.7, sx = Math.cos(a) * 0.14 - 0.04, sy = Math.sin(a) * 0.17; if (cap3(u, v, t, [sx, sy, 2.18], [sx * 1.5 - 0.04, sy * 1.45, 2.36 + (k % 2) * 0.06], 0.045)) return k % 2 ? '#ffffff' : '#e6f6fe'; }   // white hair in icicles
     return null; } },
-  snowqueen:{ r:0.9, h:4.3, k:1.05, at:function(u, v, t){ var av = Math.abs(v), rr = Math.hypot(u, v), sn = hash((u * 28) | 0, (v * 28 + t * 28) | 0, 87);
-    if (t < 2.55 && rr < 0.2 + (2.55 - t) * 0.1){ if (u > 0.1 && av < 0.07 && t > 0.2) return sn < 0.3 ? '#ffffff' : '#dfe6f0';   // her gown of white gauze, starred like snowflakes
-      if (u > 0.08 && av < 0.1) return '#c8d2e0'; return sn < 0.18 ? '#ffffff' : u < -0.05 ? '#d4dce8' : '#eef2f8'; }   // the long cloak of snow, open at the front
-    if (cap3(u, av, t, [0, 0.24, 2.45], [0.16, 0.28, 1.7], 0.065)) return '#eef2f8';
-    if (el3(u, av, t, 0.17, 0.29, 1.64, 0.05, 0.05, 0.06) <= 1) return '#f4f6fa';   // her white hands
-    if (t >= 2.45 && t < 2.72 && rr < 0.24) return sn < 0.5 ? '#ffffff' : '#e4eaf2';   // the snow fur at her throat
-    var d = Math.hypot(u, v, t - 2.92);
-    if (d < 0.2){ if (u > 0.14 && Math.abs(av - 0.075) < 0.03 && Math.abs(t - 2.95) < 0.03) return Math.abs(av - 0.075) < 0.012 ? '#ffffff' : '#3a8ad0';   // eyes like two bright stars
-      if (u > 0.16 && av < 0.045 && Math.abs(t - 2.84) < 0.014) return '#a8b4c8'; return u < -0.02 ? '#dfe6f0' : '#f6f4f8'; }   // white as ice
-    if (t >= 3.02 && t < 3.1 && Math.hypot(u, v) < 0.24) return '#c8d2e0';   // the band of her cap
-    if (t >= 3.1 && t < 3.85 && Math.hypot(u + (t - 3.1) * 0.08, v) < 0.21 - (t - 3.1) * 0.12) return sn < 0.25 ? '#ffffff' : '#e8eef6';   // her tall cap of snow
+  snowqueen:{ r:1.0, h:4.7, k:1.1, at:function(u, v, t){ var av = Math.abs(v), rr = Math.hypot(u, v), sn = hash((u * 28) | 0, (v * 28 + t * 28) | 0, 87);
+    // the long cloak of snow, blue white and shaded darker behind, falling from her shoulders to a train on the ground
+    if (u < 0.06 && t < 2.6 && rr < 0.24 + (2.6 - t) * 0.16 && rr > 0.12 + (2.6 - t) * 0.08 - 0.06){ if (rr > 0.2 + (2.6 - t) * 0.16) return '#7a9cc8'; return u < -0.12 ? (sn < 0.2 ? '#b8cce6' : '#9ab4d8') : '#cfe0f4'; }
+    // her gown of white gauze, long and straight to the ground, a line of ice down its front
+    if (t < 2.45 && rr < 0.2 + (2.45 - t) * 0.07){ if (u > 0.14 && av < 0.03 && t > 0.3) return '#8ac8f0'; return sn < 0.15 ? '#ffffff' : (u > 0.05 ? '#f6f9fd' : '#dfe8f4'); }
+    // her arms in long white sleeves, one hand out before her, one at her side
+    if (cap3(u, v, t, [0, 0.27, 2.35], [0.34, 0.36, 1.85], 0.07)) return '#e6eef8';
+    if (cap3(u, v, t, [0, -0.27, 2.35], [0.06, -0.33, 1.62], 0.07)) return '#e6eef8';
+    if (el3(u, v, t, 0.4, 0.37, 1.8, 0.06, 0.05, 0.06) <= 1 || el3(u, v, t, 0.07, -0.34, 1.55, 0.05, 0.05, 0.06) <= 1) return '#f6eef0';   // white hands
+    if (t >= 2.4 && t < 2.62 && rr < 0.26){ if (u > 0.2 && av < 0.05 && Math.abs(t - 2.52) < 0.05) return '#4ab0f0'; return sn < 0.5 ? '#ffffff' : '#dce8f4'; }   // the snow fur at her throat, a clasp of blue ice
+    var d = Math.hypot(u, v * 1.05, (t - 2.86) * 0.95);
+    if (d < 0.25){ if (u > 0.15 && Math.abs(av - 0.09) < 0.04 && Math.abs(t - 2.92) < 0.04) return Math.abs(av - 0.09) < 0.015 && Math.abs(t - 2.92) < 0.015 ? '#ffffff' : '#1e4a98';   // eyes like two bright stars
+      if (u > 0.15 && av < 0.05 && Math.abs(t - 2.76) < 0.015) return '#c88a98';   // pale lips
+      if (u > 0.17 && av < 0.02 && t > 2.8 && t < 2.88) return '#e8d8dc';
+      return u > -0.04 ? '#fff4f2' : '#7f92b4'; }   // white as ice; her silver hair behind
+    if (u < 0.04 && el3(u, v, t, -0.1, 0, 2.62, 0.15, 0.27, 0.45) <= 1) return '#7f92b4';   // pale silver hair, loose down her back
+    // a tall crown of icicles, each spike tipped white, a blue band at its foot
+    if (t >= 3.08 && t < 3.16 && Math.hypot(u, v) < 0.22 && Math.hypot(u, v) > 0.12) return '#4a8ad0';
+    if (t >= 3.16 && t < 3.7){ var a = Math.atan2(v, u), sp = Math.abs(((a / (Math.PI / 4)) % 1 + 1) % 1 - 0.5), tall = Math.floor(((a + 7) / (Math.PI / 4))) % 2 ? 0.52 : 0.34, hh = (t - 3.16) / tall, rc = Math.hypot(u, v);
+      if (rc < 0.22 && rc > 0.12 && hh < 1 && sp < 0.24 * (1 - hh)) return hh > 0.75 ? '#ffffff' : (u > 0 ? '#a6d8f6' : '#6aa8d8'); }
     return null; } }
 });
 // a figure's build, facing f, turned 53 degrees toward the camera
