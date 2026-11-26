@@ -153,7 +153,7 @@
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
     if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.putStats(b); } });
-    A.watch3d(res, showCard);
+    A.watch3d(res, showCard, { play: p, kind: card && card !== 'own' && card !== 'mine' ? 'cards' : 'drawn' });
     return true;
   }
   $('sSnap').addEventListener('click', function () { snap(); });
