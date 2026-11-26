@@ -138,13 +138,10 @@ jobs:
       # both found here: a re-spin rung asking for five of a thing capped at three,
       # and a play streak that reported ten after forty consecutive days because it
       # sorted its day keys as text.
-      # --quick IS THE STRICT ONE HERE, which is the opposite of what the flag
-      # usually means. The two excuse lists are a record of what a sweep reaches,
-      # so they can only be tuned to one sweep, and they are tuned to this one: the
-      # full run reaches strictly more and would call some of them stale, pruning
-      # them would then fail this run, and that loop has no end. Reachability is
-      # hard on both. The full sweep is three minutes and is the developer's
-      # stronger answer.
+      # --quick, against excuse lists that cover every rare rung (2026-11-23).
+      # Which rare rungs a seeded sweep reaches moves with every pool change, at
+      # any sweep size, so the lists excuse all of them on the rung below and a lit
+      # one is a note. A rung nothing reaches, or a chain ending dark, still fails.
       - name: Every badge is reachable
         run: node baseball/check-badges.mjs --quick
 

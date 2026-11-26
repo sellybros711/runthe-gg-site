@@ -20,6 +20,7 @@ A small fix that only touches code can go ahead without it.
 ## Commands
 
 ```
+node soccer/check-db-reads.mjs                what a finished game reads; no poll while hidden (CI: soccer-checks)
 node scripts/check-dashes.mjs soccer/<file>    soccer/ is not in GUARDED yet: check what you touch
 node scripts/check-cachebust.mjs               gameLogic.js and the assets the page pins
 node scripts/check-adsense.mjs                 the Pitch's banner screens and slots
@@ -58,8 +59,10 @@ node scripts/check-home-games.mjs              the home page card
 
 **The database**
 
-- Read only what is shown or what changed. Never reread a player's whole history after a game:
-  fold the new game into what is already loaded. No poll runs while the tab is hidden.
+- Read only what is shown or what changed. The history (`loadMyDrafts`) is read once a visit, when
+  the profile shows it; a finished game is folded in (`foldMyDraft`), never reread. A rank is a
+  count, never the board's rows. No poll talks to the server while the tab is hidden
+  (`pollHidden`). `check-db-reads` holds all of it.
 - The pool fills only while someone's page calls `soccer_wc_pool_state` (it adds the computer
   squads). A change to the polls keeps that true or moves the fill to the server.
 
