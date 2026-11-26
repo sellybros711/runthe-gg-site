@@ -863,7 +863,8 @@ function summerDo(L, beats) {
   const t = summerChoose(L, H.k, rngAt(L, 'pick:training:' + H.ks.indexOf(H.k)));
   /* A plan he changed by hand is the plan from now on. */
   if (H.mine) L.flags.summerLast = H.k;
-  beats.push({ kind: 'summer', text: 'Your summer: ' + SUMMER[H.k].l.toLowerCase() + '. ' + t, tone: 'good' });
+  /* The beat carries the program's key and the label the plan was shown under. */
+  beats.push({ kind: 'summer', key: H.k, label: summerOption(L, H.k).label, text: 'Your summer: ' + SUMMER[H.k].l.toLowerCase() + '. ' + t, tone: 'good' });
 }
 /* The answers to the summer (choose() runs them). */
 ANSWER.training = function(L, card, i, opt, rng, beats, touch, touches) {

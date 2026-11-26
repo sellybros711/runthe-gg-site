@@ -223,6 +223,10 @@ function wildOpen(L) {
   const left = Math.max(0, WILD_MAX - W.n);
   return {
     left, of: WILD_MAX, heat: W.heat, net: W.net, owed: W.susp,
+    /* the games still to serve, said; and the record counted, so no screen works either out */
+    owedText: W.susp ? 'You owe ' + W.susp + (W.susp === 1 ? ' game.' : ' games.') + ' They start on opening night.' : '',
+    counts: { arrests: W.rec.filter((x) => x.what === 'arrest').length, inside: W.rec.filter((x) => x.what === 'jail').length,
+      suspensions: W.rec.filter((x) => x.what !== 'arrest' && x.what !== 'jail' && x.what !== 'rehab').length },
     sitting: L.season && L.season.ban && L.season.g < L.season.ban.until - 1 ? { until: L.season.ban.until - 1, why: L.season.ban.why, text: WILD_WORDS[L.season.ban.why] + '. Back after game ' + (L.season.ban.until - 1) + '.' } : null,
     habits: Object.keys(HABITS).map((k) => ({ id: k, name: HABITS[k], level: W.hab[k], hooked: !!W.hook[k], since: W.hook[k] || null })),
     record: W.rec.map((x) => ({ y: x.y, what: x.what, g: x.g || 0, text: WILD_WORDS[x.what] + (x.g ? ': ' + x.g + ' games.' : '.') })),
@@ -232,8 +236,10 @@ function wildOpen(L) {
       const a = WILD[k], cost = a.cost || 0, min = a.min || 0, open = a.when(L);
       /* With the year's nights spent that is the reason for every one of them. */
       const why = left <= 0 ? 'nights' : !open ? 'shut' : L.cash < Math.max(cost, min) ? 'cash' : null;
-      const note = why === 'shut' ? a.shut : why === 'nights' ? 'No nights left this year.' : why === 'cash' ? 'Not enough cash.' : '';
-      return { id: k, name: a.name, blurb: a.blurb, cost, amt: !!a.amt, min, max: a.amt ? Math.floor(Math.max(0, L.cash) * 100) / 100 : 0, ok: !why, why, note };
+      /* `need` is the price or the least stake; short of it, the note says both figures. */
+      const need = Math.max(cost, min);
+      const note = why === 'shut' ? a.shut : why === 'nights' ? 'No nights left this year.' : why === 'cash' ? 'Needs ' + money(need) + '. You have ' + money(Math.max(0, L.cash)) + '.' : '';
+      return { id: k, name: a.name, blurb: a.blurb, cost, amt: !!a.amt, min, need, max: a.amt ? Math.floor(Math.max(0, L.cash) * 100) / 100 : 0, ok: !why, why, note };
     }),
   };
 }

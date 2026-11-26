@@ -2596,17 +2596,17 @@ function wildWhy(L, V, a){
 function wildSit(V){
   if (!V) return '';
   if (V.sitting) return V.sitting.text || 'You are sitting out. Out through game ' + V.sitting.until + '.';
-  if (V.owed) return 'You owe ' + V.owed + (V.owed === 1 ? ' game.' : ' games.') + ' They start on opening night.';
+  /* games owed are the engine's sentence too (owedText) */
+  if (V.owed) return V.owedText;
   return '';
 }
 function wildSitHtml(V, id){
   var t = wildSit(V);
   return t ? '<p class="cr-wd-sit" id="' + id + '" role="note">' + K.iconHtml('lock', 2) + '<span>' + esc(t) + '</span></p>' : '';
 }
+/* The record counted is the engine's (wildOpen().counts). */
 function wildCount(V){
-  var n = { arrest: 0, susp: 0, jail: 0 };
-  V.record.forEach(function(r){ if (r.what === 'arrest') n.arrest++; else if (r.what === 'jail') n.jail++; else if (r.what !== 'rehab') n.susp++; });
-  return n;
+  return { arrest: V.counts.arrests, susp: V.counts.suspensions, jail: V.counts.inside };
 }
 function wildHtml(L, V){
   var pips = '';
