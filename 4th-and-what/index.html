@@ -58,7 +58,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=38">
+<link rel="stylesheet" href="style.css?v=39">
 </head>
 <body>
 <header class="topbar">
@@ -538,6 +538,12 @@ document.documentElement.setAttribute('data-theme', 'dark');
     <div class="bug" id="bug" hidden aria-hidden="true"><b id="bugDown"></b><span id="bugCall"></span></div>
     <button type="button" class="coachbtn" id="bCoach" hidden aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="18" r="2"/><path d="M20 6l-4 .5 3 3z"/></svg>Coach view</button>
     <div class="coachread" id="coachRead" hidden aria-live="polite"></div>
+    <div class="filmbar" id="filmBar" hidden>
+      <button type="button" class="fplay" id="fPlay" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M7 5l12 7-12 7z"/><path class="i-pause" d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+      <input type="range" id="fTime" min="0" max="1000" value="0" aria-label="Time in the play">
+      <select id="fSpeed" aria-label="Speed"><option value="1">1x</option><option value="0.5" selected>0.5x</option><option value="0.25">0.25x</option></select>
+      <button type="button" class="link" id="fBreak">Breakdown</button>
+    </div>
     <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
     <div class="cap" id="cap" aria-live="polite"></div>
     <div class="measure" id="measure" hidden aria-hidden="true"><i></i><span>Measurement</span><i></i></div>
@@ -595,7 +601,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
         <button type="button" class="btn" id="rCardBtn">Save card</button>
         <button type="button" class="btn" id="rShare">Share</button>
       </div>
-      <button type="button" class="link" id="rBreak">See the breakdown</button>
+      <button type="button" class="link" id="rBreak">Watch the film</button>
       <p class="toast" id="rToast" hidden></p>
     </div>
   </div>
@@ -642,13 +648,13 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="share.js?v=2"></script>
 <script src="feel.js?v=4"></script>
 <script src="play.js?v=5"></script>
-<script type="module" src="live3d.js?v=7"></script>
-<script src="app.js?v=15"></script>
+<script type="module" src="live3d.js?v=8"></script>
+<script src="app.js?v=16"></script>
 <script src="home.js?v=5"></script>
 <script src="studio.js?v=8"></script>
 <script src="game.js?v=8"></script>
-<script src="clip.js?v=2"></script>
-<script src="flow.js?v=21"></script>
+<script src="clip.js?v=3"></script>
+<script src="flow.js?v=22"></script>
 <script src="daily.js?v=10"></script>
 <script src="trivia.js?v=7"></script>
 <script src="calls.js?v=14"></script>

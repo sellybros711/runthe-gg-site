@@ -38,9 +38,15 @@ const wx = (x) => x - FIELD_W / 2, wz = (y) => -y;
 /* the All-22 camera: yards of width that always fit, the tilt down from level,
    and how much bigger than life the men are drawn so they read from up there */
 const ACROSS = 33, TILT = 52 * Math.PI / 180, BIG = 1.4;
+/* the film's camera: higher and wider, the coaches' tape */
+const FILM = { across: 40, tilt: 66 * Math.PI / 180 };
 const aimX = (bx) => (bx + FIELD_W / 2) / 2;
 
-let world = null;      /* the stadium, built once and shared by every canvas */
+/* the stadium, built once per name and shared by every canvas that asks for
+   it: 'main' for the snap and the film, 'clip' for the share video, which
+   records in the background while the film may be open */
+const worlds = {};
+let world = null;
 const views = new WeakMap();
 
 let can = null;
@@ -292,9 +298,57 @@ function makeCoach(W, res, opt) {
   };
 }
 
+/* ---------- the film (stage 4) ----------
+ * The owner, 2026-11-19 (stage 4 of "Build it"), built 2026-11-26: the snap
+ * replayed as coaches watch it. A higher All-22 camera, and behind every man
+ * the path he ran, drawn on the turf as he runs it: the routes in their
+ * clipboard colours, the line faint, the defense pale blue, each trail fading
+ * toward its tail. The ball's flight is a white arc. Play, pause, scrub and
+ * the speed belong to whoever opened it (app.js film()). */
+const trailMat = (col, op) => new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
+  uniforms: { col: { value: new THREE.Color(col) }, prog: { value: 0 }, op: { value: op } },
+  vertexShader: 'attribute float dist; varying float vD; void main() { vD = dist; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: 'uniform vec3 col; uniform float prog; uniform float op; varying float vD; void main() { if (vD > prog) discard; float a = op * (0.3 + 0.7 * clamp(1.0 - (prog - vD) / 14.0, 0.0, 1.0)); gl_FragColor = vec4(col, a);\n#include <colorspace_fragment>\n}'
+});
+function makeTrails(W, res) {
+  const G = new THREE.Group(), frames = res.frames, list = [];
+  res.ids.forEach((e, j) => {
+    const out = [], ts = []; let last = null;
+    for (const f of frames) { const p = f.p[j]; if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) > 0.3) { out.push([wx(p[0]), wz(p[1])]); ts.push(f.t); last = p; } }
+    if (out.length < 2) return;
+    const skill = e.side === 'O' && RCOL[e.id] && e.id !== 'QB';
+    const col = e.side === 'O' ? (skill ? RCOL[e.id] : e.id === 'QB' ? '#ffffff' : '#c9d2dc') : '#8fb4e6';
+    const op = e.side === 'O' ? (skill ? 0.9 : e.id === 'QB' ? 0.7 : 0.35) : 0.75;
+    const R = ribbon(out, skill ? 0.28 : e.side === 'D' ? 0.22 : 0.18), mat = trailMat(col, op), m = new THREE.Mesh(R.g, mat); m.renderOrder = 1; G.add(m);
+    const cum = [0]; for (let i = 1; i < out.length; i++) cum.push(cum[i - 1] + Math.hypot(out[i][0] - out[i - 1][0], out[i][1] - out[i - 1][1]));
+    list.push({ mat, ts, cum });
+  });
+  /* the ball: its whole flight, shown up to now */
+  const bp = [], bt = [];
+  frames.forEach((f) => { bp.push(wx(f.ball[0]), Math.max(0.12, f.ball[2]), wz(f.ball[1])); bt.push(f.t); });
+  const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(bp, 3));
+  const ball = new THREE.Line(bg, new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85, toneMapped: false }));
+  ball.frustumCulled = false; G.add(ball);
+  W.S.add(G);
+  return {
+    update(t) {
+      list.forEach((r) => {
+        let k = 0; while (k < r.ts.length - 1 && r.ts[k + 1] <= t) k++;
+        const u = k < r.ts.length - 1 ? Math.min(1, (t - r.ts[k]) / ((r.ts[k + 1] - r.ts[k]) || 1)) : 0;
+        r.mat.uniforms.prog.value = t <= 0 ? -1 : r.cum[k] + (r.cum[Math.min(k + 1, r.cum.length - 1)] - r.cum[k]) * u;
+      });
+      let n = 0; while (n < bt.length && bt[n] <= t) n++;
+      bg.setDrawRange(0, Math.max(0, n));
+    },
+    dispose() { W.S.remove(G); G.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
+  };
+}
+
 /* ---------- the stadium ---------- */
-function build() {
-  if (world) return world;
+function build(name) {
+  name = name || 'main';
+  if (worlds[name]) return (world = worlds[name]);
   const S = new THREE.Scene();
   S.background = new THREE.Color('#050b16'); S.fog = new THREE.Fog('#050b16', 170, 330);
   const F = fieldTexture();
@@ -377,7 +431,7 @@ function build() {
   const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.BufferAttribute(cpos, 3)); cg.setAttribute('color', new THREE.BufferAttribute(ccol, 3));
   const confetti = new THREE.Points(cg, new THREE.PointsMaterial({ size: 0.55, vertexColors: true, transparent: true, depthWrite: false }));
   confetti.visible = false; confetti.frustumCulled = false; S.add(confetti);
-  world = { S, men, ball, ballShadow, los, gain, confetti, cvel: new Float32Array(NC * 3), numCache: {} };
+  world = worlds[name] = { S, men, ball, ballShadow, los, gain, confetti, cvel: new Float32Array(NC * 3), numCache: {} };
   return world;
 }
 
@@ -396,7 +450,7 @@ function setNumber(m, n, side) {
 
 /* ---------- one snap ---------- */
 function show(canvas, res, ui) {
-  const L = window.FAW_LIVE, W = build();
+  const L = window.FAW_LIVE, W = build(ui.world);
   let v = views.get(canvas);
   if (!v) {
     const r = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
@@ -427,6 +481,8 @@ function show(canvas, res, ui) {
   /* the coach layer for this snap (ui.coach: { on, play, say }); the last one is cleared */
   if (W.coach) { W.coach.dispose(); W.coach = null; }
   const coach = ui.coach ? (W.coach = makeCoach(W, res, ui.coach)) : null;
+  if (W.trails) { W.trails.dispose(); W.trails = null; }
+  const trails = ui.film ? (W.trails = makeTrails(W, res)) : null;
   function draw(tt) {
     const pre = tt < 0, F = L.frameOf(res, Math.max(0, tt)), now = performance.now(), dts = lastT == null ? 0 : Math.min(0.05, (now - lastT) / 1000); lastT = now;
     /* each man: where the engine has him, which way he faces, and his pose,
@@ -472,8 +528,10 @@ function show(canvas, res, ui) {
     const k = pre || lastDraw == null ? 1 : 1 - Math.exp(-Math.min(0.4, (now - lastDraw) / 1000) * 2.2); lastDraw = now;
     const tx = pre ? aimX(res.BX) : aimX(res.BX) + (bx - res.BX) * 0.25, ty = pre ? res.Y0 + 12 : Math.max(res.Y0 + 12, by - 10);
     C.x += (tx - C.x) * k; C.y += (ty - C.y) * k;
-    const D = Math.min(130, Math.max(45, ACROSS / (2 * Math.tan(v.cam.fov * Math.PI / 360) * v.cam.aspect)));
-    v.cam.position.set(wx(C.x), D * Math.sin(TILT), wz(C.y - D * Math.cos(TILT))); v.cam.lookAt(wx(C.x), 0, wz(C.y));
+    const across = ui.film ? FILM.across : ACROSS, tilt = ui.film ? FILM.tilt : TILT;
+    const D = Math.min(140, Math.max(45, across / (2 * Math.tan(v.cam.fov * Math.PI / 360) * v.cam.aspect)));
+    v.cam.position.set(wx(C.x), D * Math.sin(tilt), wz(C.y - D * Math.cos(tilt))); v.cam.lookAt(wx(C.x), 0, wz(C.y));
+    if (trails) trails.update(Math.max(0, tt));
     if (coach) coach.update(tt, W.men);
     if (ui.pressure) ui.pressure(pre || res.isRun ? 0 : F.a.pressure);
     v.r.render(W.S, v.cam);
@@ -510,6 +568,32 @@ function show(canvas, res, ui) {
     };
     party = requestAnimationFrame(step);
   };
+  if (ui.film) {
+    /* the film's own clock: play, pause, scrub, speed; it never fires the
+       game's events (no sounds, no stamp, no card) */
+    const tEnd = frames[frames.length - 1].t;
+    let t = 0, playing = false, speed = 1, raf2 = 0, prev2 = 0;
+    const caption = () => { if (!ui.caption) return; let txt = ''; (res.events || []).forEach((e) => { if (e.t <= t) txt = e.text; }); ui.caption(txt); };
+    const tick = (now) => {
+      const d = Math.min(0.1, (now - prev2) / 1000); prev2 = now;
+      t = Math.min(tEnd, t + d * speed); draw(t); caption(); if (ui.time) ui.time(t, tEnd);
+      if (t >= tEnd) { playing = false; if (ui.state) ui.state(false); return; }
+      raf2 = requestAnimationFrame(tick);
+    };
+    const ctl = {
+      duration: tEnd,
+      play() { if (t >= tEnd) t = 0; playing = true; prev2 = performance.now(); if (ui.state) ui.state(true); cancelAnimationFrame(raf2); raf2 = requestAnimationFrame(tick); },
+      pause() { playing = false; cancelAnimationFrame(raf2); if (ui.state) ui.state(false); },
+      seek(x) { t = Math.max(0, Math.min(tEnd, x)); lastT = null; draw(t); caption(); if (ui.time) ui.time(t, tEnd); },
+      speed(x) { speed = x; },
+      get playing() { return playing; },
+      skip() {},
+      stop() { cancelAnimationFrame(raf2); window.removeEventListener('resize', onResize); },
+      coach: (want) => { if (!coach) return false; if (want != null) { coach.set(want); v.r.render(W.S, v.cam); } return coach.on; }
+    };
+    draw(-0.01); ctl.seek(0); ctl.play();
+    return ctl;
+  }
   const ui2 = Object.assign({}, ui, { final: ui.final ? (r, skipped) => { celebrate(r); ui.final(r, skipped); } : undefined, done: (r) => { if (!ui.final) celebrate(r || res); ui.done(r); } });
   const h = L.run(res, ui2, draw);
   return {
