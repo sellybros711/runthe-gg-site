@@ -1,0 +1,34 @@
+name: Soccer club pool check
+# Run The Pitch's club pool (data/club_players.json): every shipped club decade a full squad, ratings
+# in range, World Cup ids that exist, nations the flags know, and no shrink against the base. A change
+# to the pool, its scripts, or the World Cup file it joins to runs scripts/soccer-clubs/check.mjs.
+on:
+  pull_request:
+    paths:
+      - 'data/club_players.json'
+      - 'data/players_all.json'
+      - 'scripts/soccer-clubs/**'
+      - '.github/workflows/soccer-club-pool-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/club_players.json'
+      - 'data/players_all.json'
+      - 'scripts/soccer-clubs/**'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: The club pool gate
+        env:
+          REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD~1' }}
+        run: node scripts/soccer-clubs/check.mjs --against "$REF"
