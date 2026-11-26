@@ -1169,18 +1169,21 @@ window.GA_ID='G-L29P5MRWKE';
   @media(prefers-reduced-motion:reduce){ .hq.wheel.ready .hqi, .hq.wheel.ready .hqi .wbi, .hq .hqd{animation:none} }
   @media(max-width:380px){ .hq{font-size:10px; letter-spacing:0; padding-left:0; padding-right:0} }
   @media(min-width:920px){ .hqbar{min-width:372px; margin:0} .hq{min-height:66px; font-size:11.5px; padding:9px 6px} }
-  /* The next season's countdown under the quick bar. One line, in the next season's colour. */
-  .hqwrap{margin:10px 0 13px} .hqwrap .hqbar{margin:0}
-  .hqcd{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; margin-top:7px; padding:7px 12px;
-    border-radius:12px; border:1px solid color-mix(in srgb,var(--acc) 55%,transparent); cursor:pointer;
-    background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 22%,transparent),rgba(0,0,0,.32));
-    color:#fff; font:800 11px/1 var(--body); letter-spacing:.12em; text-transform:uppercase}
-  .hqcd:hover{border-color:var(--acc)}
-  .hqcd:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
-  .hqcd .hqcdl{color:color-mix(in srgb,var(--acc) 45%,#fff)}
-  .hqcd .hqcdt{font:900 14px/1 var(--body); letter-spacing:.04em; font-variant-numeric:tabular-nums; text-transform:none}
-  .hqcd span{white-space:nowrap}
-  @media(max-width:380px){ .hqcd{gap:6px; padding:7px 8px; font-size:10px; letter-spacing:.04em} .hqcd .hqcdt{font-size:13px} }
+  /* The next season's countdown on the First Tee home (ftSeasonCd), right under the Tour Pass card it opens.
+     One line, in the next season's colour, the card's width. */
+  .ft-cd{position:relative; z-index:6; display:flex; align-items:center; justify-content:center; gap:10px; width:100%; max-width:420px;
+    margin:6px auto 0; padding:8px 12px; border-radius:12px; border:1px solid color-mix(in srgb,var(--acc) 60%,transparent); cursor:pointer;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 34%,rgba(20,14,10,.8)),rgba(16,10,8,.86));
+    box-shadow:0 6px 14px rgba(0,0,0,.28); color:#fff; font:800 11px/1 var(--body); letter-spacing:.12em; text-transform:uppercase}
+  .ft-cd:hover{border-color:var(--acc)}
+  .ft-cd:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+  .ft-cd:active{transform:translateY(1px)}
+  .ft-cd .ft-cdl{color:color-mix(in srgb,var(--acc) 40%,#fff)}
+  .ft-cd .ft-cdt{font:900 14px/1 var(--body); letter-spacing:.04em; font-variant-numeric:tabular-nums; text-transform:none}
+  .ft-cd span{white-space:nowrap}
+  .ft-tee .ft-cd{width:calc(100vw - 24px); max-width:520px}
+  .ft-home .ft-rcol .ft-cd{margin:-4px 0 0; max-width:none}
+  @media(max-width:380px){ .ft-cd{gap:6px; padding:8px 8px; font-size:10px; letter-spacing:.04em} .ft-cd .ft-cdt{font-size:13px} }
   /* Prize Wheel: a compact pill in the hero row instead of a full mode card (owner). The little wheel
      spins and the pill glows only when a spin is actually waiting, so it reads as "there's something
      here for you" without eating a screenful. */
@@ -15695,16 +15698,16 @@ function ftPinRail(){
       '.ft-prail .ft-pq{left:3px;right:3px;bottom:2px}.ft-prail:focus-visible{outline:2px solid var(--gold);outline-offset:2px}'+
       '.ft-tee .ft-ptrack{width:calc(100vw - 24px);max-width:520px}'+
       // a short phone: the cards under the golfer step right of the rail instead of running under it
-      '.ft-home.ft-railx .ft-tee .ft-giftnote,.ft-home.ft-railx .ft-tee .ft-ptrack{width:calc(100vw - 76px);left:26px}';
+      '.ft-home.ft-railx .ft-tee .ft-giftnote,.ft-home.ft-railx .ft-tee .ft-ptrack,.ft-home.ft-railx .ft-tee .ft-cd{width:calc(100vw - 76px);left:26px}';
     document.head.appendChild(st); }
   const el=$(`<button type="button" class="ft-prail" aria-label="Today's pin sheet, ${done} of ${pins.length} done${claims?', '+claims+' to claim':''}. Open the sheet.">
     <span class="ft-prc"><b>${done}</b>/${pins.length}</span>${pins.map(p=>ftPinTile(p)).join('')}</button>`);
   el.onclick=()=>{ S.ftSheetOpen=true; render(); };
   return el;
 }
-// after layout: if the rail meets the gift note or the Tour Pass card, those step right of it (ft-railx)
+// after layout: if the rail meets the gift note, the Tour Pass card or the season countdown, those step right of it (ft-railx)
 function ftRailFit(root){ const run=()=>{ try{ const r=root.querySelector('.ft-prail'); if(!r||!root.isConnected) return; root.classList.remove('ft-railx');
-    const a=r.getBoundingClientRect(), hit=[...root.querySelectorAll('.ft-tee .ft-giftnote,.ft-tee .ft-ptrack')].some(e=>{ const b=e.getBoundingClientRect(); return b.top<a.bottom+6&&b.bottom>a.top&&b.left<a.right+6; });
+    const a=r.getBoundingClientRect(), hit=[...root.querySelectorAll('.ft-tee .ft-giftnote,.ft-tee .ft-ptrack,.ft-tee .ft-cd')].some(e=>{ const b=e.getBoundingClientRect(); return b.top<a.bottom+6&&b.bottom>a.top&&b.left<a.right+6; });
     root.classList.toggle('ft-railx',hit); }catch(e){} };
   requestAnimationFrame(run); setTimeout(run,400); }
 function ftSheet(compact){
@@ -16030,6 +16033,39 @@ function ftPassTrack(desk){
   el.onclick=()=>{ S.overlay='tourpass'; render(); };
   return el;
 }
+/* THE NEXT SEASON'S COUNTDOWN, under the Tour Pass card on the home (phone and desktop), so it reads as the card's own
+   footnote and opens the same pass. Only in a season's last 14 days, and only when the next season is written: an
+   unauthored one would count down to a pass with nothing on it. It names the NUMBER and nothing else, because what
+   the next season holds is not shown before it starts (owner). A button, never a popup. It runs to Eastern
+   midnight, when the game turns the season over, then takes itself off; the new season's own launch popup
+   (overlaySeasonLaunch) takes over from there. Null when there is nothing to count. */
+function ftSeasonCd(){
+  if(!passEnabled()) return null;
+  const ssn=passSeason(), nx=ssn.n+1;
+  if(!PASS_SEASONS[nx] || ssn.daysLeft>14) return null;
+  const acc=PASS_SEASONS[nx].accent||'#a24be0', end=passSeasonEndMs(ssn.n);
+  if(end<=Date.now()) return null;   // todayKey() holds its answer for up to a second, so just past midnight it can still say the old season
+  const cd=$(`<button type="button" class="ft-cd" style="--acc:${acc}" aria-label="Season ${nx} countdown. Opens the Tour Pass."><span class="ft-cdl">Season ${nx} starts in</span><span class="ft-cdt" aria-live="off"></span></button>`);
+  cd.onclick=()=>{ S.overlay='tourpass'; render(); };
+  const tt=cd.querySelector('.ft-cdt'), pad=v=>v<10?'0'+v:String(v);
+  // the first tick runs while the home is still being built, before the button is in the page, so the stop is only
+  // for a button that WAS on screen and has since been thrown away by a render
+  let seen=false;
+  const tick=()=>{
+    if(cd.isConnected) seen=true; else if(seen){ clearInterval(iv); return; }
+    const ms=end-Date.now(), sec=Math.ceil(ms/1000);
+    // run out: off it comes, and the home redraws as the new season once todayKey() has let go of the old day.
+    // A sheet that opened meanwhile (the new season's launch popup) redraws the home itself when it closes.
+    if(ms<=0){ clearInterval(iv); const was=cd.isConnected; cd.remove();
+      let tries=0; const turn=()=>{ try{ if(S.screen!=='title' || S.overlay) return;
+        if(passSeason().n===ssn.n && ++tries<8){ setTimeout(turn,400); return; } render(); }catch(e){} };
+      if(was) setTimeout(turn,300); return; }
+    const d=Math.floor(sec/86400), h=Math.floor(sec/3600)%24, m=Math.floor(sec/60)%60, x=sec%60;
+    tt.textContent=(d?d+'d ':'')+pad(h)+'h '+pad(m)+'m '+pad(x)+'s';
+  };
+  const iv=setInterval(tick,1000); tick();
+  return cd;
+}
 function scrTitle(){
   if(!S.daily) restoreProfileIdentity();   // a Legend round swaps the look to the legend's; the home must show the player's own
   reconcileDailyAttempts();
@@ -16042,7 +16078,7 @@ function scrTitle(){
   // golfer takes what is left above the doors (and the tab bar, the doors and their play buttons below)
   const pend=loginPend();
   // a smaller golfer leaves the home room to breathe; on a phone it also makes room for the Tour Pass card
-  const ptk=passEnabled()?104:0;
+  const cd=ftSeasonCd(), ptk=(passEnabled()?104:0)+(cd?38:0);
   const h=desk?Math.round(Math.max(200,Math.min(300,innerHeight*0.30))):Math.round(Math.max(96,Math.min(190,innerHeight-400-ptk-ftSafeB()-(pend?54:0))));
   const tee=$(`<div class="ft-tee"><div class="ft-teebox"></div><div class="ft-markers"><i></i><i></i></div><button type="button" class="ft-fig" aria-label="Your golfer. Open the closet">${pxFigureHTML(S.look,h)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="ft-pk">'+spkEl('pumpkin',22)+'</span>'):''}</button></div>`);
   tee.querySelector('.ft-fig').onclick=()=>ftCloset();
@@ -16052,8 +16088,9 @@ function scrTitle(){
   if(pend){ const n=$(`<button type="button" class="ft-giftnote"><span class="ft-gi">${ftIcon('gift')}</span><span><b>Your day ${pend.n} gift is here</b>${esc(loginRewLabel(pend.rew))}. Tap to open it.</span></button>`);
     n.onclick=()=>{ ftBurst(n); claimLoginGift(); }; (desk?root:tee).appendChild(n); root.classList.add('has-gift'); }
   // the desktop stacks the pin sheet and the Tour Pass card in one column, so a taller sheet never covers the card
-  if(desk){ const col=$(`<div class="ft-rcol"></div>`); col.appendChild(ftSheet(false)); if(passEnabled()) col.appendChild(ftPassTrack(true)); root.appendChild(col); }
-  else { root.appendChild(ftPinRail()); if(passEnabled()) tee.appendChild(ftPassTrack(false)); }
+  // (the next season's countdown, when there is one, sits right under the Tour Pass card)
+  if(desk){ const col=$(`<div class="ft-rcol"></div>`); col.appendChild(ftSheet(false)); if(passEnabled()) col.appendChild(ftPassTrack(true)); if(cd) col.appendChild(cd); root.appendChild(col); }
+  else { root.appendChild(ftPinRail()); if(passEnabled()) tee.appendChild(ftPassTrack(false)); if(cd) tee.appendChild(cd); }
   // the two doors
   const cs=careerSaveInfo(), ri=resumeInfo();
   let pc=[]; try{ if(cs && !cs.ended) pc.push(`<span class="ft-chip g">${cs.circuitMode?'Legend Circuit':'Career'} · Yr ${cs.year||1}</span>`); else if(ri) pc.push(`<span class="ft-chip g">Golfer ${ri.n} of 8</span>`); }catch(e){}
