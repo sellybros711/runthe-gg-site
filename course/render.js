@@ -471,7 +471,8 @@ export function createRenderer(canvas, map, cfg) {
   let ART = null, lastS = null, lastCtx = null, artGroup = null, buckets = null;
   const TREES = ['tree_default', 'tree_oak', 'tree_detailed', 'tree_fat', 'tree_simple'], PINES = ['tree_pineRoundA', 'tree_pineRoundC', 'tree_pineTallA', 'tree_cone'];
   const BLOOMS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'], ROCKS = ['rock_largeA', 'rock_largeB', 'rock_largeC'], AUTOS = ['sedan', 'suv', 'hatchback-sports', 'van', 'truck'];
-  const GOLFERS = ['character-male-a', 'character-female-a', 'character-male-d', 'character-female-c'];
+  const GOLFERS = ['character-male-a', 'character-female-b', 'character-male-f', 'character-female-c', 'character-male-e'];
+  const VISORS = [0xff7a1a, 0xf7f5ee, 0x3d7fd9, 0xe5483b, 0xf2c230, 0x2fa89a], BAGS = [0x3d7fd9, 0xe5483b, 0x2c3540, 0x2fa89a, 0x8a5fd0, 0xe0a030];
   const CLUBHOUSE = ['building-type-h', 'building-type-a', 'building-type-d', 'building-type-b'];
   const PM = new THREE.Matrix4(), PQ = new THREE.Quaternion(), PP = new THREE.Vector3(), PS = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
   function toFloat(g) {
@@ -544,30 +545,81 @@ export function createRenderer(canvas, map, cfg) {
 
   /* the people: a small pool of rigged characters, each with its own mixer */
   const chars = [], CHAR_MAX = 49, PLAYER_SLOT = 48;
-  const ANIM = ['idle', 'walk', 'attack-melee-right', 'sit'];
+  /* What a pose is: 0 idle, 1 walk, 2 a full swing, 3 sitting (in the cart, on the mower), 4 a putt.
+     Idle, walk and sit are the kit's clips. The swing and the putt are not in any free kit, so they
+     are posed here by hand on the kit's seven bones: address, the top, impact, the finish. */
+  const ANIM = ['idle', 'walk', null, 'sit', null];
+  const LEFT = new THREE.Vector3(1, 0, 0), RIGHT = new THREE.Vector3(-1, 0, 0), AV = new THREE.Vector3(), EU = new THREE.Euler();
+  /* [when, how far the chest has turned, how far it bends, where the lead arm points, where the trail arm points] */
+  const SWING = [
+    [0.00, 0, 0.36, -0.32, -0.72, 0.62, 0.32, -0.72, 0.62],
+    [0.18, 0, 0.36, -0.32, -0.72, 0.62, 0.32, -0.72, 0.62],
+    [0.50, -0.95, 0.30, -0.75, 0.55, 0.45, -0.55, 0.75, 0.05],
+    [0.62, 0.12, 0.36, -0.26, -0.74, 0.62, 0.34, -0.72, 0.60],
+    [0.82, 1.15, 0.10, 0.55, 0.75, 0.05, 0.75, 0.55, 0.45],
+    [1.00, 1.15, 0.10, 0.55, 0.75, 0.05, 0.75, 0.55, 0.45]];
+  const IMPACT = 0.62;
+  const smooth = x => x * x * (3 - 2 * x);
+  function swingPose(c, t) {
+    let i = 0;
+    while (i < SWING.length - 2 && t > SWING[i + 1][0]) i++;
+    const a = SWING[i], b = SWING[i + 1], f = smooth(Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0])))), m = k => a[k] + (b[k] - a[k]) * f;
+    const yaw = m(1), bend = m(2), bn = c.bones;
+    bn.torso.quaternion.setFromEuler(EU.set(bend, yaw, 0, 'YXZ'));
+    bn.head.quaternion.setFromEuler(EU.set(-bend * 0.5, -yaw * 0.7, 0, 'YXZ'));
+    bn['arm-left'].quaternion.setFromUnitVectors(LEFT, AV.set(m(3), m(4), m(5)).normalize());
+    bn['arm-right'].quaternion.setFromUnitVectors(RIGHT, AV.set(m(6), m(7), m(8)).normalize());
+    bn['leg-left'].quaternion.identity(); bn['leg-right'].quaternion.identity(); bn.root.position.set(0, 0, 0);
+  }
+  /* a putt: the same address, and a small rock of the shoulders back and through */
+  function puttPose(c, t) {
+    const yaw = t <= 0 ? 0 : t < 0.5 ? -0.22 * smooth(t / 0.5) : -0.22 + 0.5 * smooth(Math.min(1, (t - 0.5) / 0.3)), bn = c.bones;
+    bn.torso.quaternion.setFromEuler(EU.set(0.4, yaw, 0, 'YXZ'));
+    bn.head.quaternion.setFromEuler(EU.set(-0.1, -yaw * 0.8, 0, 'YXZ'));
+    bn['arm-left'].quaternion.setFromUnitVectors(LEFT, AV.set(-0.32, -0.8, 0.5).normalize());
+    bn['arm-right'].quaternion.setFromUnitVectors(RIGHT, AV.set(0.32, -0.8, 0.5).normalize());
+    bn['leg-left'].quaternion.identity(); bn['leg-right'].quaternion.identity(); bn.root.position.set(0, 0, 0);
+  }
   function charAt(slot, model) {
     let c = chars[slot];
     if (c && c.model === model) return c;
     if (c) { scene.remove(c.root); c.mixer.stopAllAction(); }
     const src = ART.people[model];
     if (!src) return null;
-    const root = cloneRig(src), mixer = new THREE.AnimationMixer(root), actions = ANIM.map(n => (ART.clips[n] ? mixer.clipAction(ART.clips[n]) : null));
+    const root = cloneRig(src), mixer = new THREE.AnimationMixer(root), actions = ANIM.map(n => (n && ART.clips[n] ? mixer.clipAction(ART.clips[n]) : null)), bones = {};
+    root.traverse(o => { if (o.isBone) bones[o.name] = o; });
     root.scale.setScalar(3.8); root.visible = false; scene.add(root);
-    c = chars[slot] = { root, mixer, actions, model, cur: -1, x: 0, y: 0, face: 0, seen: false };
+    c = chars[slot] = { root, mixer, actions, bones, model, cur: -1, x: 0, y: 0, face: 0, seen: false, club: null, bag: null };
+    /* what makes a golfer a golfer: a visor, a club in the hands when playing, a bag on the back when walking */
+    if (slot < PLAYER_SLOT && bones.head && bones.torso && bones['arm-left']) {
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.025, 0.17), lam({ color: VISORS[slot % VISORS.length] })); visor.position.set(0, 0.268, 0.22); bones.head.add(visor);
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.05, 0.02), lam({ color: VISORS[slot % VISORS.length] })); band.position.set(0, 0.285, 0.145); bones.head.add(band);
+      /* the club: a pale shaft and a steel head, thick enough to read from the camera's height */
+      const club = new THREE.Group(), shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.36, 6), lam({ color: C.white })), head = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.1), lam({ color: C.rock }));
+      shaft.rotation.z = Math.PI / 2; shaft.position.x = 0.18; head.position.set(0.36, 0, 0.04);
+      club.add(shaft, head); club.position.set(0.1, 0, 0); club.visible = false; bones['arm-left'].add(club); c.club = club;
+      const bag = new THREE.Group(), tube = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.27, 0.1), lam({ color: BAGS[slot % BAGS.length] }));
+      const heads = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.07, 0.08), lam({ color: C.rock })); heads.position.set(0, 0.17, 0);
+      bag.add(tube, heads); bag.position.set(-0.03, 0.06, -0.13); bag.rotation.set(0.25, 0, 0.35); bones.torso.add(bag); c.bag = bag;
+    }
     return c;
   }
-  function pose(c, x, y, lift, anim, fx, fy, dt) {
+  function pose(c, x, y, lift, anim, fx, fy, dt, t) {
     const dx = fx === fx ? fx - x : x - c.x, dy = fx === fx ? fy - y : y - c.y;
     if (dx * dx + dy * dy > 0.0004) { let want = Math.atan2(dx, -dy), d = want - c.face; while (d > Math.PI) d -= 6.283185; while (d < -Math.PI) d += 6.283185; c.face += d * (c.seen ? 0.3 : 1); }
     c.x = x; c.y = y;
     c.root.position.set(x, lift, -y); c.root.rotation.y = Math.PI - c.face; c.root.visible = true; c.seen = true;
+    const byHand = anim === 2 || anim === 4;
     if (anim !== c.cur) {
-      const next = c.actions[anim] || c.actions[0];
-      if (c.cur >= 0 && c.actions[c.cur] && c.actions[c.cur] !== next) c.actions[c.cur].fadeOut(0.15);
-      if (next) { next.reset().fadeIn(0.15).play(); }
+      const next = c.actions[anim] || null, was = c.cur >= 0 ? c.actions[c.cur] : null;
+      if (was && was !== next) was.fadeOut(byHand ? 0 : 0.15);
+      if (byHand) c.mixer.stopAllAction();
+      else if (next) next.reset().fadeIn(c.cur === 2 || c.cur === 4 ? 0 : 0.15).play();
       c.cur = anim;
     }
-    c.mixer.update(dt);
+    if (c.club) c.club.visible = byHand;
+    if (c.bag) c.bag.visible = !byHand;
+    if (anim === 2) swingPose(c, t || 0); else if (anim === 4) puttPose(c, t || 0); else c.mixer.update(dt);
   }
   let face = 0, lastTime = 0, frameDt = 0;
   let nRing = 0, nFill = 0, nShadow = 0, nBody = 0, nBall = 0;
@@ -575,10 +627,10 @@ export function createRenderer(canvas, map, cfg) {
   function ring(x, y, r, color, h) { if (nRing < 48) put(rings, nRing++, x, y, h || 0.09, r, 1, r, color); }
   function fill(x, y, r, color) { if (nFill < 64 && r > 0.01) put(fills, nFill++, x, y, 0.08, r, 1, r, color); }
   function shadow(x, y, r) { if (nShadow < 120) put(shadows, nShadow++, x, y, 0.05, r, 1, r, null); }
-  function golfer(key, x, y, h, shirt, squash, anim, fx, fy) {
+  function golfer(key, x, y, h, shirt, squash, anim, fx, fy, t) {
     if (ART && key < PLAYER_SLOT) {
       const c = charAt(key, GOLFERS[shirt % GOLFERS.length]);
-      if (c) { pose(c, x, y, 0, anim, fx, fy, frameDt); shadow(x, y, 0.55); return; }
+      if (c) { pose(c, x, y, 0, anim, fx, fy, frameDt, t); shadow(x, y, 0.55); return; }
     }
     if (nBody >= 96) return;
     put(bodies, nBody, x, y, 0.62 * squash + h, 1, squash, 1, SHIRTS[shirt % 6]); put(heads, nBody, x, y, 1.3 * squash + h, 1, 1, 1, cSkin); nBody++;
@@ -657,17 +709,27 @@ export function createRenderer(canvas, map, cfg) {
           const shots = g.shots[m], n = shots.length, shirt = g.look + m;
           if (f >= F || n === 0) {              // on the green: putting
             const a = m / g.size * 6.283 + 0.6, r = 1.2 + (m % 2) * 0.5;
-            golfer(i * 4 + m, h.green.x + Math.cos(a) * r, h.green.y + Math.sin(a) * r, 0, shirt, 1, 0, h.green.x, h.green.y);
+            /* each stands side-on to their own putt, the hole to their left, and strokes in turn */
+            const ux = Math.cos(a), uy = Math.sin(a), rr = r + 0.7, bx0 = h.green.x + ux * rr, by0 = h.green.y + uy * rr;
             const pf = (f - F) / (1 - F), turn = Math.floor(pf * g.size) === m ? (pf * g.size) % 1 : pf * g.size > m ? 1 : 0;
-            ball(lerp(h.green.x + Math.cos(a) * (r - 0.5), h.green.x, turn), lerp(h.green.y + Math.sin(a) * (r - 0.5), h.green.y, turn), 0);
+            golfer(i * 4 + m, bx0 + uy * 0.85, by0 - ux * 0.85, 0, shirt, 1, 4, bx0, by0, turn);
+            const roll = turn < 0.5 ? 0 : (turn - 0.5) / 0.5;
+            ball(lerp(bx0, h.green.x, roll), lerp(by0, h.green.y, roll), 0);
             continue;
           }
-          const u = f / F * n, j = Math.min(n - 1, Math.floor(u)), t = u - j;
-          const ax = j === 0 ? h.tee.x + OFF[m][0] * 0.5 : shots[j - 1].x / k, ay = j === 0 ? h.tee.y + OFF[m][1] * 0.5 : shots[j - 1].y / k;
+          /* they play in turn: each waits a beat longer than the one before, so nobody swings through a partner */
+          const u = f / F * n, j = Math.min(n - 1, Math.floor(u)), t = Math.min(1, Math.max(0, (u - j - m / g.size * 0.36) / 0.64));
+          const ax = j === 0 ? h.tee.x + (m - (g.size - 1) / 2) * 1.5 : shots[j - 1].x / k, ay = j === 0 ? h.tee.y - (m % 2) * 0.5 : shots[j - 1].y / k;
           const bx = shots[j].x / k, by = shots[j].y / k;
           const swing = t < 0.12 ? 1 - Math.sin(t / 0.12 * Math.PI) * 0.18 : 1;
-          if (t < 0.5) { const q = t / 0.5; golfer(i * 4 + m, ax, ay, 0, shirt, swing, t < 0.3 ? 2 : 0, bx, by); ball(lerp(ax, bx, q), lerp(ay, by, q), Math.sin(q * Math.PI) * Math.min(7, Math.hypot(bx - ax, by - ay) * 0.3)); }
-          else { const q = (t - 0.5) / 0.5; golfer(i * 4 + m, lerp(ax, bx, q), lerp(ay, by, q), Math.abs(Math.sin(time * 10 + m)) * 0.1, shirt, 1, 1, bx, by); ball(bx, by, 0); }
+          /* a shot: stand side-on to the ball with the target to the left, swing, watch it, then walk after it.
+             The ball leaves at impact, not before. */
+          const sl = Math.hypot(bx - ax, by - ay) || 1, tx = (bx - ax) / sl, ty = (by - ay) / sl, sx = ax - ty * 0.8, sy = ay + tx * 0.8, HIT = 0.26;
+          if (t < 0.6) {
+            golfer(i * 4 + m, sx, sy, 0, shirt, swing, 2, ax, ay, Math.min(1, t / (HIT / IMPACT)));
+            const q = t < HIT ? 0 : (t - HIT) / (0.6 - HIT);
+            ball(lerp(ax, bx, q), lerp(ay, by, q), Math.sin(q * Math.PI) * Math.min(7, sl * 0.3));
+          } else { const q = (t - 0.6) / 0.4; golfer(i * 4 + m, lerp(sx, bx, q), lerp(sy, by, q), Math.abs(Math.sin(time * 10 + m)) * 0.1, shirt, 1, 1, bx, by); ball(bx, by, 0); }
         }
         continue;
       }

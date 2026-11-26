@@ -49,6 +49,9 @@ const BUNDLES = [
       'deals',         // endorsement offers from who you are, from pun brands
       'bonds',         // the people you live with: acts on a person, a partner, a family
       'wealth',        // what the money is for: homes, cars, a payroll, money at work, going broke
+      'childhood',     // before the league: nine cards, birth to fourteen, in front of the high school start
+      'wild',          // the wild side: the tables, a bookie, nights out, pills, rehab, arrests, time inside
+      'later',         // after the whistle: the rest of a life, four years a press, to the end
       'endings',       // more ways out: the career ending injury, on top, waived, the ten day, the finale
       'ribbons',       // replay: the one ribbon a life ends with, and the life on one card
       'api',           // what the page reads, the generated road, a son, the public object

@@ -453,6 +453,8 @@ function newSeason(L) {
     used: {}, acts: {}, allstar: false, awards: [], po: null, notes: [], role: null,
     startOvr: ovrOf(L), startTeam: L.team, asked: {},
   };
+  /* Games the league or a judge still holds are served first (wild.js). */
+  wildTipoff(L);
 }
 
 /* The overall you play at this season: the real number, plus how you feel. */
@@ -725,7 +727,8 @@ function playChunk(L, chunk, beats) {
   const box = s.box = [];
   for (let g = from; g <= to; g++) {
     const home = g % 2 === 0;
-    const hurt = s.injury && g >= s.injury.from && g < s.injury.until;
+    /* Hurt, or sat down by the league or a judge (wild.js). */
+    const hurt = (s.injury && g >= s.injury.from && g < s.injury.until) || sitting(s, g);
     const rest = !hurt && s.mods.rest > 0 && rng() < s.mods.rest;
     let net = net0;
     if (!hurt && !rest) {
@@ -1015,6 +1018,7 @@ function playoffImpact(L) {
   const role = s.role || roleOf(L);
   const playMin = Math.min(40, role.min + (role.starter ? 3 : 1));
   if (s.injury && s.injury.until > GAMES + 4) return 0;
+  if (s.ban && s.ban.until > GAMES) return 0;
   return impact(L, playMin) + s.mods.win + (trait(L, 'bigStage') ? 0.8 : 0);
 }
 /* A series that does not involve you, in one go. The score comes back too,
@@ -1339,6 +1343,7 @@ function queueMoment(L, chunk) {
   const s = L.season, role = s.role || roleOf(L);
   if (role.min < 18) return;
   if (s.injury && s.g >= s.injury.from && s.g < s.injury.until) return;
+  if (sitting(s, s.g)) return;
   const rng = rngAt(L, 'moment:' + chunk);
   if (rng() >= MOMENT_P) return;
   const id = weighted(rng, (Object.keys(MOMENTS)), (k) => MOMENTS[k].w(L));

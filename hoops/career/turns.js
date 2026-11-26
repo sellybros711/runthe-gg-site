@@ -208,18 +208,20 @@ function step(L) {
    draws, so a career aged up is the career stepped. */
 function ageUp(L) {
   const beats = [], log = [], y0 = L.year;
-  let steps = 0;
+  let steps = 0, closed = null;
   while (!L.retired && !L.pending.length && steps < 24) {
     /* What the page's ticker asks about a stretch: where the season stood
        before the step, and the beats that step made. */
     const was = { phase: L.phase, poDone: L.season && L.season.po ? L.season.po.results.length : 0 };
+    /* The season a press closes is gone once the year turns; the page still plays its bracket. */
+    if (L.season) closed = L.season;
     const r = step(L);
     steps++;
     log.push({ phase: was.phase, poDone: was.poDone, beats: r.beats || [] });
     for (const b of r.beats || []) beats.push(b);
     if (L.year !== y0) break;
   }
-  return { beats, steps, log, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0 };
+  return { beats, steps, log, blocked: L.pending.length > 0, retired: !!L.retired, turned: L.year !== y0, closed: L.year !== y0 ? closed : null };
 }
 /* How a season ended, in words. */
 const PO_WORDS = { Missed: 'Missed the playoffs', 'Play-in': 'Out in the play-in', R1: 'Out in the first round', R2: 'Out in the second round',
@@ -356,6 +358,9 @@ function newYear(L, beats) {
   L.year++;
   /* The lifestyle is paid for and the money at work moves (wealth.js). */
   wealthSeason(L, beats);
+  /* The habits take their share and the league remembers (wild.js). It can end here. */
+  wildSeason(L, beats);
+  if (L.retired) return;
   if (L.season) L.season = null;
   if (L.contract && L.contract.next && L.contract.years <= L.contract.total) {
     L.contract.salary = L.contract.next;

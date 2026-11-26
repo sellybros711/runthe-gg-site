@@ -201,7 +201,21 @@ if (!SCRIPT && !ONLY) {
      played by somebody who lives that way: he goes out, dates, proposes,
      marries and starts a family, one act on his partner a year. And a
      challenge about where you play is played by a man who asks to move. */
+  const canWild = (L, id) => { const V = C.wildOpen(L); return V && V.acts.find((a) => a.id === id && a.ok); };
   const CH_LIVE = {
+    /* Clean slate: nights out until rehab is on offer, rehab, then basketball. */
+    ch_clean(L) {
+      if (L.wild && L.wild.clean) return false;
+      if (canWild(L, 'rehab')) return !!C.wildAct(L, 'rehab');
+      return canWild(L, 'party') ? !!C.wildAct(L, 'party') : false;
+    },
+    /* House money: a quarter of the cash on the tables until he is up, then rehab before it has hold of him. */
+    ch_house(L) {
+      const W = L.wild;
+      if (W && W.net >= 5) return W.hab.bet >= 30 && canWild(L, 'rehab') ? !!C.wildAct(L, 'rehab') : false;
+      const a = canWild(L, 'casino');
+      return a ? !!C.wildAct(L, 'casino', Math.max(a.min, Math.round(a.max * 25) / 100)) : false;
+    },
     /* Five teams is chased by asking out: a trade to a contender, a buyout, a ring chase. */
     ch_suitcase(L) {
       for (const w of ['contender', 'buyout', 'ringchase']) if (C.actsOpen(L).some((a) => a.id === w && a.ok)) return !!C.act(L, w);
@@ -411,8 +425,9 @@ const TARGETS = [
   ['E: sons who start after their father retired', 100, 100, 'E'],
   ['E: sons who name their father', 100, 100, 'E'],
   ['E: challenges met in the sweep', C.CHALLENGE_KEYS.length, Infinity, 'E'],
-  /* Four ribbons are lived for (broke, a second divorce, a full house, the villain); check-career chases those. */
-  ['ribbons seen in the sweep', C.RIBBON_KEYS.length - 4, Infinity, 'D'],
+  /* Eight ribbons are lived for (broke, a second divorce, a full house, the villain, and the four
+     from the wild side); check-career chases those. */
+  ['ribbons seen in the sweep', C.RIBBON_KEYS.length - 8, Infinity, 'D'],
   ['the commonest ribbon %', 0, 30, 'D'],
   ['E: stories with every chapter', 100, 100, 'E'],
 ];

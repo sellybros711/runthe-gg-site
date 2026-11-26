@@ -37,13 +37,14 @@ const find = (kit, sub) => { const d = fs.readdirSync(KITS).find(n => n.toLowerC
 export const PACKS = {
   nature: [[find('nature', 'GLTF format'), ['tree_default', 'tree_oak', 'tree_detailed', 'tree_fat', 'tree_simple', 'tree_pineRoundA', 'tree_pineRoundC', 'tree_pineTallA', 'tree_cone',
     'plant_bush', 'plant_bushLarge', 'plant_bushDetailed', 'flower_redA', 'flower_yellowA', 'flower_purpleA', 'rock_largeA', 'rock_largeB', 'rock_largeC', 'grass_large', 'stump_round', 'fence_simple']]],
-  golf: [[find('minigolf', 'GLB format'), ['flag-red', 'flag-blue', 'flag-green', 'ball-red', 'club-red', 'windmill']]],
+  golf: [[find('minigolf', 'GLB format'), ['flag-red', 'flag-blue', 'flag-green', 'windmill']]],
   cars: [[find('car-kit', 'GLB format'), ['sedan', 'suv', 'hatchback-sports', 'van', 'truck']]],
   town: [[find('suburban', 'GLB format'), ['building-type-a', 'building-type-b', 'building-type-d', 'building-type-g', 'building-type-h', 'building-type-k']],
     [find('commercial', 'GLB format'), ['building-c', 'building-e', 'detail-parasol-a', 'detail-parasol-b']]],
-  people: [[find('mini-characters', 'GLB format'), ['character-male-a', 'character-male-d', 'character-female-a', 'character-female-c', 'character-worker']]]
+  people: [[find('mini-characters', 'GLB format'), ['character-male-a', 'character-male-f', 'character-male-e', 'character-female-b', 'character-female-c', 'character-worker']]]
 };
-const KEEP_ANIMS = ['idle', 'walk', 'sit', 'attack-melee-right'];
+/* The golf swing and the putt are not in the kit: render.js poses them on the skeleton by hand. */
+const KEEP_ANIMS = ['idle', 'walk', 'sit'];
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 let total = 0;

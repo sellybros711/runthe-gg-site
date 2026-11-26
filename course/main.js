@@ -14,7 +14,7 @@ import { makeBot } from './bot.js?v=4';
 import { createStore } from './store.js?v=4';
 import { createAnalytics } from './analytics.js?v=1';
 import { createInput } from './input.js?v=1';
-import { createRenderer } from './render.js?v=4';
+import { createRenderer } from './render.js?v=5';
 
 const $ = id => document.getElementById(id);
 const money = n => (n < 0 ? '-$' + (-n).toLocaleString('en-US') : '$' + n.toLocaleString('en-US'));
