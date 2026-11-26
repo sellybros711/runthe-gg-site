@@ -67,7 +67,7 @@ async function playShift(page) {
   await page.evaluate(() => { window.__course.auto(true); window.__course.scale(16); });
   /* the bot serves the day, spends after hours and ends it; the day's card is up from the close */
   await page.waitForFunction(() => window.__course.summary().ended && document.getElementById('results').classList.contains('on'), null, { timeout: 180000 });
-  await page.waitForFunction(() => !/^(Saving|)$/.test(document.getElementById('resSave').textContent), null, { timeout: 15000 });
+  await page.waitForFunction(() => !/^(Saving\.?|)$/.test(document.getElementById('resSave').textContent.trim()), null, { timeout: 15000 });
 }
 
 for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }], ['desktop 1440x900', { viewport: { width: 1440, height: 900 } }]]) {
