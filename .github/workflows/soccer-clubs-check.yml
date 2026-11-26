@@ -1,0 +1,31 @@
+name: Soccer club names check
+# Run The Pitch's club names: one name per club, and nothing undecided. A change to the soccer data,
+# the converter or the name decisions runs scripts/check-soccer-clubs.mjs. See that file.
+on:
+  pull_request:
+    paths:
+      - 'data/players_all.json'
+      - 'scripts/convertData.js'
+      - 'scripts/soccer-club-names.json'
+      - 'scripts/check-soccer-clubs.mjs'
+      - '.github/workflows/soccer-clubs-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/players_all.json'
+      - 'scripts/convertData.js'
+      - 'scripts/soccer-club-names.json'
+      - 'scripts/check-soccer-clubs.mjs'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: One name per club
+        run: node scripts/check-soccer-clubs.mjs
