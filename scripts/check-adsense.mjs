@@ -310,6 +310,35 @@ const ROW_AD_PAGES = new Set(['football/index.html']);
   }
 }
 
+/* OUR OWN "DO NOT SELL OR SHARE" LINK AND OPT-OUT (assets/rtg-privacy.js, the owner's pick 2026-11-26).
+ * It wraps adsbygoogle.push so an opted-out visitor's every ad request carries restricted data
+ * processing, and it draws the footer link. So every page with the ad tag, indexable or not, loads it
+ * without async and before the tag: after the tag, a unit could be asked for before the wrap is in place.
+ * And "never personalised with your data", as privacy-choices.html and privacy.html tell visitors:
+ * Consent Mode denies ad personalisation worldwide, and nothing may grant it while those pages say so. */
+{
+  const lib = fs.readFileSync(path.join(ROOT, 'assets/rtg-privacy.js'), 'utf8');
+  if (!lib.includes("'Do Not Sell or Share My Personal Information'")) problems.push('assets/rtg-privacy.js: the link must read exactly "Do Not Sell or Share My Personal Information"');
+  if (!/data-restrict-data-processing/.test(lib) || !/globalPrivacyControl/.test(lib)) problems.push('assets/rtg-privacy.js: the opt-out must set restricted data processing and honour Global Privacy Control');
+  for (const file of walkCode(ROOT)) {
+    const rel = path.relative(ROOT, file);
+    const src = fs.readFileSync(file, 'utf8');
+    const code = src.replace(/<!--[\s\S]*?-->/g, '');
+    if (/ad_personalization\s*:\s*['"]granted['"]/.test(code) || /consent['"]\s*,\s*['"]update['"][^)]*ad_(personalization|storage|user_data)\s*:\s*['"]granted/.test(code)) {
+      problems.push(`${rel}: grants ad personalisation, but privacy-choices.html promises ads are never personalised. Change the promise with the owner first`);
+    }
+    if (!rel.endsWith('.html')) continue;
+    const tagAt = code.search(/<script[^>]*src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/);
+    if (tagAt === -1) continue;
+    const pv = code.match(/<script([^>]*)src="\/assets\/rtg-privacy\.js\?v=\d+"([^>]*)><\/script>/);
+    if (!pv) problems.push(`${rel}: has the ad tag but not /assets/rtg-privacy.js (the Do Not Sell link and the opt-out)`);
+    else {
+      if (/\b(async|defer)\b/.test(pv[1] + pv[2])) problems.push(`${rel}: loads rtg-privacy.js async or deferred: it must be in place before the first ad push`);
+      if (pv.index > tagAt) problems.push(`${rel}: loads rtg-privacy.js after the AdSense tag`);
+    }
+  }
+}
+
 /* ONE NAMED UNIT PER PLACEMENT (the owner's rule, 2026-10-27: "if we add an ad, we also go and do
  * this so that we can track all of them"). Every ad spot has its own unit in AdSense, so the Ad
  * units report says which spot earns and which does not. scripts/ad-units.json is the list. A slot

@@ -149,10 +149,20 @@
       "sha": "730f65c38c3be65e"
     }
   },
+  "about.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
   "arcade/almamater/index.html": {
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     },
     "/assets/rtg-ads.js": {
       "v": "5",
@@ -414,6 +424,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -596,6 +610,10 @@
     }
   },
   "arcade/chain/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -733,6 +751,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     },
     "/assets/rtg-ads.js": {
       "v": "5",
@@ -924,6 +946,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -1114,6 +1140,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -1288,6 +1318,10 @@
       "v": "3",
       "sha": "d37ab08269df2f39"
     },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -1383,6 +1417,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     },
     "/assets/rtg-ads.js": {
       "v": "5",
@@ -1553,6 +1591,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     },
     "/assets/rtg-ads.js": {
       "v": "5",
@@ -1728,6 +1770,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -1898,6 +1944,10 @@
     }
   },
   "arcade/rollcall/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -2036,6 +2086,10 @@
     }
   },
   "arcade/sportegories/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -2173,6 +2227,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     },
     "/assets/rtg-ads.js": {
       "v": "5",
@@ -2359,7 +2417,17 @@
       "sha": "aaaa6b4054ff4960"
     }
   },
+  "baseball/how-to-play.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
   "baseball/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -2548,6 +2616,10 @@
       "v": "1",
       "sha": "8211beb1a8c09cc1"
     },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -2569,7 +2641,17 @@
       "sha": "dd8cc0d912efc44f"
     }
   },
+  "cfb/how-to-play.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
   "cfb/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "engine.js": {
       "v": "36",
       "sha": "24d34bfe4cbd5e31"
@@ -2639,6 +2721,12 @@
       "sha": "a7aee657b01c3630"
     }
   },
+  "contact.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
   "course/index.html": {
     "/arcade/auth.js": {
       "v": "4",
@@ -2653,10 +2741,20 @@
       "sha": "8258debe771b5740"
     }
   },
+  "disclaimer.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
   "football/fantasy/index.html": {
     "/football/fantasy/skin.js": {
       "v": "1",
       "sha": "8211beb1a8c09cc1"
+    },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     },
     "/assets/rtg-ads.js": {
       "v": "5",
@@ -2683,7 +2781,17 @@
       "sha": "dd8cc0d912efc44f"
     }
   },
+  "football/how-to-play.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
   "football/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "engine.js": {
       "v": "102",
       "sha": "f42f3c6833f06f11"
@@ -2803,6 +2911,12 @@
     "/arcade/auth.js": {
       "v": "4",
       "sha": "c71a149f3b8da69e"
+    }
+  },
+  "golf/how-to-play.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     }
   },
   "golf/index.html": {
@@ -2978,9 +3092,97 @@
       "v": "2",
       "sha": "f7a56d5883d63d55"
     },
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
+    }
+  },
+  "golf/privacy.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "golf/terms.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/arcade-free-daily-puzzles.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/college-football-commissioner-mode.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/college-football-nil-budget.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/football-full-team-run.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/perfect-season-salary-cap.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/putt-putt-off-the-trail.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/putt-putt-stars-lives-worlds.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/run-the-diamond-best-eras.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/run-the-diamond-pitching-staff.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/run-the-pitch-world-cup-xi.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "guides/run-the-tour-golfer.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     }
   },
   "hoops/design/style-guide.html": {
@@ -3170,6 +3372,10 @@
     }
   },
   "index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -3199,6 +3405,18 @@
     "main.js": {
       "v": "3",
       "sha": "834fcd81fc0e32fd"
+    }
+  },
+  "privacy-choices.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "privacy.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     }
   },
   "setlist/index.html": {
@@ -3236,6 +3454,10 @@
     }
   },
   "shut-the-door/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -3415,7 +3637,29 @@
       "sha": "368a4b38aad57e57"
     }
   },
+  "soccer/about.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "soccer/contact.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "soccer/how-to-play.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
   "soccer/index.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    },
     "/assets/rtg-ads.js": {
       "v": "5",
       "sha": "5db35f8b2981e3a6"
@@ -3431,6 +3675,18 @@
     "/soccer/club.js": {
       "v": "3",
       "sha": "85c5e5de0834f573"
+    }
+  },
+  "soccer/privacy.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
+    }
+  },
+  "terms.html": {
+    "/assets/rtg-privacy.js": {
+      "v": "2",
+      "sha": "bae8c4dc47ddf0a2"
     }
   },
   "wrestling/booking/index.html": {
