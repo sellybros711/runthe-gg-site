@@ -262,6 +262,17 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 .stage .coachbtn[hidden], .stage .coachread[hidden] { display: none; }
 .stage .coachread { position: absolute; left: 10px; top: 64px; padding: 5px 10px; border-radius: 999px; background: rgba(6, 12, 22, .88); color: #ffd36b; font: 900 13px/1 'Barlow Condensed', 'Arial Narrow', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 .stage .coachread:empty { display: none; }
+/* the result card's options: every route runner in the order the QB looked */
+.ropts { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin: 6px 0 10px; }
+.ropts[hidden] { display: none; }
+.ropt { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 3px; border-radius: 999px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .14); font: 800 11px/1 'Inter', sans-serif; color: #c9d2dc; }
+.ropt i { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #46505e; color: #fff; font: 900 10px/1 'Inter', sans-serif; font-style: normal; }
+.ropt b { font: 900 13px/1 'Barlow Condensed', 'Arial Narrow', sans-serif; color: #fff; }
+.ropt small { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.ropt.open { border-color: rgba(54, 211, 153, .6); } .ropt.open small { color: #36d399; }
+.ropt.tight small { color: #ffd36b; }
+.ropt.covered { opacity: .7; }
+.ropt.to { background: #19c6a7; border-color: #19c6a7; color: #04120d; } .ropt.to b, .ropt.to small { color: #04120d; } .ropt.to i { background: #04120d; }
 .stage .bug b { font: italic 900 20px/1 'Barlow Condensed', 'Arial Narrow', sans-serif; color: #fff; text-transform: uppercase; white-space: nowrap; }
 .stage .bug span { margin-left: auto; font: 800 10px/1.2 'Inter', sans-serif; color: #9fb2c8; letter-spacing: .08em; text-transform: uppercase; text-align: right; }
 .press { position: absolute; left: 10px; right: 10px; top: 10px; height: 14px; border-radius: 4px; background: rgba(10, 14, 30, .55); border: 2px solid rgba(255, 255, 255, .5); overflow: hidden; }

@@ -59,7 +59,7 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   same for everybody; the first run of the day that ends is posted (`supabase/169`, the first post
   stands) and the board shows on the card. Practice (any down, spot, level and hash) is the second button. A player's very first Go For It snap
   gets `calls.js` `FIRST` (QB Sneak, Stick, Levels: the plan said two thirds or better at 4th and 1;
-  measured 2026-11-16 at 1000 snaps, 78%, 61% and 60%, the comment there has the rest); the hand,
+  measured 2026-11-26 at 1000 snaps, 78%, 59% and 58%, the comment there has the rest); the hand,
   never the snap.
 - **Your record and the moments** (the launch plan, Phase 2). `profile.js`, on the device (`faw_profile`):
   snaps, conversions, the longest 4th down converted, the best run, the signature play, and eight
@@ -91,13 +91,23 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   are free hitters. Every man in a run concept has a drawn block (`routes.js` `runBlocks`, not the
   sneak). Call it's hint reads the run card's box and the distance (`calls.js` `HINT`), and
   `test/calls.test.mjs` holds each hint to the card it names: a retune that breaks one rewrites it.
-- **Reads are ordered, up to three** (`play.targets`). The QB goes through them in order; the last
-  one is the checkdown when the pocket goes.
+- **Every route is an option; the reads are the order he looks** (the owner, 2026-11-26: "you can put
+  the first, 2nd, 3rd read but that doesn't mean the QB will always throw it to the 1st read").
+  `res.options` is the reads (`play.targets`, up to three) then every other route runner. The QB looks
+  at one at a time and throws to him when he is open and the throw is worth it (`value`: the catch's
+  own chance, less for a catch short of the sticks, nothing `read.yac` yards short); he moves on when
+  the route is done or the look runs out. With every look taken, or when the pocket goes, he throws
+  to the best option if it is worth it, else to the last read if that ball is catchable (`read.dump`),
+  else he is sacked (`sackShare`) or, on 4th down, throws it up to his best option (a throwaway loses
+  the ball as surely). A pass can be sacked: never always dump it off. `throwInfo.look` and
+  `throwInfo.board` (every option's separation at the throw) feed the Coach view and the card's options row.
 - **Every number in copy comes from the engine** (the distance, the yards, the spot, the pocket
   time). Write the sentence without the number otherwise.
 - **A retune is three things:** the change in `config.js`, `node 4th-and-what/build/tune.mjs 300`,
   and the new rates in the vault's `4th-and-what-formulas.md`. The engine test holds the rates
-  within a band of real 4th down conversion.
+  within a band of real 4th down conversion. The targets are the NFL's, measured (the owner,
+  2026-11-26: "retune to the real rates"): `build/real-rates.mjs` reads nflverse play by play, and
+  `TARGET` in `tune.mjs` and the engine test is what it printed. Never type a target by hand.
 - **Playbooks need a Run The Games account** (the owner's call, 2026-10-30). They live in the
   shared cloud saves (`ps_saves`, game `fourth_and_what`: slot `index` and one `b-<id>` a book),
   with a local copy for speed. No new table. A snap's stats are not an edit (2026-11-16): a snap of a saved play

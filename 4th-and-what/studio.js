@@ -440,7 +440,7 @@
       if (d.extend && r) { r.pts = r.pts.concat(pts).slice(0, 8); delete r.type; delete r.depth; }
       else { p.routes = p.routes.filter(function (x) { return x.who !== d.who; }); p.routes.push({ who: d.who, pts: pts.slice(0, 6) }); }
       if (!p.targets.length && !isRun()) p.targets.push(d.who);
-      hint(isRun() ? '' : 'Use Read to set the 1st, 2nd and 3rd read.');
+      hint(isRun() ? '' : 'Every route is an option. Read sets the order he looks.');
     } else if (d.kind === 'path') {
       if (d.give) { give(d.who); p = P(); }
       p.handoff.path = d.extend ? p.handoff.path.concat(pts).slice(0, 8) : pts.slice(0, 6);

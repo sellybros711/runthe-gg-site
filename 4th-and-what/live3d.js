@@ -169,7 +169,7 @@ function applyPose(m, t, k) {
 const RCOL = { WR1: '#3d8bff', WR2: '#ef4b3f', SLOT: '#b06cff', TE: '#f5c542', RB: '#2ec4a6', QB: '#5b8cff' };
 const RLAB = { WR1: 'X', WR2: 'Z', SLOT: 'H', TE: 'Y', RB: 'RB', QB: 'QB' };
 const RUNC = '#36d399';
-const ORD = ['1st', '2nd', '3rd'];
+const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 const ribbonMat = (col) => new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
   uniforms: { col: { value: new THREE.Color(col) }, prog: { value: 0 }, op: { value: 1 } },
@@ -200,7 +200,11 @@ function badgeTex(text, fill, ink) {
 function makeCoach(W, res, opt) {
   const G = new THREE.Group(), frames = res.frames, ids = res.ids, idx = {}, tEnd = frames[frames.length - 1].t;
   ids.forEach((e, i) => { idx[e.id] = i; });
-  const targets = !res.isRun && opt.play && opt.play.targets ? opt.play.targets.filter((id) => idx[id] != null).slice(0, 3) : [];
+  /* every route runner is an option (the engine's res.options: the reads in
+     their order, then the rest); the reads wear gold numbers, the rest white */
+  const nReads = !res.isRun && opt.play && opt.play.targets ? opt.play.targets.filter((id) => idx[id] != null).slice(0, 3).length : 0;
+  const targets = res.isRun ? [] : (res.options || (opt.play && opt.play.targets) || []).filter((id) => idx[id] != null);
+  const board = {}; ((res.throwInfo && res.throwInfo.board) || []).forEach((b) => { board[b.id] = b.sep; });
   const ev = res.events || [], thr = ev.find((e) => e.kind === 'throw'), to = res.throwInfo && res.throwInfo.to;
   const routes = [];
   const pathOf = (j, t1) => { const out = [], ts = []; let last = null; for (const f of frames) { if (f.t > t1) break; const p = f.p[j]; if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) > 0.35) { out.push([wx(p[0]), wz(p[1])]); ts.push(f.t); last = p; } } return { out, ts }; };
@@ -239,7 +243,8 @@ function makeCoach(W, res, opt) {
   });
   /* the reads, over the receivers' heads */
   const tex = {}, T = (k, txt, fill, ink) => tex[k] || (tex[k] = badgeTex(txt, fill, ink));
-  const reads = targets.map((id, n) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T('w' + n, String(n + 1), '#f5b72a', '#0b1626'), depthTest: false, transparent: true, toneMapped: false })); sp.renderOrder = 5; sp.scale.set(1.1, 1.1, 1); G.add(sp); return { id, j: idx[id], sp, n }; });
+  const fresh = (n) => n < nReads ? T('w' + n, String(n + 1), '#f5b72a', '#0b1626') : T('o' + n, String(n + 1), '#eef2f7', '#0b1626');
+  const reads = targets.map((id, n) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fresh(n), depthTest: false, transparent: true, toneMapped: false })); sp.renderOrder = 5; sp.scale.set(n < nReads ? 1.9 : 1.55, n < nReads ? 1.9 : 1.55, 1); G.add(sp); return { id, j: idx[id], sp, n }; });
   W.S.add(G);
   let on = !!opt.on, lastRead = -2;
   G.visible = on;
@@ -258,20 +263,26 @@ function makeCoach(W, res, opt) {
       const A = men[l.userData.a].G.position, B = men[l.userData.b].G.position, p = l.geometry.attributes.position;
       p.setXYZ(0, A.x, 0.06, A.z); p.setXYZ(1, B.x, 0.06, B.z); p.needsUpdate = true; l.computeLineDistances(); l.material.opacity = l.userData.peak * f;
     });
-    /* which read his eyes are on: the progressions and the checkdown, from the events */
+    /* which option his eyes are on: each progression names the man he moves to,
+       and so does the throw when the pocket goes */
     let eye = 0, gone = false;
-    ev.forEach((e) => { if (e.t > t || tt < 0) return; if (e.kind === 'progress') eye++; if (e.kind === 'checkdown') eye = targets.length - 1; if (e.kind === 'throw') gone = true; });
+    ev.forEach((e) => { if (e.t > t || tt < 0) return; if ((e.kind === 'progress' || e.kind === 'checkdown') && e.to) { const k = targets.indexOf(e.to); if (k >= 0) eye = k; } if (e.kind === 'throw') gone = true; });
     reads.forEach((r) => {
-      const m = men[r.j]; const P = m.G.position; r.sp.position.set(P.x, 3.25, P.z);
+      const m = men[r.j]; const P = m.G.position; r.sp.position.set(P.x, 3.25 * BIG, P.z);
       const thrownTo = gone && r.id === to, live = !gone && r.n === eye && tt >= 0, passed = !gone && r.n < eye;
-      r.sp.material.map = thrownTo ? T('t' + r.n, String(r.n + 1), '#19c6a7', '#04120d') : passed ? T('p' + r.n, String(r.n + 1), '#46505e', '#c9d2dc') : T('w' + r.n, String(r.n + 1), '#f5b72a', '#0b1626');
-      const pulse = live ? 1.25 + 0.12 * Math.sin(performance.now() / 120) : thrownTo ? 1.3 : 1;
-      r.sp.scale.set(1.1 * pulse, 1.1 * pulse, 1); r.sp.material.opacity = gone && !thrownTo ? 0.45 : 1;
+      /* after the throw every option shows how he stood: open (3 yards or more) green, covered grey */
+      const sep = board[r.id], open = sep != null && sep >= 3;
+      r.sp.material.map = thrownTo ? T('t' + r.n, String(r.n + 1), '#19c6a7', '#04120d')
+        : gone ? (open ? T('g' + r.n, String(r.n + 1), '#36d399', '#04120d') : T('p' + r.n, String(r.n + 1), '#46505e', '#c9d2dc'))
+        : passed ? T('p' + r.n, String(r.n + 1), '#46505e', '#c9d2dc') : fresh(r.n);
+      const base = r.n < nReads ? 1.9 : 1.55, pulse = live ? 1.3 + 0.12 * Math.sin(performance.now() / 120) : thrownTo ? 1.3 : 1;
+      r.sp.scale.set(base * pulse, base * pulse, 1); r.sp.material.opacity = gone && !thrownTo && !open ? 0.5 : 1;
     });
     const read = res.isRun || !targets.length ? -1 : gone ? 99 : tt < 0 ? -1 : eye;
     if (read !== lastRead) {
       lastRead = read;
-      if (opt.say) opt.say(read === -1 ? '' : read === 99 ? (to ? 'Ball to ' + (RLAB[to] || to) + '.' : '') : ORD[read] + ' read · ' + (RLAB[targets[read]] || targets[read]));
+      const lab = (id) => RLAB[id] || id, look = res.throwInfo && res.throwInfo.look != null ? res.throwInfo.look : -1;
+      if (opt.say) opt.say(read === -1 ? '' : read === 99 ? (to ? 'Ball to ' + lab(to) + (look >= 0 ? ' · ' + (ORD[look] || '') + ' look' : '') : '') : (ORD[read] || '') + ' look · ' + lab(targets[read]));
     }
   }
   return {
