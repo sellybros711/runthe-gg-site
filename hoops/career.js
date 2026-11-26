@@ -6527,10 +6527,72 @@ function summerCard(L) {
     options: ks.map((k) => { const P = SUMMER[k], rook = P.l0 && L.seasonsDone === 0; return { label: rook ? P.l0 : P.l, hint: rook ? P.h0 : P.hy && L.age <= 24 ? P.hy : P.h }; }),
   };
 }
+/* A ROUTINE SUMMER IS FOLDED (the owner's call, 2026-11-26). The summer card
+   was thirteen cards and about 925 words of a career, and most summers it
+   asked the same question of the same man. Now a summer after something big
+   still asks: the first, a new city, a season of missed games, a title, a
+   contract year, the first one past 32, a body that needs looking at. Any
+   other summer is HELD: the engine picks from the same four programs the card
+   would have offered, the one nearest what he chose the last time he was
+   asked, and it is done when the season tips off. Until then `summerOf(L)`
+   shows it and `summerPick(L, key)` changes it, so the choice is still his.
+   Doing it is `summerChoose` on the draw the card's answer would have used, so
+   a held summer is exactly that program picked by hand. */
+const SUMMER_ASK = { first: 1, moved: 1, hurt: 1, champ: 1, contract: 1 };
+function summerAsks(L) {
+  if (inCollege(L) || !L.flags.summerLast) return true;
+  const sit = summerSit(L);
+  if (SUMMER_ASK[sit] || L.m.health < 60) return true;
+  if (sit === 'old' && !L.flags.summerOld) { L.flags.summerOld = L.year; return true; }
+  return false;
+}
+/* The program nearest the one he last chose: the same one while it is still
+   fresh, else the one that works the most of the same things. Rest and rehab
+   are for a body that asks for them. */
+function summerAuto(L, ks) {
+  const last = SUMMER[L.flags.summerLast], run = L.flags.summerRun;
+  const ok = ks.filter((k) => !SUMMER[k].rest && k !== 'rehab');
+  const pool = ok.length ? ok : ks;
+  if (L.m.health < 70) { const r = ks.find((k) => SUMMER[k].rest || k === 'rehab'); if (r) return r; }
+  const like = (k) => { const fx = SUMMER[k].fx || {}; let n = 0; if (last && last.fx) for (const x in fx) if (last.fx[x]) n += Math.min(fx[x], last.fx[x]); return n; };
+  const stale = (k) => !!(run && run.k === k && run.n >= 2);
+  return pool.slice().sort((a, b) => (stale(a) ? 1 : 0) - (stale(b) ? 1 : 0) || like(b) - like(a) || ks.indexOf(a) - ks.indexOf(b))[0];
+}
+/* The summer of a year that opens: a card, or a held plan. */
+function summerOpen(L) {
+  if (summerAsks(L)) { L.pending.push(summerCard(L)); return; }
+  const ks = summerKeys(L);
+  L.flags.summerOff = ks;
+  L.flags.summerHold = { y: L.year, ks, k: summerAuto(L, ks) };
+}
+const summerOption = (L, k) => { const P = SUMMER[k], rook = P.l0 && L.seasonsDone === 0; return { key: k, label: rook ? P.l0 : P.l, hint: rook ? P.h0 : P.hy && L.age <= 24 ? P.hy : P.h }; };
+/* The held summer, for the screen: what is planned and what else is on offer. */
+function summerOf(L) {
+  const H = L.flags.summerHold;
+  if (!H || H.y !== L.year || L.retired) return null;
+  const o = summerOption(L, H.k);
+  return { y: L.year - 1, key: H.k, label: o.label, hint: o.hint, options: H.ks.map((k) => summerOption(L, k)) };
+}
+function summerPick(L, key) {
+  const H = L.flags.summerHold;
+  if (!H || H.y !== L.year || H.ks.indexOf(key) < 0) return null;
+  H.k = key; H.mine = 1;
+  return summerOf(L);
+}
+/* Tip-off: the held summer is done, on the draw the card's answer would use. */
+function summerDo(L, beats) {
+  const H = L.flags.summerHold;
+  if (!H || H.y !== L.year) return;
+  delete L.flags.summerHold;
+  const t = summerChoose(L, H.k, rngAt(L, 'pick:training:' + H.ks.indexOf(H.k)));
+  /* A plan he changed by hand is the plan from now on. */
+  if (H.mine) L.flags.summerLast = H.k;
+  beats.push({ kind: 'summer', text: 'Your summer: ' + SUMMER[H.k].l.toLowerCase() + '. ' + t, tone: 'good' });
+}
 /* The answers to the summer (choose() runs them). */
 ANSWER.training = function(L, card, i, opt, rng, beats, touch, touches) {
   let text = '', tone = '', made = null, won = null, shots = null, contest = null;
-  if (card.ctx && card.ctx.ks) { text = summerChoose(L, card.ctx.ks[i], rng); tone = 'good'; return { text, tone, made, won, shots, contest }; }
+  if (card.ctx && card.ctx.ks) { L.flags.summerLast = card.ctx.ks[i]; text = summerChoose(L, card.ctx.ks[i], rng); tone = 'good'; return { text, tone, made, won, shots, contest }; }
   const t = TRAIN[i];
   const young = L.age <= 24 ? 1 : L.age <= 28 ? 0.8 : 0.6;
   if (t) {
@@ -10996,7 +11058,11 @@ story({
     tag: 'Team plane', t: 'You open the playoffs on the road.', x: 'Lower seed. A hostile building on Saturday. The team plane leaves Thursday.',
     o: [O('Say it\'s the same game', { trust: 4, win: 0.2 }, 'They believe it. Mostly.', { sub: 'Keep everyone calm' }),
       O('Embrace being the villain', { fame: 2, morale: 3 }, 'You walk in waving. Their fans hate it. You love it.', { sub: 'Feed off the hate' })] },
-  po_hurt: { at: 'late', when: (L) => L.m.health < 72 && !!(L.season && L.season.seed && L.season.seed <= 10), w: 4,
+  /* BANGED UP FOR THE PLAYOFFS. The health meter sits near 90 in April, and under 72 it was true
+     of one season in three hundred, so this card and apr_rest_up were all but never dealt (the
+     sweep found each once in thousands of careers). A man is not right when the meter is under
+     80 or he has missed a real stretch of the season. */
+  po_hurt: { at: 'late', when: (L) => !!(L.season && L.season.seed && L.season.seed <= 10) && (L.m.health < 80 || L.season.out >= 10), w: 4,
     tag: 'The trainer\'s room', t: 'You\'re not healthy for the playoffs.', x: 'Something\'s wrong in your ankle. The team doctor says you could make it worse.',
     o: [O('Play through it', { health: -6, fame: 3, win: 0.2 }, 'You tape it twice and play. It hurts for a month after.', { sub: 'It\'s the playoffs' }),
       O('Sit out Game 1', { health: 8, win: -0.2 }, 'You watch in a suit. It\'s the hardest game of your career.', { sub: 'Get right first' })] },
@@ -11315,7 +11381,7 @@ story({
     tag: 'Agent\'s office', t: 'Your contract runs out in June.', x: '{agent} says every playoff game is worth money now.',
     o: [O('Block it out', { trust: 2 }, 'Basketball now. Money in July.', { sub: 'Basketball first' }),
       O('Go over the numbers', { morale: -2, fame: 1 }, 'He walks you through it. You sleep worse.', { sub: 'Know what\'s at stake' })] },
-  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 12,
+  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && (L.m.health < 80 || L.season.out >= 10), w: 12,
     tag: 'Training staff', t: 'Rest all the way to Game 1?', x: '{gm} wants you off the court until Saturday. No practice at all.',
     o: [O('Take the days off', { health: 10 }, 'Three days in the cold tub. You feel brand new.', { sub: 'Get your legs back' }),
       O('Practice anyway', { health: -4, eth: 2, trust: -2 }, 'You shoot alone at night. Nothing happens. This time.', { sub: 'Stay sharp' })] },
@@ -11733,6 +11799,8 @@ function step(L) {
         break;
       }
       if (!L.season) newSeason(L);
+      /* A held summer is done before the first game. */
+      summerDo(L, beats);
       const role = roleOf(L);
       L.season.role = role;
       beats.push({ kind: 'role', text: E.teamName(L.team) + ': ' + role.label + ', about ' + Math.round(role.min) + ' minutes a night.', tone: '' });
@@ -12012,7 +12080,8 @@ function storyStretch(L, phase) {
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
-  L.pending.push(summerCard(L));
+  /* A card, or a routine summer held until tip-off (summerOpen). */
+  summerOpen(L);
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
   if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L, 'pre') ? 1 : 0);
@@ -13975,6 +14044,27 @@ const numWord = (n) => NUMWORDS[n] || String(n);
    that could say something the career did not do, and it is written to the
    player in short sentences. Called by the page when a career ends, so it
    moves nothing the season reads. */
+/* What a played childhood left, in two or three short sentences off what he chose. */
+const KID_SAY = {
+  teacher: { dad: 'Your father taught you to shoot in the driveway.', park: 'You learned the game from the big kids at the park.', self: 'You taught yourself, alone with a ball.' },
+  sport: { soccer: 'You played soccer too.', football: 'You played football too.', chess: 'You were in the chess club.', hoops: 'It was only ever basketball.' },
+  aau: { went: 'Your mother worked two jobs for the travel team.', stayed: 'You stayed on the town team with your friends.' },
+};
+function kidStory(L) {
+  if (!L.kid || !L.kid.done) return '';
+  const out = [];
+  for (const k of ['teacher', 'sport', 'aau']) { const m = recall(L, 'kid.' + k); if (m && KID_SAY[k][m.v]) out.push(KID_SAY[k][m.v]); }
+  return out.join(' ');
+}
+/* The rest of the life, when it was lived (later.js). */
+function laterStory(L) {
+  const P = L.later;
+  if (!P) return '';
+  const out = [P.job === 'family' && !P.peak ? 'You went home and stayed.' : 'After the game: ' + LATER_JOBS[P.job].n[P.peak].toLowerCase() + '.'];
+  if (P.gave) out.push('You gave away ' + money(P.gave) + '.');
+  if (P.over) out.push('You lived to ' + P.died + '.');
+  return out.join(' ');
+}
 function careerStory(L) {
   const f = L.final || legacy(L);
   const H = L.history, T = totals(L), d = L.draft || {};
@@ -13982,6 +14072,9 @@ function careerStory(L) {
   const start = [];
   if (L.parent) start.push('Your father was ' + L.parent.name + '. ' + L.parent.verdict + '.');
   if (L.origin && ORIGINS[L.origin] && !L.parent) start.push(ORIGINS[L.origin].name + '.');
+  /* A childhood that was played is the first thing it says (childhood.js). */
+  const kid = kidStory(L);
+  if (kid) start.push(kid);
   const road = roadStory(L).slice(0, -1);
   if (road.length) start.push(road.join(' '));
   else if (BACKGROUNDS[L.bg] && !L.amHist.length) start.push(BACKGROUNDS[L.bg].name + '.');
@@ -14016,7 +14109,8 @@ function careerStory(L) {
     const M = memories(L).slice(-3);
     if (M.length) out.push({ h: 'What people remember', p: M.map((m) => m.t).join(' ') });
     const last = H[H.length - 1];
-    const end = ['You retired at ' + last.age + ', ' + T.pts.toLocaleString('en-US') + ' points in all.', f.verdict + '.'];
+    /* A man who died young did not retire. */
+    const end = [(L.flags.died ? 'You were gone at ' + L.age : 'You retired at ' + last.age) + ', ' + T.pts.toLocaleString('en-US') + ' points in all.', f.verdict + '.'];
     if (f.ending) {
       end.push(f.ending.tierName + '.');
       if (f.ending.secretName) end.push(f.ending.secretName + '.');
@@ -14026,6 +14120,8 @@ function careerStory(L) {
   }
   const dn = dealNames(L);
   if (dn.length) out.push({ h: 'Your face sold', p: listWords(dn) + '.' });
+  const after = laterStory(L);
+  if (after) out.push({ h: 'After the whistle', p: after });
   const cc = H.length ? careerComps(L) : [];
   if (cc.length) out.push({ h: 'Who you were like', p: 'Your career reads like ' + listWords(cc) + '.' });
   if (f.epilogue) out.push({ h: 'Years later', p: f.epilogue });
@@ -14091,7 +14187,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, realMan, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, realMan, personAct, bondsLeft, summerOf, summerPick, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

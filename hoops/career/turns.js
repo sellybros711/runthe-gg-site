@@ -116,6 +116,8 @@ function step(L) {
         break;
       }
       if (!L.season) newSeason(L);
+      /* A held summer is done before the first game. */
+      summerDo(L, beats);
       const role = roleOf(L);
       L.season.role = role;
       beats.push({ kind: 'role', text: E.teamName(L.team) + ': ' + role.label + ', about ' + Math.round(role.min) + ' minutes a night.', tone: '' });
@@ -395,7 +397,8 @@ function storyStretch(L, phase) {
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
-  L.pending.push(summerCard(L));
+  /* A card, or a routine summer held until tip-off (summerOpen). */
+  summerOpen(L);
   /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
   if (L.seasonsDone > 0) queueEvents(L, 'pre', storyStretch(L, 'pre') ? 1 : 0);

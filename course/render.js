@@ -22,9 +22,13 @@
  *
  * World x is east and y is north; three's X is x and Z is minus y. */
 import * as THREE from '/assets/vendor/three-0.180.0/three.module.min.js';
-import { GLTFLoader } from '/assets/vendor/three-0.180.0/addons/loaders/GLTFLoader.js';
-import { mergeGeometries } from '/assets/vendor/three-0.180.0/addons/utils/BufferGeometryUtils.js';
-import { clone as cloneRig } from '/assets/vendor/three-0.180.0/addons/utils/SkeletonUtils.js';
+
+/* THE ART LOADS AFTER THE GAME HAS STARTED, NOT BESIDE IT. The model loader and the packs are
+   1.6 MB between them. Fetched at boot they shared the line with the game's own files and pushed
+   the time to playable from about 2.2 s to about 2.8 s on a 4G link. So nothing below is imported
+   up front: draw() starts the load once the first ticks have run. */
+const ADDONS = '/assets/vendor/three-0.180.0/addons/';
+let GLTFLoader = null, mergeGeometries = null, cloneRig = null;
 
 const C = {
   rough: 0x6fae4f, rough2: 0x77b656, rough3: 0x68a54a, semi: 0x7cb955, fairA: 0x92d162, fairB: 0x84c457, collar: 0x9ad968, tee: 0x5a9c40,
@@ -516,7 +520,11 @@ export function createRenderer(canvas, map, cfg) {
       if (parts.length) art.models[top.name] = parts;
     }
   }
-  function loadArt() {
+  async function loadArt() {
+    try {
+      const [a, b, c] = await Promise.all([import(ADDONS + 'loaders/GLTFLoader.js'), import(ADDONS + 'utils/BufferGeometryUtils.js'), import(ADDONS + 'utils/SkeletonUtils.js')]);
+      GLTFLoader = a.GLTFLoader; mergeGeometries = b.mergeGeometries; cloneRig = c.clone;
+    } catch (e) { return false; }
     const loader = new GLTFLoader(), art = { models: {}, mats: { flat: new THREE.MeshLambertMaterial({ vertexColors: true }) }, people: {}, clips: {} };
     const get = n => new Promise((ok, no) => loader.load('models/' + n + '.glb', ok, undefined, no));
     return Promise.all(['nature', 'golf', 'cars', 'town', 'people'].map(get)).then(([nature, golf, cars, town, people]) => {
@@ -641,6 +649,7 @@ export function createRenderer(canvas, map, cfg) {
 
   function draw(S, ctx, alpha, time, goal, opts) {
     const p = S.player, sh = cfg.shift;
+    if (artStart && S.tick >= 3) artStart();          // the game is running: now fetch the art
     nRing = nFill = nShadow = nBody = nBall = 0;
     frameDt = Math.min(0.1, Math.max(0, time - lastTime)); lastTime = time;
     for (let i = 0; i < chars.length; i++) if (chars[i]) chars[i].root.visible = false;
@@ -792,7 +801,8 @@ export function createRenderer(canvas, map, cfg) {
     return out;
   }
   function project(x, y, out) { V.set(x, 1.5, -y).project(cam); out.x = (V.x + 1) / 2 * viewW; out.y = (1 - V.y) / 2 * viewH; return out; }
-  const artReady = loadArt();
+  let artStart = null;
+  const artReady = new Promise(ok => { artStart = () => { artStart = null; loadArt().then(ok, () => ok(false)); }; });
   return { rebuild, snapshot, draw, resize, pick, project, artReady,
     setHelpers(st, lk) { stationsOf = st; looksOf = lk; },
     info() { return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, dpr }; },
