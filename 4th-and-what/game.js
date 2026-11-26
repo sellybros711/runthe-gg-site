@@ -158,7 +158,7 @@
       box.appendChild(T2);
     }
   });
-  $('g3d').addEventListener('click', function () { if (res) A.watch3d(res); });
+  $('g3d').addEventListener('click', function () { if (res) A.watch3d(res, null, { play: played, kind: 'drawn' }); });
   $('gShare').addEventListener('click', function () {
     if (!res) return;
     SH.send(SH.text(res)).then(function (how) { A.toast('gToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
