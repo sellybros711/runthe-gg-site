@@ -217,7 +217,160 @@
     return (w[0][0] + w[1][0] + w[2][0]).toUpperCase();
   }
 
-  var api = { CUP: 'The Club Cup', MIN_SPIN: MIN_SPIN, MIN_OPP: MIN_OPP, NAMES: NAMES, SKIP: SKIP, BRAND_WORDS: BRAND_WORDS,
+  /* ====================================================================================
+   * CLUB SEASON (the owner's call, 2026-11-26: the club side plays "more of a season mode").
+   *
+   * A ten club league: your XI and nine club sides. Nine matches, one against each, played in
+   * three blocks of three, with a transfer window after the first and second block. The table
+   * decides the title. The top four go to The Club Cup: a semi-final and a final.
+   *
+   * Everything here is pure and takes its random numbers as `rnd`, so check-club can play
+   * thousands of seasons on a fixed seed and hold the title odds.
+   *
+   * THE MATCH MODEL IS THE LEAGUE'S OWN. The World Cup side's simulateMatch is tuned for a
+   * knockout (a penalty below 86, a boost above 90, compounding by round), which is wrong for a
+   * league where a draw is a result. Here each side's goals are Poisson, with a mean that leans
+   * on the rating gap. Draws, goal difference and the odd upset fall out of that on their own.
+   * ==================================================================================== */
+  var SEASON = {
+    clubs: 10, matches: 9, blocks: [3, 3, 3], cupSpots: 4,
+    // Nine opponents, drawn by rating band so every league has favourites, a middle and strugglers.
+    bands: [[92, 99, 1], [87, 91, 2], [81, 86, 2], [74, 80, 2], [60, 73, 2]],
+    goals: 1.3,     // a side's mean goals against an equal
+    lean: 0.07     // how hard a rating point leans the means
+  };
+
+  function poisson(mean, rnd) {
+    var l = Math.exp(-mean), k = 0, p = 1;
+    do { k++; p *= rnd(); } while (p > l && k < 12);
+    return k - 1;
+  }
+  /* One league match between ratings a and b: [goals for a, goals for b]. */
+  function matchGoals(a, b, rnd) {
+    var d = (a - b) * SEASON.lean;
+    return [Math.min(7, poisson(SEASON.goals * Math.exp(d / 2), rnd)), Math.min(7, poisson(SEASON.goals * Math.exp(-d / 2), rnd))];
+  }
+
+  /* Nine opponents from the cup's pool, by band. A thin band borrows its nearest neighbours. */
+  function seasonOpponents(pool, rnd) {
+    var left = pool.slice(), out = [];
+    SEASON.bands.forEach(function (b) {
+      for (var n = 0; n < b[2]; n++) {
+        var idx = [];
+        left.forEach(function (o, i) { if (o.teamOverall >= b[0] && o.teamOverall <= b[1]) idx.push(i); });
+        if (!idx.length) {   // nobody left in the band: the closest rating to its middle
+          var mid = (b[0] + b[1]) / 2, best = -1, gap = 1e9;
+          left.forEach(function (o, i) { var g = Math.abs(o.teamOverall - mid); if (g < gap) { gap = g; best = i; } });
+          if (best < 0) return;
+          idx = [best];
+        }
+        out.push(left.splice(idx[Math.floor(rnd() * idx.length)], 1)[0]);
+      }
+    });
+    return out;
+  }
+
+  /* A new season. Team 0 is the player. The fixture list is the circle method: nine rounds,
+     every side plays once a round and meets every other side once. */
+  function seasonStart(pool, rnd) {
+    var opps = seasonOpponents(pool, rnd);
+    var teams = [{ you: true, name: 'YOUR XI', era: '', ovr: 0, squad: null }].concat(opps.map(function (o) {
+      return { you: false, name: o.country, era: o.year, ovr: o.teamOverall, squad: o.squad };
+    }));
+    var n = teams.length, order = [];
+    for (var i = 1; i < n; i++) order.push(i);
+    for (var j = order.length - 1; j > 0; j--) { var k = Math.floor(rnd() * (j + 1)), t = order[j]; order[j] = order[k]; order[k] = t; }
+    var rounds = [];
+    for (var r = 0; r < n - 1; r++) {
+      var ring = [0].concat(order), pairs = [];
+      for (var x = 0; x < n / 2; x++) pairs.push([ring[x], ring[n - 1 - x]]);
+      rounds.push(pairs);
+      order.unshift(order.pop());
+    }
+    return { teams: teams, rounds: rounds, md: 0, mine: [],
+      rows: teams.map(function () { return { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }; }) };
+  }
+
+  /* The player's opponent on matchday `md` (0 based), as a team. */
+  function seasonOpponentAt(season, md) {
+    var pair = season.rounds[md].filter(function (p) { return p[0] === 0 || p[1] === 0; })[0];
+    return season.teams[pair[0] === 0 ? pair[1] : pair[0]];
+  }
+
+  /* Play the next `count` matchdays at the player's current rating. Returns the player's results. */
+  function seasonPlay(season, userOvr, count, rnd) {
+    var played = [];
+    for (var c = 0; c < count && season.md < season.rounds.length; c++) {
+      season.rounds[season.md].forEach(function (pair) {
+        var a = pair[0], b = pair[1];
+        var ra = a === 0 ? userOvr : season.teams[a].ovr, rb = b === 0 ? userOvr : season.teams[b].ovr;
+        var g = matchGoals(ra, rb, rnd), A = season.rows[a], B = season.rows[b];
+        A.p++; B.p++; A.gf += g[0]; A.ga += g[1]; B.gf += g[1]; B.ga += g[0];
+        if (g[0] > g[1]) { A.w++; B.l++; A.pts += 3; } else if (g[0] < g[1]) { B.w++; A.l++; B.pts += 3; } else { A.d++; B.d++; A.pts++; B.pts++; }
+        if (a === 0 || b === 0) {
+          var mine = a === 0 ? g[0] : g[1], theirs = a === 0 ? g[1] : g[0], opp = season.teams[a === 0 ? b : a];
+          var res = { md: season.md + 1, opp: opp, gf: mine, ga: theirs, res: mine > theirs ? 'W' : (mine < theirs ? 'L' : 'D') };
+          season.mine.push(res); played.push(res);
+        }
+      });
+      season.md++;
+    }
+    season.teams[0].ovr = userOvr;
+    return played;
+  }
+
+  /* The table: points, goal difference, goals for, then the name (a full tie is rare and neutral). */
+  function seasonTable(season) {
+    return season.teams.map(function (t, i) {
+      var r = season.rows[i];
+      return { i: i, you: t.you, name: t.name, era: t.era, ovr: t.ovr, p: r.p, w: r.w, d: r.d, l: r.l, gf: r.gf, ga: r.ga, gd: r.gf - r.ga, pts: r.pts };
+    }).sort(function (a, b) { return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || (a.name < b.name ? -1 : 1); })
+      .map(function (row, k) { row.pos = k + 1; return row; });
+  }
+
+  /* The Club Cup: the top four. 1 v 4 and 2 v 3, then a final. A level cup tie goes to
+     penalties, a coin that leans a little on the rating. Returns the player's cup, or
+     { qualified: false }. `result` is 'winner', 'finalist' or 'semi'. */
+  function seasonCup(season, userOvr, rnd) {
+    var table = seasonTable(season), top = table.slice(0, SEASON.cupSpots);
+    var me = top.filter(function (r) { return r.you; })[0];
+    if (!me) return { qualified: false, table: table };
+    var rate = function (row) { return row.you ? userOvr : row.ovr; };
+    var tie = function (a, b) {
+      var g = matchGoals(rate(a), rate(b), rnd), pens = false, aWins;
+      if (g[0] === g[1]) { pens = true; aWins = rnd() < 0.5 + Math.max(-0.2, Math.min(0.2, (rate(a) - rate(b)) * 0.01)); }
+      else aWins = g[0] > g[1];
+      return { a: a, b: b, ga: g[0], gb: g[1], pens: pens, winner: aWins ? a : b };
+    };
+    var semis = [tie(top[0], top[3]), tie(top[1], top[2])];
+    var mine = semis[0].a.you || semis[0].b.you ? semis[0] : semis[1], other = mine === semis[0] ? semis[1] : semis[0];
+    var view = function (t) {
+      var youA = t.a.you;
+      return { opp: youA ? t.b : t.a, gf: youA ? t.ga : t.gb, ga: youA ? t.gb : t.ga, pens: t.pens, won: t.winner.you === true };
+    };
+    var out = { qualified: true, table: table, seed: me.pos, semi: view(mine), final: null, result: 'semi' };
+    if (out.semi.won) {
+      var f = tie(mine.winner, other.winner);
+      out.final = view(f);
+      out.result = out.final.won ? 'winner' : 'finalist';
+    }
+    return out;
+  }
+
+  /* A transfer window signing: the man replaces the weakest player in his own position.
+     Returns that pick's index, or -1 when the squad has nobody in his position. */
+  function swapTarget(picks, man) {
+    var idx = -1, low = 1e9;
+    picks.forEach(function (pk, i) {
+      if (pk.player.position !== man.position) return;
+      var o = ovOf(pk.player);
+      if (o < low) { low = o; idx = i; }
+    });
+    return idx;
+  }
+
+  var api = { CUP: 'The Club Cup', SEASON: SEASON, matchGoals: matchGoals, seasonOpponents: seasonOpponents, seasonStart: seasonStart,
+    seasonOpponentAt: seasonOpponentAt, seasonPlay: seasonPlay, seasonTable: seasonTable, seasonCup: seasonCup, swapTarget: swapTarget, MIN_SPIN: MIN_SPIN, MIN_OPP: MIN_OPP, NAMES: NAMES, SKIP: SKIP, BRAND_WORDS: BRAND_WORDS,
     clubName: clubName, eraOf: eraOf, personKey: personKey, build: build, strength: strength, opponents: opponents, spin: spin,
     cupWords: cupWords, chip: chip };
   root.RTPClub = api;

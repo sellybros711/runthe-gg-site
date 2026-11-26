@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Run The Pitch: the club side (Club Draft and The Club Cup).
+/* Run The Pitch: the club side (Club Draft, the Club Season and The Club Cup).
  *
  *   node soccer/check-club.mjs            the data rules, then a whole club run in Chromium
  *   node soccer/check-club.mjs --quick    the data rules only, no browser
@@ -9,12 +9,13 @@
  *   - no shown club name carries a company's brand (the owner's ruling), and nobody is a "Free agent" club
  *   - every spun club and decade holds at least MIN_SPIN different men, each man once
  *   - the cup's sides sit on the World Cup pool's rating scale, with enough in every round's band
+ *   - the season: ten clubs, every pair meets once, the table adds up, the title odds by rating
  * The browser run (outside hosts answered locally, Supabase counted):
  *   - the door is shut until /soccer/?club=1, and the World Cup side is unchanged
  *   - a whole club draft, Easy and Full Team: the wheel lands on a club and a decade, no man is
- *     drafted twice, the reveal and the cup play to a result
+ *     drafted twice, the reveal, then a whole season: three blocks, a signing, a kept XI, the cup
  *   - no screen of a club run says "World Cup" except a player's own World Cups line
- *   - a club run writes nothing to the server (step 1: its boards are not built)
+ *   - a club run writes nothing to the server (its board is not built yet)
  */
 import http from 'node:http';
 import fs from 'node:fs';
@@ -115,6 +116,33 @@ ok(new Set(units.map(u => u.club + '|' + u.era)).size === units.length, 'a shown
   const w = run(wcSpin), c = run(clubSpin);
   ok(Math.abs(w.p50 - c.p50) <= 1.5, `a greedy club draft is as strong as a World Cup one: median ${c.p50.toFixed(1)} against ${w.p50.toFixed(1)}`);
   ok(Math.abs(w.over86 - c.over86) <= 0.12, `and reaches 86 OVR as often: ${Math.round(c.over86 * 100)}% against ${Math.round(w.over86 * 100)}%`);
+}
+
+// The Club Season: the league's rules, and how often each rating wins it. A change to the match
+// model, the bands or the pool moves these, and any copy that quotes a chance must move with them.
+{
+  let seed = 4242;
+  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const one = C.seasonStart(opp, rnd);
+  const met = new Set(); let fair = one.rounds.length === 9;
+  one.rounds.forEach(r => { const seen = new Set(); r.forEach(([a, b]) => { seen.add(a); seen.add(b); met.add(Math.min(a, b) + '-' + Math.max(a, b)); }); if (seen.size !== 10 || r.length !== 5) fair = false; });
+  ok(one.teams.length === 10 && fair && met.size === 45, 'a season is ten clubs and nine rounds, every side plays once a round and meets every other once');
+  ok(new Set(one.teams.slice(1).map(t => t.name + t.era)).size === 9 && one.teams.slice(1).some(t => t.ovr >= 92) && one.teams.slice(1).some(t => t.ovr <= 73), 'nine different opponents, a favourite and a struggler among them');
+  C.seasonPlay(one, 88, 3, rnd); C.seasonPlay(one, 89.5, 6, rnd);
+  const tb = C.seasonTable(one);
+  ok(one.md === 9 && one.mine.length === 9 && tb.every(r => r.p === 9 && r.pts === r.w * 3 + r.d) && tb.reduce((a, r) => a + r.gd, 0) === 0 && tb.reduce((a, r) => a + r.w - r.l, 0) === 0, 'the table adds up: nine played each, points from results, goals for equal goals against');
+  ok(tb.every((r, k) => k === 0 || tb[k - 1].pts > r.pts || (tb[k - 1].pts === r.pts && tb[k - 1].gd >= r.gd)), 'the table is ordered by points, then goal difference');
+  const cup = C.seasonCup(one, 89.5, rnd), mePos = tb.find(r => r.you).pos;
+  ok(cup.qualified === (mePos <= 4) && (!cup.qualified || (['winner', 'finalist', 'semi'].includes(cup.result) && (cup.result === 'semi') === !cup.final)), 'the cup takes the top four: a semi-final, and a final for the winner');
+  const picks = [['GK', 80], ['DEF', 84], ['DEF', 79], ['MID', 88], ['FWD', 90], ['FWD', 77]].map(([position, overall], i) => ({ slot: position, player: { player_id: 'x' + i, position, overall } }));
+  ok(C.swapTarget(picks, { position: 'FWD', overall: 95 }) === 5 && C.swapTarget(picks, { position: 'DEF', overall: 70 }) === 2 && C.swapTarget(picks, { position: 'GK', overall: 99 }) === 0, 'a signing replaces the weakest man in his own position');
+  const run = (ov) => { let title = 0, top4 = 0, cupW = 0; const N = 1500; for (let i = 0; i < N; i++) { const s2 = C.seasonStart(opp, rnd); C.seasonPlay(s2, ov, 9, rnd); const c2 = C.seasonCup(s2, ov, rnd); if (c2.table.find(r => r.you).pos === 1) title++; if (c2.qualified) top4++; if (c2.result === 'winner') cupW++; } return { title: title / N, top4: top4 / N, cup: cupW / N }; };
+  const o80 = run(80), o86 = run(86), o90 = run(90), o95 = run(95), o99 = run(99);
+  const pct = (x) => Math.round(x * 100) + '%';
+  console.log(`     title odds by squad rating: 80 ${pct(o80.title)}, 86 ${pct(o86.title)}, 90 ${pct(o90.title)}, 95 ${pct(o95.title)}, 99 ${pct(o99.title)}; top four: ${pct(o80.top4)}, ${pct(o86.top4)}, ${pct(o90.top4)}, ${pct(o95.top4)}, ${pct(o99.top4)}`);
+  ok(o80.title < o86.title && o86.title < o90.title && o90.title < o95.title && o95.title < o99.title, 'a better squad wins the league more often, at every step');
+  ok(o80.title <= 0.04 && o86.title >= 0.03 && o86.title <= 0.13 && o90.title >= 0.10 && o90.title <= 0.24 && o95.title >= 0.28 && o95.title <= 0.48 && o99.title >= 0.45 && o99.title <= 0.70, 'the title is hard but winnable: about 7% at 86, 16% at 90, 38% at 95, 57% at 99');
+  ok(o86.top4 >= 0.45 && o86.top4 <= 0.68 && o99.top4 >= 0.93, 'an 86 squad reaches the cup about half the time, a 99 nearly always');
 }
 
 if (args.includes('--quick')) { console.log(fails ? `\n${fails} failed` : '\nall passed (data rules only)'); process.exit(fails ? 1 : 0); }
@@ -221,43 +249,69 @@ for (const [label, viewport] of [['phone', { width: 390, height: 844 }], ['deskt
   const picks = await page.evaluate(() => gs.picks.map(pk => ({ k: RTPClub.personKey(pk.player), id: pk.player.player_id, real: !!playerById(pk.player.player_id) })));
   ok(new Set(picks.map(p => p.k)).size === 11, `${label}: eleven different men drafted`);
   ok(picks.every(p => p.real), `${label}: every pick is a real player id the boards can resolve`);
-  // the reveal, then the cup
+  // the reveal, then the season
   await page.waitForFunction(() => { const b = document.getElementById('btn-reveal-go'); return b && b.classList.contains('show'); }, null, { timeout: 60000 });
   said.push(await visibleText(page));
-  ok(await page.evaluate(() => document.getElementById('btn-reveal-go').textContent === 'START THE CUP'), `${label}: the reveal's button starts the cup`);
+  ok(await page.evaluate(() => document.getElementById('btn-reveal-go').textContent === 'START THE SEASON'), `${label}: the reveal's button starts the season`);
   await shot('reveal');
   await page.click('#btn-reveal-go');
-  await page.waitForFunction(() => document.getElementById('screen-sim').classList.contains('active') && typeof simResult !== 'undefined' && simResult, null, { timeout: 20000 });
-  await page.waitForTimeout(1500);
+  await page.waitForFunction(() => document.getElementById('screen-season').classList.contains('active') && SEASONRUN, null, { timeout: 20000 });
   said.push(await visibleText(page));
-  await shot('cup');
-  const oppOk = await page.evaluate(() => {
-    const gsm = simResult.groupStage, names = [];
-    (gsm.matchdays || gsm.matches || []).forEach(m => names.push(m.country || (m.opponent && m.opponent.country)));
-    simResult.matches.forEach(m => names.push(m.opponent.country));
-    return { names, allClubs: names.length > 0 && names.every(n => CLUB.names.has(n)) };
+  await shot('season-start');
+  const league = await page.evaluate(() => ({ teams: SEASONRUN.season.teams.length, clubs: SEASONRUN.season.teams.slice(1).every(t => CLUB.names.has(t.name)), rows: document.querySelectorAll('.cs-table tr').length, mast: document.querySelector('.masthead .edition').textContent }));
+  ok(league.teams === 10 && league.clubs && league.rows === 10 && league.mast === 'Club Side', `${label}: a ten club league, every opponent a club side, the table drawn`);
+  // three blocks, a transfer window after the first two
+  const ratings = [await page.evaluate(() => seasonOvr())];
+  for (let block = 0; block < 3; block++) {
+    await page.click('#cs-play');
+    await page.waitForTimeout(150);
+    said.push(await visibleText(page));
+    const st = await page.evaluate(() => ({ md: SEASONRUN.season.md, stage: SEASONRUN.stage, mine: SEASONRUN.season.mine.length, pts: SEASONRUN.season.rows.reduce((a, r) => a + r.p, 0) }));
+    ok(st.md === (block + 1) * 3 && st.mine === (block + 1) * 3 && st.pts === (block + 1) * 30 && st.stage === (block < 2 ? 'results' : 'final'), `${label}: block ${block + 1} plays three matchdays for all ten sides`);
+    if (block === 0) await shot('season-results');
+    if (block < 2) {
+      await page.click('#cs-window');
+      await page.waitForFunction(() => SEASONRUN.stage === 'window' && !document.getElementById('spin-overlay').classList.contains('show'), null, { timeout: 20000 });
+      await page.waitForTimeout(150);
+      said.push(await visibleText(page));
+      if (block === 0) {   // sign the best man on offer
+        await page.waitForTimeout(250); await shot('season-window');
+        const before = await page.evaluate(() => ({ n: document.querySelectorAll('.cs-pl').length, people: gs.picks.map(pk => RTPClub.personKey(pk.player)) }));
+        await page.click('.cs-pl');
+        const sel = await page.evaluate(() => ({ man: RTPClub.personKey(SEASONRUN.pick.man), out: RTPClub.personKey(SEASONRUN.pick.out), pos: SEASONRUN.pick.man.position, outPos: SEASONRUN.pick.out.position, to: SEASONRUN.pick.to, swap: document.querySelector('.cs-swap').innerText }));
+        said.push(await visibleText(page));
+        await page.click('#cs-sign');
+        const after = await page.evaluate(() => ({ people: gs.picks.map(pk => RTPClub.personKey(pk.player)), ovr: seasonOvr(), stage: SEASONRUN.stage, n: gs.picks.length }));
+        ok(before.n >= 1 && sel.pos === sel.outPos && after.people.includes(sel.man) && !after.people.includes(sel.out) && after.n === 11 && new Set(after.people).size === 11, `${label}: a signing replaces a man in his own position, eleven different men still`);
+        ok(Math.abs(after.ovr - sel.to) < 0.05 && after.stage === 'block', `${label}: the squad rating becomes the one the window showed (${sel.to})`);
+      } else {             // keep the XI
+        const before = await page.evaluate(() => gs.picks.map(pk => pk.player.player_id).join());
+        await page.click('#cs-keep');
+        ok(await page.evaluate((b) => gs.picks.map(pk => pk.player.player_id).join() === b && SEASONRUN.stage === 'block', before), `${label}: Keep my XI changes nothing`);
+      }
+      ratings.push(await page.evaluate(() => seasonOvr()));
+    }
+  }
+  await shot('season-final');
+  await page.click('#cs-cup');
+  await page.waitForTimeout(200);
+  said.push(await visibleText(page));
+  await shot('season-done');
+  const res = await page.evaluate(() => {
+    const t = RTPClub.seasonTable(SEASONRUN.season), me = t.find(r => r.you), c = SEASONRUN.cup;
+    return { stage: SEASONRUN.stage, pos: me.pos, pts: me.pts, sum: t.reduce((a, r) => a + r.p, 0), qualified: c.qualified, result: c.result || null,
+      text: document.getElementById('season-content').innerText, modal: document.getElementById('entry-bg').classList.contains('show') };
   });
-  ok(oppOk.allClubs, `${label}: every cup opponent is a club side (${oppOk.names.slice(0, 3).join(', ')})`);
-  await page.evaluate(() => simSkipToResult());
-  await page.waitForFunction(() => document.getElementById('screen-reveal').classList.contains('active') && document.getElementById('res-rank-line'), null, { timeout: 60000 });
-  await page.waitForTimeout(1500);
-  said.push(await visibleText(page));
-  await shot('result');
-  const res = await page.evaluate(() => ({
-    line: document.getElementById('res-rank-line').textContent,
-    hidden: ['res-share', 'res-beatmine', 'res-leaderboard'].every(id => { const b = document.getElementById(id); return !b || getComputedStyle(b).display === 'none'; }),
-    modal: document.getElementById('entry-bg').classList.contains('show'),
-  }));
-  ok(/not ranked yet/.test(res.line), `${label}: the result says the run is not ranked yet`);
-  ok(res.hidden && !res.modal, `${label}: no board, share card or challenge link on a club result, and no modal opens`);
+  ok(res.stage === 'done' && res.sum === 90 && res.qualified === (res.pos <= 4), `${label}: the season ends after nine matchdays; the top four, and only they, play the cup (finished ${res.pos}, ${res.pts} pts)`);
+  ok(/not ranked yet/i.test(res.text) && !res.modal, `${label}: the result says the run is not ranked yet, and no modal opens`);
   const writes = supa.filter(r => /rpc\/(submit_draft|submit_daily|create_friendly_challenge|refresh_my_badges)|^POST/.test(r));
   ok(writes.length === 0, `${label}: a club run writes nothing to the server (${writes.length} writes${writes.length ? ': ' + writes.join(', ') : ''})`);
   const wcSaid = said.join('\n').split('\n').filter(l => /world cup/i.test(l));
   ok(wcSaid.length === 0, `${label}: no screen of a club run says "World Cup"${wcSaid.length ? ': ' + wcSaid.slice(0, 4).join(' | ') : ''}`);
-  // Re-draft stays on the club side
-  await page.click('#res-again');
+  // another season stays on the club side
+  await page.click('#cs-again');
   await page.click('#btn-setup-go');
-  ok(await page.evaluate(() => isClub()), `${label}: Re-draft starts another club draft`);
+  ok(await page.evaluate(() => isClub()), `${label}: Play another season starts another club draft`);
   ok(errors.length === 0, `${label}: no page errors${errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''}`);
   await ctx.close();
 }

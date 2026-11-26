@@ -24,7 +24,7 @@ A small fix that only touches code can go ahead without it.
 node soccer/check-db-reads.mjs                what a finished game reads; no poll while hidden (CI: soccer-checks)
 node soccer/check-guest-daily.mjs             a guest's Daily: the Function, then the page (--quick: the Function only)
 psql -d sdg -f supabase/test/soccer_daily_guest_test.sql    189 against a real Postgres (createdb sdg first)
-node soccer/check-club.mjs                    the club side: names, squads, balance, a whole club run (--quick, --names)
+node soccer/check-club.mjs                    the club side: names, squads, balance, the season's odds, a whole season (--quick, --names)
 node scripts/check-dashes.mjs soccer/<file>    soccer/ is not in GUARDED yet: check what you touch
 node scripts/check-cachebust.mjs               gameLogic.js and the assets the page pins
 node scripts/check-adsense.mjs                 the Pitch's banner screens and slots
@@ -54,6 +54,12 @@ node scripts/check-home-games.mjs              the home page card
   rename into one name in `NAMES`: that list is for brands and spelling pairs only.
 - The club cup is **The Club Cup**. No club screen says "World Cup" except a man's own
   World Cups line; shared copy goes through `cw()`.
+- **The club side plays a season** (the owner's call, 2026-11-26), not the World Cup run with
+  clubs swapped in: a ten club league in three blocks of three, a transfer window after the first
+  two (one spin: sign one man for the weakest in his position, or keep the XI), and The Club Cup
+  for the top four. The rules and the league's own match model are in `soccer/club.js`
+  (`SEASON`); the screen is `renderSeason()`. `check-club` holds the title odds by squad rating.
+  Change the model, the bands or the pool and rerun it, and move any copy that quotes a chance.
 - The cup's sides sit on the World Cup pool's rating scale, and the wheel is weighted by squad
   size, so both sides draft to the same strength and the published odds hold for both.
   `check-club` measures it. Change the spin or the pool and rerun it.
