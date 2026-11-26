@@ -72,7 +72,7 @@ async function run(name, viewport, mobile) {
   /* ---------- the storyboard, in the game ---------- */
   await page.click('#hPlay');
   await page.waitForSelector('#board', { state: 'visible' });
-  ok((await L(() => window.__lastShot.play.steps.length)) === 4, 'a first visit opens on the starter play');
+  ok((await L(() => window.__lastShot.play.steps.length)) === 5, 'a first visit opens on the starter play (the Pin-down and its roll, five steps)');
   await page.click('#bClear');
   ok((await L(() => window.__lastShot.play.steps.length)) === 0, 'Clear gives a blank clipboard');
   await drawPin();
