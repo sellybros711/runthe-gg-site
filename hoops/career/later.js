@@ -154,9 +154,12 @@ function laterOf(L) {
   return {
     can: false, on: true, over: P.over, age: L.age, died: P.died || null, job: P.job, title: laterTitle(L), best: laterJob(L).n[P.peak], peak: P.peak,
     pay: laterJob(L).pay[P.rung], cash: L.cash, worth: netWorth(L), health: L.m.health, years: L.age - P.from, gave: P.gave || 0,
+    life: lifeLine(L), next: P.over ? null : laterNext(),
     line: P.over ? laterLine(L) : null,
   };
 }
+/* What a press is called. */
+const laterNext = () => (NUMWORDS[LATER_STEP] || LATER_STEP) + ' years go by';
 /* What the stone says. */
 function laterLine(L) {
   const P = L.later, parts = [L.name + ', ' + P.died + '.'];
