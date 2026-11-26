@@ -10,7 +10,7 @@
 export const GAME = Object.freeze({ name: 'Run The Course', slug: 'course', logo: '/course/logo.svg' });
 
 export const CONFIG = {
-  version: 3,
+  version: 4,
   schema: 1,
 
   shift: {
@@ -18,6 +18,7 @@ export const CONFIG = {
     dawnS: 30,                // the mowing phase before the gates open
     openS: 210,               // gates open, 7:00 to 19:00 in game
     closeMaxS: 150,           // after closing, groups still out get this long to finish
+    afterMaxS: 300,           // after hours has no clock for the player; this is only the longest it can run
     lastTeeS: 130,            // no tee time later than this into the open phase
     firstTeeS: 6,
     clockOpen: 7, clockClose: 19,
@@ -25,7 +26,7 @@ export const CONFIG = {
     cartDrift: 0.25, mowerDrift: 0.5,     // share of the wanted speed gained a tick
     golferWalk: 4, golferCart: 8,
     carry: 2,
-    rings: { checkin: 2.5, sendoff: 1, mow: 3, pad: 1.5 },
+    rings: { checkin: 2.5, sendoff: 1, mow: 3, keys: 1.5, snack: 1.5, range: 2 },
     ringR: 2.2, padR: 2.4, enterR: 1.5, leaveR: 2.6,
     teeGapS: 15,              // minimum gap between groups sent off tee 1
     watchdogS: 75             // a group that has not advanced in this long is moved on
@@ -33,6 +34,7 @@ export const CONFIG = {
 
   golfers: {
     groupsDay1: 5,
+    gentleDays: 1,            // on the first days nobody is very slow: a jam out on the course is nothing a new player can fix
     bookingsPerStar: 0.5,     // 50% more groups a star above 2.0
     sizeOdds: [0.15, 0.35, 0.20, 0.30],
     tierOdds: { scratch: 0.05, good: 0.2, average: 0.4, hacker: 0.25, beginner: 0.1 },
@@ -64,7 +66,41 @@ export const CONFIG = {
     upgradeMax: 10, upgradeGrowth: 1.45,
     tierEvery: 3,             // a building changes its look every this many levels
     snackBase: 1, rangeBase: 1,   // dollars a golfer at the first level of each
-    upgradeQuietS: 12,         // the goal line only sends you to a pad when no group needs you for this long
+    /* THE PLACES. One pad a place. Standing on it opens the place's card: build it, level what it
+       holds, hire who runs it. `build` names a pad above; `ups` name upgrades below; `hire` names staff. */
+    places: {
+      clubhouse:     { name: 'Clubhouse',     ups: ['clubhouse', 'boots', 'my_cart'] },
+      shop:          { name: 'Pro Shop',      ups: ['shop'], hire: 'clerk' },
+      starter:       { name: 'Starter Box',   ups: ['starter'], hire: 'starter' },
+      shed:          { name: 'Mower Shed',    ups: ['shed'], hire: 'greenskeeper' },
+      parking:       { name: 'Parking Lot',   ups: ['parking'] },
+      gardens:       { name: 'Gardens',       ups: ['gardens'] },
+      hole_1:        { name: 'Hole 1',        ups: ['hole_1'] },
+      hole_2:        { name: 'Hole 2',        ups: ['hole_2'] },
+      hole_3:        { name: 'Hole 3',        ups: ['hole_3'] },
+      cart_barn:     { name: 'Cart Barn',     build: 'cart_barn', ups: ['cart_barn'], hire: 'attendant' },
+      putting_green: { name: 'Putting Green', build: 'putting_green', ups: ['putting_green'] },
+      snack_shack:   { name: 'Snack Shack',   build: 'snack_shack', ups: ['snack_shack'], hire: 'cook' },
+      driving_range: { name: 'Driving Range', build: 'driving_range', ups: ['driving_range'], hire: 'range_hand' },
+      hole_4:        { name: 'Hole 4',        build: 'hole_4', ups: [] }
+    },
+    /* THE HIRES. Each runs one station for you. They work at `staffSpeed` of your own pace, after a
+       beat to notice (`staffDelayS`), so doing it yourself is always quicker. Hired once, kept. */
+    staff: {
+      attendant:    { name: 'Cart Attendant', cost: 200, station: 'keys' },
+      clerk:        { name: 'Shop Clerk',     cost: 250, station: 'checkin' },
+      starter:      { name: 'Starter',        cost: 300, station: 'sendoff' },
+      cook:         { name: 'Cook',           cost: 350, station: 'snack' },
+      greenskeeper: { name: 'Greenskeeper',   cost: 400, station: 'mow' },
+      range_hand:   { name: 'Range Hand',     cost: 450, station: 'range' }
+    },
+    staffSpeed: 0.8, staffDelayS: 2,
+    saveShare: 0.3,           // the goal line saves for the next hire or building: it only suggests a level that costs up to this share of it
+    greenskeeperCut: 85, greenskeeperS: 7,   // a hired greenskeeper cuts a green to this, one every so many seconds of dawn
+    /* THE HANDS-ON STATIONS. A group waits this long for cart keys, or at the snack shack, then goes
+       on without. The range holds this many baskets; a golfer takes one. The putting green must be
+       at least this well kept to charge for. */
+    keysWaitS: 14, snackWaitS: 12, rangeBaskets: 8, practiceMinCondition: 50,
     upgrades: {
       boots:     { name: 'Boots',       cost: 20, walk: 0.25 },                      // your walking speed, units a second
       shop:      { name: 'Pro Shop',    cost: 25, checkin: 0.07, fee: 0.04 },        // check in that share faster; every fee that share higher

@@ -46,7 +46,9 @@
      entry from the opponent's 35: QB Sneak 78%, Stick 61%, Levels 60%. The
      passes were under two thirds before the retune too: 100 snaps were too
      few. No shot holds two thirds (Drive is the best, 66%); Mesh is the one
-     quick card over it, 70%. The owner's call). It is the hand, not the
+     quick card over it, 70%. The owner's call. Re-measured 2026-11-26 after
+     every route became an option, 1000 snaps: QB Sneak 78%, Stick 59%, Levels
+     58%; Mesh 71%, Drive 72%). It is the hand, not the
      snap: the defense and the dice are the seed's as always. */
   var FIRST = { run: 'QB Sneak', quick: 'Stick', shot: 'Levels' };
   /* deal(sc, seed, opt): three cards, one of each kind, on three different

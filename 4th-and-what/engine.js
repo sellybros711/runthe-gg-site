@@ -247,6 +247,10 @@
     (play.routes || []).forEach(function (r, i) { if (r && r.pts && r.pts.length) routes[r.who] = { pts: r.pts, order: i + 1 }; });
     (play.blocks || []).forEach(function (b) { if (b && b.to) blocks[b.who] = b.to; });
     var targets = isRun ? [] : (play.targets || []).filter(function (id) { return routes[id] && !blocks[id]; }).slice(0, 3);
+    /* every man running a route is an option (the owner, 2026-11-26: "the person
+       shooting should be the open man depending on what the defense does"): the
+       reads first, in their order, then the other routes in the order drawn */
+    var options = isRun ? [] : targets.concat(Object.keys(routes).filter(function (id) { return id !== 'QB' && !blocks[id] && targets.indexOf(id) < 0; }));
     /* field yards, kept on the field: inside the sidelines and the end lines */
     var abs = function (p) { return { x: clamp(BX + p[0], 0.3, FIELD_W - 0.3), y: clamp(Y0 + p[1], -9.7, 109.7) }; };
 
@@ -439,7 +443,14 @@
     function landmark(dx, dy) { return { x: clamp(BX + dx, 1, FIELD_W - 1), y: Math.min(109.5, Y0 + dy) }; }
     /* an underneath dropper defends the sticks: no deeper than sticks past the
        marker, no shallower than floor */
-    var under = function (dy) { return T.zone.sticks ? Math.min(dy, Math.max(T.zone.floor, distance + T.zone.sticks)) : dy; };
+    var under = function (dy) {
+      var d0 = T.zone.sticks ? Math.min(dy, Math.max(T.zone.floor, distance + T.zone.sticks)) : dy;
+      /* and on long yardage he sinks toward the sticks (since 2026-11-26: before,
+         this only ever made him shallower, so on 4th and 15 the hook defenders
+         sat at 6 yards and a dig at 18 ran free), never past sinkCap, under the
+         safeties */
+      return T.zone.sinkCap ? Math.max(d0, Math.min(distance + T.zone.sticks - T.zone.sink, T.zone.sinkCap)) : d0;
+    };
     function takeNearest(list, pt, pref) {
       var best = null, bs = 1e9;
       list.forEach(function (d) {
@@ -481,7 +492,7 @@
     }
 
     return { T: T, S: S, distance: distance, Y0: Y0, BX: BX, marker: marker, setDef: setDef, O: O, Oal: Oal, Dal: Dal, box: box, shell: shell,
-      isRun: isRun, routes: routes, blocks: blocks, targets: targets, abs: abs, call: call, E: E, byId: byId, QB: QB,
+      isRun: isRun, routes: routes, blocks: blocks, targets: targets, options: options, abs: abs, call: call, E: E, byId: byId, QB: QB,
       offense: offense, defense: defense, ballCarrierId: ballCarrierId, stayIns: stayIns, rushers: rushers, receivers: receivers,
       track: track, motion: motion, pa: pa };
   }
@@ -523,7 +534,7 @@
     var rnd = RNG.mulberry32(seed >>> 0);
     var ctx = setup(scenario, play, opt, rnd, seed);
     var T = ctx.T, dt = T.dt, S = ctx.S, distance = ctx.distance, Y0 = ctx.Y0, BX = ctx.BX, marker = ctx.marker;
-    var setDef = ctx.setDef, box = ctx.box, isRun = ctx.isRun, routes = ctx.routes, targets = ctx.targets, call = ctx.call;
+    var setDef = ctx.setDef, box = ctx.box, isRun = ctx.isRun, routes = ctx.routes, targets = ctx.targets, options = ctx.options, call = ctx.call;
     var E = ctx.E, byId = ctx.byId, QB = ctx.QB, offense = ctx.offense, defense = ctx.defense;
     var ballCarrierId = ctx.ballCarrierId, stayIns = ctx.stayIns, rushers = ctx.rushers, receivers = ctx.receivers, pa = ctx.pa;
     var carrier = null;
@@ -707,6 +718,21 @@
       return best;
     }
     function openBy(r) { return nearestDefender(r); }
+    /* what a throw to him is worth now, the way the QB sees it: the chance of the
+       catch (the catch's own formula, with the separation he has, the throw to
+       where he will be and the pressure now) and whether the catch moves the
+       chains (short of the sticks it counts for less, down to nothing read.yac
+       yards short: he would have to run the rest after the catch) */
+    function value(e) {
+      var sep = openBy(e), p = e, tf = 0;
+      for (var it = 0; it < 2; it++) { var d1 = len(p.x - QB.x, p.y - QB.y); tf = d1 / QB.arch.arm + T.ball.loft * d1 * d1; p = along(e, tf); }
+      var d2 = len(p.x - QB.x, p.y - QB.y), deepBy = Math.max(0, d2 - T.catch.deepFrom);
+      var z = T.catch.base + T.catch.perSep * (Math.min(sep, T.catch.sepCap) - 2) - T.catch.perTen * (d2 - 12) / 10 - T.catch.deep * deepBy * deepBy / 100
+        - T.catch.pressure * (pressure || 0) - (sep < 1 ? T.catch.tight : 0) + (e.arch.hands || 0) + (QB.arch.accuracy || 0);
+      return chance(z) * (p.y >= marker ? 1 : Math.max(0, 1 - (marker - p.y) / T.read.yac));
+    }
+    /* the best of the options right now; the earlier look wins a near tie */
+    function mostOpen() { var best = null, bv = -1; options.forEach(function (id) { var e = byId[id]; if (!e) return; var v = value(e); if (v > bv + 0.03) { bv = v; best = e; } }); return best; }
     /* The separation that decides a catch. A defender trailing him (nearer the
        QB than he is) has his back to the ball and counts trail yards further
        off; one over the top or in the lane counts as he stands. */
@@ -778,24 +804,45 @@
       if (isRun && ballCarrierId === 'QB' && !carrier) { carrier = QB; }
 
       if (!isRun && !thrown && !windup && !collapseFate) {
-        /* the progression: his eyes are on one read at a time, in the order drawn */
-        var P = targets[eye] ? byId[targets[eye]] : null, C2 = targets.length > 1 ? byId[targets[targets.length - 1]] : null;
+        /* the progression (the owner, 2026-11-26: "you can put the first, 2nd, 3rd
+           read but that doesn't mean the QB will always throw it to the 1st read").
+           His eyes go through the options one at a time: the reads in their order,
+           then the rest. He throws to the man he is on when that man is open, or
+           open enough on time at the end of his route; otherwise he moves on when
+           the route is done or the look has run its time. With every look taken,
+           he throws to whoever is most open, if anyone has a window. */
+        var P = options[eye] ? byId[options[eye]] : null, C2 = targets.length > 1 ? byId[targets[targets.length - 1]] : null;
         /* "finishes the route" is a timing throw: the ball leaves as he is a beat
            from the end of what you drew, so it meets him there */
         var routeDone = P && P.path && left(P) <= Math.max(P.v, 3) * (T.read.release + T.read.timing + flightTo(P.path[P.path.length - 1]));
         if (t >= Tp && !collapsed) { collapsed = true; say(t, 'pressure', 'The pocket is gone.'); }
-        if (!collapsed && P && t >= eyeAt && (routeDone || (t >= minRead && openBy(P) >= T.read.separation))) {
-          /* covered at the top of his route, and there is another read: move on */
-          if (routeDone && eye < targets.length - 1 && openBy(P) < T.read.covered) {
-            eye++; eyeAt = t + T.read.shift;
-            say(t, 'progress', eye === 1 ? 'Covered. Second read.' : 'Covered. Third read.');
-          } else windup = { to: P, at: t + T.read.release, primary: eye === 0 };
+        if (!collapsed && P && t >= eyeAt) {
+          var sepP = openBy(P);
+          if (((t >= minRead && sepP >= T.read.separation) || (routeDone && sepP >= T.read.window)) && value(P) >= T.read.worth) windup = { to: P, at: t + T.read.release, primary: eye === 0, look: eye };
+          else if (routeDone || (t >= minRead && t - Math.max(eyeAt, minRead) >= T.read.look)) {
+            if (eye < options.length - 1) {
+              eye++; eyeAt = t + T.read.shift;
+              say(t, 'progress', eye === 1 ? 'Covered. Next read.' : 'Covered. Moves on.', { to: options[eye], look: eye });
+            } else {
+              var B = mostOpen();
+              if (B && value(B) >= T.read.worth) windup = { to: B, at: t + T.read.release, primary: B.id === options[0], look: options.indexOf(B.id) };
+            }
+          }
         }
         else if (collapsed) {
-          if (C2) { windup = { to: C2, at: Math.max(t + T.read.release * 0.6, pa ? pa.fake : 0), primary: false }; say(t, 'checkdown', 'Checks it down.'); }
+          /* the pocket is gone: the best option if a throw to him is still worth it,
+             else the checkdown if it is a ball he can catch (read.dump), else he
+             is sacked, or on 4th down forces it, or throws it away (before 2026-11-26 any play with two reads
+             always dumped it off, so a pass was never sacked: the NFL sacks 6 to 14%
+             of 4th down passes) */
+          var B2 = mostOpen(), outlet = B2 && value(B2) >= T.read.worth ? B2 : C2 && value(C2) >= T.read.dump ? C2 : null;
+          if (outlet) { windup = { to: outlet, at: Math.max(t + T.read.release * 0.6, pa ? pa.fake : 0), primary: false, look: options.indexOf(outlet.id) }; say(t, 'checkdown', outlet === C2 ? 'Checks it down.' : 'Finds the open man.', { to: outlet.id }); }
           else {
-            collapseFate = rnd() < T.sackShare ? 'sack' : 'throwaway';
-            if (collapseFate === 'sack') {
+            /* on 4th down a throwaway loses the ball as surely as a sack, so the
+               QB who is not sacked throws it up to his best option anyway */
+            collapseFate = rnd() < T.sackShare ? 'sack' : S.down === 4 && B2 ? 'force' : 'throwaway';
+            if (collapseFate === 'force') { windup = { to: B2, at: Math.max(t + T.read.release * 0.6, pa ? pa.fake : 0), primary: false, look: options.indexOf(B2.id), forced: true }; say(t, 'checkdown', 'Throws it up for grabs.', { to: B2.id }); collapseFate = null; }
+            else if (collapseFate === 'sack') {
               var bs2 = 1e9; rushers.forEach(function (d) { var s = dist(d, QB); if (s < bs2) { bs2 = s; sacker = d; } });
             } else { say(t, 'throwaway', 'Throws it away.'); finish(t + 0.6, 'throwaway', 'nobody'); }
           }
@@ -811,7 +858,8 @@
         }
         var sp = len(r0.vx, r0.vy), tw = len(QB.x - r0.x, QB.y - r0.y) || 1;
         var toward = sp > 1 ? (r0.vx * (QB.x - r0.x) + r0.vy * (QB.y - r0.y)) / (sp * tw) : 0.5;
-        throwInfo = { from: { x: QB.x, y: QB.y }, to: { x: px, y: py }, t0: t, t1: t + tf, dist: len(px - QB.x, py - QB.y), pressure: pressure, toward: toward, openAtThrow: openBy(r0), primary: windup.primary };
+        throwInfo = { from: { x: QB.x, y: QB.y }, to: { x: px, y: py }, t0: t, t1: t + tf, dist: len(px - QB.x, py - QB.y), pressure: pressure, toward: toward, openAtThrow: openBy(r0), primary: windup.primary, look: windup.look,
+          board: options.map(function (id) { var e = byId[id]; return { id: id, sep: e ? Math.round(openBy(e) * 10) / 10 : null }; }) };
         ball.holder = null; ball.air = throwInfo;
         r0.chase = { x: px, y: py, t1: throwInfo.t1 };
         var nm = routeName([r0.x0 - BX, r0.y0 - Y0], routes[r0.id] ? routes[r0.id].pts : null);
@@ -977,7 +1025,7 @@
             var deepest = null, col = null, cs = 1e9;
             receivers.forEach(function (r) {
               var off = Math.abs(r.x - d.mark.x);
-              if (off < d.width * T.zone.reach && r.y > d.mark.y - T.zone.threat && (!deepest || r.y > deepest.y)) deepest = r;
+              if (off < Math.min(d.width * T.zone.reach, T.zone.reachMax || 1e9) && r.y > d.mark.y - T.zone.threat && (!deepest || r.y > deepest.y)) deepest = r;
               if (off < d.width && r.y > d.mark.y - T.zone.threat && 100 - r.y < cs) { cs = 100 - r.y; col = r; }
             });
             var dy3 = deepest && t > T.zone.react ? deepest.y + T.zone.cushion + Math.max(0, deepest.vy) * T.zone.bail : d.mark.y;
@@ -1174,7 +1222,9 @@
       formation: setDef.id, isRun: isRun, call: call, callName: callName(call), callLine: callLine(call),
       pocket: Math.round(Tp * 100) / 100, outcome: outcome, win: win, title: title,
       yards: shown, spotY: spotY, spot: spotY != null ? spotName(spotY) : null, reason: reason,
-      throwInfo: throwInfo ? { dist: Math.round(throwInfo.dist * 10) / 10, sep: throwInfo.sep != null ? Math.round(throwInfo.sep * 10) / 10 : null, p: throwInfo.p != null ? Math.round(throwInfo.p * 1000) / 1000 : null, to: thrownTo ? thrownTo.id : null, primary: throwInfo.primary } : null,
+      throwInfo: throwInfo ? { dist: Math.round(throwInfo.dist * 10) / 10, sep: throwInfo.sep != null ? Math.round(throwInfo.sep * 10) / 10 : null, p: throwInfo.p != null ? Math.round(throwInfo.p * 1000) / 1000 : null, to: thrownTo ? thrownTo.id : null, primary: throwInfo.primary, look: throwInfo.look, board: throwInfo.board,
+        airYards: Math.round((throwInfo.to.y - Y0) * 10) / 10 } : null,
+      options: options.slice(),
       events: events, ids: E.map(function (e) { return { id: e.id, side: e.side, role: e.role, big: e.role === 'ol' || e.role === 'dl', label: e.label || '' }; }),
       motion: ctx.motion, playAction: !!pa, plans: plansOf(ctx),
       dt: dt, pre: pre, frames: frames, tEnd: tEnd

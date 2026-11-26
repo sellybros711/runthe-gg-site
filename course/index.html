@@ -59,6 +59,9 @@ body.map #goal,body.map #sheet,body.map #leave,body.map #arrow{display:none!impo
 #goalText{background:var(--accent);color:#fff;font-weight:800;font-size:16px;border-radius:18px;padding:12px 16px;box-shadow:0 4px 0 #c85a0c;max-width:520px;text-align:center;transition:transform .2s}
 #goalText.pop{transform:scale(1.06)}
 #leave{position:fixed;right:12px;bottom:calc(var(--sb) + 76px);z-index:6;display:none;border:0;background:var(--card);color:var(--ink);font:800 16px system-ui,sans-serif;min-width:96px;min-height:52px;border-radius:18px;box-shadow:0 4px 0 rgba(34,48,58,.25)}
+#endDay{position:fixed;left:12px;bottom:calc(var(--sb) + 76px);z-index:6;display:none;border:0;background:var(--ink);color:#fff;font:800 16px system-ui,sans-serif;min-width:104px;min-height:52px;border-radius:18px;box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.item .go:disabled{opacity:.5}
+#placeCash{float:right;font-size:16px;font-weight:900}
 #arrow{position:fixed;z-index:4;width:40px;height:40px;margin:-20px 0 0 -20px;display:none;pointer-events:none}
 #arrow svg{width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
 #stick{position:fixed;left:0;top:0;width:112px;height:112px;border-radius:50%;background:rgba(255,255,255,.22);border:3px solid rgba(255,255,255,.6);z-index:4;display:none;pointer-events:none}
@@ -107,6 +110,7 @@ body.map #goal,body.map #sheet,body.map #leave,body.map #arrow{display:none!impo
 <div id="sheet" class="hud"><span id="sheetLabel">Tee sheet</span><span id="chips"></span></div>
 <div id="goal" class="hud"><div id="goalText" role="status" aria-live="polite"></div></div>
 <button id="leave" type="button">Leave</button>
+<button id="endDay" type="button">End day</button>
 <div id="arrow"><svg viewBox="0 0 40 40"><path d="M20 3 L35 30 L20 23 L5 30 Z" fill="#ff7a1a" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg></div>
 <div id="stick"><div></div></div>
 <div id="banner"></div>
@@ -118,6 +122,7 @@ body.map #goal,body.map #sheet,body.map #leave,body.map #arrow{display:none!impo
     <div class="rows" id="resRows"></div>
     <p id="resNext"></p>
     <p id="resSave"></p>
+    <button class="btn plain" id="afterBtn" type="button">After hours</button>
     <button class="btn" id="nextDay" type="button">Next day</button>
   </div>
 </div>
@@ -125,9 +130,18 @@ body.map #goal,body.map #sheet,body.map #leave,body.map #arrow{display:none!impo
 <div id="book" class="veil" role="dialog" aria-modal="true" aria-labelledby="bookTitle">
   <div class="card wide">
     <h2 id="bookTitle">Course Book <span id="bookCash"></span></h2>
-    <p>Everything you can build. Find takes you to its pad.</p>
+    <p>Everything you can buy. Find takes you to its pad.</p>
     <div id="bookList"></div>
     <button class="btn plain small" id="closeBook" type="button">Back to the course</button>
+  </div>
+</div>
+
+<div id="place" class="veil" role="dialog" aria-modal="true" aria-labelledby="placeTitle">
+  <div class="card wide">
+    <h2><span id="placeTitle"></span> <span id="placeCash"></span></h2>
+    <p id="placeNote"></p>
+    <div id="placeList"></div>
+    <button class="btn plain small" id="closePlace" type="button">Back to the course</button>
   </div>
 </div>
 
@@ -141,7 +155,8 @@ body.map #goal,body.map #sheet,body.map #leave,body.map #arrow{display:none!impo
       <p>Drag to walk. Tap to walk there.</p>
       <p>Stand in a ring to work. The orange line says what is next.</p>
       <p>Walk into the mower or the cart to ride it.</p>
-      <p>Pads level things up. The Course Book lists them all.</p>
+      <p>Stand on a place's pad to open its card. Build, level up or hire from it.</p>
+      <p>After the last group, walk the course and spend. Then end the day.</p>
       <p>Groups lose patience. Keep them moving.</p>
     </div>
     <button class="btn plain small" id="closeMenu" type="button">Back to the course</button>
@@ -160,6 +175,6 @@ body.map #goal,body.map #sheet,body.map #leave,body.map #arrow{display:none!impo
 <script src="/arcade/auth-ui.js?v=9"></script>
 <!-- the model loader (three.js addons) asks for "three" by name; this says which copy -->
 <script type="importmap">{"imports":{"three":"/assets/vendor/three-0.180.0/three.module.min.js"}}</script>
-<script type="module" src="main.js?v=5"></script>
+<script type="module" src="main.js?v=7"></script>
 </body>
 </html>

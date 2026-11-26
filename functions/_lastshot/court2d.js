@@ -24,6 +24,10 @@
  *   open space     a ring on the shooter as wide as his space to the closest
  *                  defender, shrinking as the contest closes, then the sim's
  *                  own open value at the release
+ *   the options    at the decision moment (result.read, 2026-11-26) a ring on
+ *                  every scoring option in the colour of how open the read
+ *                  saw him (green open, amber a hand up, red covered), then
+ *                  the pass line to the man he picked with a READ chip
  *   the read       a chip at the release: the shot caption's word and its make
  *                  chance, the same numbers the readout shows
  *
@@ -53,6 +57,16 @@ export const SCHEME_CHIP = { over: 'FOUGHT OVER', under: 'WENT UNDER', switch: '
   zone23: 'ZONE SITS', zone131: 'ZONE SITS', zone32: 'ZONE SITS' };
 /* The shot caption's word (sim.js shoot), short, for the read chip. */
 export const READ_CHIP = { 'Wide open': 'WIDE OPEN', 'Open look': 'OPEN LOOK', 'Hand in the face': 'HAND UP', 'Contested': 'CONTESTED', 'Bail out': 'BAIL OUT' };
+/* The read's three colours: open (4 ft or more), a hand up (2), covered. */
+export const readCol = d => d >= 4 ? '61,220,132' : d >= 2 ? '255,190,40' : '255,84,72';
+export const readWord = d => d >= 6 ? 'WIDE OPEN' : d >= 4 ? 'OPEN' : d >= 2 ? 'HAND UP' : 'COVERED';
+/* The chip at the read: who he went to and how open the read saw him. */
+export function readChip(read) {
+  if (!read) return null;
+  const p = read.options.find(o => o.who === read.pick);
+  if (!p) return null;
+  return 'READ: ' + read.pick + (read.pick === read.by ? ' SHOOTS' : ' ' + readWord(p.open));
+}
 /* The space colours, on the sim's own open thresholds (sim.js shoot). */
 const openCol = d => d >= 6 ? '61,220,132' : d >= 4 ? '255,210,63' : d >= 2 ? '255,140,60' : '255,84,72';
 
@@ -268,9 +282,15 @@ export function planRun(run) {
     }
   }
   // the passes as thrown: from where the ball left to where it was caught
+  // (the drawn pass the read sent somewhere else is the one it threw, or none
+  // when he kept it)
+  const R = res.read && res.read.pick !== res.read.call ? res.read : null;
   let n = 0;
-  for (const s of steps) {
-    if (s.kind !== 'pass') continue;
+  for (const st of steps) {
+    if (st.kind !== 'pass') continue;
+    const sent = R && st.from === R.by && st.to === R.call;
+    if (sent && R.pick === R.by) continue;
+    const s = sent ? { from: R.by, to: R.pick } : st;
     const p = (res.passes || []).filter(q => q.from === s.from && q.to === s.to)[passes.filter(q => q.from === s.from && q.to === s.to).length];
     const order = n++;
     if (!p) { passes.push({ from: s.from, to: s.to, order, at: null }); continue; }
@@ -297,7 +317,14 @@ export function planRun(run) {
     from: (() => { const f = F.find(q => q.sk != null); return f ? { x: f.b[0], y: f.b[1] } : null; })(),
     since: (() => { const p = (res.passes || []).filter(q => q.to === res.shooter && !q.lost).pop(); return p ? p.at : res.shotAt + 1.5; })()
   } : null;
-  return { res, F, routes, passes, uses, shot, winner: res.how === 'make' && res.outcome === 'win' };
+  // the read: every option, where it is, how open the read saw it, and the pick
+  const rd = res.read && res.read.options ? {
+    at: res.read.at, by: IDS.indexOf(res.read.by), pick: IDS.indexOf(res.read.pick), keep: res.read.pick === res.read.by,
+    chip: readChip(res.read), open: (res.read.options.find(o => o.who === res.read.pick) || {}).open || 0,
+    target: (res.read.options.find(o => o.who === res.read.pick) || {}).at || null,
+    options: res.read.options.map(o => ({ n: o.n, i: IDS.indexOf(o.who), open: o.open, col: readCol(o.open), pick: o.who === res.read.pick }))
+  } : null;
+  return { res, F, routes, passes, uses, shot, read: rd, winner: res.how === 'make' && res.outcome === 'win' };
 }
 
 /* After the last frame the ball plays out from the rim: a make drops
@@ -565,6 +592,47 @@ export function createCourt2d(cv) {
     }
   }
 
+  /* THE READ (2026-11-26): from the decision for READ_SPAN of game time, a
+     ring on every option in the colour of how open the read saw him, with
+     his option number, and a bright line from the man with the ball to the
+     one he went to, with the READ chip. Nothing after the release. */
+  const READ_SPAN = 1.1;
+  function readMarks(fr, shotUp) {
+    const R = D.read;
+    if (!R || shotUp || fr.t > R.at + 0.02 || fr.t < R.at - READ_SPAN) return;
+    const k = clamp((R.at + 0.02 - fr.t) / 0.15, 0, 1), out = clamp((fr.t - (R.at - READ_SPAN)) / 0.3, 0, 1), a = Math.min(k, out);
+    if (a <= 0) return;
+    const lw = Math.max(0.2, px1(2));
+    ctx.globalAlpha = a;
+    for (const o of R.options) {
+      if (o.i < 0) continue;
+      const x = fr.o[2 * o.i], y = fr.o[2 * o.i + 1], r = o.pick ? 2.5 : 2.1;
+      ctx.fillStyle = 'rgba(' + o.col + ',.18)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(' + o.col + ',.98)'; ctx.lineWidth = o.pick ? lw * 1.5 : lw; ctx.stroke();
+      // the option's number, up and left, as the clipboard has it
+      const bx = x - r * 0.85, by = y - r * 0.85, br = Math.max(0.55, px1(8));
+      ctx.fillStyle = 'rgb(' + o.col + ')'; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.font = '800 ' + (br * 1.3).toFixed(2) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(o.n), bx, by + br * 0.06);
+    }
+    if (R.by >= 0 && R.pick >= 0) {
+      const ax = fr.o[2 * R.by], ay = fr.o[2 * R.by + 1];
+      const bx = R.keep ? RIM.x : R.target ? R.target.x : fr.o[2 * R.pick], by = R.keep ? RIM.y : R.target ? R.target.y : fr.o[2 * R.pick + 1];
+      ctx.lineCap = 'round'; ctx.setLineDash([1.1, 0.7]);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
+      ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = lw * 3; ctx.stroke();
+      ctx.strokeStyle = 'rgba(' + readCol(R.open) + ',.98)'; ctx.lineWidth = lw * 1.2; ctx.stroke();
+      ctx.setLineDash([]);
+      if (R.chip) {
+        const cx = fr.o[2 * R.pick], cy = fr.o[2 * R.pick + 1];
+        chips.push({ x: cx, y: cy - 3.4, text: R.chip, bg: 'rgb(' + readCol(R.open) + ')', fg: '#111', a, side: -1 });
+      }
+    }
+    ctx.globalAlpha = 1;
+    // for the checks: the read is on the board (read only)
+    if (typeof window !== 'undefined') window.__readMarks = { at: R.at, t: fr.t, chip: R.chip, options: R.options.map(o => o.n + ':' + o.col) };
+  }
+
   /* Open space: a ring on the shooter out to the closest defender. */
   function openRing(fr, after) {
     const S = D.shot;
@@ -706,7 +774,7 @@ export function createCourt2d(cv) {
       body(fr.o[2 * i], fr.o[2 * i + 1], fr.f ? fr.f[i] : 270, 'home', String(i + 1), POSE_O[code] || '', bob, fr.h === IDS[i]);
     }
     // the defense's answer to the screen goes over the bodies, as a telestrator draws it
-    if (run) { feet(); schemes(fi, opts.hold ? run.F[0] : fr, shotUp); }
+    if (run) { feet(); schemes(fi, opts.hold ? run.F[0] : fr, shotUp); if (!opts.hold) readMarks(fr, shotUp); }
     if (run && run.shot && run.shot.from && shotUp) {
       // the shot's line, from the hands to where the ball is
       ballAt(fr, after, B);

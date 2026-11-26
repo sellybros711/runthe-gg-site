@@ -154,7 +154,10 @@ test('outcomes follow the spot: past the marker wins, short loses', () => {
 test('a sensible play converts about as often as a real 4th down', () => {
   /* the tuner's numbers, held within a band: a retune that moves them far
      from real football fails here, and the vault note is updated with them */
-  const TARGET = { 1: 65, 3: 55, 5: 45, 7: 38, 10: 28, 15: 18 };
+  /* the real 4th down conversion, every regular season run and pass of 2021 to 2024 in nflverse
+     play by play (3,079 attempts): 4th and 1 68% (1,223), 3 50%, 5 49%, 7 43%, 10 30%, and 14 to 16
+     yards 14% (69; exactly 15 is 21% of only 33). Measured 2026-11-26; build/real-rates.mjs redoes it. */
+  const TARGET = { 1: 68, 3: 50, 5: 49, 7: 43, 10: 30, 15: 14 };
   const SENS = { 1: ['sneak', 'inside zone', 'slant flat', 'stick'], 5: ['slant flat', 'stick', 'mesh', 'curls'], 15: ['dig', 'deep shot', 'curls'] };
   for (const d of [1, 5, 15]) {
     const avg = SENS[d].reduce((a, n) => a + rate(PLAYBOOK[n], d, 120), 0) / SENS[d].length * 100;

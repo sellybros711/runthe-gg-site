@@ -67,7 +67,7 @@
          in the NFL comes at about 2.5 seconds, sooner against the blitz. */
       free: 0.3, freeAt: 0.9, freeJit: 0.5 },
     /* A collapsed pocket with nobody to dump it to: this share are sacks, the rest thrown away. */
-    sackShare: 0.6,
+    sackShare: 0.4,
 
     /* THE THROW. The QB throws to the primary target when he finishes the
        route, or earlier once he has `separation` yards on everybody (and has
@@ -79,7 +79,7 @@
        closer than that, in yards) at the end of his route is passed over, and
        the eyes reach the next read `shift` seconds later. The last read always
        gets the ball on time. */
-    read: { separation: 3.0, minRead: 0.85, release: 0.18, timing: 0.05, covered: 0.6, shift: 0.5 },
+    read: { separation: 3.0, minRead: 0.85, release: 0.18, timing: 0.05, covered: 0.6, shift: 0.5, window: 1.5, look: 0.55, yac: 6, worth: 0.45, dump: 0.25 },
     ball: { loft: 0.0005, height: 2.0 },
     /* the receiver runs his route while the ball is in the air, and adjusts to it for the last adjust seconds */
     adjust: 0.35,
@@ -135,7 +135,7 @@
        is within threat yards of his depth (cushion yards in front of him, plus
        bail yards for every yard a second he is coming), and his side to side
        follows the man in his own column, seen deepLag seconds late. */
-    zone: { radius: 6.5, under: 0.5, sticks: 2.5, floor: 8.5, ratRadius: 8, ratPull: 0.75,
+    zone: { radius: 6.5, under: 0.5, sticks: 2.5, floor: 8.5, sink: 1, sinkCap: 14, reachMax: 16, ratRadius: 8, ratPull: 0.75,
       fire: [[-10.5, 8.5, 0, null], [10.5, 8.5, 0, null], [0, 9, 0, null]],
       react: 0.3, pull: 0.6, speed: 0.85, threat: 9, deepLag: 0.35, cushion: 1.4, bail: 0.15, reach: 1.7 },
     /* A receiver's sharp cut costs the man on him this many seconds at half speed, per right angle. */

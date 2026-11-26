@@ -33,13 +33,16 @@ export const MAP = {
     driving_range: { x: -24, y: -31 },
     hole_4: { x: -6, y: 15 }
   },
-  /* one pad for each thing that levels up, beside the thing itself */
-  upgradePads: {
-    boots: { x: -3, y: -15 }, shop: { x: 10, y: 1.5 }, starter: { x: 3, y: 19.5 }, shed: { x: -19, y: 3 },
-    my_cart: { x: 15.5, y: -13 }, hole_1: { x: 15, y: 30 }, hole_2: { x: 63, y: 45.5 }, hole_3: { x: 35, y: 12.5 },
-    cart_barn: { x: 24, y: -6 }, clubhouse: { x: -10, y: -3 }, gardens: { x: -7, y: 9.5 }, parking: { x: 1.5, y: -22.5 },
-    putting_green: { x: 31.5, y: 9 }, snack_shack: { x: 26, y: -18.5 }, driving_range: { x: -30, y: -31 }
+  /* one pad a place (CONFIG.economy.places), beside the place itself */
+  places: {
+    clubhouse: { x: -10, y: -3 }, shop: { x: 10, y: 1.5 }, starter: { x: 3, y: 19.5 }, shed: { x: -19, y: 3 },
+    parking: { x: 1.5, y: -22.5 }, gardens: { x: -7, y: 9.5 }, hole_1: { x: 15, y: 30 }, hole_2: { x: 63, y: 45.5 }, hole_3: { x: 35, y: 12.5 },
+    cart_barn: { x: 17, y: -6 }, putting_green: { x: 25, y: 5.5 }, snack_shack: { x: 31.5, y: -16.5 }, driving_range: { x: -24, y: -31 }, hole_4: { x: -6, y: 15 }
   },
+  /* the hands-on stations: the ring you stand in, and where the group stands */
+  keys: { ring: { x: 12.8, y: -1.2 }, spot: { x: 10.4, y: -1.6 } },
+  snack: { ring: { x: 26, y: -15.4 }, spot: { x: 23, y: -17.2 } },
+  rangeRing: { x: -28, y: -13.5 },
   snackShack: { x: 26, y: -12 },              // at the turn, between 9 and 10
   range: { x: -47, y: -21, w: 34, d: 18 },
   road: { x: 100, w: 5 },
