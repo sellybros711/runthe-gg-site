@@ -23,6 +23,8 @@
  *  - It never touches Google's own message. Turning that off is the owner's switch in AdSense, after
  *    this link is live.
  *  - The choice is this browser's (localStorage and a first-party cookie, a year).
+ *  - Banner and in-page units only. Shut The Door's video ads (adBreak) have no unit to mark; they
+ *    play nothing until Google approves H5 Games Ads, and need their own signal before they do.
  */
 (function (root) {
   'use strict';
@@ -52,10 +54,12 @@
   function wrap(q) {
     if (!q || typeof q !== 'object' || q.__rtgPrivacy) return q;
     try {
+      /* push is an accessor that keeps the wrapper: Google's tag may set its own push on the page's
+         queue instead of replacing the queue, and a plain property would lose the wrapper then. What
+         it assigns is kept underneath and called after the units are marked. */
       var push = q.push;
-      if (typeof push === 'function') {
-        Object.defineProperty(q, 'push', { configurable: true, writable: true, value: function () { stampAll(); return push.apply(q, arguments); } });
-      }
+      var wrapped = function () { stampAll(); return typeof push === 'function' ? push.apply(q, arguments) : undefined; };
+      Object.defineProperty(q, 'push', { configurable: true, get: function () { return wrapped; }, set: function (f) { push = f; } });
       Object.defineProperty(q, '__rtgPrivacy', { value: true });
     } catch (e) {}
     return q;
@@ -73,11 +77,12 @@
   function restrict() {
     stampAll();
     /* Analytics: no ad signals for an opted-out visitor (gtag's own queue, so it works before gtag loads) */
-    try { root.dataLayer = root.dataLayer || []; root.dataLayer.push(['set', { allow_ad_personalization_signals: false, restricted_data_processing: true }]); } catch (e) {}
+    try { root.dataLayer = root.dataLayer || []; (function () { root.dataLayer.push(arguments); })('set', { allow_ad_personalization_signals: false, restricted_data_processing: true }); } catch (e) {}
     if (watching || typeof MutationObserver !== 'function') return;
     watching = true;
     new MutationObserver(function (ms) {
       for (var i = 0; i < ms.length; i++) {
+        if (ms[i].type === 'attributes') { var t = ms[i].target; if (t.matches && t.matches('ins.adsbygoogle')) stamp(t); continue; }
         var add = ms[i].addedNodes;
         for (var j = 0; j < add.length; j++) {
           var n = add[j];
@@ -86,7 +91,7 @@
           else if (n.querySelectorAll) Array.prototype.forEach.call(n.querySelectorAll('ins.adsbygoogle'), stamp);
         }
       }
-    }).observe(document.documentElement, { childList: true, subtree: true });
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   }
   if (optedOut()) restrict();
 
@@ -95,6 +100,8 @@
     var a = document.createElement('a');
     a.id = ID;
     a.href = HREF;
+    a.target = '_blank';            // a new tab, so a game in progress is never left
+    a.rel = 'noopener';
     a.textContent = LABEL;
     return a;
   }
@@ -126,6 +133,9 @@
     var priv = document.querySelector(PRIV);
     if (have && (!priv || have.parentNode.className !== 'rtg-dns-line')) return;
     if (priv) { if (have) have.parentNode.remove(); place(priv); return; }
+    /* No Privacy link: a line at the very end, but only on a page that scrolls. A full-screen game
+       (golf's First Tee) would cover it; its link sits in its own menu next to Privacy instead. */
+    if (have || document.documentElement.scrollHeight <= root.innerHeight + 2) return;
     var line = document.createElement('div');
     line.className = 'rtg-dns-line';
     line.style.cssText = 'text-align:center;font-size:12px;line-height:1.4;padding:12px 16px 16px;opacity:.75';

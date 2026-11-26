@@ -14,7 +14,7 @@
         "node scripts/check-contrast.mjs",
         "node scripts/check-current.mjs"
       ],
-      "full": []
+      "full": ["node scripts/check-optout.mjs"]
     },
     "football": {
       "name": "The Perfect Season and the Fantasy Challenge",
