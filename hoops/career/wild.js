@@ -21,6 +21,9 @@ const HOOKED_AT = 60;          // a habit this strong has hold of you
 const HABITS = { bet: 'gambling', drink: 'drinking', pills: 'painkillers' };
 const JAIL_GAMES = 60, TEST_GAMES = 25, PROBE_GAMES = 10, DENY_GAMES = 40, PLEA_GAMES = 10, REHAB_GAMES = 15;
 const OVERDOSE_P = 0.05, CRASH_P = 0.01;
+/* What the record and a suspension are called. */
+const WILD_WORDS = { arrest: 'Arrested', jail: 'Four months inside', probation: 'Probation, and a league suspension', betting: 'Suspended for betting on games',
+  test: 'Suspended for a failed drug test', rehab: 'In rehab', owed: 'Serving a suspension' };
 const wildOf = (L) => L.wild || null;
 const wildMake = (L) => L.wild || (L.wild = { heat: 0, hab: { bet: 0, drink: 0, pills: 0 }, hook: {}, rec: [], net: 0, susp: 0, y: L.year, n: 0, used: {} });
 const wildYear = (W, L) => { if (W.y !== L.year) { W.y = L.year; W.n = 0; W.used = {}; } return W; };
@@ -68,6 +71,8 @@ function wildDeath(L, beats, how) {
   logIt(L, t, 'bad');
   L.pending = [];
   L.final = legacy(L);
+  /* The verdict's own line is written for a living man. */
+  L.final.blurb = 'He was ' + L.age + '. The numbers stop there.';
   L.final.after = 'The league holds a moment of silence on opening night.';
   L.retired = true;
   L.phase = 'retired';
@@ -144,7 +149,7 @@ ANSWER.wildprobe = function(L, card, i, opt, rng) {
 const WILD = {
   casino: {
     name: 'A night at the tables', blurb: 'Pick a number. Win it or lose it.', amt: true, min: 0.05,
-    when: (L) => L.age >= 21,
+    when: (L) => L.age >= 21, shut: 'You have to be 21.',
     run(L, r, amt, out) {
       const W = wildMake(L), win = ok(r, 0.46);
       L.cash = round1(L.cash + (win ? amt : -amt)); W.net = round2(W.net + (win ? amt : -amt));
@@ -157,7 +162,7 @@ const WILD = {
   },
   bookie: {
     name: 'Bet on a game', blurb: 'Not yours. Still against the rules.', amt: true, min: 0.05,
-    when: (L) => L.stage === 'nba',
+    when: (L) => L.stage === 'nba', shut: 'Not until you are in the league.',
     run(L, r, amt, out) {
       const W = wildMake(L), win = ok(r, 0.5), pay = round2(amt * 0.9);
       L.cash = round1(L.cash + (win ? pay : -amt)); W.net = round2(W.net + (win ? pay : -amt));
@@ -169,7 +174,7 @@ const WILD = {
   },
   party: {
     name: 'A big night out', blurb: 'A table, a tab and no curfew.', cost: 0.02,
-    when: (L) => L.age >= 21,
+    when: (L) => L.age >= 21, shut: 'You have to be 21.',
     run(L, r, amt, out) {
       const W = wildMake(L), guard = hasStaff(L, 'security') ? 0.5 : 1;
       bump(L, { morale: 8, health: -3, fame: 2 });
@@ -188,7 +193,7 @@ const WILD = {
   },
   pills: {
     name: 'Take something for the pain', blurb: 'The knees stop talking for a while.',
-    when: (L) => L.stage === 'nba' && L.m.health < 80,
+    when: (L) => L.stage === 'nba' && L.m.health < 80, shut: 'Nothing hurts enough.',
     run(L, r, amt, out) {
       bump(L, { health: 12 });
       habitUp(L, 'pills', 18, out);
@@ -197,7 +202,7 @@ const WILD = {
   },
   rehab: {
     name: 'Check into rehab', blurb: 'Thirty days. No phone.', cost: 0.25,
-    when: (L) => { const W = wildOf(L); return !!W && (W.hab.bet >= 30 || W.hab.drink >= 30 || W.hab.pills >= 30); },
+    when: (L) => { const W = wildOf(L); return !!W && (W.hab.bet >= 30 || W.hab.drink >= 30 || W.hab.pills >= 30); }, shut: 'No habit to treat.',
     run(L, r, amt, out) {
       const W = wildMake(L), had = Object.keys(W.hook).length > 0;
       W.hab = { bet: 0, drink: 0, pills: 0 }; W.hook = {};
@@ -218,12 +223,17 @@ function wildOpen(L) {
   const left = Math.max(0, WILD_MAX - W.n);
   return {
     left, of: WILD_MAX, heat: W.heat, net: W.net, owed: W.susp,
-    sitting: L.season && L.season.ban && L.season.g < L.season.ban.until - 1 ? { until: L.season.ban.until - 1, why: L.season.ban.why } : null,
+    sitting: L.season && L.season.ban && L.season.g < L.season.ban.until - 1 ? { until: L.season.ban.until - 1, why: L.season.ban.why, text: WILD_WORDS[L.season.ban.why] + '. Back after game ' + (L.season.ban.until - 1) + '.' } : null,
     habits: Object.keys(HABITS).map((k) => ({ id: k, name: HABITS[k], level: W.hab[k], hooked: !!W.hook[k], since: W.hook[k] || null })),
-    record: W.rec.slice(),
-    acts: WILD_KEYS.filter((k) => WILD[k].when(L)).map((k) => {
-      const a = WILD[k], cost = a.cost || 0, min = a.min || 0;
-      return { id: k, name: a.name, blurb: a.blurb, cost, amt: !!a.amt, min, max: a.amt ? round1(Math.max(0, L.cash)) : 0, ok: left > 0 && L.cash >= Math.max(cost, min) };
+    record: W.rec.map((x) => ({ y: x.y, what: x.what, g: x.g || 0, text: WILD_WORDS[x.what] + (x.g ? ': ' + x.g + ' games.' : '.') })),
+    /* Every night is listed. `why` names what closes one (`nights`: the year's are spent, `shut`:
+       not for him yet, `cash`), and `note` says it in words. `max` never passes the cash. */
+    acts: WILD_KEYS.map((k) => {
+      const a = WILD[k], cost = a.cost || 0, min = a.min || 0, open = a.when(L);
+      /* With the year's nights spent that is the reason for every one of them. */
+      const why = left <= 0 ? 'nights' : !open ? 'shut' : L.cash < Math.max(cost, min) ? 'cash' : null;
+      const note = why === 'shut' ? a.shut : why === 'nights' ? 'No nights left this year.' : why === 'cash' ? 'Not enough cash.' : '';
+      return { id: k, name: a.name, blurb: a.blurb, cost, amt: !!a.amt, min, max: a.amt ? Math.floor(Math.max(0, L.cash) * 100) / 100 : 0, ok: !why, why, note };
     }),
   };
 }

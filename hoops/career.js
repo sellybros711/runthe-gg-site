@@ -4257,8 +4257,18 @@ function clutchCard(L, cur, home) {
     eyebrow: 'Game 7 · ' + ROUNDS[cur.round], scene: 'Game 7', title: "Tied, nine seconds, your ball. What's the play?",
     text: (home ? "The home crowd's on its feet" : "A road crowd's trying to rattle you") + ' against the ' + nick(cur.opp) + '. ' + (look ? LOOKS[look].t : 'Everybody knows who gets it.'),
     ctx,
-    options: opts.map((o) => ({ label: o.label, hint: feel(L.rt[o.rate], "That's your shot", 'A fair look', 'Not your strength') })),
+    options: clutchHints(L, opts),
   };
+}
+/* What each look is worth to HIM. A man good at everything read "That's your
+   shot" four times, which said nothing: when the best one is not alone in its
+   word, it is named as the best. Nothing but the hint moves. */
+function clutchHints(L, opts) {
+  const out = opts.map((o) => ({ label: o.label, hint: feel(L.rt[o.rate], "That's your shot", 'A fair look', 'Not your strength') }));
+  let top = 0;
+  for (let i = 1; i < opts.length; i++) if (L.rt[opts[i].rate] > L.rt[opts[top].rate]) top = i;
+  if (out.some((x, i) => i !== top && x.hint === out[top].hint) && !opts.some((o, i) => i !== top && L.rt[o.rate] === L.rt[opts[top].rate])) out[top].hint = 'Your best look';
+  return out;
 }
 /* The answers to Game 7's last shot (choose() runs them). */
 ANSWER.clutch = function(L, card, i, opt, rng, beats, touch, touches) {
@@ -12487,7 +12497,17 @@ const dealNames = (L) => (L.deals || []).filter((x) => !x.dropped).map((x) => x.
    never opens the People screen plays exactly as it did, and every draw is on
    its own stream (bond:person:act:year).
 
-   Real people are never in the ledger, so none of this touches a real man. */
+   REAL MEN ARE IN THE LEDGER (a teammate who threw you the lob, a nemesis on
+   another club), with the basketball notes the cards left on them. None of
+   this touches them: only the invented can be acted on (`realMan`), because a
+   real person stays on the court. The screen may still list them. */
+/* Every real player the league was seeded with, by name. */
+function realMen(L) {
+  const out = {}, R = L.league && L.league.roster;
+  if (R) for (const c in R) for (const e of R[c]) out[Array.isArray(e) ? e[0] : e.n] = 1;
+  return out;
+}
+const realMan = (L, n) => !!realMen(L)[n];
 
 /* How much of a year goes to people: acts a season, and one a person. */
 const BOND_MAX = 4;
@@ -12683,10 +12703,10 @@ const bondUsed = (L) => (L.flags.bonds && L.flags.bonds.y === L.year) ? L.flags.
    year's time, one act a person, the cash). */
 function peopleOpen(L) {
   if (L.retired || L.pending.length || isAm(L)) return [];
-  const used = bondUsed(L), out = [];
+  const used = bondUsed(L), out = [], real = realMen(L);
   for (const id in L.people || {}) {
     const p = L.people[id], g = BOND_GROUP[p.role];
-    if (!g) continue;
+    if (!g || real[p.n]) continue;
     const acts = Object.keys(BONDS).filter((k) => BONDS[k].on(L, p)).map((k) => {
       const a = BONDS[k], cost = a.cost ? a.cost(L, p) : 0;
       /* `why` names what closes it (the year's time, this person already, the cash); `takes` is
@@ -12702,7 +12722,8 @@ function peopleOpen(L) {
 /* Everybody in the ledger, acted on or not, with the same mood word: for the
    people the screen lists who have no act open (an old partner, a GM). */
 function peopleAll(L) {
-  return Object.keys(L.people || {}).map((id) => { const p = L.people[id]; return { id, group: BOND_GROUP[p.role] || null, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice() }; });
+  const real = realMen(L);
+  return Object.keys(L.people || {}).map((id) => { const p = L.people[id]; return { id, group: BOND_GROUP[p.role] || null, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice(), real: !!real[p.n] }; });
 }
 /* How much of the year is left for people. */
 const bondsLeft = (L) => Math.max(0, BOND_MAX - bondUsed(L).n);
@@ -13035,6 +13056,9 @@ const HOOKED_AT = 60;          // a habit this strong has hold of you
 const HABITS = { bet: 'gambling', drink: 'drinking', pills: 'painkillers' };
 const JAIL_GAMES = 60, TEST_GAMES = 25, PROBE_GAMES = 10, DENY_GAMES = 40, PLEA_GAMES = 10, REHAB_GAMES = 15;
 const OVERDOSE_P = 0.05, CRASH_P = 0.01;
+/* What the record and a suspension are called. */
+const WILD_WORDS = { arrest: 'Arrested', jail: 'Four months inside', probation: 'Probation, and a league suspension', betting: 'Suspended for betting on games',
+  test: 'Suspended for a failed drug test', rehab: 'In rehab', owed: 'Serving a suspension' };
 const wildOf = (L) => L.wild || null;
 const wildMake = (L) => L.wild || (L.wild = { heat: 0, hab: { bet: 0, drink: 0, pills: 0 }, hook: {}, rec: [], net: 0, susp: 0, y: L.year, n: 0, used: {} });
 const wildYear = (W, L) => { if (W.y !== L.year) { W.y = L.year; W.n = 0; W.used = {}; } return W; };
@@ -13082,6 +13106,8 @@ function wildDeath(L, beats, how) {
   logIt(L, t, 'bad');
   L.pending = [];
   L.final = legacy(L);
+  /* The verdict's own line is written for a living man. */
+  L.final.blurb = 'He was ' + L.age + '. The numbers stop there.';
   L.final.after = 'The league holds a moment of silence on opening night.';
   L.retired = true;
   L.phase = 'retired';
@@ -13158,7 +13184,7 @@ ANSWER.wildprobe = function(L, card, i, opt, rng) {
 const WILD = {
   casino: {
     name: 'A night at the tables', blurb: 'Pick a number. Win it or lose it.', amt: true, min: 0.05,
-    when: (L) => L.age >= 21,
+    when: (L) => L.age >= 21, shut: 'You have to be 21.',
     run(L, r, amt, out) {
       const W = wildMake(L), win = ok(r, 0.46);
       L.cash = round1(L.cash + (win ? amt : -amt)); W.net = round2(W.net + (win ? amt : -amt));
@@ -13171,7 +13197,7 @@ const WILD = {
   },
   bookie: {
     name: 'Bet on a game', blurb: 'Not yours. Still against the rules.', amt: true, min: 0.05,
-    when: (L) => L.stage === 'nba',
+    when: (L) => L.stage === 'nba', shut: 'Not until you are in the league.',
     run(L, r, amt, out) {
       const W = wildMake(L), win = ok(r, 0.5), pay = round2(amt * 0.9);
       L.cash = round1(L.cash + (win ? pay : -amt)); W.net = round2(W.net + (win ? pay : -amt));
@@ -13183,7 +13209,7 @@ const WILD = {
   },
   party: {
     name: 'A big night out', blurb: 'A table, a tab and no curfew.', cost: 0.02,
-    when: (L) => L.age >= 21,
+    when: (L) => L.age >= 21, shut: 'You have to be 21.',
     run(L, r, amt, out) {
       const W = wildMake(L), guard = hasStaff(L, 'security') ? 0.5 : 1;
       bump(L, { morale: 8, health: -3, fame: 2 });
@@ -13202,7 +13228,7 @@ const WILD = {
   },
   pills: {
     name: 'Take something for the pain', blurb: 'The knees stop talking for a while.',
-    when: (L) => L.stage === 'nba' && L.m.health < 80,
+    when: (L) => L.stage === 'nba' && L.m.health < 80, shut: 'Nothing hurts enough.',
     run(L, r, amt, out) {
       bump(L, { health: 12 });
       habitUp(L, 'pills', 18, out);
@@ -13211,7 +13237,7 @@ const WILD = {
   },
   rehab: {
     name: 'Check into rehab', blurb: 'Thirty days. No phone.', cost: 0.25,
-    when: (L) => { const W = wildOf(L); return !!W && (W.hab.bet >= 30 || W.hab.drink >= 30 || W.hab.pills >= 30); },
+    when: (L) => { const W = wildOf(L); return !!W && (W.hab.bet >= 30 || W.hab.drink >= 30 || W.hab.pills >= 30); }, shut: 'No habit to treat.',
     run(L, r, amt, out) {
       const W = wildMake(L), had = Object.keys(W.hook).length > 0;
       W.hab = { bet: 0, drink: 0, pills: 0 }; W.hook = {};
@@ -13232,12 +13258,17 @@ function wildOpen(L) {
   const left = Math.max(0, WILD_MAX - W.n);
   return {
     left, of: WILD_MAX, heat: W.heat, net: W.net, owed: W.susp,
-    sitting: L.season && L.season.ban && L.season.g < L.season.ban.until - 1 ? { until: L.season.ban.until - 1, why: L.season.ban.why } : null,
+    sitting: L.season && L.season.ban && L.season.g < L.season.ban.until - 1 ? { until: L.season.ban.until - 1, why: L.season.ban.why, text: WILD_WORDS[L.season.ban.why] + '. Back after game ' + (L.season.ban.until - 1) + '.' } : null,
     habits: Object.keys(HABITS).map((k) => ({ id: k, name: HABITS[k], level: W.hab[k], hooked: !!W.hook[k], since: W.hook[k] || null })),
-    record: W.rec.slice(),
-    acts: WILD_KEYS.filter((k) => WILD[k].when(L)).map((k) => {
-      const a = WILD[k], cost = a.cost || 0, min = a.min || 0;
-      return { id: k, name: a.name, blurb: a.blurb, cost, amt: !!a.amt, min, max: a.amt ? round1(Math.max(0, L.cash)) : 0, ok: left > 0 && L.cash >= Math.max(cost, min) };
+    record: W.rec.map((x) => ({ y: x.y, what: x.what, g: x.g || 0, text: WILD_WORDS[x.what] + (x.g ? ': ' + x.g + ' games.' : '.') })),
+    /* Every night is listed. `why` names what closes one (`nights`: the year's are spent, `shut`:
+       not for him yet, `cash`), and `note` says it in words. `max` never passes the cash. */
+    acts: WILD_KEYS.map((k) => {
+      const a = WILD[k], cost = a.cost || 0, min = a.min || 0, open = a.when(L);
+      /* With the year's nights spent that is the reason for every one of them. */
+      const why = left <= 0 ? 'nights' : !open ? 'shut' : L.cash < Math.max(cost, min) ? 'cash' : null;
+      const note = why === 'shut' ? a.shut : why === 'nights' ? 'No nights left this year.' : why === 'cash' ? 'Not enough cash.' : '';
+      return { id: k, name: a.name, blurb: a.blurb, cost, amt: !!a.amt, min, max: a.amt ? Math.floor(Math.max(0, L.cash) * 100) / 100 : 0, ok: !why, why, note };
     }),
   };
 }
@@ -13444,9 +13475,12 @@ function laterOf(L) {
   return {
     can: false, on: true, over: P.over, age: L.age, died: P.died || null, job: P.job, title: laterTitle(L), best: laterJob(L).n[P.peak], peak: P.peak,
     pay: laterJob(L).pay[P.rung], cash: L.cash, worth: netWorth(L), health: L.m.health, years: L.age - P.from, gave: P.gave || 0,
+    life: lifeLine(L), next: P.over ? null : laterNext(),
     line: P.over ? laterLine(L) : null,
   };
 }
+/* What a press is called. */
+const laterNext = () => (NUMWORDS[LATER_STEP] || LATER_STEP) + ' years go by';
 /* What the stone says. */
 function laterLine(L) {
   const P = L.later, parts = [L.name + ', ' + P.died + '.'];
@@ -14057,7 +14091,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, realMan, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

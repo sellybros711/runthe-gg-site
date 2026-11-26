@@ -1511,8 +1511,18 @@ function clutchCard(L, cur, home) {
     eyebrow: 'Game 7 · ' + ROUNDS[cur.round], scene: 'Game 7', title: "Tied, nine seconds, your ball. What's the play?",
     text: (home ? "The home crowd's on its feet" : "A road crowd's trying to rattle you") + ' against the ' + nick(cur.opp) + '. ' + (look ? LOOKS[look].t : 'Everybody knows who gets it.'),
     ctx,
-    options: opts.map((o) => ({ label: o.label, hint: feel(L.rt[o.rate], "That's your shot", 'A fair look', 'Not your strength') })),
+    options: clutchHints(L, opts),
   };
+}
+/* What each look is worth to HIM. A man good at everything read "That's your
+   shot" four times, which said nothing: when the best one is not alone in its
+   word, it is named as the best. Nothing but the hint moves. */
+function clutchHints(L, opts) {
+  const out = opts.map((o) => ({ label: o.label, hint: feel(L.rt[o.rate], "That's your shot", 'A fair look', 'Not your strength') }));
+  let top = 0;
+  for (let i = 1; i < opts.length; i++) if (L.rt[opts[i].rate] > L.rt[opts[top].rate]) top = i;
+  if (out.some((x, i) => i !== top && x.hint === out[top].hint) && !opts.some((o, i) => i !== top && L.rt[o.rate] === L.rt[opts[top].rate])) out[top].hint = 'Your best look';
+  return out;
 }
 /* The answers to Game 7's last shot (choose() runs them). */
 ANSWER.clutch = function(L, card, i, opt, rng, beats, touch, touches) {
