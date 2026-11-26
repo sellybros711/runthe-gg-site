@@ -92,6 +92,7 @@
       rec.start(250);
       paint();
       var ui = {
+        world: 'clip',
         caption: function (t) { cap = t; },
         pressure: function () {},
         done: function () {

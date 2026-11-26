@@ -249,7 +249,18 @@ async function run(name, viewport, scale) {
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
   ok(await page.evaluate(() => window.FAW_FLOW.last().seed) === seed2, 'the drawn play snaps against the look it was drawn against');
   await page.click('#rBreak');
-  ok(await page.isVisible('#vReplay') && !(await page.isVisible('#watch')), 'See the breakdown opens the snap on turf');
+  /* Watch the film (stage 4): the snap again in the 3D stadium, where the browser
+     draws WebGL; its Breakdown link opens the snap on turf (without WebGL, the
+     card's link goes there itself) */
+  if (await page.isVisible('#filmBar')) {
+    await page.waitForTimeout(300);
+    ok(await page.isVisible('#cLive3d') && !(await page.isVisible('#rCard')), 'Watch the film plays the snap again in the stadium');
+    await page.click('#fPlay');
+    ok(await page.evaluate(() => document.getElementById('fPlay').classList.contains('paused')), 'the film pauses');
+    await page.evaluate(() => { const r = document.getElementById('fTime'); r.value = '600'; r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true })); });
+    await page.click('#fBreak');
+  }
+  ok(await page.isVisible('#vReplay') && !(await page.isVisible('#watch')), 'the film\'s Breakdown opens the snap on turf');
   await page.waitForFunction(() => document.getElementById('gTime').value === '1000', null, { timeout: 30000 });
   ok((await page.textContent('#gResBig')) !== 'Run a play', 'the breakdown shows the result');
 

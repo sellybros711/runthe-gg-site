@@ -215,7 +215,7 @@
   /* watch3d(res, done, o): o.play is what was snapped (its reads), o.kind 'drawn' or 'cards' */
   function watch3d(res, done, o) {
     o = o || {};
-    var w = $('watch'); w.hidden = false; $('cap').textContent = ''; $('bSkip').hidden = false; $('rCard').hidden = true;
+    var w = $('watch'); w.hidden = false; $('cap').textContent = ''; $('bSkip').hidden = false; $('rCard').hidden = true; $('filmBar').hidden = true;
     if (live) live.stop();
     window.FAW_LIVE.prepare(res.BX, res.Y0, res.level);
     var FE = window.FAW_FEEL, stamp = $('stamp'), meas = $('measure');
@@ -253,8 +253,45 @@
     if (use3) { try { live = D3.show($('cLive3d'), res, ui); return; } catch (e) { $('cLive').hidden = false; $('cLive3d').hidden = true; $('bug').hidden = true; cb.hidden = true; chip.hidden = true; ui.zoom = true; ui.coach = null; } }
     live = window.FAW_LIVE.show($('cLive'), res, ui);
   }
+  /* THE FILM (stage 4, the owner's "Build it"): the snap again in the 3D stadium,
+     the coaches' tape. A higher All-22 camera, every man's path drawn behind him,
+     the ball's arc, and the Coach view; play, pause, scrub and speed. o.play is
+     what was snapped, o.breakdown opens the 2D breakdown. Without WebGL it is
+     the breakdown. */
+  function film(res, o) {
+    o = o || {};
+    var D3 = window.FAW_LIVE3D;
+    if (!D3 || !D3.ok()) { if (o.breakdown) o.breakdown(); return false; }
+    var w = $('watch'); w.hidden = false; $('rCard').hidden = true; $('bSkip').hidden = true; $('stamp').hidden = true; $('measure').hidden = true;
+    $('press').style.opacity = '0'; $('cap').textContent = '';
+    if (live) live.stop();
+    $('cLive').hidden = true; $('cLive3d').hidden = false;
+    $('bug').hidden = true;
+    var cb = $('bCoach'), chip = $('coachRead'), bar = $('filmBar'), fp = $('fPlay'), ft = $('fTime');
+    cb.hidden = false; chip.hidden = false; chip.textContent = ''; cb.setAttribute('aria-pressed', 'true');
+    cb.onclick = function () { var on = cb.getAttribute('aria-pressed') !== 'true'; cb.setAttribute('aria-pressed', String(on)); if (live && live.coach) live.coach(on); };
+    bar.hidden = false;
+    var dragging = false;
+    live = D3.show($('cLive3d'), res, {
+      film: true,
+      coach: { on: true, play: o.play || null, say: function (t) { chip.textContent = t; } },
+      caption: function (t) { $('cap').textContent = t; },
+      time: function (t, end) { if (!dragging) ft.value = String(Math.round(t / end * 1000)); },
+      state: function (on) { fp.classList.toggle('paused', !on); fp.setAttribute('aria-label', on ? 'Pause' : 'Play'); }
+    });
+    var ctl = live;
+    fp.onclick = function () { if (ctl.playing) ctl.pause(); else ctl.play(); };
+    ft.oninput = function () { dragging = true; ctl.pause(); ctl.seek(+ft.value / 1000 * ctl.duration); };
+    ft.onchange = function () { dragging = false; };
+    /* a film is for study: it opens at half speed */
+    $('fSpeed').onchange = function () { ctl.speed(+$('fSpeed').value); };
+    $('fSpeed').value = '0.5'; ctl.speed(0.5);
+    $('fBreak').onclick = function () { closeFilm(); if (o.breakdown) o.breakdown(); };
+    return true;
+  }
+  function closeFilm() { if (live) live.stop(); live = null; $('filmBar').hidden = true; $('watch').hidden = true; }
   $('bSkip').addEventListener('click', function () { live && live.skip(); });
-  $('bClose3d').addEventListener('click', function () { if (live) live.stop(); $('watch').hidden = true; });
+  $('bClose3d').addEventListener('click', function () { if (live) live.stop(); $('watch').hidden = true; $('filmBar').hidden = true; });
 
   window.FAW_APP = {
     el: el, fill: fill, select: select, toast: toast, copy: copy, pct: pct, CALL_LABEL: CALL_LABEL,
@@ -263,7 +300,7 @@
     store: store, signedIn: signedIn, openStore: openStore, terms: terms, nameFor: nameFor, tagOf: tagOf, customOf: customOf,
     choices: choices, choiceOptions: choiceOptions, choice: choice,
     show: show, on: on, fire: fire, current: function () { return current; }, mode: function () { return mode; },
-    saveDialog: saveDialog, watch3d: watch3d, marginText: marginText
+    saveDialog: saveDialog, watch3d: watch3d, film: film, marginText: marginText
   };
   /* the views register themselves after this file; the first view is shown once they have */
   window.addEventListener('DOMContentLoaded', function () { fromHash(location.hash.slice(1) || 'home'); });
