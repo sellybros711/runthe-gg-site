@@ -917,6 +917,12 @@
     vertical-align:-0.13em;flex:0 0 auto;}
   .flag-ico.lg{width:2.05em;height:1.38em;border-radius:4px;border-width:1.5px;}
   .flag-none{background-image:repeating-linear-gradient(45deg,#cfc8ba 0 5px,#bdb6a7 5px 10px);}
+  /* a guest on the Daily board, and the ask for an account at a guest's result */
+  .lb-guest{font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;opacity:.6;border:1px solid currentColor;
+    border-radius:4px;padding:1px 4px;margin-left:4px;vertical-align:middle;}
+  .dr-guest{text-align:center;font-weight:700;font-size:14px;margin:10px 0 8px;}
+  .dr-guest-cta{display:block;margin:0 auto;padding:11px 16px;border-radius:10px;border:0;cursor:pointer;
+    background:var(--gold);color:#16120F;font-family:inherit;font-weight:900;font-size:13.5px;letter-spacing:.2px;}
   /* The club side: a club is three plain letters on a plain chip, never a crest. */
   .flag-ico.club-ico{background:#1b2a52;color:#F3E7CF;display:inline-flex;align-items:center;justify-content:center;
     font-family:Archivo,sans-serif;font-weight:900;font-size:.5em;line-height:1;letter-spacing:.2px;overflow:hidden;
@@ -6675,7 +6681,9 @@ async function applySession(session){
   const justLoggedIn = !!authUser && (loginNav || oauthReturn);
   loginNav=false;
   // A guest who just signed in on the results screen → save the score they earned.
-  if(authUser){ maybeSubmitPendingDraft(); claimPendingDraftId(); }
+  // A guest's Daily days move onto the account first, so the result on screen
+  // (and the streak it shows) is already the account's.
+  if(authUser){ claimGuestDaily().then(()=>{ refreshDailyStatus(); maybeSubmitPendingDraft(); claimPendingDraftId(); }); }
   // If the home leaderboard view is open as a guest, refresh it now that they're
   // signed in so the sign-in CTA drops away.
   {
@@ -6938,7 +6946,6 @@ function setStartGate(el, signedHtml){
 // Re-apply the gate on whichever mode-intro screen is showing (after auth change).
 function refreshStartGates(){
   const di=document.getElementById('screen-daily-intro');
-  if(di && di.classList.contains('active')) setStartGate($('daily-intro-start'),'Start Challenge');
   const fi=document.getElementById('screen-friendly-intro');
   if(fi && fi.classList.contains('active')) setStartGate($('btn-friendly-build'),'BUILD MY SQUAD&nbsp;→');
 }
@@ -8010,7 +8017,7 @@ function lbPodiumHtml(top3, highlightId){
     const fl=(row.flag && String(row.flag).trim()) ? flagChip(row.flag,'pod-flag') : '';
     return `<div class="lb-pod-spot ${tier} rank-${rank}${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${idx}" data-id="${row.id==null?'':row.id}">
       <div class="pod-token"><span class="pod-flagwrap">${fl||'<span class="pod-flag-none"></span>'}</span><span class="pod-medal">${metalTrophySvg(rank,'pod-trophy')}</span></div>
-      <div class="pod-name">${escapeHtml(nm)}${you?'<span class="pod-you">YOU</span>':''}</div>
+      <div class="pod-name">${escapeHtml(nm)}${row.guest?' <span class="lb-guest">guest</span>':''}${you?'<span class="pod-you">YOU</span>':''}</div>
       <div class="pod-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</div>
       <div class="pod-base"><span class="pod-rank">${rank}</span></div>
     </div>`;
@@ -8266,7 +8273,12 @@ let DAILY = { active:false, theme:null, seq:[], idx:0, date:null };
 let dailyPlayedToday = false, dailyStreak = 0;
 async function refreshDailyStatus(){
   dailyPlayedToday=false;
-  if(!isSignedIn() || !sbClient){ updateDailyButton(); return; }
+  if(!isSignedIn() || !sbClient){
+    const g=guestDailyRec();
+    dailyPlayedToday = !!(g && g.date===utcDateStr());   // this device's guest run, if any
+    dailyStreak=0;
+    updateDailyButton(); return;
+  }
   try{
     const { data } = await sbClient.from('daily_results').select('id')
       .eq('user_id', authUser.id).eq('date', utcDateStr()).maybeSingle();
@@ -8279,7 +8291,7 @@ function updateDailyButton(){
   const sub=$('daily-btn-sub'); if(!sub) return;
   const t=todaysTheme();
   let s = 'Today: '+t.name;
-  if(isSignedIn() && dailyPlayedToday) s += ' · Played';
+  if(dailyPlayedToday) s += ' · Played';
   if(isSignedIn() && dailyStreak>0)   s += ' · Streak '+dailyStreak;
   sub.textContent=s;
 }
@@ -8290,12 +8302,13 @@ function openDailyIntro(){
   const nm=$('daily-intro-name'); if(nm) nm.textContent=t.name;
   const bl=$('daily-intro-blurb'); if(bl) bl.textContent=t.blurb;
   showScreen('daily-intro');
-  setStartGate($('daily-intro-start'),'Start Challenge');   // guests: "Sign in to play"
+  { const b=$('daily-intro-start'); if(b){ b.classList.remove('gated'); b.textContent='Start Challenge'; } }   // guests play too (the owner's call, 2026-11-26)
 }
 
 // Start (or replay) today's daily challenge.
 function startDailyChallenge(){
-  if(!requireAccount('Create a free account or sign in to play the Daily Challenge and build a streak.')) return;
+  // No account needed (the owner's call, 2026-11-26). A guest's result goes on
+  // the day's board under a generated name; the account is asked for at the result.
   if(typeof friendlyReset==='function') friendlyReset();
   const theme=todaysTheme();
   DAILY = { active:true, theme, seq:buildDailySequence(theme), idx:0, date:utcDateStr() };
@@ -8303,8 +8316,76 @@ function startDailyChallenge(){
   // Full draft, no respins (the sequence is fixed for fairness).
   gs = G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full:0 } });
   gs.daily = true; gs.dailyTheme = theme.id; gs.dailyThemeName = theme.name;
-  ga('daily_started',{theme_id:theme.id,theme_name:theme.name,date:DAILY.date});
+  ga('daily_started',{theme_id:theme.id,theme_name:theme.name,date:DAILY.date,is_guest:!isSignedIn()});
   goToHome();
+}
+
+// ---- a guest's Daily ----------------------------------------------------------
+// A guest's finished Daily goes on the day's board under a generated name
+// ("SillyStriker46"), through /api/pitch-guest (functions/api/pitch-guest.js,
+// supabase/189). No anonymous sign-in: the page keeps a random device id, the
+// server derives the guest from it, works the score out from the eleven ids,
+// and keeps the first attempt of the day. When this browser signs in, the
+// guest's days move onto the account and the board shows its name in that spot.
+// Everything here fails soft: with the Function or 189 missing, a guest still
+// plays and sees a rank, exactly as before.
+const GUEST_DEVICE_KEY='rtp_guest_device', GUEST_DAILY_KEY='rtp_guest_daily';
+const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+function guestDevice(make){
+  try{
+    let d=localStorage.getItem(GUEST_DEVICE_KEY);
+    if(UUID_RE.test(d||'')) return d;
+    if(!make) return null;
+    d=(crypto.randomUUID ? crypto.randomUUID()
+       : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{ const r=Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); }));
+    localStorage.setItem(GUEST_DEVICE_KEY, d);
+    return d;
+  }catch(e){ return null; }
+}
+// { date, id, name }: this device's last guest Daily on the board.
+function guestDailyRec(){ try{ const v=JSON.parse(localStorage.getItem(GUEST_DAILY_KEY)); return (v && typeof v==='object') ? v : null; }catch(e){ return null; } }
+function guestDailyWrite(v){ try{ if(v) localStorage.setItem(GUEST_DAILY_KEY, JSON.stringify(v)); else localStorage.removeItem(GUEST_DAILY_KEY); }catch(e){} }
+// Post a guest's finished Daily. Returns { id, name, first } or null (not posted).
+async function submitGuestDaily(progress){
+  const ids   = (gs && Array.isArray(gs.picks)) ? gs.picks.map(p=>String(p.player.player_id)) : null;
+  const slots = (gs && Array.isArray(gs.picks)) ? gs.picks.map(p=>String(p.slot||p.player.position||'')) : null;
+  const device=guestDevice(true);
+  if(!device || !ids || ids.length!==11) return null;
+  try{
+    const res=await fetch('/api/pitch-guest', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ device, player_ids:ids, progress:Math.max(0,Math.min(6,progress|0)),
+        result:(gs.result && gs.result.resultLabel) || null, furthest:(simResult && simResult.furthestRound) || null,
+        slots, theme:gs.dailyThemeName || null }) });
+    if(!res.ok) return null;
+    const d=await res.json();
+    if(!d || d.id==null || !d.name) return null;
+    guestDailyWrite({ date:utcDateStr(), id:d.id, name:String(d.name) });
+    return { id:d.id, name:String(d.name), first:!!d.first };
+  }catch(e){ return null; }
+}
+// This browser signed in: move its guest days onto the account. Runs once per
+// sign-in, and only for a device that has a guest run on record.
+let guestClaimBusy=false;
+async function claimGuestDaily(){
+  const rec=guestDailyRec(), device=guestDevice(false);
+  if(!isSignedIn() || !sbAccessToken || !rec || !device || guestClaimBusy) return 0;
+  guestClaimBusy=true;
+  try{
+    const res=await fetch('/api/pitch-guest', { method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+sbAccessToken },
+      body: JSON.stringify({ action:'claim', device }) });
+    if(!res.ok) return 0;
+    const d=await res.json();
+    guestDailyWrite(null);            // claimed (or nothing left to claim): the guest record is spent
+    const moved=(d && d.moved)|0;
+    if(moved>0){
+      myDraftsUid=null;               // the moved days join the history
+      if(gs && gs.daily && gs.result && rec.date===utcDateStr()) gs.result._claimed=true;   // today's run is now the account's
+      try{ await loadProfile(); await refreshMyBadges(); }catch(e){}
+    }
+    return moved;
+  }catch(e){ return 0; }
+  finally{ guestClaimBusy=false; }
 }
 
 // Submit today's result (first attempt counts; server enforces). Returns row id
@@ -8327,13 +8408,18 @@ async function submitDailyRow(progress){
 }
 
 // Read today's daily board (named rows only; names are server-attributed).
+// daily_board (supabase/189) is accounts and guests on one board. Until 189 is
+// run it does not exist, and the page falls back to daily_results for the visit.
+let DAILY_SRC='daily_board';
 async function fetchDailyBoard(limit){
   if(!sbClient) return [];
-  const { data, error } = await sbClient.from('daily_results')
-    .select('id,name,flag,overall,progress,result,furthest,player_ids,slots')
+  const q=(src)=>sbClient.from(src)
+    .select('id,name,flag,overall,progress,result,furthest,player_ids,slots'+(src==='daily_board'?',guest':''))
     .eq('date', utcDateStr())
     .order('overall',{ascending:false}).order('progress',{ascending:false}).order('created_at',{ascending:true})
     .limit(limit||100);
+  let { data, error } = await q(DAILY_SRC);
+  if(error && DAILY_SRC==='daily_board'){ DAILY_SRC='daily_results'; ({ data, error } = await q(DAILY_SRC)); }
   if(error){ console.warn('[daily] board fetch failed', error); return []; }
   return data||[];
 }
@@ -8343,10 +8429,12 @@ async function fetchDailyBoard(limit){
 // date + overall). Same rule as the board: higher overall, then further progress.
 async function fetchDailyRank(overall, progress){
   const ov=(+overall).toFixed(1);
-  const base=`${SUPABASE_URL}/rest/v1/daily_results?select=id&limit=1&date=eq.${utcDateStr()}`;
   const orF=encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${+progress||0}))`);
   const hdr={ headers: sbHeaders({ 'Prefer':'count=exact' }) };
-  const [b,t]=await Promise.all([fetch(base+'&or='+orF, hdr), fetch(base, hdr)]);
+  const ask=()=>{ const base=`${SUPABASE_URL}/rest/v1/${DAILY_SRC}?select=id&limit=1&date=eq.${utcDateStr()}`;
+    return Promise.all([fetch(base+'&or='+orF, hdr), fetch(base, hdr)]); };
+  let [b,t]=await ask();
+  if((!b.ok || !t.ok) && DAILY_SRC==='daily_board'){ DAILY_SRC='daily_results'; [b,t]=await ask(); }   // before 189
   if(!b.ok || !t.ok) throw new Error('daily rank failed');
   const rank=sbCount(b)+1;
   return { rank, total: Math.max(sbCount(t), rank) };
@@ -8357,18 +8445,24 @@ async function fillDailyRankBadge(overall, progress){
   if(gs.result._lb){ renderDailyRankLine(el, gs.result._lb); return; }
   if(gs.result._lbStarted) return;
   gs.result._lbStarted = true; gs.result._progress = progress;
-  let recorded=null;
+  let recorded=null, guest=null;
   if(isSignedIn()){
     recorded = await submitDailyRow(progress);
     await loadProfile();        // pull the freshly-updated streak
     await refreshMyBadges();    // streak/daily may have changed the name tier
     refreshDailyStatus();       // update the home button (Played / streak)
+  }else{
+    guest = await submitGuestDaily(progress);   // onto the board under a generated name
+    if(guest){ recorded = guest.id; refreshDailyStatus(); }
   }
   // rank among today's board (named only); total = today's entries
   let rank=null, total=null;
   try{ ({ rank, total } = await fetchDailyRank(overall, progress)); }catch(e){}
+  // A guest run just claimed by this sign-in is the account's first attempt, not a replay.
   const lb={ rank, total, streak:(authProfile&&authProfile.current_streak)||0,
-             signedIn:isSignedIn(), already:(isSignedIn()&&recorded===null) };
+             signedIn:isSignedIn(),
+             already: isSignedIn() ? (recorded===null && !gs.result._claimed) : !!(guest && !guest.first),
+             guestName: guest ? guest.name : null };
   gs.result._lb=lb; gs.result._lbId=recorded;
   ga('daily_completed',{overall:overall,progress:progress,rank:rank,total:total,streak:lb.streak,is_daily:true,is_signed_in:isSignedIn()});
   renderDailyRankLine(el, lb);
@@ -8393,7 +8487,21 @@ function flameSvg(streak){
 function renderDailyRankLine(el, lb){
   el.className='res-rank dr-wrap';
   if(!lb.signedIn){
-    el.innerHTML='<div class="dr-pills"><div class="dr-pill dr-cta">Sign in to put your name on the daily board &amp; build a streak</div></div>';
+    // A guest is on the board under a generated name. The account is asked for
+    // here, at the result: it keeps the spot and starts a streak.
+    let g='';
+    if(lb.guestName && lb.rank && lb.total){
+      g += `<div class="dr-pill dr-rank"><span class="drp-col"><span class="drp-cap">Daily Rank</span>`
+        +  `<span class="drp-val">#${lb.rank}<span class="drp-sub"> / ${lb.total}</span></span></span></div>`;
+    }
+    const line = lb.guestName
+      ? `You’re on today’s board as <b>${escapeHtml(lb.guestName)}</b>.`
+      : 'Sign in to put your name on the daily board.';
+    el.innerHTML=`<div class="dr-pills">${g}</div>`
+      + `<div class="dr-guest">${line}</div>`
+      + `<button type="button" class="dr-guest-cta" id="dr-guest-cta">${lb.guestName?'Make a free account. Keep your spot. Start a streak.':'Sign in. Start a streak.'}</button>`
+      + (lb.already ? '<div class="dr-note">First attempt counted</div>' : '');
+    const cta=$('dr-guest-cta'); if(cta) cta.addEventListener('click', ()=>openAccountModal());
     return;
   }
   let pills='';
@@ -8444,12 +8552,17 @@ async function openDailyBoard(view){
   const list=$('daily-list'); if(list) list.innerHTML='<div class="lb-empty">Loading…</div>';
   // play/replay button label
   const pb=$('daily-play-btn');
-  if(pb) pb.textContent = (isSignedIn() && dailyPlayedToday) ? 'Replay (first attempt counts)' : 'Play Today’s Challenge';
+  if(pb) pb.textContent = dailyPlayedToday ? 'Replay (first attempt counts)' : 'Play Today’s Challenge';
   bg.classList.add('show');
   // your-line summary
   const yl=$('daily-yourline');
   if(yl){
-    if(!isSignedIn()) yl.innerHTML='<b>Sign in</b> to rank on the daily board and build a streak.';
+    if(!isSignedIn()){
+      const g=guestDailyRec();
+      yl.innerHTML = (g && g.date===utcDateStr() && g.name)
+        ? `Playing as <b>${escapeHtml(g.name)}</b>. Make a free account to keep your spot.`
+        : 'Play as a guest. Make a free account to build a streak.';
+    }
     else {
       const st=(authProfile&&authProfile.current_streak)||0;
       yl.innerHTML = (dailyPlayedToday?'Played today':'Not played yet')
@@ -8508,7 +8621,7 @@ function renderDailyList(rows){
     const hasLineup=Array.isArray(row.player_ids)&&row.player_ids.length>0;
     return `<div class="lb-row${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${i}" data-id="${row.id==null?'':row.id}">
       ${rankCell}
-      <span class="lb-name"><span class="lb-nm">${fl?fl+' ':''}${escapeHtml(nm)}</span></span>
+      <span class="lb-name"><span class="lb-nm">${fl?fl+' ':''}${escapeHtml(nm)}${row.guest?' <span class="lb-guest">guest</span>':''}</span></span>
       <span class="lb-meta">${emToSvg(lbMetaLabel(row))}</span>
       <span class="lb-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</span>
       ${hasLineup?'<span class="lb-chev" aria-hidden="true">›</span>':''}

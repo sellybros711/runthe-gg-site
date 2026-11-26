@@ -4,10 +4,15 @@ name: Run The Pitch checks
 # tab is hidden (the page half of the site's save rule, platform-database-saves
 # in the knowledge base). Runs only when the game or its engine changes.
 #
+# And a guest's Daily Challenge: the Function with Supabase faked, the page in a
+# browser, and supabase/189 against a real Postgres.
+#
 # And the club side (Club Draft and The Club Cup): its data rules and a
 # whole club run in a browser.
 #
 # Locally: node soccer/check-db-reads.mjs
+#          node soccer/check-guest-daily.mjs
+#          createdb sdg && psql -d sdg -f supabase/test/soccer_daily_guest_test.sql
 #          node soccer/check-club.mjs
 
 on:
@@ -16,6 +21,12 @@ on:
       - 'soccer/**'
       - 'gameLogic.js'
       - 'data/players_all.json'
+      - 'functions/_pitchguest/**'
+      - 'functions/api/pitch-guest.js'
+      - 'functions/_arcadeguest/core.js'
+      - 'supabase/12_daily_challenge.sql'
+      - 'supabase/189_soccer_daily_guest.sql'
+      - 'supabase/test/soccer_daily_guest_test.sql'
       - '.github/workflows/soccer-checks.yml'
   push:
     branches: [main]
@@ -23,6 +34,12 @@ on:
       - 'soccer/**'
       - 'gameLogic.js'
       - 'data/players_all.json'
+      - 'functions/_pitchguest/**'
+      - 'functions/api/pitch-guest.js'
+      - 'functions/_arcadeguest/core.js'
+      - 'supabase/12_daily_challenge.sql'
+      - 'supabase/189_soccer_daily_guest.sql'
+      - 'supabase/test/soccer_daily_guest_test.sql'
       - '.github/workflows/soccer-checks.yml'
   workflow_dispatch: {}
 
@@ -44,7 +61,17 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Database reads and hidden tab polls
         run: node soccer/check-db-reads.mjs
+      - name: A guest plays the Daily (the Function, then the page)
+        run: node soccer/check-guest-daily.mjs
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+      - name: supabase/189 against a real Postgres (applied twice)
+        run: |
+          createdb sdg
+          psql -X -q -v ON_ERROR_STOP=1 -d sdg -f supabase/test/soccer_daily_guest_test.sql
       - name: The club side (data rules, then a whole club run)
         run: node soccer/check-club.mjs
-      - name: No em or en dashes in the club side's code
-        run: node scripts/check-dashes.mjs soccer/club.js soccer/check-club.mjs soccer/check-db-reads.mjs soccer/CLAUDE.md
+      - name: No em or en dashes in the game's own code
+        run: node scripts/check-dashes.mjs soccer/club.js soccer/check-club.mjs soccer/check-db-reads.mjs soccer/check-guest-daily.mjs soccer/CLAUDE.md functions/_pitchguest functions/api/pitch-guest.js supabase/189_soccer_daily_guest.sql supabase/test/soccer_daily_guest_test.sql
