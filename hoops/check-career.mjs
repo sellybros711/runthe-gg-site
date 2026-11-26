@@ -1382,7 +1382,7 @@ section('19. deals from who you are, more ways out, and goals asked some years')
      the plain answering bot, so the careers are the careers anyone gets. */
   const N = 300;
   const how = {}, brands = {}, bad = [];
-  let deals = 0, seasons = 0, summers = 0, goals = 0, careerInj = 0;
+  let deals = 0, seasons = 0, summers = 0, heldSummers = 0, goals = 0, careerInj = 0;
   for (let i = 0; i < N; i++) {
     const L = C.newLife({ seed: 'en' + i, league, start: i % 2 ? 'hs' : 'draft' });
     let g = 0;
@@ -1396,7 +1396,7 @@ section('19. deals from who you are, more ways out, and goals asked some years')
         if (c.id === 'ontop') how.topOffered = (how.topOffered || 0) + 1;
         C.choose(L, (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length);
         if (L.last && (DASH.test(L.last.text || '') || /undefined|NaN|\{[a-z]/.test(L.last.text || ''))) bad.push(c.id + ': ' + L.last.text);
-      } else C.step(L);
+      } else { const st = C.step(L); if ((st.beats || []).some((b) => b.kind === 'summer')) heldSummers++; }
     }
     seasons += L.history.length;
     for (const x of L.deals || []) brands[x.n] = 1;
@@ -1434,7 +1434,8 @@ section('19. deals from who you are, more ways out, and goals asked some years')
   const P = (dur, health) => C.careerEndP({ dur, m: { health }, age: 29, mem: {}, traits: {} });
   ok(P(40, 60) > P(65, 90) * 2.5 && P(65, 90) > P(90, 100), `a worn body is far likelier to end on an injury (${P(40, 60).toFixed(3)}, ${P(65, 90).toFixed(3)}, ${P(90, 100).toFixed(3)})`);
   ok(careerInj > 0, `the career ending injury card is dealt (${careerInj})`);
-  ok(summers / seasons > 0.9, `the summer is asked every year (${(summers / seasons).toFixed(2)} a season)`);
+  /* The owner's call of 2026-11-26: a routine summer is held and done at tip-off, a big one still asks. */
+  ok((summers + heldSummers) / seasons > 0.9 && summers / seasons > 0.15 && heldSummers / seasons > 0.3, `every year has a summer: asked after something big, held when it is routine (${(summers / seasons).toFixed(2)} asked and ${(heldSummers / seasons).toFixed(2)} held a season)`);
   ok(goals / seasons > 0.45 && goals / seasons < 0.85, `the goal is asked some years, not every year (${(goals / seasons).toFixed(2)} a season)`);
 }
 
@@ -2076,6 +2077,90 @@ section('25. after the whistle: the rest of a life, four years a press, to the e
     let g = 0; while (!X.later.over && !X.flags.broke && g++ < 60) { if (X.pending.length) C.choose(X, 1); else C.laterAge(X); }
     ok(!!X.flags.broke || X.wealth.own.length === 0, `a lifestyle with no paycheck is sold off, or breaks him (${X.flags.broke ? 'broke in ' + X.flags.broke : 'the jet went'})`);
   }
+}
+
+// ── 26. the routine summer is folded ──────────────────────────────────────
+section('26. a routine summer is held, shown, changeable, and done at tip-off');
+{
+  /* The owner's call, 2026-11-26. */
+  const E = require('./engine.js');
+  const JUNK26 = /\bundefined\b|\bNaN\b|\[object |\{[a-z]/;
+  const N = 60, bad = [], asked = {}, sits = {};
+  let held = 0, done = 0, cards = 0, changed = 0, kept = 0, firstAsked = 0, peekSame = 0, lost = 0, stale = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'fold' + i, league, start: 'draft' });
+    const r = E.createSeededRNG(E.hashSeed('fold-p' + i));
+    let g = 0, first = true, pending = null;
+    while (!L.retired && g++ < 8000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (c.id === 'training') { cards++; if (first) { firstAsked++; first = false; } if (C.summerOf(L)) bad.push('a card and a held summer in one year: ' + L.seed); }
+        C.choose(L, Math.floor(r() * c.options.length)); continue;
+      }
+      const was = JSON.stringify(L), S = C.summerOf(L);
+      if (JSON.stringify(L) === was) peekSame++; else bad.push('reading the summer changed the life');
+      if (S && !pending) {
+        held++; first = false;
+        const t = [S.label, S.hint].concat(S.options.map((o) => o.label + ' ' + o.hint)).join(' | ');
+        if (S.options.length < 2 || !S.options.some((o) => o.key === S.key) || DASH.test(t) || JUNK26.test(t)) bad.push('held summer: ' + t.slice(0, 80));
+        if (C.summerPick(L, 'nope') !== null) bad.push('picked a program that was not on offer');
+        pending = { key: S.key, y: L.year, last: L.flags.summerLast };
+        /* one in three, he changes the plan by hand */
+        if (i % 3 === 0) { const o = S.options.find((x) => x.key !== S.key); const R = C.summerPick(L, o.key); if (R && R.key === o.key) { changed++; pending.key = o.key; pending.mine = 1; } else bad.push('could not change the plan'); }
+      }
+      const st = C.step(L);
+      if (pending) {
+        const b = (st.beats || []).find((x) => x.kind === 'summer');
+        if (L.year !== pending.y) { lost++; pending = null; }
+        else if (b) {
+          done++;
+          if (!L.mem['summer.' + pending.key] || C.summerOf(L) !== null || DASH.test(b.text) || JUNK26.test(b.text) || !/^Your summer: /.test(b.text)) bad.push('the held summer was not done as shown: ' + b.text.slice(0, 80));
+          if (pending.mine ? L.flags.summerLast === pending.key : L.flags.summerLast === pending.last) kept++;
+          if (/third year running/.test(b.text)) stale++;
+          pending = null;
+        }
+      }
+    }
+  }
+  console.log(`  ${N} careers  ${cards} summers asked  ${held} held  ${changed} changed by hand  ${stale} gone stale`);
+  ok(firstAsked === N, `the first summer always asks (${firstAsked} of ${N})`);
+  ok(held > cards && cards / N >= 2, `most summers are held, and a career is still asked some (${(cards / N).toFixed(1)} asked and ${(held / N).toFixed(1)} held a career)`);
+  ok(done === held - lost && lost <= 2, `every held summer is done at tip-off (${done} of ${held})`);
+  ok(kept === done, `a plan changed by hand is the plan from then on; one left alone changes nothing he chose (${kept} of ${done})`);
+  ok(changed >= 20, `the plan can be changed for any program on offer (${changed})`);
+  ok(stale <= held * 0.05, `a held summer does not go stale by repeating itself (${stale} of ${held})`);
+  ok(!bad.length && peekSame > 1000, `a held summer reads clean, is one of the programs on offer, and reading it changes nothing (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  /* A summer after something big still asks. */
+  {
+    const L = C.newLife({ seed: 'fold-big', league, start: 'draft' });
+    let g = 0; while (g++ < 4000 && !(L.stage === 'nba' && L.history.length >= 2 && L.phase === 'off' && !L.pending.length)) { if (L.pending.length) C.choose(L, 0); else C.step(L); }
+    L.m.health = 40;
+    while (g++ < 5000 && L.phase === 'off' && !L.pending.length) C.step(L);
+    ok(L.pending.some((c) => c.id === 'training') && C.summerOf(L) === null, 'a body that needs looking at gets the card, not a plan');
+  }
+}
+
+// ── 27. the written story knows the whole life ────────────────────────────
+section('27. the career story says a childhood, a death and a later life when they happened');
+{
+  const E = require('./engine.js');
+  const end = (L, seed, wild) => { const r = E.createSeededRNG(E.hashSeed('st-p' + seed)); let g = 0, n = 0; while (!L.retired && g++ < 9000) { if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); n = 0; continue; } if (wild) { const V = C.wildOpen(L), a = V && (V.acts.find((x) => x.id === 'pills' && x.ok) || V.acts.find((x) => x.id === 'party' && x.ok)); if (a && n++ < 6 && C.wildAct(L, a.id)) continue; } n = 0; C.step(L); } return L; };
+  const text = (L) => C.careerStory(L).map((x) => x.h + ': ' + x.p).join(' | ');
+  const K = end(C.newLife({ seed: 'st-kid', league, start: 'kid' }), 'kid'), H = end(C.newLife({ seed: 'st-kid', league, start: 'hs' }), 'kid');
+  const ks = C.careerStory(K).find((x) => x.h === 'Where it started'), hs = C.careerStory(H).find((x) => x.h === 'Where it started');
+  ok(!!ks && /(driveway|the park|alone with a ball)/.test(ks.p) && /(soccer|football|chess|only ever basketball)/.test(ks.p) && /(travel team|town team)/.test(ks.p), `a childhood that was played opens the story ("${ks && ks.p.slice(0, 90)}")`);
+  ok(!!hs && !/(driveway|chess club|travel team|town team)/.test(hs.p), 'a career with no childhood says nothing of one');
+  let dead = null;
+  for (let i = 0; i < 60 && !dead; i++) { const L = end(C.generateRoad({ seed: 'wild-end' + i, league }), 'd' + i, true); if (L.flags.died) dead = L; }
+  const de = dead && C.careerStory(dead).find((x) => x.h === 'The end');
+  ok(!dead.history.length || (!!de && /^You were gone at \d+,/.test(de.p) && !/retired/.test(de.p)), `a man who died young did not retire ("${de ? de.p.slice(0, 60) : 'never played'}")`);
+  const O = end(C.generateRoad({ seed: 'st-old', league }), 'old');
+  ok(!C.careerStory(O).some((x) => x.h === 'After the whistle'), 'a life not lived after the game has no chapter for it');
+  C.laterStart(O); let g = 0; while (!O.later.over && g++ < 200) { if (O.pending.length) C.choose(O, 0); else C.laterAge(O); }
+  const la = C.careerStory(O).find((x) => x.h === 'After the whistle');
+  ok(!!la && /You lived to \d+\.$/.test(la.p) && (/^After the game: /.test(la.p) || /^You went home and stayed\./.test(la.p)), `a later life is the last chapter ("${la && la.p}")`);
+  const all = [text(K), text(dead), text(O)].join(' | ');
+  ok(!DASH.test(all) && !/\bundefined\b|\bNaN\b|\{[a-z]/.test(all), 'and all of it reads clean');
 }
 
 if (!QUICK) await browser();
