@@ -263,7 +263,7 @@ var KIT = {
   monster:{ g:['#2e4a3a', '#36543e', '#284234', 0.2], p:['#6e6a7a', '#7e7a8a', '#5e5a6a'], paved:true, tree:['dead', 'pine', 'dead'], leaves:['#1e3a2e', '#24443a', '#183026'], bark:'#2e2a2e',
     low:['mcurnlow', 'mcarmourlow', 'rockdark'], brk:'pumpkin', haz:'slow', hazC:['#9a6a44', '#7a5236'], waterC:['#1e3448', '#5a86a4'], seaC:['#1e3448', '#5a86a4'], bogC:['#9a6a44', '#7a5236'], lm:['mcTowerLm', 'mcGateLm', 'mcOakLm'], wall:['#8a8698', '#3a3646'],
     npc:{ skin:'light', polo:'navy', hat:'black', pants:'grey', hair:'grey', hairStyle:'short', cap:false, gender:'female' }, who:'the housekeeper' },
-  // Frost Hollow: deep snow under the northern lights, a path trodden through it, snowy firs, street lamps and a sled left by the
+  // The Frosty Hollow: deep snow under the northern lights, a path trodden through it, snowy firs, street lamps and a sled left by the
   // path, open water for the water and deep snow for the slow ground
   frost:{ g:['#e4ecf6', '#f0f5fb', '#d4e0ee', 0.18], p:['#b8c8dc', '#c8d6e6', '#a6b8ce'], paved:false, tree:['pine', 'pine', 'pine'], leaves:['#1e4a3a', '#245440', '#183e30'], bark:'#3a2a1e', snow:true,
     low:['fhlamplow', 'bushsnow', 'fhsledlow', 'rocksnow'], brk:'ice', haz:'slow', hazC:['#f4f8fc', '#d8e4f0'], waterC:['#14304e', '#6aa8d8'], seaC:['#14304e', '#6aa8d8'], bogC:['#f4f8fc', '#d8e4f0'], lm:['fhPalaceLm', 'fhClockLm', 'fhNutLm'], wall:['#e4ecf6', '#7a90a8'],
@@ -6689,7 +6689,7 @@ Object.assign(FOLK3D, {
       return u < -0.04 || t > 2.64 || (av > 0.19 && u < 0.1) ? '#6a4224' : skin; }
     return null; } }
 });
-/* ---- Frost Hollow (the Members Tour): a snowy hollow on a long winter night, the walk a path trodden in the snow, snowy firs along
+/* ---- The Frosty Hollow (the Members Tour): a snowy hollow on a long winter night, the walk a path trodden in the snow, snowy firs along
    it, street lamps and a sled left by the path, the Snow Queen's palace of driven snow with its halls lit green by the northern
    lights, Drosselmeyer's tall clock with the owl on its top, and the great Nutcracker standing guard. Andersen's palace is snow, not
    crystal: "the walls of the palace were of driving snow, and the windows and doors of cutting winds". */

@@ -1391,7 +1391,7 @@ var THEMES = {
     bumper:'mcarmour', block:'mcstone', spinner:'#c8a040', slider:'mcknight', flag:'#8a2a4a',
     decor:['mccandle', 'mckey'], acc:'#b89cff', river:['#1e3448', '#5a86a4'], kicker:'#c8a040', loopCol:['#c8a040', '#8a8698', '#0e0c18'],
     holes:[] },
-  /* Frost Hollow: the Members Tour's winter, a snowy hollow on a long night under the northern lights, where the old winter
+  /* The Frosty Hollow: the Members Tour's winter, a snowy hollow on a long night under the northern lights, where the old winter
      tales of the public domain books live (Hans Christian Andersen's The Snow Queen of 1844, with Kai and Gerda, the Robber Girl
      and the Snow Queen herself, drawn from the text and Vilhelm Pedersen's plates of 1849; E. T. A. Hoffmann's
      Nutcracker and Mouse King of 1816, with Marie, Drosselmeyer, the Nutcracker and the seven headed Mouse King, from the text and
@@ -1400,7 +1400,7 @@ var THEMES = {
      frozen pond the ice. Snowy firs, stones and lamps stand about (the bumpers), banks of snow, ice and the Nutcracker divide it
      (the blocks). No film or later staging of any of them: no Disney look of any kind, no ice gown or braid, no talking snowman,
      nothing named after one. And no Santa, Mrs. Claus or Krampus: the holiday folk are the Daily's (holidayFolk). */
-  frost:{ name:'Frost Hollow', kick:'Members Tour', bg:'#0c1a2e', bg2:'#142640', carpet:'#3f7a74', carpet2:'#38706a', wall:'#e4ecf6', wallHi:'#ffffff', wallLo:'#7a90a8', ink:'#0a1424',
+  frost:{ name:'The Frosty Hollow', kick:'Members Tour', bg:'#0c1a2e', bg2:'#142640', carpet:'#3f7a74', carpet2:'#38706a', wall:'#e4ecf6', wallHi:'#ffffff', wallLo:'#7a90a8', ink:'#0a1424',
     haz:'water', hazCol:'#14304e', hazCol2:'#6aa8d8', hazName:'Open Water', slow:'mud', slowCol:'#eef4fa', slowName:'Deep Snow', iceCol:'#cfe8f8', iceCol2:'#f2fbff',
     bumper:'fhfir', block:'fhsnow', spinner:'#d8b048', slider:'fhsled', flag:'#c8302a',
     decor:['fhflake', 'fhlantern'], acc:'#9fe8c8', river:['#14304e', '#6aa8d8'], kicker:'#c8302a', loopCol:['#d8b048', '#e4ecf6', '#0a1424'],
@@ -5584,7 +5584,7 @@ var MEMBER_WORLDS = [
   { id:'hallows', name:'Hallows Night', theme:'haunted', blurb:'The season’s front nine, for Tour Pass members.', haz:['One trick a hole', 'Trick or treat'] },
   { id:'harvest', name:'Harvest Moon', theme:'harvest', blurb:'The season’s back nine.', haz:['Every set piece', 'At once'] },
   { id:'monster', name:'Monster Castle', theme:'monster', blurb:'The castle on the hill, for Tour Pass members.', haz:['One trick a hole', 'Monsters at home'] },
-  { id:'frost', name:'Frost Hollow', theme:'frost', blurb:'Deep winter, for Tour Pass members.', haz:['One trick a hole', 'Old winter tales'] }
+  { id:'frost', name:'The Frosty Hollow', theme:'frost', blurb:'Deep winter, for Tour Pass members.', haz:['One trick a hole', 'Old winter tales'] }
 ];
 var MEMBER_LEVELS = [
   // ---- HALLOWS NIGHT: nine holes, one haunted idea each. Not harder than the tour, just its own.
@@ -5772,7 +5772,7 @@ var MEMBER_LEVELS = [
     addBlock(H, -2.4, -30.6, 1.6, -32.1, 'fhsnow');
     H.comps.push({ k:'plane', gx:-0.0046, gy:0.0028 }); H.comps.push({ k:'mound', x:-6.4, y:-33.4, s:1.6, a:0.12 }); zoneC(H, M.MUD, 6.9, -10.9, 0.5); zoneC(H, M.MUD, -6.6, -21.6, 0.5);
     pen(H, T, 3.9, -36.6); teeSide(H, T); bowl(H, 3.9, -36.6, 1.5, 0.14); return H; } },
-  // Frost Hollow, the signature hole: up the snow stair to the Snow Queen's hall, across the frozen lake she calls the Mirror of
+  // The Frosty Hollow, the signature hole: up the snow stair to the Snow Queen's hall, across the frozen lake she calls the Mirror of
   // Reason, its pieces lying about it, and over Kai's ice word in the floor, which opens the door of the inner hall for a few
   // seconds. The word lies just short of the door, so a putt at the door rolls over it. Through, and on to the cup.
   { par:4, three:3, sig:true, f:function(T){ var H = hole([pg([[-6.6, 0], [6.9, 0], [8.9, -7.1], [7.6, -13.4], [-7.9, -13.4], [-8.6, -6.4]]), pg([[-9.6, -17.4], [9.1, -17.4], [11.9, -27.6], [10.4, -38.4], [-9.4, -38.4], [-11.6, -28.4]], 0.8), pg([[-10.4, -38.3], [10.4, -38.3], [11.6, -48.9], [6.1, -57.1], [-3.9, -57.9], [-10.9, -51.4]], 0.8)], [0.6, -2.5], [4.1, -52.4]);
@@ -6031,7 +6031,7 @@ var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Hairpin', 'The Switch', 'The 
 var MEMBER_NAMES = ['Graveyard Gate', 'Coffin Drop', 'Witch’s Cauldron', 'Bat Belfry', 'Haunted Floors', 'Brew River', 'Crypt Doors', 'Headless Leaps', 'Hallows Night',
   'Hayride', 'Bog Hop', 'Corn Maze', 'The Mill Race', 'Pie Plate Spin', 'Turkey Trot', 'Log Flume', 'Scarecrow Alley', 'Harvest Moon',
   'The Drawbridge', 'The Portcullis', 'The Secret Bookcase', 'The Marching Armour', 'The Ballroom', 'The Wolf’s Hollow', 'The Golem’s Clay', 'The Horseman’s Bridge', 'Monster Castle',
-  'The Frozen Pond', 'Kai’s Sled', 'Gerda’s Boat', 'The Reindeer’s Leap', 'The Nutcracker', 'Drosselmeyer’s Clock', 'The Sugar Wood', 'Jack Frost’s Hill', 'Frost Hollow'];
+  'The Frozen Pond', 'Kai’s Sled', 'Gerda’s Boat', 'The Reindeer’s Leap', 'The Nutcracker', 'Drosselmeyer’s Clock', 'The Sugar Wood', 'Jack Frost’s Hill', 'The Frosty Hollow'];
 var TOUR_NAMES = [
   'First Tee', 'The Slope', 'Bank Shot', 'The Windmill', 'Sand Bar', 'Step Up', 'Slide Rule', 'Causeway', 'The Kicker',
   'First Loop', 'Two Gates', 'Conveyor', 'Drawbridge', 'Spin Cycle', 'The Creek', 'Double Mill', 'Loop the Pond', 'Clubhouse Classic',
@@ -6804,7 +6804,7 @@ var SKIN = {
     if (v < -0.34) return Math.abs(u) < 0.03 ? '#1a1410' : null; if (v > 0.66) return Math.abs(u) < 0.42 ? '#8a6a20' : null; return Math.abs(u) < 0.2 ? (u < -0.06 ? '#fff8ec' : '#e8dcc8') : null; },
   mckey:function(u, v){ if (Math.abs(u) > 0.8 || Math.abs(v) > 0.4) return null; var d = Math.hypot(u + 0.5, v); if (d < 0.32) return d < 0.16 ? null : '#6a6676';
     if (Math.abs(v) < 0.07 && u > -0.2 && u < 0.72) return '#8a8698'; if (u > 0.4 && u < 0.72 && v > 0 && v < 0.3 && ((u * 10) | 0) % 2) return '#8a8698'; return null; },
-  // ---- Frost Hollow, drawn plain and bold on a winter night, the things that stand about side on: a snowy fir, its tiers of
+  // ---- The Frosty Hollow, drawn plain and bold on a winter night, the things that stand about side on: a snowy fir, its tiers of
   // boughs and the snow on each; a stone capped with snow; a street lamp; a fisherman's stool by the ice; the town well under its
   // little roof; a clump of frozen reeds; a toy soldier, his tall black shako, red coat and white trousers; his drum; a brass
   // numeral plate of Drosselmeyer's clock; a fir of the Sugar Wood hung with sugared fruit; a sugarplum; a frost fern of Jack
@@ -9130,11 +9130,11 @@ var GREETERS = {
     hi:['Oh! You gave me a fright. Welcome to Monster Castle.', 'I am Ichabod Crane. I teach the castle school. Nobody comes to class.'],
     tip:['Every hole here has one trick of its own. Read it and it is kind to you.', 'The monsters are friendly. Mostly. Say hello as you pass.', 'If you hear hooves, do not wait for me.'],
     bye:'I will be right behind you. Well. Nearby.' },
-  /* Frost Hollow's host: Godfather Drosselmeyer as Hoffmann wrote him in 1816, the clockmaker and the teller of tales: small and
+  /* The Frosty Hollow's host: Godfather Drosselmeyer as Hoffmann wrote him in 1816, the clockmaker and the teller of tales: small and
      lean, his face all wrinkles, a black patch over his right eye, a white wig of spun glass and a yellow coat (trail.js FOLK3D
      drosselmeyer). Never a ballet staging's cape and top hat. */
   frost:{ name:'Drosselmeyer', role:'The Clockmaker', folk:'drosselmeyer', look:{ skin:'light', polo:'gold', hat:'black', pants:'black', hair:'white', hairStyle:'short', cap:false, top:'blazer', gender:'male' },
-    hi:['Ah, a visitor! Welcome to Frost Hollow.', 'I am Drosselmeyer. I mend clocks. And I tell winter tales.'],
+    hi:['Ah, a visitor! Welcome to the Frosty Hollow.', 'I am Drosselmeyer. I mend clocks. And I tell winter tales.'],
     tip:['Every hole here has one winter trick. Look for it first.', 'Ice runs a long way. Snow holds a ball. Read which is which.', 'The folk of the old tales live here. Say hello as you pass.'],
     bye:'Off you go. Mind the ice.' }
 };

@@ -237,7 +237,7 @@ WORLD.monster=function(P,th,seed){
   for(var k=0;k<4;k++){ var p=spot(P,P.w*(.2+.6*hash(k,3,seed)),P.h*hash(k,4,seed),4,4,6,tk); if(p){ P.ell(p[0]+2,p[1]+2,1.6,1.4,function(a,b){ P.set(a,b,hex('#e8781f')); }); } }
   fog(P,th.fog,9,.4);
 };
-/* Frost Hollow (the Members Tour): deep snow under the northern lights, a frozen river with skating marks winding across, the Snow
+/* The Frosty Hollow (the Members Tour): deep snow under the northern lights, a frozen river with skating marks winding across, the Snow
    Queen's palace of driven snow with its windows lit green, a little town of snowy roofs, snowy firs, street lamps along the path,
    and snow falling */
 WORLD.frost=function(P,th,seed){
