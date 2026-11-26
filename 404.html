@@ -21,7 +21,24 @@
   .foot404 a{color:#9db2c8;text-decoration:none;font-weight:700;}
   .foot404 a:hover{color:#eaf1f8;}
   .links a.home{background:#6EE84E;border-color:#6EE84E;color:#06230c;}
+  /* while a signed in visitor's tester pass is asked for, the page waits blank
+     instead of flashing the 404 (the script at the end of the body) */
+  html.rtg-pass .card{visibility:hidden}
+  html.rtg-pass body::after{content:'Loading';position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);color:#6f829a;font-size:14px;letter-spacing:.04em}
 </style>
+<script>
+/* Only when a stored sign in exists and this path has not been tried this tab:
+   the same test the pass script makes, so nobody else ever waits. */
+(function () {
+  try {
+    if (sessionStorage.getItem('rtg_pass_tried') === location.pathname) return;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('sb-') === 0 && /auth/.test(k)) { document.documentElement.classList.add('rtg-pass'); return; }
+    }
+  } catch (e) {}
+})();
+</script>
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
@@ -81,9 +98,12 @@ window.GA_ID='G-L29P5MRWKE';
    it refresh, then asks. Only for a visitor with a stored sign in, once per
    path a tab, so it can never loop. Names no page. */
 (function () {
+  /* show the 404 after all (no pass, or anything went wrong), at most 6 s on */
+  var reveal = function () { document.documentElement.classList.remove('rtg-pass'); };
+  setTimeout(reveal, 6000);
   try {
     var path = location.pathname, flag = 'rtg_pass_tried';
-    if (sessionStorage.getItem(flag) === path) return;
+    if (sessionStorage.getItem(flag) === path) return reveal();
     var tok = null, stale = false, now = Date.now() / 1000;
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
@@ -97,27 +117,27 @@ window.GA_ID='G-L29P5MRWKE';
     var ask = function (t) {
       sessionStorage.setItem(flag, path);
       fetch('/api/stumpire/me', { headers: { Authorization: 'Bearer ' + t }, credentials: 'same-origin' })
-        .then(function (r) { if (r.status === 200) location.reload(); })
-        .catch(function () {});
+        .then(function (r) { if (r.status === 200) location.reload(); else reveal(); })
+        .catch(reveal);
     };
     if (tok) { ask(tok); return; }
-    if (!stale) return;
+    if (!stale) return reveal();
     sessionStorage.setItem(flag, path);
-    var load = function (src, then) { var e = document.createElement('script'); e.src = src; e.onload = then; document.head.appendChild(e); };
+    var load = function (src, then) { var e = document.createElement('script'); e.src = src; e.onload = then; e.onerror = reveal; document.head.appendChild(e); };
     load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js', function () {
       load('/arcade/auth.js?v=4', function () {
         var A = window.RTG_AUTH, done = false;
-        if (!A || !A.onChange || !A.boot) return;
+        if (!A || !A.onChange || !A.boot) return reveal();
         A.onChange(function (st) {
           if (done || !st || !st.resolved) return;
           done = true;
           var t = st.signedIn && A.token && A.token();
-          if (t) ask(t);
+          if (t) ask(t); else reveal();
         });
         A.boot();   /* the Arcade page starts it the same way */
       });
     });
-  } catch (e) {}
+  } catch (e) { reveal(); }
 })();
 </script>
 </body>
