@@ -164,6 +164,15 @@
        3+ runs high: the same blocks win the first yards at 4th and 1 and 2,
        where the run card converts 65% and 55%. */
     runBlock: { base: 3.2, jitter: 1.2, heldSpeed: 0.25, leadBonus: 0.3, claim: 3, hold: [0.2, 1.2], climb: 0.43, deep: 0.15, whiff: 0.26, lose: 0.11, lostAt: 0.35 },
+    /* THE SURGE on a short yardage run (at yards to go or fewer, not the sneak):
+       held down linemen are driven back speed yards a second for the first time
+       seconds, and a block on one loses lose times as often (the line fires off
+       low); a lineman's climb to a backer holds climb as long (he is a step
+       away, not a hole away); and a tackle within near yards of the line
+       carries him up to push yards more, the pile behind him moving forward.
+       Tuned 2026-11-26 to the NFL's 73% on 3rd and 4th
+       and 1 runs. */
+    surge: { at: 2, time: 0.8, speed: 1.6, lose: 0.5, climb: 0.43, push: 1.7, near: 2 },
     /* when the defense sees it is a run */
     readRun: { dl: 0.0, lb: 0.62, db: 1.0 },
     /* THE MESH: the QB steps toward the man drawn to get it at qb yards a
