@@ -5774,11 +5774,11 @@ var MEMBER_LEVELS = [
     pen(H, T, 3.9, -36.6); teeSide(H, T); bowl(H, 3.9, -36.6, 1.5, 0.14); return H; } },
   // Frost Hollow, the signature hole: up the snow stair to the Snow Queen's hall, across the frozen lake she calls the Mirror of
   // Reason, its pieces lying about it, and over Kai's ice word in the floor, which opens the door of the inner hall for a few
-  // seconds. Through it and down to the cup.
+  // seconds. The word lies just short of the door, so a putt at the door rolls over it. Through, and on to the cup.
   { par:4, three:3, sig:true, f:function(T){ var H = hole([pg([[-6.6, 0], [6.9, 0], [8.9, -7.1], [7.6, -13.4], [-7.9, -13.4], [-8.6, -6.4]]), pg([[-9.6, -17.4], [9.1, -17.4], [11.9, -27.6], [10.4, -38.4], [-9.4, -38.4], [-11.6, -28.4]], 0.8), pg([[-10.4, -38.3], [10.4, -38.3], [11.6, -48.9], [6.1, -57.1], [-3.9, -57.9], [-10.9, -51.4]], 0.8)], [0.6, -2.5], [4.1, -52.4]);
     climb(H, -2.6, -13.4, -17.4, 2.6);
     zoneC(H, M.ICE, 1.1, -27.4, 5.4); zoneC(H, M.ICE, -3.6, -30.1, 3.4); zoneC(H, M.ICE, 4.9, -24.4, 3.1);
-    addBlock(H, -9.9, -37.6, -2.6, -39.1, 'fhice'); addBlock(H, 1.4, -37.6, 10.9, -39.1, 'fhice'); switchDoor(H, T, -38.35, -2.6, 1.4, 4.6, -31.9, 5); H.movers[H.movers.length - 1].skin = 'fhdoor';
+    addBlock(H, -9.9, -37.6, -2.6, -39.1, 'fhice'); addBlock(H, 1.4, -37.6, 10.9, -39.1, 'fhice'); switchDoor(H, T, -38.35, -2.6, 1.4, -0.6, -32.6, 5); H.movers[H.movers.length - 1].skin = 'fhdoor';
     rocks(H, [[-4.4, -6.6, 0.5, 'fhfir'], [4.6, -7.1, 0.5, 'fhfir'], [-7.4, -22.6, 0.5, 'fhshard'], [7.6, -21.9, 0.5, 'fhshard'], [-8.1, -31.9, 0.45, 'fhshard'], [8.4, -33.1, 0.45, 'fhshard'], [-0.6, -33.6, 0.45, 'fhshard'], [-6.4, -47.6, 0.5, 'fhshard'], [8.1, -46.1, 0.45, 'fhshard'], [-2.6, -54.1, 0.45, 'fhfir']]);
     H.comps.push({ k:'plane', gx:0.0044, gy:0.0027 }); H.comps.push({ k:'mound', x:-4.9, y:-51.1, s:1.8, a:0.12 }); zoneC(H, M.MUD, 6.1, -10.9, 0.5); zoneC(H, M.MUD, -7.4, -43.1, 0.5);
     pen(H, T, 4.1, -52.4); teeSide(H, T); bowl(H, 4.1, -52.4, 1.5, 0.14); return H; } }
