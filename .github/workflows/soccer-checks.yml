@@ -13,6 +13,7 @@ name: Run The Pitch checks
 # Locally: node soccer/check-db-reads.mjs
 #          node soccer/check-guest-daily.mjs
 #          createdb sdg && psql -d sdg -f supabase/test/soccer_daily_guest_test.sql
+#          createdb scs && psql -d scs -f supabase/test/soccer_club_seasons_test.sql
 #          node soccer/check-club.mjs
 
 on:
@@ -28,6 +29,8 @@ on:
       - 'supabase/12_daily_challenge.sql'
       - 'supabase/189_soccer_daily_guest.sql'
       - 'supabase/test/soccer_daily_guest_test.sql'
+      - 'supabase/191_soccer_club_seasons.sql'
+      - 'supabase/test/soccer_club_seasons_test.sql'
       - '.github/workflows/soccer-checks.yml'
   push:
     branches: [main]
@@ -42,6 +45,8 @@ on:
       - 'supabase/12_daily_challenge.sql'
       - 'supabase/189_soccer_daily_guest.sql'
       - 'supabase/test/soccer_daily_guest_test.sql'
+      - 'supabase/191_soccer_club_seasons.sql'
+      - 'supabase/test/soccer_club_seasons_test.sql'
       - '.github/workflows/soccer-checks.yml'
   workflow_dispatch: {}
 
@@ -73,7 +78,11 @@ jobs:
         run: |
           createdb sdg
           psql -X -q -v ON_ERROR_STOP=1 -d sdg -f supabase/test/soccer_daily_guest_test.sql
+      - name: supabase/191, the season board, against a real Postgres (applied twice)
+        run: |
+          createdb scs
+          psql -X -q -v ON_ERROR_STOP=1 -d scs -f supabase/test/soccer_club_seasons_test.sql
       - name: The club side (data rules, then a whole club run)
         run: node soccer/check-club.mjs
       - name: No em or en dashes in the game's own code
-        run: node scripts/check-dashes.mjs soccer/club.js soccer/check-club.mjs soccer/check-db-reads.mjs soccer/check-guest-daily.mjs soccer/CLAUDE.md functions/_pitchguest functions/api/pitch-guest.js supabase/189_soccer_daily_guest.sql supabase/test/soccer_daily_guest_test.sql
+        run: node scripts/check-dashes.mjs soccer/club.js soccer/check-club.mjs soccer/check-db-reads.mjs soccer/check-guest-daily.mjs soccer/CLAUDE.md functions/_pitchguest functions/api/pitch-guest.js supabase/189_soccer_daily_guest.sql supabase/test/soccer_daily_guest_test.sql supabase/191_soccer_club_seasons.sql supabase/test/soccer_club_seasons_test.sql

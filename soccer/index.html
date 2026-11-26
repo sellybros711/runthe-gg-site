@@ -980,6 +980,9 @@
   .cs-stats div{border-radius:10px;background:#0f0b1a;border:1px solid #3a2140;padding:10px 4px;text-align:center;}
   .cs-stats b{display:block;font-family:Anton,sans-serif;font-weight:400;font-size:24px;color:var(--gold);}
   .cs-stats span{font-weight:900;font-size:9px;letter-spacing:1.2px;color:#a79bb8;text-transform:uppercase;}
+  .cs-rank{text-align:center;font-weight:700;font-size:15px;}
+  .cs-rank b{font-family:Anton,sans-serif;font-weight:400;font-size:26px;color:var(--gold);letter-spacing:.5px;}
+  #cs-board-line .dr-guest-cta{margin-top:8px;}
   /* hero soccer-ball mark */
   .ball-svg{width:62px;height:62px;display:inline-block;}
   /* reel + reveal use a larger flat flag */
@@ -4617,6 +4620,25 @@ window.GA_ID='G-L29P5MRWKE';
   </div>
 </div>
 
+<!-- ===== the Club Season board (supabase/191): points, goal difference, the cup ===== -->
+<div class="entry-bg daily-bg" id="season-bg">
+  <div class="entry-card daily-card">
+    <button class="entry-close" id="season-close" aria-label="Close">✕</button>
+    <h3 class="entry-title">Season Board</h3>
+    <p class="entry-sub">Points from nine matches. Then goal difference. Then The Club Cup.</p>
+    <div class="lb-seg daily-seg" id="season-seg-size" style="margin:12px 0 6px;">
+      <button type="button" data-v="full" class="active">Full Team</button>
+      <button type="button" data-v="quick">Quick</button>
+    </div>
+    <div class="lb-seg daily-seg" id="season-seg-window" style="margin:0 0 12px;">
+      <button type="button" data-v="all" class="active">All time</button>
+      <button type="button" data-v="week">Week</button>
+      <button type="button" data-v="day">Today</button>
+    </div>
+    <div class="entry-lb-list" id="season-list"></div>
+  </div>
+</div>
+
 <!-- ===== share popup (preview + grid of share targets) ===== -->
 <div class="lineup-bg" id="share-bg">
   <div class="lineup-card">
@@ -5040,6 +5062,92 @@ function seasonPlayCup(){
   ga('club_season_finished',{position:me.pos,points:me.pts,cup:R.cup.result||'none',team_overall:seasonOvr(),signings:R.signed});
   if(me.pos===1 || R.cup.result==='winner'){ try{ launchConfetti(); }catch(e){} }
   renderSeason();
+  seasonPost(R, me);   // onto the season board, then its rank (the screen is already up)
+}
+
+// ---- the season board (supabase/191) ----
+// One finished season, one post: an account as itself (submit_club_season), a
+// guest through /api/pitch-guest under its generated name. Then the season's
+// rank on its board, one call. Fails soft: with 191 not run or the Function
+// missing, the season still ends and the line says the board is not open.
+// Read only what is shown: the board's rows load when the player opens it.
+function seasonPayload(R, me){
+  return { draft_type:(gs.draftType==='full'?'full':'quick'), mode:(gameMode==='hard'?'hard':'easy'),
+    won:me.w, drawn:me.d, lost:me.l, gf:me.gf, ga:me.ga, position:me.pos, cup:(R.cup && R.cup.result) || 'none',
+    overall:Math.round(seasonOvr()*10)/10, signings:Math.min(2, R.signed|0),
+    player_ids:gs.picks.map(p=>String(p.player.player_id)), slots:gs.picks.map(p=>String(p.slot||p.player.position||'')) };
+}
+async function seasonPost(R, me){
+  if(R.board) return;                       // one post a season
+  const pay=seasonPayload(R, me);
+  const B=R.board={ state:'posting', id:null, guestName:null, rank:null, total:null };
+  renderSeason();
+  try{
+    if(isSignedIn()){
+      const a={}; Object.keys(pay).forEach(k=>{ a['p_'+k]=pay[k]; });
+      B.id=await sbRpc('submit_club_season', a);
+    }else{
+      const device=guestDevice(true);
+      if(device){
+        const res=await fetch('/api/pitch-guest', { method:'POST', headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(Object.assign({ action:'season', device }, pay)) });
+        if(res.ok){
+          const d=await res.json();
+          if(d && d.id!=null){ B.id=d.id; B.guestName=d.name||null; try{ localStorage.setItem(GUEST_SEASON_KEY,'1'); }catch(e){} }
+        }
+      }
+    }
+  }catch(e){ /* not posted: the rank below still shows where it would stand */ }
+  try{
+    const r=await sbRpc('club_season_rank', { p_draft_type:pay.draft_type, p_points:pay.won*3+pay.drawn, p_gd:pay.gf-pay.ga, p_cup:pay.cup, p_gf:pay.gf });
+    if(r && r.rank!=null){ B.rank=+r.rank; B.total=Math.max(+r.total||0, +r.rank); }
+  }catch(e){}
+  B.state = B.rank!=null ? 'ranked' : 'closed';
+  if(SEASONRUN===R && R.stage==='done') renderSeason();
+}
+function seasonBoardLineHtml(){
+  const B=SEASONRUN && SEASONRUN.board;
+  if(!B || B.state==='posting') return '<div class="cs-note">Filing your season…</div>';
+  if(B.state==='closed') return '<div class="cs-note">The season board is not open yet. This run is not ranked.</div>';
+  const rank=`<div class="cs-rank">Season rank <b>#${B.rank.toLocaleString()}</b> of ${B.total.toLocaleString()}</div>`;
+  if(isSignedIn()) return rank + (B.id==null && !B.claimed ? '<div class="cs-note">Could not save this one. The rank is where it would stand.</div>' : '');
+  return rank + (B.guestName
+    ? `<div class="cs-sub">You’re on the board as <b>${escapeHtml(B.guestName)}</b>.</div>
+       <button type="button" class="dr-guest-cta" id="cs-acct">Make a free account. Keep your seasons.</button>`
+    : `<button type="button" class="dr-guest-cta" id="cs-acct">Sign in to put your seasons on the board.</button>`);
+}
+// The board itself, opened by the player. Top 50 for a draft size and a window.
+let seasonBoardSize='full', seasonBoardWindow='all';
+async function openSeasonBoard(){
+  const bg=$('season-bg'); if(!bg) return;
+  if(gs && gs.draftType) seasonBoardSize = gs.draftType==='full' ? 'full' : 'quick';
+  bg.classList.add('show');
+  refreshSeasonBoard();
+}
+async function refreshSeasonBoard(){
+  const list=$('season-list'); if(!list) return;
+  document.querySelectorAll('#season-seg-size button').forEach(b=>b.classList.toggle('active', b.dataset.v===seasonBoardSize));
+  document.querySelectorAll('#season-seg-window button').forEach(b=>b.classList.toggle('active', b.dataset.v===seasonBoardWindow));
+  list.innerHTML='<div class="lb-empty">Loading…</div>';
+  const cut=lbCutoffISO(seasonBoardWindow);
+  const url=`${SUPABASE_URL}/rest/v1/club_season_board?select=id,name,flag,guest,points,won,drawn,lost,gd,cup,overall`
+    +`&draft_type=eq.${seasonBoardSize}${cut?`&created_at=gte.${encodeURIComponent(cut)}`:''}`
+    +`&order=points.desc,gd.desc,cup_rank.desc,gf.desc,created_at.asc&limit=50`;
+  let rows=null;
+  try{ const res=await fetch(url, { headers: sbHeaders() }); if(res.ok) rows=await res.json(); }catch(e){}
+  if(!rows){ list.innerHTML='<div class="lb-empty">The season board is not open yet.</div>'; return; }
+  if(!rows.length){ list.innerHTML='<div class="lb-empty">No seasons yet. Be the first.</div>'; return; }
+  const mine=SEASONRUN && SEASONRUN.board && SEASONRUN.board.id;
+  const CUP={ winner:'Cup winner', finalist:'Cup final', semi:'Cup semi', none:'' };
+  list.innerHTML=`<div class="lb-rows">${rows.map((r,i)=>{
+    const nm=cleanDisplayName((r.name&&String(r.name).trim())?r.name:'Anonymous');
+    const fl=(r.flag&&String(r.flag).trim())?flagChip(r.flag)+' ':'';
+    return `<div class="lb-row${mine!=null && r.id===mine?' you':''}">
+      <span class="lb-rank">${i+1}</span>
+      <span class="lb-name"><span class="lb-nm">${fl}${escapeHtml(nm)}${r.guest?' <span class="lb-guest">guest</span>':''}</span></span>
+      <span class="lb-meta">W${r.won} D${r.drawn} L${r.lost} · ${r.gd>0?'+':''}${r.gd}${CUP[r.cup]?' · '+CUP[r.cup]:''}</span>
+      <span class="lb-ov gold">${r.points}</span>
+    </div>`; }).join('')}</div>`;
 }
 const ORDINALS=['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
 function seasonTableHtml(){
@@ -5110,11 +5218,12 @@ function renderSeason(){
         ${seasonResultRow(Object.assign({ res:cup.semi.won?'W':'L' }, cup.semi), 'Semi-final')}
         ${cup.final?seasonResultRow(Object.assign({ res:cup.final.won?'W':'L' }, cup.final), 'Final'):''}</div>` : '';
     body = `<div class="cs-card"><div class="cs-head${champ||won?' gold':''}">${title}</div>
-        <div class="cs-sub">${me.pts} points from 9. ${cupLine}</div></div>
+        <div class="cs-sub">${me.pts} points from nine matches. ${cupLine}</div></div>
       <div class="cs-stats"><div><b>${me.pts}</b><span>Points</span></div><div><b>${me.gd>0?'+':''}${me.gd}</b><span>Goal difference</span></div><div><b>${seasonOvr().toFixed(1)}</b><span>Squad rating</span></div></div>`
+      + `<div class="cs-card" id="cs-board-line">${seasonBoardLineHtml()}</div>`
       + cupCard + head + table
-      + `<div class="cs-note">Club Season preview. This run is not ranked yet.</div>
-      <button type="button" class="cs-btn" id="cs-again">Play another season<small>Draft a new club XI</small></button>
+      + `<button type="button" class="cs-btn" id="cs-again">Play another season<small>Draft a new club XI</small></button>
+      <button type="button" class="cs-btn ghost" id="cs-board">Season board</button>
       <button type="button" class="cs-btn ghost" id="cs-home">Home</button>`;
   }
   c.innerHTML=body;
@@ -5123,6 +5232,8 @@ function renderSeason(){
   on('cs-window', seasonOpenWindow);
   on('cs-cup', seasonPlayCup);
   on('cs-again', newGame);
+  on('cs-board', openSeasonBoard);
+  on('cs-acct', ()=>openAccountModal());
   on('cs-home', ()=>{ if(typeof friendlyReset==='function') friendlyReset(); showScreen('start'); });
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -8581,7 +8692,7 @@ function startDailyChallenge(){
 // guest's days move onto the account and the board shows its name in that spot.
 // Everything here fails soft: with the Function or 189 missing, a guest still
 // plays and sees a rank, exactly as before.
-const GUEST_DEVICE_KEY='rtp_guest_device', GUEST_DAILY_KEY='rtp_guest_daily';
+const GUEST_DEVICE_KEY='rtp_guest_device', GUEST_DAILY_KEY='rtp_guest_daily', GUEST_SEASON_KEY='rtp_guest_season';
 const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function guestDevice(make){
   try{
@@ -8620,7 +8731,8 @@ async function submitGuestDaily(progress){
 let guestClaimBusy=false;
 async function claimGuestDaily(){
   const rec=guestDailyRec(), device=guestDevice(false);
-  if(!isSignedIn() || !sbAccessToken || !rec || !device || guestClaimBusy) return 0;
+  let seasons=false; try{ seasons=localStorage.getItem(GUEST_SEASON_KEY)==='1'; }catch(e){}
+  if(!isSignedIn() || !sbAccessToken || (!rec && !seasons) || !device || guestClaimBusy) return 0;
   guestClaimBusy=true;
   try{
     const res=await fetch('/api/pitch-guest', { method:'POST',
@@ -8629,10 +8741,12 @@ async function claimGuestDaily(){
     if(!res.ok) return 0;
     const d=await res.json();
     guestDailyWrite(null);            // claimed (or nothing left to claim): the guest record is spent
+    try{ localStorage.removeItem(GUEST_SEASON_KEY); }catch(e){}
     const moved=(d && d.moved)|0;
+    if(d && (d.seasons|0)>0 && SEASONRUN && SEASONRUN.board){ SEASONRUN.board.guestName=null; SEASONRUN.board.claimed=true; try{ renderSeason(); }catch(e){} }
     if(moved>0){
       myDraftsUid=null;               // the moved days join the history
-      if(gs && gs.daily && gs.result && rec.date===utcDateStr()) gs.result._claimed=true;   // today's run is now the account's
+      if(gs && gs.daily && gs.result && rec && rec.date===utcDateStr()) gs.result._claimed=true;   // today's run is now the account's
       try{ await loadProfile(); await refreshMyBadges(); }catch(e){}
     }
     return moved;
@@ -10013,6 +10127,10 @@ $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
   on('daily-close','click',closeDailyBoard);
   on('daily-bg','click',e=>{ if(e.target===$('daily-bg')) closeDailyBoard(); });
   on('daily-play-btn','click',()=>{ closeDailyBoard(); openDailyIntro(); });
+  on('season-close','click',()=>$('season-bg').classList.remove('show'));
+  { const sb=$('season-bg'); if(sb) sb.addEventListener('click',e=>{ if(e.target===sb) sb.classList.remove('show'); }); }
+  document.querySelectorAll('#season-seg-size button').forEach(b=>b.addEventListener('click',()=>{ seasonBoardSize=b.dataset.v; refreshSeasonBoard(); }));
+  document.querySelectorAll('#season-seg-window button').forEach(b=>b.addEventListener('click',()=>{ seasonBoardWindow=b.dataset.v; refreshSeasonBoard(); }));
   on('daily-seg','click',e=>{ const b=e.target.closest('button'); if(!b) return; openDailyBoard(b.dataset.dv); });
   // tap a daily row with a stored lineup → show that squad
   on('daily-list','click',e=>{

@@ -24,6 +24,7 @@ A small fix that only touches code can go ahead without it.
 node soccer/check-db-reads.mjs                what a finished game reads; no poll while hidden (CI: soccer-checks)
 node soccer/check-guest-daily.mjs             a guest's Daily: the Function, then the page (--quick: the Function only)
 psql -d sdg -f supabase/test/soccer_daily_guest_test.sql    189 against a real Postgres (createdb sdg first)
+psql -d scs -f supabase/test/soccer_club_seasons_test.sql   191, the season board (createdb scs first)
 node soccer/check-club.mjs                    the club side: names, squads, balance, the season's odds, a whole season (--quick, --names)
 node scripts/check-dashes.mjs soccer/<file>    soccer/ is not in GUARDED yet: check what you touch
 node scripts/check-cachebust.mjs               gameLogic.js and the assets the page pins
@@ -69,8 +70,12 @@ node scripts/check-home-games.mjs              the home page card
   and **no `?v=`** (the refresh cannot bump one), only for the club side, and never depend on it:
   with the file missing the club side plays on World Cup squads. A man who never went to a World
   Cup has an id the server does not know (`wd:` person key, `rated: 'rule'`).
-- Until its boards exist, a club run writes nothing to the server, and its door shows only after
-  `/soccer/?club=1`.
+- **The season board** (`supabase/191`): one post per finished season, an account as itself
+  (`submit_club_season`), a guest through `/api/pitch-guest` under its generated name. It ranks
+  season points, then goal difference, then the cup, then goals. The result is the page's word
+  (as a draft's progress is); the server holds it to what a season can be and never takes points
+  or a name from the page. The board's rows load only when the player opens it. The club side's
+  door still shows only after `/soccer/?club=1`.
 
 **Numbers a player reads**
 

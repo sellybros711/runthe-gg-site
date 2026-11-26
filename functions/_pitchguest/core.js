@@ -59,3 +59,30 @@ export function readDaily(body) {
     p_slots: okSlots ? slots : null, p_theme: text(body.theme, 40)
   } };
 }
+
+/* A guest's finished Club Season (supabase/191). The result is the page's word, as a draft's
+   progress is; the database holds it to what a season can be. Checked here first so nothing
+   malformed reaches it. Returns the RPC's arguments, or a reason it is refused. */
+const POOL_ID = /^Q[0-9]{1,12}$/;
+const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+export function readSeason(body) {
+  if (!body || typeof body !== 'object') return { error: 'bad body' };
+  const { device, draft_type: dt, mode, won, drawn, lost, gf, ga, position, cup, overall, signings, player_ids: ids, slots } = body;
+  if (typeof device !== 'string' || !UUID.test(device)) return { error: 'bad device' };
+  if (dt !== 'full' && dt !== 'quick') return { error: 'bad draft type' };
+  if (mode !== 'easy' && mode !== 'hard') return { error: 'bad mode' };
+  if (!int(won, 0, 9) || !int(drawn, 0, 9) || !int(lost, 0, 9) || won + drawn + lost !== 9) return { error: 'bad results' };
+  if (!int(gf, 0, 63) || !int(ga, 0, 63)) return { error: 'bad goals' };
+  if (!int(position, 1, 10)) return { error: 'bad position' };
+  if (!['winner', 'finalist', 'semi', 'none'].includes(cup)) return { error: 'bad cup' };
+  const size = dt === 'full' ? 11 : 6;
+  if (!Array.isArray(ids) || ids.length !== size || new Set(ids).size !== size
+      || !ids.every((x) => typeof x === 'string' && (PLAYER.test(x) || POOL_ID.test(x)))) return { error: 'bad squad' };
+  if (typeof overall !== 'number' || !isFinite(overall)) return { error: 'bad rating' };
+  const okSlots = Array.isArray(slots) && slots.length === size && slots.every((x) => SLOTS.includes(x));
+  return { device, args: {
+    p_draft_type: dt, p_mode: mode, p_won: won, p_drawn: drawn, p_lost: lost, p_gf: gf, p_ga: ga,
+    p_position: position, p_cup: cup, p_overall: Math.round(overall * 10) / 10, p_signings: int(signings, 0, 2) ? signings : 0,
+    p_player_ids: ids, p_slots: okSlots ? slots : null
+  } };
+}

@@ -17,13 +17,15 @@
  *   - a whole club draft, Easy and Full Team: the wheel lands on a club and a decade, no man is
  *     drafted twice, the reveal, then a whole season: three blocks, a signing, a kept XI, the cup
  *   - no screen of a club run says "World Cup" except a player's own World Cups line
- *   - a club run writes nothing to the server (its board is not built yet)
+ *   - the season board (supabase/191): one post per season (a guest through the real Function, an
+ *     account as itself), the rank, and a board that loads only when opened
  */
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { onRequestPost as pitchGuest } from '../functions/api/pitch-guest.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -188,20 +190,46 @@ const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch();
 const shots = (args.find(a => a.startsWith('--shots=')) || '').slice(8);
 
+// The page's world: outside hosts answered locally. Supabase is counted and faked (the season's
+// rank and board answer; everything else is empty). /api/pitch-guest is the REAL Function, with the
+// database behind it faked, so a guest's season goes through the code that will run in production.
+const fnEnv = { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE: 'service-secret', SUPABASE_ANON: 'anon' };
+const realFetch = globalThis.fetch;
 async function open(url, viewport) {
   const ctx = await browser.newContext({ viewport });
   const page = await ctx.newPage();
-  const supa = [], errors = [];
+  const supa = [], errors = [], guestPosts = [], rpcBodies = {};
   page.on('pageerror', e => errors.push(e.message));
-  await page.route('**/*', route => {
-    const u = new URL(route.request().url());
+  const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*', 'access-control-expose-headers': 'content-range' };
+  await page.route('**/*', async (route) => {
+    const rq = route.request(), u = new URL(rq.url());
+    if (u.hostname === '127.0.0.1' && u.pathname === '/api/pitch-guest') {
+      const body = rq.postData() || '';
+      guestPosts.push(JSON.parse(body));
+      globalThis.fetch = async (fu, init) => {
+        if (/rpc\/soccer_season_guest_submit$/.test(fu)) { rpcBodies.guestSeason = JSON.parse(init.body); return new Response(JSON.stringify({ id: 77, name: 'SillyStriker46' }), { status: 200 }); }
+        return new Response('{}', { status: 404 });
+      };
+      const r = await pitchGuest({ request: new Request('https://runthe.gg/api/pitch-guest', { method: 'POST', headers: { Origin: 'https://runthe.gg', 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.9' }, body }), env: fnEnv });
+      globalThis.fetch = realFetch;
+      return route.fulfill({ status: r.status, contentType: 'application/json', body: await r.text() });
+    }
     if (u.hostname === '127.0.0.1') return route.continue();
-    if (u.hostname.endsWith('supabase.co')) { supa.push(route.request().method() + ' ' + u.pathname); return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-expose-headers': 'content-range', 'content-range': '0-0/0' }, body: '[]' }); }
-    return route.fulfill({ status: 204, body: '' });
+    if (!u.hostname.endsWith('supabase.co')) return route.fulfill({ status: 204, body: '' });
+    if (rq.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors, body: '' });
+    supa.push(rq.method() + ' ' + u.pathname);
+    const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', headers: Object.assign({ 'content-range': '0-0/0' }, cors), body: JSON.stringify(o) });
+    if (u.pathname.endsWith('/rpc/club_season_rank')) { rpcBodies.rank = JSON.parse(rq.postData() || '{}'); return json({ rank: 12, total: 345 }); }
+    if (u.pathname.endsWith('/rpc/submit_club_season')) { rpcBodies.season = JSON.parse(rq.postData() || '{}'); rpcBodies.seasonAuth = rq.headers().authorization; return json(55); }
+    if (u.pathname.endsWith('/rest/v1/club_season_board')) return json([
+      { id: 1, name: 'TopOne', flag: '', guest: false, points: 25, won: 8, drawn: 1, lost: 0, gd: 19, cup: 'winner', overall: 96.1 },
+      { id: 77, name: 'SillyStriker46', flag: '', guest: true, points: 20, won: 6, drawn: 2, lost: 1, gd: 9, cup: 'semi', overall: 88 },
+      { id: 55, name: 'Real', flag: '', guest: false, points: 14, won: 4, drawn: 2, lost: 3, gd: 1, cup: 'none', overall: 84 }]);
+    return json([]);
   });
   await page.goto(base + url, { waitUntil: 'load' });
   await page.waitForFunction(() => Array.isArray(window.PLAYERS) && window.PLAYERS.length > 0 && !document.getElementById('btn-start').disabled, null, { timeout: 30000 });
-  return { ctx, page, supa, errors };
+  return { ctx, page, supa, errors, guestPosts, rpcBodies };
 }
 const visibleText = (page) => page.evaluate(() => {
   const sc = document.querySelector('.screen.active'); if (!sc) return '';
@@ -260,7 +288,8 @@ const visibleText = (page) => page.evaluate(() => {
 }
 
 for (const [label, viewport] of [['phone', { width: 390, height: 844 }], ['desktop', { width: 1440, height: 900 }]]) {
-  const { ctx, page, supa, errors } = await open('/soccer/?club=1', viewport);
+  const { ctx, page, supa, errors, guestPosts, rpcBodies } = await open('/soccer/?club=1', viewport);
+  const signedIn = label === 'desktop';   // the phone plays as a guest, the desktop as an account
   ok(await page.evaluate(() => getComputedStyle(document.getElementById('btn-club')).display !== 'none'), `${label}: ?club=1 shows the club door`);
   const shot = async (name) => { if (shots) await page.screenshot({ path: `${shots}/club-${label}-${name}.png` }); };
   await shot('start');
@@ -301,9 +330,9 @@ for (const [label, viewport] of [['phone', { width: 390, height: 844 }], ['deskt
   }
   ok(seen.every(x => x.isClubSpin && /^\d{4}s$/.test(x.era) && x.n >= 6 && x.open >= 1), `${label}: eleven spins, each a club and a decade with a man to draft`);
   ok(seen.every(x => x.header === `${x.club.toUpperCase()} ${x.era}`), `${label}: the squad header names the club and decade (${seen[0].header})`);
-  const picks = await page.evaluate(() => gs.picks.map(pk => ({ k: RTPClub.personKey(pk.player), id: pk.player.player_id, real: !!playerById(pk.player.player_id) })));
+  const picks = await page.evaluate(() => gs.picks.map(pk => ({ k: RTPClub.personKey(pk.player), id: pk.player.player_id, real: !!playerById(pk.player.player_id) || (/^Q\d+$/.test(pk.player.player_id) && pk.player.club_side.rated === 'rule') })));
   ok(new Set(picks.map(p => p.k)).size === 11, `${label}: eleven different men drafted`);
-  ok(picks.every(p => p.real), `${label}: every pick is a real player id the boards can resolve`);
+  ok(picks.every(p => p.real), `${label}: every pick is a World Cup player's id or a club pool man's (the two kinds the season board accepts)`);
   // the reveal, then the season
   await page.waitForFunction(() => { const b = document.getElementById('btn-reveal-go'); return b && b.classList.contains('show'); }, null, { timeout: 60000 });
   said.push(await visibleText(page));
@@ -348,7 +377,9 @@ for (const [label, viewport] of [['phone', { width: 390, height: 844 }], ['deskt
     }
   }
   await shot('season-final');
+  if (signedIn) await page.evaluate(() => { authUser = { id: 'u-test' }; sbAccessToken = 'tok'; authProfile = { username: 'Real', current_streak: 0 }; });
   await page.click('#cs-cup');
+  await page.waitForFunction(() => SEASONRUN.board && SEASONRUN.board.state !== 'posting', null, { timeout: 15000 });
   await page.waitForTimeout(200);
   said.push(await visibleText(page));
   await shot('season-done');
@@ -358,9 +389,28 @@ for (const [label, viewport] of [['phone', { width: 390, height: 844 }], ['deskt
       text: document.getElementById('season-content').innerText, modal: document.getElementById('entry-bg').classList.contains('show') };
   });
   ok(res.stage === 'done' && res.sum === 90 && res.qualified === (res.pos <= 4), `${label}: the season ends after nine matchdays; the top four, and only they, play the cup (finished ${res.pos}, ${res.pts} pts)`);
-  ok(/not ranked yet/i.test(res.text) && !res.modal, `${label}: the result says the run is not ranked yet, and no modal opens`);
-  const writes = supa.filter(r => /rpc\/(submit_draft|submit_daily|create_friendly_challenge|refresh_my_badges)|^POST/.test(r));
-  ok(writes.length === 0, `${label}: a club run writes nothing to the server (${writes.length} writes${writes.length ? ': ' + writes.join(', ') : ''})`);
+  // the season board: one post, then the rank
+  ok(/Season rank\s*#12\s*of 345/i.test(res.text.replace(/\n/g, ' ')) && !res.modal, `${label}: the result shows the season's rank, and no modal opens`);
+  const sent = signedIn ? Object.fromEntries(Object.entries(rpcBodies.season || {}).map(([k, v]) => [k.replace(/^p_/, ''), v])) : guestPosts.find(b => b.action === 'season');
+  ok(!!sent && sent.won + sent.drawn + sent.lost === 9 && sent.won * 3 + sent.drawn === res.pts && sent.position === res.pos && sent.cup === (res.result || 'none')
+     && sent.player_ids.length === 11 && sent.draft_type === 'full' && !('points' in sent) && !('name' in sent), `${label}: one season is posted, the one that was played, with no points or name of the page's own`);
+  ok(rpcBodies.rank && rpcBodies.rank.p_points === res.pts && rpcBodies.rank.p_draft_type === 'full', `${label}: the rank is asked for the season's own points`);
+  if (signedIn) {
+    ok(/^Bearer tok$/.test(rpcBodies.seasonAuth || '') && guestPosts.length === 0 && !/free account|Sign in/i.test(res.text), `${label}: an account posts as itself and is not asked to sign in`);
+  } else {
+    ok(rpcBodies.guestSeason && /^[0-9a-f-]{36}$/.test(rpcBodies.guestSeason.p_guest) && rpcBodies.guestSeason.p_guest !== sent.device && !supa.some(r => /submit_club_season/.test(r)), `${label}: a guest posts through the Function, under a derived id`);
+    ok(/on the board as SillyStriker46/i.test(res.text.replace(/\n/g, ' ')) && /free account/i.test(res.text) && await page.evaluate(() => localStorage.getItem('rtp_guest_season') === '1'), `${label}: a guest sees the generated name and the ask for an account, and the device remembers to claim`);
+  }
+  const writes = supa.filter(r => /^POST/.test(r) && !/rpc\/(club_season_rank|submit_club_season)$/.test(r));
+  ok(writes.length === 0 && supa.filter(r => /submit_club_season/.test(r)).length + guestPosts.filter(b => b.action === 'season').length === 1, `${label}: a club run makes one write, its season (${writes.length} others${writes.length ? ': ' + writes.join(', ') : ''})`);
+  // the board opens on a tap, and marks the guest and the player's own row
+  ok(!supa.some(r => /club_season_board/.test(r)), `${label}: the board's rows are not read until the player opens it`);
+  await page.click('#cs-board');
+  await page.waitForFunction(() => document.querySelectorAll('#season-list .lb-row').length === 3, null, { timeout: 10000 });
+  const bd = await page.evaluate(() => ({ html: document.getElementById('season-list').innerHTML, you: (document.querySelector('#season-list .lb-row.you .lb-nm') || {}).textContent || '' }));
+  ok((bd.html.match(/lb-guest/g) || []).length === 1 && (signedIn ? /Real/.test(bd.you) : /SillyStriker46/.test(bd.you)), `${label}: the board lists the seasons, tags the guest, and marks the player's own row`);
+  said.push(await page.evaluate(() => document.getElementById('season-bg').innerText));
+  await page.evaluate(() => document.getElementById('season-close').click());
   const wcSaid = said.join('\n').split('\n').filter(l => /world cup/i.test(l));
   ok(wcSaid.length === 0, `${label}: no screen of a club run says "World Cup"${wcSaid.length ? ': ' + wcSaid.slice(0, 4).join(' | ') : ''}`);
   // another season stays on the club side
