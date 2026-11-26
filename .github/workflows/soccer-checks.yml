@@ -4,7 +4,7 @@ name: Run The Pitch checks
 # tab is hidden (the page half of the site's save rule, platform-database-saves
 # in the knowledge base). Runs only when the game or its engine changes.
 #
-# And the club side (Club Draft and The Cup of Champions): its data rules and a
+# And the club side (Club Draft and The Club Cup): its data rules and a
 # whole club run in a browser.
 #
 # Locally: node soccer/check-db-reads.mjs

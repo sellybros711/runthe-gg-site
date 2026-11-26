@@ -15,7 +15,7 @@ A small fix that only touches code can go ahead without it.
 | Team OVR, the sim, the published odds | `soccer-sim.md` |
 | accounts, the solo boards, the Daily, badges | `soccer-accounts-boards.md` |
 | challenge links, the Online Friendly, the pool, computer squads | `soccer-online.md` |
-| the club side, Club Draft, The Cup of Champions | `features/soccer-club-draft.md` |
+| the club side, Club Draft, The Club Cup | `features/soccer-club-draft.md` |
 | the player data | `soccer-data.md` (the data itself is the Rosters Agent's) |
 
 ## Commands
@@ -47,7 +47,10 @@ node scripts/check-home-games.mjs              the home page card
 - **Club names, never brands, never crests.** A club shows as plain text and a three letter chip.
   A name that carries a company's brand shows as the city or the unbranded name: `NAMES` in
   `soccer/club.js`. `check-club` fails on a branded name (`--names` prints what every club is shown as).
-- The club cup is **The Cup of Champions**. No club screen says "World Cup" except a man's own
+- **One club across its eras, under the name of its time.** The data's `club_id` is the club; a
+  decade shows the name most of its men carry then (Zenit Leningrad in the 1980s). Never merge a
+  rename into one name in `NAMES`: that list is for brands and spelling pairs only.
+- The club cup is **The Club Cup**. No club screen says "World Cup" except a man's own
   World Cups line; shared copy goes through `cw()`.
 - The cup's sides sit on the World Cup pool's rating scale, and the wheel is weighted by squad
   size, so both sides draft to the same strength and the published odds hold for both.

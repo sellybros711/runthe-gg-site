@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Run The Pitch: the club side (Club Draft and The Cup of Champions).
+/* Run The Pitch: the club side (Club Draft and The Club Cup).
  *
  *   node soccer/check-club.mjs            the data rules, then a whole club run in Chromium
  *   node soccer/check-club.mjs --quick    the data rules only, no browser
@@ -61,8 +61,22 @@ for (const [name, [lo, hi, need]] of Object.entries(bands)) {
   ok(n >= need, `${name}: ${n} cup sides rated ${lo} to ${hi}`);
 }
 ok(Math.min(...opp.map(o => o.teamOverall)) === Math.min(...Object.values(wc)) && Math.max(...opp.map(o => o.teamOverall)) === Math.max(...Object.values(wc)), 'the cup sides span the World Cup pool\'s rating scale');
-ok(C.cupWords('World Cup winners. History made.') === 'Cup of Champions winners. History made.' && C.cupWords('FIFA WORLD CUP') === 'THE CUP OF CHAMPIONS', 'the cup\'s words replace the World Cup\'s');
+ok(C.cupWords('World Cup winners. History made.') === 'Club Cup winners. History made.' && C.cupWords('FIFA WORLD CUP') === 'THE CLUB CUP', 'the cup\'s words replace the World Cup\'s');
 ok(clubs.every(c => /^[A-ZÀ-Ý0-9?]{1,3}$/.test(C.chip(c))), 'every club has a chip of one to three plain letters');
+ok(new Set(units.map(u => u.club + '|' + u.era)).size === units.length, 'a shown name and decade is one squad');
+// One club across its eras, under the name of its time (the owner's ruling). The data's club_id
+// is the club. Made-up rows, so this holds before and after the data carries club_id.
+{
+  const mk = (i, year, name) => ({ player_id: `T_${year}_${i}`, name: 'Man ' + i + ' ' + year, country: 'Testland', year, position: ['GK', 'DEF', 'MID', 'FWD'][i % 4], wc_overall: 70 + i, overall: 70 + i, club_at_tournament: name, club_id: 'zenit' });
+  const rows = [];
+  for (let i = 0; i < 7; i++) rows.push(mk(i, 1986, 'Zenit Leningrad'));
+  for (let i = 0; i < 7; i++) rows.push(mk(i, 2014, 'Zenit Saint Petersburg'));
+  for (let i = 0; i < 4; i++) rows.push(mk(i + 10, 2018, 'Zenit Saint Petersburg'));
+  rows.push(mk(20, 2010, 'Zenit St Petersburg'));   // one man under a third spelling that decade
+  const z = C.build(rows);
+  ok(z.length === 2 && z.every(u => u.id === 'zenit'), 'a renamed club is one club across its decades');
+  ok(z.find(u => u.era === '1980s').club === 'Zenit Leningrad' && z.find(u => u.era === '2010s').club === 'Zenit Saint Petersburg', 'and each decade shows the name of its time');
+}
 
 // The two sides draft to the same strength. A greedy drafter (best man on offer, a re-spin when
 // nothing rated 84 or more shows) plays both, on a fixed seed. If the club side drifts weaker the

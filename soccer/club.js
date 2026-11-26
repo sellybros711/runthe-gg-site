@@ -1,4 +1,4 @@
-/* Run The Pitch: the club side (Club Draft and The Cup of Champions).
+/* Run The Pitch: the club side (Club Draft and The Club Cup).
  *
  * Pure functions over the player data the game already loads. No DOM, no network, so
  * soccer/check-club.mjs runs it in node. The page (soccer/index.html) owns the screens.
@@ -9,12 +9,16 @@
  * A man who went to three World Cups from one club in one decade is one man in that unit,
  * at his best rating, and the unit remembers which World Cups he went to.
  *
- * NAMES (the owner's call, 2026-11-26): "Use club names, but not brands if there are brands
- * involved." Clubs show by name in plain text, never a crest. Where the name carries a
- * company's brand, NAMES gives the city or the unbranded common name. NAMES also folds the
- * data's spelling pairs (Internazionale and Inter Milan) until the Rosters Agent cleans the
- * file. A new club in the data that carries a brand needs a line here: check-club lists
- * every name it has not seen.
+ * NAMES (the owner's calls, 2026-11-26). "Use club names, but not brands if there are brands
+ * involved": clubs show by their plain common name in text, never a crest, and where the name
+ * carries a company's brand, NAMES gives the city or the unbranded name. This is the one place
+ * a shown name is decided, so a later change (a lawyer's answer, say) is a line here.
+ *
+ * ONE CLUB ACROSS ITS ERAS, UNDER THE NAME OF ITS TIME. "If a name changed from the 80s to the
+ * 10s, it would show as the old name if it landed in the 80s and the new name with the 10s."
+ * The data's club_id (the Rosters Agent's, one per club across every name it has had) is the
+ * club; the name shown for a decade is the name most of its men carry in that decade. Rows
+ * with no club_id yet fall back to the name, with the spelling pairs below folded.
  */
 (function (root) {
   'use strict';
@@ -44,7 +48,6 @@
     'Ulsan Hyundai Horangi': 'Ulsan',
     'Jeonbuk Hyundai Motors': 'Jeonbuk',
     'POSCO Atoms': 'Pohang',
-    'Pohang Steelers': 'Pohang',
     'Suwon Samsung Bluewings': 'Suwon Bluewings',
     'Lucky-Goldstar Hwangso': 'Seoul',
     'LG Cheetahs': 'Anyang',
@@ -67,7 +70,7 @@
     'Tianjin Quanjian': 'Tianjin Tianhai',
     'Tianjin TEDA': 'Tianjin Jinmen Tiger',
     'Tianjin Teda': 'Tianjin Jinmen Tiger',
-    /* one club, two spellings in the data */
+    /* one club, two spellings in the data (not renames: a rename keeps the name of its time) */
     'Internazionale': 'Inter Milan',
     'AC Milan': 'Milan',
     'PSV': 'PSV Eindhoven',
@@ -75,9 +78,6 @@
     '1899 Hoffenheim': 'Hoffenheim',
     'TSG Hoffenheim': 'Hoffenheim',
     'Kaiserslautern': '1. FC Kaiserslautern',
-    'Levski-Spartak Sofia': 'Levski Sofia',
-    'CSKA SZ Sofia': 'CSKA Sofia',
-    'Croatia Zagreb': 'Dinamo Zagreb',
     'Admira/Wacker': 'Admira Wacker',
     'Al Ahli': 'Al-Ahli',
     'Al Hilal': 'Al-Hilal',
@@ -88,8 +88,6 @@
     'Al Nassr': 'Al-Nassr',
     'Al Qadsiah': 'Al-Qadsiah',
     'Al Sadd': 'Al-Sadd',
-    'Chicago Fire FC': 'Chicago Fire',
-    'Houston Dynamo FC': 'Houston Dynamo',
     'FC Hansa Rostock': 'Hansa Rostock',
     'FC Utrecht': 'Utrecht',
     'Cotonsport Garoua': 'Coton Sport',
@@ -118,29 +116,40 @@
   function build(players) {
     var map = {};
     (players || []).forEach(function (p) {
-      var club = clubName(p.club_at_tournament);
-      if (!club || p.year == null) return;
-      var era = eraOf(p.year), key = club + '|' + era;
-      var u = map[key] || (map[key] = { club: club, era: era, decade: Math.floor(p.year / 10) * 10, key: key, people: {} });
+      var shown = clubName(p.club_at_tournament);
+      if (!shown || p.year == null) return;
+      var id = p.club_id || ('name:' + shown);          // the club, whatever it was called then
+      var era = eraOf(p.year), key = id + '|' + era;
+      var u = map[key] || (map[key] = { id: id, era: era, decade: Math.floor(p.year / 10) * 10, key: key, people: {}, names: {} });
+      var nm = u.names[shown] || (u.names[shown] = { n: 0, last: 0 });
+      nm.n++; if (p.year > nm.last) nm.last = p.year;
       var pk = personKey(p), cur = u.people[pk];
       if (!cur) cur = u.people[pk] = { best: p, wcs: [] };
       if (cur.wcs.indexOf(p.year) < 0) cur.wcs.push(p.year);
       // his best World Cup in that shirt; the later one on a tie
       if (ovOf(p) > ovOf(cur.best) || (ovOf(p) === ovOf(cur.best) && p.year > cur.best.year)) cur.best = p;
     });
-    var units = [];
+    var units = [], taken = {};
     Object.keys(map).sort().forEach(function (key) {
       var u = map[key];
+      // the name of its time: what most of its men carry that decade, the later name on a tie
+      var club = Object.keys(u.names).sort(function (a, b) { return u.names[b].n - u.names[a].n || u.names[b].last - u.names[a].last || (a < b ? -1 : 1); })[0];
       var squad = Object.keys(u.people).sort().map(function (pk) {
         var e = u.people[pk], copy = {};
         for (var k in e.best) copy[k] = e.best[k];
         copy.overall = ovOf(e.best);
-        copy.club_side = { club: u.club, era: u.era, wcs: e.wcs.slice().sort(function (a, b) { return a - b; }) };
+        copy.club_side = { club: club, id: u.id, era: u.era, wcs: e.wcs.slice().sort(function (a, b) { return a - b; }) };
         return copy;
       });
-      if (squad.length >= MIN_SPIN) units.push({ club: u.club, era: u.era, decade: u.decade, key: key, squad: squad });
+      if (squad.length < MIN_SPIN) return;
+      // The page finds a squad by the name and decade the wheel showed, so the pair is unique.
+      // Two clubs with one shown name in one decade (it has not happened) keep the bigger squad.
+      var shownKey = club + '|' + u.era, prev = taken[shownKey];
+      if (prev != null) { if (units[prev].squad.length >= squad.length) return; units[prev] = null; }
+      taken[shownKey] = units.length;
+      units.push({ id: u.id, club: club, era: u.era, decade: u.decade, key: key, squad: squad });
     });
-    return units;
+    return units.filter(Boolean);
   }
 
   /* How good a unit's best eleven is, before it is placed on the World Cup scale. */
@@ -150,7 +159,7 @@
     return ovs.reduce(function (a, b) { return a + b; }, 0) / 11;
   }
 
-  /* The sides met in The Cup of Champions.
+  /* The sides met in The Club Cup.
    *
    * The sim's tuning (the trophy odds How to play publishes) was calibrated against the spread
    * of the World Cup opponent pool's team_overall, round by round. Club units bunch high, so a
@@ -191,12 +200,12 @@
   /* The cup's words in place of the World Cup's, for copy the two sides share. */
   function cupWords(s) {
     if (typeof s !== 'string' || s.indexOf('orld') < 0 && s.indexOf('ORLD') < 0) return s;
-    return s.replace(/FIFA WORLD CUP/g, 'THE CUP OF CHAMPIONS')
-      .replace(/WORLD CUP/g, 'CUP OF CHAMPIONS')
+    return s.replace(/FIFA WORLD CUP/g, 'THE CLUB CUP')
+      .replace(/WORLD CUP/g, 'CLUB CUP')
       .replace(/Champions of the world/g, 'Champions of champions')
-      .replace(/World Cup winners/g, 'Cup of Champions winners')
-      .replace(/World Cup Winners/g, 'Cup of Champions Winners')
-      .replace(/World Cup/g, 'Cup of Champions');
+      .replace(/World Cup winners/g, 'Club Cup winners')
+      .replace(/World Cup Winners/g, 'Club Cup Winners')
+      .replace(/World Cup/g, 'Club Cup');
   }
 
   /* Three plain letters for a club's chip. Text only: no crest, no colours of its own. */
@@ -208,7 +217,7 @@
     return (w[0][0] + w[1][0] + w[2][0]).toUpperCase();
   }
 
-  var api = { CUP: 'The Cup of Champions', MIN_SPIN: MIN_SPIN, MIN_OPP: MIN_OPP, NAMES: NAMES, SKIP: SKIP, BRAND_WORDS: BRAND_WORDS,
+  var api = { CUP: 'The Club Cup', MIN_SPIN: MIN_SPIN, MIN_OPP: MIN_OPP, NAMES: NAMES, SKIP: SKIP, BRAND_WORDS: BRAND_WORDS,
     clubName: clubName, eraOf: eraOf, personKey: personKey, build: build, strength: strength, opponents: opponents, spin: spin,
     cupWords: cupWords, chip: chip };
   root.RTPClub = api;

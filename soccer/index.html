@@ -3691,7 +3691,7 @@ window.GA_ID='G-L29P5MRWKE';
       <!-- The club side's door. A preview: shown only after /soccer/?club=1 (see THE CLUB SIDE). -->
       <button id="btn-club" class="btn big home-primary club-home-btn" style="display:none">
         <span class="btn-label">Club Draft</span>
-        <span class="btn-sub">Preview · Draft a club XI &amp; win The Cup of Champions</span>
+        <span class="btn-sub">Preview · Draft a club XI &amp; win The Club Cup</span>
       </button>
 
       <!-- Daily Challenge: one themed draft a day, same for everyone -->
@@ -4658,7 +4658,7 @@ window.GA_ID='G-L29P5MRWKE';
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
 <script src="/gameLogic.js?v=0.0.32"></script>
-<!-- The club side: Club Draft and The Cup of Champions (soccer/club.js, checked by soccer/check-club.mjs). -->
+<!-- The club side: Club Draft and The Club Cup (soccer/club.js, checked by soccer/check-club.mjs). -->
 <script src="/soccer/club.js?v=1"></script>
 <!-- The player dataset is fetched async by boot() (data/players_all.json), so it
      no longer blocks first paint. The players_all.js wrapper is loaded on demand
@@ -4817,12 +4817,12 @@ function saveDraftPref(){
 const FULL_OPEN_SLOTS = ['GK','DEF','DEF','DEF','MID','MID','FWD','FWD','FLEX','FLEX','FLEX'];
 
 // ============================================================
-//  THE CLUB SIDE (Club Draft and The Cup of Champions)
+//  THE CLUB SIDE (Club Draft and The Club Cup)
 // ============================================================
 // Run The Pitch has two sides (the owner's call, 2026-11-26): a club side and a
 // World Cup side. A club draft is a normal draft whose state carries gs.club:
 // the wheel lands on a club and a decade (soccer/club.js builds those from the
-// World Cup data), and the run is The Cup of Champions against other club sides.
+// World Cup data), and the run is The Club Cup against other club sides.
 // Everything else (slots, re-spins, Easy and Hard, the reveal, the sim) is the
 // World Cup side's own code, asked isClub() where the two differ.
 //
