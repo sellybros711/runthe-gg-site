@@ -3291,10 +3291,10 @@ function paintPro(why, kind){
     + (kind === 'thanks' ? (proOwned ? 'Pro is on' : 'Thanks for buying Pro') : proOwned ? 'You have Pro' : 'Run The Floor Pro')
     + '</h2><button class="ghost sm" data-pro-x>Close</button></div>';
   if (kind === 'thanks') {
-    h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles, build your own, high school careers and the family tree are open. On every device you sign in on.'
+    h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles, build your own, a whole life in Career and the family tree are open. On every device you sign in on.'
       : 'Your payment went through. Pro is on its way to your account and usually lands in a few seconds.') + '</p>';
   } else if (proOwned) {
-    h += '<p class="mx-say">Endless puzzles, build your own, high school careers and the family tree are open. Thanks for backing the game.</p>'
+    h += '<p class="mx-say">Endless puzzles, build your own, a whole life in Career and the family tree are open. Thanks for backing the game.</p>'
       + '<button class="ghost" id="pro-bill">Manage billing</button>'
       + '<p class="pro-err" id="pro-err" hidden></p>'
       + '<p class="fx-hint" style="text-align:center">Change your card or cancel in Stripe. Pro stays on until the end of the year you paid for.</p>';
@@ -3302,10 +3302,11 @@ function paintPro(why, kind){
     var signed = signedAcct();
     h += '<p class="mx-say">' + (why === 'endless' ? 'Out of puzzles for today? Pro keeps them coming.'
         : why === 'build' ? 'Build your own puzzles with Pro.'
-        : why === 'career' ? 'Play your road from high school with Pro.'
+        : why === 'career' ? 'Play his whole life with Pro. From birth to long after basketball.'
         : why === 'family' ? 'Play as your son with Pro, and keep a family tree.' : 'The dailies are free. Pro is everything else.') + '</p>'
       + '<ul class="pro-list">'
-      + '<li><b>Career from high school</b>Play the road yourself, from age 15 to the draft. Free careers start on draft night.</li>'
+      + '<li><b>A whole life</b>Start at birth, or in high school at 15. Play the road to the draft yourself. Free careers start on draft night.</li>'
+      + '<li><b>Life after basketball</b>When he retires, live the rest of his life. A job, money, health and family.</li>'
       + '<li><b>Family tree</b>When a career ends, play as your son. Every generation is kept.</li>'
       + '<li><b>Endless puzzles</b>A new Fix History team or Six Passes pair every time you finish one.</li>'
       + '<li><b>Rebuild any team</b>Any club, any year, champions too. Four trade windows to win it.</li>'
