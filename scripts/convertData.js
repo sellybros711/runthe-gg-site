@@ -16,6 +16,26 @@ const IN_PATH  = path.join(__dirname, '..', 'data', 'world_cup_full_rosters_1966
 const OUT_PATH = path.join(__dirname, '..', 'data', 'players_all.json');
 const JS_PATH  = path.join(__dirname, '..', 'data', 'players_all.js');
 
+// One name per club (scripts/soccer-club-names.json): the World Cup rosters spell some clubs two
+// ways (Al Hilal and Al-Hilal, Internazionale and Inter Milan), which splits a club in two for
+// anything that groups by club, and one roster lists a federation as the club. The decisions live
+// in the json; scripts/check-soccer-clubs.mjs fails on a new pair nobody has decided.
+const CLUB_NAMES = JSON.parse(fs.readFileSync(path.join(__dirname, 'soccer-club-names.json'), 'utf8'));
+const NOT_A_CLUB = new Set(CLUB_NAMES.not_a_club);
+function clubName(c) {
+  if (c == null || NOT_A_CLUB.has(c)) return null;
+  return CLUB_NAMES.same[c] || c;
+}
+// One id per club across its names: the owner's ruling (2026-11-26) that a renamed club is one club,
+// shown under the name it had then. club_at_tournament keeps that name; club_id joins the eras.
+const ERA_ID = new Map();
+for (const e of CLUB_NAMES.eras) for (const n of e.names) ERA_ID.set(n, e.id);
+const slug = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+function clubId(name) {
+  if (name == null) return null;
+  return ERA_ID.get(name) || CLUB_NAMES.ids[name] || slug(name);
+}
+
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
@@ -168,7 +188,8 @@ function main() {
       tournament_result:   is2026 ? null : strOrNull(row.tournament_result),
       age_at_tournament:   intOrNull(row.age_at_tournament),
       birth_year:          intOrNull(row.birth_year),
-      club_at_tournament:  strOrNull(row.club_at_tournament),
+      club_at_tournament:  clubName(strOrNull(row.club_at_tournament)),
+      club_id:             clubId(clubName(strOrNull(row.club_at_tournament))),
       award:               awardOrNull(row.award),
       // upgrade tracking: set pre_wc_overall to the OLD rating before bumping wc_overall
       // wc_note is an optional short reason (e.g. "2 goals vs France")

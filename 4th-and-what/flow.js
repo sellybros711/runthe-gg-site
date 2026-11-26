@@ -9,7 +9,8 @@
  *   4. The card        over the last frame: the result, why, the defense; Run it
  *                      back, Edit play, New play, Save play (to a playbook),
  *                      Save card (the picture, like Run The Tour's), Share, and
- *                      See the breakdown (the snap on turf, game.js)
+ *                      Watch the film (the snap again in the 3D stadium, with
+ *                      the trails; its Breakdown is the snap on turf, game.js)
  *
  * The play is the Studio's draft (FAW_APP.draft), so Build and Play share it.
  *
@@ -357,7 +358,12 @@
     }
     SH.send(shareLine()).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
   });
-  $('rBreak').addEventListener('click', function () { close3d(); A.show('replay'); window.FAW_GAME.load(res, played); });
+  /* Watch the film (stage 4): the snap again in the 3D stadium with the trails;
+     its Breakdown link (and a browser without WebGL) opens the 2D breakdown */
+  $('rBreak').addEventListener('click', function () {
+    var r = res, p = played, toBreak = function () { close3d(); A.show('replay'); window.FAW_GAME.load(r, p); };
+    if (!A.film(r, { play: p, breakdown: toBreak })) toBreak();
+  });
   $('bClose3d').addEventListener('click', function () { $('rCard').hidden = true; });
 
   A.on('play', spotLine);

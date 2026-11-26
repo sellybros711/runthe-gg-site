@@ -81,12 +81,12 @@
       "sha": "f47af376ff4c615f"
     },
     "live3d.js": {
-      "v": "7",
-      "sha": "722021fd58202481"
+      "v": "8",
+      "sha": "d86834af26d7e1ae"
     },
     "app.js": {
-      "v": "15",
-      "sha": "8c270354c7121b48"
+      "v": "16",
+      "sha": "391df2413dc51e76"
     },
     "home.js": {
       "v": "5",
@@ -101,12 +101,12 @@
       "sha": "d3dda6bf5b299315"
     },
     "clip.js": {
-      "v": "2",
-      "sha": "ee57c2208849675b"
+      "v": "3",
+      "sha": "91723c27f9e613b6"
     },
     "flow.js": {
-      "v": "21",
-      "sha": "91808b5faf2bb3fc"
+      "v": "22",
+      "sha": "73e60761ab8c8071"
     },
     "daily.js": {
       "v": "10",
@@ -117,8 +117,8 @@
       "sha": "baef9753b7b44131"
     },
     "calls.js": {
-      "v": "13",
-      "sha": "9a5238cc596838d0"
+      "v": "14",
+      "sha": "7993309117f44928"
     },
     "goforit.js": {
       "v": "9",
@@ -3099,8 +3099,8 @@
       "sha": "5fbc4037132257c7"
     },
     "modes-ui.js": {
-      "v": "27",
-      "sha": "bc4fd85f6f528926"
+      "v": "28",
+      "sha": "7a08d8666d57882c"
     },
     "career-kit.js": {
       "v": "18",
@@ -3151,8 +3151,8 @@
       "sha": "14d401c9313d16be"
     },
     "career-ui.js": {
-      "v": "73",
-      "sha": "c13f38dae8358040"
+      "v": "74",
+      "sha": "817b78018d2ab4b6"
     }
   },
   "ideas/index.html": {
@@ -3427,6 +3427,10 @@
     "/gameLogic.js": {
       "v": "0.0.32",
       "sha": "201097f19827a3c0"
+    },
+    "/soccer/club.js": {
+      "v": "1",
+      "sha": "6e13b36ad48ae1ee"
     }
   },
   "wrestling/booking/index.html": {

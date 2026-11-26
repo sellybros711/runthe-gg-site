@@ -48,9 +48,12 @@
      few. No shot holds two thirds (Drive is the best, 66%); Mesh is the one
      quick card over it, 70%. The owner's call. Re-measured 2026-11-26 after
      every route became an option, 1000 snaps: QB Sneak 78%, Stick 59%, Levels
-     58%; Mesh 71%, Drive 72%). It is the hand, not the
-     snap: the defense and the dice are the seed's as always. */
-  var FIRST = { run: 'QB Sneak', quick: 'Stick', shot: 'Levels' };
+     58%; Mesh 71%, Drive 72%). Swapped 2026-11-26 to Mesh and Drive (the
+     owner left it to the hub: a new player's first snaps should work more
+     often than not); 1000 snaps after the surge: QB Sneak 78%, Mesh 70%,
+     Drive 72%. It is the hand, not the snap: the defense and the dice are the
+     seed's as always. */
+  var FIRST = { run: 'QB Sneak', quick: 'Mesh', shot: 'Drive' };
   /* deal(sc, seed, opt): three cards, one of each kind, on three different
      sets where the pool allows; opt.first deals the first hand */
   function deal(sc, seed, opt) {

@@ -262,6 +262,15 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 .stage .coachbtn[hidden], .stage .coachread[hidden] { display: none; }
 .stage .coachread { position: absolute; left: 10px; top: 64px; padding: 5px 10px; border-radius: 999px; background: rgba(6, 12, 22, .88); color: #ffd36b; font: 900 13px/1 'Barlow Condensed', 'Arial Narrow', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 .stage .coachread:empty { display: none; }
+/* the film (live3d.js stage 4): play, scrub, speed, and the way to the breakdown */
+.stage .filmbar { position: absolute; left: 10px; right: 10px; bottom: 44px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(6, 12, 22, .92); }
+.stage .filmbar[hidden] { display: none; }
+.stage .filmbar .fplay { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f5b72a; color: #0b1626; display: grid; place-items: center; }
+.stage .filmbar .fplay svg { width: 18px; height: 18px; fill: currentColor; }
+.stage .filmbar .fplay .i-play { display: none; } .stage .filmbar .fplay.paused .i-play { display: inline; } .stage .filmbar .fplay.paused .i-pause { display: none; }
+.stage .filmbar input[type=range] { flex: 1; min-width: 0; accent-color: #f5b72a; }
+.stage .filmbar select { flex: none; background: #0b1626; color: #e9eef5; border: 1px solid rgba(255, 255, 255, .2); border-radius: 8px; font: 800 12px/1 'Inter', sans-serif; padding: 6px 4px; }
+.stage .filmbar .link { flex: none; color: #19c6a7; font: 800 12px/1 'Inter', sans-serif; background: none; border: 0; padding: 4px; }
 /* the result card's options: every route runner in the order the QB looked */
 .ropts { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin: 6px 0 10px; }
 .ropts[hidden] { display: none; }
