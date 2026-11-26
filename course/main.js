@@ -7,14 +7,14 @@
  * NOTHING OPENS A GUIDE BY ITSELF. A first visit goes straight into day 1,
  * and the goal line (part of the HUD) says the next thing to do. How it
  * works is behind a button in the menu. */
-import { CONFIG, GAME } from './config.js?v=4';
-import { MAP } from './map.js?v=4';
-import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations, looksOf, shopList } from './sim.js?v=4';
-import { makeBot } from './bot.js?v=4';
-import { createStore } from './store.js?v=4';
+import { CONFIG, GAME } from './config.js?v=5';
+import { MAP } from './map.js?v=5';
+import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations, looksOf, shopList, placeCard, placeAt } from './sim.js?v=5';
+import { makeBot } from './bot.js?v=5';
+import { createStore } from './store.js?v=5';
 import { createAnalytics } from './analytics.js?v=1';
 import { createInput } from './input.js?v=1';
-import { createRenderer } from './render.js?v=5';
+import { createRenderer } from './render.js?v=6';
 
 const $ = id => document.getElementById(id);
 const money = n => (n < 0 ? '-$' + (-n).toLocaleString('en-US') : '$' + n.toLocaleString('en-US'));
@@ -45,11 +45,14 @@ function floatText(x, y, text, neg) {
 function fx(type, x, y, n) {
   if (type === 'cash' || type === 'tip') { if (n > 0) floatText(x, y, '+' + money(n)); if (navigator.vibrate) navigator.vibrate(12); }
   else if (type === 'refund') floatText(x, y, money(-n), true);
-  else if (type === 'pad') { floatText(x, y, money(-cfg.economy.pads[n].cost), true); burst(x, y); if (pin && pin.id === n) pin = null; analytics.track('pad_buy', { id: n }); if (R) R.rebuild(S, ctx); }
-  else if (type === 'up') { banner(cfg.economy.upgrades[n].name + ' is level ' + S.levels[n]); burst(x, y); analytics.track('upgrade', { id: n, level: S.levels[n] }); if (navigator.vibrate) navigator.vibrate(20); if (R) R.rebuild(S, ctx); if (pin && pin.id === n) pin = null; }
+  else if (type === 'pad') { floatText(x, y, money(-cfg.economy.pads[n].cost), true); burst(x, y); pin = null; analytics.track('pad_buy', { id: n }); if (R) R.rebuild(S, ctx); }
+  else if (type === 'hire') { banner(cfg.economy.staff[n].name + ' hired'); burst(x, y); pin = null; analytics.track('hire', { id: n }); if (navigator.vibrate) navigator.vibrate(20); if (R) R.rebuild(S, ctx); }
+  else if (type === 'closed') closed();
+  else if (type === 'filled') floatText(x, y, 'Balls refilled');
+  else if (type === 'up') { banner(cfg.economy.upgrades[n].name + ' is level ' + S.levels[n]); burst(x, y); analytics.track('upgrade', { id: n, level: S.levels[n] }); if (navigator.vibrate) navigator.vibrate(20); if (R) R.rebuild(S, ctx); pin = null; }
   else if (type === 'built' || type === 'cleared') { if (R) R.rebuild(S, ctx); banner(type === 'built' ? cfg.economy.pads[n].name + ' is open' : 'Plot cleared'); }
   else if (type === 'walkoff') floatText(x, y, 'Walked off', true);
-  else if (type === 'mown') floatText(x, y, 'Green ' + n + ' cut');
+  else if (type === 'mown') floatText(x, y, n ? 'Green ' + n + ' cut' : 'Putting green cut');
 }
 const sparks = [], SPARK = ['#ff7a1a', '#f2c230', '#35c26b', '#3d7fd9', '#ff6b8a', '#fffaf0'];
 for (let i = 0; i < 12; i++) { const d = document.createElement('div'); d.className = 'spark'; d.style.background = SPARK[i % SPARK.length]; document.body.appendChild(d); sparks.push(d); }
@@ -70,7 +73,8 @@ function begin() {
   course = store.course(); courseKey = keyOf(course);
   ctx = makeCtx(course, cfg, map); ctx.fx = fx;
   S = startShift(course, cfg, map);
-  acc = 0; ended = false; goalKey = ''; bot = null; pin = null;
+  acc = 0; ended = false; goalKey = ''; bot = null; pin = null; cardFor = null; standing = null; standT = 0;
+  $('endDay').style.display = 'none'; $('place').classList.remove('on');
   if (R) { R.setHelpers(stations, looksOf); R.rebuild(S, ctx); R.snapshot(S); }
   $('dayLabel').textContent = 'Day ' + S.no;
   $('results').classList.remove('on');
@@ -78,43 +82,64 @@ function begin() {
   analytics.track('shift_start', { no: S.no });
   hud(true);
 }
-function finish() {
-  ended = true; input.release();
-  const end = endShift(S, ctx, course), r = end.result, debug = S.debug;
+/* THE DAY'S CARD comes up when the course closes: the last group is in and the numbers are final.
+   From it the player walks the course after hours, or goes straight to the next day. */
+function dayCard() {
+  const r = endShift(S, ctx, course).result;
   const mm = Math.floor(r.avgRoundS / 60), ss = Math.round(r.avgRoundS % 60), ds = Math.round((r.stars - r.stars0) * 100) / 100;
   $('resTitle').textContent = 'Day ' + r.no + ' done';
   $('resGoal').innerHTML = '';
   const tag = document.createElement('span'); tag.className = 'tag' + (r.goalMet ? '' : ' miss'); tag.textContent = r.goalMet ? 'Goal met' : 'Goal missed';
   $('resGoal').append(tag, ' ' + money(r.cash) + ' of ' + money(r.goal));
   const rows = [['Rounds played', r.rounds], ['Average round', r.rounds ? mm + ':' + (ss < 10 ? '0' : '') + ss : '-'], ['Cash earned', money(r.cash)], ['Tips', money(r.tips)],
-    ['Star rating', r.stars.toFixed(2) + ' (' + (ds >= 0 ? '+' : '') + ds.toFixed(2) + ')'], ['Lowest round', r.low || '-'], ['Walk offs', r.walkOffs], ['Upgrades bought', r.upgrades]];
+    ['Star rating', r.stars.toFixed(2) + ' (' + (ds >= 0 ? '+' : '') + ds.toFixed(2) + ')'], ['Lowest round', r.low || '-'], ['Walk offs', r.walkOffs]];
   const box = $('resRows'); box.textContent = '';
   for (const [k, v] of rows) { const a = document.createElement('span'), b = document.createElement('span'); a.textContent = k; b.textContent = v; box.append(a, b); }
-  const nextUp = shopList(S, ctx).find(i => !i.done);
-  $('resNext').textContent = !nextUp ? '' : nextUp.can ? 'You can afford: ' + nextUp.name + (nextUp.level ? ' level ' + (nextUp.level + 1) : '') + '.' : 'Next up: ' + nextUp.name + (nextUp.level ? ' level ' + (nextUp.level + 1) : '') + '. ' + money(nextUp.cost - S.cash) + ' to go.';
-  $('resSave').textContent = debug ? 'Debug tools were on. This day was not saved.' : 'Saving.';
+  const list = shopList(S, ctx), can = list.find(i => i.can), nextUp = list.find(i => !i.done);
+  $('resNext').textContent = can ? 'You can afford something. Walk the course after hours.' : nextUp ? 'Next up: ' + nextUp.name + '. ' + money(nextUp.cost - S.cash) + ' to go.' : '';
+}
+function closed() {
+  dayCard();
+  $('resSave').textContent = '';
+  $('afterBtn').style.display = ''; $('endDay').style.display = 'block';
   $('results').classList.add('on');
-  analytics.track('shift_end', { no: r.no, rounds: r.rounds, cash: r.cash, tips: r.tips, walk_offs: r.walkOffs, goal_met: r.goalMet, stuck: r.stuck });
+  /* the day waits while the card is read (a check's bot plays on through it) */
+  if (!bot) { paused = true; input.release(); }
+}
+$('afterBtn').addEventListener('click', () => { $('results').classList.remove('on'); paused = document.hidden; last = performance.now(); banner('After hours'); });
+function endDay() { if (S && !ended && S.phase === 'after') { command(S, 'end'); paused = document.hidden; last = performance.now(); } }
+$('endDay').addEventListener('click', endDay);
+function finish() {
+  ended = true; input.release();
+  const end = endShift(S, ctx, course), r = end.result, debug = S.debug, open = $('results').classList.contains('on');
+  $('endDay').style.display = 'none'; $('afterBtn').style.display = 'none'; $('place').classList.remove('on');
+  $('resSave').textContent = debug ? 'Debug tools were on. This day was not saved.' : 'Saving.';
+  analytics.track('shift_end', { no: r.no, rounds: r.rounds, cash: r.cash, tips: r.tips, walk_offs: r.walkOffs, goal_met: r.goalMet, stuck: r.stuck, upgrades: r.upgrades, hires: r.hires });
   analytics.flush();
   saving = store.finish(end, S.log, debug).then(how => {
     const text = { debug: 'Debug tools were on. This day was not saved.', device: 'Saved on this device. Sign in to keep it everywhere.', saved: 'Saved to your account.',
       offline: 'Saved on this device. It will send when you are back online.', server: 'Your account had a newer course. That one is loaded.',
       refused: 'That day could not be saved. Your account course is loaded.', signedout: 'Saved on this device. Sign in to keep it everywhere.' }[how] || 'Saved on this device.';
     $('resSave').textContent = text;
+    /* ended from after hours, with the card already put away: straight on to the next morning */
+    if (!open) { begin(); banner(text); }
     return how;
   });
 }
-$('nextDay').addEventListener('click', () => { const go = () => begin(); if (saving) saving.then(go, go); else go(); });
+$('nextDay').addEventListener('click', () => {
+  if (!ended) { endDay(); return; }                 // the card at close: Next day ends the day first
+  const go = () => begin(); if (saving) saving.then(go, go); else go();
+});
 
 /* ---- the HUD ---- */
 const SH = [];
 let hudCash = -1, hudStars = -1, hudClock = '', hudSheet = '', hudMode = '';
 function hud(force) {
-  const earned = S.tally.fees - S.tally.refunds + S.tally.tips;
+  const earned = S.tally.fees - S.tally.refunds + S.tally.tips + S.tally.extras;
   if (force || S.cash !== hudCash || earned !== hud.e) {
     hudCash = S.cash; hud.e = earned;
     $('cash').textContent = money(S.cash);
-    $('goalLabel').textContent = 'Today ' + money(earned) + ' of ' + money(S.goal);
+    $('goalLabel').textContent = 'Today ' + money(earned) + ' / ' + money(S.goal);
     const f = $('barFill'); f.style.width = Math.min(100, S.goal ? earned / S.goal * 100 : 100) + '%'; f.classList.toggle('met', earned >= S.goal);
   }
   if (force || S.stars !== hudStars) { hudStars = S.stars; $('stars').textContent = S.stars.toFixed(2); }
@@ -189,7 +214,7 @@ function frame(now) {
       if (S.done) { hud(false); finish(); break; }
     }
     if (n === 12) acc = 0;
-    if (!ended) hud(false);
+    if (!ended) { hud(false); stand(dt); }
   }
   if (pin && S && Math.hypot(S.player.x - pin.x, S.player.y - pin.y) < 2.4) pin = null;
   if (R) { DRAW.route = showRoute; DRAW.overview = overview; DRAW.pin = pin; R.draw(S, ctx, ended ? 1 : acc / TICK, now / 1000, ended || pin ? null : goal, DRAW); arrow(); }
@@ -208,7 +233,7 @@ function frame(now) {
   }
 }
 document.addEventListener('visibilitychange', () => {
-  paused = document.hidden || overview || $('menu').classList.contains('on') || $('book').classList.contains('on');
+  paused = document.hidden || overview || $('menu').classList.contains('on') || $('book').classList.contains('on') || $('place').classList.contains('on') || (!bot && !ended && $('results').classList.contains('on'));
   if (document.hidden) { input.release(); analytics.last(); }
   last = performance.now();
 });
@@ -233,24 +258,56 @@ const BUILD = { cart_barn: 'Golfers ride. Rounds go faster. A rental fee.', putt
   driving_range: 'Range balls. Money from every golfer.', hole_4: 'A fourth hole. Mow the plot clear to start it.' };
 function openSheet(id) { $(id).classList.add('on'); paused = true; input.release(); }
 function closeSheet(id) { $(id).classList.remove('on'); paused = document.hidden; last = performance.now(); }
+const WHO = { clerk: 'Checks groups in for you.', starter: 'Sends groups off tee 1 for you.', greenskeeper: 'Cuts the greens at dawn for you.', attendant: 'Hands out cart keys for you.',
+  cook: 'Serves at the Snack Shack for you.', range_hand: 'Keeps the range in balls for you.' };
+const titleOf = it => (it.kind === 'build' ? 'Build the ' + it.name : it.kind === 'hire' ? 'Hire a ' + it.name : it.name + ' · Level ' + it.level);
+const whatOf = it => (it.kind === 'build' ? BUILD[it.id] : it.kind === 'hire' ? WHO[it.id] : WHAT[it.id]) || '';
+function row(it, button) {
+  const el = document.createElement('div'); el.className = 'item' + (it.done ? ' done' : '');
+  const h = document.createElement('h3'), p = document.createElement('p');
+  h.textContent = titleOf(it); p.textContent = whatOf(it);
+  el.append(h, button, p);
+  if (it.kind === 'up') { const pips = document.createElement('div'); pips.className = 'pips'; for (let i = 1; i <= it.max; i++) { const d = document.createElement('i'); if (i <= it.level) d.className = 'on'; pips.append(d); } el.append(pips); }
+  return el;
+}
 function paintBook() {
   const box = $('bookList'); box.textContent = '';
   $('bookCash').textContent = money(S.cash);
   for (const it of shopList(S, ctx)) {
-    const row = document.createElement('div'); row.className = 'item' + (it.done ? ' done' : '');
-    const h = document.createElement('h3'), p = document.createElement('p');
-    h.textContent = it.kind === 'build' ? 'Build the ' + it.name : it.name + ' · Level ' + it.level;
-    p.textContent = (it.kind === 'build' ? BUILD[it.id] : WHAT[it.id]) || '';
-    row.append(h);
     const go = document.createElement('button'); go.type = 'button'; go.className = 'go' + (it.can ? ' can' : '');
-    if (it.done) { go.textContent = 'Max'; go.disabled = true; }
+    if (it.done) { go.textContent = it.kind === 'hire' ? 'Hired' : 'Max'; go.disabled = true; }
     else { go.textContent = 'Find'; const c = document.createElement('small'); c.textContent = money(it.cost); go.append(c);
-      go.addEventListener('click', () => { pin = { id: it.id, x: it.x, y: it.y }; closeSheet('book'); }); }
-    row.append(go, p);
-    if (it.kind === 'level') { const pips = document.createElement('div'); pips.className = 'pips'; for (let i = 1; i <= it.max; i++) { const d = document.createElement('i'); if (i <= it.level) d.className = 'on'; pips.append(d); } row.append(pips); }
-    box.append(row);
+      go.addEventListener('click', () => { pin = { id: it.pid, x: it.x, y: it.y }; closeSheet('book'); }); }
+    box.append(row(it, go));
   }
 }
+/* A PLACE'S CARD. Stand on a place's pad and its card opens: build it, level what it holds, hire
+   who runs it. Every button is a command to the sim, like any other input. */
+let cardFor = null, standing = null, standT = 0;
+function paintPlace(pid) {
+  const card = placeCard(S, ctx, pid), box = $('placeList'); box.textContent = '';
+  $('placeTitle').textContent = card.name; $('placeCash').textContent = money(S.cash);
+  $('placeNote').textContent = card.st === 'building' ? 'It is being built.' : card.st === 'clearing' ? 'Mow the plot clear to start the build.' : card.items.every(i => i.done) ? 'Nothing more to buy here.' : '';
+  for (const it of card.items) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'go' + (it.can ? ' can' : '');
+    if (it.done) { b.textContent = it.kind === 'hire' ? 'Hired' : 'Max'; b.disabled = true; }
+    else {
+      b.textContent = it.kind === 'build' ? 'Build' : it.kind === 'hire' ? 'Hire' : 'Level up'; const c = document.createElement('small'); c.textContent = money(it.cost); b.append(c);
+      b.disabled = !it.can;
+      b.addEventListener('click', () => { command(S, 'buy', it.kind, it.id); if (R) R.snapshot(S); step(S, ctx); hud(true); paintPlace(pid); });
+    }
+    box.append(row(it, b));
+  }
+}
+function stand(dt) {
+  const pid = S.done || bot ? null : placeAt(S, ctx), p = S.player;
+  if (pid !== standing) { standing = pid; standT = 0; if (!pid) cardFor = null; return; }
+  if (!pid || cardFor === pid || overview) return;
+  if (p.vx * p.vx + p.vy * p.vy > 0.3) { standT = 0; return; }       // walking across a pad opens nothing
+  standT += dt;
+  if (standT > 0.35) { cardFor = pid; paintPlace(pid); openSheet('place'); analytics.track('place_open', { id: pid }); }
+}
+$('closePlace').addEventListener('click', () => closeSheet('place'));
 $('bookBtn').addEventListener('click', () => { if (!S || ended) return; paintBook(); openSheet('book'); analytics.track('book_open', { no: S.no }); });
 $('closeBook').addEventListener('click', () => closeSheet('book'));
 /* the whole course at a glance: the day waits while you look */
@@ -292,5 +349,5 @@ addEventListener('pagehide', () => analytics.last());
 window.__course = {
   game: GAME, state: () => S, ctx: () => ctx, info: () => (R ? R.info() : null), store, art: R ? R.artReady : Promise.resolve(false),
   auto(on) { bot = on ? makeBot() : null; }, scale(n) { scale = n; },
-  summary: () => ({ no: S.no, tick: S.tick, phase: S.phase, done: S.done, ended, cash: S.cash, goal: goal && goal.text, mode: S.player.mode, fps })
+  summary: () => ({ no: S.no, tick: S.tick, phase: S.phase, done: S.done, ended, staff: Object.keys(S.staff), levels: S.levels, cash: S.cash, goal: goal && goal.text, mode: S.player.mode, fps })
 };
