@@ -564,6 +564,8 @@
        hitter (a spare); a light box leaves none. The dice: one roll for each
        block the line makes, and one more on each down lineman. */
     function engage(blk, def, w) { def.engaged = { by: blk, until: w }; blk.engaging = def; }
+    /* the surge: a short yardage run (the sneak is its own wedge) */
+    var surging = isRun && !!T.surge && distance <= T.surge.at && ballCarrierId !== 'QB';
     if (isRun) {
       var inBox = defense.filter(function (d) { return Math.abs(d.x0 - BX) <= 5.6 && d.y0 - Y0 <= 7.5; }), claimed = [];
       FM.ELIGIBLE.forEach(function (id) {
@@ -604,10 +606,10 @@
                holds deep less, and it whiffs on him whiff of the time per yard.
                Short yardage backers stand closer, so it leaves them be. */
             var off = Math.max(0, pq[2].y0 - Y0 - 3.5);
-            w *= T.runBlock.climb * Math.max(0.2, 1 - (T.runBlock.deep || 0) * off);
+            w *= (surging ? T.surge.climb : T.runBlock.climb) * Math.max(0.2, 1 - (T.runBlock.deep || 0) * off);
             if (T.runBlock.whiff && off > 0 && rnd() < T.runBlock.whiff * off) w = T.runBlock.lostAt;
           }
-          else if (T.runBlock.lose && rnd() < T.runBlock.lose) w = T.runBlock.lostAt;
+          else if (T.runBlock.lose && rnd() < T.runBlock.lose * (surging ? T.surge.lose : 1)) w = T.runBlock.lostAt;
           engage(pq[1], pq[2], w);
         });
       };
@@ -967,7 +969,15 @@
         if (d.bit && pa && t >= pa.freeze) { d.bit = false; d.stumble = Math.max(d.stumble || 0, T.pa.recover); }
         if (d.stumble > 0) d.stumble -= dt;
         if (d.engaged) {
-          if (t < d.engaged.until) { var c = carrier || QB; var dx = c.x - d.x, dy = c.y - d.y, L2 = len(dx, dy) || 1; stepToward(d, d.x + dx / L2, d.y + dy / L2, d.top * T.runBlock.heldSpeed); return; }
+          if (t < d.engaged.until) {
+            /* THE SURGE (the owner, 2026-11-26: "build the short yardage surge for
+               4th and 1"): on a run at surge.at yards to go or fewer, the line fires
+               off low and drives a held down lineman back off the ball for the
+               first surge.time seconds, at surge.speed yards a second; the pile
+               forms past the line, where the NFL's 3rd and 4th and 1 runs convert 73% */
+            if (surging && d.role === 'dl' && t < T.surge.time) { stepToward(d, d.x, d.y + 1, T.surge.speed); return; }
+            var c = carrier || QB; var dx = c.x - d.x, dy = c.y - d.y, L2 = len(dx, dy) || 1; stepToward(d, d.x + dx / L2, d.y + dy / L2, d.top * T.runBlock.heldSpeed); return;
+          }
           d.engaged = null;
         }
         if (carrier && (caught || readRun(d))) { pursue(d, carrier); return; }
@@ -1091,6 +1101,8 @@
             var headOn = dd.y > carrier.y ? 0.55 : 1;
             /* the fall: his momentum, how square he was hit, how strong he is, and a roll */
             var fall = (sp2 * T.tackle.momentum + rnd() * T.tackle.fall + (isRun ? rnd() * T.tackle.drive : 0)) * fwd * headOn * (0.7 + (carrier.arch.power || 0.4) * 0.6);
+            /* the surge carries him: the pile behind him is moving forward */
+            if (surging && carrier.y - Y0 < T.surge.near) fall += rnd() * T.surge.push;
             dd.tackler = true;
             var y2 = carrier.y + fall;
             if (y2 >= 100) { say(t, 'td', 'Falls in for six.'); finish(t, 'touchdown', 'fall', 100); }

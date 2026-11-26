@@ -91,6 +91,11 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   are free hitters. Every man in a run concept has a drawn block (`routes.js` `runBlocks`, not the
   sneak). Call it's hint reads the run card's box and the distance (`calls.js` `HINT`), and
   `test/calls.test.mjs` holds each hint to the card it names: a retune that breaks one rewrites it.
+  **The surge** (the owner, 2026-11-26: "build the short yardage surge for 4th and 1"): on a run at
+  `surge.at` (2) yards to go or fewer, not the sneak, the line drives held down linemen back, its
+  blocks lose less, and a tackle near the line carries the back forward (`config.js` `surge`). The
+  free hitter still comes free; he just meets a pile that is moving. Only short yardage: a base down
+  carry spread must not move.
 - **Every route is an option; the reads are the order he looks** (the owner, 2026-11-26: "you can put
   the first, 2nd, 3rd read but that doesn't mean the QB will always throw it to the 1st read").
   `res.options` is the reads (`play.targets`, up to three) then every other route runner. The QB looks
