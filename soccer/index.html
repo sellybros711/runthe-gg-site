@@ -931,6 +931,55 @@
     text-align:center;padding:0 10px;color:var(--ink);overflow-wrap:anywhere;}
   .pcard .club-wcs{font-size:11px;font-weight:700;opacity:.8;margin:2px 0 4px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .club-home-btn{background:#1b2a52;color:#fff;border:2px solid var(--gold);}
+  /* Club Season. The World Cup side's look with maroon where that side uses teal (the owner's call). */
+  .cs-wrap{--cs:#C2456B;--cs-deep:#8A1538;max-width:560px;margin:0 auto;padding:4px 0 24px;display:flex;flex-direction:column;gap:12px;color:#F3E7CF;}
+  .cs-card{border-radius:14px;background:#141024;border:1.5px solid #3a2140;padding:12px;}
+  .cs-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;}
+  .cs-hd b{font-family:Anton,sans-serif;font-weight:400;font-size:22px;letter-spacing:.5px;text-transform:uppercase;}
+  .cs-hd span,.cs-tag{font-weight:900;font-size:10.5px;letter-spacing:1.5px;color:var(--cs);text-transform:uppercase;}
+  .cs-prog{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;}
+  .cs-prog i{height:24px;border-radius:5px;background:#2a2238;font-style:normal;font-weight:900;font-size:11px;line-height:24px;text-align:center;color:#8d83a3;}
+  .cs-prog i.W{background:#1F9E57;color:#fff;}.cs-prog i.D{background:#6b6480;color:#fff;}.cs-prog i.L{background:#E5402A;color:#fff;}
+  .cs-prog i.next{outline:2px solid var(--gold);}
+  .cs-win{display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;font-weight:900;font-size:9px;letter-spacing:1.2px;color:#8d83a3;text-transform:uppercase;margin-top:5px;}
+  .cs-table{width:100%;border-collapse:collapse;font-weight:700;font-size:13px;}
+  .cs-table td{padding:6px 4px;border-top:1px solid #2a2238;}
+  .cs-table tr:first-child td{border-top:0;}
+  .cs-table td.n{width:22px;color:#8d83a3;}.cs-table td.r{text-align:right;width:34px;}
+  .cs-table td.ovr{font-family:Anton,sans-serif;font-weight:400;font-size:15px;color:#9fb0cf;}
+  .cs-table td.pts{font-family:Anton,sans-serif;font-weight:400;font-size:16px;color:var(--gold);}
+  .cs-table tr.you td{background:#3a0f22;color:#fff;}.cs-table tr.you td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
+  .cs-table tr.cut td{border-top:2px dashed var(--cs);}
+  .cs-note{text-align:center;font-weight:700;font-size:11.5px;color:#8d83a3;margin-top:6px;}
+  .cs-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #2a2238;font-weight:700;font-size:13.5px;}
+  .cs-row:first-of-type{border-top:0;}
+  .cs-row .sc{font-family:Anton,sans-serif;font-weight:400;font-size:18px;white-space:nowrap;}
+  .cs-row .rs{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:5px;text-align:center;font-weight:900;font-size:11px;color:#fff;margin-right:6px;}
+  .cs-row .rs.W{background:#1F9E57;}.cs-row .rs.D{background:#6b6480;}.cs-row .rs.L{background:#E5402A;}
+  .cs-row small{display:block;font-weight:600;font-size:11px;color:#a79bb8;margin-top:1px;}
+  .cs-head{text-align:center;font-family:Anton,sans-serif;font-weight:400;font-size:34px;line-height:1.02;letter-spacing:.5px;text-transform:uppercase;}
+  .cs-head.gold{color:var(--gold);}
+  .cs-sub{text-align:center;font-weight:700;font-size:13.5px;color:#d9cfe6;margin-top:4px;}
+  .cs-btn{display:block;width:100%;border:0;border-radius:12px;padding:13px 8px 11px;cursor:pointer;font-family:inherit;font-weight:900;font-size:17px;letter-spacing:.5px;text-transform:uppercase;text-align:center;background:var(--red);color:#fff;}
+  .cs-btn small{display:block;font-weight:700;font-size:10px;letter-spacing:1px;margin-top:2px;opacity:.9;}
+  .cs-btn.ghost{background:transparent;border:2px solid #b9922a;color:var(--gold);font-size:13.5px;padding:10px;}
+  .cs-btn[disabled]{opacity:.45;cursor:default;}
+  .cs-wheel{display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin:10px 0 10px;}
+  .cs-wheel div{border-radius:10px;padding:12px 8px;text-align:center;background:#F3E7CF;color:#16120F;}
+  .cs-wheel div.y{background:var(--gold);}
+  .cs-wheel b{display:block;font-family:Anton,sans-serif;font-weight:400;font-size:24px;line-height:1.02;text-transform:uppercase;overflow-wrap:anywhere;}
+  .cs-wheel i{font-style:normal;font-weight:900;font-size:9px;letter-spacing:2px;color:#5a4a2a;text-transform:uppercase;}
+  .cs-pl{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;width:100%;padding:8px 4px;border:0;border-top:1px solid #2a2238;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;}
+  .cs-pl.sel{background:#3a0f22;box-shadow:inset 3px 0 0 var(--gold);}
+  .cs-pl .pos{font-weight:900;font-size:10px;background:var(--cs-deep);color:#fff;border-radius:5px;padding:5px 0;text-align:center;}
+  .cs-pl b{font-weight:700;font-size:14px;}.cs-pl small{display:block;font-weight:600;font-size:11px;color:#a79bb8;margin-top:1px;}
+  .cs-pl .ov{font-family:Anton,sans-serif;font-size:21px;color:var(--gold);}
+  .cs-swap{border-radius:10px;background:#0f0b1a;border:1.5px dashed var(--cs);padding:10px;font-weight:700;font-size:13px;line-height:1.4;margin-top:10px;}
+  .cs-swap b{color:var(--gold);}
+  .cs-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .cs-stats div{border-radius:10px;background:#0f0b1a;border:1px solid #3a2140;padding:10px 4px;text-align:center;}
+  .cs-stats b{display:block;font-family:Anton,sans-serif;font-weight:400;font-size:24px;color:var(--gold);}
+  .cs-stats span{font-weight:900;font-size:9px;letter-spacing:1.2px;color:#a79bb8;text-transform:uppercase;}
   /* hero soccer-ball mark */
   .ball-svg{width:62px;height:62px;display:inline-block;}
   /* reel + reveal use a larger flat flag */
@@ -3697,7 +3746,7 @@ window.GA_ID='G-L29P5MRWKE';
       <!-- The club side's door. A preview: shown only after /soccer/?club=1 (see THE CLUB SIDE). -->
       <button id="btn-club" class="btn big home-primary club-home-btn" style="display:none">
         <span class="btn-label">Club Draft</span>
-        <span class="btn-sub">Preview · Draft a club XI &amp; win The Club Cup</span>
+        <span class="btn-sub">Preview · Draft a club XI &amp; play a season</span>
       </button>
 
       <!-- Daily Challenge: one themed draft a day, same for everyone -->
@@ -4030,6 +4079,11 @@ window.GA_ID='G-L29P5MRWKE';
       <button id="btn-copy" class="btn gold">Copy to Share</button>
       <button id="btn-again" class="btn teal">Play Again</button>
     </div>
+  </section>
+
+  <!-- ===== CLUB SEASON (the club side: a ten club league, see THE CLUB SEASON in the script) ===== -->
+  <section id="screen-season" class="screen">
+    <div class="cs-wrap" id="season-content"></div>
   </section>
 
   <!-- ===== SIMULATION ===== -->
@@ -4665,7 +4719,7 @@ window.GA_ID='G-L29P5MRWKE';
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
 <script src="/gameLogic.js?v=0.0.32"></script>
 <!-- The club side: Club Draft and The Club Cup (soccer/club.js, checked by soccer/check-club.mjs). -->
-<script src="/soccer/club.js?v=1"></script>
+<script src="/soccer/club.js?v=2"></script>
 <!-- The player dataset is fetched async by boot() (data/players_all.json), so it
      no longer blocks first paint. The players_all.js wrapper is loaded on demand
      only as a file:// fallback (see loadEmbeddedPlayers). -->
@@ -4876,6 +4930,181 @@ function clubOpponentPool(){
   return RTPClub.opponents(d.units, d.wcScale).map(o=>Object.assign({}, o, getOpponentPositionalRatings(o.squad, o.teamOverall)));
 }
 function startClubSetup(){ sideClub=true; goToDraftSetup(); }
+
+// ============================================================
+//  THE CLUB SEASON
+// ============================================================
+// The owner's call (2026-11-26): the club side plays "more of a season mode",
+// not the World Cup run with clubs swapped in. After the draft and the reveal,
+// a club XI plays a ten club league (soccer/club.js holds the rules and the
+// match model; check-club holds the title odds):
+//   three blocks of three matches  ->  the table moves after each
+//   a transfer window after blocks one and two  ->  one spin, sign one man or keep the XI
+//   the top four  ->  The Club Cup, a semi-final and a final
+// One screen (screen-season) drawn from SEASONRUN.stage. Nothing is sent to the
+// server: the season's board is the next step.
+let SEASONRUN=null;   // { season, block, stage, last, unit, pick, cup, signed }
+function seasonOvr(){ return (gs && gs.result && gs.result.teamOverall) || 0; }
+// The official squad rating for a set of picks (the average, the 99s, captains and awards).
+function clubRatingOf(picks){
+  const r=G.computeResult({ ...gs, picks });
+  return Math.round(r.teamOverall * getLeadershipBonus(r.scoredPicks||picks).multiplier * 10)/10;
+}
+function runSeasonScreen(){
+  SEASONRUN={ season:RTPClub.seasonStart(clubOpponentPool(), Math.random), block:0, stage:'block', last:null, unit:null, pick:null, cup:null, signed:0 };
+  SEASONRUN.season.teams[0].ovr=seasonOvr();
+  ga('club_season_started',{team_overall:seasonOvr(),draft_type:draftType,game_mode:gameMode});
+  showScreen('season');
+  renderSeason();
+}
+function seasonScorers(n){
+  const squad=gs.picks.map(p=>p.player), names=[];
+  for(let i=0;i<n;i++){ const p=simPickScorer(squad); names.push(surnameOf(p.name||'')); }
+  return names.join(', ');
+}
+function seasonPlayBlock(){
+  const R=SEASONRUN; if(!R || R.stage!=='block') return;
+  R.last=RTPClub.seasonPlay(R.season, seasonOvr(), 3, Math.random).map(m=>Object.assign(m,{ scorers:seasonScorers(m.gf) }));
+  R.block++;
+  R.stage = R.block<3 ? 'results' : 'final';
+  renderSeason();
+}
+// The transfer window: one spin of the wheel, on a club and decade that holds a man worth a look.
+async function seasonOpenWindow(){
+  const R=SEASONRUN; if(!R || R.stage!=='results') return;
+  const people=clubPickedPeople();
+  const fits=u=>u.squad.some(p=>!people.has(RTPClub.personKey(p)) && RTPClub.swapTarget(gs.picks,p)>=0);
+  const unit=RTPClub.spin(clubData().units, fits);
+  if(!unit){ R.stage='block'; return renderSeason(); }
+  R.stage='spinning';
+  openSpinOverlay();
+  $('spin-round-label').textContent='Transfer window';
+  { const d=$('spin-dots'); if(d) d.innerHTML=''; }
+  await doSpinAnim(unit.club, unit.era);
+  await new Promise(r=>setTimeout(r,600));
+  closeSpinOverlay();
+  R.unit=unit; R.pick=null; R.stage='window';
+  renderSeason();
+}
+function seasonWindowOptions(){
+  const R=SEASONRUN, people=clubPickedPeople(), now=seasonOvr();
+  return R.unit.squad.filter(p=>!people.has(RTPClub.personKey(p))).map(p=>{
+    const i=RTPClub.swapTarget(gs.picks,p);
+    if(i<0) return null;
+    const next=gs.picks.map((pk,k)=>k===i?{ ...pk, player:p }:pk);
+    return { man:p, i, out:gs.picks[i].player, to:clubRatingOf(next), from:now };
+  }).filter(Boolean).sort((a,b)=>(b.man.overall-a.man.overall) || a.man.name.localeCompare(b.man.name));
+}
+function seasonSign(){
+  const R=SEASONRUN; if(!R || R.stage!=='window' || !R.pick) return;
+  const { man, i }=R.pick, slot=gs.picks[i].slot;
+  const picks=gs.picks.map((pk,k)=>k===i?{ ...pk, player:man }:pk);
+  gs={ ...gs, picks, filledSlots:{ ...gs.filledSlots, [slot]:man } };
+  gs.result=G.computeResult(gs);     // the new squad's rating, then captains and awards on top
+  applyLeadershipBonus();
+  R.signed++;
+  ga('club_season_signing',{overall:man.overall,team_overall:seasonOvr(),window:R.block});
+  seasonCloseWindow();
+}
+function seasonCloseWindow(){ const R=SEASONRUN; R.unit=null; R.pick=null; R.stage='block'; renderSeason(); }
+function seasonPlayCup(){
+  const R=SEASONRUN; if(!R || R.stage!=='final') return;
+  R.cup=RTPClub.seasonCup(R.season, seasonOvr(), Math.random);
+  if(R.cup.qualified){
+    R.cup.semi.scorers=seasonScorers(R.cup.semi.gf);
+    if(R.cup.final) R.cup.final.scorers=seasonScorers(R.cup.final.gf);
+  }
+  R.stage='done';
+  const me=RTPClub.seasonTable(R.season).find(r=>r.you);
+  ga('club_season_finished',{position:me.pos,points:me.pts,cup:R.cup.result||'none',team_overall:seasonOvr(),signings:R.signed});
+  if(me.pos===1 || R.cup.result==='winner'){ try{ launchConfetti(); }catch(e){} }
+  renderSeason();
+}
+const ORDINALS=['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+function seasonTableHtml(){
+  const rows=RTPClub.seasonTable(SEASONRUN.season);
+  return `<table class="cs-table">${rows.map(r=>`<tr class="${r.you?'you':''}${r.pos===RTPClub.SEASON.cupSpots+1?' cut':''}">
+      <td class="n">${r.pos}</td>
+      <td>${r.you?'YOUR XI':escapeHtml(r.name)+' '+escapeHtml(r.era)}</td>
+      <td class="r ovr">${Math.round(r.you?seasonOvr():r.ovr)}</td>
+      <td class="r">${r.gd>0?'+':''}${r.gd}</td>
+      <td class="r pts">${r.pts}</td></tr>`).join('')}</table>
+    <div class="cs-note">Top ${RTPClub.SEASON.cupSpots} reach ${RTPClub.CUP}</div>`;
+}
+function seasonResultRow(m, label){
+  return `<div class="cs-row"><span><span class="rs ${m.res}">${m.res}</span>${label} ${escapeHtml(m.opp.name)} ${escapeHtml(m.opp.era||'')}
+      ${m.scorers?`<small>${escapeHtml(m.scorers)}</small>`:''}</span><span class="sc">${m.gf}-${m.ga}${m.pens?' (pens)':''}</span></div>`;
+}
+function renderSeason(){
+  const R=SEASONRUN, c=$('season-content'); if(!R || !c) return;
+  const S=R.season, mine=S.mine, me=RTPClub.seasonTable(S).find(r=>r.you);
+  const w=mine.filter(m=>m.res==='W').length, d=mine.filter(m=>m.res==='D').length, l=mine.filter(m=>m.res==='L').length;
+  const chips=Array.from({length:9},(_,i)=>mine[i]?`<i class="${mine[i].res}">${mine[i].res}</i>`:`<i class="${i===mine.length?'next':''}">${i+1}</i>`).join('');
+  const head=`<div class="cs-card">
+      <div class="cs-hd"><b>Your season</b><span>${mine.length?`W${w} · D${d} · L${l} · ${me.pts} pts`:'Matchday 1 of 9'}</span></div>
+      <div class="cs-prog">${chips}</div>
+      <div class="cs-win"><span>1 to 3 · window</span><span>4 to 6 · window</span><span>The run-in</span></div>
+    </div>`;
+  const table=`<div class="cs-card" style="padding:8px 10px">${seasonTableHtml()}</div>`;
+  const last=R.last ? `<div class="cs-card"><div class="cs-tag" style="margin-bottom:4px">Results</div>${R.last.map(m=>seasonResultRow(m,'MD'+m.md)).join('')}</div>` : '';
+  let body='';
+  if(R.stage==='block'){
+    const next=[0,1,2].map(k=>RTPClub.seasonOpponentAt(S, S.md+k));
+    body = head + table + `<div class="cs-card"><div class="cs-tag" style="margin-bottom:4px">Next three</div>${next.map((o,k)=>
+        `<div class="cs-row"><span>MD${S.md+k+1} ${escapeHtml(o.name)} ${escapeHtml(o.era)}</span><span class="sc" style="color:#9fb0cf">${Math.round(o.ovr)}</span></div>`).join('')}</div>`
+      + `<button type="button" class="cs-btn" id="cs-play">${R.block===2?'Play the run-in':`Play Matchdays ${S.md+1} to ${S.md+3}`}<small>${R.block===2?`Matchdays 7 to 9, then ${RTPClub.CUP} for the top four`:'Then a transfer window'}</small></button>`;
+  } else if(R.stage==='results' || R.stage==='spinning'){
+    body = head + last + table
+      + `<button type="button" class="cs-btn" id="cs-window"${R.stage==='spinning'?' disabled':''}>Open the transfer window<small>One spin. Sign one man, or keep your XI.</small></button>`;
+  } else if(R.stage==='window'){
+    const opts=seasonWindowOptions(), pick=R.pick;
+    body = `<div class="cs-card">
+        <div class="cs-tag" style="text-align:center">Transfer window ${R.block} of 2 · Squad rating ${seasonOvr().toFixed(1)}</div>
+        <div class="cs-wheel"><div><i>Club</i><b>${escapeHtml(R.unit.club)}</b></div><div class="y"><i>Era</i><b>${escapeHtml(R.unit.era)}</b></div></div>
+        ${opts.map((o,k)=>`<button type="button" class="cs-pl${pick&&pick.man.player_id===o.man.player_id?' sel':''}" data-k="${k}">
+            <span class="pos">${o.man.position}</span>
+            <span><b>${escapeHtml(o.man.name)}</b><small>${escapeHtml(o.man.country)} · for ${escapeHtml(surnameOf(o.out.name))} (${o.out.overall})</small></span>
+            <span class="ov">${o.man.overall}</span></button>`).join('')}
+        ${pick?`<div class="cs-swap">Signing <b>${escapeHtml(pick.man.name)}</b> (${pick.man.overall}) drops <b>${escapeHtml(pick.out.name)}</b> (${pick.out.overall}).<br>Squad rating <b>${pick.from.toFixed(1)}</b> to <b>${pick.to.toFixed(1)}</b></div>`:''}
+      </div>
+      <button type="button" class="cs-btn" id="cs-sign"${pick?'':' disabled'}>${pick?'Sign him':'Pick a man to sign'}</button>
+      <button type="button" class="cs-btn ghost" id="cs-keep">Keep my XI</button>`;
+    c.innerHTML=body;
+    c.querySelectorAll('.cs-pl').forEach(b=>b.addEventListener('click',()=>{ R.pick=opts[+b.dataset.k]; renderSeason(); }));
+    $('cs-sign').addEventListener('click', seasonSign);
+    $('cs-keep').addEventListener('click', seasonCloseWindow);
+    if(!pick) window.scrollTo({top:0});   // a fresh window opens at its top; picking a man keeps the place
+    return;
+  } else if(R.stage==='final'){
+    const champ=me.pos===1, inCup=me.pos<=RTPClub.SEASON.cupSpots;
+    body = `<div class="cs-card"><div class="cs-head${champ?' gold':''}">${champ?'League champions':`Finished ${ORDINALS[me.pos]}`}</div>
+        <div class="cs-sub">${me.pts} points. ${inCup?`You're in ${RTPClub.CUP}.`:`The top four go to ${RTPClub.CUP}.`}</div></div>`
+      + head + last + table
+      + `<button type="button" class="cs-btn" id="cs-cup">${inCup?`Play ${RTPClub.CUP}`:'See your season'}<small>${inCup?'Semi-final, then the final':'The final table'}</small></button>`;
+  } else {   // done
+    const cup=R.cup, champ=me.pos===1, won=cup.result==='winner';
+    const title = champ&&won ? 'The double' : (champ ? 'League champions' : (won ? `${RTPClub.CUP} winners` : `Finished ${ORDINALS[me.pos]}`));
+    const cupLine = !cup.qualified ? 'No cup this year.' : (won ? `And you won ${RTPClub.CUP}.` : (cup.result==='finalist' ? `Beaten in ${RTPClub.CUP} final.` : `Out in ${RTPClub.CUP} semi-final.`));
+    const cupCard = cup.qualified ? `<div class="cs-card"><div class="cs-tag" style="margin-bottom:4px">${RTPClub.CUP}</div>
+        ${seasonResultRow(Object.assign({ res:cup.semi.won?'W':'L' }, cup.semi), 'Semi-final')}
+        ${cup.final?seasonResultRow(Object.assign({ res:cup.final.won?'W':'L' }, cup.final), 'Final'):''}</div>` : '';
+    body = `<div class="cs-card"><div class="cs-head${champ||won?' gold':''}">${title}</div>
+        <div class="cs-sub">${me.pts} points from 9. ${cupLine}</div></div>
+      <div class="cs-stats"><div><b>${me.pts}</b><span>Points</span></div><div><b>${me.gd>0?'+':''}${me.gd}</b><span>Goal difference</span></div><div><b>${seasonOvr().toFixed(1)}</b><span>Squad rating</span></div></div>`
+      + cupCard + head + table
+      + `<div class="cs-note">Club Season preview. This run is not ranked yet.</div>
+      <button type="button" class="cs-btn" id="cs-again">Play another season<small>Draft a new club XI</small></button>
+      <button type="button" class="cs-btn ghost" id="cs-home">Home</button>`;
+  }
+  c.innerHTML=body;
+  const on=(id,fn)=>{ const b=$(id); if(b) b.addEventListener('click',fn); };
+  on('cs-play', seasonPlayBlock);
+  on('cs-window', seasonOpenWindow);
+  on('cs-cup', seasonPlayCup);
+  on('cs-again', newGame);
+  on('cs-home', ()=>{ if(typeof friendlyReset==='function') friendlyReset(); showScreen('start'); });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 const FULL_FLOORS = { DEF:3, MID:2, FWD:2 };
 const FULL_POS_CAP = 5;
 // Per-position cap (fixed + flex). Forwards are limited to 4; DEF/MID to 5.
@@ -5065,13 +5294,13 @@ function showScreen(name){
   // The masthead's line names the side being played. (The full two-sides masthead is a later step.)
   { const ed=document.querySelector('.masthead .edition');
     if(ed){
-      const club = name==='setup' ? sideClub : (isClub() && ['home','select','sim','reveal','report'].includes(name));
+      const club = name==='setup' ? sideClub : (isClub() && ['home','select','sim','reveal','report','season'].includes(name));
       ed.textContent = club ? 'Club Side' : 'World Cup Game';
     } }
   // Hide the mobile ad strip on the full-viewport / sensitive screens (sim,
   // results/share, draft select, pitch reveal). Additive, no game logic touched.
   document.body.classList.toggle('rtp-hide-ads',
-    name==='sim' || name==='report' || name==='select' || name==='home');
+    name==='sim' || name==='report' || name==='select' || name==='home' || name==='season');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 // Name of the currently-active screen (without the "screen-" prefix).
@@ -5333,7 +5562,7 @@ function goToHome(){
   b.disabled=false;
   b.textContent='Spin the Wheel';
   $('btn-start-wc').style.display='none';
-  { const t=$('btn-start-wc').lastChild; if(t && t.nodeType===3) t.textContent = isClub() ? ' Start the Cup' : ' Start World Cup'; }
+  { const t=$('btn-start-wc').lastChild; if(t && t.nodeType===3) t.textContent = isClub() ? ' Start the Season' : ' Start World Cup'; }
   $('pitch-result').classList.remove('show');
   showScreen('home');   // make the pitch visible first so labels can be measured
   updatePitch();
@@ -5937,7 +6166,7 @@ function showPitchResult(){
   box.scrollIntoView({behavior:'smooth',block:'center'});
   // reveal the Start World Cup button once the rating has landed
   const wc=$('btn-start-wc');
-  { const t=wc.lastChild; if(t && t.nodeType===3) t.textContent = isClub() ? ' Start the Cup' : ' Start World Cup'; }
+  { const t=wc.lastChild; if(t && t.nodeType===3) t.textContent = isClub() ? ' Start the Season' : ' Start World Cup'; }
   wc.style.display='';
   wc.disabled=false;
   setTimeout(()=>wc.scrollIntoView({behavior:'smooth',block:'center'}), dur+200);
@@ -6469,7 +6698,7 @@ function runRevealOverlay(){
   tlab.style.display='none';
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
   // friendly challenger continues to the share screen; everyone else simulates
-  go.textContent = (friendlyMode && friendlyRole==='challenger') ? 'CONTINUE →' : (isClub() ? 'START THE CUP' : 'START WORLD CUP');
+  go.textContent = (friendlyMode && friendlyRole==='challenger') ? 'CONTINUE →' : (isClub() ? 'START THE SEASON' : 'START WORLD CUP');
 
   ov.classList.toggle('full', isFullDraft());
   // Reveal in pitch order, attackers first (top) down to the keeper last. Each
@@ -9883,7 +10112,7 @@ $('btn-formation-go').addEventListener('click',()=>{
   goToHome();
 });
 $('btn-go-spin').addEventListener('click',startSpin);
-$('btn-start-wc').addEventListener('click',()=>{ $('btn-start-wc').disabled=true; runSimulationScreen(); });
+$('btn-start-wc').addEventListener('click',()=>{ $('btn-start-wc').disabled=true; if(isClub()) runSeasonScreen(); else runSimulationScreen(); });
 
 $('btn-respin-full').addEventListener('click',()=>{
   if(gs.respins.full<=0) return;
@@ -9953,6 +10182,7 @@ $('btn-reveal-go').addEventListener('click',()=>{
   if(friendlyMode && friendlyRole==='challenger'){ showChallengeReady(); }
   else if(onlineMode==='h2h'){ h2hOnDraftComplete(); }
   else if(onlineMode==='wc'){ wcOnDraftComplete(); }
+  else if(isClub()){ runSeasonScreen(); }   // the club side plays a league season
   else { runSimulationScreen(); }
 });
 
