@@ -2649,8 +2649,8 @@
       "sha": "1891cdfef9c19253"
     },
     "main.js": {
-      "v": "7",
-      "sha": "8850a77f132df8c4"
+      "v": "8",
+      "sha": "8258debe771b5740"
     }
   },
   "football/fantasy/index.html": {
@@ -2985,8 +2985,8 @@
   },
   "hoops/design/style-guide.html": {
     "../career-kit.js": {
-      "v": "14",
-      "sha": "19ffaf93130b9309"
+      "v": "18",
+      "sha": "651e05dd7cae662d"
     },
     "../util.js": {
       "v": "1",
@@ -3035,8 +3035,8 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "70",
-      "sha": "74556429e954a98a"
+      "v": "71",
+      "sha": "246a5a79152a9de8"
     },
     "baller.js": {
       "v": "29",
@@ -3103,8 +3103,8 @@
       "sha": "bc4fd85f6f528926"
     },
     "career-kit.js": {
-      "v": "14",
-      "sha": "19ffaf93130b9309"
+      "v": "18",
+      "sha": "651e05dd7cae662d"
     },
     "sound.js": {
       "v": "2",
@@ -3131,12 +3131,12 @@
       "sha": "3829fe10bba58a06"
     },
     "closet-ui.js": {
-      "v": "14",
-      "sha": "1213469bd70002bf"
+      "v": "18",
+      "sha": "750399270b63b532"
     },
     "shop-ui.js": {
-      "v": "7",
-      "sha": "ea8a61ae873182ef"
+      "v": "11",
+      "sha": "c0482b9514184ff8"
     },
     "daily-ui.js": {
       "v": "5",
@@ -3151,8 +3151,8 @@
       "sha": "14d401c9313d16be"
     },
     "career-ui.js": {
-      "v": "71",
-      "sha": "69799fe00aa82e24"
+      "v": "73",
+      "sha": "c13f38dae8358040"
     }
   },
   "ideas/index.html": {
@@ -3521,8 +3521,8 @@
       "sha": "2987d27952084469"
     },
     "render.js": {
-      "v": "6",
-      "sha": "947236e36979bcf3"
+      "v": "7",
+      "sha": "284f5bb200a7cd64"
     }
   },
   "hoops/page.js": {
