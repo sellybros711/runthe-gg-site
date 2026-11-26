@@ -23,6 +23,9 @@
  *              in Season 3) the pass's own packs are Tour packs and a saved seasonal credit opens as the
  *              plain Seasonal Pack, at Tour odds, so nothing is ever a pack nobody can open.
  *   SEASONAL PACKS copy the Summer pack's price, odds and pity exactly (the ladder is not re-tuned).
+ *   COUNTDOWN  the next season's countdown on the First Tee home shows in a season's last 14 days, only when the
+ *              next season is written, names its number and nothing it holds, opens the Tour Pass, and leaves
+ *              on its own at Eastern midnight.
  *
  * The date is moved with Playwright's clock, so passSeason() and dropLive() read it exactly as they read a
  * real one. The instrumented copy is golf/__test_pass.html, removed in a finally.
@@ -184,6 +187,17 @@ window.__P = {
     var q=function(x){ var e=d.querySelector(x); return e?e.textContent.replace(/\\s+/g,' '):null; };
     var out={head:q('.tp-tblock'), xp:q('.tp-xp'), ev:q('.tp-ev'), chal:q('.pchal'), stamps:q('.tp-stamps'), ot:q('.tp-ot'), otOn:d.querySelectorAll('.tp-otm.on').length, stampTag:!!d.querySelector('[data-t="30"] .tp-stq')};
     d.remove(); S.overlay=null; return out; },
+  /* the next season's countdown on the First Tee home: what it says, where it sits, what it opens */
+  cd(){ S.overlay=null; S.ftSheetOpen=false; S.screen='title'; render(); var e=document.querySelector('.ft-cd'); if(!e) return null;
+    var r=e.getBoundingClientRect(), box=function(q){ var x=document.querySelector(q); if(!x) return null; var b=x.getBoundingClientRect(); return {t:b.top,b:b.bottom,l:b.left,r:b.right}; };
+    return {txt:e.innerText.replace(/\\s+/g,' ').trim(), aria:e.getAttribute('aria-label'), tag:e.tagName, acc:e.style.getPropertyValue('--acc').trim(),
+      want:(PASS_SEASONS[passSeason().n+1]||{}).accent||null, inRcol:!!e.closest('.ft-rcol'), inTee:!!e.closest('.ft-tee'),
+      afterCard:!!(e.previousElementSibling&&e.previousElementSibling.classList.contains('ft-ptrack')),
+      box:{t:r.top,b:r.bottom,l:r.left,r:r.right}, vw:innerWidth, vh:innerHeight, fig:box('.ft-fig'), doors:[].map.call(document.querySelectorAll('.ft-door'),function(d){ var b=d.getBoundingClientRect(); return {t:b.top,b:b.bottom,l:b.left,r:b.right}; })}; },
+  cdOpen(){ var e=document.querySelector('.ft-cd'); if(!e) return null; e.click(); var o=S.overlay; S.overlay=null; render(); return o; },
+  cdSecret(n){ var d=PASS_SEASONS[n]||{}, out=[]; if(d.name) out.push(d.name);
+    window.__P.items().forEach(function(i){ if(i.season===n && i.name) out.push(i.name); }); return out; },
+  cdNow(){ var e=document.querySelector('.ft-cd'), p=document.querySelector('.ft-ptrack .ptk-k'); return {cd:e?e.innerText.replace(/\\s+/g,' ').trim():null, card:p?p.textContent:null, season:passSeason().n, ov:S.overlay}; },
   levelUp(fromTier, toTier){ var s=passState(); s.xp=passXpForTierX(toTier); passSave(s);
     S._passPop={xp0:passXpForTierX(fromTier), tier0:fromTier}; S.overlay=null; S.screen='title';
     var pend=passLevelPending(); flushPassLevel(); var pl=S.passLevel;
@@ -636,6 +650,64 @@ try {
   ok('the cloud merge carries the season stamp', STW.merged === 'S2', STW);
   ok('a free player\'s stale wallet is not proof of last season\'s Pro (pass_period is the season read, not bought)', STW.freeStale === false, STW);
   ok('...while a stale wallet that says the pass was active still is', STW.buyerStale === true, STW);
+
+  head('the next season\'s countdown on the First Tee home');
+  // Season 2's last 14 days are Nov 20 to Dec 3 (Eastern). Season 3 starts at Eastern midnight on Dec 4.
+  const secret = (await E('cdSecret', 3)).concat(['Snowman', 'Northern Lights', 'Frost', 'Fireworks']);
+  ok('Season 3 has a name and items to keep quiet about', secret.length > 6, secret.slice(0, 4));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const iso of ['2026-11-20T16:00:00Z', '2026-11-28T16:00:00Z', '2026-12-03T16:00:00Z', '2026-12-04T04:30:00Z']) {
+    await at(iso);
+    const c = await E('cd');
+    ok(`${iso}: it shows, and says "Season 3 starts in" with a clock`, !!c && /^Season 3 starts in \d+d \d\dh \d\dm \d\ds$|^Season 3 starts in \d\dh \d\dm \d\ds$/i.test(c.txt), c && c.txt);
+    if (!c) continue;
+    const said = (c.txt + ' ' + c.aria).toLowerCase(), leak = secret.filter(s => said.includes(s.toLowerCase()));
+    ok(`${iso}: it names the number only: no season name, no item`, !leak.length, leak);
+  }
+  await at('2026-11-28T16:00:00Z');
+  let CD = await E('cd');
+  ok('the clock counts to Eastern midnight on Dec 4 (5d 13h from noon ET Nov 28)', /5d 1[23]h/.test(CD.txt), CD.txt);
+  ok('it is a button in Season 3\'s colour', CD.tag === 'BUTTON' && CD.acc === CD.want && CD.acc === '#d8343a', CD);
+  ok('desktop: it sits right under the Tour Pass card in the right column, clear of the golfer', CD.inRcol && CD.afterCard && CD.fig && (CD.box.r < CD.fig.l || CD.box.l > CD.fig.r || CD.box.b < CD.fig.t), CD);
+  ok('desktop: on screen, and over no door', CD.box.b <= CD.vh && CD.box.r <= CD.vw && !CD.doors.some(d => CD.box.t < d.b && CD.box.b > d.t && CD.box.l < d.r && CD.box.r > d.l), CD);
+  ok('a tap opens the Tour Pass', (await E('cdOpen')) === 'tourpass');
+  for (const [w, h] of [[390, 844], [375, 667]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(150);
+    CD = await E('cd');
+    await page.waitForTimeout(450);   // the phone home fits itself to the screen after layout
+    CD = Object.assign(CD, await page.evaluate(() => { const e = document.querySelector('.ft-cd'), r = e.getBoundingClientRect();
+      return { box: { t: r.top, b: r.bottom, l: r.left, r: r.right }, doors: [...document.querySelectorAll('.ft-door')].map(d => { const b = d.getBoundingClientRect(); return { t: b.top, b: b.bottom, l: b.left, r: b.right }; }) }; }));
+    ok(`${w}x${h}: under the Tour Pass card on the tee, inside the screen, over no door`, CD.inTee && CD.afterCard && CD.box.l >= 0 && CD.box.r <= w && CD.box.b <= h
+      && !CD.doors.some(d => CD.box.t < d.b && CD.box.b > d.t && CD.box.l < d.r && CD.box.r > d.l), CD);
+    ok(`${w}x${h}: a tap opens the Tour Pass`, (await E('cdOpen')) === 'tourpass');
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const [iso, why] of [['2026-11-19T16:00:00Z', 'Nov 19, 15 days out'], ['2026-11-20T04:30:00Z', '11:30pm ET Nov 19'], ['2026-12-04T05:30:00Z', '12:30am ET Dec 4: Season 3 has started'],
+    ['2026-12-10T16:00:00Z', 'Dec 10, early in Season 3'], ['2027-01-25T16:00:00Z', 'Jan 25, Season 3\'s last 14 days, Season 4 unwritten'], ['2027-02-01T16:00:00Z', 'Feb 1, Season 3\'s last day, Season 4 unwritten'],
+    ['2027-02-10T16:00:00Z', 'Feb 10, Season 4']]) {
+    await at(iso);
+    ok(`gone on ${why}`, (await E('cd')) === null);
+  }
+  // a home left open across the turnover: the clock runs out and the countdown takes itself off
+  // (Season 3's launch popup is marked seen for this one, so the home is left to redraw itself)
+  await page.evaluate(() => localStorage.setItem('bag_s3_launch_seen', 'true'));
+  await at('2026-12-04T04:59:57Z');
+  ok('3 seconds before Eastern midnight it is on screen', !!(await E('cd')));
+  await page.waitForTimeout(1700);
+  ok('...and still counting a second before', (await E('cdNow')).cd !== null);
+  await page.waitForTimeout(3800);
+  let AFT = await E('cdNow');
+  ok('...and when the clock runs out it leaves on its own, and the home redraws as Season 3', AFT.cd === null && AFT.season === 3 && AFT.ov === null && /Season 3/.test(AFT.card || ''), AFT);
+  // with the launch popup still owed, it is the popup that takes over (its own code, untouched)
+  await page.evaluate(() => localStorage.removeItem('bag_s3_launch_seen'));
+  await at('2026-12-04T04:59:58Z');
+  ok('a second run at the turnover, popup owed: on screen first', !!(await E('cd')));
+  await page.waitForTimeout(4500);
+  AFT = await E('cdNow');
+  ok('...then gone, and Season 3\'s launch popup is up', AFT.cd === null && AFT.season === 3 && AFT.ov === 'seasonlaunch', AFT);
+  await page.evaluate(() => { S.overlay = null; });
+  await at('2026-10-10T16:00:00Z');
 
   head('page errors');
   ok('none', errs.length === 0, errs.slice(0, 3));

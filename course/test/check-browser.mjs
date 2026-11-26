@@ -37,11 +37,15 @@ const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable
 async function open(ctxOpts, { signedAs = null, throttle = false, url = base } = {}) {
   const context = await browser.newContext(ctxOpts);
   const page = await context.newPage();
-  const errors = [], sizes = { bytes: 0, art: 0, files: [] };
+  const errors = [], sizes = { bytes: 0, art: 0, files: [], pending: [] };
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on('pageerror', e => errors.push(String(e.message)));
   /* the model packs load behind the game: they are counted apart from what it takes to start playing */
-  page.on('response', async r => { try { const b = await r.body(), u = r.url().replace(/^https?:\/\/[^/]+/, ''); if (/\/course\/models\//.test(u)) sizes.art += b.length; else { sizes.bytes += b.length; sizes.files.push([u, b.length]); } } catch (e) {} });
+  /* Reading a response's body is itself a round trip to the browser, so a size lands a moment after
+     the page already has the file. Every read is kept in `pending`, and settle() waits for them
+     before a size is trusted. Without that the packs were once counted as 0 bytes on a busy runner. */
+  page.on('response', r => { sizes.pending.push((async () => { try { const b = await r.body(), u = r.url().replace(/^https?:\/\/[^/]+/, ''); if (/\/course\/models\//.test(u)) sizes.art += b.length; else { sizes.bytes += b.length; sizes.files.push([u, b.length]); } } catch (e) {} })()); });
+  sizes.settle = async () => { let n = -1; while (n !== sizes.pending.length) { n = sizes.pending.length; await Promise.all(sizes.pending); } };
   /* the sign in scripts and the CDN are not this game's to test; a stand-in says who is signed in */
   await page.route(/cdn\.jsdelivr\.net|supabase\.co|\/arcade\/auth(-ui)?\.js/, r => r.abort());
   await page.addInitScript(id => {
@@ -69,6 +73,7 @@ async function playShift(page) {
 for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }], ['desktop 1440x900', { viewport: { width: 1440, height: 900 } }]]) {
   const phone = !!vp.isMobile;
   const { context, page, errors, sizes, bootMs } = await open(vp, { throttle: phone });
+  await sizes.settle();
   if (phone) {
     notes.push('to start playing: ' + (sizes.bytes / 1024).toFixed(0) + ' KB in ' + sizes.files.length + ' files, playable in ' + bootMs + ' ms on a 9 Mbps link with 150 ms latency');
     ok(sizes.bytes < 2e6, name + ': what it takes to start playing is ' + sizes.bytes + ' bytes, over 2 MB');
@@ -80,6 +85,7 @@ for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 84
   }
   /* the art lands behind the game and must not break it; from here on the check plays with the real models */
   const art = await page.evaluate(() => window.__course.art);
+  await sizes.settle();
   ok(art === true, name + ': the model packs did not load');
   if (phone) { notes.push('the model packs: ' + (sizes.art / 1024).toFixed(0) + ' KB, loaded after the game is playable'); ok(sizes.art > 0 && sizes.art < 2.2e6, name + ': the model packs are ' + sizes.art + ' bytes'); }
   /* straight into day 1: no guide, no card, the goal line says what to do */

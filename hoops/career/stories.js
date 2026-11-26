@@ -833,7 +833,11 @@ story({
     tag: 'Team plane', t: 'You open the playoffs on the road.', x: 'Lower seed. A hostile building on Saturday. The team plane leaves Thursday.',
     o: [O('Say it\'s the same game', { trust: 4, win: 0.2 }, 'They believe it. Mostly.', { sub: 'Keep everyone calm' }),
       O('Embrace being the villain', { fame: 2, morale: 3 }, 'You walk in waving. Their fans hate it. You love it.', { sub: 'Feed off the hate' })] },
-  po_hurt: { at: 'late', when: (L) => L.m.health < 72 && !!(L.season && L.season.seed && L.season.seed <= 10), w: 4,
+  /* BANGED UP FOR THE PLAYOFFS. The health meter sits near 90 in April, and under 72 it was true
+     of one season in three hundred, so this card and apr_rest_up were all but never dealt (the
+     sweep found each once in thousands of careers). A man is not right when the meter is under
+     80 or he has missed a real stretch of the season. */
+  po_hurt: { at: 'late', when: (L) => !!(L.season && L.season.seed && L.season.seed <= 10) && (L.m.health < 80 || L.season.out >= 10), w: 4,
     tag: 'The trainer\'s room', t: 'You\'re not healthy for the playoffs.', x: 'Something\'s wrong in your ankle. The team doctor says you could make it worse.',
     o: [O('Play through it', { health: -6, fame: 3, win: 0.2 }, 'You tape it twice and play. It hurts for a month after.', { sub: 'It\'s the playoffs' }),
       O('Sit out Game 1', { health: 8, win: -0.2 }, 'You watch in a suit. It\'s the hardest game of your career.', { sub: 'Get right first' })] },
@@ -1152,7 +1156,7 @@ story({
     tag: 'Agent\'s office', t: 'Your contract runs out in June.', x: '{agent} says every playoff game is worth money now.',
     o: [O('Block it out', { trust: 2 }, 'Basketball now. Money in July.', { sub: 'Basketball first' }),
       O('Go over the numbers', { morale: -2, fame: 1 }, 'He walks you through it. You sleep worse.', { sub: 'Know what\'s at stake' })] },
-  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && L.m.health < 70, w: 12,
+  apr_rest_up: { at: 'late', req: { team: true }, when: (L) => inPO(L) && L.season.seed <= 6 && (L.m.health < 80 || L.season.out >= 10), w: 12,
     tag: 'Training staff', t: 'Rest all the way to Game 1?', x: '{gm} wants you off the court until Saturday. No practice at all.',
     o: [O('Take the days off', { health: 10 }, 'Three days in the cold tub. You feel brand new.', { sub: 'Get your legs back' }),
       O('Practice anyway', { health: -4, eth: 2, trust: -2 }, 'You shoot alone at night. Nothing happens. This time.', { sub: 'Stay sharp' })] },

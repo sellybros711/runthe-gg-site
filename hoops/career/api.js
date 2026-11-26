@@ -247,6 +247,27 @@ const numWord = (n) => NUMWORDS[n] || String(n);
    that could say something the career did not do, and it is written to the
    player in short sentences. Called by the page when a career ends, so it
    moves nothing the season reads. */
+/* What a played childhood left, in two or three short sentences off what he chose. */
+const KID_SAY = {
+  teacher: { dad: 'Your father taught you to shoot in the driveway.', park: 'You learned the game from the big kids at the park.', self: 'You taught yourself, alone with a ball.' },
+  sport: { soccer: 'You played soccer too.', football: 'You played football too.', chess: 'You were in the chess club.', hoops: 'It was only ever basketball.' },
+  aau: { went: 'Your mother worked two jobs for the travel team.', stayed: 'You stayed on the town team with your friends.' },
+};
+function kidStory(L) {
+  if (!L.kid || !L.kid.done) return '';
+  const out = [];
+  for (const k of ['teacher', 'sport', 'aau']) { const m = recall(L, 'kid.' + k); if (m && KID_SAY[k][m.v]) out.push(KID_SAY[k][m.v]); }
+  return out.join(' ');
+}
+/* The rest of the life, when it was lived (later.js). */
+function laterStory(L) {
+  const P = L.later;
+  if (!P) return '';
+  const out = [P.job === 'family' && !P.peak ? 'You went home and stayed.' : 'After the game: ' + LATER_JOBS[P.job].n[P.peak].toLowerCase() + '.'];
+  if (P.gave) out.push('You gave away ' + money(P.gave) + '.');
+  if (P.over) out.push('You lived to ' + P.died + '.');
+  return out.join(' ');
+}
 function careerStory(L) {
   const f = L.final || legacy(L);
   const H = L.history, T = totals(L), d = L.draft || {};
@@ -254,6 +275,9 @@ function careerStory(L) {
   const start = [];
   if (L.parent) start.push('Your father was ' + L.parent.name + '. ' + L.parent.verdict + '.');
   if (L.origin && ORIGINS[L.origin] && !L.parent) start.push(ORIGINS[L.origin].name + '.');
+  /* A childhood that was played is the first thing it says (childhood.js). */
+  const kid = kidStory(L);
+  if (kid) start.push(kid);
   const road = roadStory(L).slice(0, -1);
   if (road.length) start.push(road.join(' '));
   else if (BACKGROUNDS[L.bg] && !L.amHist.length) start.push(BACKGROUNDS[L.bg].name + '.');
@@ -288,7 +312,8 @@ function careerStory(L) {
     const M = memories(L).slice(-3);
     if (M.length) out.push({ h: 'What people remember', p: M.map((m) => m.t).join(' ') });
     const last = H[H.length - 1];
-    const end = ['You retired at ' + last.age + ', ' + T.pts.toLocaleString('en-US') + ' points in all.', f.verdict + '.'];
+    /* A man who died young did not retire. */
+    const end = [(L.flags.died ? 'You were gone at ' + L.age : 'You retired at ' + last.age) + ', ' + T.pts.toLocaleString('en-US') + ' points in all.', f.verdict + '.'];
     if (f.ending) {
       end.push(f.ending.tierName + '.');
       if (f.ending.secretName) end.push(f.ending.secretName + '.');
@@ -298,6 +323,8 @@ function careerStory(L) {
   }
   const dn = dealNames(L);
   if (dn.length) out.push({ h: 'Your face sold', p: listWords(dn) + '.' });
+  const after = laterStory(L);
+  if (after) out.push({ h: 'After the whistle', p: after });
   const cc = H.length ? careerComps(L) : [];
   if (cc.length) out.push({ h: 'Who you were like', p: 'Your career reads like ' + listWords(cc) + '.' });
   if (f.epilogue) out.push({ h: 'Years later', p: f.epilogue });
@@ -363,7 +390,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, realMan, personAct, bondsLeft, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, realMan, personAct, bondsLeft, summerOf, summerPick, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,
