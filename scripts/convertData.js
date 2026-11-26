@@ -26,6 +26,15 @@ function clubName(c) {
   if (c == null || NOT_A_CLUB.has(c)) return null;
   return CLUB_NAMES.same[c] || c;
 }
+// One id per club across its names: the owner's ruling (2026-11-26) that a renamed club is one club,
+// shown under the name it had then. club_at_tournament keeps that name; club_id joins the eras.
+const ERA_ID = new Map();
+for (const e of CLUB_NAMES.eras) for (const n of e.names) ERA_ID.set(n, e.id);
+const slug = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+function clubId(name) {
+  if (name == null) return null;
+  return ERA_ID.get(name) || CLUB_NAMES.ids[name] || slug(name);
+}
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 function parseCSV(text) {
@@ -180,6 +189,7 @@ function main() {
       age_at_tournament:   intOrNull(row.age_at_tournament),
       birth_year:          intOrNull(row.birth_year),
       club_at_tournament:  clubName(strOrNull(row.club_at_tournament)),
+      club_id:             clubId(clubName(strOrNull(row.club_at_tournament))),
       award:               awardOrNull(row.award),
       // upgrade tracking: set pre_wc_overall to the OLD rating before bumping wc_overall
       // wc_note is an optional short reason (e.g. "2 goals vs France")

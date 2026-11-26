@@ -1,5 +1,5 @@
 {
-  "_about": "Run The Pitch's club names, decided once. `same` maps a spelling found in the World Cup rosters to the one name the game uses for that club; scripts/convertData.js applies it to club_at_tournament. `apart` lists names that normalize alike but are different clubs, checked against the players' nations and years (Barcelona in Spain and Barcelona SC in Ecuador). `not_a_club` is cleared to null: the 1994 United States squad was contracted to its federation, not a club. scripts/check-soccer-clubs.mjs fails on any pair of names that normalize alike and is in neither list. Era names of one club (Zenit Leningrad, CSKA SZ Sofia, Levski-Spartak Sofia) stay as they are until the owner decides.",
+  "_about": "Run The Pitch's club names and club identities, decided once. scripts/convertData.js applies them. `same` maps a spelling found in the World Cup rosters to the one spelling of that name (Al Hilal to Al-Hilal); it never renames a club. club_at_tournament keeps the NAME OF THE TIME, and club_id is one stable id per club across its names (the owner's ruling, 2026-11-26: a club that changed its name is one club, shown under the name it had then). The id is the slug of the name unless `eras` gives one id to several names of one club, or `ids` sets it to keep two clubs apart whose names slug alike. `apart` lists names that normalize alike but are different clubs, checked against the players' nations and years. `display` is a short name per club_id for the game to show if set (the owner is weighing names like 'Man U'); empty means show the name of the time. `not_a_club` is cleared to null: the 1994 United States squad was contracted to its federation. scripts/check-soccer-clubs.mjs holds all of it.",
   "same": {
     "Racing": "Racing Club",
     "AC Milan": "Milan",
@@ -26,14 +26,12 @@
     "Al Nassr": "Al-Nassr",
     "Al Hilal": "Al-Hilal",
     "Sangmu FC": "Sangmu",
-    "Chicago Fire": "Chicago Fire FC",
     "Utrecht": "FC Utrecht",
     "Tianjin Teda": "Tianjin TEDA",
     "Al Sadd": "Al-Sadd",
     "Jeju United FC": "Jeju United",
     "Monastir": "US Monastir",
     "St. Johnstone": "St Johnstone",
-    "Houston Dynamo": "Houston Dynamo FC",
     "Al Fateh": "Al-Fateh",
     "Shabab Al Ahli": "Shabab Al-Ahli",
     "Internazionale": "Inter Milan",
@@ -42,13 +40,75 @@
     "SG Dynamo Dresden": "Dynamo Dresden",
     "Spartak TAZ Trnava": "Spartak Trnava"
   },
-  "apart": [
-    ["Barcelona", "Barcelona SC"],
-    ["Guarani", "Guaraní"],
-    ["Real Sociedad", "CD Real Sociedad"],
-    ["Olimpia", "CD Olimpia"],
-    ["Wimbledon", "AFC Wimbledon"],
-    ["Al Khaleej Club", "Al-Khaleej"]
+  "eras": [
+    {
+      "id": "zenit-saint-petersburg",
+      "names": [
+        "Zenit Leningrad",
+        "Zenit Saint Petersburg"
+      ]
+    },
+    {
+      "id": "cska-sofia",
+      "names": [
+        "CSKA SZ Sofia",
+        "CSKA Sofia"
+      ]
+    },
+    {
+      "id": "levski-sofia",
+      "names": [
+        "Levski-Spartak Sofia",
+        "Levski Sofia"
+      ]
+    },
+    {
+      "id": "chicago-fire",
+      "names": [
+        "Chicago Fire",
+        "Chicago Fire FC"
+      ]
+    },
+    {
+      "id": "houston-dynamo",
+      "names": [
+        "Houston Dynamo",
+        "Houston Dynamo FC"
+      ]
+    }
   ],
-  "not_a_club": ["United States Soccer Federation"]
+  "ids": {
+    "Guarani": "guarani-campinas",
+    "Guaraní": "guarani-asuncion"
+  },
+  "apart": [
+    [
+      "Barcelona",
+      "Barcelona SC"
+    ],
+    [
+      "Guarani",
+      "Guaraní"
+    ],
+    [
+      "Real Sociedad",
+      "CD Real Sociedad"
+    ],
+    [
+      "Olimpia",
+      "CD Olimpia"
+    ],
+    [
+      "Wimbledon",
+      "AFC Wimbledon"
+    ],
+    [
+      "Al Khaleej Club",
+      "Al-Khaleej"
+    ]
+  ],
+  "not_a_club": [
+    "United States Soccer Federation"
+  ],
+  "display": {}
 }
