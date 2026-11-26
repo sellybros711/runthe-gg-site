@@ -1,0 +1,81 @@
+name: Soccer club pool refresh (Wikidata)
+# Monthly: rebuilds Run The Pitch's club pool (data/club_players.json) from Wikidata, proves it, and
+# puts it live through a pull request it merges itself (the owner's call, 2026-11-26: club data goes
+# live by itself once the gate passes, as golf's roster refresh does).
+#
+# scripts/soccer-clubs/fetch.mjs pulls, build.mjs makes the file, check.mjs is the gate. A failed
+# check stops the job before anything is pushed, so nothing goes live; the red run is the alert.
+# No key: Wikidata is free and CC0.
+#
+# A pull request opened with the workflow token starts no other workflow, so the gate runs HERE.
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '23 9 3 * *'   # the 3rd of each month, after the windows close on the 1st of Sep and Feb
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: soccer-club-pool-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pull Wikidata
+        run: node scripts/soccer-clubs/fetch.mjs --fresh
+      - name: Build the pool
+        run: node scripts/soccer-clubs/build.mjs | tee /tmp/build.txt
+      - name: Anything to propose?
+        id: diff
+        run: |
+          if git diff --quiet -- data/club_players.json; then
+            echo "The pool did not change. Nothing to propose." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: The gate (full squads, ratings, ids, nations, no shrink)
+        if: steps.diff.outputs.changed == '1'
+        run: node scripts/soccer-clubs/check.mjs --against HEAD | tee /tmp/gate.txt
+      - name: Push the branch and open (or update) the pull request
+        if: steps.diff.outputs.changed == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "soccer-club-pool-bot"
+          git config user.email "noreply@anthropic.com"
+          TITLE="Run The Pitch: club pool refresh from Wikidata, $(date -u +%Y-%m-%d)"
+          git checkout -B soccer-club-pool-refresh
+          git add data/club_players.json
+          git commit -m "$TITLE"
+          git push -f origin soccer-club-pool-refresh
+          {
+            echo "The monthly club pool refresh, opened by the workflow. The gate passed before this was pushed, and the workflow merged it, so it is live."
+            echo
+            echo '## The gate'; echo '```'; cat /tmp/gate.txt; echo '```'
+            echo '## The build'; echo '```'; cat /tmp/build.txt; echo '```'
+          } > /tmp/body.md
+          OPEN=$(gh pr list --head soccer-club-pool-refresh --state open --json number --jq '.[0].number')
+          if [ -n "$OPEN" ]; then
+            gh pr edit "$OPEN" --title "$TITLE" --body-file /tmp/body.md
+          else
+            gh pr create --base main --head soccer-club-pool-refresh --title "$TITLE" --body-file /tmp/body.md
+          fi
+      - name: Go live (merge the pull request)
+        if: steps.diff.outputs.changed == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=$(gh pr list --head soccer-club-pool-refresh --state open --json number --jq '.[0].number')
+          if [ -z "$N" ]; then echo "::error::no open club pool pull request to merge"; exit 1; fi
+          if gh pr merge "$N" --merge --delete-branch; then
+            echo "Merged #$N. The club pool is live." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::could not merge the club pool pull request #$N (most likely main moved under it)"
+            exit 1
+          fi
