@@ -7,11 +7,11 @@
  * NOTHING OPENS A GUIDE BY ITSELF. A first visit goes straight into day 1,
  * and the goal line (part of the HUD) says the next thing to do. How it
  * works is behind a button in the menu. */
-import { CONFIG, GAME } from './config.js?v=5';
+import { CONFIG, GAME } from './config.js?v=6';
 import { MAP } from './map.js?v=5';
-import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations, looksOf, shopList, placeCard, placeAt } from './sim.js?v=5';
-import { makeBot } from './bot.js?v=5';
-import { createStore } from './store.js?v=5';
+import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations, looksOf, shopList, placeCard, placeAt } from './sim.js?v=6';
+import { makeBot } from './bot.js?v=6';
+import { createStore } from './store.js?v=6';
 import { createAnalytics } from './analytics.js?v=1';
 import { createInput } from './input.js?v=1';
 import { createRenderer } from './render.js?v=7';
@@ -66,7 +66,14 @@ function burst(x, y) {
   }
 }
 let bannerT = 0;
-function banner(text) { const b = $('banner'); b.textContent = text; b.classList.add('on'); clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), 1600); }
+function banner(text, ms) { const b = $('banner'); b.textContent = text; b.classList.add('on'); clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), ms || 1600); }
+
+/* ---- the words for the day's event, the kinds of group, and what a review says ---- */
+const EVENT = { outing: ['Outing', 'An outing is booked. Busy day.'], rain: ['Rain', 'It rained overnight. The greens are rough.'],
+  heat: ['Heat wave', 'Heat wave. Short tempers. Big thirst.'], critic: ['Critic', 'A critic is playing today.'] };
+const SAID = { great: 'Great day out.', plain: 'It was fine.', greens: 'The greens were shaggy.', pace: 'Slow going out there.', wait: 'Waited too long to get going.',
+  keys: 'Nobody had our cart keys.', snack: 'Nobody was at the Snack Shack.', counter: 'Gave up at the counter.', tee: 'Gave up waiting on tee 1.', course: 'Gave up waiting on the course.' };
+const whoOf = n => (n.critic ? 'The critic' : cfg.golfers.types[n.type].name);
 
 /* ---- a shift ---- */
 function begin() {
@@ -78,7 +85,7 @@ function begin() {
   if (R) { R.setHelpers(stations, looksOf); R.rebuild(S, ctx); R.snapshot(S); }
   $('dayLabel').textContent = 'Day ' + S.no;
   $('results').classList.remove('on');
-  banner('Day ' + S.no);
+  if (S.event) banner('Day ' + S.no + '. ' + EVENT[S.event][1], 4200); else banner('Day ' + S.no);
   analytics.track('shift_start', { no: S.no });
   hud(true);
 }
@@ -87,14 +94,22 @@ function begin() {
 function dayCard() {
   const r = endShift(S, ctx, course).result;
   const mm = Math.floor(r.avgRoundS / 60), ss = Math.round(r.avgRoundS % 60), ds = Math.round((r.stars - r.stars0) * 100) / 100;
-  $('resTitle').textContent = 'Day ' + r.no + ' done';
+  $('resTitle').textContent = 'Day ' + r.no + (r.goalMet ? ' won' : ' lost');
   $('resGoal').innerHTML = '';
   const tag = document.createElement('span'); tag.className = 'tag' + (r.goalMet ? '' : ' miss'); tag.textContent = r.goalMet ? 'Goal met' : 'Goal missed';
-  $('resGoal').append(tag, ' ' + money(r.cash) + ' of ' + money(r.goal));
-  const rows = [['Rounds played', r.rounds], ['Average round', r.rounds ? mm + ':' + (ss < 10 ? '0' : '') + ss : '-'], ['Cash earned', money(r.cash)], ['Tips', money(r.tips)],
+  $('resGoal').append(tag, ' ' + money(r.cash) + ' of ' + money(r.goal) + (r.event ? ' · ' + EVENT[r.event][0] : ''));
+  const rows = [['Rounds played', r.rounds], ['Average round', r.rounds ? mm + ':' + (ss < 10 ? '0' : '') + ss : '-'], ['Cash earned', money(r.cash)], ['Tips', money(r.tips)], ['Goal bonus', r.goalMet ? money(r.bonus) : '-'],
     ['Star rating', r.stars.toFixed(2) + ' (' + (ds >= 0 ? '+' : '') + ds.toFixed(2) + ')'], ['Lowest round', r.low || '-'], ['Walk offs', r.walkOffs]];
   const box = $('resRows'); box.textContent = '';
   for (const [k, v] of rows) { const a = document.createElement('span'), b = document.createElement('span'); a.textContent = k; b.textContent = v; box.append(a, b); }
+  /* what they said: the worst reviews of the day first, and the best one last */
+  const said = $('resSaid'), notes = S.notes.slice().sort((a, b) => a.stars - b.stars || a.id - b.id), pickN = notes.length > 4 ? notes.slice(0, 3).concat(notes[notes.length - 1]) : notes;
+  said.textContent = '';
+  for (const n of pickN) {
+    const li = document.createElement('p'), st = document.createElement('b'); li.className = n.stars < 2.5 ? 'bad' : n.stars >= 4 ? 'good' : '';
+    st.textContent = n.stars.toFixed(1) + ' \u2605'; li.append(st, ' ' + whoOf(n) + ': ' + SAID[n.why]); said.append(li);
+  }
+  $('resSaidHead').style.display = pickN.length ? '' : 'none';
   const list = shopList(S, ctx), can = list.find(i => i.can), nextUp = list.find(i => !i.done);
   $('resNext').textContent = can ? 'You can afford something. Walk the course after hours.' : nextUp ? 'Next up: ' + nextUp.name + '. ' + money(nextUp.cost - S.cash) + ' to go.' : '';
 }
@@ -114,7 +129,7 @@ function finish() {
   const end = endShift(S, ctx, course), r = end.result, debug = S.debug, open = $('results').classList.contains('on');
   $('endDay').style.display = 'none'; $('afterBtn').style.display = 'none'; $('place').classList.remove('on');
   $('resSave').textContent = debug ? 'Debug tools were on. This day was not saved.' : 'Saving.';
-  analytics.track('shift_end', { no: r.no, rounds: r.rounds, cash: r.cash, tips: r.tips, walk_offs: r.walkOffs, goal_met: r.goalMet, stuck: r.stuck, upgrades: r.upgrades, hires: r.hires });
+  analytics.track('shift_end', { event: r.event || 'none', no: r.no, rounds: r.rounds, cash: r.cash, tips: r.tips, walk_offs: r.walkOffs, goal_met: r.goalMet, stuck: r.stuck, upgrades: r.upgrades, hires: r.hires });
   analytics.flush();
   saving = store.finish(end, S.log, debug).then(how => {
     const text = { debug: 'Debug tools were on. This day was not saved.', device: 'Saved on this device. Sign in to keep it everywhere.', saved: 'Saved to your account.',
@@ -145,17 +160,18 @@ function hud(force) {
   if (force || S.stars !== hudStars) { hudStars = S.stars; $('stars').textContent = S.stars.toFixed(2); }
   const c = clockOf(S, cfg);
   if (c !== hudClock) { hudClock = c; $('clock').textContent = c; }
-  sheetOf(S, 3, SH);
+  sheetOf(S, S.event ? 2 : 3, SH);
   let key = '';
   for (const g of SH) key += g.id + g.st + '|';
   if (force || key !== hudSheet) {
     hudSheet = key;
     const box = $('chips'); box.textContent = '';
+    if (S.event) { const el = document.createElement('span'); el.className = 'chip ev'; el.textContent = EVENT[S.event][0]; box.append(el); }
     for (const g of SH) {
       const el = document.createElement('span'); el.className = 'chip' + (g.st === 'sched' ? '' : ' here');
       const t = document.createElement('i');
       t.textContent = g.st === 'sched' ? clockOf({ tick: g.arrive }, cfg) : 'Here';
-      el.append(g.size === 1 ? '1 golfer' : g.size + ' golfers', t); box.append(el);
+      el.append(g.critic ? g.size + ' · Critic' : g.type !== 'regular' ? g.size + ' · ' + cfg.golfers.types[g.type].name : g.size === 1 ? '1 golfer' : g.size + ' golfers', t); box.append(el);
     }
     if (!SH.length) { const el = document.createElement('span'); el.className = 'chip'; el.textContent = 'No more groups today'; box.append(el); }
   }
@@ -349,5 +365,5 @@ addEventListener('pagehide', () => analytics.last());
 window.__course = {
   game: GAME, state: () => S, ctx: () => ctx, info: () => (R ? R.info() : null), store, art: R ? R.artReady : Promise.resolve(false),
   auto(on) { bot = on ? makeBot() : null; }, scale(n) { scale = n; },
-  summary: () => ({ no: S.no, tick: S.tick, phase: S.phase, done: S.done, ended, staff: Object.keys(S.staff), levels: S.levels, cash: S.cash, goal: goal && goal.text, mode: S.player.mode, fps })
+  summary: () => ({ event: S.event, notes: S.notes.length, no: S.no, tick: S.tick, phase: S.phase, done: S.done, ended, staff: Object.keys(S.staff), levels: S.levels, cash: S.cash, goal: goal && goal.text, mode: S.player.mode, fps })
 };

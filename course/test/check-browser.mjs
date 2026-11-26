@@ -153,7 +153,7 @@ for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 84
   const res = await page.evaluate(() => ({ title: document.getElementById('resTitle').textContent, rows: [...document.querySelectorAll('#resRows span')].map(x => x.textContent),
     save: document.getElementById('resSave').textContent, goal: document.getElementById('resGoal').textContent, info: window.__course.info(), tally: window.__course.state().tally,
     stored: JSON.parse(localStorage.getItem('rtc_course_v1')) }));
-  ok(res.title === 'Day 1 done', name + ': the results card says "' + res.title + '"');
+  ok(/^Day 1 (won|lost)$/.test(res.title), name + ': the results card says "' + res.title + '"');
   for (const label of ['Rounds played', 'Average round', 'Cash earned', 'Tips', 'Star rating', 'Lowest round']) ok(res.rows.includes(label), name + ': the results card has no ' + label);
   ok(/Goal met/.test(res.goal), name + ': the bot missed the day 1 goal: ' + res.goal);
   ok(res.tally.stuck === 0 && res.tally.cutOff === 0, name + ': a group was stuck or cut off');

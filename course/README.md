@@ -41,6 +41,22 @@ tester gate, noindexed, linked from nowhere, off the home page and the newslette
   baskets. A hire works slower than the player (`staffSpeed`, `staffDelayS`). `economy.staff`.
 - The whole structure, its chapters and the build order are in the vault: `games/course/course-structure.md`.
 
+## A day that can be won or lost (step 2, 2026-11-26)
+
+- **Three kinds of group** (`golfers.types`): Regulars, Rush and Tourists. A kind multiplies a group's
+  patience at the counter and on tee 1, its time on a hole, its tip and what it spends on extras, and
+  weighs its review its own way. Out on the course everyone waits the same: that wait is not the
+  player's to fix. Day 1 is all regulars.
+- **The day's event** (`events`): from day 3 a day may be an outing (more groups), rain (rougher
+  greens), a heat wave (snack sales up, shorter waits at the counter and tee) or a critic's visit
+  (one group's review counts several times). Kinds and events are drawn from their own seed stream,
+  so the tee sheet does not move.
+- **Reviews you can read**: every group leaves a note in `S.notes` (stars and a reason code). The
+  page turns the code into a sentence on the day's card. A service a group went without (cart keys,
+  the snack) costs `stars.missPenalty`.
+- **Won or lost**: the goal is a share of the fees booked at today's prices, rising a little each day
+  (`goalShareStep` to `goalShareMax`). Meeting it wins the day and pays `goalBonus` at the close.
+
 ## The rules the code keeps
 
 - **The sim is pure and deterministic.** Same seed, config and command log give the same shift in
