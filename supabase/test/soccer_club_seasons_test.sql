@@ -30,6 +30,12 @@ do $$ begin
 end $$;
 
 create extension if not exists citext;
+-- Supabase's own defaults: anon and authenticated are handed ALL on every new table, view and
+-- function in public. A script that forgets to revoke passes on a bare cluster and is wide open
+-- in production, so the test's base sets the same defaults (QA's review of 191).
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+grant usage on schema public to anon, authenticated, service_role;
 drop schema if exists auth cascade;
 create schema auth;
 create table auth.users (id uuid primary key);
@@ -111,6 +117,8 @@ begin
   perform pg_temp.must_fail(format($q$select submit_club_season('full','easy',5,2,2,12,8,6,'winner',99,0,%L::text[])$q$, xi), 'a cup from sixth');
   perform pg_temp.must_fail(format($q$select submit_club_season('full','easy',5,2,2,12,8,3,'none',99,0,%L::text[])$q$, xi), 'third with no cup');
   perform pg_temp.must_fail(format($q$select submit_club_season('full','easy',5,2,2,12,8,11,'none',99,0,%L::text[])$q$, xi), 'eleventh of ten');
+  perform pg_temp.must_fail(format($q$select submit_club_season('full','easy',9,0,0,20,2,2,'winner',99,0,%L::text[])$q$, xi), 'nine wins and second');
+  perform pg_temp.must_fail(format($q$select submit_club_season('full','easy',0,0,9,2,20,7,'none',99,0,%L::text[])$q$, xi), 'nine defeats and seventh');
   perform pg_temp.must_fail(format($q$select submit_club_season('full','easy',5,2,2,12,8,3,'champion',99,0,%L::text[])$q$, xi), 'a made-up cup word');
   perform pg_temp.must_fail(format($q$select submit_club_season('mega','easy',5,2,2,12,8,3,'semi',99,0,%L::text[])$q$, xi), 'a made-up draft type');
   perform pg_temp.must_fail(format($q$select submit_club_season('full','easy',5,2,2,12,8,3,'semi',99,0,%L::text[])$q$, six), 'six men in a full squad');
@@ -176,6 +184,52 @@ begin
   perform soccer_season_guest_submit('13131313-1313-4313-8313-131313131313', ip, 'quick', 'easy', 4, 4, 1, 12, 7, 3, 'semi', 84, 0, six, null);
   if exists (select 1 from soccer_club_seasons where guest = g2) then raise exception 'a 61 day old guest season was kept'; end if;
   if not exists (select 1 from soccer_club_seasons where user_id = acct2) then raise exception 'an account''s old season was pruned'; end if;
+end $$;
+
+-- 9. the board is read only: as a browser role, an update and a delete on the view are refused
+--    and change nothing (a view over one table is auto-updatable unless it is revoked)
+select count(*) as rows_before, coalesce(sum(points), 0) as points_before from public.soccer_club_seasons \gset
+set role anon;
+select count(*) > 0 as anon_reads from public.club_season_board \gset
+do $$ begin
+  begin update public.club_season_board set points = 27, name = 'hacked'; raise exception 'HOLE: anon updated the board';
+  exception when insufficient_privilege then null; end;
+  begin delete from public.club_season_board; raise exception 'HOLE: anon deleted from the board';
+  exception when insufficient_privilege then null; end;
+  begin insert into public.club_season_board (name, points) values ('hacked', 27); raise exception 'HOLE: anon inserted into the board';
+  exception when insufficient_privilege then null; when others then null; end;
+  begin perform 1 from public.soccer_club_seasons; raise exception 'HOLE: anon read the table';
+  exception when insufficient_privilege then null; end;
+end $$;
+set role authenticated;
+do $$ begin
+  begin update public.club_season_board set points = 27; raise exception 'HOLE: an account updated the board';
+  exception when insufficient_privilege then null; end;
+  begin delete from public.club_season_board; raise exception 'HOLE: an account deleted from the board';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+select (count(*) = :rows_before and coalesce(sum(points), 0) = :points_before) as untouched from public.soccer_club_seasons \gset
+\if :anon_reads
+\else
+  \echo 'FAIL: anon cannot read the board'
+  \quit 1
+\endif
+\if :untouched
+\else
+  \echo 'FAIL: a browser role changed the board'
+  \quit 1
+\endif
+
+-- 10. a hidden season leaves the board and the rank, and nothing else changes
+do $$
+declare before_n int; top_id bigint;
+begin
+  select count(*) into before_n from club_season_board where draft_type = 'quick';
+  select id into top_id from soccer_club_seasons where draft_type = 'quick' order by points desc limit 1;
+  update soccer_club_seasons set hidden = true where id = top_id;
+  if (select count(*) from club_season_board where draft_type = 'quick') <> before_n - 1 or exists (select 1 from club_season_board where id = top_id) then raise exception 'a hidden season is still on the board'; end if;
+  if (club_season_rank('quick', 0, -30, 'none', 0)->>'total')::int <> before_n - 1 then raise exception 'a hidden season still counts in the rank'; end if;
 end $$;
 
 \echo 'soccer_club_seasons_test: all passed'

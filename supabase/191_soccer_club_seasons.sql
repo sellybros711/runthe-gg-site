@@ -60,6 +60,11 @@ create table if not exists public.soccer_club_seasons (
   created_at  timestamptz not null default now(),
   constraint soccer_club_seasons_owner check ((user_id is not null) <> (guest is not null))
 );
+-- A season the owner has taken off the board (a made-up result, say). One update hides it:
+--   update soccer_club_seasons set hidden = true where id = <the row's id>;
+-- The board and the rank leave hidden rows out. Added by alter so a re-run over an older copy
+-- of this script gains it too.
+alter table public.soccer_club_seasons add column if not exists hidden boolean not null default false;
 -- The board's order, per draft size: points, goal difference, the cup, goals, then the earlier season.
 create index if not exists soccer_club_seasons_board_idx
   on public.soccer_club_seasons (draft_type, points desc, gd desc, cup_rank desc, gf desc, created_at asc);
@@ -102,6 +107,8 @@ begin
   if p_cup not in ('winner', 'finalist', 'semi', 'none') then raise exception 'bad cup'; end if;
   -- The Club Cup is the top four's, and only theirs
   if (p_cup <> 'none') <> (p_position <= 4) then raise exception 'the cup is for the top four'; end if;
+  -- nine wins is first and nine defeats is last, whatever the page says
+  if (p_won = 9 and p_position <> 1) or (p_lost = 9 and p_position <> 10) then raise exception 'position does not fit the results'; end if;
   if n_ids <> (case when p_draft_type = 'full' then 11 else 6 end) then raise exception 'wrong squad size: %', n_ids; end if;
   if n_ids <> n_distinct then raise exception 'duplicate players not allowed'; end if;
   -- each a World Cup player, or a club pool man (a Wikidata id)
@@ -229,15 +236,22 @@ revoke all on function public.soccer_season_guest_claim(uuid, uuid) from public,
 grant execute on function public.soccer_season_guest_claim(uuid, uuid) to service_role;
 
 -- ---------- 6) the board ------------------------------------------------------------
--- What the page reads: board columns only. No user id, no guest id. It runs as its
--- owner on purpose (Supabase's advisor will flag a "security definer view"): it is
--- the only window onto the table, which has no policy of its own.
+-- What the page reads: board columns only. No user id, no guest id, no hidden rows. It runs
+-- as its owner on purpose (Supabase's advisor will flag a "security definer view"): it is the
+-- only window onto the table, which has no policy of its own.
+--
+-- READ ONLY, AND THAT TAKES A REVOKE. A view over one table is auto-updatable, this one runs as
+-- its owner (so the table's row level security does not apply), and Supabase's default
+-- privileges hand anon and authenticated ALL on every new view in public. Without the revoke
+-- below, anyone could update or delete the board through the view (QA's review, 2026-11-26).
 create or replace view public.club_season_board as
   select s.id, s.name, s.flag, (s.guest is not null) as guest, s.draft_type, s.mode,
          s.points, s.won, s.drawn, s.lost, s.gf, s.ga, s.gd, s.position, s.cup, s.cup_rank,
          s.overall, s.signings, s.player_ids, s.slots, s.created_at
-    from public.soccer_club_seasons s;
+    from public.soccer_club_seasons s
+   where not s.hidden;
 
+revoke all on public.club_season_board from public, anon, authenticated;
 grant select on public.club_season_board to anon, authenticated;
 
 -- A season's rank on its board, and the board's size, in one call (two index counts).
@@ -249,13 +263,13 @@ language sql stable security definer set search_path = public as $$
   with me as (select case p_cup when 'winner' then 3 when 'finalist' then 2 when 'semi' then 1 else 0 end as cr)
   select json_build_object(
     'rank', 1 + (select count(*) from soccer_club_seasons s, me
-                  where s.draft_type = p_draft_type and (p_since is null or s.created_at >= p_since)
+                  where s.draft_type = p_draft_type and not s.hidden and (p_since is null or s.created_at >= p_since)
                     and (s.points > p_points
                       or (s.points = p_points and s.gd > p_gd)
                       or (s.points = p_points and s.gd = p_gd and s.cup_rank > me.cr)
                       or (s.points = p_points and s.gd = p_gd and s.cup_rank = me.cr and s.gf > p_gf))),
     'total', (select count(*) from soccer_club_seasons s
-               where s.draft_type = p_draft_type and (p_since is null or s.created_at >= p_since)));
+               where s.draft_type = p_draft_type and not s.hidden and (p_since is null or s.created_at >= p_since)));
 $$;
 
 revoke all on function public.club_season_rank(text, int, int, text, int, timestamptz) from public;
