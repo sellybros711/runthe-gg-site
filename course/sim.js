@@ -117,14 +117,14 @@ export function upgradeCost(cfg, id, level) {
 const extra = (S, cfg, id) => { const l = levelOf(S, cfg, id); return l > 1 ? l - 1 : 0; };
 /* The numbers the levels change, worked out when a shift starts and after each purchase. */
 function applyLevels(S, cfg) {
-  const u = cfg.economy.upgrades, sh = cfg.shift, g = cfg.golfers, e = id => extra(S, cfg, id);
+  const u = cfg.economy.upgrades, sh = cfg.shift, g = cfg.golfers, e = id => extra(S, cfg, id), hot = S.event === 'heat' ? cfg.events.heat.wait : 1;
   S.fx = {
     walk: sh.walk + u.boots.walk * e('boots'), cart: sh.cart + u.my_cart.cart * e('my_cart'), mower: sh.mower + u.shed.mower * e('shed'),
     mow: Math.max(0.5, sh.rings.mow - u.shed.mow * e('shed')),
     checkin: sh.rings.checkin * Math.max(0.2, 1 - u.shop.checkin * e('shop')),
     sendoff: sh.rings.sendoff * Math.max(0.2, 1 - u.starter.sendoff * e('starter')),
-    patCounter: g.patience.counter + u.clubhouse.patience * e('clubhouse'),
-    patTee: g.patience.tee1 + u.starter.patience * e('starter'),
+    patCounter: (g.patience.counter + u.clubhouse.patience * e('clubhouse')) * hot,
+    patTee: (g.patience.tee1 + u.starter.patience * e('starter')) * hot,
     patCourse: g.patience.course + u.putting_green.patience * levelOf(S, cfg, 'putting_green'),
     feeAll: 1 + u.shop.fee * e('shop'),
     rental: u.cart_barn.rental * levelOf(S, cfg, 'cart_barn'),
@@ -132,7 +132,7 @@ function applyLevels(S, cfg) {
     tipMax: cfg.economy.tipMax + u.clubhouse.tip * e('clubhouse'),
     design: Math.min(1, cfg.stars.designNeutral + u.gardens.design * e('gardens')),
     practice: u.putting_green.practice * levelOf(S, cfg, 'putting_green'),
-    snack: levelOf(S, cfg, 'snack_shack') ? cfg.economy.snackBase + u.snack_shack.snack * e('snack_shack') : 0,
+    snack: levelOf(S, cfg, 'snack_shack') ? (cfg.economy.snackBase + u.snack_shack.snack * e('snack_shack')) * (S.event === 'heat' ? cfg.events.heat.snack : 1) : 0,
     range: levelOf(S, cfg, 'driving_range') ? cfg.economy.rangeBase + u.driving_range.range * e('driving_range') : 0
   };
 }
@@ -179,12 +179,17 @@ export function startShift(course, cfg, map) {
     pads: {}, plot: null, carts: course.unlocks.cart_barn === 'done', levels: Object.assign({}, course.levels), fx: null, padList: [],
     staff: Object.assign({}, course.staff), auto: { checkin: 0, sendoff: 0, keys: 0, snack: 0, range: 0 }, gk: 0,
     pg: course.unlocks.putting_green === 'done' ? (course.pg || cfg.stars.greenStart) : -1, pgMow: 0, baskets: course.baskets, afterT: 0,
-    work: { id: null, t: 0 },
-    tally: { rounds: 0, golfers: 0, fees: 0, refunds: 0, tips: 0, spent: 0, walkOffs: 0, roundS: 0, low: 0, stuck: 0, cutOff: 0, aces: 0, upgrades: 0, extras: 0, hires: 0 },
+    work: { id: null, t: 0 }, event: '', notes: [],
+    tally: { bonus: 0, rounds: 0, golfers: 0, fees: 0, refunds: 0, tips: 0, spent: 0, walkOffs: 0, roundS: 0, low: 0, stuck: 0, cutOff: 0, aces: 0, upgrades: 0, extras: 0, hires: 0 },
     log: [], pending: []
   };
   S.rng = S.seed;
-  for (const h of course.holes) if (h.open) { S.greens[h.ord] = h.green; S.mow[h.ord] = 0; S.teeQ[h.ord] = []; S.busy[h.ord] = 0; }
+  /* The day's event and each group's kind come from their own stream, so the tee sheet is the
+     same sheet with or without them. */
+  const ev = cfg.events, R2 = { rng: mixSeed(S.seed, 7919) };
+  if (no >= ev.fromDay && rngNext(R2) < ev.chance) S.event = rngPick(R2, ev.odds);
+  for (const h of course.holes) if (h.open) { S.greens[h.ord] = S.event === 'rain' ? clamp(h.green - ev.rain.greens, 0, 100) : h.green; S.mow[h.ord] = 0; S.teeQ[h.ord] = []; S.busy[h.ord] = 0; }
+  if (S.event === 'rain' && S.pg > 0) S.pg = clamp(S.pg - ev.rain.greens, 0, 100);
   for (const id in cfg.economy.pads) {
     const u = course.unlocks[id];
     S.pads[id] = { st: u || 'open', t: 0 };
@@ -195,14 +200,17 @@ export function startShift(course, cfg, map) {
   /* The tee sheet: bookings scale with the star rating, and with the clubhouse. */
   const g = cfg.golfers;
   const n = Math.max(2, Math.round(g.groupsDay1 * (1 + g.bookingsPerStar * (course.stars - cfg.stars.start))
-    * (1 + cfg.economy.upgrades.parking.bookings * extra(S, cfg, 'parking'))));
+    * (1 + cfg.economy.upgrades.parking.bookings * extra(S, cfg, 'parking')) * (S.event === 'outing' ? 1 + ev.outing.bookings : 1)));
   const span = (sh.lastTeeS - sh.firstTeeS) / Math.max(1, n - 1);
   for (let i = 0; i < n; i++) addGroup(S, cfg, Math.round((sh.dawnS + sh.firstTeeS + span * i + (rngNext(S) - 0.5) * span * 0.4) * r));
   if (no <= g.gentleDays) for (const q of S.groups) if (q.pace === 'verySlow') q.pace = 'slow';
+  if (no > g.gentleDays) for (const q of S.groups) { q.type = rngPick(R2, g.typeOdds); q.pm = g.types[q.type].patience; }
+  if (S.event === 'critic') S.groups[Math.floor(rngNext(R2) * S.groups.length)].critic = true;
   /* A thin tee sheet lowers the goal: it is always within reach of good service. */
   let booked = 0;
   for (const q of S.groups) booked += q.size;
-  const reach = Math.floor(booked * cfg.economy.feePerHole * roundPlan(open, false).length * cfg.economy.goalShare / 5) * 5;
+  const eco = cfg.economy, share = Math.min(eco.goalShareMax, eco.goalShare + eco.goalShareStep * (no - 1));
+  const reach = Math.floor(booked * feeOf(S, { cfg, route: { plan: roundPlan(open, false) } }) * share / 5) * 5;
   if (reach < S.goal) S.goal = reach;
   return S;
 }
@@ -213,6 +221,7 @@ function addGroup(S, cfg, arrive) {
   const golfers = [];
   for (let i = 0; i < size; i++) golfers.push(rngPick(S, g.tierOdds));
   const grp = { id: S.groups.length + 1, size, golfers, pace: rngPick(S, g.paceOdds), look: Math.floor(rngNext(S) * 1000),
+    type: 'regular', pm: 1, critic: false, mk: 0, ms: 0,
     st: 'sched', arrive, x: 0, y: 0, path: [], pi: 0, hi: 0, ord: 0, sent: false, paid: 0,
     wc: 0, wt: 0, wo: 0, wk: 0, ws: 0, t0: 0, t1: 0, shots: null, scores: [], tot: null, check: 0, adv: arrive, cart: false };
   S.groups.push(grp);
@@ -285,7 +294,12 @@ export function step(S, ctx) {
   if (S.phase === 'closing') {
     /* the last group is in: the day's numbers are final, and after hours begins */
     if (active > 0 && S.tick >= openEnd + sh.closeMaxS * r) { for (const g of S.groups) if (g.st !== 'gone') { S.tally.cutOff++; g.st = 'gone'; } active = 0; }
-    if (active === 0) { S.phase = 'after'; S.afterT = S.tick; if (ctx.fx) ctx.fx('closed', S.player.x, S.player.y, 0); }
+    if (active === 0) {
+      /* a day that met its goal is won, and a won day pays a bonus */
+      const t = S.tally;
+      if (t.fees - t.refunds + t.tips + t.extras >= S.goal) { t.bonus = Math.round(S.goal * cfg.economy.goalBonus); S.cash += t.bonus; }
+      S.phase = 'after'; S.afterT = S.tick; if (ctx.fx) ctx.fx('closed', S.player.x, S.player.y, 0);
+    }
   } else if (S.phase === 'after') {
     /* AFTER HOURS. Nobody on the course and no clock the player can see: walk the property and
        spend. It ends on the player's word ('end'), or at afterMaxS so a shift is never endless. */
@@ -405,10 +419,11 @@ function ringDo(S, ctx, id) {
   const map = ctx.map;
   if (id === 'checkin') checkIn(S, ctx);
   else if (id === 'sendoff') { const g = unsent(S, ctx); if (g) { g.sent = true; g.adv = S.tick; if (ctx.fx) ctx.fx('sent', map.teeRing.x, map.teeRing.y, g.id); } }
-  else if (id === 'keys') { const g = waiting(S, 'keys'); if (g) { g.cart = true; extra$(S, ctx, Math.round(g.size * S.fx.rental), map.keys.ring); toTee(S, g, ctx); } }
-  else if (id === 'snack') { const g = waiting(S, 'snack'); if (g) { extra$(S, ctx, Math.round(g.size * S.fx.snack), map.snack.ring); toNext(S, g, ctx); } }
+  else if (id === 'keys') { const g = waiting(S, 'keys'); if (g) { g.cart = true; extra$(S, ctx, Math.round(g.size * S.fx.rental * kind(ctx, g).spend), map.keys.ring); toTee(S, g, ctx); } }
+  else if (id === 'snack') { const g = waiting(S, 'snack'); if (g) { extra$(S, ctx, Math.round(g.size * S.fx.snack * kind(ctx, g).spend), map.snack.ring); toNext(S, g, ctx); } }
   else { S.baskets = ctx.cfg.economy.rangeBaskets; if (ctx.fx) ctx.fx('filled', map.rangeRing.x, map.rangeRing.y, 0); }
 }
+const kind = (ctx, g) => ctx.cfg.golfers.types[g.type];
 function extra$(S, ctx, n, at) { if (n > 0) { S.cash += n; S.tally.extras += n; if (ctx.fx) ctx.fx('cash', at.x, at.y, n); } }
 
 /* Every ring on the property and whether it has work right now, then every place's pad. */
@@ -536,7 +551,7 @@ function checkIn(S, ctx) {
   g.check = S.tick; g.adv = S.tick; g.ord = ctx.route.plan[0];
   if (ctx.fx) ctx.fx('cash', map.counter.x, map.counter.y, g.paid);
   /* range balls: a basket a golfer, while there are baskets */
-  if (S.fx.range > 0 && S.baskets > 0) { const n = g.size < S.baskets ? g.size : S.baskets; S.baskets -= n; extra$(S, ctx, Math.round(n * S.fx.range), map.rangeRing); }
+  if (S.fx.range > 0 && S.baskets > 0) { const n = g.size < S.baskets ? g.size : S.baskets; S.baskets -= n; extra$(S, ctx, Math.round(n * S.fx.range * kind(ctx, g).spend), map.rangeRing); }
   /* with a cart barn, the group stops for keys on the way to the tee */
   if (S.carts) { g.st = 'toKeys'; g.path = [map.waypoints.toTee[0], map.keys.spot]; g.pi = 0; }
   else { g.st = 'toTee'; g.path = map.waypoints.toTee.concat([ctx.route.holes[g.ord].wait]); g.pi = 0; }
@@ -572,7 +587,14 @@ function release(S, g) {
   let i = S.queue.indexOf(g.id); if (i >= 0) S.queue.splice(i, 1);
   for (const ord in S.teeQ) { i = S.teeQ[ord].indexOf(g.id); if (i >= 0) S.teeQ[ord].splice(i, 1); if (S.busy[ord] === g.id) S.busy[ord] = 0; }
 }
-function walkOff(S, g, ctx) {
+/* One group's review: its stars into the rating (a critic's count several times), and a note the day's card can read. */
+function review(S, g, cfg, stars, why) {
+  const n = g.critic ? cfg.events.critic.weight : 1;
+  for (let i = 0; i < n; i++) S.reviews.push(stars);
+  S.stars = starsOf(S.reviews, cfg);
+  S.notes.push({ id: g.id, type: g.type, critic: g.critic, size: g.size, stars, why });
+}
+function walkOff(S, g, ctx, why) {
   release(S, g); requeue(S, ctx);
   if (g.paid) {
     /* a full refund, but never more than is in the till: cash cannot go below zero */
@@ -580,7 +602,7 @@ function walkOff(S, g, ctx) {
     S.cash -= back; S.tally.refunds += back; if (ctx.fx) ctx.fx('refund', g.x, g.y, back); g.paid = 0;
   }
   S.tally.walkOffs++;
-  S.reviews.push(ctx.cfg.stars.walkOffReview); S.stars = starsOf(S.reviews, ctx.cfg);
+  review(S, g, ctx.cfg, ctx.cfg.stars.walkOffReview, why);
   if (ctx.fx) ctx.fx('walkoff', g.x, g.y, g.id);
   g.st = 'off'; g.path = [ctx.map.gate]; g.pi = 0; g.adv = S.tick;
 }
@@ -591,11 +613,11 @@ function updateGroup(S, g, ctx, dt) {
   const cfg = ctx.cfg, gc = cfg.golfers, sh = cfg.shift, st = g.st;
   const speed = g.cart ? sh.golferCart : sh.golferWalk;
   if (st === 'toQueue') { if (walk(g, speed, dt)) { g.st = 'queue'; g.adv = S.tick; } }
-  else if (st === 'queue') { walk(g, speed, dt); g.wc += dt; if (g.wc >= S.fx.patCounter) walkOff(S, g, ctx); }
+  else if (st === 'queue') { walk(g, speed, dt); g.wc += dt; if (g.wc >= S.fx.patCounter * g.pm) walkOff(S, g, ctx, 'counter'); }
   else if (st === 'toKeys') { if (walk(g, speed, dt)) { g.st = 'keys'; g.adv = S.tick; } }
-  else if (st === 'keys') { g.wk += dt; if (g.wk >= cfg.economy.keysWaitS) toTee(S, g, ctx); }      // nobody came: they walk the round
+  else if (st === 'keys') { g.wk += dt; if (g.wk >= cfg.economy.keysWaitS) { g.mk = 1; toTee(S, g, ctx); } }      // nobody came: they walk the round
   else if (st === 'toSnack') { if (walk(g, speed, dt)) { g.st = 'snack'; g.adv = S.tick; } }
-  else if (st === 'snack') { g.ws += dt; if (g.ws >= cfg.economy.snackWaitS) toNext(S, g, ctx); }  // nobody came: they go on hungry
+  else if (st === 'snack') { g.ws += dt; if (g.ws >= cfg.economy.snackWaitS) { g.ms = 1; toNext(S, g, ctx); } }  // nobody came: they go on hungry
   else if (st === 'toTee' || st === 'toNext') {
     if (walk(g, speed, dt)) { g.st = 'teeWait'; g.adv = S.tick; S.teeQ[g.ord].push(g.id); }
   }
@@ -603,8 +625,8 @@ function updateGroup(S, g, ctx, dt) {
     const q = S.teeQ[g.ord], first = g.hi === 0;
     if (q[0] === g.id && !S.busy[g.ord] && (!first || g.sent)
       && (!first || S.tick - S.lastTee >= sh.teeGapS * sh.tick)) { q.shift(); teeOff(S, g, ctx); return; }
-    if (first) { g.wt += dt; if (g.wt >= S.fx.patTee) walkOff(S, g, ctx); }
-    else { g.wo += dt; if (g.wo >= S.fx.patCourse) walkOff(S, g, ctx); }
+    if (first) { g.wt += dt; if (g.wt >= S.fx.patTee * g.pm) walkOff(S, g, ctx, 'tee'); }
+    else { g.wo += dt; if (g.wo >= S.fx.patCourse) walkOff(S, g, ctx, 'course'); }
   }
   else if (st === 'play') {
     const h = ctx.route.holes[g.ord];
@@ -632,7 +654,7 @@ function teeOff(S, g, ctx) {
     if (res.strokes === 1) S.tally.aces++;
   }
   g.scores.push(strokes);
-  const secs = gc.holeS[h.par] * gc.sizeFactor[g.size - 1] * gc.paceFactor[g.pace] * (g.cart ? S.fx.pace : 1);
+  const secs = gc.holeS[h.par] * gc.sizeFactor[g.size - 1] * gc.paceFactor[g.pace] * gc.types[g.type].pace * (g.cart ? S.fx.pace : 1);
   g.t0 = S.tick; g.t1 = S.tick + Math.max(1, Math.round(secs * r));
   g.x = h.tee.x; g.y = h.tee.y;
   if (ctx.fx) ctx.fx('tee', h.tee.x, h.tee.y, g.id);
@@ -654,16 +676,23 @@ function holeOut(S, g, ctx) {
 }
 /* A finished group passes the shop: the review, the tip, the day's numbers. */
 function settle(S, g, ctx) {
-  const cfg = ctx.cfg, gc = cfg.golfers, w = cfg.stars.weights, r = cfg.shift.tick;
+  const cfg = ctx.cfg, gc = cfg.golfers, ty = gc.types[g.type], w = ty.weights || cfg.stars.weights, r = cfg.shift.tick;
   let cond = 0;
   for (const ord of S.open) cond += S.greens[ord];
   cond = cond / (S.open.length * 100);
-  const service = 1 - (g.wc / S.fx.patCounter + g.wt / S.fx.patTee) / 2;
+  const service = 1 - (g.wc / (S.fx.patCounter * g.pm) + g.wt / (S.fx.patTee * g.pm)) / 2;
   const pace = 1 - g.wo / S.fx.patCourse;
-  const score = clamp(w.condition * cond + w.pace * pace + w.service * service + w.design * S.fx.design, 0, 1);
-  const tip = Math.round(g.paid * S.fx.tipMax * score);
+  const score = clamp(w.condition * cond + w.pace * pace + w.service * service + w.design * S.fx.design - cfg.stars.missPenalty * (g.mk + g.ms), 0, 1);
+  const tip = Math.round(g.paid * S.fx.tipMax * score * ty.tip);
+  /* what the review says: happy, or the worst of the day (a service they went without, if nothing else was poor) */
+  let why = 'great';
+  if (score < cfg.stars.happy) {
+    why = cond <= pace && cond <= service ? 'greens' : pace <= service ? 'pace' : 'wait';
+    const low = cond < pace ? (cond < service ? cond : service) : (pace < service ? pace : service);
+    if (low >= cfg.stars.happy || (g.mk + g.ms > 0 && low >= 0.5)) why = g.mk ? 'keys' : g.ms ? 'snack' : 'plain';
+  }
   S.cash += tip; S.tally.tips += tip;
-  S.reviews.push(Math.round((1 + 4 * score) * 10) / 10); S.stars = starsOf(S.reviews, cfg);
+  review(S, g, cfg, Math.round((1 + 4 * score) * 10) / 10, why);
   S.tally.rounds++; S.tally.golfers += g.size; S.tally.roundS += (S.tick - g.check) / r;
   for (const t of g.tot) if (!S.tally.low || t < S.tally.low) S.tally.low = t;
   if (ctx.fx) ctx.fx('tip', ctx.map.shopExit.x, ctx.map.shopExit.y, tip);
@@ -682,6 +711,7 @@ export function endShift(S, ctx, course) {
     no: S.no, seed: S.seed, v: S.v, rounds: t.rounds, golfers: t.golfers,
     cash: t.fees - t.refunds + t.tips + t.extras, fees: t.fees - t.refunds, tips: t.tips, extras: t.extras, spent: t.spent,
     upgrades: t.upgrades, hires: t.hires, walkOffs: t.walkOffs, avgRoundS: t.rounds ? Math.round(t.roundS / t.rounds * 10) / 10 : 0, low: t.low, aces: t.aces,
+    event: S.event, bonus: t.bonus,
     stars0: S.stars0, stars: S.stars, goal: S.goal, goalMet: t.fees - t.refunds + t.tips + t.extras >= S.goal,
     stuck: t.stuck, cutOff: t.cutOff, cashAfter: S.cash, ticks: S.tick
   };
@@ -736,8 +766,8 @@ export function goalOf(S, ctx) {
   let need = null, left = 1e9;
   const want = (id, role, g, l) => { if (g && !S.staff[role] && l < left) { need = id; left = l; } };
   const atC = head && head.st === 'queue' ? head : null, atT = unsent(S, ctx), atK = waiting(S, 'keys'), atS = waiting(S, 'snack');
-  want('checkin', 'clerk', atC, atC ? S.fx.patCounter - atC.wc : 0);
-  want('sendoff', 'starter', atT, atT ? S.fx.patTee - atT.wt : 0);
+  want('checkin', 'clerk', atC, atC ? S.fx.patCounter * atC.pm - atC.wc : 0);
+  want('sendoff', 'starter', atT, atT ? S.fx.patTee * atT.pm - atT.wt : 0);
   want('keys', 'attendant', atK, atK ? eco.keysWaitS - atK.wk : 0);
   want('snack', 'cook', atS, atS ? eco.snackWaitS - atS.ws : 0);
   const spot = need ? ringAt(S, map, need) : null;

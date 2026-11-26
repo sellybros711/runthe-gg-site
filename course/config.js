@@ -10,7 +10,7 @@
 export const GAME = Object.freeze({ name: 'Run The Course', slug: 'course', logo: '/course/logo.svg' });
 
 export const CONFIG = {
-  version: 4,
+  version: 5,
   schema: 1,
 
   shift: {
@@ -43,14 +43,37 @@ export const CONFIG = {
     sizeFactor: [0.6, 0.8, 0.9, 1.0],
     holeS: { 3: 14, 4: 20, 5: 26 },       // a foursome's time on a hole, by par
     cartFactor: 0.8,
-    patience: { counter: 25, tee1: 30, course: 40 }
+    patience: { counter: 25, tee1: 30, course: 40 },
+    /* THE THREE KINDS OF GROUP. Each multiplies a group's patience at the counter and on tee 1 (the
+       waits your service decides; out on the course everyone waits the same), its time on a hole, its tip and
+       what it spends on extras (cart, snack, range balls), and weighs its review its own way.
+       On the gentle first days every group is a regular. */
+    typeOdds: { regular: 0.5, rush: 0.25, tourist: 0.25 },
+    types: {
+      regular: { name: 'Regulars', patience: 1, pace: 1, tip: 1, spend: 1, weights: null },
+      rush:    { name: 'Rush', patience: 0.75, pace: 0.9, tip: 1.5, spend: 0.5, weights: { condition: 0.15, pace: 0.45, service: 0.30, design: 0.10 } },
+      tourist: { name: 'Tourists', patience: 1.35, pace: 1.15, tip: 1, spend: 1.75, weights: { condition: 0.35, pace: 0.15, service: 0.20, design: 0.30 } }
+    }
+  },
+
+  /* THE DAY'S EVENT. From `fromDay` on, a day has one with this chance, drawn by these odds.
+       outing  that share more groups booked
+       rain    every green starts the day this much rougher
+       heat    snack sales times `snack`; patience at the counter and on tee 1 times `wait`
+       critic  one group's review counts `weight` times */
+  events: {
+    fromDay: 3, chance: 0.6,
+    odds: { outing: 0.3, rain: 0.25, heat: 0.25, critic: 0.2 },
+    outing: { bookings: 0.3 }, rain: { greens: 25 }, heat: { snack: 2, wait: 0.8 }, critic: { weight: 4 }
   },
 
   economy: {
     feePerHole: 1,            // dollars a golfer a hole played
     tipMax: 0.3,              // of the fee, scaled by satisfaction
-    goalDay1: 60, goalGrowth: 1.06,
-    goalShare: 0.75,          // the goal is never more than this share of the fees booked
+    goalDay1: 60, goalGrowth: 1.15,
+    goalShare: 0.75,          // the goal is never more than this share of the fees booked on day 1
+    goalShareStep: 0.02, goalShareMax: 0.95,   // that share rises this much a day, to this: later days leave less room for walk offs
+    goalBonus: 0.1,           // a day that meets its goal pays this share of the goal on top, at the close
     startCash: 0,
     pads: {
       cart_barn: { name: 'Cart Barn', cost: 60, buildS: 10, kind: 'unlock' },
@@ -125,6 +148,8 @@ export const CONFIG = {
     weights: { condition: 0.30, pace: 0.30, service: 0.25, design: 0.15 },
     designNeutral: 0.5,
     walkOffReview: 1,
+    missPenalty: 0.08,        // off a review's score for each service a group went without (cart keys, the snack)
+    happy: 0.75,              // a score this high is a happy review; below it the review names what was worst
     greenDecay: 20, fairwayDecay: 10, greenStart: 60, fairwayStart: 70
   },
 

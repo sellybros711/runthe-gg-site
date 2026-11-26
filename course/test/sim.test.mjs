@@ -137,7 +137,7 @@ test('the economy: fees at check in, a full refund and a one star review on a wa
   assert.equal(r.fees, S.tally.fees - S.tally.refunds);
   assert.equal(r.cash, r.fees + r.tips);
   assert.ok(r.tips <= Math.round(S.tally.fees * CONFIG.economy.tipMax) && r.tips > 0);
-  assert.equal(r.cashAfter, course.cash + r.cash - r.spent);
+  assert.equal(r.cashAfter, course.cash + r.cash + r.bonus - r.spent);
   assert.equal(end.course.cash, r.cashAfter);
   assert.equal(end.course.shiftsFiled, 1);
   /* nobody there: every group walks off, each a refund (nothing was paid) and a one star review */
@@ -411,4 +411,74 @@ test('the putting green charges only while it is kept', () => {
   const bad = startShift(Object.assign(JSON.parse(JSON.stringify(c)), { pg: CONFIG.economy.practiceMinCondition - 1 }), CONFIG, MAP);
   assert.ok(feeOf(good, ctx) > feeOf(bad, ctx));
   assert.equal(startShift(newCourse(CONFIG, MAP, 7), CONFIG, MAP).pg, -1, 'not built, no green');
+});
+
+/* ---- step 2: kinds of group, the day's event, reviews you can read, a day won or lost ---- */
+const later = (seed, no) => { const c = newCourse(CONFIG, MAP, seed); c.shiftsFiled = no - 1; return c; };
+function withEvent(name) {
+  for (let seed = 1; seed < 400; seed++) { const c = later(seed, 5), S = startShift(c, CONFIG, MAP); if (S.event === name) return c; }
+  throw new Error('no seed gives ' + name);
+}
+
+test('day 1 is plain: no event, every group a regular', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const S = startShift(newCourse(CONFIG, MAP, seed), CONFIG, MAP);
+    assert.equal(S.event, '');
+    assert.ok(S.groups.every(g => g.type === 'regular' && g.pm === 1 && !g.critic));
+  }
+});
+
+test('later days draw every kind of group and every event, and the tee sheet is the same sheet', () => {
+  const kinds = new Set(), events = new Set();
+  for (let seed = 1; seed <= 200; seed++) { const S = startShift(later(seed, 6), CONFIG, MAP); events.add(S.event); for (const g of S.groups) kinds.add(g.type); }
+  assert.deepEqual([...kinds].sort(), Object.keys(CONFIG.golfers.types).sort());
+  assert.deepEqual([...events].sort(), ['', ...Object.keys(CONFIG.events.odds)].sort());
+  /* kinds and events come from their own stream: with events off, the arrivals and sizes do not move */
+  const off = clone(CONFIG); off.events.chance = 0;
+  const c = withEvent('heat'), a = startShift(c, CONFIG, MAP), b = startShift(c, off, MAP);
+  assert.deepEqual(a.groups.map(g => [g.arrive, g.size, g.pace]), b.groups.map(g => [g.arrive, g.size, g.pace]));
+});
+
+test('each event does what it says', () => {
+  const off = clone(CONFIG); off.events.chance = 0;
+  let c = withEvent('outing');
+  assert.ok(startShift(c, CONFIG, MAP).groups.length > startShift(c, off, MAP).groups.length, 'an outing books more groups');
+  c = withEvent('rain');
+  const wet = startShift(c, CONFIG, MAP), dry = startShift(c, off, MAP);
+  for (const ord of wet.open) assert.equal(wet.greens[ord], Math.max(0, dry.greens[ord] - CONFIG.events.rain.greens));
+  c = withEvent('heat');
+  assert.equal(startShift(c, CONFIG, MAP).fx.patTee, startShift(c, off, MAP).fx.patTee * CONFIG.events.heat.wait);
+  assert.equal(startShift(c, CONFIG, MAP).fx.patCourse, startShift(c, off, MAP).fx.patCourse);
+  c = withEvent('critic');
+  const S = startShift(c, CONFIG, MAP);
+  assert.equal(S.groups.filter(g => g.critic).length, 1);
+  /* nobody at the counter: the critic walks off too, and that review counts `weight` times */
+  const idle = play(c, CONFIG, () => {});
+  assert.equal(idle.S.reviews.length - c.reviews.length, idle.end.result.walkOffs + CONFIG.events.critic.weight - 1);
+});
+
+test('a group in a rush gives up sooner than a tourist', () => {
+  const c = later(3, 6), ctx = makeCtx(c, CONFIG, MAP), S = startShift(c, CONFIG, MAP);
+  S.groups.forEach((g, i) => { g.type = i % 2 ? 'rush' : 'tourist'; g.pm = CONFIG.golfers.types[g.type].patience; });
+  while (!S.done) step(S, ctx);
+  const waited = t => { const v = S.groups.filter(g => g.type === t).map(g => g.wc); return v.reduce((a, b) => a + b, 0) / v.length; };
+  assert.ok(waited('rush') < waited('tourist'), waited('rush') + ' against ' + waited('tourist'));
+});
+
+test('every group leaves a review you can read', () => {
+  const { S, end } = play(later(11, 6));
+  assert.equal(S.notes.length, end.result.rounds + end.result.walkOffs);
+  const WHY = ['great', 'greens', 'pace', 'wait', 'keys', 'snack', 'plain', 'counter', 'tee', 'course'];
+  for (const n of S.notes) { assert.ok(WHY.includes(n.why), n.why); assert.ok(n.stars >= 1 && n.stars <= 5); assert.ok(CONFIG.golfers.types[n.type]); }
+  const idle = play(later(11, 6), CONFIG, () => {});
+  assert.ok(idle.S.notes.length > 0 && idle.S.notes.every(n => n.why === 'counter' && n.stars === CONFIG.stars.walkOffReview));
+});
+
+test('a day that meets its goal is won and pays the bonus; a lost day pays none', () => {
+  const won = play(newCourse(CONFIG, MAP, 5)).end.result;
+  assert.ok(won.goalMet);
+  assert.equal(won.bonus, Math.round(won.goal * CONFIG.economy.goalBonus));
+  const lost = play(newCourse(CONFIG, MAP, 5), CONFIG, () => {}).end.result;
+  assert.ok(!lost.goalMet);
+  assert.equal(lost.bonus, 0);
 });
