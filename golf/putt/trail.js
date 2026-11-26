@@ -6747,8 +6747,9 @@ LMSIZE.fhPalaceLm = [16, 7, 12]; LMSIZE.fhClockLm = [3.4, 2.4, 10]; LMSIZE.fhNut
    mouse standing up, SEVEN heads, a little gold crown on each, as the book has him. The Nutcracker: the big head and little body,
    white beard, violet hussar's jacket with white braid, a little wooden cloak and a cap, his great jaw. Jack Frost of the folklore
    and the Victorian picture books: an elfin boy all of frost, pale blue skin, white hair in icicles, a white tunic cut in points
-   like frost leaves, pointed shoes (never the modern film's hoodie and staff). And the Snow Queen as Andersen tells it: tall and
-   slender and dazzling white, her cloak and her tall cap of snow, her eyes like two stars. No ice gown, no braid, no film's look. */
+   like frost leaves, pointed shoes (never the modern film's hoodie and staff). And the Snow Queen as Andersen tells it and Pedersen
+   drew her: tall, slender and dazzling white, a long white gown of gauze under a blue white cloak of snow, a tall crown of icicles,
+   silver hair loose behind, eyes like two stars. No fitted ice gown, no braid, no snowflake cape, no film's look. */
 Object.assign(FOLK3D, {
   drosselmeyer:{ r:0.9, h:3.3, at:function(u, v, t){ var av = Math.abs(v);
     if (t < 0.12 && el3(u, av, t, 0.07, 0.11, 0.05, 0.17, 0.08, 0.06) <= 1) return '#14141a';   // buckled shoes
