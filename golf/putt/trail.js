@@ -263,7 +263,7 @@ var KIT = {
   monster:{ g:['#2e4a3a', '#36543e', '#284234', 0.2], p:['#6e6a7a', '#7e7a8a', '#5e5a6a'], paved:true, tree:['dead', 'pine', 'dead'], leaves:['#1e3a2e', '#24443a', '#183026'], bark:'#2e2a2e',
     low:['mcurnlow', 'mcarmourlow', 'rockdark'], brk:'pumpkin', haz:'slow', hazC:['#9a6a44', '#7a5236'], waterC:['#1e3448', '#5a86a4'], seaC:['#1e3448', '#5a86a4'], bogC:['#9a6a44', '#7a5236'], lm:['mcTowerLm', 'mcGateLm', 'mcOakLm'], wall:['#8a8698', '#3a3646'],
     npc:{ skin:'light', polo:'navy', hat:'black', pants:'grey', hair:'grey', hairStyle:'short', cap:false, gender:'female' }, who:'the housekeeper' },
-  // Frost Hollow: deep snow under the northern lights, a path trodden through it, snowy firs, street lamps and a sled left by the
+  // The Frosty Hollow: deep snow under the northern lights, a path trodden through it, snowy firs, street lamps and a sled left by the
   // path, open water for the water and deep snow for the slow ground
   frost:{ g:['#e4ecf6', '#f0f5fb', '#d4e0ee', 0.18], p:['#b8c8dc', '#c8d6e6', '#a6b8ce'], paved:false, tree:['pine', 'pine', 'pine'], leaves:['#1e4a3a', '#245440', '#183e30'], bark:'#3a2a1e', snow:true,
     low:['fhlamplow', 'bushsnow', 'fhsledlow', 'rocksnow'], brk:'ice', haz:'slow', hazC:['#f4f8fc', '#d8e4f0'], waterC:['#14304e', '#6aa8d8'], seaC:['#14304e', '#6aa8d8'], bogC:['#f4f8fc', '#d8e4f0'], lm:['fhPalaceLm', 'fhClockLm', 'fhNutLm'], wall:['#e4ecf6', '#7a90a8'],
@@ -768,6 +768,13 @@ function plan(spec){
   P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall' || t.k === 'bridge') return; if (PLANT[t.k]) return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
   reachable();
   puzzle();
+  /* VISITORS (putt.js FOLK_VISIT, the owner's call of 2026-11-26: the holiday folk live in the Frosty Hollow all year): one or
+     two of them beside the walk, as well as its own folk. They are placed LAST, on a random stream of their own and only where
+     nothing else stands, so every other thing on the walk (the local, the chest, a puzzle's pieces) is exactly where it was.
+     Never in a gym's room or its shadow, and never where a tree nearer the camera would hide them. */
+  (spec.visit || []).forEach(function(vf, vi){ var RV = rng(spec.seed ^ (0x51517 + vi * 977));
+    for (var vn2 = 0; vn2 < 80; vn2++){ var vq = beside(SL * (0.2 + 0.6 * ((vi + 0.5) / spec.visit.length) + (RV() - 0.5) * 0.18), (vi + (spec.seed & 1)) % 2 ? -1 : 1, PW + 1.8 + RV() * 1.6), vx = vq[0], vy = vq[1];
+      if (free(vx, vy, 1.1) && okGround(vx, vy, 1) && !hides(vx, vy) && !(GYM && (inGym(vx, vy, 1.5) || gymShadow(vx, vy)))){ item('visit', vx, vy, { fid:vf.id, say:vf.say, n:0, th:themeAt(vy) }); used.push({ x:vx, y:vy, r:1.1 }); break; } } });
   /* PUZZLES, the owner's call: about half the trails carry one, never two, and solving it pays a coin bonus as a
      small chest of its own (PZ_COINS of them, 300 for an easy puzzle). The local on that trail, or the world's
      greeter, gives a clue, so nobody is left guessing what the thing by the path is for. Four kinds:
@@ -2111,6 +2118,11 @@ function run(box, P, pic, api){
   function pup(e){ if (!drag || (e && e.pointerId != null && e.pointerId !== drag.id)) return; drag = null; stickV = [0, 0]; stick.classList.remove('on'); stick.style.left = stick.style.top = ''; knob.style.transform = ''; }
   if (coarse) box.addEventListener('pointerdown', pdn); window.addEventListener('pointermove', pmv); window.addEventListener('pointerup', pup); window.addEventListener('pointercancel', pup); window.addEventListener('blur', pup);
   window.addEventListener('keydown', kd, true); window.addEventListener('keyup', ku, true);
+  // a tap on a visitor gives their next line
+  function vtap(e){ if (!alive || (gym && gym.in) || e.target.closest('button')) return; var r = box.getBoundingClientRect(), cx = e.clientX - r.left, cy = e.clientY - r.top, best = null, bd = 34;
+    items.forEach(function(t){ if (t.k !== 'visit') return; var z0 = pic.zAt(t.x, t.y), a = scr(t.x, t.y, z0), b2 = scr(t.x, t.y, z0 + GH), mx = a[0] / dpr, my = (a[1] + b2[1]) / 2 / dpr, d = Math.hypot(mx - cx, my - cy); if (d < bd){ bd = d; best = t; } });
+    if (best){ say(best.say[best.n % best.say.length], 3600, best); best.n++; } }
+  box.addEventListener('click', vtap);
 
   /* WHERE HE IS ALONG THE WALK. A route that doubles back has two legs side by side, so the nearest bit of path can
      be the wrong leg: once he is following it, only the stretch round where he was is asked, and the whole walk
@@ -2524,6 +2536,9 @@ function run(box, P, pic, api){
         if (PZ && !PZ.solved){ say(P.puzzle.clue, 8200, npc); var rest = (word ? [word] : []).concat(ls); if (rest.length) npcLater(rest.join(' '), 8.4, npc); }
         else if (P.spec.folk && ls.length){ var fq = (word ? [word] : []).concat(ls); say(fq[0], 3600, npc); for (var fi = 1; fi < fq.length; fi++) npcLater(fq[fi], 3.7 * fi, npc); }   // one of the folk of Oz: a line at a time, who they are and then the hole
         else if (word){ say(word, 3600, npc); if (ls.length) npcLater(ls.join(' '), 3.7, npc); } else if (ls.length) say(ls.join(' '), 5200, npc); } else if (dn > 5) nearNpc = false; }
+    // a visitor (the holiday folk in the Frosty Hollow) says hello as he walks up, never over something already being said
+    for (var vi2 = 0; vi2 < items.length; vi2++){ var vt = items[vi2]; if (vt.k !== 'visit') continue; var dvv = Math.hypot(vt.x - g.x, vt.y - g.y);
+      if (dvv < 3.2 && !vt.near){ vt.near = true; if (!bubble || now > bubble.until){ say(vt.say[vt.n % vt.say.length], 3600, vt); vt.n++; } } else if (dvv > 5) vt.near = false; }
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
@@ -2579,6 +2594,7 @@ function run(box, P, pic, api){
       else if (t.k === 'crate') drawSprite(SPR.crate, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc'){ if (P.spec.folk) drawFolk(t); else drawFigure(npcFrame(t), t.x, t.y); }
+      else if (t.k === 'visit') folkAt(t.fid, t.x < P.near(t.x, t.y)[0] ? 1 : -1, t.x, t.y);
       else if (t.k === 'ship' || t.k === 'tumble' || t.k === 'ghost') drawLifeThing(t, tsec);
       else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); if (greet.folk && FOLK3D[greet.folk]) folkAt(greet.folk, hs.face[0] >= 0 ? 1 : -1, t.x, t.y); else drawFigure(hostFrame(), t.x, t.y, false, 'host');
         if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
@@ -2675,7 +2691,7 @@ function run(box, P, pic, api){
   try{ var hh = api.host; if (hh && hh.golferWalkWarm) for (var q = 0; q < 8; q++){ var a = q * Math.PI / 4; hh.golferWalkWarm(Math.sin(a), -Math.cos(a)); } }catch(e){}
   requestAnimationFrame(step);
   var ctl = {
-    stop:function(){ alive = false; if (dlg && dlg.kill) dlg.kill(); window.removeEventListener('resize', onRs); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
+    stop:function(){ alive = false; if (dlg && dlg.kill) dlg.kill(); window.removeEventListener('resize', onRs); box.removeEventListener('click', vtap); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true);
       if (gym){ box.removeEventListener('pointerdown', gymTapDown); box.removeEventListener('pointermove', gymTapMove); box.removeEventListener('pointerup', gymTapUp); if (gPanel) gPanel.remove(); } },
     // for the checks: where he is, and a way to hold the stick
@@ -6689,7 +6705,7 @@ Object.assign(FOLK3D, {
       return u < -0.04 || t > 2.64 || (av > 0.19 && u < 0.1) ? '#6a4224' : skin; }
     return null; } }
 });
-/* ---- Frost Hollow (the Members Tour): a snowy hollow on a long winter night, the walk a path trodden in the snow, snowy firs along
+/* ---- The Frosty Hollow (the Members Tour): a snowy hollow on a long winter night, the walk a path trodden in the snow, snowy firs along
    it, street lamps and a sled left by the path, the Snow Queen's palace of driven snow with its halls lit green by the northern
    lights, Drosselmeyer's tall clock with the owl on its top, and the great Nutcracker standing guard. Andersen's palace is snow, not
    crystal: "the walls of the palace were of driving snow, and the windows and doors of cutting winds". */
