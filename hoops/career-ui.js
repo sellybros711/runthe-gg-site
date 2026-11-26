@@ -1169,6 +1169,18 @@ var CSS = [
 'body:has(#cr-sheet:not([hidden]) .cr-yr) .k-toasts{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 12px);}',
 /* one tap continues, and the button is always on the sheet however short the screen */
 '.cr-yr-foot{position:sticky;bottom:0;flex:0 0 auto;margin:0 calc(var(--k-s-4)*-1);padding:8px var(--k-s-4) calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(14,18,37,0),#0e1225 26%);}',
+/* THE HELD SUMMER: one line and Change, on the year summary and on Now */
+'.cr-sm{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;margin:8px 0 0;padding:8px 8px 8px 12px;background:rgba(62,207,142,.1);box-shadow:inset 4px 0 0 var(--k-good);}',
+'.cr-sm p{margin:0;min-width:0;}',
+'.cr-sm-l{display:block;font:800 14px/1.25 var(--k-f-text);color:#fff;overflow-wrap:anywhere;}',
+'.cr-sm-h{display:block;margin-top:2px;font:500 12.5px/1.35 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-sm .cr-sm-b{min-height:44px;min-width:0;padding:0 12px;font-size:12px;letter-spacing:.08em;}',
+'#cr-sheet .cr-yr .cr-sm{margin:0;}',
+'.cr-smp .k-h1{margin:6px 0 12px;}',
+'.cr-smp .k-opts{margin:0 0 12px;}',
+'.cr-smp-o .cr-smp-on{align-self:center;font:800 10px/1.2 var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;}',
+'#cr-sheet .cr-yr .cr-smp{padding:var(--k-s-4) 0;}',
+'.cr-lt-job p.cr-lt-life{margin-top:4px;font-weight:500;}',
 /* ── people and money (the BitLife plan, phases 2 and 3) ── */
 '.cr-acts.cr-life{margin-top:4px;}',
 '.cr-acts .cr-lfbtn{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;font-size:13px;letter-spacing:.08em;}',
@@ -2068,7 +2080,8 @@ window.addEventListener('resize', function(){ if (onScreen && onScreen()) fitTra
 /* THE YEAR'S TEXT (the BitLife pace, 2026-11-24). One press of Age up can play
    several stretches, so what comes back is a year of beats, not a stretch of
    them. The feed is the headlines: the record as it stands (the latest, not
-   one a stretch), your role, an award, a trade, an injury. News from around
+   one a stretch), your role, an award, a trade, an injury, the summer done at
+   tip-off. News from around
    the league folds under them, and so does anything past FEED_MAX lines, with
    the toned beats (gold, good, bad) kept ahead of the plain ones. Nothing is
    dropped: the fold opens. */
@@ -2083,7 +2096,9 @@ function feedOf(list){
   });
   if (head.length > FEED_MAX) {
     var keep = [];
-    head.forEach(function(b, i){ if (b.tone || b.kind === 'record' || b.kind === 'year') keep.push(i); });
+    /* the summer he planned, done at tip-off, is a headline whatever else the press played */
+    head.forEach(function(b, i){ if (b.kind === 'summer') keep.push(i); });
+    head.forEach(function(b, i){ if (keep.indexOf(i) < 0 && (b.tone || b.kind === 'record' || b.kind === 'year')) keep.push(i); });
     head.forEach(function(b, i){ if (keep.indexOf(i) < 0) keep.push(i); });
     keep = keep.slice(0, FEED_MAX);
     var out = [];
@@ -2184,6 +2199,8 @@ function stageHtml(L, fresh){
         + (WV.left ? '<i aria-label="' + WV.left + ' nights left this year">' + WV.left + '</i>' : '') + '</button>';
       out += '</div>' + wildSitHtml(WV, 'cr-now-sit');
     }
+    /* the held summer, until the season tips off */
+    out += summerLineHtml(L, 'cr-now-sm');
     out += tk;
   }
   return '<div class="cr-stage" id="cr-stage">' + out + '</div>';
@@ -2565,26 +2582,20 @@ function goMoney(){
    he knows (Team), and a night out ends back on Now, where an arrest lands
    as the card on top. Nobody real is named or drawn on it. */
 var WILD_ICON = { casino: 'cash', bookie: 'ball', party: 'tophat', pills: 'bandage', rehab: 'heart' };
-var WILD_SIT = { jail: 'You are inside.', probation: 'The league has you sitting out.', betting: 'Suspended for betting.', test: 'Suspended for a failed test.', rehab: 'You are in rehab.', owed: 'Serving a suspension.' };
-var WILD_REC = { arrest: 'Arrested', jail: 'Time inside', probation: 'Suspended after an arrest', betting: 'Suspended for betting', test: 'Suspended for a failed test', rehab: 'Sat out for rehab', owed: 'Suspended' };
 var wildSel = null;
 function capFirst(t){ t = String(t); return t.charAt(0).toUpperCase() + t.slice(1); }
-/* Why a night shows and cannot be had: wildOpen says ok is false when the
-   year's nights are spent or the bank cannot cover the price or the least
-   stake. */
+/* Why a night shows and cannot be had, in the engine's words: wildOpen marks
+   every closed night with `why` (the year's nights are spent, it is not for
+   him yet, the bank cannot cover it) and says it in `note`. */
 function wildWhy(L, V, a){
   if (a.ok) return '';
-  /* a night that is not for him yet: the engine says why (too young, nothing hurts, no habit) */
-  if (a.why === 'shut' && a.note) return a.note;
-  if (V.left <= 0) return 'No nights left this year';
-  var need = Math.max(a.cost, a.min);
-  if (L.cash < need) return 'Needs ' + money(need) + '. You have ' + money(L.cash) + '.';
-  return 'Not open right now';
+  return a.note || 'Not open right now.';
 }
-/* Sitting out now, or games owed next season: one line, the engine's numbers. */
+/* Sitting out now, or games owed next season: one line. A suspension being
+   served is the engine's sentence (sitting.text). */
 function wildSit(V){
   if (!V) return '';
-  if (V.sitting) return (WILD_SIT[V.sitting.why] || 'You are sitting out.') + ' Out through game ' + V.sitting.until + '.';
+  if (V.sitting) return V.sitting.text || 'You are sitting out. Out through game ' + V.sitting.until + '.';
   if (V.owed) return 'You owe ' + V.owed + (V.owed === 1 ? ' game.' : ' games.') + ' They start on opening night.';
   return '';
 }
@@ -2608,7 +2619,7 @@ function wildHtml(L, V){
   out += V.acts.length ? '<ul class="cr-mvlist cr-wdlist" style="--g:#e5483f">' + V.acts.map(function(a){
     var why = wildWhy(L, V, a);
     var chip = a.amt ? 'You pick the stake' : a.cost ? money(a.cost) : 'Free';
-    return '<li><button type="button" class="cr-mv cr-wa' + (a.ok ? '' : ' is-off') + '" data-wact="' + a.id + '"' + ' aria-label="' + esc(a.name + '. ' + a.blurb + (why ? ' ' + why + '.' : '')) + '">'
+    return '<li><button type="button" class="cr-mv cr-wa' + (a.ok ? '' : ' is-off') + '" data-wact="' + a.id + '"' + ' aria-label="' + esc(a.name + '. ' + a.blurb + (why ? ' ' + why : '')) + '">'
       + '<span class="cr-mvic">' + K.iconHtml(WILD_ICON[a.id] || 'flame', 4) + '</span>'
       + '<span class="cr-mvt"><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + '</small><span class="cr-mvchips"><span class="cr-mvchip">' + esc(chip) + '</span>'
       + (why ? '<span class="cr-mvchip why">' + esc(why) + '</span>' : '') + '</span></span></button></li>';
@@ -2627,7 +2638,8 @@ function wildHtml(L, V){
   out += '<h3 class="cr-sub">Your record</h3><div class="cr-leg cr-wd-rec" id="cr-wd-rec"><div><b id="cr-wd-arr">' + nc.arrest + '</b><span>Arrests</span></div>'
     + '<div><b id="cr-wd-susp">' + nc.susp + '</b><span>Suspensions</span></div><div><b id="cr-wd-jail">' + nc.jail + '</b><span>Time inside</span></div></div>';
   out += V.record.length ? '<ul class="cr-list cr-wd-reclist">' + V.record.slice().reverse().map(function(r){
-    return '<li><span class="yr">' + r.y + '</span>' + esc(WILD_REC[r.what] || 'On the record') + (r.g ? ' · ' + r.g + (r.g === 1 ? ' game' : ' games') : '') + '</li>';
+    /* the record in the engine's words (record[].text) */
+    return '<li><span class="yr">' + r.y + '</span>' + esc(r.text || 'On the record.') + '</li>';
   }).join('') + '</ul>' : '<p class="k-small cr-dnone">Clean. Nothing on it.</p>';
   return out + '<button class="k-btn k-sec k-block" id="cr-sheet-x" type="button">Close</button>';
 }
@@ -3190,6 +3202,8 @@ function wireLife(L, d){
   /* people and money */
   var gw = $('cr-go-wild');
   if (gw) gw.onclick = openWild;
+  var sm = root.querySelector('#cr-now-sm .cr-sm-b');
+  if (sm) sm.onclick = openSummer;
   var gp = $('cr-go-people'), gm = $('cr-go-money'), mg = $('cr-pp-mingle');
   if (gp) gp.onclick = goPeople;
   if (gm) gm.onclick = goMoney;
@@ -3427,6 +3441,8 @@ function yearHtml(yr){
     + '<div class="cr-yr-cash two"><div><small>Net worth</small><b id="cr-yr-worth">' + money(s.worth) + '</b></div>'
     + '<div><small>Upkeep a year</small><b id="cr-yr-upkeep">' + money(s.upkeep) + '</b></div></div>'
     + '<div class="cr-yr-meters" id="cr-yr-meters">' + meters + '</div>'
+    /* the summer the engine is holding for the year that just opened */
+    + summerLineHtml(store().cur, 'cr-yr-sm')
     + '<div class="cr-yr-foot"><button class="k-btn k-block k-big" id="cr-yr-go" type="button">Continue</button></div>';
 }
 /* The summary is a sheet like every other (focus goes in, Escape, back and
@@ -3437,8 +3453,7 @@ function openYear(yr, then){
   if (!sh || !yr) { if (then) then(); return; }
   var k = skin(yr.s.team), box = sh.querySelector('.in');
   box.className = 'k-sheet in cr-yr';
-  box.innerHTML = yearHtml(yr);
-  box.scrollTop = 0;
+  drawYear(box, yr);
   sh.classList.remove('cr-flat');
   if (k) K.theme(box, k.primary, k.secondary);
   yearOpen = true;
@@ -3447,7 +3462,87 @@ function openYear(yr, then){
     dlg = null; yearOpen = false; box.removeAttribute('style'); box.className = 'k-sheet in'; box.innerHTML = '';
     if (then) then();
   } });
+  /* Continue holds the focus, as it always has: Change sits ahead of it in the sheet */
+  var go = $('cr-yr-go'); if (go) go.focus({ preventScroll: true });
+}
+function drawYear(box, yr){
+  box.innerHTML = yearHtml(yr);
+  box.scrollTop = 0;
   $('cr-yr-go').onclick = closeOff;
+  var ch = box.querySelector('#cr-yr-sm .cr-sm-b');
+  if (ch) ch.onclick = function(){ drawYearSummer(box, yr); };
+}
+
+/* ─── THE HELD SUMMER (the owner's call, 2026-11-26) ──────────────────────
+   A routine summer is no longer a card. The engine holds a plan from the turn
+   of the year until the season tips off, and does it then. What a player
+   sees is one line, "Your summer: <program>" with its hint and a Change
+   button: on the year summary, and on Now for as long as the plan is held.
+   Change lists the programs on offer this summer, the planned one marked. A
+   tap is C.summerPick and nothing else, saved at once, and the line reads the
+   new plan. EVERY WORD OF A PROGRAM IS C.summerOf's: its label and its hint
+   are never restated here. At tip-off the engine's `summer` beat is one of
+   the feed's headlines (feedOf). */
+function summerLineHtml(L, id){
+  var S = L && C.summerOf ? C.summerOf(L) : null;
+  if (!S) return '';
+  return '<div class="cr-sm" id="' + id + '" data-summer="' + esc(S.key) + '">' + K.iconHtml('dumbbell', 2)
+    + '<p><b class="cr-sm-l">Your summer: ' + esc(S.label) + '</b><small class="cr-sm-h">' + esc(S.hint) + '</small></p>'
+    + '<button class="k-btn k-sec cr-sm-b" type="button" aria-label="Change your summer">Change</button></div>';
+}
+function summerPickHtml(S, back){
+  return '<div class="cr-smp" id="cr-smp"><div class="k-eyebrow">' + K.iconHtml('dumbbell', 2) + 'Before the season</div>'
+    + '<h3 class="k-h1" id="cr-smp-h" tabindex="-1">Your summer</h3>'
+    + '<ol class="k-opts cr-smp-list">' + S.options.map(function(o){
+      var on = o.key === S.key;
+      return '<li><button type="button" class="k-opt cr-smp-o' + (on ? ' is-chosen' : '') + '" data-summer="' + esc(o.key) + '" aria-pressed="' + on + '">'
+        + '<span><span class="cr-ol">' + esc(o.label) + '</span><small>' + esc(o.hint) + '</small></span>' + (on ? '<span class="k-tone cr-smp-on">Your plan</span>' : '') + '</button></li>';
+    }).join('') + '</ol>'
+    + '<button class="k-btn k-sec k-block" id="cr-smp-x" type="button">' + (back ? 'Back' : 'Close') + '</button></div>';
+}
+/* A tap on a program: the engine changes the plan, and it is saved. */
+function summerTake(key){
+  var L = store().cur;
+  if (!L || !C.summerPick) return false;
+  var S = C.summerOf(L);
+  if (!S) return false;
+  if (key !== S.key) { if (!C.summerPick(L, key)) return false; save(); }
+  return true;
+}
+/* Now was drawn under the summary before the plan was changed on it: its
+   line is redrawn in place, so the summary never closes on the old plan. */
+function summerNowSync(){
+  var e = $('cr-now-sm'), L = store().cur;
+  if (!e || !L) return;
+  var t = document.createElement('div');
+  t.innerHTML = summerLineHtml(L, 'cr-now-sm');
+  if (!t.firstChild) return;
+  e.parentNode.replaceChild(t.firstChild, e);
+  var b = document.querySelector('#cr-now-sm .cr-sm-b');
+  if (b) b.onclick = openSummer;
+}
+/* From Now: its own sheet, and the line on Now reads the new plan. */
+function openSummer(){
+  var L = store().cur, S = L && C.summerOf ? C.summerOf(L) : null;
+  if (!S || yearOpen) return;
+  openSheet(summerPickHtml(S, false), 'Your summer', 'cr-smsheet');
+  var done = function(){ closeOff(); if (onScreen()) render(); var b = document.querySelector('#cr-now-sm .cr-sm-b'); if (b) b.focus({ preventScroll: true }); };
+  $('cr-sheet').querySelectorAll('.cr-smp-o').forEach(function(b){ b.onclick = function(){ if (summerTake(b.getAttribute('data-summer'))) done(); }; });
+  $('cr-smp-x').onclick = done;
+  var h = $('cr-smp-h'); if (h) h.focus({ preventScroll: true });
+}
+/* From the year summary: the same list in the summary's own sheet, and back
+   to the summary. The sheet stays the one dialog, so every way of closing it
+   is still the one tap that continues. */
+function drawYearSummer(box, yr){
+  var L = store().cur, S = L && C.summerOf ? C.summerOf(L) : null;
+  if (!S) return;
+  box.innerHTML = summerPickHtml(S, true);
+  box.scrollTop = 0;
+  var back = function(){ drawYear(box, yr); var b = box.querySelector('#cr-yr-sm .cr-sm-b'); if (b) b.focus({ preventScroll: true }); };
+  box.querySelectorAll('.cr-smp-o').forEach(function(b){ b.onclick = function(){ if (summerTake(b.getAttribute('data-summer'))) { summerNowSync(); back(); } }; });
+  $('cr-smp-x').onclick = back;
+  var h = $('cr-smp-h'); if (h) h.focus({ preventScroll: true });
 }
 function doChoose(i){
   var L = store().cur;
@@ -4422,7 +4517,9 @@ function laterView(card){
     + '<div class="cr-ltgrid"><section class="k-panel cr-lt" id="cr-lt" aria-label="His life now">'
     + '<div class="cr-lt-head"><div class="cr-yr-age cr-lt-age"><small>Age</small><b id="cr-lt-age">' + LT.age + '</b></div>'
     + '<div class="cr-lt-job"><span class="k-eyebrow">' + (LT.years ? LT.years + (LT.years === 1 ? ' year' : ' years') + ' after the game' : 'The first year after the game') + '</span>'
-    + '<h3 class="k-h1" id="cr-lt-title">' + esc(LT.title) + '</h3><p><b id="cr-lt-pay">' + esc(money(LT.pay)) + '</b> a year</p></div></div>'
+    + '<h3 class="k-h1" id="cr-lt-title">' + esc(LT.title) + '</h3><p><b id="cr-lt-pay">' + esc(money(LT.pay)) + '</b> a year</p>'
+    /* his family now, in the engine's line */
+    + (LT.life ? '<p class="cr-lt-life" id="cr-lt-life">' + esc(LT.life) + '.</p>' : '') + '</div></div>'
     + '<div class="cr-leg cr-lt-figs"><div><b id="cr-lt-cash">' + esc(money(LT.cash)) + '</b><span>Cash</span></div>'
     + '<div><b id="cr-lt-worth">' + esc(money(LT.worth)) + '</b><span>Net worth</span></div>'
     + '<div class="' + (LT.health < 40 ? 'down' : '') + '"><b id="cr-lt-health">' + LT.health + '</b><span>Health</span></div></div>'
@@ -4431,7 +4528,7 @@ function laterView(card){
     + (stage.result ? '<div class="k-panel k-receipt cr-result cr-lt-res k-in" aria-live="polite"><div class="cr-you">You: ' + esc(stage.result.label || '') + '</div><p class="k-what">' + esc(stage.result.text || '') + '</p></div>' : '')
     + feed
     + (c ? pageCardHtml(c) : '<div class="cr-lt-dock"><button class="k-btn k-block k-big cr-age" id="cr-lt-go" type="button"><span class="cr-age-w">' + K.iconHtml('up', 2) + 'Age up</span>'
-      + '<small class="cr-age-n">' + C.LATER_STEP + ' years go by</small></button></div>')
+      + '<small class="cr-age-n" id="cr-lt-next">' + esc(LT.next || C.LATER_STEP + ' years go by') + '</small></button></div>')
     + '</div></div>';
 }
 /* THE LAST PAGE: the line, the ribbon, the life card. */

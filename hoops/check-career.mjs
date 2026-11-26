@@ -3278,6 +3278,15 @@ async function browser() {
             const r = T.season && T.season.po ? T.season.po.results : [];
             return T.phase === 'off' && r.length > 0 && !r[r.length - 1].won && r[r.length - 1].round < 3;
           },
+          /* an offseason whose next press turns the year into a held summer, with no card waiting (a copy is aged up to see) */
+          summer: (L) => {
+            if (!(nba(L) && L.phase === 'off' && L.history.length >= 2 && C.summerOf)) return false;
+            const T = JSON.parse(JSON.stringify(L));
+            let r = null;
+            try { r = age0(T); } catch (e) { return false; }
+            const S = r && r.turned && !T.retired && !T.pending.length ? C.summerOf(T) : null;
+            return !!S && S.options.length >= 3;
+          },
         };
         const age0 = window.__age0;
         const was = window.__n.step;
@@ -3482,6 +3491,134 @@ async function browser() {
           await page.waitForTimeout(250);
         } else ok(false, `${tag}: one press from the summer of a title year turns it and shows the summary`);
       } else ok(false, `${tag}: found a title year to age up from`);
+
+      /* THE HELD SUMMER (the owner's call, 2026-11-26). A routine summer is
+         no card: the engine holds a plan from the turn of the year to tip-off
+         (section 26). What a player has of it is one line and a Change
+         button, on the year summary and on Now, and a line with the wrong
+         program on it, a list short a program, or a tap that changes the
+         words and not the plan would all look fine. So the walk reads the
+         line against C.summerOf, taps Change, reads the list against the
+         programs on offer, taps one, reads what the engine holds and what
+         was saved, does it again from Now, and then tips the season off and
+         reads the program the engine did. */
+      if (await find('summer')) {
+        await page.evaluate(() => {
+          const C = window.RTF_CAREER, pick = C.summerPick;
+          window.__sm = [];
+          if (pick) C.summerPick = function(L, k){ window.__sm.push(k); return pick.apply(this, arguments); };
+        });
+        await armed('#cr-next');
+        await tryPress('#cr-next');
+        await page.waitForSelector('#cr-yr-go', { timeout: 5000 }).catch(() => {});
+        await page.waitForTimeout(300);
+        /* the line, wherever it is drawn, beside what the engine holds */
+        const line = (id) => page.evaluate((id) => {
+          const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, S = C.summerOf ? C.summerOf(L) : null;
+          const e = document.querySelector('#' + id), btn = e && e.querySelector('.cr-sm-b'), tx = (sel) => { const x = e && e.querySelector(sel); return x ? x.textContent.trim() : null; };
+          let saved = null; try { const st = JSON.parse(localStorage.getItem('rtf.life.v1')); saved = st && st.cur && st.cur.flags && st.cur.flags.summerHold ? st.cur.flags.summerHold.k : null; } catch (x) {}
+          const r = btn ? btn.getBoundingClientRect() : null, hit = r ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
+          const er = e ? e.getBoundingClientRect() : null;
+          return { there: !!e, label: tx('.cr-sm-l'), hint: tx('.cr-sm-h'), key: e ? e.getAttribute('data-summer') : null, btn: btn ? btn.textContent.trim() : null,
+            h: r ? Math.round(r.height) : 0, mine: !!hit && !!btn && btn.contains(hit), inside: !!er && er.left >= 0 && er.right <= innerWidth + 0.5, cut: !!e && e.scrollWidth > e.clientWidth + 1,
+            side: document.documentElement.scrollWidth - innerWidth, want: S ? { key: S.key, label: 'Your summer: ' + S.label, hint: S.hint } : null, saved, held: S ? S.key : null,
+            calls: window.__sm.slice(), steps: L.steps, sheet: !document.querySelector('#cr-sheet').hidden, year: !!document.querySelector('#cr-yr-go') };
+        }, id);
+        /* the list Change opens, beside the programs on offer */
+        const list = () => page.evaluate(() => {
+          const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, S = C.summerOf ? C.summerOf(L) : null;
+          const sh = document.querySelector('#cr-sheet'), box = sh && sh.querySelector('.k-sheet'), rows = box && !sh.hidden ? [...box.querySelectorAll('.cr-smp-o')] : [];
+          const r = box ? box.getBoundingClientRect() : null;
+          return { open: !!sh && !sh.hidden && rows.length > 0, got: rows.map((e) => [e.getAttribute('data-summer'), (e.querySelector('.cr-ol') || {}).textContent, (e.querySelector('small') || {}).textContent]),
+            want: S ? S.options.map((o) => [o.key, o.label, o.hint]) : null, on: rows.filter((e) => e.getAttribute('aria-pressed') === 'true').map((e) => e.getAttribute('data-summer')), key: S ? S.key : null,
+            low: Math.min.apply(null, rows.map((e) => Math.round(e.getBoundingClientRect().height)).concat(999)), fit: !!r && r.top >= 0 && r.bottom <= innerHeight + 0.5 && r.left >= 0 && r.right <= innerWidth + 0.5,
+            side: document.documentElement.scrollWidth - innerWidth, modal: !!box && box.getAttribute('role') === 'dialog', calls: window.__sm.slice(), x: !!document.querySelector('#cr-smp-x') };
+        });
+        const sameRows = (a, b) => !!a && !!b && JSON.stringify(a) === JSON.stringify(b);
+        const holdLine = (v, where) => {
+          ok(v.there && !!v.want && v.label === v.want.label && v.hint === v.want.hint && v.key === v.want.key, `${tag}: ${where}, the held summer is one line, "Your summer:" and the engine's program with its hint (${v.label || 'no line'}; ${v.hint || 'no hint'})`);
+          ok(v.there && /^change$/i.test(v.btn || '') && v.h >= 44 && v.mine && v.inside && !v.cut && v.side <= 0, `${tag}: ${where}, Change is on the line, at least 44px tall, under nothing, and the line cuts nothing (${v.h}px)`);
+        };
+        const holdList = (l, where) => {
+          ok(l.open && l.modal && sameRows(l.got, l.want) && l.got.length >= 2, `${tag}: ${where}, Change lists exactly the programs on offer, each with the engine's label and hint (${l.got.map((x) => x[0]).join(', ') || 'no list'})`);
+          ok(l.open && l.on.length === 1 && l.on[0] === l.key && l.low >= 44 && l.fit && l.side <= 0 && l.x, `${tag}: ${where}, the planned one is the one marked, every program is at least 44px tall and the list fits the screen (${l.on.join(', ') || 'none marked'}, ${l.low}px)`);
+        };
+        const sY = await sheet(), y0 = await line('cr-yr-sm');
+        if (sY) holdSheet(sY, 'a year that opens a held summer'); else ok(false, `${tag}: the year turned into a held summer and its summary came up`);
+        holdLine(y0, 'on the year summary');
+        /* CHANGE, ON THE SUMMARY */
+        await tryPress('#cr-yr-sm .cr-sm-b');
+        await page.waitForTimeout(250);
+        const l1 = await list();
+        holdList(l1, 'on the year summary');
+        ok(l1.calls.length === 0, `${tag}: opening the list changes nothing the engine holds (${l1.calls.length} calls)`);
+        const k1 = l1.want ? (l1.want.find((o) => o[0] !== l1.key) || [])[0] : null;
+        await tryPress('#cr-sheet .cr-smp-o[data-summer="' + k1 + '"]');
+        await page.waitForTimeout(250);
+        const y1 = await line('cr-yr-sm');
+        ok(!!k1 && y1.calls.length === 1 && y1.calls[0] === k1 && y1.held === k1, `${tag}: a tap on a program is C.summerPick with that program, once, and the engine holds it (${y1.calls.join(', ') || 'no call'}; holds ${y1.held})`);
+        ok(y1.saved === k1, `${tag}: and it is saved at once (${y1.saved})`);
+        ok(y1.year && y1.sheet && y1.steps === y0.steps, `${tag}: the tap lands back on the summary, which is still up, and plays nothing`);
+        holdLine(y1, 'after the change');
+        const sY1 = await sheet();
+        ok(!!sY1 && sY1.fit && /continue/i.test(sY1.go.text) && sY1.go.on && sY1.go.mine, `${tag}: Continue is still on the sheet, under nothing`);
+        await tryPress('#cr-yr-go');
+        await page.waitForTimeout(350);
+        /* THE SAME LINE ON NOW, until tip-off */
+        await page.evaluate(() => { const e = document.querySelector('#cr-now-sm'); if (e) e.scrollIntoView({ block: 'center' }); });
+        await page.waitForTimeout(150);
+        const n0 = await line('cr-now-sm');
+        ok(!n0.sheet && n0.held === k1, `${tag}: the summary closes and the plan is the one picked`);
+        holdLine(n0, 'on Now');
+        await tryPress('#cr-now-sm .cr-sm-b');
+        await page.waitForTimeout(300);
+        const l2 = await list();
+        holdList(l2, 'on Now');
+        /* closing the list picks nothing */
+        await tryPress('#cr-smp-x');
+        await page.waitForTimeout(300);
+        const n1 = await line('cr-now-sm');
+        ok(!n1.sheet && n1.calls.length === 1 && n1.held === k1 && n1.steps === y0.steps, `${tag}: Close shuts the list and leaves the plan alone (${n1.calls.length - 1} more calls)`);
+        await page.evaluate(() => { const e = document.querySelector('#cr-now-sm'); if (e) e.scrollIntoView({ block: 'center' }); });
+        await tryPress('#cr-now-sm .cr-sm-b');
+        await page.waitForTimeout(300);
+        const k2 = l2.want ? (l2.want.find((o) => o[0] !== k1 && o[0] !== l1.key) || [])[0] : null;
+        await tryPress('#cr-sheet .cr-smp-o[data-summer="' + k2 + '"]');
+        await page.waitForTimeout(350);
+        const n2 = await line('cr-now-sm');
+        ok(!!k2 && n2.calls.length === 2 && n2.calls[1] === k2 && n2.held === k2 && n2.saved === k2 && !n2.sheet && n2.steps === y0.steps, `${tag}: from Now, a tap changes what the engine holds, saves it and closes the list (${n2.calls.join(', ') || 'no call'}; holds ${n2.held}, saved ${n2.saved})`);
+        holdLine(n2, 'on Now after the change');
+        /* TIP-OFF: the program on the line is the program the engine does, and it is a headline */
+        let tip = null;
+        for (let i = 0; i < 8 && !tip; i++) {
+          const sel = (await page.$('.cr-choice')) ? '.cr-choice' : '#cr-next';
+          await armed(sel);
+          if (!(await tryPress(sel))) break;
+          await page.waitForTimeout(400);
+          if (await page.$('#cr-yr-go')) break;
+          tip = await page.evaluate(() => {
+            const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur, last = window.__n.last, b = last && (last.beats || []).find((x) => x.kind === 'summer');
+            if (!b) return null;
+            const heads = [...document.querySelectorAll('#cr-feed > li:not(.cr-fold)')].map((e) => e.textContent.trim());
+            return { text: b.text, head: heads.indexOf(b.text) >= 0, held: C.summerOf(L), last: L.flags.summerLast, line: !!document.querySelector('#cr-now-sm'), did: !!L.mem['summer.' + L.flags.summerLast] };
+          });
+        }
+        const lab2 = l2.want && k2 ? (l2.want.find((o) => o[0] === k2) || [])[1] : null;
+        ok(!!tip && !!lab2 && tip.text.indexOf('Your summer: ' + lab2.toLowerCase() + '. ') === 0 && tip.last === k2 && tip.did, `${tag}: at tip-off the program the engine does is the one the line showed (${tip ? tip.text.slice(0, 60) : 'no summer beat'})`);
+        ok(!!tip && tip.head, `${tag}: and the engine's summer line is one of the feed's headlines, not under the fold`);
+        ok(!!tip && tip.held === null && !tip.line, `${tag}: once it is done nothing is held and the line is gone from Now`);
+        /* a press that played a lot still leads with the summer: more toned beats than the feed has headlines */
+        const crowd = await page.evaluate(() => {
+          const beats = []; for (let i = 0; i < 9; i++) beats.push({ kind: 'award', text: 'Headline number ' + i + '.', tone: 'gold' });
+          beats.push({ kind: 'summer', text: 'Your summer: checked. It was done.', tone: 'good' });
+          RTF_CAREER_UI.paintPress({ beats, result: null });
+          const heads = [...document.querySelectorAll('#cr-feed > li:not(.cr-fold)')].map((e) => e.textContent.trim()), under = [...document.querySelectorAll('#cr-feed .cr-fold li')].map((e) => e.textContent.trim());
+          const out = { head: heads.indexOf('Your summer: checked. It was done.') >= 0, heads: heads.length, under: under.length, all: heads.length + under.length };
+          RTF_CAREER_UI.paintPress({ beats: [], result: null });
+          return out;
+        });
+        ok(crowd.head && crowd.all === 10 && crowd.under > 0, `${tag}: behind nine other headlines the summer is still above the fold, and nothing is dropped (${crowd.heads} shown, ${crowd.under} folded)`);
+      } else ok(false, `${tag}: found a year that turns into a held summer`);
 
       /* THE BIG NIGHTS STILL PLAY LIVE, with scenes on: your playoff games
          open the live ticker, and a stretch of the regular season does not.
@@ -4035,9 +4172,13 @@ async function browser() {
           net: tx('#cr-wd-net'), wantNet: V.net > 0 ? 'Up ' + m(V.net) : V.net < 0 ? 'Down ' + m(-V.net) : 'Even', heat: tx('#cr-wd-heat'), wantHeat: String(V.heat), owed: tx('#cr-wd-owed'), wantOwed: String(V.owed),
           rec: [tx('#cr-wd-arr'), tx('#cr-wd-susp'), tx('#cr-wd-jail')].join(','), wantRec: [n.a, n.s, n.j].join(','), rows: sh.querySelectorAll('.cr-wd-reclist li').length, wantRows: V.record.length,
           sit: tx('#cr-wd-sit'), wantSit: V.sitting ? String(V.sitting.until) : V.owed ? String(V.owed) : null, res: tx('.cr-result .k-what'), more: [...sh.querySelectorAll('.cr-wd-more li')].map((e) => e.textContent),
+          /* the words are the engine's: why a night is closed (note), the record (record[].text) and a suspension being served (sitting.text) */
+          words: acts.every((e, i) => { const a = V.acts[i], y = e.querySelector('.why'); return !a || a.ok || (!!y && y.textContent === a.note); })
+            && JSON.stringify([...sh.querySelectorAll('.cr-wd-reclist li')].map((e) => e.textContent)) === JSON.stringify(V.record.slice().reverse().map((r) => r.y + r.text))
+            && (!V.sitting || tx('#cr-wd-sit') === V.sitting.text),
           fit: box.left >= 0 && box.right <= innerWidth + 0.5 && box.bottom <= innerHeight + 0.5 };
       });
-      const wildOk = (S) => S && S.left === S.wantLeft && same(S.ids, S.want) && S.acts && !S.small && S.habs && S.net === S.wantNet && S.heat === S.wantHeat && S.owed === S.wantOwed && S.rec === S.wantRec && S.rows === S.wantRows && (S.wantSit === null ? S.sit === null : !!S.sit && S.sit.includes(S.wantSit)) && S.fit;
+      const wildOk = (S) => S && S.words && S.left === S.wantLeft && same(S.ids, S.want) && S.acts && !S.small && S.habs && S.net === S.wantNet && S.heat === S.wantHeat && S.owed === S.wantOwed && S.rec === S.wantRec && S.rows === S.wantRows && (S.wantSit === null ? S.sit === null : !!S.sit && S.sit.includes(S.wantSit)) && S.fit;
       /* THE BOT: a life until an act nobody has tapped yet is open. It goes
          out itself now and then (the engine's own call, kept aside), which is
          how a habit grows and rehab opens. */
@@ -4251,14 +4392,14 @@ async function browser() {
           if (!R || !document.querySelector('#cr-lt')) return null;
           const V = C.laterOf(R), m = (x) => x < 0 ? '-' + C.money(-x) : C.money(x), go = document.querySelector('#cr-lt-go'), g = go ? go.getBoundingClientRect() : null, c = R.pending[0] || null;
           return { on: V.on, age: q('#cr-lt-age') === String(V.age), title: q('#cr-lt-title') === V.title, pay: q('#cr-lt-pay') === m(V.pay), cash: q('#cr-lt-cash') === m(V.cash), worth: q('#cr-lt-worth') === m(V.worth), health: q('#cr-lt-health') === String(V.health), ageN: V.age,
-            go: go ? { text: go.textContent, h: g.height, seen: g.top >= 0 && g.bottom <= innerHeight + 0.5, step: go.textContent.includes(C.LATER_STEP + ' years') } : null, card: c ? { title: q('#cr-pgcard #cr-card-h') === c.title, opts: same2([...document.querySelectorAll('#cr-pgcard .cr-choice .cr-ol')].map((e) => e.textContent), c.options.map((o) => o.label)), small: [...document.querySelectorAll('#cr-pgcard .cr-choice')].filter((e) => e.getBoundingClientRect().height < 44).length, n: c.options.length } : null,
+            go: go ? { text: go.textContent, h: g.height, seen: g.top >= 0 && g.bottom <= innerHeight + 0.5, step: typeof V.next === 'string' && V.next.length > 5 && q('#cr-lt-next') === V.next, life: !V.life || q('#cr-lt-life') === V.life + '.' } : null, card: c ? { title: q('#cr-pgcard #cr-card-h') === c.title, opts: same2([...document.querySelectorAll('#cr-pgcard .cr-choice .cr-ol')].map((e) => e.textContent), c.options.map((o) => o.label)), small: [...document.querySelectorAll('#cr-pgcard .cr-choice')].filter((e) => e.getBoundingClientRect().height < 44).length, n: c.options.length } : null,
             noCard: !document.querySelector('#cr-pgcard'), feed: [...document.querySelectorAll('#cr-lt-feed li')].map((e) => e.textContent), res: q('.cr-lt-res .k-what'), shell: getComputedStyle(document.querySelector('#cr-shell') || document.body).display, tabs: !!document.querySelector('#s-car.cr-app'), saved: (() => { try { const s = JSON.parse(localStorage.getItem('rtf.life.v1')); return !!(s.rest && s.rest.later && s.rest.age === R.age && s.rest.later.n === R.later.n); } catch (e) { return false; } })() };
           function same2(a, b){ return JSON.stringify(a) === JSON.stringify(b); }
         });
         const figs = (S) => S && S.on && S.age && S.title && S.pay && S.cash && S.worth && S.health;
         const S0 = await lt();
         const st0 = await page.evaluate(() => window.__calls.filter((c) => c.f === 'start'));
-        ok(figs(S0) && st0.length === 1 && st0[0].ok && S0.saved && !S0.tabs && S0.go && S0.go.h >= 44 && S0.go.seen && S0.go.step && S0.noCard, `${tag}: with Pro the same button is C.laterStart, once: a screen with no tabs, his age, what he is called and what it pays, cash, net worth and health, all C.laterOf's, and one main button that says how many years a press is`);
+        ok(figs(S0) && st0.length === 1 && st0[0].ok && S0.saved && !S0.tabs && S0.go && S0.go.h >= 44 && S0.go.seen && S0.go.step && S0.go.life && S0.noCard, `${tag}: with Pro the same button is C.laterStart, once: a screen with no tabs, his age, what he is called and what it pays, his family, cash, net worth and health, all C.laterOf's, and one main button that says how many years a press is, in the engine's words`);
         const bad = [], seenCards = {};
         let presses = 0, cards = 0, over = null;
         for (let i = 0; i < 120 && !over; i++) {
