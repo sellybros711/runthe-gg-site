@@ -173,8 +173,10 @@ async function run(name, viewport, mobile) {
   await page.click('[data-level="2-1"]');
   await page.waitForSelector('#board', { state: 'visible' });
   ok((await page.textContent('#sUs')) === '86' && (await page.textContent('#sThem')) === '88' && (await page.textContent('#lvlSit')) === '22.0 · Down 2', 'down 2: the scoreboard reads 86-88');
-  /* a two at the horn ties it: the reference screen, run to a spot inside the arc */
-  const tie = refPlay('2-1'); tie.steps[1].pts[1] = P(31, 12);
+  /* a two at the horn ties it: O1 takes it inside the arc himself (a play
+     with no action has no other option to read, so the read never finds a
+     three instead; reads.js) */
+  const tie = { spots: refPlay('2-1').spots, goAt: 6, steps: [{ kind: 'move', who: 'O1', pts: [P(28, 12)], beat: 1 }, { kind: 'shoot', who: 'O1', beat: 1 }] };
   await L(p => window.__lastShot.setPlay(p), tie);
   const sot = await seedFor('ot');
   ok(sot != null, 'a seed for overtime: ' + sot);

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { CONFIG } from '../config.js';
 import { MAP } from '../map.js';
-import { newCourse, startShift, step, endShift, makeCtx, replay, command, roundPlan, buildRoute, goalOf, starsOf, goalFor, stations, migrateCourse, levelOf, upgradeCost, feeOf, shopList, looksOf } from '../sim.js';
+import { newCourse, startShift, step, endShift, makeCtx, replay, command, roundPlan, buildRoute, goalOf, starsOf, goalFor, stations, migrateCourse, levelOf, upgradeCost, feeOf, shopList, looksOf, placeCard, placeAt } from '../sim.js';
 import { makeBot } from '../bot.js';
 import { runShifts } from '../headless.mjs';
 
@@ -163,25 +163,37 @@ test('stars: a new course starts at the start value, and the window is the last 
   assert.equal(goalFor(1, CONFIG), CONFIG.economy.goalDay1);
 });
 
-test('the pad: standing on it with the cash buys it, builds it, and golfers ride', () => {
+test('a place: its pad opens a card, and buying from the card builds it', () => {
   const course = newCourse(CONFIG, MAP, 1); course.cash = CONFIG.economy.pads.cart_barn.cost;
-  const { S, end } = play(course);
-  assert.ok(S.tally.spent >= CONFIG.economy.pads.cart_barn.cost);
-  assert.equal(end.course.unlocks.cart_barn, 'done');
-  const next = startShift(end.course, CONFIG, MAP);
-  assert.equal(next.carts, true);
-  /* not enough cash: the ring has no work */
-  const poor = newCourse(CONFIG, MAP, 1), ctx = makeCtx(poor, CONFIG, MAP), P = startShift(poor, CONFIG, MAP);
-  const st = stations(P, ctx, []).find(x => x.id === 'cart_barn');
-  assert.equal(st.can, false);
+  const ctx = makeCtx(course, CONFIG, MAP), S = startShift(course, CONFIG, MAP), pad = MAP.places.cart_barn;
+  /* from anywhere else, a buy does nothing: the card belongs to the pad */
+  command(S, 'buy', 'build', 'cart_barn'); step(S, ctx);
+  assert.equal(S.pads.cart_barn.st, 'open'); assert.equal(S.cash, course.cash);
+  S.player.x = pad.x; S.player.y = pad.y;
+  assert.equal(placeAt(S, ctx), 'cart_barn');
+  const card = placeCard(S, ctx, 'cart_barn');
+  assert.deepEqual(card.items.map(i => i.kind), ['build']); assert.equal(card.items[0].can, true);
+  command(S, 'buy', 'build', 'cart_barn'); step(S, ctx);
+  assert.equal(S.pads.cart_barn.st, 'building'); assert.equal(S.cash, 0); assert.equal(S.tally.spent, CONFIG.economy.pads.cart_barn.cost);
+  command(S, 'buy', 'build', 'cart_barn'); step(S, ctx);
+  assert.equal(S.tally.spent, CONFIG.economy.pads.cart_barn.cost, 'it cannot be bought twice');
+  for (let i = 0; i < CONFIG.economy.pads.cart_barn.buildS * CONFIG.shift.tick + 5; i++) step(S, ctx);
+  assert.equal(S.pads.cart_barn.st, 'done'); assert.equal(S.carts, true);
+  assert.deepEqual(placeCard(S, ctx, 'cart_barn').items.map(i => i.kind), ['up', 'hire'], 'built, its card offers a level and a hire');
+  /* no cash, nothing on the card can be bought */
+  const poor = newCourse(CONFIG, MAP, 1), P = startShift(poor, CONFIG, MAP);
+  assert.equal(placeCard(P, ctx, 'cart_barn').items[0].can, false);
+  assert.equal(stations(P, ctx, []).find(x => x.place === 'cart_barn').can, false);
+  /* one pad a place, each on the map */
+  const pads = stations(P, ctx, [], true).filter(x => x.pad);
+  assert.equal(pads.length, Object.keys(CONFIG.economy.places).length);
+  for (const id in CONFIG.economy.places) assert.ok(MAP.places[id], id + ' has a pad');
 });
 
 test('hole 4: buying it starts the clearing, and the mower clears the plot', () => {
-  const course = newCourse(CONFIG, MAP, 1); course.cash = 5000; course.unlocks.cart_barn = 'done';
-  const { end } = play(course);
-  assert.ok(['clearing', 'building'].includes(end.course.unlocks.hole_4), 'bought: ' + end.course.unlocks.hole_4);
-  let c = end.course;
-  for (let i = 0; i < 3 && c.unlocks.hole_4 !== 'building'; i++) c = play(c).end.course;
+  const course = newCourse(CONFIG, MAP, 1); course.cash = 9000;
+  let c = course;
+  for (let i = 0; i < 4 && c.unlocks.hole_4 !== 'building'; i++) c = play(c).end.course;
   assert.equal(c.unlocks.hole_4, 'building');
   assert.equal(c.holes[3].open, false, 'opening the hole is a later phase');
 });
@@ -223,13 +235,13 @@ test('changing a config value changes the game, with no code edit', () => {
   const base = play(newCourse(CONFIG, MAP, 12)).end.result;
   const fee = clone(CONFIG); fee.economy.feePerHole = 2;
   assert.ok(play(newCourse(fee, MAP, 12), fee).end.result.fees > base.fees * 1.6, 'double the fee, about double the fees');
-  const slow = clone(CONFIG); slow.golfers.holeS = { 3: 28, 4: 40, 5: 52 };
+  const slow = clone(CONFIG); slow.golfers.holeS = { 3: 18, 4: 26, 5: 34 };
   assert.ok(play(newCourse(slow, MAP, 12), slow).end.result.avgRoundS > base.avgRoundS);
   const busy = clone(CONFIG); busy.golfers.groupsDay1 = 8;
   assert.equal(startShift(newCourse(busy, MAP, 12), busy, MAP).groups.length, 8);
   const pad = clone(CONFIG); pad.economy.pads.cart_barn.cost = 5;
-  const course = newCourse(pad, MAP, 12), ctx = makeCtx(course, pad, MAP), S = startShift(course, pad, MAP); S.cash = 5;
-  assert.match(goalOf(Object.assign(S, { phase: 'open', greens: { 1: 100, 2: 100, 3: 100 }, groups: [] }), ctx).text, /\$5\./);
+  const course = newCourse(pad, MAP, 12), ctx = makeCtx(course, pad, MAP), S = startShift(course, pad, MAP);
+  assert.equal(placeCard(S, ctx, 'cart_barn').items[0].cost, 5);
 });
 
 test('save and load: a course survives JSON, and an unknown schema is refused', () => {
@@ -244,7 +256,7 @@ test('save and load: a course survives JSON, and an unknown schema is refused', 
 test('upgrades: every level costs more, raises what it says, and stops at the top', () => {
   const U = CONFIG.economy.upgrades, max = CONFIG.economy.upgradeMax;
   for (const id in U) {
-    assert.ok(MAP.upgradePads[id], id + ' has a pad on the map');
+    assert.ok(Object.values(CONFIG.economy.places).some(p => p.ups.includes(id)), id + ' is on a place\'s card');
     for (let l = 1; l < max - 1; l++) assert.ok(upgradeCost(CONFIG, id, l + 1) > upgradeCost(CONFIG, id, l), id + ' level ' + l);
     assert.equal(upgradeCost(CONFIG, id, 1), U[id].cost);
   }
@@ -257,25 +269,30 @@ test('upgrades: every level costs more, raises what it says, and stops at the to
   assert.ok(S.fx.checkin < base.fx.checkin && S.fx.checkin > 0 && S.fx.sendoff < base.fx.sendoff && S.fx.sendoff > 0);
   assert.ok(S.fx.patCounter > base.fx.patCounter && S.fx.patTee > base.fx.patTee && S.fx.pace < base.fx.pace);
   assert.ok(S.groups.length > base.groups.length, 'a bigger parking lot books more groups');
-  assert.ok(!stations(S, ctx, [], true).some(st => st.up), 'a maxed thing has no pad left');
-  assert.ok(shopList(S, ctx).filter(i => i.kind === 'level').every(i => i.done && !i.can));
+  assert.ok(shopList(S, ctx).filter(i => i.kind === 'up').every(i => i.done && !i.can), 'nothing levels past the top');
   const list = shopList(base, ctx);
   assert.ok(list.length >= 12 && list[0].cost <= list[1].cost, 'the list is cheapest first');
   assert.equal(levelOf(base, CONFIG, 'boots'), 1);
   const fresh = startShift(newCourse(CONFIG, MAP, 3), CONFIG, MAP);
   assert.equal(levelOf(fresh, CONFIG, 'cart_barn'), 0, 'the cart barn has no level until it is built');
-  assert.ok(!stations(fresh, ctx, [], true).some(st => st.up === 'cart_barn'));
+  assert.ok(!placeCard(fresh, ctx, 'cart_barn').items.some(i => i.kind === 'up'));
 });
 
-test('upgrades: standing on a pad with the cash buys one level, and it carries to the next day', () => {
+test('upgrades: a level is bought from the place\'s card, and it carries to the next day', () => {
   const course = newCourse(CONFIG, MAP, 4); course.cash = 20;
-  const ctx = makeCtx(course, CONFIG, MAP), S = startShift(course, CONFIG, MAP), pad = MAP.upgradePads.boots, walk0 = S.fx.walk;
+  const ctx = makeCtx(course, CONFIG, MAP), S = startShift(course, CONFIG, MAP), pad = MAP.places.clubhouse, walk0 = S.fx.walk;
   S.player.x = pad.x; S.player.y = pad.y;
   for (let i = 0; i < 30; i++) step(S, ctx);
+  assert.equal(S.levels.boots, undefined, 'standing on a pad buys nothing by itself');
+  command(S, 'buy', 'up', 'boots'); step(S, ctx);
   assert.equal(S.levels.boots, 2); assert.equal(S.cash, 0); assert.ok(S.fx.walk > walk0); assert.equal(S.tally.upgrades, 1);
-  for (let i = 0; i < 60; i++) step(S, ctx);
+  command(S, 'buy', 'up', 'boots'); step(S, ctx);
   assert.equal(S.levels.boots, 2, 'no cash, no second level');
-  while (!S.done) step(S, ctx);
+  command(S, 'buy', 'up', 'shop'); step(S, ctx);
+  assert.equal(S.levels.shop, undefined, 'the pro shop is not on the clubhouse\'s card');
+  while (S.phase !== 'after') step(S, ctx);
+  command(S, 'end'); step(S, ctx);
+  assert.equal(S.done, true);
   const end = endShift(S, ctx, course);
   assert.equal(end.course.levels.boots, 2);
   assert.equal(startShift(end.course, CONFIG, MAP).fx.walk, walk0 + CONFIG.economy.upgrades.boots.walk);
@@ -300,17 +317,12 @@ test('a course saved before upgrades existed still loads, at level 1', () => {
   assert.equal(levelOf(startShift(c, CONFIG, MAP), CONFIG, 'shop'), 1);
 });
 
-test('new buildings: the putting green, the snack shack and the range each add income once built', () => {
+test('new buildings: built, each has a look and a number of its own', () => {
   const plain = newCourse(CONFIG, MAP, 6); plain.unlocks.cart_barn = 'done';
   const built = JSON.parse(JSON.stringify(plain)); for (const id of ['putting_green', 'snack_shack', 'driving_range']) built.unlocks[id] = 'done';
-  const ctx = makeCtx(plain, CONFIG, MAP), A = startShift(plain, CONFIG, MAP), B = startShift(built, CONFIG, MAP);
+  const A = startShift(plain, CONFIG, MAP), B = startShift(built, CONFIG, MAP);
   assert.equal(A.fx.snack, 0); assert.equal(A.fx.range, 0); assert.equal(A.fx.practice, 0);
   assert.ok(B.fx.snack > 0 && B.fx.range > 0 && B.fx.practice > 0 && B.fx.patCourse > A.fx.patCourse);
-  assert.ok(feeOf(B, ctx) > feeOf(A, ctx));
-  const bot = makeBot(); while (!B.done) { bot(B, ctx); step(B, ctx); }
-  assert.ok(B.tally.extras > 0, 'snacks were sold at the turn');
-  const r = endShift(B, ctx, built).result;
-  assert.equal(r.cash, r.fees + r.tips + r.extras);
   const looks = looksOf(B, CONFIG, {});
   assert.equal(looks['snack_shack:st'], 'done'); assert.equal(looks.snack_shack, 0);
   assert.equal(looksOf(A, CONFIG, {}).snack_shack, -1, 'not built, no look');
@@ -332,4 +344,71 @@ test('a filed shift replays well inside the server\'s 10 ms of CPU, late in the 
     c = endShift(S, ctx, c).course;
   }
   assert.ok(worst < 6, 'the slowest replay took ' + worst.toFixed(2) + ' ms');
+});
+
+test('after hours: the day ends on the player\'s word, not on the last group', () => {
+  const course = newCourse(CONFIG, MAP, 2), ctx = makeCtx(course, CONFIG, MAP), S = startShift(course, CONFIG, MAP), bot = makeBot();
+  while (S.phase !== 'after') { bot(S, ctx); step(S, ctx); }
+  assert.equal(S.done, false, 'the last group is in and the day is still going');
+  assert.ok(S.groups.every(g => g.st === 'gone'));
+  const cash = S.cash, earned = S.tally.fees - S.tally.refunds + S.tally.tips + S.tally.extras;
+  for (let i = 0; i < 200; i++) step(S, ctx);
+  assert.equal(S.done, false, 'after hours has no clock the player can see');
+  assert.equal(S.cash, cash); assert.equal(S.tally.fees - S.tally.refunds + S.tally.tips + S.tally.extras, earned, 'nothing is earned after hours');
+  command(S, 'end'); step(S, ctx);
+  assert.equal(S.done, true);
+  /* an 'end' before closing does nothing */
+  const T = startShift(course, CONFIG, MAP); command(T, 'end'); step(T, ctx); assert.equal(T.done, false);
+  /* nobody at the controls: after hours still ends, at its longest */
+  const I = startShift(course, CONFIG, MAP); let n = 0; while (!I.done && n++ < 20000) step(I, ctx);
+  assert.equal(I.done, true);
+});
+
+test('a hire runs a station for you, slower than you would', () => {
+  const U = 'u', course = newCourse(CONFIG, MAP, 3), hired = JSON.parse(JSON.stringify(course)); hired.staff.clerk = 1; hired.staff.starter = 1; hired.staff.greenskeeper = 1;
+  const ctx = makeCtx(hired, CONFIG, MAP), S = startShift(hired, CONFIG, MAP);
+  while (!S.done) { step(S, ctx); if (S.phase === 'after') command(S, 'end'); }      // nobody at the controls at all
+  const r = endShift(S, ctx, hired).result;
+  assert.ok(r.rounds >= 3, 'the clerk and the starter got groups round: ' + r.rounds);
+  assert.ok(r.cash > 0);
+  for (const ord of S.open) assert.ok(S.greens[ord] >= CONFIG.economy.greenskeeperCut, 'the greenskeeper cut green ' + ord);
+  for (const ord of S.open) assert.ok(S.greens[ord] < 100, 'but not as well as you would');
+  assert.ok(CONFIG.economy.staffSpeed < 1 && CONFIG.economy.staffDelayS > 0);
+  /* hiring: from the place's card, once */
+  const rich = JSON.parse(JSON.stringify(course)); rich.cash = 1000;
+  const H = startShift(rich, CONFIG, MAP); H.player.x = MAP.places.shop.x; H.player.y = MAP.places.shop.y;
+  command(H, 'buy', 'hire', 'clerk'); step(H, ctx);
+  assert.equal(H.staff.clerk, 1); assert.equal(H.cash, 1000 - CONFIG.economy.staff.clerk.cost); assert.equal(H.tally.hires, 1);
+  command(H, 'buy', 'hire', 'clerk'); step(H, ctx);
+  assert.equal(H.cash, 1000 - CONFIG.economy.staff.clerk.cost, 'nobody is hired twice');
+  while (H.phase !== 'after') step(H, ctx); command(H, 'end'); step(H, ctx);
+  assert.equal(endShift(H, ctx, rich).course.staff.clerk, 1, 'a hire is kept');
+});
+
+test('hands on: cart keys, the snack shack and the range each need a hand, or a hire', () => {
+  const base = newCourse(CONFIG, MAP, 6); for (const id of ['cart_barn', 'snack_shack', 'driving_range']) base.unlocks[id] = 'done';
+  const run = (course, hands) => { const ctx = makeCtx(course, CONFIG, MAP), S = startShift(course, CONFIG, MAP), bot = makeBot(); while (!S.done) { if (hands) bot(S, ctx); else if (S.phase === 'after') command(S, 'end'); step(S, ctx); } return S; };
+  /* a clerk and a starter get groups round, but nobody is at the barn, the shack or the range */
+  const alone = JSON.parse(JSON.stringify(base)); alone.staff.clerk = 1; alone.staff.starter = 1; alone.baskets = 0;
+  const A = run(alone, false);
+  assert.ok(A.tally.rounds >= 3);
+  assert.equal(A.tally.extras, 0, 'no keys handed, nothing served, no balls: nothing extra earned');
+  assert.ok(A.groups.every(g => !g.cart), 'nobody got a cart');
+  assert.equal(A.tally.stuck + A.tally.cutOff, 0, 'and nobody was left standing at the barn or the shack');
+  /* hire the three and it all runs */
+  const staffed = JSON.parse(JSON.stringify(alone)); staffed.staff.attendant = 1; staffed.staff.cook = 1; staffed.staff.range_hand = 1;
+  const B = run(staffed, false);
+  assert.ok(B.tally.extras > 0); assert.ok(B.groups.some(g => g.cart)); assert.equal(B.baskets <= CONFIG.economy.rangeBaskets, true);
+  /* or do it by hand: the goal line sends the player to each */
+  const C = run(base, true);
+  assert.ok(C.tally.extras > 0, 'by hand, the extras come in');
+  assert.equal(C.tally.stuck + C.tally.cutOff, 0);
+});
+
+test('the putting green charges only while it is kept', () => {
+  const c = newCourse(CONFIG, MAP, 7); c.unlocks.putting_green = 'done'; c.pg = 100;
+  const ctx = makeCtx(c, CONFIG, MAP), good = startShift(c, CONFIG, MAP);
+  const bad = startShift(Object.assign(JSON.parse(JSON.stringify(c)), { pg: CONFIG.economy.practiceMinCondition - 1 }), CONFIG, MAP);
+  assert.ok(feeOf(good, ctx) > feeOf(bad, ctx));
+  assert.equal(startShift(newCourse(CONFIG, MAP, 7), CONFIG, MAP).pg, -1, 'not built, no green');
 });

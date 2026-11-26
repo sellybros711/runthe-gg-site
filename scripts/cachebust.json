@@ -13,8 +13,8 @@
       "sha": "9f0e387d6587c96d"
     },
     "config.js": {
-      "v": "13",
-      "sha": "0359b5e7e7eafcb0"
+      "v": "15",
+      "sha": "65a4eccd8dc4cf6f"
     },
     "formations.js": {
       "v": "1",
@@ -25,8 +25,8 @@
       "sha": "9c6a7e1575b377f0"
     },
     "engine.js": {
-      "v": "15",
-      "sha": "cc20803b5c6abaa5"
+      "v": "17",
+      "sha": "860bb21069fb5969"
     },
     "names.js": {
       "v": "4",
@@ -81,44 +81,44 @@
       "sha": "f47af376ff4c615f"
     },
     "live3d.js": {
-      "v": "4",
-      "sha": "d983532b968af066"
+      "v": "7",
+      "sha": "722021fd58202481"
     },
     "app.js": {
-      "v": "14",
-      "sha": "4a07c5add3b9755e"
+      "v": "15",
+      "sha": "8c270354c7121b48"
     },
     "home.js": {
       "v": "5",
       "sha": "02c26b377d40b35d"
     },
     "studio.js": {
-      "v": "7",
-      "sha": "61b6cb89f034f1c8"
+      "v": "8",
+      "sha": "3ba1ac1249ac2647"
     },
     "game.js": {
-      "v": "6",
-      "sha": "fefdb546b27fe98a"
+      "v": "8",
+      "sha": "d3dda6bf5b299315"
     },
     "clip.js": {
       "v": "2",
       "sha": "ee57c2208849675b"
     },
     "flow.js": {
-      "v": "19",
-      "sha": "28bf3467ed43ae0e"
+      "v": "21",
+      "sha": "91808b5faf2bb3fc"
     },
     "daily.js": {
       "v": "10",
       "sha": "917c5bc2e8ddc2d4"
     },
     "trivia.js": {
-      "v": "6",
-      "sha": "198d1e95ea61edf7"
+      "v": "7",
+      "sha": "baef9753b7b44131"
     },
     "calls.js": {
-      "v": "12",
-      "sha": "88f7eeda88e47821"
+      "v": "13",
+      "sha": "9a5238cc596838d0"
     },
     "goforit.js": {
       "v": "9",
@@ -133,8 +133,8 @@
       "sha": "0e10656847809bfa"
     },
     "learn.js": {
-      "v": "2",
-      "sha": "2991ca80a3cc5c27"
+      "v": "3",
+      "sha": "f0262551cf8af7a6"
     },
     "testview.js": {
       "v": "2",
@@ -2649,8 +2649,8 @@
       "sha": "1891cdfef9c19253"
     },
     "main.js": {
-      "v": "5",
-      "sha": "c43fca4301128246"
+      "v": "7",
+      "sha": "8850a77f132df8c4"
     }
   },
   "football/fantasy/index.html": {
@@ -3035,8 +3035,8 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "70",
-      "sha": "dde1ec07eaafc73a"
+      "v": "71",
+      "sha": "246a5a79152a9de8"
     },
     "baller.js": {
       "v": "29",
@@ -3151,8 +3151,8 @@
       "sha": "14d401c9313d16be"
     },
     "career-ui.js": {
-      "v": "70",
-      "sha": "f26cf393a49ca246"
+      "v": "71",
+      "sha": "69799fe00aa82e24"
     }
   },
   "ideas/index.html": {
@@ -3489,24 +3489,24 @@
   },
   "course/main.js": {
     "config.js": {
-      "v": "4",
-      "sha": "b7948a1f117ebfbf"
+      "v": "5",
+      "sha": "e6ad327a18f10f1e"
     },
     "map.js": {
-      "v": "4",
-      "sha": "218d3480182de765"
+      "v": "5",
+      "sha": "d5e48b51d312f2b8"
     },
     "sim.js": {
-      "v": "4",
-      "sha": "3be6ad03efe81c73"
+      "v": "5",
+      "sha": "69290c2c06c6f92f"
     },
     "bot.js": {
-      "v": "4",
-      "sha": "5634c0fe3eb47905"
+      "v": "5",
+      "sha": "136243e7f92e999d"
     },
     "store.js": {
-      "v": "4",
-      "sha": "dbc07ac533148883"
+      "v": "5",
+      "sha": "dc15e57a27b1279d"
     },
     "analytics.js": {
       "v": "1",
@@ -3517,8 +3517,8 @@
       "sha": "2987d27952084469"
     },
     "render.js": {
-      "v": "5",
-      "sha": "fa2d1d2bfc78516e"
+      "v": "6",
+      "sha": "947236e36979bcf3"
     }
   },
   "hoops/page.js": {
@@ -3613,14 +3613,14 @@
   },
   "course/bot.js": {
     "sim.js": {
-      "v": "4",
-      "sha": "3be6ad03efe81c73"
+      "v": "5",
+      "sha": "69290c2c06c6f92f"
     }
   },
   "course/store.js": {
     "sim.js": {
-      "v": "4",
-      "sha": "3be6ad03efe81c73"
+      "v": "5",
+      "sha": "69290c2c06c6f92f"
     }
   },
   "mythiball/proto3d/park.js": {

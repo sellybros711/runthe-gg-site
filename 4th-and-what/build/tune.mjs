@@ -81,7 +81,10 @@ const SENSIBLE = {
   10: ['curls', 'dig', 'mesh', 'deep shot'],
   15: ['dig', 'deep shot', 'curls']
 };
-const TARGET = { 1: 65, 3: 55, 5: 45, 7: 38, 10: 28, 15: 18 };
+/* the real 4th down conversion, every regular season run and pass of 2021 to 2024 in nflverse
+   play by play (3,079 attempts): 4th and 1 68% (1,223), 3 50%, 5 49%, 7 43%, 10 30%, and 14 to 16
+   yards 14% (69; exactly 15 is 21% of only 33). Measured 2026-11-26; build/real-rates.mjs redoes it. */
+const TARGET = { 1: 68, 3: 50, 5: 49, 7: 43, 10: 30, 15: 14 };
 
 export function rate(play, distance, seeds, tuning) {
   let w = 0;

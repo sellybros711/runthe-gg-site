@@ -138,6 +138,19 @@ canvas.shot3d{pointer-events:none;background:#06070a}
 body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
 /* the feel (Phase 1): Go at, speed and sound, the readout, GAME WINNER, the answer cutaway */
 .gorow{display:flex;align-items:center;gap:8px;padding:2px 10px 0}
+/* THE OPTIONS (2026-11-26, reads.js): one line by the frames, every scoring option the drawing
+   makes, and a tap opens the full list over the foot of the clipboard. Never a row of its own, so
+   the tools stay where they are on a 360 by 640 phone. */
+.fr.opts{flex:1 1 auto;min-width:0;max-width:100%;align-items:flex-start;padding:0 10px;text-align:left}
+.fr.opts small{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.8}
+.fr.opts span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px}
+.optlist{position:absolute;left:14px;right:14px;bottom:12px;margin:0;padding:6px 10px;list-style:none;max-height:64%;overflow:auto;background:rgba(251,250,246,.97);border:2px solid var(--marker);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:3}
+.optlist li{display:flex;gap:8px;align-items:center;min-height:26px;font-weight:700;font-size:14px;color:var(--ink);line-height:1.2}
+.optlist li i{flex:none;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#22324d;color:#fff;font-style:normal;font-size:12px;font-weight:800}
+.optlist li.call i{background:#E8742A}
+.optlist li b{flex:none;font-family:'Outfit',sans-serif}
+.app.running .optlist,#vGame.lres .optlist{display:none}
+.pop.wrap{white-space:normal;text-align:center;width:max-content;max-width:calc(100% - 32px)}
 .golab{flex:1;font-size:13px;font-weight:700;color:var(--dim)}
 .gostep{display:flex;align-items:center;gap:4px}
 .gostep .mini{min-width:44px;min-height:44px;font-size:18px;line-height:1}
@@ -552,11 +565,12 @@ body.rtg-sticky-on .app{bottom:var(--sticky-ad-h,0px)}
     <div class="bigword" id="big" hidden></div>
     <div class="cut" id="cut" hidden><div class="cuthead" id="cutHead"></div><div class="cutv" id="cutV" aria-live="polite"></div><div class="cutsub" id="cutSub"></div><div class="cutskip">Tap to skip</div></div>
     <div class="hint" id="hint"></div>
+    <ol class="optlist" id="optList" aria-label="Scoring options" hidden></ol>
     <div class="clip bclip" aria-hidden="true"><div class="lever"></div><div class="plate"><i class="rivet l"></i><i class="rivet r"></i></div></div>
     <div class="sheet" id="sheet"><div class="cboard" id="cardBoard"><div class="clip" aria-hidden="true"><div class="lever"></div><div class="plate"><i class="rivet l"></i><i class="rivet r"></i></div></div><div class="card" id="card"></div></div></div>
   </div>
   <div class="tray" id="tray">
-  <div class="frames" id="framesRow"><div class="frames" id="frames" style="padding:0"></div><button class="fr next" id="bNext">Next frame</button></div>
+  <div class="frames" id="framesRow"><div class="frames" id="frames" style="padding:0"></div><button class="fr next" id="bNext">Next frame</button><button class="fr opts" id="bOpts" aria-expanded="false" aria-controls="optList" hidden><small>Options</small><span id="optLine"></span></button></div>
   <div class="gorow" id="goRow">
     <span class="golab" id="goLab"></span>
     <div class="gostep"><button class="mini" id="goMinus" aria-label="Hold longer">-</button><span class="gochip" id="goChip"></span><button class="mini" id="goPlus" aria-label="Go sooner">+</button></div>

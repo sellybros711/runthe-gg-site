@@ -88,6 +88,14 @@ export const SCENARIO = Object.freeze({
     /* Low man help: a ball inside helpZone feet with his defender beaten
        brings the nearest helper (never the one on the SG) after helpDelay. */
     helpZone: 13, helpDelay: 0.25,
+    /* The tag (defense.js): a cutter tagGap feet clear of his man, moving at
+       tagSpeed or more, draws the nearest helper within tagReach after
+       tagDelay. He sits tagOff off the cutter till his man is within tagBack,
+       then tagHold more. 0 tagGap turns it off. */
+    tagGap: 5, tagSpeed: 6, tagReach: 22, tagDelay: 0.15, tagOff: 2.5, tagBack: 3.5, tagHold: 0.6,
+    /* The read (sim.js): the man with the ball keeps the drawn option while
+       its value is at least readStay of the best look on the floor. */
+    readStay: 0.9,
     /* A big guarding a guard on the perimeter gives him this much more room,
        per point of size, so he cannot be blown by. */
     cushion: 1.0,
@@ -122,6 +130,9 @@ export const SCENARIO = Object.freeze({
     /* At the rim, each point of size the defender has on the shooter makes
        his contest this much stronger (and weaker the other way round). */
     sizeEdge: 0.18,
+    /* A second defender within crowdReach feet of a finish at the rim takes
+       crowdShare off its make chance (shot.js). */
+    crowdReach: 4, crowdShare: 0.08,
     /* Off the dribble and on the move. */
     pullupThree: 0.72, pullupTwo: 0.82, runningThree: 0.94, runningTwo: 0.96,
     /* A shot forced up at the bail-out mark. */

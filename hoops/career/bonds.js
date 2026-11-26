@@ -12,7 +12,17 @@
    never opens the People screen plays exactly as it did, and every draw is on
    its own stream (bond:person:act:year).
 
-   Real people are never in the ledger, so none of this touches a real man. */
+   REAL MEN ARE IN THE LEDGER (a teammate who threw you the lob, a nemesis on
+   another club), with the basketball notes the cards left on them. None of
+   this touches them: only the invented can be acted on (`realMan`), because a
+   real person stays on the court. The screen may still list them. */
+/* Every real player the league was seeded with, by name. */
+function realMen(L) {
+  const out = {}, R = L.league && L.league.roster;
+  if (R) for (const c in R) for (const e of R[c]) out[Array.isArray(e) ? e[0] : e.n] = 1;
+  return out;
+}
+const realMan = (L, n) => !!realMen(L)[n];
 
 /* How much of a year goes to people: acts a season, and one a person. */
 const BOND_MAX = 4;
@@ -208,10 +218,10 @@ const bondUsed = (L) => (L.flags.bonds && L.flags.bonds.y === L.year) ? L.flags.
    year's time, one act a person, the cash). */
 function peopleOpen(L) {
   if (L.retired || L.pending.length || isAm(L)) return [];
-  const used = bondUsed(L), out = [];
+  const used = bondUsed(L), out = [], real = realMen(L);
   for (const id in L.people || {}) {
     const p = L.people[id], g = BOND_GROUP[p.role];
-    if (!g) continue;
+    if (!g || real[p.n]) continue;
     const acts = Object.keys(BONDS).filter((k) => BONDS[k].on(L, p)).map((k) => {
       const a = BONDS[k], cost = a.cost ? a.cost(L, p) : 0;
       /* `why` names what closes it (the year's time, this person already, the cash); `takes` is
@@ -227,7 +237,8 @@ function peopleOpen(L) {
 /* Everybody in the ledger, acted on or not, with the same mood word: for the
    people the screen lists who have no act open (an old partner, a GM). */
 function peopleAll(L) {
-  return Object.keys(L.people || {}).map((id) => { const p = L.people[id]; return { id, group: BOND_GROUP[p.role] || null, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice() }; });
+  const real = realMen(L);
+  return Object.keys(L.people || {}).map((id) => { const p = L.people[id]; return { id, group: BOND_GROUP[p.role] || null, role: p.role, n: p.n, rel: p.rel, mood: bondMood(p), met: p.met, notes: p.notes.slice(), real: !!real[p.n] }; });
 }
 /* How much of the year is left for people. */
 const bondsLeft = (L) => Math.max(0, BOND_MAX - bondUsed(L).n);

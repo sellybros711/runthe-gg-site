@@ -58,7 +58,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=36">
+<link rel="stylesheet" href="style.css?v=38">
 </head>
 <body>
 <header class="topbar">
@@ -536,6 +536,8 @@ document.documentElement.setAttribute('data-theme', 'dark');
     <canvas id="cLive" aria-label="The play in the stadium"></canvas>
     <canvas id="cLive3d" hidden aria-label="The play in the stadium"></canvas>
     <div class="bug" id="bug" hidden aria-hidden="true"><b id="bugDown"></b><span id="bugCall"></span></div>
+    <button type="button" class="coachbtn" id="bCoach" hidden aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="18" r="2"/><path d="M20 6l-4 .5 3 3z"/></svg>Coach view</button>
+    <div class="coachread" id="coachRead" hidden aria-live="polite"></div>
     <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
     <div class="cap" id="cap" aria-live="polite"></div>
     <div class="measure" id="measure" hidden aria-hidden="true"><i></i><span>Measurement</span><i></i></div>
@@ -548,6 +550,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
       <p class="rline" id="rLine"></p>
       <p class="rwhy" id="rWhy"></p>
       <p class="rread" id="rRead"></p>
+      <div class="ropts" id="rOpts" hidden></div>
       <p class="rmoment" id="rMoment" hidden></p>
       <div class="rsnaps" id="rSnaps" hidden></div>
       <div class="rdaily" id="rDaily" hidden>
@@ -608,7 +611,7 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <dialog class="dlg" id="guide">
   <h2>How it works</h2>
   <ol>
-    <li><b>Studio.</b> Pick a formation or a concept. Give each player a route from the list, or draw one. Route and Block draw his job. With Run, drag from the man who gets the ball: that drag is his path. Read sets the 1st, 2nd and 3rd read. Motion sends a man before the snap. Move lines a player up. Nothing else moves him.</li>
+    <li><b>Studio.</b> Pick a formation or a concept. Give each player a route from the list, or draw one. Route and Block draw his job. With Run, drag from the man who gets the ball: that drag is his path. Read sets the 1st, 2nd and 3rd read: the order the QB looks. Every route is an option. He throws to whoever is open. Motion sends a man before the snap. Move lines a player up. Nothing else moves him.</li>
     <li><b>Play.</b> Set the down, the distance and the spot. Pick the defense, or let it pick. Run Play. Your players run exactly what you drew.</li>
     <li><b>Test vs Defense.</b> Every defense, many snaps each, and the rate for each one.</li>
     <li><b>Playbooks.</b> Save plays to a book on your Run The Games account. Name them in your own words.</li>
@@ -622,10 +625,10 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/assets/cloudsave.js?v=4"></script>
-<script src="config.js?v=13"></script>
+<script src="config.js?v=15"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=15"></script>
+<script src="engine.js?v=17"></script>
 <script src="names.js?v=4"></script>
 <script src="routes.js?v=4"></script>
 <script src="book.js?v=4"></script>
@@ -639,20 +642,20 @@ document.documentElement.setAttribute('data-theme', 'dark');
 <script src="share.js?v=2"></script>
 <script src="feel.js?v=4"></script>
 <script src="play.js?v=5"></script>
-<script type="module" src="live3d.js?v=4"></script>
-<script src="app.js?v=14"></script>
+<script type="module" src="live3d.js?v=7"></script>
+<script src="app.js?v=15"></script>
 <script src="home.js?v=5"></script>
-<script src="studio.js?v=7"></script>
-<script src="game.js?v=6"></script>
+<script src="studio.js?v=8"></script>
+<script src="game.js?v=8"></script>
 <script src="clip.js?v=2"></script>
-<script src="flow.js?v=19"></script>
+<script src="flow.js?v=21"></script>
 <script src="daily.js?v=10"></script>
-<script src="trivia.js?v=6"></script>
-<script src="calls.js?v=12"></script>
+<script src="trivia.js?v=7"></script>
+<script src="calls.js?v=13"></script>
 <script src="goforit.js?v=9"></script>
 <script src="profile.js?v=2"></script>
 <script src="library.js?v=3"></script>
-<script src="learn.js?v=2"></script>
+<script src="learn.js?v=3"></script>
 <script src="testview.js?v=2"></script>
 <script src="printview.js?v=1"></script>
 <!-- The ads (Ads Agent, 2026-10-30): ready, and inert until the launch commit adds the ad tag. -->

@@ -471,7 +471,7 @@ export function createRenderer(canvas, map, cfg) {
   let ART = null, lastS = null, lastCtx = null, artGroup = null, buckets = null;
   const TREES = ['tree_default', 'tree_oak', 'tree_detailed', 'tree_fat', 'tree_simple'], PINES = ['tree_pineRoundA', 'tree_pineRoundC', 'tree_pineTallA', 'tree_cone'];
   const BLOOMS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'], ROCKS = ['rock_largeA', 'rock_largeB', 'rock_largeC'], AUTOS = ['sedan', 'suv', 'hatchback-sports', 'van', 'truck'];
-  const GOLFERS = ['character-male-a', 'character-female-b', 'character-male-f', 'character-female-c', 'character-male-e'];
+  const GOLFERS = ['character-male-a', 'character-female-b', 'character-male-f', 'character-female-c'], STAFF = 'character-male-e';
   const VISORS = [0xff7a1a, 0xf7f5ee, 0x3d7fd9, 0xe5483b, 0xf2c230, 0x2fa89a], BAGS = [0x3d7fd9, 0xe5483b, 0x2c3540, 0x2fa89a, 0x8a5fd0, 0xe0a030];
   const CLUBHOUSE = ['building-type-h', 'building-type-a', 'building-type-d', 'building-type-b'];
   const PM = new THREE.Matrix4(), PQ = new THREE.Quaternion(), PP = new THREE.Vector3(), PS = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
@@ -697,12 +697,23 @@ export function createRenderer(canvas, map, cfg) {
     }
     tufts.count = nt;
 
+    /* the hires, each at their post */
+    if (ART) {
+      let k = 0;
+      for (const role in cfg.economy.staff) {
+        k++;
+        if (!S.staff[role]) continue;
+        const at = role === 'clerk' ? map.counter : role === 'starter' ? map.teeRing : role === 'attendant' ? map.keys.ring : role === 'cook' ? map.snack.ring : role === 'range_hand' ? map.rangeRing : map.mowerPark;
+        const c = charAt(PLAYER_SLOT + k, STAFF);
+        if (c) { pose(c, at.x + (role === 'clerk' ? 0.9 : 1.1), at.y + (role === 'clerk' ? 1.5 : 0.6), 0, 0, at.x + 1, at.y - 5, frameDt, 0); shadow(at.x + 1, at.y + 0.6, 0.55); }
+      }
+    }
     /* golfers, their patience, their shots */
     for (let i = 0; i < S.groups.length && i < 64; i++) {
       const g = S.groups[i];
       if (g.st === 'sched' || g.st === 'gone') continue;
       const gx = i < prevN ? lerp(prev[6 + i * 2], g.x, alpha) : g.x, gy = i < prevN ? lerp(prev[7 + i * 2], g.y, alpha) : g.y;
-      const walking = g.st === 'toQueue' || g.st === 'toTee' || g.st === 'toNext' || g.st === 'leave' || g.st === 'off';
+      const walking = g.st === 'toQueue' || g.st === 'toTee' || g.st === 'toNext' || g.st === 'leave' || g.st === 'off' || g.st === 'toKeys' || g.st === 'toSnack';
       if (g.st === 'play' && g.shots) {
         const f = Math.min(1, (S.tick + alpha - g.t0) / (g.t1 - g.t0)), h = ctx.route.holes[g.ord], F = 0.76;
         for (let m = 0; m < g.size; m++) {
@@ -739,6 +750,8 @@ export function createRenderer(canvas, map, cfg) {
       let left = -1;
       if (g.st === 'queue') left = 1 - g.wc / S.fx.patCounter;
       else if (g.st === 'teeWait') left = g.hi === 0 ? 1 - g.wt / S.fx.patTee : 1 - g.wo / S.fx.patCourse;
+      else if (g.st === 'keys') left = 1 - g.wk / cfg.economy.keysWaitS;
+      else if (g.st === 'snack') left = 1 - g.ws / cfg.economy.snackWaitS;
       if (left >= 0) {
         col.copy(left > 0.5 ? cOk : left > 0.25 ? cWarn : cBadc);
         ring(gx, gy, 1.9, col, 0.11); fill(gx, gy, 1.85 * Math.max(0, left), col);

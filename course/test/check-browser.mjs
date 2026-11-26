@@ -9,7 +9,8 @@
  *   it boots straight into day 1 with no console error and no guide open
  *   one thumb plays it: a drag walks, a tap travels, WASD on a desktop,
  *   walking into the cart rides it and Leave gets out
- *   a whole shift, played by the goal line bot, ends on the results card
+ *   a place's pad opens its card
+ *   a whole day, played by the goal line bot (serve, then spend after hours, then end the day), ends on the day's card
  *   under 150 draw calls and 100,000 triangles with the real models in, every control 44 by 44
  *   what it takes to start playing is under 2 MB and under 3 s on a 4G link;
  *   the model packs load behind that and are counted apart
@@ -60,8 +61,9 @@ async function open(ctxOpts, { signedAs = null, throttle = false, url = base } =
 const sum = page => page.evaluate(() => window.__course.summary());
 async function playShift(page) {
   await page.evaluate(() => { window.__course.auto(true); window.__course.scale(16); });
-  await page.waitForFunction(() => document.getElementById('results').classList.contains('on'), null, { timeout: 120000 });
-  await page.waitForFunction(() => !/^Saving/.test(document.getElementById('resSave').textContent), null, { timeout: 15000 });
+  /* the bot serves the day, spends after hours and ends it; the day's card is up from the close */
+  await page.waitForFunction(() => window.__course.summary().ended && document.getElementById('results').classList.contains('on'), null, { timeout: 180000 });
+  await page.waitForFunction(() => !/^(Saving|)$/.test(document.getElementById('resSave').textContent), null, { timeout: 15000 });
 }
 
 for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }], ['desktop 1440x900', { viewport: { width: 1440, height: 900 } }]]) {
@@ -115,6 +117,17 @@ for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 84
   ok(await page.evaluate(() => getComputedStyle(document.getElementById('leave')).display) === 'block', name + ': no Leave button in the cart');
   await page.click('#leave'); await page.waitForTimeout(300);
   ok((await sum(page)).mode === 'walk', name + ': Leave did not get out of the cart');
+
+  /* a place's pad opens its card: stand on the clubhouse's and it comes up, with nothing bought by standing */
+  await page.evaluate(() => { const c = window.__course, S = c.state(), at = c.ctx().map.places.clubhouse; S.player.x = at.x; S.player.y = at.y; S.player.go = false; S.player.dir = -1; });   // the check's shortcut to the pad
+  await page.waitForFunction(() => document.getElementById('place').classList.contains('on'), null, { timeout: 5000 }).catch(() => {});
+  const card = await page.evaluate(() => ({ on: document.getElementById('place').classList.contains('on'), title: document.getElementById('placeTitle').textContent,
+    rows: [...document.querySelectorAll('#placeList h3')].map(x => x.textContent), buttons: [...document.querySelectorAll('#placeList button')].map(b => [b.textContent, b.disabled, Math.round(b.getBoundingClientRect().height)]), spent: window.__course.state().tally.spent }));
+  ok(card.on && card.title === 'Clubhouse', name + ': standing on the clubhouse pad did not open its card: ' + JSON.stringify(card));
+  ok(card.rows.length === 3 && card.buttons.every(b => b[1] && b[2] >= 44), name + ': the clubhouse card should hold three levels, none affordable on day 1: ' + JSON.stringify(card));
+  ok(card.spent === 0, name + ': standing on a pad spent money');
+  await page.click('#closePlace');
+  ok(await page.evaluate(() => !document.getElementById('place').classList.contains('on')), name + ': the card did not close');
 
   /* every control is at least 44 by 44 */
   await page.click('#menuBtn');

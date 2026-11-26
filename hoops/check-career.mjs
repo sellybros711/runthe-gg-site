@@ -1876,6 +1876,68 @@ section('23. the wild side: the tables, nights out, pills and rehab, and what th
   ok(['ch_clean', 'ch_house'].every((k) => C.CHALLENGES[k] && C.CHALLENGES[k].blurb.length > 8) && C.CHALLENGES.ch_house.blurb.indexOf(C.money(5)) > 0, `two challenges from the wild side ("${C.CHALLENGES.ch_house.blurb}")`);
 }
 
+// ── 23b. real men stay on the court, and what the last screens asked for ──
+section('23b. no real man can be acted on, and the wild side and the later life say more');
+{
+  const E = require('./engine.js');
+  /* Every real player the checks' league holds, by name. */
+  const realNames = new Set(); for (const c in CHECK_ROSTERS) for (const e of (Array.isArray(CHECK_ROSTERS[c]) ? CHECK_ROSTERS[c] : [])) realNames.add(Array.isArray(e) ? e[0] : e.n);
+  let inLedger = 0, acted = [], flagged = 0, listed = 0, invented = 0;
+  for (let i = 0; i < 40; i++) {
+    const L = C.generateRoad({ seed: 'real' + i, league }); const r = E.createSeededRNG(E.hashSeed('real-p' + i)); let g = 0;
+    while (!L.retired && g++ < 9000) {
+      if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); continue; }
+      if (g % 7 === 0) for (const P of C.peopleOpen(L)) { listed++; if (C.realMan(L, P.n)) acted.push(P.n + ' (' + P.role + ')'); else if (P.role === 'Teammate') invented++; }
+      C.step(L);
+    }
+    for (const x of C.peopleAll(L)) if (C.realMan(L, x.n)) { inLedger++; if (x.real === true) flagged++; if (C.personAct(L, x.id, 'dinner') || C.personAct(L, x.id, 'callout') || C.personAct(L, x.id, 'trash')) acted.push('acted: ' + x.n); }
+  }
+  console.log(`  ${inLedger} real men in 40 ledgers  ${listed} people offered an act  ${invented} of them invented teammates`);
+  const lg = C.newLife({ seed: 'real-x', league, start: 'draft' });
+  const some = Object.keys(lg.league.roster).reduce((t, c) => t + lg.league.roster[c].length, 0);
+  ok(some > 300 && C.realMan(lg, lg.league.roster.BOS[0][0]) && !C.realMan(lg, 'Nobody Atall'), `the engine knows every real player by name (${some})`);
+  ok(inLedger >= 20 && flagged === inLedger, `real men are in the ledger, and every one is marked real (${flagged} of ${inLedger})`);
+  ok(acted.length === 0, `no real man is ever offered an act or can be acted on (${acted.slice(0, 3).join(', ') || 'none in ' + listed + ' offers'})`);
+  ok(invented > 0, `an invented teammate still can be (${invented})`);
+
+  /* The wild side says why a night is closed, lists every night, and never offers a stake past the cash. */
+  const toSeason = (seed, age) => { const L = C.newLife({ seed, league, start: 'draft' }); let g = 0; while (g++ < 4000 && !(L.stage === 'nba' && L.history.length >= 1 && L.phase === 'early' && !L.pending.length)) { if (L.pending.length) C.choose(L, 0); else C.step(L); } L.age = age; return L; };
+  {
+    const Y = toSeason('wild-y', 20); Y.cash = 5; Y.m.health = 95;
+    const V = C.wildOpen(Y);
+    ok(V.acts.length === C.WILD_KEYS.length && ['casino', 'party', 'pills', 'rehab'].every((id) => { const a = V.acts.find((x) => x.id === id); return !a.ok && a.why === 'shut' && a.note.length > 5; }) && C.wildAct(Y, 'casino', 1) === null, `a twenty year old sees every night, and the ones not for him yet say why ("${V.acts[0].note}")`);
+    const A = toSeason('wild-z', 25); A.cash = 2.98; A.m.health = 60;
+    const W = C.wildOpen(A), tab = W.acts.find((a) => a.id === 'casino');
+    ok(tab.ok && tab.why === null && tab.max <= A.cash && W.acts.find((a) => a.id === 'rehab').why === 'shut', `the most he can stake is never more than he has (${tab.max} of ${A.cash})`);
+    ok(!!C.wildAct(A, 'casino', tab.max), 'and the engine takes that stake');
+    A.cash = 0.01; const P = C.wildOpen(A).acts.find((a) => a.id === 'casino');
+    ok(!P.ok && P.why === 'cash' && P.note === 'Not enough cash.', 'short of the least stake, the cash is why');
+    A.cash = 9; A.wild.n = C.WILD_MAX; const N = C.wildOpen(A).acts.find((a) => a.id === 'casino');
+    ok(!N.ok && N.why === 'nights', 'with the nights spent, the nights are why');
+    A.wild.rec.push({ y: A.year, what: 'test', g: 25 }); A.season.ban = { from: A.season.g + 1, until: A.season.g + 26, why: 'test' };
+    const R = C.wildOpen(A);
+    ok(R.record.every((x) => typeof x.text === 'string' && x.text.length > 5 && !DASH.test(x.text)) && R.sitting && /^Suspended for a failed drug test\. Back after game \d+\.$/.test(R.sitting.text), `the record and a suspension come in words ("${R.sitting && R.sitting.text}")`);
+  }
+  /* A man who died young gets a sober line, and the later life names its press and his family. */
+  {
+    let dead = null, old = null;
+    for (let i = 0; i < 60 && !dead; i++) {
+      const L = C.generateRoad({ seed: 'wild-end' + i, league }); let g = 0, n = 0; const r = E.createSeededRNG(i + 3);
+      while (!L.retired && g++ < 9000) {
+        if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); n = 0; continue; }
+        const V = C.wildOpen(L), a = V && (V.acts.find((x) => x.id === 'pills' && x.ok) || V.acts.find((x) => x.id === 'party' && x.ok));
+        if (a && n++ < 6 && C.wildAct(L, a.id)) continue;
+        n = 0; C.step(L);
+      }
+      if (L.flags.died) dead = L; else if (!old) old = L;
+    }
+    ok(!!dead && /^He was \d+\. The numbers stop there\.$/.test(dead.final.blurb) && C.lifeCard(dead).blurb === dead.final.blurb, `a man who died young has a sober line ("${dead && dead.final.blurb}")`);
+    C.laterStart(old);
+    const V = C.laterOf(old);
+    ok(typeof V.next === 'string' && V.next.indexOf('years go by') > 0 && typeof V.life === 'string' && V.life.length > 3, `the later life names its press and his family ("${V.next}", "${V.life}")`);
+  }
+}
+
 // ── 24. a childhood ───────────────────────────────────────────────────────
 section('24. before the league: a childhood in nine cards, and the same sophomore at the end of it');
 {

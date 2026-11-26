@@ -40,6 +40,11 @@ export function shotQuality(sc, shooter, defenders, bailout) {
     const edge = ((T.size && T.size[near.arch]) || 3) - ((T.size && T.size[shooter.arch]) || 3);
     const k = Math.max(0.35, Math.min(1.6, 1 + (T.sizeEdge ?? 0.18) * edge));
     contest = 1 - (1 - f) * k;
+    /* A CROWD AT THE RIM (2026-11-26): a second defender within crowdReach
+       feet takes crowdShare off what the first one left. Help at the rim is
+       two bodies, and a zone lives there. */
+    const second = defenders.filter(x => x.id !== near.who && dist(shooter.pos, x.pos) <= (T.crowdReach ?? 0)).length;
+    if (second) contest *= 1 - (T.crowdShare ?? 0);
   } else contest = contestOf(near.d, T.contestJumper);
   const pullup = !!shooter.pullup && zone !== 'rim', running = !!shooter.running && !pullup && zone !== 'rim';
   const mov = pullup ? (zone === 'three' ? T.pullupThree : T.pullupTwo) : running ? (zone === 'three' ? T.runningThree : T.runningTwo) : 1;

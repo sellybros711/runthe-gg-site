@@ -4,14 +4,23 @@
  * same three inputs give the same result anywhere.
  *
  * The rng is drawn in one order: the screen scheme first, then each risky
- * pass, then the shot, then their answer. */
+ * pass, then the shot, then their answer.
+ *
+ * THE READ (2026-11-26) draws nothing. At the decision moment (the throw of
+ * the last pass, or the drawn shooter's own release when there is no pass)
+ * the man with the ball weighs every option the drawing makes (reads.js)
+ * against the defense as it stands and goes to the best one. So which passes
+ * are thrown can change with the defense, and a pass thrown somewhere else
+ * draws its risk roll (if it has any) in the same place the drawn pass would
+ * have: the order stays scheme, risky passes, shot, answer. */
 import { mulberry32 } from './rng.js';
 import { SCHEMES, ZONES, DEFENSES, SCHEME_NAMES, isZone } from './scenario.js';
-import { COURT, dist, segDist, toRim, zoneOf } from './court-geo.js';
+import { COURT, dist, toRim, zoneOf } from './court-geo.js';
 import { advanceRunner, advanceDefender, speedOf, separate, pinBehind, turnFace } from './motion.js';
 import { targetFor, screens, defenderOf, useScreen } from './defense.js';
 import { shotQuality, openWord } from './shot.js';
 import { IDS, problems, planOf } from './playbook.js';
+import { optionsOf, deciderOf, laneRisk, choose, readCaption } from './reads.js';
 
 export const DT = 1 / 60;
 const FRAME_EVERY = 2;
@@ -36,7 +45,9 @@ export function simulate(sc, play, seed, opt = {}) {
   const st = {
     clock: goAt, scheme: DEFENSES.includes(opt.scheme) ? opt.scheme : rolled, screened: {}, lastScreen: null,
     O: {}, X: [], ball: { holder: sc.handler, pos: null, flight: null }, k: -1, pass: null, shot: null,
-    events: [], frames: [], end: null, bailPending: false, passes: []
+    events: [], frames: [], end: null, bailPending: false, passes: [],
+    /* the read: the options the drawing makes, and who decides (never in a preview) */
+    options: opt.preview ? null : optionsOf(sc, play), decider: opt.preview ? null : deciderOf(sc, play), read: null, lock: null
   };
   for (const id of IDS) st.O[id] = { id, arch: sc.roster[id].arch, pos: { ...play.spots[id] }, path: [], vel: { x: 0, y: 0 }, segEnds: 0, screen: null, pending: null };
   for (const [xid, man] of Object.entries(sc.matchups)) st.X.push({ id: xid, man, pos: null, aim: null, vel: { x: 0, y: 0 }, holdT: 0, underT: 0 });
@@ -63,61 +74,10 @@ export function simulate(sc, play, seed, opt = {}) {
   let tick = 0;
   frame(st);
   nextStep(sc, play, st, T, rng, cap);
+  st.ctx = { sc, play, opt };
   while (!st.end) {
     tick++;
-    // the ball
-    if (st.shot) {
-      st.shot.t += DT;
-      if (st.shot.t >= st.shot.dur) { finish(sc, st, T, rng, cap); break; }
-    } else if (st.ball.flight) {
-      const f = st.ball.flight; f.t += DT;
-      const k = Math.min(1, f.t / f.dur);
-      st.ball.pos = { x: f.a.x + (f.b.x - f.a.x) * k, y: f.a.y + (f.b.y - f.a.y) * k };
-      if (k >= 1) catchBall(sc, play, st, T, rng, cap);
-    } else if (st.pass && st.pass.releaseAt != null && st.clock <= st.pass.releaseAt + 1e-9) throwBall(st, T, rng, cap);
-    if (st.end) break;
-
-    // the offense
-    for (const id of IDS) {
-      const p = st.O[id];
-      if (!p.path.length) { p.spd = 0; continue; }
-      // the man with the ball keeps the pace the coach drew (a clock burn takes the time it took); cutters vary
-      advanceRunner(p, DT, st.ball.holder === id ? T.dribbleSpeed : T.runSpeed * (p.vs || 1), T);
-      if (!p.path.length && p.pending) { p.screen = p.pending; p.pending = null; }
-    }
-    for (const id of IDS) if (!st.O[id].path.length) st.O[id].vel = { x: 0, y: 0 };
-
-    // the defense
-    const ev = screens(st, T);
-    if (ev) cap(ev.scheme === 'switch' ? 'Switch on the screen' : ev.scheme === 'over' ? 'Fought over the top' : 'Went under the screen', { slow: true });
-    for (const x of st.X) {
-      x.holdT = Math.max(0, x.holdT - DT); x.underT = Math.max(0, x.underT - DT);
-      let aim = targetFor(x, st, T), hold = 0;
-      // Fighting over the top: stuck on the screener's body until the hold runs out.
-      const ls = st.lastScreen, scr = x.holdT > 0 && ls ? st.O[ls.screener] : null;
-      if (scr) { const pin = pinBehind(x, scr.pos, T); aim = { x: aim.x * 0.3 + pin.x * 0.7, y: aim.y * 0.3 + pin.y * 0.7 }; hold = 0.5; }
-      advanceDefender(x, aim, DT, T.defSpeed * (x.vs || 1), T.defLag * (x.vl || 1), hold, T);
-    }
-    separate(IDS.map(id => st.O[id]), st.X, T);
-    animate(st, DT);
-
-    st.clock = Math.max(0, st.clock - DT);
-    if (!st.shot) stepCheck(sc, play, st, T, rng, cap);
-    if (opt.preview) {
-      // A frame is over once every step in it is done and the ball has landed.
-      const done = st.run && st.run.every(r => r.state === 'done') && !st.ball.flight && !st.pass;
-      if (done || st.clock <= 0) st.end = { outcome: 'preview', how: 'preview' };
-      if (tick % FRAME_EVERY === 0 || st.end) frame(st);
-      continue;
-    }
-    if (!st.shot && !st.end && st.clock <= sc.bailoutAt + 1e-9) {
-      /* A shooter already in his gather lets it go at his release, not now:
-         firing at the mark skipped the closeout and made a catch timed to
-         3.0 the best look on the floor (fixed 2026-11-13). */
-      if (st.ball.holder && !(st.release && st.release.who === st.ball.holder)) shoot(sc, st, T, rng, cap, st.ball.holder, true);
-      else if (!st.ball.holder) st.bailPending = true;
-    }
-    if (!st.shot && !st.end && st.clock <= 0) end(st, 'lose', 'clock', cap, 'Time');
+    if (advance(sc, play, st, T, rng, cap, opt)) break;
     if (tick % FRAME_EVERY === 0 || st.end) frame(st);
   }
   frame(st);
@@ -125,6 +85,69 @@ export function simulate(sc, play, seed, opt = {}) {
   const res = result(sc, play, st, seed);
   res.startClock = sc.clock; res.goAt = goAt;
   return res;
+}
+
+/* One tick of the possession. True when the loop should stop at once (the
+   shot landed, or the ball was lost), with no frame for this tick. */
+function advance(sc, play, st, T, rng, cap, opt) {
+  // the ball
+  if (st.shot) {
+    st.shot.t += DT;
+    if (st.shot.t >= st.shot.dur) { finish(sc, st, T, rng, cap); return true; }
+  } else if (st.ball.flight) {
+    const f = st.ball.flight; f.t += DT;
+    const k = Math.min(1, f.t / f.dur);
+    st.ball.pos = { x: f.a.x + (f.b.x - f.a.x) * k, y: f.a.y + (f.b.y - f.a.y) * k };
+    if (k >= 1) catchBall(sc, play, st, T, rng, cap);
+  } else if (st.pass && st.pass.releaseAt != null && st.clock <= st.pass.releaseAt + 1e-9) throwBall(st, T, rng, cap);
+  if (st.end) return true;
+
+  // the offense
+  for (const id of IDS) {
+    const p = st.O[id];
+    if (st.lock === id) p.path = [];
+    if (!p.path.length) { p.spd = 0; continue; }
+    // the man with the ball keeps the pace the coach drew (a clock burn takes the time it took); cutters vary
+    advanceRunner(p, DT, st.ball.holder === id ? T.dribbleSpeed : T.runSpeed * (p.vs || 1), T);
+    if (!p.path.length && p.pending) { p.screen = p.pending; p.pending = null; }
+  }
+  for (const id of IDS) if (!st.O[id].path.length) st.O[id].vel = { x: 0, y: 0 };
+
+  // the defense
+  const ev = screens(st, T);
+  if (ev) cap(ev.scheme === 'switch' ? 'Switch on the screen' : ev.scheme === 'over' ? 'Fought over the top' : 'Went under the screen', { slow: true });
+  for (const x of st.X) {
+    x.holdT = Math.max(0, x.holdT - DT); x.underT = Math.max(0, x.underT - DT);
+    let aim = targetFor(x, st, T), hold = 0;
+    // Fighting over the top: stuck on the screener's body until the hold runs out.
+    const ls = st.lastScreen, scr = x.holdT > 0 && ls ? st.O[ls.screener] : null;
+    if (scr) { const pin = pinBehind(x, scr.pos, T); aim = { x: aim.x * 0.3 + pin.x * 0.7, y: aim.y * 0.3 + pin.y * 0.7 }; hold = 0.5; }
+    advanceDefender(x, aim, DT, T.defSpeed * (x.vs || 1), T.defLag * (x.vl || 1), hold, T);
+  }
+  separate(IDS.map(id => st.O[id]), st.X, T);
+  if (!st.peek) animate(st, DT);
+
+  st.clock = Math.max(0, st.clock - DT);
+  if (!st.shot) stepCheck(sc, play, st, T, rng, cap);
+  if (opt.preview) {
+    // A frame is over once every step in it is done and the ball has landed.
+    const done = st.run && st.run.every(r => r.state === 'done') && !st.ball.flight && !st.pass;
+    if (done || st.clock <= 0) st.end = { outcome: 'preview', how: 'preview' };
+    return false;
+  }
+  bailCheck(sc, st, T, rng, cap);
+  return false;
+}
+
+function bailCheck(sc, st, T, rng, cap) {
+  if (!st.shot && !st.end && st.clock <= sc.bailoutAt + 1e-9) {
+    /* A shooter already in his gather lets it go at his release, not now:
+       firing at the mark skipped the closeout and made a catch timed to
+       3.0 the best look on the floor (fixed 2026-11-13). */
+    if (st.ball.holder && !(st.release && st.release.who === st.ball.holder)) shoot(sc, st, T, rng, cap, st.ball.holder, true);
+    else if (!st.ball.holder) st.bailPending = true;
+  }
+  if (!st.shot && !st.end && st.clock <= 0) end(st, 'lose', 'clock', cap, 'Time');
 }
 
 /* ---------- steps ----------
@@ -196,6 +219,7 @@ function feedPart(st, i) {
   const P = st.plan[i], r = st.run[i], next = P.parts[r.part + 1];
   if (!next) return false;
   if (!next.waitFor.every(k => screenSet(st, k))) return false;
+  if (st.lock === P.s.who) return false;   // the read's shooter has the ball: he shoots
   const p = st.O[P.s.who];
   r.part++;
   p.path = next.pts.map(q => ({ x: q.x, y: q.y }));
@@ -237,7 +261,7 @@ function advanceStep(sc, play, st, T, rng, cap, i) {
     return true;
   }
   if (s.kind === 'pass') return r.thrown ? false : tryThrow(sc, play, st, T, rng, cap, i);
-  if (s.kind === 'shoot') return tryShoot(st, T, i);
+  if (s.kind === 'shoot') return tryShoot(sc, play, st, T, rng, cap, i);
   return false;
 }
 
@@ -270,14 +294,14 @@ function tryThrow(sc, play, st, T, rng, cap, i) {
   }
   const flight = dist(passer.pos, target) / T.passSpeed;
   if (eta > flight + 1e-9) return false;
-  st.run[i].thrown = true;
   // a short pass to a man running right by the passer is a handoff: the
   // passer is the screen
   const handoff = st.plan[i].name === 'handoff' || (k >= 0 && dist(passer.pos, rec.pos) < 6);
-  st.pass = { from: s.from, to: s.to, target: { ...target }, step: i, releaseAt: st.clock, handoff };
-  throwBall(st, T, rng, cap);
-  if (handoff && !st.end) { const use = useScreen(st, T, s.from, s.to, 'handoff'); if (use) cap(schemeCaption(use), { slow: true }); }
-  return true;
+  const call = { who: s.to, at: { ...target }, eta, handoff, step: i };
+  let pick = call;
+  /* THE READ: this is the last pass, so the passer looks first */
+  if (st.decider && !st.read && i === st.decider.pass) { const r = readNow(sc, play, st, T, cap, s.from, call); if (r) pick = r.pick; }
+  return readGo(sc, st, T, rng, cap, s.from, pick, i, call);
 }
 
 function startPass(st, s, T) {
@@ -287,24 +311,11 @@ function startPass(st, s, T) {
 
 function throwBall(st, T, rng, cap) {
   const ps = st.pass, a = { ...st.O[ps.from].pos }, b = { ...ps.target };
+  /* the risk off the length and the closest defender to its lane, not the
+     passer's own man or anybody on the passer, nor the receiver's man closing
+     out on the catch (that is a contest); a handoff has no lane (reads.js) */
+  const { risk, long, laneK } = laneRisk(T, st.X, a, b, { skip: defenderOf(st, ps.from), to: ps.to, handoff: ps.handoff });
   const len = dist(a, b);
-  const long = len > T.longPass;
-  const xPasser = defenderOf(st, ps.from);
-  // the closest defender to the line of the pass, not counting the passer's
-  // own man or anybody standing on the passer
-  // (in the middle of the lane only: the receiver's own man closing out on
-  // the catch is a contest, not a steal; a handoff has no lane)
-  let lane = Infinity;
-  const dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy;
-  for (const x of st.X) {
-    if (ps.handoff || !L2 || x === xPasser || dist(x.pos, a) <= 2) continue;
-    const t = ((x.pos.x - a.x) * dx + (x.pos.y - a.y) * dy) / L2;
-    if (t < 0.1 || t > (x.man === ps.to ? 0.75 : 0.9)) continue;
-    lane = Math.min(lane, segDist(x.pos, a, b));
-  }
-  const longK = long ? Math.min(1, (len - T.longPass) / 10 + 0.3) : 0;
-  const laneK = Math.max(0, Math.min(1, (T.laneCover - lane) / T.laneCover));
-  const risk = (T.passRiskLong ?? 0.06) * longK + (T.passRiskLane ?? 0.1) * laneK;
   const lost = risk > 0 && rng() < risk;
   st.ball = { holder: null, pos: a, flight: { a, b, t: 0, dur: Math.max(0.12, len / T.passSpeed), to: ps.to, lost, step: ps.step, chase: 0 } };
   st.passes.push({ from: ps.from, to: ps.to, at: round1(st.clock), long, lane: laneK > 0, risk: Math.round(risk * 1000) / 1000, lost, handoff: !!ps.handoff });
@@ -328,15 +339,22 @@ function catchBall(sc, play, st, T, rng, cap) {
   st.catchAt[f.to] = st.clock;
   if (f.step != null && st.run) st.run[f.step].state = 'done';
   if (st.bailPending) { shoot(sc, st, T, rng, cap, f.to, true); return; }
+  if (st.read && st.read.pick === f.to && f.to !== st.read.call && !st.release) readCatch(st, T, f.to);
   stepCheck(sc, play, st, T, rng, cap);
 }
 
 /* ---------- the shot ----------
    On the catch, or when his own route ends: a gather (catch and shoot, pull
    up, or a finish at the rim), and the defense closes out meanwhile. */
-function tryShoot(st, T, i) {
+function tryShoot(sc, play, st, T, rng, cap, i) {
   const who = st.plan[i].s.who, p = st.O[who];
   if (st.release || st.ball.holder !== who || p.path.length || runningRoute(st, who) >= 0) return false;
+  /* THE READ, with no pass drawn: the shooter is the man with the ball, and
+     he looks before he goes up */
+  if (st.decider && !st.read && st.decider.pass < 0 && who === st.decider.who) {
+    const r = readNow(sc, play, st, T, cap, who, null);
+    if (r && r.pick.who !== who) return readGo(sc, st, T, rng, cap, who, r.pick, null, null);
+  }
   const caught = st.catchAt[who] != null;
   const g = zoneOf(p.pos) === 'rim' ? T.gatherRim : caught && st.catchAt[who] > st.clock - 0.05 ? T.gatherCatch : T.gatherDribble;
   st.release = { who, at: st.clock - (g ?? 0.4) };
@@ -348,14 +366,11 @@ function shoot(sc, st, T, rng, cap, who, bailout) {
   // already in his shot when the bail-out mark came: that is the play, not a heave
   if (bailout && st.release && st.release.who === who) bailout = false;
   const p = st.O[who];
-  const caughtAt = st.catchAt ? st.catchAt[who] : null, endAt = p.routeEndAt;
-  // catch and shoot: he caught it and did not dribble anywhere after
-  // (a catch in the last step or two of his route counts: he caught it on the run)
-  const cs = caughtAt != null && (endAt == null || endAt >= caughtAt - 0.35) && !p.path.length;
-  const running = cs && endAt != null && endAt - caughtAt < 0.25 || (bailout && p.path.length > 0 && st.ball.holder !== who);
-  const pullup = !cs && (st.ball.holder === who) && (endAt != null || p.path.length > 0);
+  const { running, pullup } = shotKind(st, who, bailout);
   const defenders = st.X.map(x => ({ id: x.id, pos: x.pos, arch: x.arch || st.O[sc.matchups[x.id]].arch }));
   const q = shotQuality(sc, { pos: p.pos, arch: p.arch, pullup, running }, defenders, bailout);
+  // a peek ahead (the read) stops at the release: it never rolls anything
+  if (st.peek) { st.peek.q = q; st.peek.who = who; st.peek.at = round1(st.clock); st.end = { outcome: 'peek', how: 'peek' }; return; }
   const made = rng() < q.p;
   const dur = q.zone === 'rim' ? T.shotFlight * 0.6 : T.shotFlight;
   st.shot = { who, at: round1(st.clock), from: { ...p.pos }, q, made, t: 0, dur };
@@ -365,6 +380,136 @@ function shoot(sc, st, T, rng, cap, who, bailout) {
   p.path = []; p.pending = null;
   cap(bailout ? 'Bail out' : q.open >= 6 ? 'Wide open' : q.open >= 4 ? 'Open look' : q.open >= 2 ? 'Hand in the face' : 'Contested',
     { slow: true, shot: true, p: Math.round(q.p * 100) / 100, open: Math.round(q.open * 10) / 10, zone: q.zone });
+}
+
+/* How he shoots: catch and shoot, on the run, or a pull up. */
+function shotKind(st, who, bailout) {
+  const p = st.O[who];
+  // the read's shooter caught it and went straight up, on the move or set
+  if (st.readShot && st.readShot.who === who && !bailout) return { cs: true, running: st.readShot.running, pullup: false };
+  const caughtAt = st.catchAt ? st.catchAt[who] : null, endAt = p.routeEndAt;
+  // catch and shoot: he caught it and did not dribble anywhere after
+  // (a catch in the last step or two of his route counts: he caught it on the run)
+  const cs = caughtAt != null && (endAt == null || endAt >= caughtAt - 0.35) && !p.path.length;
+  const running = cs && endAt != null && endAt - caughtAt < 0.25 || (bailout && p.path.length > 0 && st.ball.holder !== who);
+  const pullup = !cs && (st.ball.holder === who) && (endAt != null || p.path.length > 0);
+  return { cs, running, pullup };
+}
+
+/* ---------- the read ----------
+   The man with the ball (by) weighs every option the drawing makes against
+   the defense as it stands this tick. For each one he looks ahead: the sim
+   itself runs on, in a copy, with the ball going there (the drawn receiver
+   where the throw was timed for, a cutter at his route's end, anybody else
+   where he stands, or he keeps it), until the shot goes up, and reads that
+   shot's quality. So how open each man is comes from the real closeouts:
+   each defender's own speed, lag and spot, a screen or switch still holding
+   him, the help. A look ahead draws nothing (its stand in rng is never
+   rolled: it stops at the release) and leaves the real run untouched.
+   Then the lane's risk and what the make is worth (reads.js). He keeps the
+   call while it is at least tuning.readStay of the best look, else he goes
+   to the best. call: the drawn pass and the throw it was timed for, or null
+   when the drawn shooter is the man with the ball. */
+function readNow(sc, play, st, T, cap, by, call) {
+  const opts = st.options || [];
+  if (!opts.length) return null;
+  const me = st.O[by], mine = defenderOf(st, by), cands = [];
+  const callWho = call ? call.who : st.decider.call;
+  for (const o of opts) {
+    const p = st.O[o.who];
+    let pick;
+    if (o.who === by) pick = { who: by, at: { ...me.pos } };
+    else if (call && call.who === o.who) pick = call;
+    else {
+      let at = p.pos;
+      const k = runningRoute(st, o.who);
+      if (k >= 0 && p.path.length) { const Q = st.plan[k]; at = Q.route[Q.route.length - 1]; }
+      pick = { who: o.who, at: { ...at } };
+    }
+    const risk = o.who === by ? 0 : laneRisk(T, st.X, me.pos, pick.at, { skip: mine, to: o.who, handoff: !!pick.handoff }).risk;
+    const q = peek(sc, play, st, T, by, pick, call);
+    const value = q ? q.p * winOf(sc, q.points, q.at) * (1 - risk) : 0;
+    cands.push({ n: o.n, who: o.who, label: o.label, call: o.who === callWho, pick, open: q ? q.open : 0, p: q ? q.p : 0, points: q ? q.points : 0, risk, value });
+  }
+  /* the coach's read order would go in here (reads.js choose, the seam) */
+  const ch = choose(cands, T.readStay ?? 0.8, null);
+  if (!ch) return null;
+  const r1 = n => Math.round(n * 10) / 10, r3 = n => Math.round(n * 1000) / 1000;
+  st.read = {
+    at: r1(st.clock), by, call: callWho, pick: ch.pick.who, why: ch.why,
+    options: cands.map(c => ({ n: c.n, who: c.who, label: c.label, call: c.call, open: r1(c.open), p: r3(c.p), points: c.points, risk: r3(c.risk), value: r3(c.value), at: { x: r1(c.pick.at.x), y: r1(c.pick.at.y) } }))
+  };
+  const text = readCaption(st.read, readLead(st, ch.pick.who));
+  st.read.text = text;
+  if (text) cap(text, { slow: true, read: true });
+  return { pick: ch.pick.pick, why: ch.why };
+}
+
+/* The look ahead: a copy of the possession with the ball going to pick,
+   run on to the release. Returns that shot's quality, or null. */
+function peek(sc, play, st, T, by, pick, call) {
+  const { frames, events, vis, ctx, ...rest } = st;
+  const P = structuredClone(rest);
+  P.frames = []; P.events = []; P.peek = { q: null, who: null };
+  P.read = { pick: pick.who, call: call ? call.who : by, peek: true };
+  const rng0 = () => 0.5, cap0 = () => {};
+  readGo(sc, P, T, rng0, cap0, by, pick, call ? call.step : null, call);
+  if (P.release && !P.shot && P.clock <= P.release.at + 1e-9) shoot(sc, P, T, rng0, cap0, P.release.who, false);
+  for (let n = 0; n < 600 && !P.end; n++) advance(sc, play, P, T, rng0, cap0, {});
+  return P.peek.q ? { ...P.peek.q, at: P.peek.at } : null;
+}
+
+/* What a make of `points` going up at `at` is worth: the share of the time it
+   wins, once their answer (when it leaves them time) and overtime are in.
+   The same odds finish() rolls. */
+export function winOf(sc, points, at) {
+  const T = sc.tuning, lead = sc.us + points - sc.them, ot = T.overtimeWin ?? 0.5;
+  if (lead < 0) return 0;
+  const full = answerOdds(sc, at, points, true), pa = answerOdds(sc, at, points);
+  if (lead === 0) return (1 - pa) * ot;
+  return (1 - full) + (full - pa) * ot;
+}
+
+/* What the defense did that the read answers, in two or three words. */
+function readLead(st, pick) {
+  const call = st.read.call, uses = st.uses || [];
+  if (st.help && st.X.some(x => x.id === st.help.x && x.man === pick)) return 'Help came.';
+  const u = [...uses].reverse().find(q => q.cutter === call || q.screener === call);
+  const s = u ? u.scheme : st.scheme;
+  if (s === 'switch' || s === 'matchup') return 'They switched.';
+  if (s === 'over') return 'They fought over.';
+  if (s === 'under') return 'They went under.';
+  if (isZone(s)) return 'The zone shifted.';
+  return null;
+}
+
+/* Go where the read said: keep it and go up, or throw it. step: the drawn
+   pass this is (it counts as thrown), or null. call: the drawn pass's own
+   throw, so the drawn receiver gets exactly the pass the coach drew (a
+   handoff stays a handoff). Every pass in the sim leaves through here. */
+function readGo(sc, st, T, rng, cap, by, pick, step, call) {
+  if (step != null) st.run[step].thrown = true;
+  if (pick.who === by) {
+    if (step != null) st.run[step].state = 'done';
+    const p = st.O[by], caught = st.catchAt[by] != null && st.catchAt[by] > st.clock - 0.05;
+    const g = zoneOf(p.pos) === 'rim' ? T.gatherRim : caught ? T.gatherCatch : T.gatherDribble;
+    st.release = { who: by, at: st.clock - (g ?? 0.4) };
+    return true;
+  }
+  const handoff = !!(call && pick.who === call.who && call.handoff);
+  st.pass = { from: by, to: pick.who, target: { ...pick.at }, step, releaseAt: st.clock, handoff };
+  throwBall(st, T, rng, cap);
+  if (handoff && !st.end) { const use = useScreen(st, T, by, pick.who, 'handoff'); if (use) cap(schemeCaption(use), { slow: true }); }
+  return true;
+}
+
+/* The read's man has it: he stops where he is and goes straight up. */
+function readCatch(st, T, who) {
+  const p = st.O[who], moving = p.path.length > 0 && (p.spd || 0) > 0.4;
+  p.path = []; p.pending = null; st.lock = who;
+  p.routeEndAt = st.clock;
+  st.readShot = { who, running: moving };
+  st.release = { who, at: st.clock - (zoneOf(p.pos) === 'rim' ? T.gatherRim : T.gatherCatch) };
 }
 
 /* Their possession, if the make left them time. */
@@ -568,6 +713,7 @@ function result(sc, play, st, seed) {
     scheme: st.scheme, schemeName: SCHEME_NAMES[st.scheme],
     screen: st.lastScreen, screens: (st.uses || []).map(u => ({ screener: u.screener, cutter: u.cutter, name: u.name, t: u.t })),
     passes: st.passes,
+    read: st.read,
     reason: reasonOf(sc, st),
     events: st.events, frames: st.frames
   };
@@ -600,7 +746,10 @@ export function reasonOf(sc, st) {
   else if (use && role === 'screen') off = s.q.zone === 'rim' ? ' on the roll' : ' on the pop';
   else if (s.q.pullup) off = ' off the dribble';
   const look = openWord(s.q.open);
-  const lead = name(s.who) + ' was ' + look + off + '.';
+  /* the read went off the call: say so first, short */
+  const R = st.read, read = R && !R.peek && R.pick !== R.call && R.pick === s.who
+    ? R.call + ' was covered. ' + (R.pick === R.by ? R.by + ' kept it. ' : R.by + ' found ' + R.pick + '. ') : '';
+  const lead = read + name(s.who) + ' was ' + look + off + '.';
 
   // what the defense did, in one short sentence
   let d = '';

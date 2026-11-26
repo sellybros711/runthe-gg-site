@@ -2574,6 +2574,8 @@ function capFirst(t){ t = String(t); return t.charAt(0).toUpperCase() + t.slice(
    stake. */
 function wildWhy(L, V, a){
   if (a.ok) return '';
+  /* a night that is not for him yet: the engine says why (too young, nothing hurts, no habit) */
+  if (a.why === 'shut' && a.note) return a.note;
   if (V.left <= 0) return 'No nights left this year';
   var need = Math.max(a.cost, a.min);
   if (L.cash < need) return 'Needs ' + money(need) + '. You have ' + money(L.cash) + '.';

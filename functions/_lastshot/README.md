@@ -4,7 +4,7 @@ One possession. You are the coach. It starts in a timeout: draw a play, set when
 on the clipboard: the handler holds till then), Run It, and your five run exactly what you drew
 with 22.0 on the clock, down 1. Score in the last 4.9 to win. Score earlier and they get the ball
 back, and a short cutaway shows their shot. A first visit finds a starter play already drawn (a
-pin-down, Go at 6.0, the Pin-down starter) with Run It pulsing; Clear gives a blank clipboard. Runs have a 2x toggle and
+pin-down with O5 rolling after it, Go at 6.0, the Pin-down starter) with Run It pulsing; Clear gives a blank clipboard. Runs have a 2x toggle and
 synthesized sound (`sound.js`, mute remembered); dead time plays at 4x.
 
 **The run gets the room.** While a play runs and its card is up, the clipboard's rows and the mode
@@ -35,8 +35,47 @@ confetti on a winner. Over it, the coaching layer, every piece read off the sim:
   ZONE SITS
 - from the pass to the shooter, a ring as wide as his space to the closest defender, that becomes
   the shot event's own `open` at the release, coloured on the sim's thresholds (6, 4, 2 ft)
+- at the decision moment (`result.read`), a ring on every scoring option in the colour of how open
+  the read saw him (green open, amber a hand up, red covered) with his option number, and a line
+  from the man with the ball to the one he went to, chipped `READ: O5 OPEN` (`READ: O1 SHOOTS`
+  when he kept it). Playback slows there.
 - at the release, a read chip: the shot caption's word and its make chance (`HAND UP · 40%`, the
   same numbers as the readout)
+
+## The options and the read (2026-11-26)
+
+The owner: "the game should know when someone is open to shoot", every play has more than one
+scoring option, and the man who shoots is the open one, depending on what the defense does.
+
+**The options** (`reads.js` `optionsOf`, pure): every man who ends the play where he can catch and
+score, the drawn Shoot first as option 1, the rest ranked by design value (his open make rate for
+the zone, what the points are worth in this game, how the play frees him). A label a coach would
+say: `wing three off the pin-down`, `roll to the rim`, `spot-up, weak side`, `pull-up three`. A
+play with no action (nobody but the man with the ball moves) has only his shot, so a one tap
+shot stays one. The clipboard shows them on one line by the frames (`1 O2 · 2 O5 · 3 O3`), a tap
+opens the full list over the foot of the clipboard (Escape or a run shuts it), and a numbered
+badge sits where each one ends, orange for option 1. It follows the drawing.
+
+**The read** (`sim.js` `readNow`): at the throw of the last pass, or the drawn shooter's own
+release when no pass is drawn, the man with the ball looks ahead. For each option a copy of the
+possession runs on with the ball going there, to the release, and the read takes that shot's
+quality: so how open a man is comes from the real closeouts, every defender's own speed and lag,
+a screen or switch still holding him, the help. Its value is the make chance times what the make
+wins (their answer and overtime in, `winOf`), less the lane's risk (`laneRisk`, the same risk the
+throw rolls). He keeps the call while it is at least `readStay` (0.9) of the best look and goes
+to the best when the defense took it away; his man shoots on the catch. The look ahead draws
+nothing and never touches the run, so a seed is still the same run anywhere (the Daily, Beat my
+play). `result.read` carries every option's openness, make chance, risk and value, the pick and
+why (`call`, `open`, `best`); a read off the call adds a caption (`They fought over. O2 covered.
+O5 open.`) and leads the reason (`O2 was covered. O1 found O5.`). `choose()` holds the seam for a
+coach's read order (a progression), not wired.
+
+**The defense's answer** (tuned so the feel stays in `targets.test.mjs`): a cutter trailing his
+man by `tagGap` draws a tag from the nearest helper (never off the SG or the screener), the low
+man tags a roll before the pass, a second defender at the rim takes `crowdShare` off a finish,
+and the 3-2's left wing sits a step nearer the elbow. The Pin-down starter rolls O5 after the pin
+so it has a real second option: going under it is O2, over the top it is O5, a switch goes
+either way. Its old shape still counts as a starter in the Ladder.
 
 Chips stay on the stage, clear of the caption and the readout, and clear of each other. Reduced
 motion: one fixed box, no trails, no bob, a still confetti scatter. The floor is one texture built
@@ -209,6 +248,7 @@ Under a browser driver the page sends nothing, not even the probe, unless a chec
 | `playbook.js` | the play format, the order rule, screen names, what makes a play illegal |
 | `sim.js` | the possession as a pure fixed-step sim (60 Hz, no DOM, no Math.random) |
 | `motion.js`, `defense.js`, `shot.js` | how bodies move; man to man and the three screen schemes; shot quality |
+| `reads.js` | the scoring options a drawing makes, the lane risk, the read's choice and its words |
 | `board.js` | the clipboard: Move, Screen, Pass, Shoot, Undo, Clear, Run It (pointer events) |
 | `run-view.js`, `court2d.js`, `view.js` | the renderer switch and the frame tween; the live court (the tactics board and its coaching layer); feet to pixels, shared with the clipboard |
 | `client.js`, `share.js`, `sound.js` | home, the page flow (the hold, the run, the answer cutaway), the result and the share line; the sounds |

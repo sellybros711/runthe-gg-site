@@ -131,7 +131,7 @@
     var gained = r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'interception' ? 0 : r.yards;
     big.className = 'resultbig ' + (r.win ? 'win' : 'lose');
     big.textContent = r.outcome === 'touchdown' ? 'Touchdown' : r.outcome === 'sack' ? 'Sack' : r.outcome === 'incomplete' ? 'Incomplete' : r.outcome === 'throwaway' ? 'Thrown away' : r.outcome === 'fumble' ? 'Fumble' : r.outcome === 'interception' ? 'Intercepted' : r.outcome === 'safety' ? 'Safety' : (gained >= 0 ? gained + ' yard gain' : (-gained) + ' yard loss');
-    var target = r.throwInfo && r.throwInfo.to ? (T.LABEL[r.throwInfo.to] || r.throwInfo.to) + (r.throwInfo.primary ? ' (1st read)' : '') : r.isRun ? 'Run' : '-';
+    var target = r.throwInfo && r.throwInfo.to ? (T.LABEL[r.throwInfo.to] || r.throwInfo.to) + (r.throwInfo.look != null ? ' (' + ['1st', '2nd', '3rd', '4th', '5th', '6th'][r.throwInfo.look] + ' look)' : r.throwInfo.primary ? ' (1st read)' : '') : r.isRun ? 'Run' : '-';
     var verdict = r.title.charAt(0) + r.title.slice(1).toLowerCase();
     var rows = [['Result', verdict], ['Target', target],
       ['Completion', r.isRun ? '-' : r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'sack' || r.outcome === 'interception' ? 'No' : r.throwInfo ? 'Yes' : '-'],
@@ -158,7 +158,7 @@
       box.appendChild(T2);
     }
   });
-  $('g3d').addEventListener('click', function () { if (res) A.watch3d(res); });
+  $('g3d').addEventListener('click', function () { if (res) A.watch3d(res, null, { play: played, kind: 'drawn' }); });
   $('gShare').addEventListener('click', function () {
     if (!res) return;
     SH.send(SH.text(res)).then(function (how) { A.toast('gToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });

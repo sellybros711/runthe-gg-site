@@ -64,11 +64,54 @@ async function feel(name, viewport, mobile) {
 
   // first run: the starter play, ready, Run It pulsing, and no popup
   const st = await page.evaluate(() => ({ kinds: window.__lastShot.play.steps.map(s => s.kind).join(' '), goAt: window.__lastShot.play.goAt, beats: window.__lastShot.play.steps.map(s => s.beat).join('') }));
-  ok(st.kinds === 'screen move pass shoot' && st.goAt === 6 && st.beats === '1111', 'a first-time player finds the starter pin-down holding till 6.0: ' + JSON.stringify(st));
+  ok(st.kinds === 'screen move move pass shoot' && st.goAt === 6 && st.beats === '11111', 'a first-time player finds the starter pin-down (with its roll) holding till 6.0: ' + JSON.stringify(st));
   ok(!(await page.isDisabled('#bRun')) && /\bpulse\b/.test(await page.getAttribute('#bRun', 'class')), 'Run It is ready and pulsing');
   ok((await page.locator('.sheet.on, .fsheet.on').count()) === 0, 'no guide or popup opened by itself');
   ok((await page.textContent('#goChip')) === 'Go at 6.0' && (await page.textContent('#goLab')) === 'Hold till 6.0', 'the Go at chip reads Go at 6.0, Hold till 6.0');
   await snap('1-starter');
+
+  /* THE OPTIONS AND THE READ (2026-11-26). The clipboard lists every scoring
+     option the drawing makes (reads.js, the same list the sim reads), the
+     drawn Shoot first; a run marks them at the decision moment; and one play
+     ends with different shooters on different seeds. */
+  const want = await page.evaluate(() => window.__lastShot.options().map(o => o.n + ' ' + o.who));
+  ok(await page.isVisible('#bOpts') && (await page.textContent('#optLine')) === want.join(' · ') && want[0] === '1 O2' && want[1] === '2 O5', 'the clipboard lists the options: ' + await page.textContent('#optLine'));
+  ok(await page.isHidden('#optList'), 'the full list is shut till asked for');
+  await page.click('#bOpts');
+  const lines = await page.$$eval('#optList li', els => els.map(e => [...e.children].map(c => c.textContent).join(' ')));
+  const full = await page.evaluate(() => window.__lastShot.options().map(o => o.n + ' ' + o.who + ' ' + o.label));
+  ok(await page.isVisible('#optList') && lines.join('|') === full.join('|') && full[0] === '1 O2 wing three off the pin-down' && full[1] === '2 O5 roll to the rim', 'a tap opens every option, the drawn shot first: ' + full.join(', '));
+  ok(!DASHES.test(full.join(' ')), 'option copy has no dashes');
+  const tools = await page.locator('#actions').boundingBox(), vp = page.viewportSize();
+  ok(tools && tools.y + tools.height <= vp.height + 0.5, 'the tools stay on screen with the list open');
+  await snap('1b-options');
+  await page.keyboard.press('Escape');
+  ok(await page.isHidden('#optList') && (await page.getAttribute('#bOpts', 'aria-expanded')) === 'false', 'Escape shuts it');
+  // the list follows the drawing: one Undo takes the shot off, and option 1 is no longer anybody's call
+  await page.click('#bUndo');
+  ok((await page.evaluate(() => window.__lastShot.options().some(o => o.call))) === false && await page.isVisible('#bOpts'), 'the list updates as the coach draws (no Shoot, no call)');
+  await page.evaluate(() => window.__lastShot.setPlay(window.__lastShot.starter()));
+  // two seeds, one play, two shooters, each the read's own pick
+  const two = await page.evaluate(() => { const by = {}; for (let s = 1; s < 300 && Object.keys(by).length < 2; s++) { const r = window.__lastShot.simulate(s); if (r.shot && !r.shot.bailout && r.read && !by[r.shooter]) by[r.shooter] = s; } return by; });
+  ok(Object.keys(two).length === 2, 'one play, two seeds, two shooters: ' + JSON.stringify(two));
+  const shooters = [];
+  for (const [who, sd] of Object.entries(two)) {
+    await page.evaluate(() => { window.__readMarks = null; });
+    await page.evaluate(s => window.__lastShot.run(s), sd);
+    await page.waitForFunction(() => window.__readMarks && window.__readMarks.t < window.__readMarks.at - 0.2, null, { timeout: 30000, polling: 16 });
+    const m = await page.evaluate(() => [window.__readMarks, window.__lastShot.result.read]);
+    ok(m[0].chip === 'READ: ' + m[1].pick + (m[1].pick === m[1].by ? ' SHOOTS' : '') || m[0].chip.startsWith('READ: ' + m[1].pick + ' '), 'the board marks the read: ' + m[0].chip);
+    ok(m[0].options.length === m[1].options.length && m[0].options.every(o => /^\d:(61,220,132|255,190,40|255,84,72)$/.test(o)), 'every option ringed green, amber or red: ' + m[0].options.join(' '));
+    if (who !== 'O2') { await page.evaluate(() => { window.__lastShot.paused = true; }); await snap('1c-read'); await page.evaluate(() => { window.__lastShot.paused = false; }); }
+    await page.waitForSelector('#sheet.on', { timeout: 30000 });
+    const r = await page.evaluate(() => window.__lastShot.result);
+    shooters.push(r.shooter);
+    ok(r.shooter === who && r.read.pick === who, 'seed ' + sd + ' ends with ' + who + ', the read\'s pick (' + r.scheme + ')');
+    if (r.read.pick !== r.read.call) ok((await page.textContent('.reason')).startsWith(r.read.call + ' was covered.'), 'the reason says the read: ' + await page.textContent('.reason'));
+    await page.click('#bBack');
+    await page.waitForSelector('#board', { state: 'visible' });
+  }
+  ok(new Set(shooters).size === 2, 'the same play ended two ways: ' + shooters.join(' and '));
 
   // Go at: half a second a tap, clamped to 1.0 and the clock
   await page.click('#goMinus');

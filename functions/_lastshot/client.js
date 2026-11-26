@@ -37,6 +37,7 @@
  *     the way the daily's run is filed (daily-ui.js). */
 import { SCENARIO as SC, isZone } from './scenario.js';
 import { simulate } from './sim.js';
+import { optionsOf, optionLine } from './reads.js';
 import { IDS, emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf, cleanSituation, situationKey, GO_AT_MIN, GO_AT_NEW } from './playbook.js';
 import { STARTERS, starterById, starterPlay, isStarter, OWN_HINT, NO_STARTERS } from './starters.js';
 import { drawPlay } from './diagram.js';
@@ -93,7 +94,7 @@ const SCX = () => (mode === 'edit' && edit ? scenarioFor(SC, edit.entry.situatio
 function loadPlay() {
   const raw = lsGet(KEY);
   /* FIRST RUN: nothing saved yet, so the clipboard opens with a play already
-     on it (the Pin-down starter: O5 pins for O2, holding till 6.0) and Run It
+     on it (the Pin-down starter: O5 pins for O2 and rolls, holding till 6.0) and Run It
      pulses. No popup. */
   if (raw == null) return starterPlay('pin-down');
   try {
@@ -122,6 +123,7 @@ const ui = {
     $('bUndo').disabled = !p.steps.length && !(f && f.beat > 1);
     $('bClear').disabled = !p.steps.length;
     if (f) frameStrip(p, f);
+    optsSync(p);
     if (mode === 'daily') dayBarSync();
     if (!hintTimer || !$('hint').textContent) $('hint').textContent = defaultHint();
   },
@@ -339,6 +341,35 @@ function countResult(res) {
     stars: c.mode === 'level' || c.mode === 'daily' ? starsOf(res) : undefined, level: c.level, look });
 }
 
+/* ---------- the options (reads.js) ----------
+   One line by the frames: every scoring option the drawing makes, the drawn
+   Shoot first, as the sim will read them. A tap opens the full list over the
+   foot of the clipboard; another tap, Escape or a run closes it. */
+let optsKey = null;
+function optsSync(p) {
+  const o = optionsOf(SCX(), p), b = $('bOpts'), list = $('optList');
+  const key = JSON.stringify(o.map(x => [x.n, x.who, x.label, x.call]));
+  b.hidden = !p.steps.length || !o.length;
+  if (b.hidden) optsOpen(false);
+  if (key === optsKey) return;
+  optsKey = key;
+  $('optLine').textContent = o.map(x => x.n + ' ' + x.who).join(' · ');
+  b.setAttribute('aria-label', 'Scoring options: ' + o.map(optionLine).join(', '));
+  list.innerHTML = '';
+  for (const x of o) {
+    const li = document.createElement('li');
+    if (x.call) li.className = 'call';
+    li.innerHTML = '<i></i><b></b><span></span>';
+    li.children[0].textContent = x.n; li.children[1].textContent = x.who; li.children[2].textContent = x.label;
+    list.appendChild(li);
+  }
+}
+function optsOpen(on) {
+  $('optList').hidden = !on;
+  $('bOpts').setAttribute('aria-expanded', String(!!on));
+}
+$('bOpts').addEventListener('click', () => optsOpen($('optList').hidden));
+
 /* ---------- the storyboard strip ---------- */
 function frameStrip(p, f) {
   const box = $('frames');
@@ -410,6 +441,8 @@ function slowWindows(res) {
   const s = F.find(f => f.sk != null);
   if (s) { out.push({ a: s.t + 0.2, b: -1, rate: 0.5 }); out.push({ a: s.t + 0.04, b: s.t - 0.24, rate: 0.28 }); }
   for (const e of res.events) if (e.slow && !e.shot && !e.final) out.push({ a: e.t + 0.25, b: e.t - 0.25, rate: 0.7 });
+  /* the read (2026-11-26): the board marks every option and the pick, slow enough to see */
+  if (res.read) out.push({ a: res.read.at + 0.15, b: res.read.at - 0.7, rate: 0.4 });
   return out;
 }
 
@@ -462,6 +495,7 @@ function run(seed, opt, pl) {
   lastResult = res; ranOnce = true; lastTiming = null;
   if (!lsGet(RAN_KEY)) lsSet(RAN_KEY, '1');
   $('framesRow').hidden = true;   // the court gets the strip's room while it plays
+  optsOpen(false);
   countRunStart(res);
   if (mode === 'edit' && edit) books.countRun(edit, res);
   $('board').hidden = true; $('court').hidden = false;
@@ -660,12 +694,13 @@ function caption(e) {
 function pumpCaptions(now) {
   if (now < caps.until || !caps.q.length) return;
   const e = caps.q.shift();
-  pop(e.text, e.final, e.shot);
+  pop(e.text, e.final, e.shot, e.read);
   caps.until = now + (e.final ? 1300 : e.shot ? 1100 : 950) / (speed > 1 ? 1.4 : 1);
 }
 
-function pop(text, final, shot) {
+function pop(text, final, shot, wrap) {
   const el = $('pop'); el.textContent = text; el.classList.remove('on', 'shot'); el.classList.toggle('final', !!final);
+  el.classList.toggle('wrap', !!wrap);   // the read's three short sentences may take two lines on a phone
   if (shot) el.classList.add('shot');
   void el.offsetWidth; el.classList.add('on');
 }
@@ -873,6 +908,7 @@ $('back').addEventListener('click', e => {
    and any screen change closes them all. With none open, Escape docks an
    open result card. */
 function closeSheets() {
+  optsOpen(false);
   if ($('playsSheet').classList.contains('on')) closePlays();
   document.querySelectorAll('.fsheet.on').forEach(el => el.classList.remove('on'));
 }
@@ -880,6 +916,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape' && e.key !== 'Esc') return;
   const open = document.querySelector('.fsheet.on');
   if (open) { e.preventDefault(); if (open.id === 'playsSheet') closePlays(); else open.classList.remove('on'); return; }
+  if (!$('optList').hidden) { e.preventDefault(); optsOpen(false); return; }
   if ($('sheet').classList.contains('on') && !$('card').classList.contains('peek') && $('bMore')) { e.preventDefault(); cardOpen(false); }
 });
 function goHome() {
@@ -1234,10 +1271,11 @@ async function doShare(text, btn, kind) {
 window.__lastShot = { run, get result() { return lastResult; }, get play() { return play; }, setPlay(p) { if (mode === 'level' || mode === 'daily' || mode === 'beat') savePlay(p); else play = p; board.reset(); },
   /* the feel: tap to result in ms, the live phase, a pause for screenshots, the sound's state */
   get timing() { return lastTiming; }, get phase() { return live ? live.phase || 'preview' : null; }, set paused(v) { paused = !!v; }, get speed() { return speed; },
-  get sound() { return { muted: sound.muted, state: sound.state }; }, starter: () => starterPlay('pin-down'), openPlays, loadStarter, home: goHome, savedRuns: () => [...savedRuns.values()],
+  get sound() { return { muted: sound.muted, state: sound.state }; }, starter: () => starterPlay('pin-down'), options: () => optionsOf(SCX(), play), openPlays, loadStarter, home: goHome, savedRuns: () => [...savedRuns.values()],
   view: () => board.view(), get board() { return board; }, get mode() { return mode; }, get edit() { return edit; }, books,
   simulate: (seed, opt) => { const r = simulate(SCX(), play, seed, mode === 'level' && lvl ? levelOpt(lvl.L) : opt || {});
-    return { outcome: r.outcome, reason: r.reason, shotAt: r.shotAt, scheme: r.scheme, how: r.how, answer: r.answer, ot: r.ot, us: r.us, them: r.them, down: r.down, stars: starsOf(r) }; },
+    return { outcome: r.outcome, reason: r.reason, shotAt: r.shotAt, scheme: r.scheme, how: r.how, answer: r.answer, ot: r.ot, us: r.us, them: r.them, down: r.down, stars: starsOf(r),
+      shooter: r.shooter, shot: r.shot, read: r.read ? { pick: r.read.pick, call: r.read.call, why: r.read.why, text: r.read.text } : null }; },
   /* the ladder, for check-ladder.mjs */
   get level() { return lvl ? lvl.L.id : null; }, get ladder() { return ladder; }, openLadder, openLevel: id => openLevel(levelById(id)),
   /* the Daily and Beat my play, for check-daily.mjs and check-beat.mjs */

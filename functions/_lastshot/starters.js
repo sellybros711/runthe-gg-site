@@ -2,7 +2,10 @@
  * one tap from the clipboard. Each is legal from the default down 1, works,
  * and has its own answer to the defense, so Test it has something to show:
  *
- *   Pin-down             beats going under. A zone takes it away.
+ *   Pin-down             beats going under. A zone takes it away. Since
+ *                        2026-11-26 O5 rolls after the pin, so the read has
+ *                        a second man: over the top it is O5, on a switch
+ *                        either one, going under it is O2.
  *   Floppy               the shooter picks his side. Beats man, not a zone.
  *   Horns Twist          two ball screens, the big rolls. Holds up against all.
  *   Spain pick and roll  a back screen frees the roller. Beats a switch.
@@ -17,10 +20,11 @@ const one = steps => steps.map(s => ({ ...s, beat: 1 }));
 
 export const STARTERS = Object.freeze([
   {
-    id: 'pin-down', name: 'Pin-down', note: 'O5 pins for O2. A three off the curl. Best when they go under.',
+    id: 'pin-down', name: 'Pin-down', note: 'O5 pins for O2, then rolls. O2 for three or O5 at the rim.',
     play: { goAt: 6, spots: SCENARIO.spots, steps: one([
       { kind: 'screen', who: 'O5', pts: [P(35, 10.5)] },
       { kind: 'move', who: 'O2', pts: [P(33.5, 9), P(38, 14), P(43, 23)] },
+      { kind: 'move', who: 'O5', pts: [P(28, 6)] },
       { kind: 'pass', from: 'O1', to: 'O2' },
       { kind: 'shoot', who: 'O2' }]) }
   },
@@ -70,7 +74,12 @@ export const starterPlay = id => {
    routes, Go at) is a starter's keeps Run It off with OWN_HINT. One edit (a
    spot, a route, the Go at) makes it the player's own. Free play, the Daily,
    Beat my play and playbooks are unchanged. */
-const KEYS = new Set(STARTERS.map(s => playKey(s.play)));
+/* The Pin-down as it was before its roll (2026-11-26) is still a starter: a
+   player who saved it as is has not made it his own. */
+const LEGACY = [{ goAt: 6, spots: SCENARIO.spots, steps: [
+  { kind: 'screen', who: 'O5', pts: [P(35, 10.5)] }, { kind: 'move', who: 'O2', pts: [P(33.5, 9), P(38, 14), P(43, 23)] },
+  { kind: 'pass', from: 'O1', to: 'O2' }, { kind: 'shoot', who: 'O2' }] }];
+const KEYS = new Set([...STARTERS.map(s => playKey(s.play)), ...LEGACY.map(playKey)]);
 export function isStarter(play) {
   try { return !!play && KEYS.has(playKey(play)); } catch (e) { return false; }
 }
