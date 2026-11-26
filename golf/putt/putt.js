@@ -1391,6 +1391,20 @@ var THEMES = {
     bumper:'mcarmour', block:'mcstone', spinner:'#c8a040', slider:'mcknight', flag:'#8a2a4a',
     decor:['mccandle', 'mckey'], acc:'#b89cff', river:['#1e3448', '#5a86a4'], kicker:'#c8a040', loopCol:['#c8a040', '#8a8698', '#0e0c18'],
     holes:[] },
+  /* Frost Hollow: the Members Tour's winter, a snowy hollow on a long night under the northern lights, where the old winter
+     tales of the public domain books live (Hans Christian Andersen's The Snow Queen of 1844, with Kai and Gerda, the Robber Girl
+     and the Snow Queen herself, drawn from the text and Vilhelm Pedersen's plates of 1849; E. T. A. Hoffmann's
+     Nutcracker and Mouse King of 1816, with Marie, Drosselmeyer, the Nutcracker and the seven headed Mouse King, from the text and
+     the 1816 plates, and Tchaikovsky's ballet of 1892 for the snow; and Jack Frost of the old folklore). The course is a frosted
+     felt between banks of snow, its rails the packed snow walls, open water the hazard, deep snow the slow ground and the
+     frozen pond the ice. Snowy firs, stones and lamps stand about (the bumpers), banks of snow, ice and the Nutcracker divide it
+     (the blocks). No film or later staging of any of them: no Disney look of any kind, no ice gown or braid, no talking snowman,
+     nothing named after one. And no Santa, Mrs. Claus or Krampus: the holiday folk are the Daily's (holidayFolk). */
+  frost:{ name:'Frost Hollow', kick:'Members Tour', bg:'#0c1a2e', bg2:'#142640', carpet:'#3f7a74', carpet2:'#38706a', wall:'#e4ecf6', wallHi:'#ffffff', wallLo:'#7a90a8', ink:'#0a1424',
+    haz:'water', hazCol:'#14304e', hazCol2:'#6aa8d8', hazName:'Open Water', slow:'mud', slowCol:'#eef4fa', slowName:'Deep Snow', iceCol:'#cfe8f8', iceCol2:'#f2fbff',
+    bumper:'fhfir', block:'fhsnow', spinner:'#d8b048', slider:'fhsled', flag:'#c8302a',
+    decor:['fhflake', 'fhlantern'], acc:'#9fe8c8', river:['#14304e', '#6aa8d8'], kicker:'#c8302a', loopCol:['#d8b048', '#e4ecf6', '#0a1424'],
+    holes:[] },
   treasure:{ name:'Treasure Island', kick:'World 32', bg:'#12262a', bg2:'#1c3436', carpet:'#5e7a38', carpet2:'#567234', wall:'#7a5a36', wallHi:'#b48c5a', wallLo:'#3a2816', ink:'#14100c',
     haz:'water', hazCol:'#1e5a64', hazCol2:'#6ab0a8', hazName:'The Anchorage', slow:'mud', slowCol:'#6a7a3e', slowName:'Marsh Grass', iceCol:'#c8d0d4', iceCol2:'#eef2f4',
     quickCol:'#a08c62', quickCol2:'#8c7854', quickRim:'#5a4a30',
@@ -1451,7 +1465,7 @@ var THEMES = {
     holes:['Low Tide', 'Sandcastle', 'Crab Walk', 'The Lighthouse', 'Tide Pool', 'Boardwalk', 'Shell Game', 'Surf’s Up', 'Sunset'] }
 };
 /* the light that comes up out of the cup when the ball drops, one colour a theme (the real greens use gold) */
-var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', monster:'#b89cff', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
+var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', monster:'#b89cff', frost:'#9fe8c8', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
   firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', moon:'#9fe8ff', mars:'#ffb08a', saturn:'#ffd98a', crystara:'#9ff0ff', jellara:'#ff8ad0', oz:'#5affa0', cyclops:'#ffd860', medusa:'#9affc8', underworld:'#b8a8ff', olympus:'#ffe9a0', wonderland:'#ffb0c8', lookingglass:'#d8e4ff', beanstalk:'#ffe08a', mississippi:'#ffe6a0', lochness:'#d8c8f0', himalayas:'#ffe0a0', pacific:'#c8f0a0', bigtop:'#ffd860', london:'#ffd27a', notredame:'#ffe0a0', treasure:'#ffd25a', candy:'#ff9ad0', beach:'#5ce1ff' };
 Object.keys(GLOW).forEach(function(k){ if (THEMES[k]) THEMES[k].glow = GLOW[k]; });
 // the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
@@ -5569,7 +5583,8 @@ The ship came across a calm grey sea to Medusa's island: felt the colour of the 
 var MEMBER_WORLDS = [
   { id:'hallows', name:'Hallows Night', theme:'haunted', blurb:'The season’s front nine, for Tour Pass members.', haz:['One trick a hole', 'Trick or treat'] },
   { id:'harvest', name:'Harvest Moon', theme:'harvest', blurb:'The season’s back nine.', haz:['Every set piece', 'At once'] },
-  { id:'monster', name:'Monster Castle', theme:'monster', blurb:'The castle on the hill, for Tour Pass members.', haz:['One trick a hole', 'Monsters at home'] }
+  { id:'monster', name:'Monster Castle', theme:'monster', blurb:'The castle on the hill, for Tour Pass members.', haz:['One trick a hole', 'Monsters at home'] },
+  { id:'frost', name:'Frost Hollow', theme:'frost', blurb:'Deep winter, for Tour Pass members.', haz:['One trick a hole', 'Old winter tales'] }
 ];
 var MEMBER_LEVELS = [
   // ---- HALLOWS NIGHT: nine holes, one haunted idea each. Not harder than the tour, just its own.
@@ -5941,7 +5956,8 @@ function secretFrom(i){ return (i - 1) * PER + SECRETS[i - 1].at - 1; }
 var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Hairpin', 'The Switch', 'The Drop', 'The Ferry', 'Ferry Jump'];
 var MEMBER_NAMES = ['Graveyard Gate', 'Coffin Drop', 'Witch’s Cauldron', 'Bat Belfry', 'Haunted Floors', 'Brew River', 'Crypt Doors', 'Headless Leaps', 'Hallows Night',
   'Hayride', 'Bog Hop', 'Corn Maze', 'The Mill Race', 'Pie Plate Spin', 'Turkey Trot', 'Log Flume', 'Scarecrow Alley', 'Harvest Moon',
-  'The Drawbridge', 'The Portcullis', 'The Secret Bookcase', 'The Marching Armour', 'The Ballroom', 'The Wolf’s Hollow', 'The Golem’s Clay', 'The Horseman’s Bridge', 'Monster Castle'];
+  'The Drawbridge', 'The Portcullis', 'The Secret Bookcase', 'The Marching Armour', 'The Ballroom', 'The Wolf’s Hollow', 'The Golem’s Clay', 'The Horseman’s Bridge', 'Monster Castle',
+  'The Frozen Pond', 'Kai’s Sled', 'Gerda’s Boat', 'The Reindeer’s Leap', 'The Nutcracker', 'Drosselmeyer’s Clock', 'The Sugar Wood', 'Jack Frost’s Hill', 'Frost Hollow'];
 var TOUR_NAMES = [
   'First Tee', 'The Slope', 'Bank Shot', 'The Windmill', 'Sand Bar', 'Step Up', 'Slide Rule', 'Causeway', 'The Kicker',
   'First Loop', 'Two Gates', 'Conveyor', 'Drawbridge', 'Spin Cycle', 'The Creek', 'Double Mill', 'Loop the Pond', 'Clubhouse Classic',
@@ -6714,6 +6730,62 @@ var SKIN = {
     if (v < -0.34) return Math.abs(u) < 0.03 ? '#1a1410' : null; if (v > 0.66) return Math.abs(u) < 0.42 ? '#8a6a20' : null; return Math.abs(u) < 0.2 ? (u < -0.06 ? '#fff8ec' : '#e8dcc8') : null; },
   mckey:function(u, v){ if (Math.abs(u) > 0.8 || Math.abs(v) > 0.4) return null; var d = Math.hypot(u + 0.5, v); if (d < 0.32) return d < 0.16 ? null : '#6a6676';
     if (Math.abs(v) < 0.07 && u > -0.2 && u < 0.72) return '#8a8698'; if (u > 0.4 && u < 0.72 && v > 0 && v < 0.3 && ((u * 10) | 0) % 2) return '#8a8698'; return null; },
+  // ---- Frost Hollow, drawn plain and bold on a winter night: a snowy fir from above, its tiers of boughs and the snow on their
+  // tips; a round stone capped with snow; an iron lamp with its warm glass; a fisherman's stool by the ice; the town well; a clump of
+  // frozen reeds; a toy soldier seen from above, his tall black shako and its gold plate between red shoulders; his drum; a brass
+  // numeral boss of Drosselmeyer's clock; a fir of the Sugar Wood hung with sugared fruit; a sugarplum; a frost fern of Jack
+  // Frost's; a piece of the Snow Queen's frozen lake; packed snow; clear ice; the Nutcracker's violet hussar's jacket and its white braid (Hoffmann's, not a later toy's red); a grove of
+  // sugared firs; a gingerbread board iced in white; the Nutcracker's painted jaw (the gate); the palace door of ice (the switch
+  // door); a wooden sled; and, about the course, a six pointed snowflake and a little lantern
+  fhfir:function(u, v){ var r = Math.hypot(u, v); if (r > 0.92) return null; var a = Math.atan2(v, u), arm = Math.abs(Math.sin(a * 4)), tier = r * 3 % 1;
+    if (r > 0.38 + arm * 0.5) return null; if (r < 0.12) return '#3a2a1e'; if (tier > 0.62 && arm > 0.4) return '#f4f8fc'; return u + v < -0.2 ? '#2e6a52' : (Math.floor(r * 6) % 2 ? '#1e4a3a' : '#245440'); },
+  fhstone:function(u, v){ var r = Math.hypot(u * 1.05, v) + Math.sin(Math.atan2(v, u) * 5) * 0.04; if (r > 0.9) return null; if (r > 0.78) return '#4a5468';
+    if (u + v < -0.1 && r < 0.66) return Math.sin(u * 9 + v * 7) > 0.85 ? '#dfe8f2' : '#f4f8fc'; return u + v < 0.3 ? '#8a94a8' : '#6a7488'; },
+  fhlamp:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; if (r > 0.72) return '#1e2230'; if (r > 0.56) return Math.abs(u) < 0.08 || Math.abs(v) < 0.08 ? '#1e2230' : '#ffd27a';
+    if (r < 0.2) return '#fff4c0'; return r < 0.34 ? '#ffe08a' : '#2a2e3e'; },
+  fhstool:function(u, v){ var r = Math.hypot(u, v); if (r > 0.8) return null; if (r > 0.68) return '#4a2e18'; if (Math.abs(((u + 1) * 4) % 1 - 0.5) < 0.06) return '#5a3a20';
+    return u + v < -0.2 ? '#a8784a' : '#8a5e36'; },
+  fhwell:function(u, v){ var r = Math.hypot(u, v); if (r > 0.92) return null; if (r > 0.62){ var a = Math.atan2(v, u); if (v < -0.4 && r > 0.74) return '#f4f8fc'; return Math.floor((a + 4) * 3) % 2 ? '#8a94a8' : '#6e7890'; }
+    if (r > 0.52) return '#3a4254'; return r < 0.2 ? '#2a4a6a' : '#14243a'; },
+  fhreed:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; for (var k = 0; k < 7; k++){ var a = k * 0.9, cx = Math.cos(a) * 0.38 * (k % 2 ? 1 : 0.55), cy = Math.sin(a) * 0.38 * (k % 2 ? 1 : 0.55), d = Math.hypot(u - cx, v - cy);
+      if (d < 0.1) return '#6a4a2a'; if (d < 0.16) return '#c8a870'; }
+    return r < 0.7 ? (Math.sin(u * 11 + v * 7) > 0.4 ? '#b8c4a0' : '#8a9a78') : null; },
+  fhsoldier:function(u, v){ var r = Math.hypot(u, v); if (r > 0.9) return null; if (Math.hypot(Math.abs(u) - 0.5, v + 0.04) < 0.34) return Math.hypot(Math.abs(u) - 0.5, v + 0.04) < 0.12 ? '#e8c060' : '#c8302a';   // the red shoulders, gold epaulettes
+    if (r < 0.4){ if (Math.abs(u) < 0.14 && v > 0.08 && v < 0.3) return '#e8c060'; return u + v < -0.2 ? '#3a3a44' : '#14141c'; }   // the shako and its plate
+    return r > 0.78 ? '#7a1a1a' : '#a8243a'; },
+  fhdrum:function(u, v){ var r = Math.hypot(u, v); if (r > 0.84) return null; if (r > 0.7) return Math.floor((Math.atan2(v, u) + 4) * 4) % 2 ? '#e8c060' : '#c8302a';
+    if (Math.abs(r - 0.62) < 0.05) return '#1e3a8a'; if (Math.hypot(u - 0.2, v + 0.2) < 0.08 || Math.hypot(u + 0.25, v - 0.15) < 0.08) return '#d8c8a8'; return u + v < -0.2 ? '#fffaf0' : '#efe8d8'; },
+  fhnumeral:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; if (r > 0.72) return '#8a6a20'; var bar = Math.abs(v) < 0.42 && (Math.abs(u) < 0.07 || Math.abs(u - 0.26) < 0.07 || Math.abs(u + 0.26) < 0.07);
+    if (bar) return '#2a1a08'; return u + v < -0.2 ? '#f4d878' : '#d8b048'; },
+  fhsugar:function(u, v){ var r = Math.hypot(u, v); if (r > 0.92) return null; var a = Math.atan2(v, u), arm = Math.abs(Math.sin(a * 4)); if (r > 0.38 + arm * 0.5) return null;
+    for (var k = 0; k < 4; k++){ var fa = k * 1.571 + 0.4, d = Math.hypot(u - Math.cos(fa) * 0.5, v - Math.sin(fa) * 0.5); if (d < 0.11) return ['#e8402a', '#f4c040', '#c86ad8', '#4ac868'][k]; }
+    if (r < 0.12) return '#3a2a1e'; if (Math.sin(u * 23 + v * 19) > 0.72) return '#ffffff'; return u + v < -0.2 ? '#2e6a52' : '#1e4a3a'; },
+  fhplum:function(u, v){ var r = Math.hypot(u, v * 1.08); if (r > 0.82) return null; if (Math.hypot(u + 0.06, v + 0.62) < 0.1) return '#5a3a1a';
+    if (Math.sin(u * 27) * Math.cos(v * 25) > 0.82) return '#ffffff'; return r > 0.7 ? '#4a1a5a' : u + v < -0.3 ? '#a85ad0' : '#7a3aa8'; },
+  fhfern:function(u, v){ var r = Math.hypot(u, v); if (r > 0.9) return null; var a = Math.atan2(v, u), k = Math.round(a / 1.047) * 1.047, du = Math.cos(k), dv = Math.sin(k), al = u * du + v * dv, lat = Math.abs(-u * dv + v * du);
+    if (al > 0 && lat < 0.05 + 0.02 * al) return '#ffffff'; if (al > 0.1 && Math.abs(lat - (al % 0.18) * 1.2) < 0.05) return '#dff2ff'; return r < 0.24 ? '#cfe8f8' : (r < 0.8 ? '#9ac8e8' : null); },
+  fhshard:function(u, v){ var au = Math.abs(u), av = Math.abs(v); if (au * 0.9 + av > 0.9 || (u > 0.1 && v > 0.3)) return null; if (au * 0.9 + av > 0.76) return '#6aa8d8';
+    if (Math.abs(u - v * 0.4) < 0.04) return '#ffffff'; return u + v < -0.1 ? '#e6f6fe' : '#b8dcf4'; },
+  fhsnow:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.97) return null; var row = Math.floor((v + 1) * 2), cx = ((u + 1) * 2.2 + (row % 2) * 0.5) % 1, cy = ((v + 1) * 2) % 1;
+    if (cx < 0.05 || cy < 0.08) return '#a8bcd2'; var g = Math.sin(u * 13 + row * 2.1) * 0.5 + 0.5; return g > 0.78 ? '#ffffff' : cy > 0.7 ? '#cfdcea' : '#eaf0f8'; },
+  fhice:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.97) return null; if (Math.abs(v) > 0.78) return '#8ac0e4'; var c = Math.abs(Math.sin(u * 7.3 + v * 2.1) - Math.cos(u * 2.7 - v * 5.3));
+    if (c < 0.06) return '#ffffff'; return (u + v) % 0.5 < 0.25 ? '#cfeafa' : '#b4dcf4'; },
+  fhnut:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.97) return null; if (Math.abs(v) > 0.78) return '#14141c'; if (Math.abs(v) < 0.1) return Math.abs(((u + 1) * 5) % 1 - 0.5) < 0.18 ? '#ffffff' : '#f4d878';
+    if (Math.abs(((u + 1) * 3) % 1 - 0.5) < 0.05) return '#f4f0e6'; return v < 0 ? '#7a3aa8' : '#5a2a86'; },
+  fhgrove:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.99) return null; var gx = ((u + 1) * 2) % 1 - 0.5, gy = ((v + 1) * 2.4) % 1 - 0.5, r = Math.hypot(gx, gy), a = Math.atan2(gy, gx), arm = Math.abs(Math.sin(a * 4));
+    if (r > 0.2 + arm * 0.26) return '#eef4fa'; if (r < 0.05) return '#3a2a1e'; if (Math.hypot(gx - 0.16, gy + 0.12) < 0.06) return ['#e8402a', '#f4c040', '#c86ad8'][Math.floor((u + 1) * 2 + (v + 1) * 2.4) % 3];
+    if (Math.sin(u * 41 + v * 37) > 0.8) return '#ffffff'; return gx + gy < 0 ? '#2e6a52' : '#1e4a3a'; },
+  fhboard:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.95) return null; if (Math.abs(v) > 0.72) return '#6a3a16'; if (Math.abs(v - Math.abs(((u + 1) * 4) % 1 - 0.5) * 0.9 + 0.22) < 0.1) return '#ffffff';
+    return Math.hypot(((u + 1) * 6) % 1 - 0.5, v * 0.5) < 0.12 ? '#e8402a' : '#a86a32'; },
+  fhjaw:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.95) return null; if (Math.abs(v) > 0.7) return '#14141c'; if (v < -0.1) return Math.abs(((u + 1) * 6) % 1 - 0.5) < 0.42 ? '#fffaf0' : '#c8c0b0'; return '#c8302a'; },
+  fhdoor:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.95) return null; if (Math.abs(v) > 0.72 || Math.abs(u) > 0.9) return '#6aa8d8'; var c = Math.abs(Math.sin(u * 9 + v * 3));
+    if (c < 0.08) return '#ffffff'; return u < 0 ? '#e6f6fe' : '#cfeafa'; },
+  fhsled:function(u, v){ var au = Math.abs(u), av = Math.abs(v); if (au > 0.98 || av > 0.9) return null; if (av > 0.66) return au < 0.92 || v < 0 ? '#5a3a20' : null;   // the runners, curled up at the front
+    return Math.abs(((u + 1) * 4) % 1 - 0.5) < 0.06 ? '#5a3a20' : (v < 0 ? '#c8302a' : '#a8243a'); },
+  fhflake:function(u, v){ var r = Math.hypot(u, v); if (r > 0.7) return null; var a = Math.atan2(v, u), k = Math.round(a / 1.047) * 1.047, du = Math.cos(k), dv = Math.sin(k), al = u * du + v * dv, lat = Math.abs(-u * dv + v * du);
+    if (al > 0 && lat < 0.07) return '#ffffff'; if (al > 0.3 && al < 0.55 && Math.abs(lat - (al - 0.3) * 0.8) < 0.06) return '#ffffff'; return r < 0.12 ? '#e6f6fe' : null; },
+  fhlantern:function(u, v){ if (Math.abs(u) > 0.42 || Math.abs(v) > 0.8) return null; if (v < -0.58) return Math.abs(u) < 0.12 ? '#1e2230' : null; if (v > 0.6) return '#1e2230';
+    if (Math.abs(u) > 0.3) return '#1e2230'; return Math.abs(v) < 0.2 && Math.abs(u) < 0.14 ? '#fff4c0' : '#ffc860'; },
   ndquill:function(u, v){ var d = Math.abs(u - v * 0.6); if (v < -0.8 || v > 0.8) return null; if (d < 0.03 && v > 0.4) return '#3a2a18'; var w = 0.22 * (1 - Math.abs(v + 0.1) / 0.9); if (d > w || v > 0.45) return null; return d < 0.04 ? '#c8c0a8' : '#f4f0e4'; },
   btticket:function(u, v){ if (Math.abs(u) > 0.9 || Math.abs(v) > 0.5) return null; if (Math.hypot(Math.abs(u) - 0.9, v) < 0.16) return null; if (Math.abs(u - 0.4) < 0.025 && Math.floor(v * 10) % 2) return '#8a1e1a'; return Math.abs(v) > 0.38 ? '#8a1e1a' : '#e85a4a'; },
   // ---- the Pacific Forest, old growth and the loggers' ruins of the Cryptid Expedition, drawn plain and bold: a cedar stump, its
@@ -7146,6 +7218,8 @@ var CSS = '\
 .wm-harvest b{font-family:Cinzel,serif;font-weight:700;font-size:29px;letter-spacing:.05em;background-image:linear-gradient(180deg,#fff0c2,#f4a63a 50%,#b85a16);-webkit-text-stroke:.7px #3a1d08;filter:drop-shadow(0 2px 0 #6b3a14) drop-shadow(0 2px 0 #3a1d08) drop-shadow(0 4px 4px rgba(0,0,0,.45))}\
 .wm-monster i{background:#2a2448;color:#e0d4ff;border:1px solid #b89cff}\
 .wm-monster b{font-family:Cinzel,serif;font-weight:700;font-size:27px;letter-spacing:.07em;background-image:linear-gradient(180deg,#ffffff,#d8ccf4 45%,#8a7ab8);-webkit-text-stroke:.7px #0e0c18;filter:drop-shadow(0 2px 0 #3a3646) drop-shadow(0 3px 0 #0e0c18) drop-shadow(0 0 10px rgba(184,156,255,.7))}\
+.wm-frost i{background:#14304e;color:#e6f6fe;border:1px solid #9fe8c8}\
+.wm-frost b{font-family:Cinzel,serif;font-weight:700;font-size:28px;letter-spacing:.07em;background-image:linear-gradient(180deg,#ffffff,#cfeafa 45%,#6aa8d8);-webkit-text-stroke:.7px #0a1424;filter:drop-shadow(0 2px 0 #3a5a7a) drop-shadow(0 3px 0 #0a1424) drop-shadow(0 0 10px rgba(159,232,200,.7))}\
 .pp-path{position:absolute;left:0;top:0;pointer-events:none}.pp-path path{fill:none;stroke:rgba(255,255,255,.75);stroke-width:5;stroke-dasharray:2 11;stroke-linecap:round}\
 .pp-lv{position:absolute;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;border:3px solid #10241a;background:#F1D04A;color:#10241a;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(0,0,0,.35);padding:0}\
 .pp-lv b{font-family:var(--display,inherit);font-size:19px;line-height:1}.pp-lv span{font-size:10px;font-weight:900;line-height:1;opacity:.8}\
@@ -7284,6 +7358,8 @@ var CSS = '\
 .pp-lv.wt-harvest.lock{background:repeating-linear-gradient(170deg,#c8a457 0 3px,#a8843c 3px 5px);border-color:#5a4318;color:#3a2a08}.pp-lv.wt-harvest.cur{background:radial-gradient(circle at 40% 35%,#e0703a,#8b2e10);border-color:#ffe2b0;color:#fff}\
 .pp-lv.wt-monster{border-radius:5px 5px 9px 9px;background:linear-gradient(90deg,transparent 0 18%,#0e0c18 18% 30%,transparent 30% 44%,#0e0c18 44% 56%,transparent 56% 70%,#0e0c18 70% 82%,transparent 82%) top/100% 9px no-repeat,repeating-linear-gradient(0deg,#5e5a72 0 1px,transparent 1px 10px),linear-gradient(180deg,#b4b0c4,#7a768e);border-color:#1e1c2c;color:#0e0c18}\
 .pp-lv.wt-monster.lock{background:linear-gradient(90deg,transparent 0 18%,#0e0c18 18% 30%,transparent 30% 44%,#0e0c18 44% 56%,transparent 56% 70%,#0e0c18 70% 82%,transparent 82%) top/100% 9px no-repeat,linear-gradient(180deg,#3a3652,#201e32);border-color:#5a5478;color:#a8a0c8}.pp-lv.wt-monster.cur{background:linear-gradient(90deg,transparent 0 18%,#0e0c18 18% 30%,transparent 30% 44%,#0e0c18 44% 56%,transparent 56% 70%,#0e0c18 70% 82%,transparent 82%) top/100% 9px no-repeat,radial-gradient(ellipse 30% 40% at 50% 58%,#fff2b0,#ffb840 60%,#8a6ab8);border-color:#e0d4ff;color:#0e0c18;box-shadow:0 0 14px rgba(184,156,255,.9),0 4px 0 rgba(0,0,0,.35)}.pp-lv.wt-monster.cur:after{border-radius:8px 8px 12px 12px}\
+.pp-lv.wt-frost{border-radius:46% 46% 46% 46%/40% 40% 52% 52%;background:radial-gradient(circle at 36% 28%,rgba(255,255,255,.95) 0 9%,transparent 22%),linear-gradient(60deg,transparent 46%,rgba(255,255,255,.5) 46% 54%,transparent 54%),linear-gradient(-60deg,transparent 46%,rgba(255,255,255,.5) 46% 54%,transparent 54%),linear-gradient(180deg,#f2fbff,#a6d3f0 60%,#6aa8d8);border-color:#1e3a5a;color:#0a1424}\
+.pp-lv.wt-frost.lock{background:linear-gradient(180deg,#2a3e5a,#14243a);border-color:#4a6488;color:#a8c4e0}.pp-lv.wt-frost.cur{background:radial-gradient(circle at 50% 40%,#ffffff,#9fe8c8 55%,#3a8aa8);border-color:#e6f6fe;color:#0a1424;box-shadow:0 0 14px rgba(159,232,200,.9),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.ace{background:radial-gradient(circle at 38% 32%,#fff6b0,#f1c232 50%,#c58b0e)!important;border-color:#6b4700!important;color:#3a2600!important}\
 .pp-hub{--wa:#f08a24;--wi:#2a1606;--wb1:#3a1f63;--wb2:#1c1438;--wt:rgba(10,18,26,.88)}\
 .pp-hub[data-wt=clubhouse]{--wa:#F1D04A;--wi:#14301c;--wb1:#24653d;--wb2:#123a22;--wt:rgba(14,40,24,.9)}\
@@ -7320,6 +7396,7 @@ var CSS = '\
 .pp-hub[data-wt=candy]{--wa:#ff5fa2;--wi:#3a1c0c;--wb1:#7a4422;--wb2:#3a1c0c;--wt:rgba(58,28,12,.92)}\
 .pp-hub[data-wt=haunted]{--wa:#ff9a3a;--wi:#2a1606;--wb1:#3a1f63;--wb2:#1c1438;--wt:rgba(28,20,44,.92)}\
 .pp-hub[data-wt=monster]{--wa:#c8b4ff;--wi:#14122a;--wb1:#3a3466;--wb2:#16142c;--wt:rgba(22,20,40,.92)}\
+.pp-hub[data-wt=frost]{--wa:#9fe8c8;--wi:#0a1424;--wb1:#1e3a5a;--wb2:#0c1a2e;--wt:rgba(12,26,46,.92)}\
 .pp-hub[data-wt=harvest]{--wa:#f2a93b;--wi:#2b1606;--wb1:#7a4a1e;--wb2:#3a220c;--wt:rgba(52,32,12,.92)}\
 .pp-hub[data-wt] .pp-daily{background:linear-gradient(135deg,var(--wb1),var(--wb2) 62%)!important;box-shadow:0 0 0 2px var(--wa),0 10px 26px rgba(0,0,0,.45);transition:background .4s,box-shadow .4s}\
 .pp-hub[data-wt] .pp-daily .pp-dside .g{background:var(--wa);color:var(--wi)}.pp-hub[data-wt] .pp-dk b{color:var(--wa)}.pp-hub[data-wt] .pp-dside .rw{color:var(--wa)}\
@@ -7423,6 +7500,7 @@ var CSS = '\
 .pp-door[data-door=london] .pp-dl,.pp-door[data-door=london] .pp-dr{background:radial-gradient(circle at 72% 50%,#d8b048 0 4%,transparent 5%),linear-gradient(180deg,transparent 0 30%,rgba(255,255,255,.07) 30% 31%,transparent 31% 62%,rgba(255,255,255,.07) 62% 63%,transparent 63%),repeating-linear-gradient(90deg,rgba(0,0,0,.2) 0 2px,transparent 2px 24px),linear-gradient(180deg,#1e2622,#0c1210);border-color:#c8a040}\
 .pp-door[data-door=treasure] .pp-dl,.pp-door[data-door=treasure] .pp-dr{background:radial-gradient(circle at 72% 50%,#e8b84a 0 4%,transparent 5%),repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 3px,transparent 3px 16px),linear-gradient(180deg,#8a6236,#4a3018);border-color:#c8302a}\
 .pp-door[data-door=monster] .pp-dl,.pp-door[data-door=monster] .pp-dr{background:repeating-linear-gradient(90deg,rgba(0,0,0,.35) 0 3px,transparent 3px 14px),repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 3px,transparent 3px 22px),linear-gradient(180deg,#6a6680,#2e2a3e);border-color:#b89cff}\
+.pp-door[data-door=frost] .pp-dl,.pp-door[data-door=frost] .pp-dr{background:radial-gradient(circle at 72% 50%,#9fe8c8 0 4%,transparent 5%),linear-gradient(60deg,transparent 47%,rgba(255,255,255,.35) 47% 53%,transparent 53%),linear-gradient(-60deg,transparent 47%,rgba(255,255,255,.35) 47% 53%,transparent 53%),linear-gradient(180deg,#e6f6fe,#7ab4dc);border-color:#9fe8c8}\
 .pp-door[data-door=notredame] .pp-dl,.pp-door[data-door=notredame] .pp-dr{background:radial-gradient(circle at 72% 50%,#2a2018 0 5%,transparent 6%),repeating-linear-gradient(0deg,transparent 0 22px,rgba(20,14,8,.55) 22px 26px),repeating-linear-gradient(90deg,rgba(0,0,0,.25) 0 2px,transparent 2px 20px),linear-gradient(180deg,#6a4a2a,#3a2614);border-color:#a8742e}\
 .pp-door[data-door=bigtop] .pp-dl,.pp-door[data-door=bigtop] .pp-dr{background:radial-gradient(circle at 72% 50%,#f4c840 0 4%,transparent 5%),repeating-linear-gradient(90deg,#c8302a 0 18px,#f4ecd8 18px 36px);border-color:#f4c840}\
 .pp-door[data-door=pacific] .pp-dl,.pp-door[data-door=pacific] .pp-dr{background:radial-gradient(circle at 72% 50%,#2a2016 0 4%,transparent 5%),repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 3px,transparent 3px 22px),linear-gradient(180deg,#9a6a42,#5a3a22);border-color:#d8582a}\
@@ -7657,8 +7735,8 @@ var PAY = {
     sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball', 'Saturn Ball', 'Prism Ball', 'Jelly Ball', 'Emerald Spectacles', 'Fleece Ball', 'Bronze Helm', 'Asphodel Crown', 'Winged Cap', 'Hatter’s Top Hat', 'White Knight’s Helm', 'Giant’s Thimble Cap', 'Huck’s Straw Hat', 'Highland Tam', 'Glacier Glasses', 'Caulk Boots', 'Ringmaster’s Topper', 'Baker Street Deerstalker', 'Bell-Ringer’s Hood', 'Goatskin Cap'],
     worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles', 'Crystal Specs', 'Wobble Boots', 'Silver Shoes', 'Shepherd Sandals', 'Winged Sandals', 'Pomegranate Ball', 'Ambrosia Ball', 'Cheshire Ball', 'Humpty Ball', 'Magic Bean Ball', 'Riverboat Ball', 'Deep Loch Ball', 'Yeti Print Ball', 'Tree Ring Ball', 'Big Top Ball', 'Gaslight Ball', 'Bourdon Ball', 'Piece of Eight Ball'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
-    sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)', 'Full Moon Ball (Members only)'],
-    worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)', 'Invisible Man’s Goggles (Members only)'], finish:'Members Champion Jacket (Members only)',
+    sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)', 'Full Moon Ball (Members only)', 'Nutcracker Ball (Members only)'],
+    worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)', 'Invisible Man’s Goggles (Members only)', 'Frost Spectacles (Members only)'], finish:'Members Champion Jacket (Members only)',
     /* THE CHAMPION'S JACKET STAYS WHERE IT WAS WON: it was the Members Tour's finish when the tour ended at Harvest Moon, so it is
        still paid for clearing Harvest Moon (finishW, the world it is paid in) now that Monster Castle comes after it. A player
        who had cleared Harvest Moon keeps it, and nobody has a world more to play for it. */
@@ -7703,7 +7781,7 @@ var REWARD_ITEM = {
   'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
   'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
   'Hallows Crown':'hw:pphallowscrown', 'Harvest Moon Putter':'pu:ppharvest', 'Phantom Mask':'ew:ppphantommask', 'Golden Leaf Ball':'bl:ppgoldleaf',
-  'Full Moon Ball':'bl:ppfullmoon', 'Invisible Man’s Goggles':'ew:ppinvisible',
+  'Full Moon Ball':'bl:ppfullmoon', 'Invisible Man’s Goggles':'ew:ppinvisible', 'Nutcracker Ball':'bl:ppnutcracker', 'Frost Spectacles':'ew:ppfrostspecs',
   'Members Champion Jacket':'tp:ppchampjacket', 'Hallows Lantern Ball':'bl:pphallowslantern', 'Diamond Putter':'pu:ppdiamond' };
 var REWARD_OLD = { 'Clubhouse Polo':'Clubhouse Cleats', 'Sprinkle Trail':'Sprinkle Ball', 'High Score Celebration':'Pixel Shades',
   'Treasure Trail':'Pirate Eyepatch', 'Eruption Celebration':'Lava Rock Cleats', 'Rainbow Trail':'Aviator Goggles', 'Footprint Trail':'Dino Claw Cleats',
@@ -8169,7 +8247,7 @@ function membersSheet(o){
   o = o || {}; var TR = TOURS.members, Pm = PAY.members, nw = TR.worlds.length, tot = (TR.levels.length - nw) * Pm.hole + nw * (Pm.sig + Pm.world) + TR.per * Pm.treat.each + Pm.treat.all;
   var n = o.n || 1, at = o.n ? 'Hole ' + n + ' · ' + levelName(n, 'members') : nw + ' worlds';
   var sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ MEMBERS TOUR · ' + esc(at.toUpperCase()) + '</div><div class="t">This hole is for Tour Pass members</div>\
-    <div class="m">' + TR.levels.length + ' holes you won’t find anywhere else: a crypt door on a switch, a haunted mill, a castle drawbridge. Look around all you like. Playing them takes the pass.</div>\
+    <div class="m">' + TR.levels.length + ' holes you won’t find anywhere else: a crypt door on a switch, a haunted mill, a castle drawbridge, a frozen pond. Look around all you like. Playing them takes the pass.</div>\
     <div class="pp-memrw"><b>' + tot.toLocaleString() + ' coins</b> to win, a <b>trick or treat bonus</b> on every Hallows hole you beat under par, and rewards only members can earn:<br>' + Pm.sigReward.concat(Pm.worldReward, [Pm.treat.reward]).map(function(r){ return esc(r.replace(' (Members only)', '')); }).join(' · ') + ' · ' + esc(Pm.finish.replace(' (Members only)', '')) + '</div>\
     <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>Opens the Members Tour and doubles your lives: ' + LIVES_PASS + '</small></button>\
     <div class="m pp-memfree">No pass? The Putt Putt Tour is free to play: ' + TOURS.main.levels.length + ' holes across ' + TOURS.main.worlds.length + ' worlds.</div>\
@@ -8532,7 +8610,7 @@ function spaceTrip(theme, label, name, host, cb){
     if (t > DUR) return finish(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 }
-var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', crystara:'Crystal Gate', jellara:'Jelly Gate', oz:'Emerald Gate', cyclops:'Cave Stone', medusa:'Temple Gate', underworld:'Gate of Hades', olympus:'Gate of the Hours', wonderland:'The Little Door', lookingglass:'The Looking-Glass', beanstalk:'The Giant’s Door', mississippi:'The Fence Gate', lochness:'The Keep Gate', himalayas:'The Snow Gate', pacific:'The Ranger Gate', bigtop:'The Ring Curtain', london:'The Door of 221B', notredame:'The Red Door', treasure:'The Stockade Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', monster:'The Castle Gate', clubhouse:'Clubhouse Door' };
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', crystara:'Crystal Gate', jellara:'Jelly Gate', oz:'Emerald Gate', cyclops:'Cave Stone', medusa:'Temple Gate', underworld:'Gate of Hades', olympus:'Gate of the Hours', wonderland:'The Little Door', lookingglass:'The Looking-Glass', beanstalk:'The Giant’s Door', mississippi:'The Fence Gate', lochness:'The Keep Gate', himalayas:'The Snow Gate', pacific:'The Ranger Gate', bigtop:'The Ring Curtain', london:'The Door of 221B', notredame:'The Red Door', treasure:'The Stockade Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', monster:'The Castle Gate', frost:'The Palace Door', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
 /* THE WALK IS A PLACE (golf/putt/trail.js). Winning a hole and pressing Next opens the trail to the next
@@ -8975,7 +9053,14 @@ var GREETERS = {
   monster:{ name:'Ichabod Crane', role:'The Schoolmaster', folk:'ichabod', look:{ skin:'light', polo:'black', hat:'black', pants:'black', hair:'brown', hairStyle:'short', cap:true, hatStyle:'tophat', top:'blazer', gender:'male' },
     hi:['Oh! You gave me a fright. Welcome to Monster Castle.', 'I am Ichabod Crane. I teach the castle school. Nobody comes to class.'],
     tip:['Every hole here has one trick of its own. Read it and it is kind to you.', 'The monsters are friendly. Mostly. Say hello as you pass.', 'If you hear hooves, do not wait for me.'],
-    bye:'I will be right behind you. Well. Nearby.' }
+    bye:'I will be right behind you. Well. Nearby.' },
+  /* Frost Hollow's host: Godfather Drosselmeyer as Hoffmann wrote him in 1816, the clockmaker and the teller of tales: small and
+     lean, his face all wrinkles, a black patch over his right eye, a white wig of spun glass and a yellow coat (trail.js FOLK3D
+     drosselmeyer). Never a ballet staging's cape and top hat. */
+  frost:{ name:'Drosselmeyer', role:'The Clockmaker', folk:'drosselmeyer', look:{ skin:'light', polo:'gold', hat:'black', pants:'black', hair:'white', hairStyle:'short', cap:false, top:'blazer', gender:'male' },
+    hi:['Ah, a visitor! Welcome to Frost Hollow.', 'I am Drosselmeyer. I mend clocks. And I tell winter tales.'],
+    tip:['Every hole here has one winter trick. Look for it first.', 'Ice runs a long way. Snow holds a ball. Read which is which.', 'The folk of the old tales live here. Say hello as you pass.'],
+    bye:'Off you go. Mind the ice.' }
 };
 // the pages a greeter says on the first trail of world w: who they are, how the world plays, what it pays, the hole ahead
 function greetSpec(tid, w, to){
@@ -9006,7 +9091,21 @@ var FOLK_MONSTER = {
   6:{ id:'werewolf', say:['Awoo! Sorry. I am the Werewolf. The full moon does that.', 'The hollow in my court pulls a slow ball down. Go round it, or go firm.'] },
   7:{ id:'golem', say:['I am the Golem. I keep this castle safe.', 'My clay holds a ball where it stops. Keep to the swept lane.'] },
   8:{ id:'horseman', say:['The Headless Horseman tips his pumpkin to you.', 'He points at the bridge. It has a rail on each side.'] } };
-var FOLK = { monster:FOLK_MONSTER, oz:{
+/* THE FOLK OF FROST HOLLOW (the Members Tour), as for Monster Castle: the people of the old winter tales, each in place of a walk's
+   local on the walk to the hole that is theirs (trail.js FOLK3D, each drawn from its book and never a film or a later staging).
+   From Andersen's The Snow Queen (1844): Kai, Gerda, the Robber Girl and the Snow Queen, who waits on the walk to her own palace.
+   From Hoffmann's Nutcracker and Mouse King (1816): Marie, the Mouse King and the Nutcracker. And Jack Frost of the folklore.
+   Drosselmeyer greets on the first walk. No holiday folk here: those are the Daily's. A nudge, never the line to play. */
+var FOLK_FROST = {
+  2:{ id:'kai', say:['I am Kai. I tied my sled to a big white sleigh once.', 'The sleigh road pulls you right. Aim left of where you want to go.'] },
+  3:{ id:'gerda', say:['I am Gerda. I am looking for my friend Kai.', 'The boat waits at the bank. Roll on softly. Let it carry you.'] },
+  4:{ id:'robbergirl', say:['I am the Robber Girl. This is my wood.', 'My reindeer leaps the stream. Hit the leap firmly. Short is wet.'] },
+  5:{ id:'marie', say:['I am Marie. The Nutcracker is my friend.', 'His jaws open and shut. Wait for them to open.'] },
+  6:{ id:'mouseking', say:['Squeak! I am the Mouse King. All seven of me.', 'The long hand is quick. The short hand is slow. Watch both.'] },
+  7:{ id:'nutcracker', say:['I am the Nutcracker. Welcome to my wood.', 'The grove stands in the way. Bank off a board and go round.'] },
+  8:{ id:'jackfrost', say:['Brr! I am Jack Frost. I painted all this frost.', 'I froze my hill hard. Firm goes over. Soft rolls off.'] },
+  9:{ id:'snowqueen', say:['I am the Snow Queen. My palace is ahead.', 'Roll over the ice word and my door opens. Not for long.'] } };
+var FOLK = { monster:FOLK_MONSTER, frost:FOLK_FROST, oz:{
   4:{ id:'dorothy', say:['I am Dorothy, from Kansas. A cyclone brought me here too.', 'The twister on the corner carries you along the top. Look where it sets you down.'] },
   5:{ id:'scarecrow', say:['I am the Scarecrow. My head is stuffed with straw.', 'Even I know to time my pole. And the twister by my field sends you back.'] },
   9:{ id:'lion', say:['I am the Cowardly Lion. That ditch frightens me.', 'I leap it anyway. Hit the ramp hard. Short is in the poppies.'] },
