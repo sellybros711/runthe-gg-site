@@ -2811,12 +2811,12 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "152",
-      "sha": "288669b9f5e3d783"
+      "v": "153",
+      "sha": "835c26b0a8eb5f1d"
     },
     "putt/land.js": {
-      "v": "36",
-      "sha": "e9939a213b9dc866"
+      "v": "37",
+      "sha": "95e62624b1cb56ef"
     },
     "putt/hole3d.js": {
       "v": "24",
@@ -2959,20 +2959,20 @@
       "sha": "ada21cf4617ec17e"
     },
     "putt/trail.js": {
-      "v": "75",
-      "sha": "bef8456dc7b7ad03"
+      "v": "76",
+      "sha": "ebf8024da040ddab"
     },
     "putt/mapland.js": {
-      "v": "28",
-      "sha": "c8e2fc4a660237cc"
+      "v": "29",
+      "sha": "616712e11bb4fca0"
     },
     "putt/clips.js": {
       "v": "3",
       "sha": "3be4d90ce0bc4423"
     },
     "golfer3d.js": {
-      "v": "46",
-      "sha": "ac62cf28b58a2adb"
+      "v": "47",
+      "sha": "2a732e7129e10237"
     },
     "tracer3d.js": {
       "v": "2",
