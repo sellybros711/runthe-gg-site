@@ -854,7 +854,7 @@ if (!QUICK){
     const FV = P.FOLK_VISIT || {}, vis = Object.values(FV.frost || {}).flat(), vids = vis.map(f => f.id), HF = Object.keys(P.HOLIDAY_FOLK);
     const vDrawn = vids.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), legs = Object.keys(FV.frost || {}).map(Number);
     const elsewhere = Object.keys(FV).filter(k => k !== 'frost').concat(Object.keys(P.FOLK).filter(k => Object.values(P.FOLK[k]).some(f => P.HOLIDAY_FOLK[f.id])));
-    claim(vids.length === 8 && new Set(vids).size === 8 && HF.every(id => vids.includes(id)) && vDrawn.length === 8 && vis.every(f => f.say.length === 2 && f.say.every(l => l.length <= 70 && !/[\u2013\u2014]/.test(l))) && legs.every(l => l > 1 && l < K) && Math.max(...legs.map(l => FV.frost[l].length)) <= 2 && !elsewhere.length,
+    claim(vids.length === 8 && new Set(vids).size === 8 && HF.every(id => vids.includes(id)) && vDrawn.length === 8 && vis.every(f => f.say.length === 2 && f.say.every(l => l.length <= 70 && !l.split('').some(c => c.charCodeAt(0) === 8211 || c.charCodeAt(0) === 8212))) && legs.every(l => l > 1 && l < K) && Math.max(...legs.map(l => FV.frost[l].length)) <= 2 && !elsewhere.length,
       `the holiday folk are in The Frosty Hollow, all eight once each on its walks (${legs.map(l => l + ':' + FV.frost[l].map(f => f.id).join('+')).join(' ')}), each drawn and with a hello and a winter line, and on no other world` + (elsewhere.length ? ' (also ' + elsewhere.join(', ') + ')' : '')); }
   head(`4. ${DAYS} DAILY HOLES FROM TODAY`);
   const day0 = new Date(Date.UTC(2026, 9, 1));
