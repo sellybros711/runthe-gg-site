@@ -10,8 +10,12 @@
  *                                     first is false when today was already on record
  *        -> 429 { error }             this IP has posted 3 new guest rows today
  *        -> 400 { error }             refused (not eleven known players, bad device)
+ *   POST { action: 'season', device, draft_type, mode, won, drawn, lost, gf, ga, position, cup,
+ *          overall, signings, player_ids, slots }      a guest's finished Club Season (supabase/191)
+ *        -> 200 { id, name }           the row's id on club_season_board and the generated name
+ *        -> 429 { error }              this IP has posted 20 guest seasons today
  *   POST { action: 'claim', device }  with the account's Authorization: Bearer
- *        -> 200 { moved }
+ *        -> 200 { moved }              the guest's Daily days and seasons, now the account's
  *
  * The score is never in the body: the database works it out from the ids.
  *
@@ -19,7 +23,7 @@
  * ARCADE_GUEST_SECRET is used for the keys when set; otherwise the service role.
  */
 import { verifyUser } from './stripe/_verify.js';
-import { secretOf, guestId, ipKey, readDaily, readDevice, sameOrigin, rpc } from '../_pitchguest/core.js';
+import { secretOf, guestId, ipKey, readDaily, readSeason, readDevice, sameOrigin, rpc } from '../_pitchguest/core.js';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -36,9 +40,26 @@ export async function onRequestPost(context) {
     if (!device) return json({ error: 'bad device' }, 400);
     const account = await verifyUser(env, request);
     if (!account) return json({ error: 'sign in' }, 401);
-    const r = await rpc(env, 'soccer_daily_guest_claim', { p_account: account, p_guest: await guestId(secret, device) });
-    if (r.error) return json({ error: r.error }, 400);
-    return json({ moved: (r.data && r.data.moved) || 0 });
+    const guest = await guestId(secret, device);
+    // Two things a guest can have on a board: Daily days (189) and Club Seasons (191). Each
+    // claim stands alone, so a database that has only one of the two migrations still claims it.
+    const [d, s] = await Promise.all([
+      rpc(env, 'soccer_daily_guest_claim', { p_account: account, p_guest: guest }),
+      rpc(env, 'soccer_season_guest_claim', { p_account: account, p_guest: guest })
+    ]);
+    if (d.error && s.error) return json({ error: d.error }, 400);
+    const days = (d.data && d.data.moved) || 0, seasons = (s.data && s.data.moved) || 0;
+    return json({ moved: days, seasons, all: days + seasons });
+  }
+
+  if (body && body.action === 'season') {
+    const run = readSeason(body);
+    if (run.error) return json({ error: run.error }, 400);
+    const key = await ipKey(secret, request.headers.get('CF-Connecting-IP'));
+    const r = await rpc(env, 'soccer_season_guest_submit', Object.assign({ p_guest: await guestId(secret, run.device), p_ip_key: key }, run.args));
+    if (r.error) return json({ error: r.error }, /guest limit/.test(r.error) ? 429 : 400);
+    const d = r.data || {};
+    return json({ id: d.id != null ? Number(d.id) : null, name: d.name || null });
   }
 
   const run = readDaily(body);

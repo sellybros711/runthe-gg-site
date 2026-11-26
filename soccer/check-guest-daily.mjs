@@ -26,7 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { onRequestPost } from '../functions/api/pitch-guest.js';
-import { guestId, ipKey, readDaily } from '../functions/_pitchguest/core.js';
+import { guestId, ipKey, readDaily, readSeason } from '../functions/_pitchguest/core.js';
 import { guestId as arcadeGuestId } from '../functions/_arcadeguest/core.js';
 
 const require = createRequire(import.meta.url);
@@ -41,7 +41,7 @@ const DEVICE = '11112222-3333-4444-8555-666677778888';
 const ACCT = 'cccccccc-3333-4333-8333-333333333333';
 const IDS = ['ARG_1986_a', 'ARG_1986_b', 'BRA_1970_c', 'BRA_1970_d', 'FRA_1998_e', 'FRA_1998_f', 'GER_2014_g', 'ITA_1982_h', 'ESP_2010_i', 'NED_1974_j', 'ENG_1966_k'];
 const SLOTS = ['GK', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'FWD', 'FWD', 'DEF', 'MID', 'FWD'];
-let calls = [];
+let calls = [], seasonAnswer = null;
 // The database behind the Function: one row per guest per day, the first kept.
 const db = { rows: new Map(), cap: false, claimed: 0 };
 const realFetch = globalThis.fetch;
@@ -59,6 +59,11 @@ const fakeSupabase = async (url, init) => {
     const r = db.rows.get(body.p_guest);
     return new Response(JSON.stringify({ id: r.id, name: r.name, first: !had }), { status: 200 });
   }
+  if (/rpc\/soccer_season_guest_submit$/.test(url)) {
+    if (seasonAnswer === 'limit') return new Response(JSON.stringify({ message: 'guest limit' }), { status: 400 });
+    return new Response(JSON.stringify(seasonAnswer || {}), { status: 200 });
+  }
+  if (/rpc\/soccer_season_guest_claim$/.test(url)) return new Response(JSON.stringify({ moved: 2 }), { status: 200 });
   if (/rpc\/soccer_daily_guest_claim$/.test(url)) {
     const n = db.rows.has(body.p_guest) ? 1 : 0; db.rows.delete(body.p_guest); db.claimed += n;
     return new Response(JSON.stringify({ moved: n }), { status: 200 });
@@ -104,6 +109,24 @@ const daily = (b) => Object.assign({ device: DEVICE, player_ids: IDS, progress: 
   ok(r.status === 200 && j.moved === 1 && claim.p_account === ACCT && claim.p_guest === await guestId('service-secret', DEVICE), 'a signed-in claim moves the device\'s guest days to the verified account');
   r = await onRequestPost({ request: req(daily({})), env: {} });
   ok(r.status === 503, 'unconfigured, it answers 503 and the page carries on');
+
+  // a guest's Club Season (supabase/191), through the same Function
+  const season = (b) => Object.assign({ action: 'season', device: DEVICE, draft_type: 'full', mode: 'easy', won: 6, drawn: 2, lost: 1, gf: 17, ga: 8, position: 2, cup: 'finalist',
+    overall: 88.46, signings: 1, player_ids: [...IDS.slice(0, 10), 'Q12345'], slots: SLOTS }, b);
+  ok(readSeason(season({ won: 7 })).error === 'bad results' && readSeason(season({ cup: 'champion' })).error === 'bad cup' && readSeason(season({ position: 11 })).error === 'bad position'
+    && readSeason(season({ player_ids: IDS.slice(0, 6) })).error === 'bad squad' && readSeason(season({ player_ids: [...IDS.slice(0, 10), 'Q1;drop'] })).error === 'bad squad'
+    && readSeason(season({ draft_type: 'mega' })).error === 'bad draft type' && readSeason(season({ overall: 'x' })).error === 'bad rating', 'a season that cannot be is refused before the database');
+  ok(readSeason(season({ draft_type: 'quick', player_ids: IDS.slice(0, 6), slots: null })).args.p_player_ids.length === 6 && readSeason(season({})).args.p_player_ids.includes('Q12345'), 'a quick squad is six, and a club pool man is accepted');
+  calls = []; seasonAnswer = { id: 77, name: 'SillyStriker46' };
+  r = await onRequestPost({ request: req(season({ points: 27, name: 'Hacker', guest: 'x' })), env }); j = await r.json();
+  const sSent = JSON.parse(calls[0].init.body);
+  ok(r.status === 200 && j.id === 77 && j.name === 'SillyStriker46' && /rpc\/soccer_season_guest_submit$/.test(calls[0].url), 'a guest season answers its board id and the generated name');
+  ok(!('p_points' in sSent) && !('p_name' in sSent) && sSent.p_guest === await guestId('service-secret', DEVICE) && sSent.p_overall === 88.5 && !JSON.stringify(sSent).includes(DEVICE), 'no points or name from the page are passed on; the guest id is derived');
+  seasonAnswer = 'limit'; r = await onRequestPost({ request: req(season({})), env }); seasonAnswer = null;
+  ok(r.status === 429, 'the season cap answers 429');
+  db.rows.set(await guestId('service-secret', DEVICE), { id: 41, name: 'SillyStriker46' }); calls = [];
+  r = await onRequestPost({ request: req({ action: 'claim', device: DEVICE }, { Authorization: 'Bearer acct-jwt' }), env }); j = await r.json();
+  ok(r.status === 200 && j.moved === 1 && j.seasons === 2 && calls.filter(c => /_guest_claim$/.test(c.url)).length === 2, 'a claim moves the Daily days and the seasons, each by its own call');
 }
 
 if (args.includes('--quick')) { console.log(fails ? `\n${fails} failed` : '\nall passed (the Function only)'); process.exit(fails ? 1 : 0); }
