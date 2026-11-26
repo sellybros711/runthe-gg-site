@@ -24,6 +24,8 @@ on:
       - 'supabase/test/guest_names_test.sql'
       - 'arcade/board.js'
       - 'scripts/check-arcade-names.mjs'
+      - 'supabase/190_usernames_not_guest_names.sql'
+      - 'supabase/test/usernames_not_guest_names_test.sql'
       - '.github/workflows/arcade-guest-check.yml'
   push:
     branches: [main]
@@ -37,6 +39,8 @@ on:
       - 'supabase/test/guest_names_test.sql'
       - 'arcade/board.js'
       - 'scripts/check-arcade-names.mjs'
+      - 'supabase/190_usernames_not_guest_names.sql'
+      - 'supabase/test/usernames_not_guest_names_test.sql'
       - '.github/workflows/arcade-guest-check.yml'
   workflow_dispatch: {}
 
@@ -76,3 +80,5 @@ jobs:
           $P -f supabase/test/arcade_guest_server_test.sql
       - name: supabase/188, the guest name style, against a real Postgres
         run: psql -X -q -v ON_ERROR_STOP=1 -d gst -f supabase/test/guest_names_test.sql
+      - name: supabase/190, no new username in the guest style, against a real Postgres
+        run: psql -X -q -v ON_ERROR_STOP=1 -d gst -f supabase/test/usernames_not_guest_names_test.sql
