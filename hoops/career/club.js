@@ -803,10 +803,72 @@ function summerCard(L) {
     options: ks.map((k) => { const P = SUMMER[k], rook = P.l0 && L.seasonsDone === 0; return { label: rook ? P.l0 : P.l, hint: rook ? P.h0 : P.hy && L.age <= 24 ? P.hy : P.h }; }),
   };
 }
+/* A ROUTINE SUMMER IS FOLDED (the owner's call, 2026-11-26). The summer card
+   was thirteen cards and about 925 words of a career, and most summers it
+   asked the same question of the same man. Now a summer after something big
+   still asks: the first, a new city, a season of missed games, a title, a
+   contract year, the first one past 32, a body that needs looking at. Any
+   other summer is HELD: the engine picks from the same four programs the card
+   would have offered, the one nearest what he chose the last time he was
+   asked, and it is done when the season tips off. Until then `summerOf(L)`
+   shows it and `summerPick(L, key)` changes it, so the choice is still his.
+   Doing it is `summerChoose` on the draw the card's answer would have used, so
+   a held summer is exactly that program picked by hand. */
+const SUMMER_ASK = { first: 1, moved: 1, hurt: 1, champ: 1, contract: 1 };
+function summerAsks(L) {
+  if (inCollege(L) || !L.flags.summerLast) return true;
+  const sit = summerSit(L);
+  if (SUMMER_ASK[sit] || L.m.health < 60) return true;
+  if (sit === 'old' && !L.flags.summerOld) { L.flags.summerOld = L.year; return true; }
+  return false;
+}
+/* The program nearest the one he last chose: the same one while it is still
+   fresh, else the one that works the most of the same things. Rest and rehab
+   are for a body that asks for them. */
+function summerAuto(L, ks) {
+  const last = SUMMER[L.flags.summerLast], run = L.flags.summerRun;
+  const ok = ks.filter((k) => !SUMMER[k].rest && k !== 'rehab');
+  const pool = ok.length ? ok : ks;
+  if (L.m.health < 70) { const r = ks.find((k) => SUMMER[k].rest || k === 'rehab'); if (r) return r; }
+  const like = (k) => { const fx = SUMMER[k].fx || {}; let n = 0; if (last && last.fx) for (const x in fx) if (last.fx[x]) n += Math.min(fx[x], last.fx[x]); return n; };
+  const stale = (k) => !!(run && run.k === k && run.n >= 2);
+  return pool.slice().sort((a, b) => (stale(a) ? 1 : 0) - (stale(b) ? 1 : 0) || like(b) - like(a) || ks.indexOf(a) - ks.indexOf(b))[0];
+}
+/* The summer of a year that opens: a card, or a held plan. */
+function summerOpen(L) {
+  if (summerAsks(L)) { L.pending.push(summerCard(L)); return; }
+  const ks = summerKeys(L);
+  L.flags.summerOff = ks;
+  L.flags.summerHold = { y: L.year, ks, k: summerAuto(L, ks) };
+}
+const summerOption = (L, k) => { const P = SUMMER[k], rook = P.l0 && L.seasonsDone === 0; return { key: k, label: rook ? P.l0 : P.l, hint: rook ? P.h0 : P.hy && L.age <= 24 ? P.hy : P.h }; };
+/* The held summer, for the screen: what is planned and what else is on offer. */
+function summerOf(L) {
+  const H = L.flags.summerHold;
+  if (!H || H.y !== L.year || L.retired) return null;
+  const o = summerOption(L, H.k);
+  return { y: L.year - 1, key: H.k, label: o.label, hint: o.hint, options: H.ks.map((k) => summerOption(L, k)) };
+}
+function summerPick(L, key) {
+  const H = L.flags.summerHold;
+  if (!H || H.y !== L.year || H.ks.indexOf(key) < 0) return null;
+  H.k = key; H.mine = 1;
+  return summerOf(L);
+}
+/* Tip-off: the held summer is done, on the draw the card's answer would use. */
+function summerDo(L, beats) {
+  const H = L.flags.summerHold;
+  if (!H || H.y !== L.year) return;
+  delete L.flags.summerHold;
+  const t = summerChoose(L, H.k, rngAt(L, 'pick:training:' + H.ks.indexOf(H.k)));
+  /* A plan he changed by hand is the plan from now on. */
+  if (H.mine) L.flags.summerLast = H.k;
+  beats.push({ kind: 'summer', text: 'Your summer: ' + SUMMER[H.k].l.toLowerCase() + '. ' + t, tone: 'good' });
+}
 /* The answers to the summer (choose() runs them). */
 ANSWER.training = function(L, card, i, opt, rng, beats, touch, touches) {
   let text = '', tone = '', made = null, won = null, shots = null, contest = null;
-  if (card.ctx && card.ctx.ks) { text = summerChoose(L, card.ctx.ks[i], rng); tone = 'good'; return { text, tone, made, won, shots, contest }; }
+  if (card.ctx && card.ctx.ks) { L.flags.summerLast = card.ctx.ks[i]; text = summerChoose(L, card.ctx.ks[i], rng); tone = 'good'; return { text, tone, made, won, shots, contest }; }
   const t = TRAIN[i];
   const young = L.age <= 24 ? 1 : L.age <= 28 ? 0.8 : 0.6;
   if (t) {
