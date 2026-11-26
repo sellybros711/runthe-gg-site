@@ -15912,8 +15912,13 @@ const GAD_SCREENS=['title','protour','me','setup'];   // the screens the shop an
 const GAD_GAP_MS=3*60*1000;
 const GAD={active:null, host:null, io:null, pushedFor:null, homeUsed:false, fixed:false};
 function gadStyleOnce(){ if(document.getElementById('gad-css')) return; const s=document.createElement('style'); s.id='gad-css';
-  s.textContent='.gad-ph{position:relative;width:300px;max-width:100%;height:268px;margin:150px auto 150px}.gad-ph.gad-ph-home{position:absolute;left:24px;top:232px;width:320px;height:68px;margin:0}.gad-l{display:block;height:18px;font:700 9px/18px var(--body);letter-spacing:1px;text-transform:uppercase;opacity:.5}.gad-host{position:absolute;z-index:2;overflow:hidden}';
+  s.textContent='.gad-ph{position:relative;width:300px;max-width:100%;height:268px;margin:150px auto 150px}.gad-ph.gad-ph-home{position:absolute;left:24px;top:232px;width:340px;height:80px;margin:0;padding:0 10px;box-sizing:border-box;border:1px solid transparent;border-radius:12px}.gad-ph-home .gad-l{opacity:0}.gad-ph-home.gad-on{background:linear-gradient(180deg,rgba(62,78,58,.72),rgba(38,52,42,.8));-webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);border-color:var(--glt,rgba(244,227,201,.22));box-shadow:0 18px 40px rgba(0,0,0,.35)}.gad-ph-home.gad-on .gad-l{opacity:.6;color:var(--cream,#f4e3c9)}.gad-l{display:block;height:18px;font:700 9px/18px var(--body);letter-spacing:1px;text-transform:uppercase;opacity:.5}.gad-host{position:absolute;z-index:2;overflow:hidden}';
   document.head.appendChild(s); }
+/* THE HOME BANNER'S FRAME (the owner, 2026-11-26: it looked like a stray box on the sky). It wears the pin sheet's
+   frosted glass, and the frame and its label show only once the ad has filled, so an empty slot shows nothing. The
+   ad itself sits where it did, 10px inside the frame. */
+function gadMark(){ const ins=GAD.host&&GAD.host.querySelector('ins'), on=!!ins&&ins.getAttribute('data-ad-status')==='filled';
+  document.querySelectorAll('.gad-ph').forEach(p=>p.classList.toggle('gad-on',on)); }
 // the First Tee home gets its banner on a desktop only (a phone has no clear 150px)
 function gadSpotOf(){
   if(S.overlay==='shop' && GAD_SCREENS.includes(S.screen)) return 'shop';
@@ -15930,7 +15935,7 @@ function gadWant(spot){
   if(spot==='home') return !GAD.homeUsed;           // the home's one ad for this page load
   if(GAD_GAP.includes(spot)){ try{ return Date.now()-(+localStorage.getItem('gad_'+spot+'_last')||0) >= GAD_GAP_MS; }catch(e){ return false; } }
   return true; }
-function gadDrop(){ if(GAD.io){ GAD.io.disconnect(); GAD.io=null; } if(GAD.host){ GAD.host.remove(); GAD.host=null; } GAD.active=null; GAD.fixed=false;
+function gadDrop(){ if(GAD.io){ GAD.io.disconnect(); GAD.io=null; } if(GAD.mo){ GAD.mo.disconnect(); GAD.mo=null; } if(GAD.host){ GAD.host.remove(); GAD.host=null; } GAD.active=null; GAD.fixed=false;
   document.querySelectorAll('.gad-ph').forEach(e=>e.remove()); }
 function gadPlace(){ const ph=document.querySelector('.gad-ph'); if(!ph || !GAD.host) return;
   const r=ph.getBoundingClientRect(), w=GAD_SIZE[GAD.active][0], x=r.left+(r.width-w)/2, y=r.top+18;
@@ -15975,8 +15980,10 @@ function gadMount(){
     GAD.host=$(`<div class="gad-host"><ins class="adsbygoogle" style="display:inline-block;width:${w}px;height:${h}px" data-ad-client="ca-pub-5952069078178257" data-ad-slot="${GAD_UNIT[spot]}"></ins></div>`);
     if(GAD.fixed) GAD.host.style.cssText='position:fixed;z-index:45;overflow:hidden';
     document.body.appendChild(GAD.host);
+    if(window.MutationObserver){ GAD.mo=new MutationObserver(gadMark); GAD.mo.observe(GAD.host.querySelector('ins'),{attributes:true,attributeFilter:['data-ad-status']}); }
   }
   holder.appendChild($(`<div class="gad-ph${spot==='home'?' gad-ph-home':''}" data-gad="${spot}"><span class="gad-l">Advertisement</span></div>`));
+  gadMark();
   // the page settles after render (fonts, images, the footer), so the placement is checked when it has: then as it moves
   setTimeout(gadCheck,400); setTimeout(gadCheck,1500);
 }
