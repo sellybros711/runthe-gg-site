@@ -63,6 +63,12 @@ node scripts/check-home-games.mjs              the home page card
 - The cup's sides sit on the World Cup pool's rating scale, and the wheel is weighted by squad
   size, so both sides draft to the same strength and the published odds hold for both.
   `check-club` measures it. Change the spin or the pool and rerun it.
+- **The club pool** (`data/club_players.json`, the Rosters Agent's, refreshed monthly) is who else
+  was at a club besides its World Cup men. Its squads replace the World Cup ones for the clubs and
+  decades it lists (`buildPool`, `mergeUnits`). Load it with `fetch(url, { cache: 'no-cache' })`
+  and **no `?v=`** (the refresh cannot bump one), only for the club side, and never depend on it:
+  with the file missing the club side plays on World Cup squads. A man who never went to a World
+  Cup has an id the server does not know (`wd:` person key, `rated: 'rule'`).
 - Until its boards exist, a club run writes nothing to the server, and its door shows only after
   `/soccer/?club=1`.
 
