@@ -6553,7 +6553,7 @@ async function applySession(session){
   authUser      = (session && session.user) || null;
   sbAccessToken = (session && session.access_token) || null;
   if(authUser){ await loadProfile(); await ensureUsernameFromMetadata(); }
-  else { authProfile = null; myStats = null; myAch = null; myCollected = null; myTopDrafts = null; }
+  else { authProfile = null; myStats = null; myAch = null; myCollected = null; myDraftsUid = null; myTopDrafts = null; }
   syncAuthUI();
   if(typeof refreshDailyStatus==='function') refreshDailyStatus(); // daily played/streak
   if(authUser){ if(typeof wcCheckPendingOnLoad==='function') wcCheckPendingOnLoad(); }
@@ -6722,7 +6722,7 @@ async function claimAnonymousDraft(){
       method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }),
       body: JSON.stringify({ p_id:id })
     });
-    if(res.ok) return true;
+    if(res.ok){ myDraftsUid=null; return true; }   // the claimed draft joins the history: reread on the next profile open
   }catch(e){ /* claim_draft not deployed yet → fall back to name-only below */ }
   // Fallback: at least put their name + flag on the row.
   const name = authUsername() || 'Player';
@@ -6744,6 +6744,7 @@ async function claimPendingDraftId(){
       body: JSON.stringify({ p_id: Number(id) })
     });
     if(res.ok){
+      myDraftsUid=null;   // the claimed draft joins the history: reread on the next profile open
       try{ localStorage.removeItem('rtp_pending_draft'); }catch(e){}
       if(typeof refreshMyBadges==='function'){ try{ await refreshMyBadges(); }catch(e){} }
     }
@@ -7033,30 +7034,47 @@ function achBadgeSvg(id, lvl){
 // One fetch of the player's own draft rows powers BOTH the breadth/underdog
 // achievements and the Legends collection (which players they've ever drafted).
 let myCollected = null;   // Set of player_ids the player has drafted
+// The Legends collection and the client copy of the breadth badges come from
+// the player's whole history in drafts and daily_results (up to 4,000 rows from
+// each). Read it ONCE a visit, and only when something shows it (the profile).
+// After that, each finished game is folded in from the picks already on the
+// page (foldMyDraft). Never reread the history after a game: that grew with
+// every game a loyal player played, the shape of the 2026-11-12 Disk IO outage
+// (platform-database-saves in the knowledge base).
+let myDraftsUid = null;   // whose history myCollected/myAch hold; null = not read this visit
+function foldDraftRow(ids, overall, progress){
+  const confs=new Set(), decs=new Set();
+  (ids||[]).forEach(id=>{
+    myCollected.add(String(id));
+    const p=playerById(id); if(p){ confs.add(confedOf(p.country)); decs.add(Math.floor(p.year/10)*10); }
+  });
+  if(confs.size>myAch.confedBreadth) myAch.confedBreadth=confs.size;
+  if(decs.size>myAch.decadeBreadth) myAch.decadeBreadth=decs.size;
+  const ov=+overall, pr=+progress;
+  if(ov>0 && ov<=85 && pr>myAch.underdog_progress) myAch.underdog_progress=pr;
+}
+// One just-recorded game into the loaded history. A no-op until the history
+// has been read this visit (the profile reads it fresh, game included).
+function foldMyDraft(ids, overall, progress){
+  if(!authUser || myDraftsUid!==authUser.id || !myCollected || !myAch) return;
+  foldDraftRow(ids, overall, progress);
+}
 async function loadMyDrafts(){
-  if(!sbClient || !isSignedIn() || !authUser){ myAch=null; myCollected=null; renderAchievements(); renderLegends(); return; }
+  if(!sbClient || !isSignedIn() || !authUser){ myAch=null; myCollected=null; myDraftsUid=null; renderAchievements(); renderLegends(); return; }
+  const uid=authUser.id;
+  if(myDraftsUid===uid && myCollected && myAch){ renderAchievements(); renderLegends(); return; }   // already read this visit
   try{
-    const uid=authUser.id;
     const q=async(table)=>{
       const res=await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${uid}&select=player_ids,overall,progress&limit=4000`, { headers: sbHeaders() });
-      return res.ok ? (await res.json().catch(()=>[]) || []) : [];
+      if(!res.ok) throw new Error(table+' '+res.status);   // never mark a failed read as loaded
+      return (await res.json()) || [];
     };
     const [d1,d2]=await Promise.all([q('drafts'), q('daily_results')]);
-    const col=new Set();
-    let confedMax=0, decadeMax=0, underdog=-1;
-    d1.concat(d2).forEach(r=>{
-      const confs=new Set(), decs=new Set();
-      (r.player_ids||[]).forEach(id=>{
-        col.add(String(id));
-        const p=playerById(id); if(p){ confs.add(confedOf(p.country)); decs.add(Math.floor(p.year/10)*10); }
-      });
-      if(confs.size>confedMax) confedMax=confs.size;
-      if(decs.size>decadeMax) decadeMax=decs.size;
-      const ov=+r.overall, pr=+r.progress;
-      if(ov>0 && ov<=85 && pr>underdog) underdog=pr;
-    });
-    myCollected=col;
-    myAch={ confedBreadth:confedMax, decadeBreadth:decadeMax, underdog_progress:underdog };
+    if(!authUser || authUser.id!==uid) return;   // signed out or switched mid-read
+    myCollected=new Set();
+    myAch={ confedBreadth:0, decadeBreadth:0, underdog_progress:-1 };
+    d1.concat(d2).forEach(r=>foldDraftRow(r.player_ids, r.overall, r.progress));
+    myDraftsUid=uid;
   }catch(e){ /* keep cached */ }
   renderAchievements();
   renderLegends();
@@ -7268,7 +7286,9 @@ const ACH_UNIT={ draftsman:'drafts', worldbeater:'World Cups', daily:'day streak
   collector:'legends', finalist:'finals', dailyace:'daily wins', dailygrind:'daily plays', fullxi:'full drafts',
   quickdraw:'quick drafts', hardmode:'hard wins' };
 let achPopQueue=[];
-function achMetricsReady(){ return myStats!=null && myAch!=null; }
+// get_my_stats (14/19) returns the breadth and underdog metrics itself, so the
+// server's stats alone are enough. myAch is only the pre-migration fallback.
+function achMetricsReady(){ return myStats!=null && (myAch!=null || myStats.confed_breadth!=null); }
 function completedAchTiers(){
   const m=achMetrics(), set=new Set();
   ACHIEVEMENTS.forEach(a=>{ const v=a.get(m); a.tiers.forEach((t,i)=>{ if(v>=t) set.add(a.id+':'+i); }); });
@@ -7304,11 +7324,13 @@ function checkAchievementUnlocks(){
   writeAchBaseline(cur);
   if(newly.length) queueAchPopups(newly);
 }
-// Refresh server metrics after a finished game, then alert on any new badge.
-async function afterGameAchievementCheck(){
+// After a recorded game: fold it into the loaded history, refresh the server's
+// stats (one aggregate call), then alert on any new badge. No history reread.
+async function afterGameAchievementCheck(ids, overall, progress){
   if(!isSignedIn()) return;
-  try{ await loadMyStats(); await loadMyDrafts(); checkAchievementUnlocks(); }catch(e){}
+  try{ foldMyDraft(ids, overall, progress); await loadMyStats(); checkAchievementUnlocks(); }catch(e){}
 }
+function gsPickIds(){ return (gs && Array.isArray(gs.picks)) ? gs.picks.map(p=>String(p.player.player_id)) : []; }
 function queueAchPopups(keys){
   achPopQueue.push(...keys);
   const bg=$('ach-pop-bg');
@@ -8207,6 +8229,19 @@ async function fetchDailyBoard(limit){
   return data||[];
 }
 
+// Today's rank by counting, not by reading the board: the rows that beat this
+// score and today's total, two count queries (daily_results_board_idx covers
+// date + overall). Same rule as the board: higher overall, then further progress.
+async function fetchDailyRank(overall, progress){
+  const ov=(+overall).toFixed(1);
+  const base=`${SUPABASE_URL}/rest/v1/daily_results?select=id&limit=1&date=eq.${utcDateStr()}`;
+  const orF=encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${+progress||0}))`);
+  const hdr={ headers: sbHeaders({ 'Prefer':'count=exact' }) };
+  const [b,t]=await Promise.all([fetch(base+'&or='+orF, hdr), fetch(base, hdr)]);
+  if(!b.ok || !t.ok) throw new Error('daily rank failed');
+  const rank=sbCount(b)+1;
+  return { rank, total: Math.max(sbCount(t), rank) };
+}
 // Daily rank line on the results page (+ records the attempt, +streak refresh).
 async function fillDailyRankBadge(overall, progress){
   const el=$('res-rank-line'); if(!el) return;
@@ -8222,20 +8257,13 @@ async function fillDailyRankBadge(overall, progress){
   }
   // rank among today's board (named only); total = today's entries
   let rank=null, total=null;
-  try{
-    const board=await fetchDailyBoard(500);
-    total=board.length || (recorded?1:0);
-    const ov=+(+overall).toFixed(1);
-    let better=0;
-    board.forEach(r=>{ const ro=+(+r.overall).toFixed(1); if(ro>ov || (ro===ov && (r.progress||0)>progress)) better++; });
-    rank=better+1;
-  }catch(e){}
+  try{ ({ rank, total } = await fetchDailyRank(overall, progress)); }catch(e){}
   const lb={ rank, total, streak:(authProfile&&authProfile.current_streak)||0,
              signedIn:isSignedIn(), already:(isSignedIn()&&recorded===null) };
   gs.result._lb=lb; gs.result._lbId=recorded;
   ga('daily_completed',{overall:overall,progress:progress,rank:rank,total:total,streak:lb.streak,is_daily:true,is_signed_in:isSignedIn()});
   renderDailyRankLine(el, lb);
-  if(isSignedIn()) afterGameAchievementCheck();   // alert on any newly-earned badge
+  if(isSignedIn() && recorded!=null) afterGameAchievementCheck(gsPickIds(), overall, progress);   // a replay is not recorded, so it earns nothing
   if(rank && rank<=3){ try{ launchConfetti(); }catch(e){} }
   // auto-open the daily board shortly after results settle
   setTimeout(()=>openDailyBoard(), 1000);
@@ -8425,7 +8453,7 @@ async function fillRankBadge(overall, progress){
       renderRankLine(el, rank, total);
       fillNearMiss(rank, overall);              // specific "go again" gap
       if(rank<=3){ try{ launchConfetti(); }catch(e){} } // celebrate a podium finish
-      if(isSignedIn()) afterGameAchievementCheck();  // alert on any newly-earned badge
+      if(isSignedIn() && id!=null) afterGameAchievementCheck(gsPickIds(), overall, progress);  // alert on any newly-earned badge
       return;
     }catch(e){ /* global board unreachable → per-device fallback below */ }
   }
@@ -13463,7 +13491,7 @@ function startActivityFeed(){
   const el=$('oa-item'); if(!el) return;
   const advance=()=>{
     const hub=document.getElementById('screen-online-hub');
-    if(!hub || !hub.classList.contains('active')) return;   // self-pause when off-screen
+    if(!hub || !hub.classList.contains('active') || document.visibilityState==='hidden') return;   // self-pause when off-screen or hidden
     el.classList.remove('show');
     setTimeout(()=>{ el.innerHTML=_actItems[_actIdx % _actItems.length]; el.classList.add('show'); _actIdx++; }, 220);
   };
@@ -13604,8 +13632,18 @@ function h2hOpponentName(st){ return h2hRole==='host' ? st.guest_name : st.host_
 function h2hMyPicksSubmitted(st){ return h2hRole==='host' ? !!st.host_picks : !!st.guest_picks; }
 function h2hOppPicksSubmitted(st){ return h2hRole==='host' ? !!st.guest_picks : !!st.host_picks; }
 
+// No poll talks to the server while the tab is hidden (platform-database-saves).
+// The timers keep ticking but skip; coming back to the tab polls at once.
+function pollHidden(){ return document.visibilityState==='hidden'; }
+document.addEventListener('visibilitychange', ()=>{
+  if(pollHidden()) return;
+  if(h2hPollTimer) h2hPoll();
+  if(wcPollTimer) wcPoll();
+  if(wcNotifyPollTimer) wcNotifyCheck();
+});
+
 async function h2hPoll(){
-  if(!h2hMatchId) return;
+  if(!h2hMatchId || pollHidden()) return;
   let st;
   try{ st = await sbRpc('soccer_h2h_state', { p_match_id: h2hMatchId }); }
   catch(e){ return; } // transient network hiccup, just try again next tick
@@ -13953,6 +13991,7 @@ async function wcOnDraftComplete(){
 }
 
 async function wcPoll(){
+  if(pollHidden()) return;
   try{
     const entry = await sbRpc('soccer_wc_my_entry', {});
     if(entry && entry.status==='done'){
@@ -14300,7 +14339,7 @@ async function wcCheckPendingOnLoad(){
 }
 
 async function wcNotifyCheck(){
-  if(!isSignedIn()) return;
+  if(!isSignedIn() || pollHidden()) return;
   // The wc-waiting/bracket screens already handle their own transition live;
   // don't double-announce over them.
   const onWaiting = document.getElementById('screen-wc-waiting').classList.contains('active');
