@@ -10,6 +10,8 @@
  *   - every spun club and decade holds at least MIN_SPIN different men, each man once
  *   - the cup's sides sit on the World Cup pool's rating scale, with enough in every round's band
  *   - the season: ten clubs, every pair meets once, the table adds up, the title odds by rating
+ *   - the club pool (data/club_players.json): its squads replace the World Cup ones, hold men who
+ *     never went to a World Cup under the file's ceiling, leave loans out, and do not take the wheel
  * The browser run (outside hosts answered locally, Supabase counted):
  *   - the door is shut until /soccer/?club=1, and the World Cup side is unchanged
  *   - a whole club draft, Easy and Full Team: the wheel lands on a club and a decade, no man is
@@ -34,7 +36,12 @@ const ok = (cond, msg) => { console.log((cond ? 'ok   ' : 'FAIL ') + msg); if (!
 // ---------- the data rules ----------
 const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/players_all.json'), 'utf8'));
 const players = raw.map(p => ({ ...p, overall: p.wc_overall ?? p.skill_rating }));
-const units = C.build(players);
+// The club side's squads: the World Cup ones, with the club pool's laid over them (as the page does).
+const poolFile = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/club_players.json'), 'utf8'));
+const wcById = {}; players.forEach(p => { wcById[p.player_id] = p; });
+const wcUnits = C.build(players);
+const poolUnits = C.buildPool(poolFile, wcById, 2026);
+const units = C.mergeUnits(wcUnits, poolUnits);
 const clubs = [...new Set(units.map(u => u.club))].sort();
 
 if (args.includes('--names')) {
@@ -44,13 +51,30 @@ if (args.includes('--names')) {
   process.exit(0);
 }
 
-ok(units.length >= 400 && clubs.length >= 200, `${units.length} club and decade squads to spin, ${clubs.length} clubs`);
+ok(units.length >= 400 && clubs.length >= 200, `${units.length} club and decade squads to spin, ${clubs.length} club names`);
 const branded = clubs.filter(c => C.BRAND_WORDS.test(c));
 ok(branded.length === 0, `no shown club name carries a brand${branded.length ? ': ' + branded.join(', ') : ''}`);
 ok(!clubs.some(c => C.SKIP[c]), 'no "Free agent" or federation shown as a club');
 ok(units.every(u => u.squad.length >= C.MIN_SPIN), `every spun squad holds at least ${C.MIN_SPIN} men`);
 ok(units.every(u => new Set(u.squad.map(C.personKey)).size === u.squad.length), 'a man appears once in a squad');
-ok(units.every(u => u.squad.every(p => p.club_side && p.club_side.wcs.length && p.overall >= 1 && p.overall <= 99)), 'every man has a rating and his World Cups');
+ok(units.every(u => u.squad.every(p => p.club_side && p.overall >= 1 && p.overall <= 99 && (p.club_side.rated === 'rule' ? p.club_side.wcs.length === 0 : p.club_side.wcs.length > 0))), 'every man has a rating, and his World Cups if he went to any');
+// The club pool (the Rosters Agent's file): a club is more than its World Cup players.
+{
+  const listed = Object.entries(poolFile.clubs).reduce((n, [, c]) => n + Object.keys(c.names).length, 0);
+  ok(poolUnits.length === listed && poolUnits.length >= 40, `the pool gives a squad for every club and decade it lists (${poolUnits.length})`);
+  ok(poolUnits.every(u => units.includes(u)) && units.length === new Set(units.map(u => u.key)).size, 'a pool squad replaces the World Cup squad for the same club and decade');
+  const rule = poolUnits.flatMap(u => u.squad.filter(p => p.club_side.rated === 'rule'));
+  ok(rule.length > 100 && rule.every(p => p.overall <= poolFile.rule_ceiling && p.person && !wcById[p.player_id]), `${rule.length} squad places go to men who never went to a World Cup, none rated above the file's ceiling of ${poolFile.rule_ceiling}`);
+  const linked = poolUnits.flatMap(u => u.squad.filter(p => p.club_side.rated === 'wc'));
+  ok(linked.every(p => wcById[p.player_id] && p.overall === wcById[p.player_id].wc_overall), 'a World Cup man in the pool is his own World Cup row, id and rating');
+  ok(poolUnits.every(u => u.squad.length <= C.POOL_SQUAD + 12 && ['GK', 'DEF', 'MID', 'FWD'].every(pos => u.squad.some(p => p.position === pos))), `a pool squad is a club's best ${C.POOL_SQUAD} or so, with every line in it`);
+  const loaned = new Set(); poolFile.players.forEach(m => m.spells.forEach(sp => { if (sp.loan) loaned.add(m.id + '|' + sp.club_id); }));
+  const onlyLoan = (m, id) => loaned.has(m + '|' + id) && !poolFile.players.find(x => x.id === m).spells.some(sp => sp.club_id === id && !sp.loan);
+  ok(!poolUnits.some(u => u.squad.some(p => p.person && onlyLoan(p.player_id, u.id))), 'a man only ever on loan at a club is not in its squad');
+  const share = poolUnits.reduce((a, u) => a + C.spinWeight(u), 0) / units.reduce((a, u) => a + C.spinWeight(u), 0);
+  ok(share > 0.1 && share < 0.4, `the pool's clubs take ${Math.round(share * 100)}% of spins, not the whole wheel`);
+  ok(C.mergeUnits(wcUnits, []).length === wcUnits.length && C.buildPool(null, wcById).length === 0, 'with no pool file the club side is the World Cup squads alone');
+}
 ok(Object.keys(C.NAMES).every(k => !C.SKIP[k]), 'the name list and the skip list do not overlap');
 const wc = {}; raw.forEach(p => { if (p.team_overall != null && p.year !== 2026) wc[p.country + '|' + p.year] = p.team_overall; });
 const opp = C.opponents(units, Object.values(wc));
@@ -150,11 +174,12 @@ if (args.includes('--quick')) { console.log(fails ? `\n${fails} failed` : '\nall
 // ---------- a whole club run in a browser ----------
 const { chromium } = require('playwright');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css' };
+let servePool = true;   // false: the pool file is missing (the club side must still play)
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (p.endsWith('/')) p += 'index.html';
   const f = path.join(ROOT, p);
-  if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+  if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory() || (!servePool && p === '/data/club_players.json')) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' });
   fs.createReadStream(f).pipe(res);
 });
@@ -202,6 +227,36 @@ const visibleText = (page) => page.evaluate(() => {
   });
   ok(!wcSpin.club && typeof wcSpin.year === 'number' && wcSpin.n >= 11, `a World Cup draft still spins a nation and a year (${wcSpin.year}, ${wcSpin.n} men)`);
   await ctx.close();
+}
+
+// the club pool in the page: loaded only for the club side, with no version, and never needed
+{
+  const { ctx, page, errors } = await open('/soccer/', { width: 390, height: 844 });
+  ok(await page.evaluate(() => CLUB_POOL === null && clubPoolAsk === null), 'a World Cup visit never fetches the club pool');
+  await ctx.close();
+  const c2 = await open('/soccer/?club=1', { width: 390, height: 844 });
+  await c2.page.click('#btn-club'); await c2.page.click('#btn-setup-go');
+  await c2.page.waitForFunction(() => isClub(), null, { timeout: 15000 });
+  const pool = await c2.page.evaluate(() => {
+    const d = clubData(), u = d.units.find(x => x.pool && x.squad.some(p => p.club_side.rated === 'rule' && p.country) && x.squad.some(p => p.club_side.rated === 'wc'));
+    gs = clubConfirm(u.club, u.era); showScreen('select'); paintSquad();
+    const grid = document.getElementById('player-grid'), rule = u.squad.find(p => p.club_side.rated === 'rule');
+    openProfile(rule);
+    return { loaded: !!CLUB_POOL, pools: d.units.filter(x => x.pool).length, cards: grid.querySelectorAll('.pcard').length, n: u.squad.length, text: grid.innerText, header: document.getElementById('select-country').textContent };
+  });
+  ok(pool.loaded && pool.pools >= 40, `the club side loads the pool: ${pool.pools} pool squads on the wheel`);
+  ok(pool.cards === pool.n && /Born \d{4}/.test(pool.text) && !/undefined|null|NaN/.test(pool.text), `a pool squad draws every man, with a birth year for one who never went to a World Cup (${pool.header})`);
+  ok(c2.errors.length === 0, `a pool man's card and profile tap raise no error${c2.errors.length ? ': ' + c2.errors[0] : ''}`);
+  await c2.ctx.close();
+  // the file missing: the club side plays on the World Cup squads alone
+  servePool = false;
+  const c3 = await open('/soccer/?club=1', { width: 390, height: 844 });
+  await c3.page.click('#btn-club'); await c3.page.click('#btn-setup-go');
+  await c3.page.waitForFunction(() => isClub(), null, { timeout: 15000 });
+  const bare = await c3.page.evaluate(() => { const d = clubData(); return { pools: d.units.filter(x => x.pool).length, n: d.units.length }; });
+  ok(bare.pools === 0 && bare.n >= 400 && c3.errors.length === 0, `with the pool file missing the club side still plays (${bare.n} World Cup squads)`);
+  await c3.ctx.close();
+  servePool = true;
 }
 
 for (const [label, viewport] of [['phone', { width: 390, height: 844 }], ['desktop', { width: 1440, height: 900 }]]) {

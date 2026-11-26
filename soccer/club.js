@@ -109,7 +109,7 @@
     return NAMES[s] || s;
   }
   function eraOf(year) { return (Math.floor(year / 10) * 10) + 's'; }
-  function personKey(p) { return p.name + '|' + p.country; }
+  function personKey(p) { return p.person || (p.name + '|' + p.country); }   // a pool man with no World Cup carries his own key
   function ovOf(p) { return p.overall != null ? p.overall : (p.wc_overall != null ? p.wc_overall : (p.skill_rating != null ? p.skill_rating : PAD)); }
 
   /* Every club and decade worth spinning. `players` are the engine's rows (each with overall). */
@@ -152,6 +152,84 @@
     return units.filter(Boolean);
   }
 
+  /* ---- The club pool (data/club_players.json, the Rosters Agent's, free Wikidata) ----
+   *
+   * The World Cup file knows a club only by the men it sent to World Cups. The pool knows who
+   * else was there: every man with a spell at the club, World Cup or not. For a club and decade
+   * the pool lists, its squad REPLACES the World Cup one (it is a superset), so a club is more
+   * than its World Cup players. Clubs and decades the pool does not list keep the World Cup squad.
+   *
+   *   - A man is in a decade if a spell overlaps it by a year. Loans are left out.
+   *   - A man who went to a World Cup is his best World Cup row (wc_ids), so his id, captaincy
+   *     and awards are the ones every board already knows. A man who never did is a new row,
+   *     rated by the file's rule and held under its ceiling, with no World Cups to list.
+   *   - A big club has 150 men in a decade, most of them squad players. The wheel offers the
+   *     best POOL_SQUAD of them, with the keepers and each line topped up, as a World Cup squad
+   *     is a club's best and not its whole staff.
+   *   - Only decades in clubs[id].names are built: the file's own gate for "enough men".
+   */
+  var POOL_SQUAD = 40, POOL_LINES = { GK: 3, DEF: 8, MID: 8, FWD: 6 };
+
+  function buildPool(file, wcById, nowYear) {
+    if (!file || !file.clubs || !Array.isArray(file.players)) return [];
+    var now = nowYear || new Date().getFullYear(), units = [];
+    var byClub = {};
+    file.players.forEach(function (m) {
+      (m.spells || []).forEach(function (sp) {
+        if (sp.loan || sp.from == null) return;
+        (byClub[sp.club_id] = byClub[sp.club_id] || []).push({ m: m, from: sp.from, to: sp.to == null ? now : sp.to });
+      });
+    });
+    Object.keys(file.clubs).sort().forEach(function (id) {
+      var names = file.clubs[id].names || {};
+      Object.keys(names).sort().forEach(function (era) {
+        var a = parseInt(era, 10), b = a + 9, club = clubName(names[era]);
+        if (!club || isNaN(a)) return;
+        var seen = {}, men = [];
+        (byClub[id] || []).forEach(function (x) {
+          if (x.from > b || x.to < a) return;
+          var m = x.m, row = null, wcs = [];
+          (m.wc_ids || []).forEach(function (pid) {
+            var r = wcById[pid]; if (!r) return;
+            if (wcs.indexOf(r.year) < 0) wcs.push(r.year);
+            if (!row || ovOf(r) > ovOf(row) || (ovOf(r) === ovOf(row) && r.year > row.year)) row = r;
+          });
+          var man = {};
+          if (row) { for (var k in row) man[k] = row[k]; man.overall = ovOf(row); }
+          else {
+            man = { player_id: m.id, person: 'wd:' + m.id, name: m.name, country: m.nation || '', year: '', position: m.pos,
+              overall: m.overall, wc_overall: m.overall, born: m.born || null, is_captain: false, award: '' };
+          }
+          var pk = personKey(man);
+          if (seen[pk]) return;
+          seen[pk] = 1;
+          man.club_side = { club: club, id: id, era: era, wcs: wcs.sort(function (x1, y1) { return x1 - y1; }), rated: row ? 'wc' : 'rule' };
+          men.push(man);
+        });
+        men.sort(function (x, y) { return ovOf(y) - ovOf(x) || (x.name < y.name ? -1 : 1); });
+        // the best POOL_SQUAD, then each line topped up from the men left out
+        var squad = men.slice(0, POOL_SQUAD), rest = men.slice(POOL_SQUAD);
+        Object.keys(POOL_LINES).forEach(function (pos) {
+          var have = squad.filter(function (q) { return q.position === pos; }).length;
+          for (var i = 0; i < rest.length && have < POOL_LINES[pos]; i++) {
+            if (rest[i] && rest[i].position === pos) { squad.push(rest[i]); rest[i] = null; have++; }
+          }
+        });
+        if (squad.length >= MIN_SPIN) units.push({ id: id, club: club, era: era, decade: a, key: id + '|' + era, squad: squad, pool: true });
+      });
+    });
+    return units;
+  }
+
+  /* The pool's squads over the World Cup ones: same club and decade, the pool wins. A World Cup
+     squad shown under the same name and decade as a pool squad also gives way (one name, one squad). */
+  function mergeUnits(base, pool) {
+    if (!pool || !pool.length) return base;
+    var keys = {}, shown = {};
+    pool.forEach(function (u) { keys[u.key] = 1; shown[u.club + '|' + u.era] = 1; });
+    return base.filter(function (u) { return !keys[u.key] && !shown[u.club + '|' + u.era]; }).concat(pool);
+  }
+
   /* How good a unit's best eleven is, before it is placed on the World Cup scale. */
   function strength(squad) {
     var ovs = squad.map(ovOf).sort(function (a, b) { return b - a; }).slice(0, 11);
@@ -191,11 +269,14 @@
     var able = ok ? units.filter(ok) : units;
     if (!able.length) return null;
     var total = 0, i;
-    for (i = 0; i < able.length; i++) total += able[i].squad.length;
+    for (i = 0; i < able.length; i++) total += spinWeight(able[i]);
     var r = (rnd || Math.random)() * total;
-    for (i = 0; i < able.length; i++) { r -= able[i].squad.length; if (r < 0) return able[i]; }
+    for (i = 0; i < able.length; i++) { r -= spinWeight(able[i]); if (r < 0) return able[i]; }
     return able[able.length - 1];
   }
+  /* A unit's weight on the wheel: its men, up to a World Cup squad's 26. Past that, more men do
+     not make a better spin, and the pool's big squads would crowd every other club off the wheel. */
+  function spinWeight(u) { return Math.min(u.squad.length, 26); }
 
   /* The cup's words in place of the World Cup's, for copy the two sides share. */
   function cupWords(s) {
@@ -371,7 +452,7 @@
 
   var api = { CUP: 'The Club Cup', SEASON: SEASON, matchGoals: matchGoals, seasonOpponents: seasonOpponents, seasonStart: seasonStart,
     seasonOpponentAt: seasonOpponentAt, seasonPlay: seasonPlay, seasonTable: seasonTable, seasonCup: seasonCup, swapTarget: swapTarget, MIN_SPIN: MIN_SPIN, MIN_OPP: MIN_OPP, NAMES: NAMES, SKIP: SKIP, BRAND_WORDS: BRAND_WORDS,
-    clubName: clubName, eraOf: eraOf, personKey: personKey, build: build, strength: strength, opponents: opponents, spin: spin,
+    clubName: clubName, eraOf: eraOf, personKey: personKey, build: build, buildPool: buildPool, mergeUnits: mergeUnits, POOL_SQUAD: POOL_SQUAD, spinWeight: spinWeight, strength: strength, opponents: opponents, spin: spin,
     cupWords: cupWords, chip: chip };
   root.RTPClub = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

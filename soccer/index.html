@@ -4719,7 +4719,7 @@ window.GA_ID='G-L29P5MRWKE';
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
 <script src="/gameLogic.js?v=0.0.32"></script>
 <!-- The club side: Club Draft and The Club Cup (soccer/club.js, checked by soccer/check-club.mjs). -->
-<script src="/soccer/club.js?v=2"></script>
+<script src="/soccer/club.js?v=3"></script>
 <!-- The player dataset is fetched async by boot() (data/players_all.json), so it
      no longer blocks first paint. The players_all.js wrapper is loaded on demand
      only as a file:// fallback (see loadEmbeddedPlayers). -->
@@ -4893,11 +4893,32 @@ let CLUB = null;          // { units, byKey, names, wcScale }, built on first us
 let sideClub = false;     // which side the setup screen is starting a draft for
 function isClub(){ return !!(gs && gs.club); }
 function clubPreviewOn(){ try{ return localStorage.getItem('rtp_club_preview')==='1'; }catch(e){ return false; } }
+// The club pool (data/club_players.json, the Rosters Agent's): who else was at a
+// club besides its World Cup men. It refreshes itself monthly and cannot bump a
+// version here, so it is fetched with no ?v= and revalidated every visit
+// (cache: 'no-cache'). It loads when the club side's door shows or is used, never
+// for a World Cup visit. If it cannot be had in 6 seconds the club side plays on
+// the World Cup squads alone, as it did before the pool existed.
+let CLUB_POOL=null, clubPoolAsk=null;
+function loadClubPool(){
+  if(clubPoolAsk) return clubPoolAsk;
+  const ask=fetch('/data/club_players.json', { cache:'no-cache' })
+    .then(r=>r.ok ? r.json() : null)
+    .then(d=>{ if(d && d.clubs && Array.isArray(d.players)){ CLUB_POOL=d; CLUB=null; } return CLUB_POOL; })
+    .catch(()=>null);
+  clubPoolAsk=Promise.race([ask, new Promise(r=>setTimeout(()=>r(null), 6000))]);
+  return clubPoolAsk;
+}
 function clubData(){
   if(CLUB) return CLUB;
   const all=[];
   G.getAllCountries().forEach(c=>G.getYearsForCountry(c).forEach(y=>{ G.getSquad(c,y).forEach(p=>all.push(p)); }));
-  const units=RTPClub.build(all), byKey={}, wc={};
+  let units=RTPClub.build(all);
+  if(CLUB_POOL){   // the pool's squads replace the World Cup ones for the clubs and decades it lists
+    const byId={}; all.forEach(p=>{ byId[p.player_id]=p; });
+    units=RTPClub.mergeUnits(units, RTPClub.buildPool(CLUB_POOL, byId));
+  }
+  const byKey={}, wc={};
   units.forEach(u=>{ byKey[u.club+'|'+u.era]=u; });
   // the World Cup opponent pool's ratings: the scale the cup's sides are placed on
   all.forEach(p=>{ if(p.team_overall!=null && p.year!==2026) wc[p.country+'|'+p.year]=p.team_overall; });
@@ -4929,7 +4950,7 @@ function clubOpponentPool(){
   const d=clubData();
   return RTPClub.opponents(d.units, d.wcScale).map(o=>Object.assign({}, o, getOpponentPositionalRatings(o.squad, o.teamOverall)));
 }
-function startClubSetup(){ sideClub=true; goToDraftSetup(); }
+function startClubSetup(){ sideClub=true; loadClubPool(); goToDraftSetup(); }
 
 // ============================================================
 //  THE CLUB SEASON
@@ -5400,7 +5421,7 @@ async function boot(){
   const bLabel = b.querySelector('.btn-label');
   if(bLabel) bLabel.textContent = 'START WORLD CUP'; else b.textContent = 'START WORLD CUP';
   const bc = $('btn-club');
-  if(bc && clubPreviewOn()){ bc.style.display=''; }   // the club side's preview door
+  if(bc && clubPreviewOn()){ bc.style.display=''; loadClubPool(); }   // the club side's preview door (and its pool, ahead of the first tap)
   const bd = $('btn-daily');
   if(bd){ bd.style.display=''; }   // Daily Challenge is live
   const bdb = $('btn-daily-board');
@@ -6369,6 +6390,8 @@ function statLine(p){
   const has = v => v!==null && v!==undefined;
   const seg = [];
 
+  // A club pool man who never went to a World Cup has no caps on file: his birth year stands in.
+  if(p.club_side && p.club_side.rated==='rule') return p.born ? `Born ${p.born}` : '';
   // caps is core for every position, always show (dash if unknown).
   seg.push(`${d(p.appearances)} caps`);
   // goals only when we actually have a value (null = unknown, e.g. 2026).
@@ -6434,7 +6457,7 @@ function renderGrid(squad){
         <span class="posbadge ${p.position}">${p.position}</span>
       </div>
       ${statHtml}
-      ${p.club_side?`<div class="club-wcs" title="World Cups he went to from this club">${flagChip(p.country)} ${escapeHtml(p.country)} · WC ${p.club_side.wcs.map(y=>"'"+String(y).slice(2)).join(' ')}</div>`:''}
+      ${p.club_side?`<div class="club-wcs" title="${p.club_side.wcs.length?'World Cups he went to':'He never went to a World Cup'}">${p.country?flagChip(p.country)+' '+escapeHtml(p.country):''}${p.club_side.wcs.length?(p.country?' · ':'')+'WC '+p.club_side.wcs.map(y=>"'"+String(y).slice(2)).join(' '):''}</div>`:''}
       <div class="pbottom">
         ${cardStatBlock(p)}
         ${cardBottomRight(p, taken)}
@@ -9115,6 +9138,8 @@ function normName(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toL
 const POS_LABEL = {GK:'Goalkeeper',DEF:'Defender',MID:'Midfielder',FWD:'Forward'};
 
 function openProfile(p){
+  // The profile sheet is a man's World Cup record. A club pool man who never went to one has none.
+  if(p && p.club_side && p.club_side.rated==='rule'){ if(typeof showToast==='function') showToast(`${p.name} never went to a World Cup`); return; }
   const target=normName(p.name);
   const all=(window.PLAYERS||[]).filter(x=>normName(x.name)===target)
     .sort((a,b)=>(a.year-b.year) || a.country.localeCompare(b.country));
@@ -10053,7 +10078,11 @@ $('seg-mode').querySelectorAll('.seg-opt').forEach(opt=>{
   });
 });
 // Start Draft. Quick = 6-man; Full = 11-man flex builder (no formation wheel).
-$('btn-setup-go').addEventListener('click',()=>{
+$('btn-setup-go').addEventListener('click',async ()=>{
+  if(sideClub){   // the club pool, if it is still on its way (6 seconds at most)
+    const b=$('btn-setup-go'); if(b.disabled) return;
+    b.disabled=true; try{ await loadClubPool(); }catch(e){} b.disabled=false;
+  }
   gs = (draftType==='full')
     ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full: (gameMode==='easy'?2:1) } })
     : G.createGameState();
