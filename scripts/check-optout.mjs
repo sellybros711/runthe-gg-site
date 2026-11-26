@@ -14,10 +14,10 @@
  *     data-restrict-data-processing="1" at the moment it is pushed to Google;
  *  4. the same with only Global Privacy Control on, and no click at all.
  *
- * ADSENSE IS A STAND-IN. It never calls Google (the account-safety rule). When it loads it replaces
- * window.adsbygoogle with its own object, the way adsbygoogle.js does, so the check covers the
- * moment the page's queue hands over to Google. It records, unit by unit, whether the unit carried
- * the attribute when Google would have read it. Every other outside host is refused.
+ * ADSENSE IS A STAND-IN. It never calls Google (the account-safety rule). It takes over the page's
+ * queue both ways the real tag might: by putting a new object in window.adsbygoogle, and by setting
+ * its own push on the page's array. It records, unit by unit, whether the unit carried the attribute
+ * when Google would have read it. Every other outside host is refused.
  */
 import fs from 'fs';
 import path from 'path';
