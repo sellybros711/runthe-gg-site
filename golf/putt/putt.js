@@ -5707,7 +5707,81 @@ var MEMBER_LEVELS = [
     addBlock(H, -9.1, -34.4, -4.1, -36.1, 'mctable'); addBlock(H, 4.6, -22.9, 9.9, -24.4, 'mctable');
     rocks(H, [[-4.6, -6.4, 0.5, 'mcurn'], [4.6, -7.1, 0.5, 'mcurn'], [-6.9, -22.6, 0.5, 'mcarmour'], [7.4, -33.6, 0.5, 'mcarmour'], [-8.1, -29.4, 0.45, 'mccandela'], [4.9, -49.1, 0.5, 'mcarmour'], [6.6, -57.4, 0.45, 'mccandela'], [-7.9, -48.6, 0.45, 'mcurn']]);
     H.comps.push({ k:'plane', gx:-0.0049, gy:0.0026 }); H.comps.push({ k:'mound', x:3.4, y:-54.6, s:1.9, a:0.12 }); zoneC(H, M.MUD, -6.1, -11.1, 0.5); zoneC(H, M.MUD, 7.9, -37.6, 0.5);
-    pen(H, T, -3.6, -56.6); teeSide(H, T); bowl(H, -3.6, -56.6, 1.5, 0.14); return H; } }
+    pen(H, T, -3.6, -56.6); teeSide(H, T); bowl(H, -3.6, -56.6, 1.5, 0.14); return H; } },
+  // ---- FROST HOLLOW: nine holes, one winter idea each, like Hallows Night and Monster Castle. Not harder than the tour, its own.
+  // The Frozen Pond: the village pond has frozen hard, all but the round hole a fisherman cut in the ice. The ball glides on the
+  // ice, so a soft putt runs a long way; keep it off the fishing hole and up the far bank to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-7.1, 0], [6.6, 0], [10.6, -9.1], [12.2, -21.1], [10.4, -33.1], [4.1, -41.1], [-4.9, -41.6], [-10.9, -34.1], [-12.1, -21.6], [-9.9, -8.9]])], [0.4, -2.5], [-4.4, -36.4]);
+    zoneC(H, M.ICE, 0.6, -19.6, 6.4); zoneC(H, M.ICE, 3.6, -15.9, 3.6); zoneC(H, M.ICE, -2.6, -23.4, 3.9); zoneC(H, M.WATER, 2.9, -22.6, 1.3);
+    rocks(H, [[-4.6, -7.4, 0.5, 'fhfir'], [4.9, -7.9, 0.5, 'fhfir'], [-8.6, -27.1, 0.55, 'fhfir'], [8.6, -26.6, 0.55, 'fhfir'], [3.9, -34.1, 0.5, 'fhstone'], [-9.1, -13.6, 0.45, 'fhstone'], [7.6, -14.6, 0.45, 'fhlamp'], [5.4, -22.9, 0.4, 'fhstool'], [0.6, -38.6, 0.45, 'fhfir']]);
+    addBlock(H, -9.9, -30.9, -6.1, -32.4, 'fhsnow');
+    H.comps.push({ k:'plane', gx:0.0047, gy:-0.0031 }); H.comps.push({ k:'mound', x:5.9, y:-31.4, s:1.8, a:0.12 }); zoneC(H, M.MUD, -6.6, -19.1, 0.55);
+    pen(H, T, -4.4, -36.4); teeSide(H, T); bowl(H, -4.4, -36.4, 1.5, 0.14); return H; } },
+  // Kai's Sled: the town square in the snow, and right across it the Snow Queen's road, where her great white sleigh drives by and
+  // takes every sled tied to it along. The road carries the ball to the right as it crosses, so play up the left of it.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.6, 0], [6.4, 0], [9.4, -10.4], [10.6, -22.1], [8.6, -34.6], [1.6, -41.4], [-6.4, -40.6], [-11.2, -31.4], [-11.6, -19.6], [-9.4, -8.4]])], [0.6, -2.5], [-4.6, -35.6]);
+    belt(H, -11.8, -15.4, 10.8, -20.6, 4.4, 0);
+    rocks(H, [[-4.4, -7.6, 0.5, 'fhlamp'], [4.6, -8.1, 0.5, 'fhfir'], [-7.6, -12.1, 0.45, 'fhstone'], [7.4, -12.9, 0.45, 'fhlamp'], [-8.4, -25.6, 0.5, 'fhfir'], [6.9, -26.9, 0.5, 'fhwell'], [0.4, -30.4, 0.5, 'fhlamp'], [-1.1, -39.1, 0.45, 'fhfir'], [5.4, -36.1, 0.45, 'fhstone']]);
+    addBlock(H, 2.9, -31.6, 7.4, -33.1, 'fhsnow');
+    H.comps.push({ k:'plane', gx:-0.0044, gy:-0.0033 }); H.comps.push({ k:'mound', x:-6.9, y:-30.1, s:1.8, a:0.12 }); zoneC(H, M.MUD, 4.1, -24.4, 0.55);
+    pen(H, T, -4.6, -35.6); teeSide(H, T); bowl(H, -4.6, -35.6, 1.5, 0.14); return H; } },
+  // Gerda's Boat: the river runs down between steep snowy banks, and the little boat Gerda climbed into waits at the near bank.
+  // Roll onto it while it waits, let the river carry it up to the far landing, and putt out from there.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-7.4, 0], [5.9, 0], [8.1, -6.1], [6.9, -12.1], [-6.4, -12.1], [-8.9, -5.9]]), rm(-2.6, -11.9, 2.6, -28.1), pg([[-8.6, -27.9], [8.9, -27.9], [11.1, -36.9], [6.4, -45.6], [-3.6, -46.4], [-10.1, -39.4]])], [-0.6, -2.5], [4.9, -41.1]);
+    zoneR(H, M.WATER, -2.6, -12.1, 2.6, -27.9); ferry(H, -2.5, -11.6, 2.5, -16.4, 0, -11.9, 3.6, 1.6, 0);
+    rocks(H, [[-4.9, -6.9, 0.5, 'fhfir'], [4.4, -5.9, 0.5, 'fhreed'], [-6.1, -10.4, 0.45, 'fhreed'], [5.1, -10.6, 0.45, 'fhstone'], [-6.4, -31.4, 0.5, 'fhreed'], [6.6, -31.9, 0.5, 'fhfir'], [-7.4, -38.6, 0.5, 'fhfir'], [-0.6, -36.6, 0.5, 'fhstone'], [0.9, -44.1, 0.45, 'fhfir']]);
+    addBlock(H, -5.6, -41.6, -1.9, -43.1, 'fhsnow');
+    H.comps.push({ k:'plane', gx:0.0042, gy:0.0029 }); H.comps.push({ k:'mound', x:-4.4, y:-34.1, s:1.7, a:0.12 }); zoneC(H, M.MUD, 7.9, -36.1, 0.5);
+    pen(H, T, 4.9, -41.1); teeSide(H, T); bowl(H, 4.9, -41.1, 1.5, 0.14); return H; } },
+  // The Reindeer's Leap: a frozen stream splits the forest, and the only way over it is the reindeer's leap, a snow bank that throws
+  // the ball across to the far wood. Hit the leap firmly, to the right, then up through the far wood to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-12.6, 0], [-2.0, 0], [-2.0, -12.4], [-5.9, -14.6], [-11.9, -12.9], [-13.6, -6.1]]), rm(-2.1, -3.6, 0.7, -9.6), pg([[0.6, -1.4], [7.4, -0.4], [12.9, -9.6], [14.4, -22.1], [11.1, -34.4], [3.1, -37.4], [0.6, -24.1]])], [-8.6, -2.5], [7.4, -30.6]);
+    jump(H, -2.0, -6.6, 1, 0, 2.6, 6.0, { h:0.6, ang:34 });
+    rocks(H, [[-11.4, -9.6, 0.5, 'fhfir'], [-7.4, -12.1, 0.5, 'fhfir'], [-4.4, -11.6, 0.45, 'fhstone'], [4.6, -3.4, 0.5, 'fhstone'], [11.1, -9.6, 0.5, 'fhfir'], [12.4, -21.4, 0.5, 'fhfir'], [2.6, -21.1, 0.5, 'fhfir'], [11.4, -30.4, 0.45, 'fhstone'], [3.4, -33.6, 0.45, 'fhfir'], [1.9, -12.4, 0.45, 'fhreed']]);
+    addBlock(H, 6.1, -19.4, 10.6, -20.9, 'fhsnow');
+    H.comps.push({ k:'plane', gx:0.0039, gy:-0.0034 }); H.comps.push({ k:'mound', x:9.4, y:-14.1, s:1.7, a:0.12 }); zoneC(H, M.MUD, 3.4, -27.6, 0.5);
+    pen(H, T, 7.4, -30.6); teeSide(H, T); bowl(H, 7.4, -30.6, 1.5, 0.14); return H; } },
+  // The Nutcracker: the great Nutcracker stands guard across the parlour, and the only way past is between his jaws. They open
+  // and snap shut on his clock, both halves at once. Through while they are open, then round to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.9, 0], [7.1, 0], [10.1, -9.6], [11.1, -21.6], [9.4, -34.1], [2.4, -41.1], [-6.4, -40.1], [-11.1, -31.1], [-11.4, -19.4], [-9.6, -8.1]])], [0.2, -2.5], [5.1, -35.4]);
+    addBlock(H, -11.6, -18.6, -4.4, -20.4, 'fhsnow'); addBlock(H, -4.4, -18.1, -1.6, -20.9, 'fhnut'); addBlock(H, 1.6, -18.1, 4.4, -20.9, 'fhnut'); addBlock(H, 4.4, -18.6, 11.6, -20.4, 'fhsnow');
+    gateAt(H, T, -19.5, -1.6, 0, 3.2, 0, -1); gateAt(H, T, -19.5, 0, 1.6, 3.2, 0, 1); H.movers[H.movers.length - 2].skin = 'fhjaw'; H.movers[H.movers.length - 1].skin = 'fhjaw';
+    rocks(H, [[-4.9, -7.6, 0.5, 'fhsoldier'], [4.6, -8.4, 0.5, 'fhsoldier'], [-7.4, -13.4, 0.45, 'fhdrum'], [7.6, -13.6, 0.45, 'fhdrum'], [-6.6, -27.4, 0.5, 'fhsoldier'], [-1.4, -31.6, 0.5, 'fhdrum'], [-6.1, -36.1, 0.45, 'fhfir'], [8.4, -26.4, 0.45, 'fhsoldier']]);
+    H.comps.push({ k:'plane', gx:0.0051, gy:0.0026 }); H.comps.push({ k:'mound', x:-3.9, y:-24.6, s:1.8, a:0.12 }); zoneC(H, M.MUD, 6.9, -24.9, 0.5);
+    pen(H, T, 5.1, -35.4); teeSide(H, T); bowl(H, 5.1, -35.4, 1.5, 0.14); return H; } },
+  // Drosselmeyer's Clock: the godfather's great clock face is set into the floor of the hall, and its two hands sweep round it,
+  // the long one quicker than the short. Read the hands, cross the face, and up to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-5.9, 0], [6.1, 0], [7.4, -8.4], [5.4, -12.6], [9.9, -16.6], [10.9, -24.1], [6.9, -30.4], [8.6, -36.6], [3.4, -42.6], [-4.9, -42.1], [-8.9, -35.6], [-6.4, -30.1], [-10.6, -23.4], [-9.4, -16.1], [-5.1, -12.4], [-7.6, -7.6]])], [-0.4, -2.5], [-3.9, -37.4]);
+    spinner(H, T, 0.2, -21.4, 2.6, 0.55, 1); spinner(H, T, 0.2, -21.4, 4.1, -1.05, 1); H.movers[H.movers.length - 1].phase = 2.2;
+    rocks(H, [[0.2, -14.9, 0.4, 'fhnumeral'], [6.8, -21.4, 0.4, 'fhnumeral'], [0.2, -27.9, 0.4, 'fhnumeral'], [-6.4, -21.4, 0.4, 'fhnumeral'], [-4.4, -6.9, 0.5, 'fhfir'], [4.4, -6.4, 0.5, 'fhlamp'], [5.4, -38.1, 0.45, 'fhfir'], [-6.6, -33.9, 0.45, 'fhstone']]);
+    addBlock(H, 1.4, -33.6, 5.4, -35.1, 'fhsnow');
+    H.comps.push({ k:'plane', gx:-0.0045, gy:-0.0027 }); H.comps.push({ k:'mound', x:3.9, y:-30.9, s:1.6, a:0.12 }); zoneC(H, M.MUD, -2.9, -10.6, 0.5); zoneC(H, M.MUD, 6.1, -9.1, 0.45);
+    pen(H, T, -3.9, -37.4); teeSide(H, T); bowl(H, -3.9, -37.4, 1.5, 0.14); return H; } },
+  // The Sugar Wood: past the Nutcracker's door is the wood Hoffmann wrote of, the firs hung with sugared fruit and gingerbread, and
+  // a grove of them stands right between the tee and the cup. Two sugar boards lean at its corners; bank off one and round.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-6.4, 0], [6.9, 0], [10.9, -8.9], [12.6, -21.1], [10.9, -33.6], [3.9, -41.4], [-5.4, -41.9], [-11.4, -33.9], [-12.9, -21.1], [-10.4, -8.6]])], [0.6, -2.5], [-1.4, -36.9]);
+    addBlock(H, -3.6, -17.4, 3.4, -25.6, 'fhgrove'); board(H, T, -11.6, -26.9, -7.4, -31.9, 0.8); H.blocks[H.blocks.length - 1].skin = 'fhboard'; board(H, T, 11.9, -26.4, 7.6, -31.6, 0.8); H.blocks[H.blocks.length - 1].skin = 'fhboard';
+    rocks(H, [[-4.4, -7.1, 0.5, 'fhsugar'], [4.9, -7.6, 0.5, 'fhsugar'], [-7.4, -14.1, 0.5, 'fhsugar'], [7.9, -14.6, 0.5, 'fhplum'], [-5.6, -28.1, 0.45, 'fhplum'], [5.1, -28.4, 0.45, 'fhsugar'], [-6.4, -37.4, 0.45, 'fhsugar'], [4.6, -37.9, 0.45, 'fhplum'], [8.9, -21.4, 0.45, 'fhsugar']]);
+    H.comps.push({ k:'plane', gx:0.0043, gy:-0.0032 }); H.comps.push({ k:'mound', x:-8.9, y:-20.6, s:1.8, a:0.12 }); zoneC(H, M.MUD, 6.4, -33.6, 0.5); zoneC(H, M.MUD, -8.1, -10.4, 0.5);
+    pen(H, T, -1.4, -36.9); teeSide(H, T); bowl(H, -1.4, -36.9, 1.5, 0.14); return H; } },
+  // Jack Frost's Hill: Jack Frost has piled the snow into a round hill right on the line, and frosted it hard. A soft ball turns
+  // off its shoulder; a firm one goes over the top. Or bend it round the side.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-7.4, 0], [6.1, 0], [9.9, -9.4], [11.9, -22.1], [9.6, -34.4], [2.9, -41.9], [-6.1, -41.1], [-11.4, -32.4], [-12.4, -20.4], [-10.1, -8.9]])], [-0.6, -2.5], [3.9, -36.6]);
+    H.comps.push({ k:'mound', x:0.4, y:-20.4, s:3.6, a:0.55 });
+    rocks(H, [[-4.9, -7.1, 0.5, 'fhfern'], [4.4, -6.6, 0.5, 'fhfir'], [-8.4, -14.9, 0.5, 'fhfir'], [8.1, -15.9, 0.5, 'fhfern'], [-8.9, -27.6, 0.5, 'fhfern'], [8.6, -27.1, 0.5, 'fhfir'], [-4.1, -35.6, 0.45, 'fhfir'], [-0.9, -40.1, 0.45, 'fhfern'], [8.1, -33.1, 0.4, 'fhstone']]);
+    addBlock(H, -2.4, -30.6, 1.6, -32.1, 'fhsnow');
+    H.comps.push({ k:'plane', gx:-0.0046, gy:0.0028 }); H.comps.push({ k:'mound', x:-6.4, y:-33.4, s:1.6, a:0.12 }); zoneC(H, M.MUD, 6.9, -10.9, 0.5); zoneC(H, M.MUD, -6.6, -21.6, 0.5);
+    pen(H, T, 3.9, -36.6); teeSide(H, T); bowl(H, 3.9, -36.6, 1.5, 0.14); return H; } },
+  // Frost Hollow, the signature hole: up the snow stair to the Snow Queen's hall, across the frozen lake she calls the Mirror of
+  // Reason, its pieces lying about it, and over Kai's ice word in the floor, which opens the door of the inner hall for a few
+  // seconds. Through it and down to the cup.
+  { par:4, three:3, sig:true, f:function(T){ var H = hole([pg([[-6.6, 0], [6.9, 0], [8.9, -7.1], [7.6, -13.4], [-7.9, -13.4], [-8.6, -6.4]]), pg([[-9.6, -17.4], [9.1, -17.4], [11.9, -27.6], [10.4, -38.4], [-9.4, -38.4], [-11.6, -28.4]], 0.8), pg([[-10.4, -38.3], [10.4, -38.3], [11.6, -48.9], [6.1, -57.1], [-3.9, -57.9], [-10.9, -51.4]], 0.8)], [0.6, -2.5], [4.1, -52.4]);
+    climb(H, -2.6, -13.4, -17.4, 2.6);
+    zoneC(H, M.ICE, 1.1, -27.4, 5.4); zoneC(H, M.ICE, -3.6, -30.1, 3.4); zoneC(H, M.ICE, 4.9, -24.4, 3.1);
+    addBlock(H, -9.9, -37.6, -2.6, -39.1, 'fhice'); addBlock(H, 1.4, -37.6, 10.9, -39.1, 'fhice'); switchDoor(H, T, -38.35, -2.6, 1.4, 4.6, -31.9, 5); H.movers[H.movers.length - 1].skin = 'fhdoor';
+    rocks(H, [[-4.4, -6.6, 0.5, 'fhfir'], [4.6, -7.1, 0.5, 'fhfir'], [-7.4, -22.6, 0.5, 'fhshard'], [7.6, -21.9, 0.5, 'fhshard'], [-8.1, -31.9, 0.45, 'fhshard'], [8.4, -33.1, 0.45, 'fhshard'], [-0.6, -33.6, 0.45, 'fhshard'], [-6.4, -47.6, 0.5, 'fhshard'], [8.1, -46.1, 0.45, 'fhshard'], [-2.6, -54.1, 0.45, 'fhfir']]);
+    H.comps.push({ k:'plane', gx:0.0044, gy:0.0027 }); H.comps.push({ k:'mound', x:-4.9, y:-51.1, s:1.8, a:0.12 }); zoneC(H, M.MUD, 6.1, -10.9, 0.5); zoneC(H, M.MUD, -7.4, -43.1, 0.5);
+    pen(H, T, 4.1, -52.4); teeSide(H, T); bowl(H, 4.1, -52.4, 1.5, 0.14); return H; } }
 ];
 /* THE LAB: a tester-only test world of six prototype holes, before any of it touches the ninety. Three
    are classic golf architecture brought to the carpet (the Redan's kick, the Cape's bite, the Biarritz
@@ -6730,42 +6804,44 @@ var SKIN = {
     if (v < -0.34) return Math.abs(u) < 0.03 ? '#1a1410' : null; if (v > 0.66) return Math.abs(u) < 0.42 ? '#8a6a20' : null; return Math.abs(u) < 0.2 ? (u < -0.06 ? '#fff8ec' : '#e8dcc8') : null; },
   mckey:function(u, v){ if (Math.abs(u) > 0.8 || Math.abs(v) > 0.4) return null; var d = Math.hypot(u + 0.5, v); if (d < 0.32) return d < 0.16 ? null : '#6a6676';
     if (Math.abs(v) < 0.07 && u > -0.2 && u < 0.72) return '#8a8698'; if (u > 0.4 && u < 0.72 && v > 0 && v < 0.3 && ((u * 10) | 0) % 2) return '#8a8698'; return null; },
-  // ---- Frost Hollow, drawn plain and bold on a winter night: a snowy fir from above, its tiers of boughs and the snow on their
-  // tips; a round stone capped with snow; an iron lamp with its warm glass; a fisherman's stool by the ice; the town well; a clump of
-  // frozen reeds; a toy soldier seen from above, his tall black shako and its gold plate between red shoulders; his drum; a brass
-  // numeral boss of Drosselmeyer's clock; a fir of the Sugar Wood hung with sugared fruit; a sugarplum; a frost fern of Jack
+  // ---- Frost Hollow, drawn plain and bold on a winter night, the things that stand about side on: a snowy fir, its tiers of
+  // boughs and the snow on each; a stone capped with snow; a street lamp; a fisherman's stool by the ice; the town well under its
+  // little roof; a clump of frozen reeds; a toy soldier, his tall black shako, red coat and white trousers; his drum; a brass
+  // numeral plate of Drosselmeyer's clock; a fir of the Sugar Wood hung with sugared fruit; a sugarplum; a frost fern of Jack
   // Frost's; a piece of the Snow Queen's frozen lake; packed snow; clear ice; the Nutcracker's violet hussar's jacket and its white braid (Hoffmann's, not a later toy's red); a grove of
   // sugared firs; a gingerbread board iced in white; the Nutcracker's painted jaw (the gate); the palace door of ice (the switch
   // door); a wooden sled; and, about the course, a six pointed snowflake and a little lantern
-  fhfir:function(u, v){ var r = Math.hypot(u, v); if (r > 0.92) return null; var a = Math.atan2(v, u), arm = Math.abs(Math.sin(a * 4)), tier = r * 3 % 1;
-    if (r > 0.38 + arm * 0.5) return null; if (r < 0.12) return '#3a2a1e'; if (tier > 0.62 && arm > 0.4) return '#f4f8fc'; return u + v < -0.2 ? '#2e6a52' : (Math.floor(r * 6) % 2 ? '#1e4a3a' : '#245440'); },
-  fhstone:function(u, v){ var r = Math.hypot(u * 1.05, v) + Math.sin(Math.atan2(v, u) * 5) * 0.04; if (r > 0.9) return null; if (r > 0.78) return '#4a5468';
-    if (u + v < -0.1 && r < 0.66) return Math.sin(u * 9 + v * 7) > 0.85 ? '#dfe8f2' : '#f4f8fc'; return u + v < 0.3 ? '#8a94a8' : '#6a7488'; },
-  fhlamp:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; if (r > 0.72) return '#1e2230'; if (r > 0.56) return Math.abs(u) < 0.08 || Math.abs(v) < 0.08 ? '#1e2230' : '#ffd27a';
-    if (r < 0.2) return '#fff4c0'; return r < 0.34 ? '#ffe08a' : '#2a2e3e'; },
-  fhstool:function(u, v){ var r = Math.hypot(u, v); if (r > 0.8) return null; if (r > 0.68) return '#4a2e18'; if (Math.abs(((u + 1) * 4) % 1 - 0.5) < 0.06) return '#5a3a20';
-    return u + v < -0.2 ? '#a8784a' : '#8a5e36'; },
-  fhwell:function(u, v){ var r = Math.hypot(u, v); if (r > 0.92) return null; if (r > 0.62){ var a = Math.atan2(v, u); if (v < -0.4 && r > 0.74) return '#f4f8fc'; return Math.floor((a + 4) * 3) % 2 ? '#8a94a8' : '#6e7890'; }
-    if (r > 0.52) return '#3a4254'; return r < 0.2 ? '#2a4a6a' : '#14243a'; },
-  fhreed:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; for (var k = 0; k < 7; k++){ var a = k * 0.9, cx = Math.cos(a) * 0.38 * (k % 2 ? 1 : 0.55), cy = Math.sin(a) * 0.38 * (k % 2 ? 1 : 0.55), d = Math.hypot(u - cx, v - cy);
-      if (d < 0.1) return '#6a4a2a'; if (d < 0.16) return '#c8a870'; }
-    return r < 0.7 ? (Math.sin(u * 11 + v * 7) > 0.4 ? '#b8c4a0' : '#8a9a78') : null; },
-  fhsoldier:function(u, v){ var r = Math.hypot(u, v); if (r > 0.9) return null; if (Math.hypot(Math.abs(u) - 0.5, v + 0.04) < 0.34) return Math.hypot(Math.abs(u) - 0.5, v + 0.04) < 0.12 ? '#e8c060' : '#c8302a';   // the red shoulders, gold epaulettes
-    if (r < 0.4){ if (Math.abs(u) < 0.14 && v > 0.08 && v < 0.3) return '#e8c060'; return u + v < -0.2 ? '#3a3a44' : '#14141c'; }   // the shako and its plate
-    return r > 0.78 ? '#7a1a1a' : '#a8243a'; },
-  fhdrum:function(u, v){ var r = Math.hypot(u, v); if (r > 0.84) return null; if (r > 0.7) return Math.floor((Math.atan2(v, u) + 4) * 4) % 2 ? '#e8c060' : '#c8302a';
-    if (Math.abs(r - 0.62) < 0.05) return '#1e3a8a'; if (Math.hypot(u - 0.2, v + 0.2) < 0.08 || Math.hypot(u + 0.25, v - 0.15) < 0.08) return '#d8c8a8'; return u + v < -0.2 ? '#fffaf0' : '#efe8d8'; },
-  fhnumeral:function(u, v){ var r = Math.hypot(u, v); if (r > 0.86) return null; if (r > 0.72) return '#8a6a20'; var bar = Math.abs(v) < 0.42 && (Math.abs(u) < 0.07 || Math.abs(u - 0.26) < 0.07 || Math.abs(u + 0.26) < 0.07);
-    if (bar) return '#2a1a08'; return u + v < -0.2 ? '#f4d878' : '#d8b048'; },
-  fhsugar:function(u, v){ var r = Math.hypot(u, v); if (r > 0.92) return null; var a = Math.atan2(v, u), arm = Math.abs(Math.sin(a * 4)); if (r > 0.38 + arm * 0.5) return null;
-    for (var k = 0; k < 4; k++){ var fa = k * 1.571 + 0.4, d = Math.hypot(u - Math.cos(fa) * 0.5, v - Math.sin(fa) * 0.5); if (d < 0.11) return ['#e8402a', '#f4c040', '#c86ad8', '#4ac868'][k]; }
-    if (r < 0.12) return '#3a2a1e'; if (Math.sin(u * 23 + v * 19) > 0.72) return '#ffffff'; return u + v < -0.2 ? '#2e6a52' : '#1e4a3a'; },
-  fhplum:function(u, v){ var r = Math.hypot(u, v * 1.08); if (r > 0.82) return null; if (Math.hypot(u + 0.06, v + 0.62) < 0.1) return '#5a3a1a';
-    if (Math.sin(u * 27) * Math.cos(v * 25) > 0.82) return '#ffffff'; return r > 0.7 ? '#4a1a5a' : u + v < -0.3 ? '#a85ad0' : '#7a3aa8'; },
-  fhfern:function(u, v){ var r = Math.hypot(u, v); if (r > 0.9) return null; var a = Math.atan2(v, u), k = Math.round(a / 1.047) * 1.047, du = Math.cos(k), dv = Math.sin(k), al = u * du + v * dv, lat = Math.abs(-u * dv + v * du);
-    if (al > 0 && lat < 0.05 + 0.02 * al) return '#ffffff'; if (al > 0.1 && Math.abs(lat - (al % 0.18) * 1.2) < 0.05) return '#dff2ff'; return r < 0.24 ? '#cfe8f8' : (r < 0.8 ? '#9ac8e8' : null); },
-  fhshard:function(u, v){ var au = Math.abs(u), av = Math.abs(v); if (au * 0.9 + av > 0.9 || (u > 0.1 && v > 0.3)) return null; if (au * 0.9 + av > 0.76) return '#6aa8d8';
-    if (Math.abs(u - v * 0.4) < 0.04) return '#ffffff'; return u + v < -0.1 ? '#e6f6fe' : '#b8dcf4'; },
+  fhfir:function(u, v){ var au = Math.abs(u); if (v > 0.98 || v < -0.98) return null; if (v > 0.72) return au < 0.12 ? '#3a2a1e' : null;   // a snowy fir, side on: three tiers of boughs, snow on each
+    var tier = (v + 0.98) / 1.7 * 3, f = tier - Math.floor(tier), w = (0.25 + (v + 0.98) / 1.7 * 0.65) * (0.55 + 0.45 * f); if (au > w) return null;
+    if (f < 0.28 && au > w * 0.3) return '#f4f8fc'; if (v < -0.85) return '#f4f8fc'; return u < -0.1 ? '#2e6a52' : (Math.floor(v * 6) % 2 ? '#1e4a3a' : '#245440'); },
+  fhstone:function(u, v){ var r = Math.hypot(u, (v - 0.12) / 0.7) + Math.sin(u * 7 + v * 3) * 0.03; if (r > 0.92) return null; if (v < -0.1 + Math.sin(u * 5) * 0.12) return r > 0.8 ? '#c8d8e8' : '#f4f8fc';
+    return r > 0.8 ? '#3e4454' : u < -0.2 ? '#8a94a8' : '#6a7488'; },
+  fhlamp:function(u, v){ var au = Math.abs(u); if (v < -0.95 || v > 0.98) return null; if (v < -0.82) return au < 0.3 - (v + 0.95) * 0.6 ? '#f4f8fc' : null;   // a street lamp, its cap of snow
+    if (v < -0.44) return au < 0.3 ? (au < 0.2 && Math.abs(v + 0.63) < 0.15 ? '#ffd27a' : '#1e2230') : null; if (v > 0.84) return au < 0.26 ? '#1e2230' : null; return au < 0.07 ? '#2a2e3e' : null; },
+  fhstool:function(u, v){ var au = Math.abs(u); if (v < -0.1 || v > 0.95) return null; if (v < 0.08) return au < 0.7 ? (v < 0 ? '#f4f8fc' : '#a8784a') : null;   // a fisherman's stool, snow on its seat
+    return Math.abs(au - 0.5) < 0.08 ? '#6a4626' : null; },
+  fhwell:function(u, v){ var au = Math.abs(u); if (v < -0.95 || v > 0.95) return null; if (v < -0.62) return au < 0.9 - (v + 0.95) * 0.9 ? (v < -0.82 ? '#f4f8fc' : '#6a3a22') : null;   // the town well: its little roof
+    if (v < 0.2) return Math.abs(au - 0.7) < 0.07 ? '#5a3a20' : (Math.abs(v + 0.25) < 0.04 && au < 0.6 ? '#3a2a1e' : null); return au < 0.82 ? (Math.floor((v + 1) * 5 + (au * 4 | 0)) % 2 ? '#8a94a8' : '#6e7890') : null; },
+  fhreed:function(u, v){ if (v > 0.95 || v < -0.95) return null; for (var k = -2; k <= 2; k++){ var x = k * 0.22 + Math.sin(k * 2.1) * 0.05 + (v + 1) * k * 0.04, top = -0.85 + Math.abs(k) * 0.18;
+      if (v < top) continue; if (Math.abs(u - x) < 0.06 && v < top + 0.28) return '#6a4a2a'; if (Math.abs(u - x) < 0.025) return v > 0.7 ? '#8a9a78' : '#b8a878'; } return null; },
+  fhsoldier:function(u, v){ var au = Math.abs(u); if (v < -0.98 || v > 0.98) return null;   // a toy soldier, side on: tall black shako, red coat, white trousers
+    if (v < -0.5) return au < 0.24 ? (Math.abs(v + 0.62) < 0.07 && au < 0.1 ? '#e8c060' : '#14141c') : null; if (v < -0.3) return au < 0.2 ? (Math.abs(au - 0.07) < 0.03 && Math.abs(v + 0.4) < 0.03 ? '#14141c' : '#f0c8a8') : null;
+    if (v < 0.25) return au < 0.3 ? (au < 0.04 ? '#e8c060' : Math.abs(v - 0.12) < 0.05 ? '#f4f0e6' : '#c8302a') : (au < 0.38 && v < 0.1 ? '#c8302a' : null);
+    if (v < 0.85) return Math.abs(au - 0.13) < 0.1 ? '#f4f0e6' : null; return Math.abs(au - 0.13) < 0.13 ? '#14141c' : null; },
+  fhdrum:function(u, v){ var au = Math.abs(u); if (au > 0.78 || v < -0.5 || v > 0.8) return null; if (v < -0.36) return '#efe8d8'; if (v > 0.66 || v < -0.24) return '#e8c060';   // the toy drum: white head, gold hoops, red sides laced
+    return Math.abs(Math.abs(((u + 1) * 2.5) % 1 - 0.5) * 2 - (v + 0.24) / 0.9) < 0.12 ? '#f4f0e6' : '#c8302a'; },
+  fhnumeral:function(u, v){ var au = Math.abs(u); if (au > 0.66 || v < -0.8 || v > 0.95) return null; if (v > 0.5) return au < 0.2 ? '#8a6a20' : null; if (au > 0.56 || v < -0.68 || v > 0.38) return '#8a6a20';   // a brass numeral plate of the clock
+    if (Math.abs(v + 0.15) < 0.38 && (au < 0.06 || Math.abs(au - 0.26) < 0.06)) return '#2a1a08'; return u < -0.1 ? '#f4d878' : '#d8b048'; },
+  fhsugar:function(u, v){ var au = Math.abs(u); if (v > 0.98 || v < -0.98) return null; if (v > 0.72) return au < 0.12 ? '#3a2a1e' : null;   // a fir of the Sugar Wood, hung with sugared fruit
+    var tier = (v + 0.98) / 1.7 * 3, f = tier - Math.floor(tier), w = (0.25 + (v + 0.98) / 1.7 * 0.65) * (0.55 + 0.45 * f); if (au > w) return null;
+    if (f > 0.8 && Math.abs(au - w * 0.6) < 0.09) return ['#e8402a', '#f4c040', '#c86ad8'][Math.floor(tier) % 3]; if (Math.sin(u * 23 + v * 19) > 0.8) return '#ffffff'; return u < -0.1 ? '#2e6a52' : '#1e4a3a'; },
+  fhplum:function(u, v){ var r = Math.hypot(u, (v - 0.12) * 1.1); if (v < -0.8 || v > 0.95) return null; if (v < -0.55) return Math.abs(u + (v + 0.55) * 0.3) < 0.05 ? '#5a3a1a' : null;   // a sugarplum, its stem
+    if (r > 0.78) return null; if (Math.sin(u * 27) * Math.cos(v * 25) > 0.82) return '#ffffff'; return r > 0.66 ? '#4a1a5a' : u < -0.25 ? '#a85ad0' : '#7a3aa8'; },
+  fhfern:function(u, v){ var au = Math.abs(u); if (v > 0.9 || v < -0.95) return null; for (var k = 0; k < 5; k++){ var a = -1.3 + k * 0.65, ca = Math.cos(a), sa = Math.sin(a), t = u * sa - v * -ca, w = u * ca + v * sa;   // a frost fern of Jack Frost's, white and pale blue
+      if (t > 0 && t < 0.92 && Math.abs(w) < 0.14 * (1 - t) + 0.02) return Math.abs(w) < 0.03 ? '#ffffff' : (Math.floor(t * 9) % 2 ? '#cfe8f8' : '#9ac8e8'); }
+    if (au < 0.12 && v > 0.55) return '#8ac0e4'; return null; },
+  fhshard:function(u, v){ if (v < -0.98 || v > 0.95) return null; var w = 0.62 * (v + 0.98) / 1.93 + 0.04, c = Math.sin(v * 3) * 0.12; if (Math.abs(u - c) > w) return null;   // a piece of the frozen lake, standing up
+    if (Math.abs(u - c - w * 0.3) < 0.05) return '#ffffff'; return u < c ? '#e6f6fe' : '#a6d3f0'; },
   fhsnow:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.97) return null; var row = Math.floor((v + 1) * 2), cx = ((u + 1) * 2.2 + (row % 2) * 0.5) % 1, cy = ((v + 1) * 2) % 1;
     if (cx < 0.05 || cy < 0.08) return '#a8bcd2'; var g = Math.sin(u * 13 + row * 2.1) * 0.5 + 0.5; return g > 0.78 ? '#ffffff' : cy > 0.7 ? '#cfdcea' : '#eaf0f8'; },
   fhice:function(u, v){ if (Math.abs(u) > 0.99 || Math.abs(v) > 0.97) return null; if (Math.abs(v) > 0.78) return '#8ac0e4'; var c = Math.abs(Math.sin(u * 7.3 + v * 2.1) - Math.cos(u * 2.7 - v * 5.3));
@@ -7736,7 +7812,7 @@ var PAY = {
     worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles', 'Crystal Specs', 'Wobble Boots', 'Silver Shoes', 'Shepherd Sandals', 'Winged Sandals', 'Pomegranate Ball', 'Ambrosia Ball', 'Cheshire Ball', 'Humpty Ball', 'Magic Bean Ball', 'Riverboat Ball', 'Deep Loch Ball', 'Yeti Print Ball', 'Tree Ring Ball', 'Big Top Ball', 'Gaslight Ball', 'Bourdon Ball', 'Piece of Eight Ball'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)', 'Full Moon Ball (Members only)', 'Nutcracker Ball (Members only)'],
-    worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)', 'Invisible Man’s Goggles (Members only)', 'Frost Spectacles (Members only)'], finish:'Members Champion Jacket (Members only)',
+    worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)', 'Invisible Man’s Goggles (Members only)', 'Clockmaker’s Loupe (Members only)'], finish:'Members Champion Jacket (Members only)',
     /* THE CHAMPION'S JACKET STAYS WHERE IT WAS WON: it was the Members Tour's finish when the tour ended at Harvest Moon, so it is
        still paid for clearing Harvest Moon (finishW, the world it is paid in) now that Monster Castle comes after it. A player
        who had cleared Harvest Moon keeps it, and nobody has a world more to play for it. */
@@ -7781,7 +7857,7 @@ var REWARD_ITEM = {
   'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
   'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
   'Hallows Crown':'hw:pphallowscrown', 'Harvest Moon Putter':'pu:ppharvest', 'Phantom Mask':'ew:ppphantommask', 'Golden Leaf Ball':'bl:ppgoldleaf',
-  'Full Moon Ball':'bl:ppfullmoon', 'Invisible Man’s Goggles':'ew:ppinvisible', 'Nutcracker Ball':'bl:ppnutcracker', 'Frost Spectacles':'ew:ppfrostspecs',
+  'Full Moon Ball':'bl:ppfullmoon', 'Invisible Man’s Goggles':'ew:ppinvisible', 'Nutcracker Ball':'bl:ppnutcracker', 'Clockmaker’s Loupe':'ew:pploupe',
   'Members Champion Jacket':'tp:ppchampjacket', 'Hallows Lantern Ball':'bl:pphallowslantern', 'Diamond Putter':'pu:ppdiamond' };
 var REWARD_OLD = { 'Clubhouse Polo':'Clubhouse Cleats', 'Sprinkle Trail':'Sprinkle Ball', 'High Score Celebration':'Pixel Shades',
   'Treasure Trail':'Pirate Eyepatch', 'Eruption Celebration':'Lava Rock Cleats', 'Rainbow Trail':'Aviator Goggles', 'Footprint Trail':'Dino Claw Cleats',
