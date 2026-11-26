@@ -21,6 +21,8 @@ A small fix that only touches code can go ahead without it.
 
 ```
 node soccer/check-db-reads.mjs                what a finished game reads; no poll while hidden (CI: soccer-checks)
+node soccer/check-guest-daily.mjs             a guest's Daily: the Function, then the page (--quick: the Function only)
+psql -d sdg -f supabase/test/soccer_daily_guest_test.sql    188 against a real Postgres (createdb sdg first)
 node scripts/check-dashes.mjs soccer/<file>    soccer/ is not in GUARDED yet: check what you touch
 node scripts/check-cachebust.mjs               gameLogic.js and the assets the page pins
 node scripts/check-adsense.mjs                 the Pitch's banner screens and slots
@@ -56,6 +58,13 @@ node scripts/check-home-games.mjs              the home page card
 - The 11 spins come from the UTC date and the theme (`buildDailySequence`). No re-spins. The
   server keeps the first attempt of the day (`submit_daily`). Nothing on the page may let a later
   attempt replace it.
+- **Guests play it, under a generated name** (the owner's call, 2026-11-26). A guest's result goes
+  through `/api/pitch-guest` (a Function with the service role, `supabase/188`), never an anonymous
+  sign-in. The page sends eleven ids and never a score. Guest days live in `soccer_daily_guest`
+  (no foreign key), the board reads the `daily_board` view, and a sign-in moves the days onto the
+  account (`claimGuestDaily`). A guest gets no streak, badge or profile, and enters no contest.
+- The Daily's score is one function, `_soccer_squad_overall`. `submit_daily` and the guest path
+  both call it. Change the formula there and in `G.computeResult` and `applyLeadershipBonus` together.
 
 **The database**
 

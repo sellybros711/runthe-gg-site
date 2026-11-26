@@ -65,7 +65,7 @@ await page.route('**/*', async (route) => {
     const rows = [{ player_ids: ['ARG_1986_10', 'BRA_1970_10'], overall: 84, progress: 3 }];
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) });
   }
-  if (p === '/rest/v1/daily_results') {   // a count: 7 beat us when filtered, 40 today
+  if (p === '/rest/v1/daily_results' || p === '/rest/v1/daily_board') {   // a count: 7 beat us when filtered, 40 today (daily_board is accounts and guests, 188)
     const n = u.search.includes('or=') ? 7 : 40;
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'content-range': `0-0/${n}` }, body: '[]' });
   }
@@ -122,7 +122,7 @@ ok(await page.evaluate(() => achMetricsReady()), 'badges are ready from the serv
 log.length = 0;
 const dr = await page.evaluate(() => typeof fetchDailyRank === 'function' ? fetchDailyRank(90.4, 4) : {});
 ok(dr.rank === 8 && dr.total === 40, `daily rank from counts: #${dr.rank} of ${dr.total}`);
-const drReq = log.filter(r => r.path === '/rest/v1/daily_results');
+const drReq = log.filter(r => r.path === '/rest/v1/daily_board');
 ok(drReq.length === 2 && drReq.every(r => /select=id&limit=1/.test(r.query)), 'the daily rank sends two count queries and reads no rows');
 
 // 5. Polls: silent while hidden, at once when visible.
@@ -172,7 +172,7 @@ log.length = 0;
 const daily = await finish(true);
 ok(daily.lb && daily.lb.rank === 8 && daily.lb.total === 40, `daily result: #${daily.lb && daily.lb.rank} of ${daily.lb && daily.lb.total}`);
 ok(count(HIST) === 0, `daily result: no history reread (read ${count(HIST)})`);
-const boardRows = log.filter(r => r.path === '/rest/v1/daily_results' && !/limit=1/.test(r.query));
+const boardRows = log.filter(r => /\/rest\/v1\/daily_(results|board)$/.test(r.path) && !/limit=1/.test(r.query));
 ok(boardRows.every(r => !/limit=500/.test(r.query)), 'daily result: no 500 row board read for the rank');
 ok(pageErrors.length === 0, `no page errors${pageErrors.length ? ': ' + pageErrors.slice(0, 3).join(' | ') : ''}`);
 
