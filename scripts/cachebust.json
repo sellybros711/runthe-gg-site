@@ -117,8 +117,8 @@
       "sha": "baef9753b7b44131"
     },
     "calls.js": {
-      "v": "13",
-      "sha": "9a5238cc596838d0"
+      "v": "14",
+      "sha": "7993309117f44928"
     },
     "goforit.js": {
       "v": "9",
@@ -3427,6 +3427,10 @@
     "/gameLogic.js": {
       "v": "0.0.32",
       "sha": "201097f19827a3c0"
+    },
+    "/soccer/club.js": {
+      "v": "1",
+      "sha": "6e13b36ad48ae1ee"
     }
   },
   "wrestling/booking/index.html": {

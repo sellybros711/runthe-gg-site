@@ -7,9 +7,13 @@ name: Run The Pitch checks
 # And a guest's Daily Challenge: the Function with Supabase faked, the page in a
 # browser, and supabase/188 against a real Postgres.
 #
+# And the club side (Club Draft and The Club Cup): its data rules and a
+# whole club run in a browser.
+#
 # Locally: node soccer/check-db-reads.mjs
 #          node soccer/check-guest-daily.mjs
 #          createdb sdg && psql -d sdg -f supabase/test/soccer_daily_guest_test.sql
+#          node soccer/check-club.mjs
 
 on:
   pull_request:
@@ -67,3 +71,7 @@ jobs:
         run: |
           createdb sdg
           psql -X -q -v ON_ERROR_STOP=1 -d sdg -f supabase/test/soccer_daily_guest_test.sql
+      - name: The club side (data rules, then a whole club run)
+        run: node soccer/check-club.mjs
+      - name: No em or en dashes in the game's own code
+        run: node scripts/check-dashes.mjs soccer/club.js soccer/check-club.mjs soccer/check-db-reads.mjs soccer/check-guest-daily.mjs soccer/CLAUDE.md functions/_pitchguest functions/api/pitch-guest.js supabase/188_soccer_daily_guest.sql supabase/test/soccer_daily_guest_test.sql

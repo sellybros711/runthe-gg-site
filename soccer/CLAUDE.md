@@ -15,6 +15,7 @@ A small fix that only touches code can go ahead without it.
 | Team OVR, the sim, the published odds | `soccer-sim.md` |
 | accounts, the solo boards, the Daily, badges | `soccer-accounts-boards.md` |
 | challenge links, the Online Friendly, the pool, computer squads | `soccer-online.md` |
+| the club side, Club Draft, The Club Cup | `features/soccer-club-draft.md` |
 | the player data | `soccer-data.md` (the data itself is the Rosters Agent's) |
 
 ## Commands
@@ -23,6 +24,7 @@ A small fix that only touches code can go ahead without it.
 node soccer/check-db-reads.mjs                what a finished game reads; no poll while hidden (CI: soccer-checks)
 node soccer/check-guest-daily.mjs             a guest's Daily: the Function, then the page (--quick: the Function only)
 psql -d sdg -f supabase/test/soccer_daily_guest_test.sql    188 against a real Postgres (createdb sdg first)
+node soccer/check-club.mjs                    the club side: names, squads, balance, a whole club run (--quick, --names)
 node scripts/check-dashes.mjs soccer/<file>    soccer/ is not in GUARDED yet: check what you touch
 node scripts/check-cachebust.mjs               gameLogic.js and the assets the page pins
 node scripts/check-adsense.mjs                 the Pitch's banner screens and slots
@@ -39,6 +41,24 @@ node scripts/check-home-games.mjs              the home page card
 - The data loads at `?v=` + `DATA_VERSION`. `check-cachebust` skips a version built from a variable,
   so a change to `data/players_all.json` bumps `DATA_VERSION` by hand. The data is the Rosters
   Agent's.
+
+**Two sides: a club side and a World Cup side** (the owner's call, 2026-11-26)
+
+- A club draft is a normal draft whose state carries `gs.club`. The two sides share the draft,
+  the reveal and the sim; ask `isClub()` where they differ. Never fork a second copy of the flow.
+- **Club names, never brands, never crests.** A club shows as plain text and a three letter chip.
+  A name that carries a company's brand shows as the city or the unbranded name: `NAMES` in
+  `soccer/club.js`. `check-club` fails on a branded name (`--names` prints what every club is shown as).
+- **One club across its eras, under the name of its time.** The data's `club_id` is the club; a
+  decade shows the name most of its men carry then (Zenit Leningrad in the 1980s). Never merge a
+  rename into one name in `NAMES`: that list is for brands and spelling pairs only.
+- The club cup is **The Club Cup**. No club screen says "World Cup" except a man's own
+  World Cups line; shared copy goes through `cw()`.
+- The cup's sides sit on the World Cup pool's rating scale, and the wheel is weighted by squad
+  size, so both sides draft to the same strength and the published odds hold for both.
+  `check-club` measures it. Change the spin or the pool and rerun it.
+- Until its boards exist, a club run writes nothing to the server, and its door shows only after
+  `/soccer/?club=1`.
 
 **Numbers a player reads**
 
