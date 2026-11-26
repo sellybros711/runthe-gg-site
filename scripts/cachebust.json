@@ -2649,8 +2649,8 @@
       "sha": "1891cdfef9c19253"
     },
     "main.js": {
-      "v": "7",
-      "sha": "8850a77f132df8c4"
+      "v": "8",
+      "sha": "8258debe771b5740"
     }
   },
   "football/fantasy/index.html": {
@@ -3517,8 +3517,8 @@
       "sha": "2987d27952084469"
     },
     "render.js": {
-      "v": "6",
-      "sha": "947236e36979bcf3"
+      "v": "7",
+      "sha": "284f5bb200a7cd64"
     }
   },
   "hoops/page.js": {
