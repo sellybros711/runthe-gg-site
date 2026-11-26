@@ -9181,6 +9181,20 @@ var FOLK_FROST = {
   7:{ id:'nutcracker', say:['I am the Nutcracker. Welcome to my wood.', 'The grove stands in the way. Bank off a board and go round.'] },
   8:{ id:'jackfrost', say:['Brr! I am Jack Frost. I painted all this frost.', 'I froze my hill hard. Firm goes over. Soft rolls off.'] },
   9:{ id:'snowqueen', say:['I am the Snow Queen. My palace is ahead.', 'Roll over the ice word and my door opens. Not for long.'] } };
+/* THE HOLIDAY FOLK LIVE IN THE FROSTY HOLLOW TOO (the owner, 2026-11-26: "put them in frost hollow"). All eight, all year, as its
+   visitors: one or two beside a walk as well as the walk's own folk, never more, and none on the walk to the first hole (the
+   greeter's) or to the palace (the Snow Queen's). Santa and Mrs. Claus walk together by Marie, who has the Nutcracker from
+   Christmas Eve, and Krampus is on the next walk along, near Santa as always. Each says hello as you walk up, a winter line of
+   their own, and a tap gives their next line (trail.js, 'visit'). They are still the Daily's too, by its calendar
+   (holidayFolk), exactly as before. Nothing here is earned, sold or unlocked, and nothing opens by itself. */
+function holidayVisit(id, winter){ return { id:id, say:[HOLIDAY_FOLK[id].say[0].replace('Merry Christmas.', 'I’m Santa Claus.').replace('Happy New Year! ', 'Hello! ').replace('Happy Easter! ', 'Hi! '), winter] }; }
+var FOLK_VISIT = { frost:{
+  3:[holidayVisit('mothernature', 'Winter is resting time. Spring is asleep under the snow.')],
+  4:[holidayVisit('easterbunny', 'My ears are cold. I hop. You putt. Gently on the ice.')],
+  5:[holidayVisit('santa', 'The Hollow is my kind of cold. Putt warm.'), holidayVisit('mrsclaus', 'Santa practices here in the snow. Don’t tell the elves.')],
+  6:[holidayVisit('krampus', 'I grumble. I don’t bite. Snow suits me fine.')],
+  7:[holidayVisit('cupid', 'Even the snow needs a little love. My arrows fly true.')],
+  8:[holidayVisit('toothfairy', 'Long winter nights are my busy time.'), holidayVisit('fathertime', 'Winter is long here. There’s always time for one more hole.')] } };
 var FOLK = { monster:FOLK_MONSTER, frost:FOLK_FROST, oz:{
   4:{ id:'dorothy', say:['I am Dorothy, from Kansas. A cyclone brought me here too.', 'The twister on the corner carries you along the top. Look where it sets you down.'] },
   5:{ id:'scarecrow', say:['I am the Scarecrow. My head is stuffed with straw.', 'Even I know to time my pole. And the twister by my field sends you back.'] },
@@ -9436,7 +9450,8 @@ function trailSpec(tid, from, landed){
   // a world with gyms (gyms.js) carries them on its two trails and none of the small puzzles on the rest
   var gd = !cross && tid === 'main' ? gymAt(th, leg) : null;
   var folk = !cross && !landed && (tid === 'main' || tid === 'members') && FOLK[th] ? FOLK[th][leg] || null : null;
-  return { folk:folk, gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:!landed && tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, landed:landed, key:tid + ':' + to + (landed ? ':landed' : ''), tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to + (landed ? ':landed' : '')), theme:th, theme0:th0, cross:cross, space:cross && tid === 'main' && SPACE_TRIP[th] ? SPACE_TRIP[th] : null, vehicle:tid === 'main' ? SPACE_TRIP[th] || null : null, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:landed ? {} : trailLoot(tid, to), holeTo:to <= TR.levels.length && !(cross && tid === 'main' && SPACE_TRIP[th]) ? courseFoot(to, tid) : null, holeFrom:from >= 1 && !landed ? courseFoot(from, tid) : null, greet:from % K === 0 && (tid === 'main' && SPACE_TRIP[th] ? landed : !landed) ? greetSpec(tid, w, to) : null };
+  var visit = !cross && !landed && tid === 'members' && FOLK_VISIT[th] ? FOLK_VISIT[th][leg] || null : null;
+  return { folk:folk, visit:visit, gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:!landed && tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, landed:landed, key:tid + ':' + to + (landed ? ':landed' : ''), tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to + (landed ? ':landed' : '')), theme:th, theme0:th0, cross:cross, space:cross && tid === 'main' && SPACE_TRIP[th] ? SPACE_TRIP[th] : null, vehicle:tid === 'main' ? SPACE_TRIP[th] || null : null, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:landed ? {} : trailLoot(tid, to), holeTo:to <= TR.levels.length && !(cross && tid === 'main' && SPACE_TRIP[th]) ? courseFoot(to, tid) : null, holeFrom:from >= 1 && !landed ? courseFoot(from, tid) : null, greet:from % K === 0 && (tid === 'main' && SPACE_TRIP[th] ? landed : !landed) ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
    hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
@@ -11540,7 +11555,7 @@ RTT_PUTT._holed = function(n){ if (S && S.play && S.round && S.round.mode === 'p
 RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };
 // a hole built from a function, for trying out a layout in the browser: RTT_PUTT._try(function(T){ return H; }, 'clubhouse')
 RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, tpl:'try' + Date.now(), seed:7, theme:theme || 'clubhouse', name:name || 'Try out' }; S.round = { mode:'try', i:0, cards:[], holes:[d], title:d.name, kick:'Try out' }; playHole(); };
-RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.FOLK = FOLK; RTT_PUTT.GREETERS = GREETERS; RTT_PUTT.SIGHTINGS = SIGHTINGS; RTT_PUTT.EXPEDITION = EXPEDITION; RTT_PUTT.CASEBOOK = CASEBOOK; RTT_PUTT._casebook = function(){ caseSheet(); }; RTT_PUTT.sightAt = sightAt; RTT_PUTT.camPic = camPic; RTT_PUTT._album = function(){ albumSheet(); }; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
+RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.FOLK = FOLK; RTT_PUTT.FOLK_VISIT = FOLK_VISIT; RTT_PUTT.GREETERS = GREETERS; RTT_PUTT.SIGHTINGS = SIGHTINGS; RTT_PUTT.EXPEDITION = EXPEDITION; RTT_PUTT.CASEBOOK = CASEBOOK; RTT_PUTT._casebook = function(){ caseSheet(); }; RTT_PUTT.sightAt = sightAt; RTT_PUTT.camPic = camPic; RTT_PUTT._album = function(){ albumSheet(); }; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 /* The home card wears the world you are in: the top band of that world's signature hole, cut from the
    game's own render by build-cards.mjs, so it is the same pixel art as the courses. */
 var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1, moon:1, mars:1, saturn:1, crystara:1, jellara:1, oz:1, cyclops:1, medusa:1, underworld:1, olympus:1, wonderland:1, lookingglass:1, beanstalk:1, mississippi:1, lochness:1, himalayas:1, pacific:1, bigtop:1, london:1, notredame:1, treasure:1 }, CARD_V = 26;

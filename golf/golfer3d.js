@@ -1160,7 +1160,7 @@
      own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
   const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
     ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, pptitangoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'}, ppinvisible:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppcrystalspecs:{as:'shades',frame:'%',lens:'Q'}, ppemeraldspecs:{as:'shades',frame:'%',lens:'Q'},
-    // the Clockmaker’s Loupe (The Frosty Hollow): Drosselmeyer’s watchmaker’s eyeglass, one round glass in a brass rim
+    // the Clockmaker’s Loupe (Frost Hollow): Drosselmeyer’s watchmaker’s eyeglass, one round glass in a brass rim
     pploupe:{as:'monocle',frame:'g',lens:'E'},
     // the Glacier Glasses (the Himalayas): an old climber's round glacier glasses, dark lenses in a brass wire rim, leather side shields
     ppglacier:{as:'round',frame:'%',lens:'Q',strap:'&'},
@@ -2308,7 +2308,7 @@
   function menu(look,aimDeg,o){ MO={K:o.K||3,EL:o.EL!=null?o.EL:2,phase:o.phase||0,only:o.only||'',part:o.part||''};
     try{ return draw(look,aimDeg,'walk','ws').cv; } finally{ MO=null; } }
   /* the menu pictures, kept until there are PCACHE_MAX of them. It was 400, and the closet draws every item once: with 402 items
-     (The Frosty Hollow's two) the cache emptied itself part way through, and a tile asked for after that waited for a fresh picture. */
+     (Frost Hollow's two) the cache emptied itself part way through, and a tile asked for after that waited for a fresh picture. */
   const PCACHE_MAX=1200, pcache=new Map();
   const picKey=(look,part)=>part+'|'+lookKey(look);
   function crop(cv,x,y,w,h){ const c=document.createElement('canvas'); c.width=Math.max(1,w); c.height=Math.max(1,h); c.getContext('2d').drawImage(cv,x,y,w,h,0,0,w,h); return c; }

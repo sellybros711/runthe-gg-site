@@ -846,8 +846,16 @@ if (!QUICK){
       `The Frosty Hollow pays its own two members-only rewards (${rw.join(', ')}), no trick or treat, and the Champion's Jacket stays Harvest Moon's`);
     const TSRC = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8'), folk = Object.values(P.FOLK.frost || {}).map(f => f.id).concat([P.GREETERS.frost.folk]);
     const drawn = folk.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), said = JSON.stringify(P.FOLK.frost) + JSON.stringify(P.GREETERS.frost) + JSON.stringify(TB.names.slice(w * K, w * K + K));
-    const bad = ['elsa', 'anna', 'olaf', 'kristoff', 'sven', 'arendelle', 'santa', 'claus', 'krampus'].filter(x => new RegExp('\\b' + x + '\\b', 'i').test(said)), hol = folk.filter(id => P.HOLIDAY_FOLK[id]);
-    claim(folk.length === 9 && new Set(folk).size === 9 && drawn.length === 9 && !bad.length && !hol.length, `The Frosty Hollow's host and its eight folk each have a model of their own in trail.js (${drawn.join(', ')}), none named from a film and none of the holiday folk` + (bad.length || hol.length ? ' (' + bad.concat(hol).join(', ') + ')' : '')); }
+    const bad = ['elsa', 'anna', 'olaf', 'kristoff', 'sven', 'arendelle'].filter(x => new RegExp('\\b' + x + '\\b', 'i').test(said)), hol = folk.filter(id => P.HOLIDAY_FOLK[id]);
+    claim(folk.length === 9 && new Set(folk).size === 9 && drawn.length === 9 && !bad.length && !hol.length, `The Frosty Hollow's host and its eight folk each have a model of their own in trail.js (${drawn.join(', ')}), none named from a film, and the holiday folk are visitors, not its own` + (bad.length || hol.length ? ' (' + bad.concat(hol).join(', ') + ')' : ''));
+    /* THE HOLIDAY FOLK LIVE IN THE FROSTY HOLLOW TOO (the owner, 2026-11-26): all eight, once each, as visitors on its walks (never
+       the greeter's walk or the Snow Queen's), each with a model of their own, a hello and a winter line, and on no other tour or
+       world. They are still the Daily's, by its calendar. */
+    const FV = P.FOLK_VISIT || {}, vis = Object.values(FV.frost || {}).flat(), vids = vis.map(f => f.id), HF = Object.keys(P.HOLIDAY_FOLK);
+    const vDrawn = vids.filter(id => new RegExp('\\n  ' + id + ':\\{ r:').test(TSRC)), legs = Object.keys(FV.frost || {}).map(Number);
+    const elsewhere = Object.keys(FV).filter(k => k !== 'frost').concat(Object.keys(P.FOLK).filter(k => Object.values(P.FOLK[k]).some(f => P.HOLIDAY_FOLK[f.id])));
+    claim(vids.length === 8 && new Set(vids).size === 8 && HF.every(id => vids.includes(id)) && vDrawn.length === 8 && vis.every(f => f.say.length === 2 && f.say.every(l => l.length <= 70 && !/[\u2013\u2014]/.test(l))) && legs.every(l => l > 1 && l < K) && Math.max(...legs.map(l => FV.frost[l].length)) <= 2 && !elsewhere.length,
+      `the holiday folk are in The Frosty Hollow, all eight once each on its walks (${legs.map(l => l + ':' + FV.frost[l].map(f => f.id).join('+')).join(' ')}), each drawn and with a hello and a winter line, and on no other world` + (elsewhere.length ? ' (also ' + elsewhere.join(', ') + ')' : '')); }
   head(`4. ${DAYS} DAILY HOLES FROM TODAY`);
   const day0 = new Date(Date.UTC(2026, 9, 1));
   const themesSeen = new Set();
@@ -1766,6 +1774,10 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
       out.folk = []; for (let f = 19; f < 27; f++){ const P = window.RTT_PUTT._trailPlan(f, 'members'); out.folk.push(P.spec.folk ? P.spec.folk.id + (P.items.some(t => t.k === 'npc') ? '' : '?') : '-'); }
       // and The Frosty Hollow's folk of the old winter tales, one to a walk, the Snow Queen on the walk to her own palace
       out.frost = []; for (let f = 28; f < 36; f++){ const P = window.RTT_PUTT._trailPlan(f, 'members'); out.frost.push(P.spec.folk ? P.spec.folk.id + (P.items.some(t => t.k === 'npc') ? '' : '?') : '-'); }
+      // the holiday folk stand on the Frosty Hollow's walks as visitors, and on no other walk of either tour
+      out.visit = []; for (let f = 27; f < 36; f++){ const P = window.RTT_PUTT._trailPlan(f, 'members'); out.visit.push(P.items.filter(t => t.k === 'visit').map(t => t.fid).join('+') || '-'); }
+      out.visitElse = []; for (let f = 0; f < 27; f++) if (window.RTT_PUTT._trailPlan(f, 'members').items.some(t => t.k === 'visit')) out.visitElse.push('members ' + f);
+      for (let f = 0; f < window.RTT_PUTT.TOURS.main.levels.length; f += 7) if (window.RTT_PUTT._trailPlan(f).items.some(t => t.k === 'visit')) out.visitElse.push('main ' + f);
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       out.secrets = []; out.secretElse = []; out.secretAt = [];
       for (let w = 0; w < 32; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
@@ -1783,6 +1795,7 @@ if ((RUN_ROOMS || RUN_PAGE) && !args.includes('--no-browser')){
     claim(wo.secretAt.every(k => k > 1 && k <= 18) && wo.secretAt.every((k, w) => wo.secretAt.slice(Math.max(0, w - 16), w).indexOf(k) < 0), `the secrets sit on a different walk in each run of seventeen worlds, never a world's first (${wo.secretAt.join(' ')})`);
     claim(wo.greeters.every(Boolean) && wo.notMid, `all thirty-two worlds and the four Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
     claim(wo.folk.join() === 'zombie,invisible,hyde,vampire,werewolf,golem,horseman,-', `Monster Castle's monsters stand on its walks, one to a walk (${wo.folk.join(' ')})`);
+    claim(wo.visit.join() === '-,-,mothernature,easterbunny,santa+mrsclaus,krampus,cupid,toothfairy+fathertime,-' && !wo.visitElse.length, `the holiday folk stand on The Frosty Hollow's walks beside its own folk, and on no other walk (${wo.visit.join(' ')})` + (wo.visitElse.length ? ': also ' + wo.visitElse.join(', ') : ''));
     claim(wo.frost.join() === 'kai,gerda,robbergirl,marie,mouseking,nutcracker,jackfrost,snowqueen', `The Frosty Hollow's folk stand on its walks, one to a walk, the Snow Queen on the walk to her palace (${wo.frost.join(' ')})`);
     // THE HOLES AT EACH END OF A WALK ARE THE REAL HOLES: the one you just played behind you, the next one past the arch,
     // each drawn from its own compiled course, with its cup where the course puts it
