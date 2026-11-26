@@ -81,7 +81,7 @@
         }
       } else if (routeOf(play, id)) {
         var i = tg.indexOf(id), ans = i === 0 ? '1st read' : i === 1 ? '2nd read' : i === 2 ? '3rd read' : 'Not a read';
-        qs.push({ q: 'Which read are you?', options: ['1st read', '2nd read', '3rd read', 'Not a read'], answer: ans, why: i >= 0 ? 'You are the ' + ans + '. The last read is the checkdown when the pocket goes.' : 'The QB is not reading you. Run it hard: you clear space.' });
+        qs.push({ q: 'Which read are you?', options: ['1st read', '2nd read', '3rd read', 'Not a read'], answer: ans, why: i >= 0 ? 'You are the ' + ans + '. He looks at you in that order. He throws to whoever is open.' : 'You are not a read, but you are an option. Get open and he finds you after his reads.' });
       }
     }
     var nm = sel.name, others = names.filter(function (x) { return x !== nm; });

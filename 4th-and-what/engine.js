@@ -247,6 +247,10 @@
     (play.routes || []).forEach(function (r, i) { if (r && r.pts && r.pts.length) routes[r.who] = { pts: r.pts, order: i + 1 }; });
     (play.blocks || []).forEach(function (b) { if (b && b.to) blocks[b.who] = b.to; });
     var targets = isRun ? [] : (play.targets || []).filter(function (id) { return routes[id] && !blocks[id]; }).slice(0, 3);
+    /* every man running a route is an option (the owner, 2026-11-26: "the person
+       shooting should be the open man depending on what the defense does"): the
+       reads first, in their order, then the other routes in the order drawn */
+    var options = isRun ? [] : targets.concat(Object.keys(routes).filter(function (id) { return id !== 'QB' && !blocks[id] && targets.indexOf(id) < 0; }));
     /* field yards, kept on the field: inside the sidelines and the end lines */
     var abs = function (p) { return { x: clamp(BX + p[0], 0.3, FIELD_W - 0.3), y: clamp(Y0 + p[1], -9.7, 109.7) }; };
 
@@ -481,7 +485,7 @@
     }
 
     return { T: T, S: S, distance: distance, Y0: Y0, BX: BX, marker: marker, setDef: setDef, O: O, Oal: Oal, Dal: Dal, box: box, shell: shell,
-      isRun: isRun, routes: routes, blocks: blocks, targets: targets, abs: abs, call: call, E: E, byId: byId, QB: QB,
+      isRun: isRun, routes: routes, blocks: blocks, targets: targets, options: options, abs: abs, call: call, E: E, byId: byId, QB: QB,
       offense: offense, defense: defense, ballCarrierId: ballCarrierId, stayIns: stayIns, rushers: rushers, receivers: receivers,
       track: track, motion: motion, pa: pa };
   }
@@ -523,7 +527,7 @@
     var rnd = RNG.mulberry32(seed >>> 0);
     var ctx = setup(scenario, play, opt, rnd, seed);
     var T = ctx.T, dt = T.dt, S = ctx.S, distance = ctx.distance, Y0 = ctx.Y0, BX = ctx.BX, marker = ctx.marker;
-    var setDef = ctx.setDef, box = ctx.box, isRun = ctx.isRun, routes = ctx.routes, targets = ctx.targets, call = ctx.call;
+    var setDef = ctx.setDef, box = ctx.box, isRun = ctx.isRun, routes = ctx.routes, targets = ctx.targets, options = ctx.options, call = ctx.call;
     var E = ctx.E, byId = ctx.byId, QB = ctx.QB, offense = ctx.offense, defense = ctx.defense;
     var ballCarrierId = ctx.ballCarrierId, stayIns = ctx.stayIns, rushers = ctx.rushers, receivers = ctx.receivers, pa = ctx.pa;
     var carrier = null;
@@ -707,6 +711,21 @@
       return best;
     }
     function openBy(r) { return nearestDefender(r); }
+    /* what a throw to him is worth now, the way the QB sees it: the chance of the
+       catch (the catch's own formula, with the separation he has, the throw to
+       where he will be and the pressure now) and whether the catch moves the
+       chains (short of the sticks it counts for less, down to nothing read.yac
+       yards short: he would have to run the rest after the catch) */
+    function value(e) {
+      var sep = openBy(e), p = e, tf = 0;
+      for (var it = 0; it < 2; it++) { var d1 = len(p.x - QB.x, p.y - QB.y); tf = d1 / QB.arch.arm + T.ball.loft * d1 * d1; p = along(e, tf); }
+      var d2 = len(p.x - QB.x, p.y - QB.y), deepBy = Math.max(0, d2 - T.catch.deepFrom);
+      var z = T.catch.base + T.catch.perSep * (Math.min(sep, T.catch.sepCap) - 2) - T.catch.perTen * (d2 - 12) / 10 - T.catch.deep * deepBy * deepBy / 100
+        - T.catch.pressure * (pressure || 0) - (sep < 1 ? T.catch.tight : 0) + (e.arch.hands || 0) + (QB.arch.accuracy || 0);
+      return chance(z) * (p.y >= marker ? 1 : Math.max(0, 1 - (marker - p.y) / T.read.yac));
+    }
+    /* the best of the options right now; the earlier look wins a near tie */
+    function mostOpen() { var best = null, bv = -1; options.forEach(function (id) { var e = byId[id]; if (!e) return; var v = value(e); if (v > bv + 0.03) { bv = v; best = e; } }); return best; }
     /* The separation that decides a catch. A defender trailing him (nearer the
        QB than he is) has his back to the ball and counts trail yards further
        off; one over the top or in the lane counts as he stands. */
@@ -778,21 +797,35 @@
       if (isRun && ballCarrierId === 'QB' && !carrier) { carrier = QB; }
 
       if (!isRun && !thrown && !windup && !collapseFate) {
-        /* the progression: his eyes are on one read at a time, in the order drawn */
-        var P = targets[eye] ? byId[targets[eye]] : null, C2 = targets.length > 1 ? byId[targets[targets.length - 1]] : null;
+        /* the progression (the owner, 2026-11-26: "you can put the first, 2nd, 3rd
+           read but that doesn't mean the QB will always throw it to the 1st read").
+           His eyes go through the options one at a time: the reads in their order,
+           then the rest. He throws to the man he is on when that man is open, or
+           open enough on time at the end of his route; otherwise he moves on when
+           the route is done or the look has run its time. With every look taken,
+           he throws to whoever is most open, if anyone has a window. */
+        var P = options[eye] ? byId[options[eye]] : null, C2 = targets.length > 1 ? byId[targets[targets.length - 1]] : null;
         /* "finishes the route" is a timing throw: the ball leaves as he is a beat
            from the end of what you drew, so it meets him there */
         var routeDone = P && P.path && left(P) <= Math.max(P.v, 3) * (T.read.release + T.read.timing + flightTo(P.path[P.path.length - 1]));
         if (t >= Tp && !collapsed) { collapsed = true; say(t, 'pressure', 'The pocket is gone.'); }
-        if (!collapsed && P && t >= eyeAt && (routeDone || (t >= minRead && openBy(P) >= T.read.separation))) {
-          /* covered at the top of his route, and there is another read: move on */
-          if (routeDone && eye < targets.length - 1 && openBy(P) < T.read.covered) {
-            eye++; eyeAt = t + T.read.shift;
-            say(t, 'progress', eye === 1 ? 'Covered. Second read.' : 'Covered. Third read.');
-          } else windup = { to: P, at: t + T.read.release, primary: eye === 0 };
+        if (!collapsed && P && t >= eyeAt) {
+          var sepP = openBy(P);
+          if (((t >= minRead && sepP >= T.read.separation) || (routeDone && sepP >= T.read.window)) && value(P) >= T.read.worth) windup = { to: P, at: t + T.read.release, primary: eye === 0, look: eye };
+          else if (routeDone || (t >= minRead && t - Math.max(eyeAt, minRead) >= T.read.look)) {
+            if (eye < options.length - 1) {
+              eye++; eyeAt = t + T.read.shift;
+              say(t, 'progress', eye === 1 ? 'Covered. Next read.' : 'Covered. Moves on.', { to: options[eye], look: eye });
+            } else {
+              var B = mostOpen();
+              if (B && value(B) >= T.read.worth) windup = { to: B, at: t + T.read.release, primary: B.id === options[0], look: options.indexOf(B.id) };
+            }
+          }
         }
         else if (collapsed) {
-          if (C2) { windup = { to: C2, at: Math.max(t + T.read.release * 0.6, pa ? pa.fake : 0), primary: false }; say(t, 'checkdown', 'Checks it down.'); }
+          /* the pocket is gone: the best option if a throw to him is still worth it, else the checkdown */
+          var B2 = mostOpen(), outlet = B2 && value(B2) >= T.read.worth ? B2 : C2;
+          if (outlet) { windup = { to: outlet, at: Math.max(t + T.read.release * 0.6, pa ? pa.fake : 0), primary: false, look: options.indexOf(outlet.id) }; say(t, 'checkdown', outlet === C2 ? 'Checks it down.' : 'Finds the open man.', { to: outlet.id }); }
           else {
             collapseFate = rnd() < T.sackShare ? 'sack' : 'throwaway';
             if (collapseFate === 'sack') {
@@ -811,7 +844,8 @@
         }
         var sp = len(r0.vx, r0.vy), tw = len(QB.x - r0.x, QB.y - r0.y) || 1;
         var toward = sp > 1 ? (r0.vx * (QB.x - r0.x) + r0.vy * (QB.y - r0.y)) / (sp * tw) : 0.5;
-        throwInfo = { from: { x: QB.x, y: QB.y }, to: { x: px, y: py }, t0: t, t1: t + tf, dist: len(px - QB.x, py - QB.y), pressure: pressure, toward: toward, openAtThrow: openBy(r0), primary: windup.primary };
+        throwInfo = { from: { x: QB.x, y: QB.y }, to: { x: px, y: py }, t0: t, t1: t + tf, dist: len(px - QB.x, py - QB.y), pressure: pressure, toward: toward, openAtThrow: openBy(r0), primary: windup.primary, look: windup.look,
+          board: options.map(function (id) { var e = byId[id]; return { id: id, sep: e ? Math.round(openBy(e) * 10) / 10 : null }; }) };
         ball.holder = null; ball.air = throwInfo;
         r0.chase = { x: px, y: py, t1: throwInfo.t1 };
         var nm = routeName([r0.x0 - BX, r0.y0 - Y0], routes[r0.id] ? routes[r0.id].pts : null);
@@ -1174,7 +1208,8 @@
       formation: setDef.id, isRun: isRun, call: call, callName: callName(call), callLine: callLine(call),
       pocket: Math.round(Tp * 100) / 100, outcome: outcome, win: win, title: title,
       yards: shown, spotY: spotY, spot: spotY != null ? spotName(spotY) : null, reason: reason,
-      throwInfo: throwInfo ? { dist: Math.round(throwInfo.dist * 10) / 10, sep: throwInfo.sep != null ? Math.round(throwInfo.sep * 10) / 10 : null, p: throwInfo.p != null ? Math.round(throwInfo.p * 1000) / 1000 : null, to: thrownTo ? thrownTo.id : null, primary: throwInfo.primary } : null,
+      throwInfo: throwInfo ? { dist: Math.round(throwInfo.dist * 10) / 10, sep: throwInfo.sep != null ? Math.round(throwInfo.sep * 10) / 10 : null, p: throwInfo.p != null ? Math.round(throwInfo.p * 1000) / 1000 : null, to: thrownTo ? thrownTo.id : null, primary: throwInfo.primary, look: throwInfo.look, board: throwInfo.board } : null,
+      options: options.slice(),
       events: events, ids: E.map(function (e) { return { id: e.id, side: e.side, role: e.role, big: e.role === 'ol' || e.role === 'dl', label: e.label || '' }; }),
       motion: ctx.motion, playAction: !!pa, plans: plansOf(ctx),
       dt: dt, pre: pre, frames: frames, tEnd: tEnd

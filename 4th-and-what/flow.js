@@ -212,6 +212,27 @@
 
   /* ---------- 4. the card ---------- */
   function title(r) { return r.title.charAt(0) + r.title.slice(1).toLowerCase(); }
+  /* THE OPTIONS (the owner, 2026-11-26: "it should tell you what all of the
+     scoring options are"): every man who ran a route, in the order the QB looked,
+     and how he stood when the ball came out. Open is 3 yards or more, tight is a
+     step and a half; the one he threw to is marked. */
+  var LET = { WR1: 'X', WR2: 'Z', SLOT: 'H', TE: 'Y', RB: 'RB' };
+  var ORDN = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
+  function options(r) {
+    var box = $('rOpts'), I = r.throwInfo, b = I && I.board;
+    box.innerHTML = '';
+    if (!b || b.length < 2) { box.hidden = true; return; }
+    box.hidden = false;
+    var said = [];
+    b.forEach(function (o, n) {
+      var st = o.id === I.to ? 'to' : o.sep >= 3 ? 'open' : o.sep >= 1.5 ? 'tight' : 'covered';
+      var word = st === 'to' ? 'Thrown' : st === 'open' ? 'Open' : st === 'tight' ? 'Tight' : 'Covered';
+      said.push((LET[o.id] || o.id) + ' ' + word.toLowerCase());
+      box.appendChild(A.el('span', { class: 'ropt ' + st }, [A.el('i', { text: String(n + 1) }), A.el('b', { text: LET[o.id] || o.id }), A.el('small', { text: word })]));
+    });
+    var to = LET[I.to] || I.to, look = I.look != null ? ORDN[I.look] : null;
+    box.setAttribute('aria-label', 'His options: ' + said.join(', ') + '.' + (look ? ' Found ' + to + ' on his ' + look + ' look.' : ''));
+  }
   function showCard() {
     var r = res, c = $('rCard');
     /* THE CARD THAT HITS (the launch plan, 1D): one big word, the margin,
@@ -233,6 +254,7 @@
     $('rLine').textContent = line;
     $('rWhy').textContent = why;
     $('rRead').textContent = window.FAW_CALLS ? window.FAW_CALLS.revealText(r) : r.callName;
+    options(r);
     $('rToast').hidden = true;
     if (window.FAW_DAILY) window.FAW_DAILY.card(r);
     if (window.FAW_GO) window.FAW_GO.card(r);
