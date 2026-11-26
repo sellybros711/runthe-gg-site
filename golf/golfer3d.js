@@ -2307,11 +2307,13 @@
     club:{K:6,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, shirt:{K:3,EL:8,aim:200,only:'shirt'}, pants:{K:3,EL:12,aim:200,only:'pants'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
   function menu(look,aimDeg,o){ MO={K:o.K||3,EL:o.EL!=null?o.EL:2,phase:o.phase||0,only:o.only||'',part:o.part||''};
     try{ return draw(look,aimDeg,'walk','ws').cv; } finally{ MO=null; } }
-  const pcache=new Map();
+  /* the menu pictures, kept until there are PCACHE_MAX of them. It was 400, and the closet draws every item once: with 402 items
+     (Frost Hollow's two) the cache emptied itself part way through, and a tile asked for after that waited for a fresh picture. */
+  const PCACHE_MAX=1200, pcache=new Map();
   const picKey=(look,part)=>part+'|'+lookKey(look);
   function crop(cv,x,y,w,h){ const c=document.createElement('canvas'); c.width=Math.max(1,w); c.height=Math.max(1,h); c.getContext('2d').drawImage(cv,x,y,w,h,0,0,w,h); return c; }
   function pic(look,part){ const k=picKey(look,part); if(pcache.has(k)) return pcache.get(k);
-    if(part==='ball'){ const r=ballPic(look.ball); if(pcache.size>400) pcache.clear(); pcache.set(k,r); return r; }
+    if(part==='ball'){ const r=ballPic(look.ball); if(pcache.size>PCACHE_MAX) pcache.clear(); pcache.set(k,r); return r; }
     const o=PIC[part]; if(!o) return null;
     // a cape's tile is drawn from behind
     const cv=menu(look,part==='top'&&look.top==='cape'?20:o.aim,Object.assign({part},o)), W=cv.width, H=cv.height, d=cv.getContext('2d').getImageData(0,0,W,H).data, A=(x,y)=>d[(y*W+x)*4+3]>8;
@@ -2326,7 +2328,7 @@
       else if(part==='club'&&!NOVELTY[look.club]&&look.club!=='pu_magicwand'){ const h=y1-y0; c=crop(cv,x0,y0+Math.round(h*0.66),x1-x0+1,Math.round(h*0.34)+1); }   // the head of the club
       else c=crop(cv,x0,y0,x1-x0+1,y1-y0+1);
       r={url:c.toDataURL('image/png'),w:c.width,h:c.height}; }
-    if(pcache.size>400) pcache.clear(); pcache.set(k,r); return r; }
+    if(pcache.size>PCACHE_MAX) pcache.clear(); pcache.set(k,r); return r; }
   /* A BALL IN 3D, for its tile: a lit sphere wearing the ball's own art (its outline and shading characters are
      the base colour, since the light now does that job), sat on a white tee. */
   function ballPic(id){ const map=typeof PXG_BALL!=='undefined'&&PXG_BALL[id], pal=typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[id];
