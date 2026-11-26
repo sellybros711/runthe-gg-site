@@ -1911,11 +1911,15 @@ section('23b. no real man can be acted on, and the wild side and the later life 
     ok(tab.ok && tab.why === null && tab.max <= A.cash && W.acts.find((a) => a.id === 'rehab').why === 'shut', `the most he can stake is never more than he has (${tab.max} of ${A.cash})`);
     ok(!!C.wildAct(A, 'casino', tab.max), 'and the engine takes that stake');
     A.cash = 0.01; const P = C.wildOpen(A).acts.find((a) => a.id === 'casino');
-    ok(!P.ok && P.why === 'cash' && P.note === 'Not enough cash.', 'short of the least stake, the cash is why');
+    ok(!P.ok && P.why === 'cash' && P.need === P.min && P.note === 'Needs ' + C.money(P.need) + '. You have ' + C.money(0.01) + '.', `short of the least stake, the cash is why, and the note says both figures ("${P.note}")`);
     A.cash = 9; A.wild.n = C.WILD_MAX; const N = C.wildOpen(A).acts.find((a) => a.id === 'casino');
     ok(!N.ok && N.why === 'nights', 'with the nights spent, the nights are why');
     A.wild.rec.push({ y: A.year, what: 'test', g: 25 }); A.season.ban = { from: A.season.g + 1, until: A.season.g + 26, why: 'test' };
     const R = C.wildOpen(A);
+    A.wild.rec.push({ y: A.year, what: 'arrest' }); A.wild.rec.push({ y: A.year, what: 'jail', g: 60 }); A.wild.rec.push({ y: A.year, what: 'rehab', g: 15 }); A.wild.susp = 7;
+    const Q = C.wildOpen(A);
+    ok(Q.counts.arrests === 1 && Q.counts.inside === 1 && Q.counts.suspensions === 1 && Q.owedText === 'You owe 7 games. They start on opening night.' && C.wildOpen(Object.assign(JSON.parse(JSON.stringify(A)), { pending: [] })).owed === 7, `the record is counted and the games owed are said by the engine ("${Q.owedText}")`);
+    A.wild.susp = 0;
     ok(R.record.every((x) => typeof x.text === 'string' && x.text.length > 5 && !DASH.test(x.text)) && R.sitting && /^Suspended for a failed drug test\. Back after game \d+\.$/.test(R.sitting.text), `the record and a suspension come in words ("${R.sitting && R.sitting.text}")`);
   }
   /* A man who died young gets a sober line, and the later life names its press and his family. */
@@ -2114,6 +2118,7 @@ section('26. a routine summer is held, shown, changeable, and done at tip-off');
         if (L.year !== pending.y) { lost++; pending = null; }
         else if (b) {
           done++;
+          if (b.key !== pending.key || typeof b.label !== 'string' || !b.label) bad.push('the summer beat does not name its program: ' + b.key);
           if (!L.mem['summer.' + pending.key] || C.summerOf(L) !== null || DASH.test(b.text) || JUNK26.test(b.text) || !/^Your summer: /.test(b.text)) bad.push('the held summer was not done as shown: ' + b.text.slice(0, 80));
           if (pending.mine ? L.flags.summerLast === pending.key : L.flags.summerLast === pending.last) kept++;
           if (/third year running/.test(b.text)) stale++;
