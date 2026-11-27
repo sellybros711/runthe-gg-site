@@ -2230,6 +2230,13 @@ section('28. a childhood is called back in the league, and the later life has pe
   ok(lives >= 30 && before === 0 && after === 0, `people open only while the later life is being lived (${before} before, ${after} after)`);
   ok(groups.family && groups.friend && !wrong.length, `the later life lists family, friends, a partner and rivals, nobody real (${wrong.slice(0, 2).join(', ') || 'clean'})`);
   ok(Object.keys(acts).length >= 6 && refused === 0, `acts on them are taken and read clean (${Object.keys(acts).join(', ')})`);
+  {
+    const L = C.generateRoad({ seed: 'lp-word', league }); const r = E.createSeededRNG(3); let g = 0;
+    const was = C.bondsPeriod(L);
+    while (!L.retired && g++ < 9000) { if (L.pending.length) C.choose(L, Math.floor(r() * L.pending[0].options.length)); else C.step(L); }
+    C.laterStart(L);
+    ok(was === 'year' && C.bondsPeriod(L) === 'four years', `the acts are counted over a year in the career and four years in the later life ("${was}", "${C.bondsPeriod(L)}")`);
+  }
 }
 
 if (!QUICK) await browser();

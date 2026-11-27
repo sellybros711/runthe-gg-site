@@ -249,6 +249,8 @@ function peopleAll(L) {
 }
 /* How much of the year is left for people. */
 const bondsLeft = (L) => Math.max(0, BOND_MAX - bondUsed(L).n);
+/* What the acts are counted over, in words: a year in the career, a press in the later life. */
+const bondsPeriod = (L) => inLater(L) ? (NUMWORDS[LATER_STEP] || LATER_STEP).toLowerCase() + ' years' : 'year';
 function personAct(L, pid, aid) {
   const who = peopleOpen(L).find((x) => x.id === pid), open = who && who.acts.find((x) => x.id === aid);
   if (!open || !open.ok) return null;
