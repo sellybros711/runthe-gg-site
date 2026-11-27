@@ -100,3 +100,43 @@ function kidOf(L) {
   if (L.kid.done) return { done: true, picks: L.kid.picks.slice() };
   return { done: false, i: L.kid.i, of: KID.length, age: L.age, picks: L.kid.picks.slice() };
 }
+
+/* A CHILDHOOD IS CALLED BACK (the BitLife plan's open list). What he chose as a
+   kid comes back in the league: the driveway, the park, the other sport, the
+   travel team, the corner store, the last summer. Each card asks for one
+   memory (kid.*) and fits only a career that played its childhood. */
+const kidWas = (k, v) => (L) => { const m = recall(L, 'kid.' + k); return !!m && m.v === v; };
+story({
+  kid_driveway: { at: 'off', req: { seasons: [1, 6] }, when: kidWas('teacher', 'dad'), w: 6, tag: 'Your phone',
+    t: '{dad} sent you a video', x: 'The old driveway hoop. He shot it on his phone. The net is gone. The backboard still has your handprint.',
+    o: [O('Fly home and shoot with him', { morale: 8, sho: 1 }, 'One hundred makes before dinner. He still rebounds like it matters.', { sub: 'Elbow in, follow through', rel: [['dad', 15, 'You came home and shot in the driveway.']] }),
+      O('Send him a new hoop', { cash: -0.05, morale: 3 }, 'It goes up on Saturday. He sends a video of the first swish.', { sub: 'He did his part', rel: [['dad', 6, 'You sent him a new hoop.']] })] },
+  kid_the_park: { at: 'off', req: { seasons: [2, null] }, when: (L) => kidWas('teacher', 'park')(L) && L.cash >= 1, w: 5, tag: 'Back home', rar: 'uncommon',
+    t: 'The park where you learned is falling apart', x: 'The big kids who beat you every day are grown now. The rims are bent. The city has no money for it.',
+    o: [O('Rebuild it yourself', { cash: -0.6, fame: 3, morale: 6 }, 'New rims, new lights, the same cracked court underneath. You leave one crack on purpose.', { sub: 'Give it back' }),
+      O('Run a pickup game there', { morale: 5, fame: 2 }, 'Two hundred people on the fence. Nobody calls fouls. Nobody ever did.', { sub: 'Show up' })] },
+  kid_other_sport: { at: 'mid', req: { seasons: [1, 8] }, when: (L) => { const m = recall(L, 'kid.sport'); return !!m && /^(soccer|football|chess)$/.test(m.v); }, w: 4, tag: 'A reporter',
+    t: (L) => 'A reporter found your ' + ({ soccer: 'soccer', football: 'football', chess: 'chess club' })[recall(L, 'kid.sport').v] + ' photo', x: 'You are eight in it, with a bowl cut. The story runs Sunday either way.',
+    o: [O('Tell the whole story', { fame: 4, morale: 3 }, 'You say the other sport made you. The clip goes everywhere.', { sub: 'Own the bowl cut' }),
+      O('Laugh it off', { trust: 2 }, 'One line, one laugh, back to the game. The photo runs anyway.', { sub: 'Keep it short' })] },
+  kid_only_hoops: { at: 'pre', req: { seasons: [3, null] }, when: (L) => kidWas('sport', 'hoops')(L) && (L.m.health < 85 || L.age >= 29), w: 5, tag: 'The training room',
+    t: 'Your body has played one sport since you were eight', x: 'The trainer wants you in the pool and on a bike this summer. Anything but a basketball.',
+    o: [O('Cross-train for once', { health: 8, dur: 2, morale: -2 }, 'You are terrible at swimming. Your knees love it.', { sub: 'Give the joints a break' }),
+      O('Basketball is the training', { sho: 1, health: -3 }, 'Same gym, same ball. Like always.', { sub: 'It is the only sport' })] },
+  kid_mom_paid: { at: 'off', req: { seasons: [1, 4] }, when: (L) => kidWas('aau', 'went')(L) && L.cash >= 1.5, w: 7, tag: 'Home',
+    t: 'You found out about the second job', x: '{mom} worked doubles for three years so you could play travel ball. Nobody told you.',
+    o: [O('Pay off her house', { cash: -1, morale: 10 }, 'She cries in the bank. Then she tells the teller who you are.', { sub: 'Pay it back', rel: [['mom', 25, 'You paid off her house.']] }),
+      O('Ask her what she wants', { morale: 6 }, 'She wants you home for Sunday dinner. That is all she asks for.', { sub: 'Let her choose', rel: [['mom', 15, 'You asked her what she wanted.']] })] },
+  kid_town_team: { at: 'off', req: { seasons: [2, null] }, when: kidWas('aau', 'stayed'), w: 5, tag: 'Your phone',
+    t: '{friend} wants the old town team back together', x: 'One night, the old gym, the same jerseys if they still fit. He already booked the gym.',
+    o: [O('Play the whole game', { morale: 8, health: -2 }, 'You lose by four to a bunch of accountants. Best night of the summer.', { sub: 'For old times', rel: [['friend', 15, 'You came back for the town team.']] }),
+      O('Coach from the bench', { morale: 5, trust: 2 }, 'You draw up one play on a napkin. It works. They carry you off.', { sub: 'Save your knees', rel: [['friend', 8, 'You coached the old town team for a night.']] })] },
+  kid_corner_store: { at: 'off', req: { seasons: [2, null] }, when: kidWas('crowd', 'along'), w: 4, tag: 'A letter', rar: 'uncommon',
+    t: 'The corner store owner wrote to you', x: 'He remembers the kid who ran faster than him. He never called the police. The store is closing.',
+    o: [O('Pay what you took, and then some', { cash: -0.2, morale: 6, trust: 3 }, 'You hand it to him yourself. He keeps the envelope on the wall.', { sub: 'Make it right' }),
+      O('Write back and say sorry', { morale: 3 }, 'He writes back once. "Run that fast on defense," he says.', { sub: 'Just the words' })] },
+  kid_last_summer: { at: 'off', req: { seasons: [4, null] }, when: (L) => kidWas('summer', 'kid')(L) && L.m.morale < 75, w: 5, tag: 'A hotel room',
+    t: 'You keep thinking about the last summer you were a kid', x: 'Pool, bikes, nothing. You were fourteen. It has been a long season.',
+    o: [O('Go back to the pool for a week', { morale: 10, health: 3 }, 'Same diving board. Kids lose their minds when you cannonball.', { sub: 'Be fourteen again' }),
+      O('Get back to work', { eth: 2, morale: -2 }, 'You call it a night and set an alarm for the gym.', { sub: 'That summer is over' })] },
+});

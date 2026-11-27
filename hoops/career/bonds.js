@@ -216,12 +216,19 @@ const bondUsed = (L) => (L.flags.bonds && L.flags.bonds.y === L.year) ? L.flags.
 /* Everybody you can act on now, each with the acts open on them. An act is
    listed when it fits the person; `ok` says whether it can be taken (the
    year's time, one act a person, the cash). */
+/* THE LATER LIFE HAS PEOPLE TOO (the BitLife plan's open list). While the
+   rest of his life is being played (later.js) the people at home are still
+   there: family, friends, a partner, an old rival. The locker room and the
+   press are not. Four acts a press, as a year. */
+const LATER_GROUPS = { family: 1, friend: 1, partner: 1, foe: 1 };
+const inLater = (L) => !!(L.retired && L.later && !L.later.over);
 function peopleOpen(L) {
-  if (L.retired || L.pending.length || isAm(L)) return [];
+  const later = inLater(L);
+  if ((L.retired && !later) || L.pending.length || isAm(L)) return [];
   const used = bondUsed(L), out = [], real = realMen(L);
   for (const id in L.people || {}) {
     const p = L.people[id], g = BOND_GROUP[p.role];
-    if (!g || real[p.n]) continue;
+    if (!g || real[p.n] || (later && !LATER_GROUPS[g])) continue;
     const acts = Object.keys(BONDS).filter((k) => BONDS[k].on(L, p)).map((k) => {
       const a = BONDS[k], cost = a.cost ? a.cost(L, p) : 0;
       /* `why` names what closes it (the year's time, this person already, the cash); `takes` is
