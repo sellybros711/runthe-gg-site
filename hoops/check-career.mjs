@@ -2168,6 +2168,77 @@ section('27. the career story says a childhood, a death and a later life when th
   ok(!DASH.test(all) && !/\bundefined\b|\bNaN\b|\{[a-z]/.test(all), 'and all of it reads clean');
 }
 
+// ── 28. the open list of the BitLife plan: a childhood called back, people in the later life ──
+section('28. a childhood is called back in the league, and the later life has people in it');
+{
+  const E = require('./engine.js');
+  const JUNK28 = /\bundefined\b|\bNaN\b|\[object |\{[a-z]/;
+  const IDS = Object.keys(C.STORY_EV).filter((k) => /^kid_/.test(k));
+  const seen = {}, bad = [];
+  let kidLives = 0, hsDealt = 0;
+  for (let i = 0; i < 240 && (i < 120 || IDS.some((k) => !seen[k])); i++) {
+    const start = i % 4 === 3 ? 'hs' : 'kid';
+    const L = C.newLife({ seed: 'kcb' + i, league, start });
+    const r = E.createSeededRNG(E.hashSeed('kcb-p' + i)); let g = 0;
+    if (start === 'kid') kidLives++;
+    while (!L.retired && g++ < 9000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (/^kid_/.test(c.id)) {
+          seen[c.id] = (seen[c.id] || 0) + 1;
+          if (start !== 'kid') hsDealt++;
+          const t = [c.title, c.text].concat(c.options.map((o) => o.label + ' ' + o.hint)).join(' | ');
+          if (DASH.test(t) || JUNK28.test(t)) bad.push(c.id + ': ' + t.slice(0, 80));
+          const res = C.choose(L, Math.floor(r() * c.options.length));
+          if (!res || DASH.test(res.text) || JUNK28.test(res.text)) bad.push(c.id + ' answer: ' + (res && res.text));
+          continue;
+        }
+        C.choose(L, Math.floor(r() * c.options.length));
+      } else C.step(L);
+    }
+  }
+  const dark = IDS.filter((k) => !seen[k]);
+  console.log(`  ${kidLives} lives from birth  ${IDS.length} cards that call a childhood back  ${Object.values(seen).reduce((a, b) => a + b, 0)} dealt`);
+  ok(IDS.length >= 6 && dark.length === 0, `every childhood callback is dealt somewhere (${dark.join(', ') || 'all ' + IDS.length})`);
+  ok(hsDealt === 0, `a career with no childhood is never called back to one (${hsDealt})`);
+  ok(!bad.length, `they read clean (${bad.slice(0, 2).join(' | ') || 'all'})`);
+  ok(IDS.every((k) => /recall\(L, 'kid\.' \+ k\)|kidWas\(/.test(String(C.STORY_EV[k].when || '')) || /kid\./.test(String(C.STORY_EV[k].when || ''))), 'each one asks for a memory the childhood left');
+
+  /* People in the later life: family, friends, a partner, a rival; not the locker room or the press. */
+  const groups = {}, acts = {}, wrong = [];
+  let lives = 0, before = 0, after = 0, refused = 0;
+  for (let i = 0; i < 40; i++) {
+    const L = C.generateRoad({ seed: 'lp' + i, league }); const r = E.createSeededRNG(i + 9); let g = 0;
+    while (!L.retired && g++ < 9000) { if (L.pending.length) C.choose(L, Math.floor(r() * L.pending[0].options.length)); else C.step(L); }
+    if (C.peopleOpen(L).length) before++;
+    if (!C.laterStart(L)) continue;
+    lives++; g = 0;
+    while (!L.later.over && g++ < 300) {
+      if (L.pending.length) { C.choose(L, Math.floor(r() * L.pending[0].options.length)); continue; }
+      let did = false;
+      for (const p of C.peopleOpen(L)) {
+        groups[p.group] = 1;
+        if (!/^(family|friend|partner|foe)$/.test(p.group) || C.realMan(L, p.n)) wrong.push(p.group + ' ' + p.n);
+        const open = p.acts.filter((x) => x.ok), a = open[Math.floor(r() * open.length)];
+        if (a && r() < 0.5) { const res = C.personAct(L, p.id, a.id); if (!res) refused++; else { acts[a.id] = 1; did = true; if (DASH.test(res.text) || JUNK28.test(res.text)) wrong.push(res.text); } break; }
+      }
+      if (!did) C.laterAge(L);
+    }
+    if (C.peopleOpen(L).length) after++;
+  }
+  console.log(`  ${lives} later lives  groups ${Object.keys(groups).join(', ')}  ${Object.keys(acts).length} kinds of act taken`);
+  ok(lives >= 30 && before === 0 && after === 0, `people open only while the later life is being lived (${before} before, ${after} after)`);
+  ok(groups.family && groups.friend && !wrong.length, `the later life lists family, friends, a partner and rivals, nobody real (${wrong.slice(0, 2).join(', ') || 'clean'})`);
+  ok(Object.keys(acts).length >= 6 && refused === 0, `acts on them are taken and read clean (${Object.keys(acts).join(', ')})`);
+  {
+    const L = C.generateRoad({ seed: 'lp-word', league }); const r = E.createSeededRNG(3); let g = 0;
+    const was = C.bondsPeriod(L);
+    while (!L.retired && g++ < 9000) { if (L.pending.length) C.choose(L, Math.floor(r() * L.pending[0].options.length)); else C.step(L); }
+    C.laterStart(L);
+    ok(was === 'year' && C.bondsPeriod(L) === 'four years', `the acts are counted over a year in the career and four years in the later life ("${was}", "${C.bondsPeriod(L)}")`);
+  }
+}
+
 if (!QUICK) await browser();
 
 console.log('');

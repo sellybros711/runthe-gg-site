@@ -177,7 +177,7 @@ function parentOf(L) {
    story cards a season (the 10 to 15 minute career) a card behind a narrow
    gate comes a few times in 3,000 careers, and 1,000 met it by luck. */
 const rareSeen = {};
-const EX = { gen: { easy: [], normal: [], hard: [] }, sons: [], ch: {} };
+const EX = { gen: { easy: [], normal: [], hard: [] }, sons: [], ch: {}, kid: [] };
 if (!SCRIPT && !ONLY) {
   const NE = Math.max(120, Math.ceil(N / 5));
   for (const d of C.DIFF_KEYS) for (let i = 0; i < NE; i++) {
@@ -187,6 +187,11 @@ if (!SCRIPT && !ONLY) {
        points of seed noise against a band of two. */
     try { EX.gen[d].push(Object.assign(run('gen:' + i, 'gen', pol, null, true, { diff: d, pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] }), { pol })); }
     catch (e) { crashes++; if (crashes <= 3) console.error('crash gen' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
+  }
+  /* Lives played from birth (Pro): their cards call the childhood back. */
+  for (let i = 0; i < NE; i++) {
+    try { EX.kid.push(Object.assign(run('kid:' + i, 'kid', POLICIES[i % POLICIES.length], null, true), { pol: POLICIES[i % POLICIES.length] })); }
+    catch (e) { crashes++; if (crashes <= 3) console.error('crash kid' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
   }
   /* Sons of the first sweep's careers that reached the league, a father with
      his number in the rafters first, because two of the son's cards are
@@ -239,7 +244,7 @@ if (!SCRIPT && !ONLY) {
     }
   }
 }
-const exAll = [].concat(EX.gen.easy, EX.gen.normal, EX.gen.hard, EX.sons, ...Object.values(EX.ch));
+const exAll = [].concat(EX.gen.easy, EX.gen.normal, EX.gen.hard, EX.sons, EX.kid, ...Object.values(EX.ch));
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 
 /* ─── measure ─────────────────────────────────────────────────────────── */
