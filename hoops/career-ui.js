@@ -2317,10 +2317,14 @@ function roleWord(L, p){
 }
 /* Why an act shows and cannot be taken: the engine says which (`why`: the
    year's time, this person already, or the cash) and this is its sentence. */
+/* What the acts are counted over, in the engine's word (C.bondsPeriod): a
+   year in the career, four years a press in the later life. */
+function bondPer(L){ return C.bondsPeriod ? C.bondsPeriod(L) : 'year'; }
+function bondThis(L){ var p = bondPer(L); return p === 'year' ? 'this year' : 'these ' + p; }
 function bondWhy(L, p, a){
   if (a.ok) return '';
-  if (a.why === 'year') return 'No time left this year';
-  if (a.why === 'person') return 'One act a person each year';
+  if (a.why === 'year') return 'No time left ' + bondThis(L);
+  if (a.why === 'person') return 'One act a person ' + (bondPer(L) === 'year' ? 'each year' : 'every ' + bondPer(L));
   if (a.why === 'cash') return 'Costs ' + money(a.cost) + '. You have ' + money(L.cash) + '.';
   return 'Not open right now';
 }
@@ -2340,7 +2344,7 @@ function peopleHtml(L, only){
     var left = C.bondsLeft(L), max = C.BOND_MAX, pips = '';
     for (var i = 0; i < max; i++) pips += '<i' + (i < left ? ' class="on"' : '') + '></i>';
     out += '<div class="cr-pp-head" id="cr-pp-head"><span class="cr-pp-pips" aria-hidden="true">' + pips + '</span>'
-      + '<p><b id="cr-pp-left">' + left + ' of ' + max + '</b> left this year. One a person.</p></div>';
+      + '<p><b id="cr-pp-left">' + left + ' of ' + max + '</b> left ' + bondThis(L) + '. One a person.</p></div>';
   } else {
     var shut = lifeShut(L);
     if (shut) out += '<p class="cr-life-shut" id="cr-pp-shut" role="note">' + K.iconHtml('lock', 2) + '<span>' + esc(shut) + '</span></p>';
@@ -2352,7 +2356,7 @@ function peopleHtml(L, only){
       + '<span class="cr-ava ' + tone + '" aria-hidden="true">' + esc(initials(p.n)) + '</span>'
       + '<span class="cr-ppt"><b>' + esc(p.n) + '</b><small>' + esc(roleWord(L, p)) + ' · since ' + p.met + '</small></span>'
       + '<span class="cr-ppm"><span class="cr-mood ' + tone + '">' + esc(p.mood) + '</span>' + relBar(p.rel, '') + '</span>'
-      + (note || p.used ? '<span class="note">' + (p.used ? '<i class="cr-ppdone">Done this year</i>' : '') + esc(note) + '</span>' : '') + '</button></li>';
+      + (note || p.used ? '<span class="note">' + (p.used ? '<i class="cr-ppdone">Done ' + bondThis(L) + '</i>' : '') + esc(note) + '</span>' : '') + '</button></li>';
   };
   if (mingle && !open.some(function(p){ return p.group === 'partner'; })) {
     var why = moveWhy(L, mingle);
@@ -2400,7 +2404,7 @@ function openPerson(pid){
     + '<div class="cr-ppm"><span class="cr-mood ' + tone + '" id="cr-pp-mood">' + esc(p.mood) + '</span>' + relBar(p.rel, p.mood) + '</div></div></div>'
     + (notes ? '<h3 class="cr-sub">They remember</h3><ul class="cr-list cr-ppnotes">' + notes + '</ul>' : '')
     + '<h3 class="cr-sub">What you can do</h3>'
-    + '<p class="cash cr-pp-time"><b id="cr-pa-left">' + left + ' of ' + C.BOND_MAX + '</b> left this year.' + (p.used ? ' You already made time for ' + esc(String(p.n).split(' ')[0]) + '.' : '') + '</p>'
+    + '<p class="cash cr-pp-time"><b id="cr-pa-left">' + left + ' of ' + C.BOND_MAX + '</b> left ' + bondThis(L) + '.' + (p.used ? ' You already made time for ' + esc(String(p.n).split(' ')[0]) + '.' : '') + '</p>'
     + '<ul class="cr-mvlist cr-palist" style="--g:#f29ab0">' + acts + '</ul>'
     + '<button class="k-btn k-sec k-block" id="cr-sheet-x" type="button">Close</button>', p.n, 'cr-ppsheet');
   var sh = $('cr-sheet');
@@ -4534,7 +4538,7 @@ function laterView(card){
   ltSub = null;
   var pl = open.length ? C.bondsLeft(R) : 0;
   var ppl = open.length ? '<div class="cr-acts cr-life cr-lt-acts"><button class="k-btn k-sec cr-lfbtn" id="cr-lt-people" type="button">' + K.iconHtml('people', 2) + '<span>People</span>'
-    + (pl ? '<i aria-label="' + pl + ' left this year">' + pl + '</i>' : '') + '</button></div>' : '';
+    + (pl ? '<i aria-label="' + pl + ' left ' + bondThis(R) + '">' + pl + '</i>' : '') + '</button></div>' : '';
   var feed = stage.beats && stage.beats.length ? '<ul class="k-panel k-tight cr-beats cr-lt-feed k-in" id="cr-lt-feed">' + stage.beats.map(function(b, i){
     return '<li class="' + (b.tone || '') + '" style="animation-delay:' + (REDUCED ? 0 : i * 90) + 'ms">' + esc(b.text) + '</li>'; }).join('') + '</ul>' : '';
   return laterTop(card, 'After basketball')

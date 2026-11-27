@@ -4527,7 +4527,8 @@ async function browser() {
             const rows = [...document.querySelectorAll('#cr-ltpp [data-person]')].map((e) => e.getAttribute('data-person'));
             const any = [...document.querySelectorAll('#cr-ltpp .cr-ppt b, #cr-ltpp .cr-ppl b')].map((e) => e.textContent);
             return { panel: !!document.querySelector('#cr-ltpp'), go: !!document.querySelector('#cr-lt-go'), rows, open: open.map((p) => p.id), names: any, want: open.map((p) => p.n), groups: open.map((p) => p.group), real: open.filter((p) => C.realMan(R, p.n)).length,
-              left: (document.querySelector('#cr-ltpp #cr-pp-left') || {}).textContent, leftWant: C.bondsLeft(R) + ' of ' + C.BOND_MAX }; });
+              left: (document.querySelector('#cr-ltpp #cr-pp-left') || {}).textContent, leftWant: C.bondsLeft(R) + ' of ' + C.BOND_MAX,
+              per: C.bondsPeriod ? C.bondsPeriod(R) : null, head: (document.querySelector('#cr-ltpp #cr-pp-head p') || {}).textContent || '', all: (document.querySelector('#cr-ltpp') || {}).textContent || '' }; });
           ok(L1.panel && !L1.go && L1.rows.length > 0 && same(L1.rows, L1.open) && same(L1.names, L1.want) && L1.groups.every((g) => /^(family|friend|partner|foe)$/.test(g)) && !L1.real && L1.left === L1.leftWant, `${tag}: it opens the career's People list, and every person on it is one C.peopleOpen lists, in its order, nobody else (${L1.rows.length} people, ${L1.left})`);
           await page.evaluate(() => { const C = window.RTF_CAREER, pa = window.__paO = C.personAct; window.__pa = []; C.personAct = function(L, pid, aid){ const r = pa.apply(this, arguments); window.__pa.push({ pid, aid, ok: !!r, text: r ? r.text : null }); return r; }; });
           const pick = await page.evaluate(() => { const C = window.RTF_CAREER, R = RTF_CAREER_UI.state().rest; for (const p of C.peopleOpen(R)) { const a = p.acts.filter((x) => x.ok && !x.cost)[0] || p.acts.filter((x) => x.ok)[0]; if (a) return { pid: p.id, aid: a.id, rel: R.people[p.id].rel, n: (R.flags.bonds && R.flags.bonds.y === R.year) ? R.flags.bonds.n : 0 }; } return null; });
@@ -4535,13 +4536,19 @@ async function browser() {
           if (pick) {
             await tryPress('#cr-ltpp [data-person="' + pick.pid + '"]'); await page.waitForTimeout(250);
             const sheet = await page.evaluate(() => { const s = document.querySelector('#cr-sheet'); return !!s && !s.hidden && !!s.querySelector('#cr-pp-h'); });
+            L1.time = await page.evaluate(() => (document.querySelector('#cr-sheet .cr-pp-time') || {}).textContent || '');
             await tryPress('#cr-sheet [data-pact="' + pick.aid + '"]'); await page.waitForTimeout(300);
             A = await page.evaluate((pk) => { const R = RTF_CAREER_UI.state().rest, st = JSON.parse(localStorage.getItem('rtf.life.v1')), sv = st.rest || {};
               return { calls: window.__pa.slice(), n: R.flags.bonds && R.flags.bonds.y === R.year ? R.flags.bonds.n : 0, who: !!(R.flags.bonds && R.flags.bonds.who[pk.pid]), saved: !!(sv.flags && sv.flags.bonds && sv.flags.bonds.n === R.flags.bonds.n && sv.flags.bonds.who[pk.pid] && sv.people[pk.pid].rel === R.people[pk.pid].rel),
-                res: (document.querySelector('#cr-ltpp .cr-result .k-what') || {}).textContent, panel: !!document.querySelector('#cr-ltpp'), left: (document.querySelector('#cr-ltpp #cr-pp-left') || {}).textContent, leftWant: window.RTF_CAREER.bondsLeft(R) + ' of ' + window.RTF_CAREER.BOND_MAX }; }, pick);
+                res: (document.querySelector('#cr-ltpp .cr-result .k-what') || {}).textContent, done: (document.querySelector('#cr-ltpp [data-person="' + pk.pid + '"] .cr-ppdone') || {}).textContent || '', panel: !!document.querySelector('#cr-ltpp'), left: (document.querySelector('#cr-ltpp #cr-pp-left') || {}).textContent, leftWant: window.RTF_CAREER.bondsLeft(R) + ' of ' + window.RTF_CAREER.BOND_MAX }; }, pick);
             A.sheet = sheet;
           }
           ok(pick && A && A.sheet && A.calls.length === 1 && A.calls[0].pid === pick.pid && A.calls[0].aid === pick.aid && A.calls[0].ok && A.n === pick.n + 1 && A.who && A.saved && A.res === A.calls[0].text && A.panel && A.left === A.leftWant, `${tag}: a person's sheet takes an act by tapping: it is C.personAct, once, the engine holds one fewer act and the person as done, it is saved, and the receipt is the engine's words (${A ? A.left : 'no act'})`);
+          /* the acts are counted over four years here, and the screen says so in C.bondsPeriod's words */
+          {
+            const per = L1.per, these = 'these ' + per;
+            ok(per && per !== 'year' && L1.head === L1.leftWant + ' left ' + these + '. One a person.' && (L1.time || '').indexOf(L1.leftWant + ' left ' + these + '.') === 0 && A && A.done === 'Done ' + these && !/this year|each year/.test(L1.all + (L1.time || '') + A.done), `${tag}: the People list and sheet count the acts over C.bondsPeriod, not a year ("${L1.head}", "${A ? A.done : ''}")`);
+          }
           await tryPress('#cr-ltpp-x'); await page.waitForTimeout(250);
           const B = await lt();
           ok(B && B.go && B.ppl.there && B.ppl.badge === B.ppl.want && !(await page.evaluate(() => !!document.querySelector('#cr-ltpp'))), `${tag}: it closes back to his life, the badge now ${B ? B.ppl.badge : '?'}, C.bondsLeft's`);
