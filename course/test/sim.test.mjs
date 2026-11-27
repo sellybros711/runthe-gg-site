@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { CONFIG } from '../config.js';
 import { MAP } from '../map.js';
-import { newCourse, startShift, step, endShift, makeCtx, replay, command, roundPlan, buildRoute, goalOf, starsOf, goalFor, stations, migrateCourse, levelOf, upgradeCost, feeOf, shopList, looksOf, placeCard, placeAt } from '../sim.js';
+import { holesOf, newCourse, startShift, step, endShift, makeCtx, replay, command, roundPlan, buildRoute, goalOf, starsOf, goalFor, stations, migrateCourse, levelOf, upgradeCost, feeOf, shopList, looksOf, placeCard, placeAt } from '../sim.js';
 import { makeBot } from '../bot.js';
 import { runShifts } from '../headless.mjs';
 
@@ -190,12 +190,97 @@ test('a place: its pad opens a card, and buying from the card builds it', () => 
   for (const id in CONFIG.economy.places) assert.ok(MAP.places[id], id + ' has a pad');
 });
 
-test('hole 4: buying it starts the clearing, and the mower clears the plot', () => {
+test('hole 4: three layouts on its card, the plot follows the one bought, and it opens the next morning', () => {
   const course = newCourse(CONFIG, MAP, 1); course.cash = 9000;
-  let c = course;
-  for (let i = 0; i < 4 && c.unlocks.hole_4 !== 'building'; i++) c = play(c).end.course;
-  assert.equal(c.unlocks.hole_4, 'building');
-  assert.equal(c.holes[3].open, false, 'opening the hole is a later phase');
+  const ctx = makeCtx(course, CONFIG, MAP), S = startShift(course, CONFIG, MAP), at = MAP.places.hole_4;
+  S.player.x = at.x; S.player.y = at.y;
+  const card = placeCard(S, ctx, 'hole_4');
+  assert.deepEqual(card.items.map(i => i.layout), Object.keys(MAP.layouts[4]));
+  assert.equal(new Set(card.items.map(i => i.yards)).size, 3, 'three lengths');
+  for (const it of card.items) assert.equal(it.cost, Math.round(CONFIG.economy.pads.hole_4.cost * CONFIG.economy.layouts[it.layout].cost / 5) * 5);
+  /* holes 5 and 6 wait their turn */
+  assert.equal(placeCard(S, ctx, 'hole_5').st, 'locked'); assert.equal(placeCard(S, ctx, 'hole_5').items.length, 0);
+  command(S, 'buy', 'build', 'hole_4:signature'); step(S, ctx);
+  assert.equal(S.pads.hole_4.st, 'clearing'); assert.equal(S.layouts[4], 'signature');
+  assert.equal(S.cash, course.cash - card.items.find(i => i.layout === 'signature').cost);
+  const line = MAP.layouts[4].signature.line, end = line[line.length - 1], last = S.plot.pts[S.plot.pts.length - 1];
+  assert.ok(Math.hypot(last.x - end.x, last.y - end.y) < 0.01, 'the plot runs to the signature green');
+  assert.equal(S.holes[3].par, MAP.layouts[4].signature.par);
+  /* the bot mows it clear; overnight it opens on its layout */
+  let c = endShift(S, ctx, course).course, r = null;
+  assert.equal(c.unlocks.hole_4, 'clearing'); assert.equal(c.layouts[4], 'signature');
+  for (let i = 0; i < 3 && !c.holes[3].open; i++) { const p = play(c); r = p.end.result; c = p.end.course; }
+  assert.equal(c.holes[3].open, true); assert.equal(c.unlocks.hole_4, 'done'); assert.deepEqual(r.opened, [4]);
+  assert.equal(c.holes[3].par, MAP.layouts[4].signature.par);
+  const next = makeCtx(c, CONFIG, MAP);
+  assert.deepEqual(next.route.plan, [1, 2, 3, 4, 1, 2]);
+  assert.equal(next.geoms[4].hazards.filter(z => z.type === 'water').length, 1, 'its water is in the shot model, in yards');
+  assert.equal(next.geoms[4].hazards[0].x, MAP.layouts[4].signature.hazards[0].x * CONFIG.shot.yardsPerUnit);
+  /* the next morning hole 5 is for sale, and hole 4 levels up */
+  const T = startShift(c, CONFIG, MAP);
+  assert.equal(placeCard(T, next, 'hole_5').st, 'open');
+  assert.deepEqual(placeCard(T, next, 'hole_4').items.map(i => i.kind), ['up']);
+  assert.ok(T.greens[4] >= 0 && T.greens[4] <= 100, 'a new hole has a real green');
+});
+
+test('a hole bought before there was a choice opens on its classic layout', () => {
+  const c = newCourse(CONFIG, MAP, 4); c.unlocks.hole_4 = 'building'; delete c.layouts;
+  const m = migrateCourse(c, CONFIG), { end } = play(m);
+  assert.equal(end.course.holes[3].open, true); assert.equal(end.course.layouts[4], 'classic');
+  assert.deepEqual(holesOf(MAP, end.course.layouts)[3].line, MAP.layouts[4].classic.line);
+  assert.deepEqual(MAP.layouts[4].classic.line, MAP.holes[3].line, 'classic is the map\'s own line');
+  for (const o of [4, 5, 6]) assert.equal(MAP.layouts[o].classic.par, MAP.holes[o - 1].par);
+});
+
+test('the layouts trade: short plays fast and earns least, signature earns most', () => {
+  const geo = key => { const c = newCourse(CONFIG, MAP, 1); c.layouts = { 4: key, 5: key, 6: key }; return holesOf(MAP, c.layouts).slice(3, 6); };
+  const par = key => geo(key).reduce((a, h) => a + h.par, 0);
+  assert.ok(par('short') < par('classic') && par('classic') < par('signature'), 'pars ' + par('short') + ' ' + par('classic') + ' ' + par('signature'));
+  const L = CONFIG.economy.layouts;
+  assert.ok(L.short.fee < L.classic.fee && L.classic.fee < L.signature.fee);
+  assert.ok(L.short.design < L.classic.design && L.classic.design < L.signature.design);
+  assert.ok(geo('signature').every(h => h.hazards.length >= 1) && geo('signature').some(h => h.hazards.some(z => z.type === 'water')));
+  /* every layout's tee is its hole's tee, and every hazard sits within reach of its line */
+  for (const o of [4, 5, 6]) for (const key in MAP.layouts[o]) {
+    const l = MAP.layouts[o][key];
+    assert.deepEqual(l.line[0], MAP.holes[o - 1].line[0]);
+    for (const z of l.hazards) { let best = 1e9; for (let i = 1; i < l.line.length; i++) { const a = l.line[i - 1], b = l.line[i], vx = b.x - a.x, vy = b.y - a.y, t = Math.max(0, Math.min(1, ((z.x - a.x) * vx + (z.y - a.y) * vy) / (vx * vx + vy * vy))); best = Math.min(best, Math.hypot(z.x - a.x - vx * t, z.y - a.y - vy * t)); } assert.ok(best < 6, o + ' ' + key + ' hazard ' + best); }
+  }
+});
+
+test('going Public: it waits for six holes and the stars, then pays more from the next morning', () => {
+  const c = newCourse(CONFIG, MAP, 6), T = CONFIG.economy.tiers.public;
+  for (const o of [4, 5, 6]) { c.unlocks['hole_' + o] = 'done'; c.layouts[o] = 'classic'; c.holes[o - 1].open = true; }
+  c.shiftsFiled = 20; c.cash = T.cost + 500;
+  const ctx = makeCtx(c, CONFIG, MAP), at = MAP.places.clubhouse;
+  /* too few stars: the step is on the card, locked */
+  c.stars = T.stars - 0.5; let S = startShift(c, CONFIG, MAP); S.player.x = at.x; S.player.y = at.y;
+  let it = placeCard(S, ctx, 'clubhouse').items.find(i => i.kind === 'tier');
+  assert.ok(it && it.locked && !it.can);
+  command(S, 'buy', 'tier', 'public'); step(S, ctx); assert.equal(S.tier, 'muni');
+  /* too few holes */
+  const few = clone(c); few.stars = 4; few.holes[5].open = false; few.unlocks.hole_6 = 'clearing';
+  S = startShift(few, CONFIG, MAP); assert.ok(placeCard(S, makeCtx(few, CONFIG, MAP), 'clubhouse').items.find(i => i.kind === 'tier').locked);
+  /* ready */
+  c.stars = T.stars + 0.5; S = startShift(c, CONFIG, MAP); S.player.x = at.x; S.player.y = at.y;
+  it = placeCard(S, ctx, 'clubhouse').items.find(i => i.kind === 'tier');
+  assert.ok(it.can && !it.locked);
+  const fee0 = feeOf(S, ctx);
+  command(S, 'buy', 'tier', 'public'); step(S, ctx);
+  assert.equal(S.tier, 'public'); assert.equal(S.cash, c.cash - T.cost);
+  assert.equal(feeOf(S, ctx), fee0, 'the day already booked plays at the old prices');
+  while (!S.done) { step(S, ctx); if (S.phase === 'after') command(S, 'end'); }
+  const next = endShift(S, ctx, c).course;
+  assert.equal(next.tier, 'public');
+  const P = startShift(next, CONFIG, MAP), M = startShift(Object.assign(clone(next), { tier: 'muni' }), CONFIG, MAP);
+  assert.equal(Math.round(feeOf(P, ctx) * 1000), Math.round(feeOf(M, ctx) * T.fee * 1000));
+  assert.ok(P.groups.length > M.groups.length, 'more groups book a public course');
+  assert.ok(P.goal > M.goal);
+  /* league players only at a public course */
+  const kinds = new Set();
+  for (let seed = 1; seed < 60; seed++) { const k = clone(next); k.seed = seed; for (const g of startShift(k, CONFIG, MAP).groups) kinds.add(g.type); }
+  assert.ok(kinds.has('league'));
+  for (let seed = 1; seed < 60; seed++) { const k = clone(next); k.seed = seed; k.tier = 'muni'; for (const g of startShift(k, CONFIG, MAP).groups) assert.notEqual(g.type, 'league'); }
 });
 
 test('mowing restores a green, and a day wears it down', () => {
@@ -431,7 +516,7 @@ test('day 1 is plain: no event, every group a regular', () => {
 test('later days draw every kind of group and every event, and the tee sheet is the same sheet', () => {
   const kinds = new Set(), events = new Set();
   for (let seed = 1; seed <= 200; seed++) { const S = startShift(later(seed, 6), CONFIG, MAP); events.add(S.event); for (const g of S.groups) kinds.add(g.type); }
-  assert.deepEqual([...kinds].sort(), Object.keys(CONFIG.golfers.types).sort());
+  assert.deepEqual([...kinds].sort(), Object.keys(CONFIG.golfers.typeOdds).sort());
   assert.deepEqual([...events].sort(), ['', ...Object.keys(CONFIG.events.odds)].sort());
   /* kinds and events come from their own stream: with events off, the arrivals and sizes do not move */
   const off = clone(CONFIG); off.events.chance = 0;

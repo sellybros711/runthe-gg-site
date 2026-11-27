@@ -216,6 +216,22 @@ test('events: the route stores a guest by device, nothing from a blocked country
   assert.deepEqual((await handle({ method: 'GET', sub: 'e', country: 'US' }, db)).json, { on: true });
 });
 
+test('a hole opened on the page is opened by the server\'s own replay, on its layout', async () => {
+  const db = memoryDb(), uid = 'u7';
+  await handle({ method: 'GET', sub: 'state', uid, query: { seed: '31' } }, db);
+  const row = db.courses.get(uid);
+  row.state = { unlocks: { hole_4: 'clearing' }, layouts: { 4: 'short' }, reviews: [] }; row.cash = 40;
+  const start = (await handle({ method: 'GET', sub: 'state', uid, query: {} }, db)).json.course;
+  assert.equal(start.holes[3].open, false); assert.equal(start.layouts[4], 'short');
+  const a = play(start);
+  assert.deepEqual(a.end.result.opened, [4], 'the bot mowed the plot clear');
+  const res = await handle({ method: 'POST', sub: 'shift', uid, body: { no: 1, v: CONFIG.version, log: a.log } }, db);
+  assert.equal(res.status, 200, JSON.stringify(res.json));
+  const back = (await handle({ method: 'GET', sub: 'state', uid, query: {} }, db)).json.course;
+  assert.equal(back.holes[3].open, true); assert.equal(back.holes[3].par, MAP.layouts[4].short.par);
+  assert.deepEqual(back, a.end.course, 'the server\'s course is the page\'s');
+});
+
 test('a database row reads back as the sim\'s course, whatever order its keys come in', () => {
   const row = { course: { state: { unlocks: { hole_4: 'clearing', cart_barn: 'done' }, reviews: [3.1] }, stars: '2.40', cash: '80', shifts_filed: 2, seed: 5, schema_version: 1, name: 'X', tier: 'muni' },
     holes: [{ ord: 1, par: 3, open: true, condition: { fairway: 60, green: 80 } }] };

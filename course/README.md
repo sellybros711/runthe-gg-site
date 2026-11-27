@@ -57,6 +57,22 @@ tester gate, noindexed, linked from nowhere, off the home page and the newslette
 - **Won or lost**: the goal is a share of the fees booked at today's prices, rising a little each day
   (`goalShareStep` to `goalShareMax`). Meeting it wins the day and pays `goalBonus` at the close.
 
+## Holes 4 to 6 and the step to Public (2026-11-27)
+
+- **Layouts.** Holes 4, 5 and 6 each come in three layouts (`MAP.layouts`): short, classic and
+  signature. Each keeps the hole's tee and has its own line, par and hazards (bunkers and water, in
+  world units; `holeGeom` turns them into yards). `holesOf(map, layouts)` gives the holes as built,
+  and the route, the shot model and the renderer all read that. What a style costs, pays and adds to
+  a review is `CONFIG.economy.layouts`.
+- **Opening a hole.** Buy it from its pad in one layout, mow the plot clear, and it opens the next
+  morning (`endShift` opens it). A hole waits for the one before it (`after`). An old save with a
+  hole bought before there was a choice opens on the classic layout.
+- **Public.** From the Clubhouse card, once six holes are open and the stars are there
+  (`CONFIG.economy.tiers`). It takes effect the next morning: higher fees, more bookings, a bigger
+  goal, and League groups.
+- **Saving needs no SQL.** The chosen layouts and the tier ride in `state` (jsonb). The server's
+  `toCourse` opens a hole from its unlock and reads its par from its layout.
+
 ## The rules the code keeps
 
 - **The sim is pure and deterministic.** Same seed, config and command log give the same shift in

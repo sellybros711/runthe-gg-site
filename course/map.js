@@ -31,13 +31,14 @@ export const MAP = {
     putting_green: { x: 25, y: 5.5 },
     snack_shack: { x: 31.5, y: -16.5 },
     driving_range: { x: -24, y: -31 },
-    hole_4: { x: -6, y: 15 }
+    hole_4: { x: -3, y: 25 }, hole_5: { x: -63, y: 34 }, hole_6: { x: -44, y: 61 }
   },
   /* one pad a place (CONFIG.economy.places), beside the place itself */
   places: {
     clubhouse: { x: -10, y: -3 }, shop: { x: 10, y: 1.5 }, starter: { x: 3, y: 19.5 }, shed: { x: -19, y: 3 },
     parking: { x: 1.5, y: -22.5 }, gardens: { x: -7, y: 9.5 }, hole_1: { x: 15, y: 30 }, hole_2: { x: 63, y: 45.5 }, hole_3: { x: 35, y: 12.5 },
-    cart_barn: { x: 17, y: -6 }, putting_green: { x: 25, y: 5.5 }, snack_shack: { x: 31.5, y: -16.5 }, driving_range: { x: -24, y: -31 }, hole_4: { x: -6, y: 15 }
+    cart_barn: { x: 17, y: -6 }, putting_green: { x: 25, y: 5.5 }, snack_shack: { x: 31.5, y: -16.5 }, driving_range: { x: -24, y: -31 }, hole_4: { x: -3, y: 25 },
+    hole_5: { x: -63, y: 34 }, hole_6: { x: -44, y: 61 }
   },
   /* the hands-on stations: the ring you stand in, and where the group stands */
   keys: { ring: { x: 12.8, y: -1.2 }, spot: { x: 10.4, y: -1.6 } },
@@ -60,6 +61,37 @@ export const MAP = {
     { ord: 9, par: 4, template: 'plot', line: [{ x: 84, y: 31 }, { x: 62, y: 10 }, { x: 34, y: -4 }] }
   ],
   openAtStart: [1, 2, 3],
+  /* THE LAYOUTS. Holes 4 to 6 are built to one of three layouts, chosen when the hole is bought.
+     Each keeps the hole's tee and finds its own green. `classic` is the line in `holes` above, and
+     the one a hole gets if it was bought before there was a choice. Hazards are in world units:
+     a bunker slows the next shot, water costs a stroke (shot.js). What each layout pays and how it
+     looks to a review is in CONFIG.economy.layouts. */
+  layouts: {
+    4: {
+      short:     { par: 3, line: [{ x: -8, y: 20 }, { x: -27, y: 25 }],
+                   hazards: [{ type: 'bunker', x: -25, y: 21.6, r: 1.5 }, { type: 'bunker', x: -29.6, y: 28, r: 1.3 }] },
+      classic:   { par: 4, line: [{ x: -8, y: 20 }, { x: -30, y: 28 }, { x: -52, y: 30 }],
+                   hazards: [{ type: 'bunker', x: -31, y: 31.6, r: 1.8 }, { type: 'bunker', x: -50, y: 27, r: 1.5 }] },
+      signature: { par: 4, line: [{ x: -8, y: 20 }, { x: -29, y: 21 }, { x: -46, y: 30 }],
+                   hazards: [{ type: 'water', x: -38, y: 26.4, r: 2.5 }, { type: 'bunker', x: -48.6, y: 32.6, r: 1.4 }] }
+    },
+    5: {
+      short:     { par: 3, line: [{ x: -57, y: 37 }, { x: -58, y: 52 }],
+                   hazards: [{ type: 'bunker', x: -60.4, y: 50.4, r: 1.3 }] },
+      classic:   { par: 3, line: [{ x: -57, y: 37 }, { x: -57, y: 58 }],
+                   hazards: [{ type: 'bunker', x: -59.8, y: 57, r: 1.4 }, { type: 'bunker', x: -54.2, y: 59, r: 1.4 }] },
+      signature: { par: 4, line: [{ x: -57, y: 37 }, { x: -68, y: 52 }, { x: -60, y: 66 }],
+                   hazards: [{ type: 'water', x: -63.4, y: 59.6, r: 2.3 }, { type: 'bunker', x: -66, y: 55.4, r: 1.5 }, { type: 'bunker', x: -57.4, y: 67.6, r: 1.3 }] }
+    },
+    6: {
+      short:     { par: 4, line: [{ x: -50, y: 65 }, { x: -28, y: 70 }, { x: -10, y: 68 }],
+                   hazards: [{ type: 'bunker', x: -12, y: 71.2, r: 1.5 }] },
+      classic:   { par: 5, line: [{ x: -50, y: 65 }, { x: -20, y: 72 }, { x: 14, y: 67 }],
+                   hazards: [{ type: 'bunker', x: -21, y: 75.6, r: 1.8 }, { type: 'bunker', x: 11.4, y: 64, r: 1.5 }] },
+      signature: { par: 5, line: [{ x: -50, y: 65 }, { x: -22, y: 68 }, { x: 10, y: 70 }],
+                   hazards: [{ type: 'water', x: -5, y: 69, r: 2.6 }, { type: 'bunker', x: 12.6, y: 73, r: 1.4 }, { type: 'bunker', x: -24, y: 64.6, r: 1.5 }] }
+    }
+  },
   trees: [[-20, 12], [-26, 4], [24, 22], [28, 30], [48, 28], [50, 52], [30, 52], [66, 48], [70, 24], [-18, 34],
     [-36, 16], [-40, 40], [-66, 48], [-30, 60], [0, 78], [36, 76], [78, 66], [92, 50], [94, 20], [70, 2],
     [50, -16], [20, -22], [-10, -26], [-62, 10], [-64, -8], [86, -10], [4, 50], [-4, 40], [20, 20], [90, 76]]
