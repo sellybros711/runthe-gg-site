@@ -4507,6 +4507,7 @@ async function browser() {
           const V = C.laterOf(R), m = (x) => x < 0 ? '-' + C.money(-x) : C.money(x), go = document.querySelector('#cr-lt-go'), g = go ? go.getBoundingClientRect() : null, c = R.pending[0] || null;
           return { on: V.on, age: q('#cr-lt-age') === String(V.age), title: q('#cr-lt-title') === V.title, pay: q('#cr-lt-pay') === m(V.pay), cash: q('#cr-lt-cash') === m(V.cash), worth: q('#cr-lt-worth') === m(V.worth), health: q('#cr-lt-health') === String(V.health), ageN: V.age,
             go: go ? { text: go.textContent, h: g.height, seen: g.top >= 0 && g.bottom <= innerHeight + 0.5, step: typeof V.next === 'string' && V.next.length > 5 && q('#cr-lt-next') === V.next, life: !V.life || q('#cr-lt-life') === V.life + '.' } : null, card: c ? { title: q('#cr-pgcard #cr-card-h') === c.title, opts: same2([...document.querySelectorAll('#cr-pgcard .cr-choice .cr-ol')].map((e) => e.textContent), c.options.map((o) => o.label)), small: [...document.querySelectorAll('#cr-pgcard .cr-choice')].filter((e) => e.getBoundingClientRect().height < 44).length, n: c.options.length } : null,
+            ppl: (() => { const b = document.querySelector('#cr-lt-people'), i = b && b.querySelector('i'), open = C.peopleOpen(R).length; return { there: !!b, badge: i ? i.textContent : '', want: open ? String(C.bondsLeft(R)) : '', open, h: b ? b.getBoundingClientRect().height : 0 }; })(),
             noCard: !document.querySelector('#cr-pgcard'), feed: [...document.querySelectorAll('#cr-lt-feed li')].map((e) => e.textContent), res: q('.cr-lt-res .k-what'), shell: getComputedStyle(document.querySelector('#cr-shell') || document.body).display, tabs: !!document.querySelector('#s-car.cr-app'), saved: (() => { try { const s = JSON.parse(localStorage.getItem('rtf.life.v1')); return !!(s.rest && s.rest.later && s.rest.age === R.age && s.rest.later.n === R.later.n); } catch (e) { return false; } })() };
           function same2(a, b){ return JSON.stringify(a) === JSON.stringify(b); }
         });
@@ -4514,12 +4515,52 @@ async function browser() {
         const S0 = await lt();
         const st0 = await page.evaluate(() => window.__calls.filter((c) => c.f === 'start'));
         ok(figs(S0) && st0.length === 1 && st0[0].ok && S0.saved && !S0.tabs && S0.go && S0.go.h >= 44 && S0.go.seen && S0.go.step && S0.go.life && S0.noCard, `${tag}: with Pro the same button is C.laterStart, once: a screen with no tabs, his age, what he is called and what it pays, his family, cash, net worth and health, all C.laterOf's, and one main button that says how many years a press is, in the engine's words`);
+        /* HIS PEOPLE (the later life's open list): a button by Age up carries
+           C.bondsLeft as its badge, opens the career's People list on exactly
+           the people C.peopleOpen lists, an act taken by tapping is
+           C.personAct and is saved, and the button closes back to his life. */
+        {
+          const P0 = S0 && S0.ppl;
+          ok(P0 && P0.open > 0 && P0.there && P0.badge === P0.want && P0.h >= 44, `${tag}: the later life has a People button by Age up, carrying C.bondsLeft as its badge, the way Now does (${P0 ? P0.badge + ' of ' + P0.want + ', ' + P0.open + ' people' : 'no screen'})`);
+          await tryPress('#cr-lt-people'); await page.waitForTimeout(250);
+          const L1 = await page.evaluate(() => { const C = window.RTF_CAREER, R = RTF_CAREER_UI.state().rest, open = C.peopleOpen(R);
+            const rows = [...document.querySelectorAll('#cr-ltpp [data-person]')].map((e) => e.getAttribute('data-person'));
+            const any = [...document.querySelectorAll('#cr-ltpp .cr-ppt b, #cr-ltpp .cr-ppl b')].map((e) => e.textContent);
+            return { panel: !!document.querySelector('#cr-ltpp'), go: !!document.querySelector('#cr-lt-go'), rows, open: open.map((p) => p.id), names: any, want: open.map((p) => p.n), groups: open.map((p) => p.group), real: open.filter((p) => C.realMan(R, p.n)).length,
+              left: (document.querySelector('#cr-ltpp #cr-pp-left') || {}).textContent, leftWant: C.bondsLeft(R) + ' of ' + C.BOND_MAX,
+              per: C.bondsPeriod ? C.bondsPeriod(R) : null, head: (document.querySelector('#cr-ltpp #cr-pp-head p') || {}).textContent || '', all: (document.querySelector('#cr-ltpp') || {}).textContent || '' }; });
+          ok(L1.panel && !L1.go && L1.rows.length > 0 && same(L1.rows, L1.open) && same(L1.names, L1.want) && L1.groups.every((g) => /^(family|friend|partner|foe)$/.test(g)) && !L1.real && L1.left === L1.leftWant, `${tag}: it opens the career's People list, and every person on it is one C.peopleOpen lists, in its order, nobody else (${L1.rows.length} people, ${L1.left})`);
+          await page.evaluate(() => { const C = window.RTF_CAREER, pa = window.__paO = C.personAct; window.__pa = []; C.personAct = function(L, pid, aid){ const r = pa.apply(this, arguments); window.__pa.push({ pid, aid, ok: !!r, text: r ? r.text : null }); return r; }; });
+          const pick = await page.evaluate(() => { const C = window.RTF_CAREER, R = RTF_CAREER_UI.state().rest; for (const p of C.peopleOpen(R)) { const a = p.acts.filter((x) => x.ok && !x.cost)[0] || p.acts.filter((x) => x.ok)[0]; if (a) return { pid: p.id, aid: a.id, rel: R.people[p.id].rel, n: (R.flags.bonds && R.flags.bonds.y === R.year) ? R.flags.bonds.n : 0 }; } return null; });
+          let A = null;
+          if (pick) {
+            await tryPress('#cr-ltpp [data-person="' + pick.pid + '"]'); await page.waitForTimeout(250);
+            const sheet = await page.evaluate(() => { const s = document.querySelector('#cr-sheet'); return !!s && !s.hidden && !!s.querySelector('#cr-pp-h'); });
+            L1.time = await page.evaluate(() => (document.querySelector('#cr-sheet .cr-pp-time') || {}).textContent || '');
+            await tryPress('#cr-sheet [data-pact="' + pick.aid + '"]'); await page.waitForTimeout(300);
+            A = await page.evaluate((pk) => { const R = RTF_CAREER_UI.state().rest, st = JSON.parse(localStorage.getItem('rtf.life.v1')), sv = st.rest || {};
+              return { calls: window.__pa.slice(), n: R.flags.bonds && R.flags.bonds.y === R.year ? R.flags.bonds.n : 0, who: !!(R.flags.bonds && R.flags.bonds.who[pk.pid]), saved: !!(sv.flags && sv.flags.bonds && sv.flags.bonds.n === R.flags.bonds.n && sv.flags.bonds.who[pk.pid] && sv.people[pk.pid].rel === R.people[pk.pid].rel),
+                res: (document.querySelector('#cr-ltpp .cr-result .k-what') || {}).textContent, done: (document.querySelector('#cr-ltpp [data-person="' + pk.pid + '"] .cr-ppdone') || {}).textContent || '', panel: !!document.querySelector('#cr-ltpp'), left: (document.querySelector('#cr-ltpp #cr-pp-left') || {}).textContent, leftWant: window.RTF_CAREER.bondsLeft(R) + ' of ' + window.RTF_CAREER.BOND_MAX }; }, pick);
+            A.sheet = sheet;
+          }
+          ok(pick && A && A.sheet && A.calls.length === 1 && A.calls[0].pid === pick.pid && A.calls[0].aid === pick.aid && A.calls[0].ok && A.n === pick.n + 1 && A.who && A.saved && A.res === A.calls[0].text && A.panel && A.left === A.leftWant, `${tag}: a person's sheet takes an act by tapping: it is C.personAct, once, the engine holds one fewer act and the person as done, it is saved, and the receipt is the engine's words (${A ? A.left : 'no act'})`);
+          /* the acts are counted over four years here, and the screen says so in C.bondsPeriod's words */
+          {
+            const per = L1.per, these = 'these ' + per;
+            ok(per && per !== 'year' && L1.head === L1.leftWant + ' left ' + these + '. One a person.' && (L1.time || '').indexOf(L1.leftWant + ' left ' + these + '.') === 0 && A && A.done === 'Done ' + these && !/this year|each year/.test(L1.all + (L1.time || '') + A.done), `${tag}: the People list and sheet count the acts over C.bondsPeriod, not a year ("${L1.head}", "${A ? A.done : ''}")`);
+          }
+          await tryPress('#cr-ltpp-x'); await page.waitForTimeout(250);
+          const B = await lt();
+          ok(B && B.go && B.ppl.there && B.ppl.badge === B.ppl.want && !(await page.evaluate(() => !!document.querySelector('#cr-ltpp'))), `${tag}: it closes back to his life, the badge now ${B ? B.ppl.badge : '?'}, C.bondsLeft's`);
+          await page.evaluate(() => { if (window.__paO) window.RTF_CAREER.personAct = window.__paO; });
+        }
         const bad = [], seenCards = {};
         let presses = 0, cards = 0, over = null;
         for (let i = 0; i < 120 && !over; i++) {
           const S = await lt();
           if (!S) { bad.push('the screen went away at ' + i); break; }
           if (!figs(S)) bad.push('figures at ' + i);
+          if (S.card ? S.ppl.there : (S.ppl.there !== S.ppl.open > 0 || S.ppl.badge !== S.ppl.want)) bad.push('people button at ' + i + ': ' + JSON.stringify(S.ppl));
           await page.evaluate(() => { window.__calls.length = 0; });
           if (S.card) {
             if (!S.card.title || !S.card.opts || S.card.small || S.go) bad.push('card at ' + i + ': ' + JSON.stringify(S.card));
@@ -4542,12 +4583,12 @@ async function browser() {
             if (!S2 || !same(S2.feed, a[0].beats) || !S2.saved || S2.ageN !== S.ageN + (await page.evaluate(() => window.RTF_CAREER.LATER_STEP))) bad.push('after press ' + presses + ': feed ' + JSON.stringify(S2 && S2.feed).slice(0, 100));
           }
         }
-        ok(!bad.length && presses >= 3 && cards >= 1, `${tag}: one press is C.laterAge, once: the years go by, the beats are the feed, every figure moves with the engine, and a card the years deal is answered as a card, C.choose with that answer (${presses} presses, ${cards} cards${bad.length ? '; ' + bad.slice(0, 2).join(' | ') : ''})`);
+        ok(!bad.length && presses >= 3 && cards >= 1, `${tag}: one press is C.laterAge, once: the years go by, the beats are the feed, every figure moves with the engine, a card the years deal is answered as a card, C.choose with that answer, and while it waits there is no People button (${presses} presses, ${cards} cards${bad.length ? '; ' + bad.slice(0, 2).join(' | ') : ''})`);
         await page.waitForTimeout(400);
         const E2 = await page.evaluate(() => { const q = (s) => { const e = document.querySelector(s); return e ? e.textContent : null; }, lc = document.querySelector('#cr-lt-lc'), st = JSON.parse(localStorage.getItem('rtf.life.v1'));
           return { end: !!document.querySelector('#cr-lt-end'), line: q('#cr-lt-line'), rib: q('#cr-lt-rib .cr-rib-n'), ribL: q('#cr-lt-rib .cr-rib-l'), facts: lc ? [...lc.querySelectorAll('.cr-lc-facts li')].map((e) => e.textContent) : null, stats: lc ? [...lc.querySelectorAll('.cr-lc-stats div')].map((e) => ({ k: e.querySelector('span').textContent, v: e.querySelector('b').textContent })) : null,
-            rest: st.rest, later: st.last.later, verdict: st.last.verdict, score: st.last.score, vault: st.vault, hofRib: st.hof[0].ribbon.id, go: !!document.querySelector('#cr-lt-go') }; });
-        ok(over && over.of && E2.end && E2.line === over.of.line && !!E2.line && E2.rib === over.rb.name && E2.ribL === over.rb.line && same(E2.facts, over.lc.facts) && same(E2.stats, over.lc.stats) && !E2.go && !DASH.test(E2.line), `${tag}: when it ends there is one last page: the engine's last line, the ribbon the whole life earned and the life card, read again off the life ("${E2.line}")`);
+            rest: st.rest, later: st.last.later, verdict: st.last.verdict, score: st.last.score, vault: st.vault, hofRib: st.hof[0].ribbon.id, go: !!document.querySelector('#cr-lt-go'), ppl: !!document.querySelector('#cr-lt-people, #cr-ltpp') }; });
+        ok(over && over.of && E2.end && E2.line === over.of.line && !!E2.line && E2.rib === over.rb.name && E2.ribL === over.rb.line && same(E2.facts, over.lc.facts) && same(E2.stats, over.lc.stats) && !E2.go && !E2.ppl && !DASH.test(E2.line), `${tag}: when it ends there is one last page, with no People button: the engine's last line, the ribbon the whole life earned and the life card, read again off the life ("${E2.line}")`);
         ok(over && E2.rest === null && E2.later && E2.later.line === over.of.line && E2.verdict === life.fin.verdict && E2.score === life.fin.score && E2.vault['b:' + over.rb.id] && E2.hofRib === over.rb.id, `${tag}: the life is kept on his card and leaves the slot, a new ribbon goes in the Vault, and the Hall verdict and score are the ones the career ended with`);
         await page.evaluate(() => { window.__shared.length = 0; });
         await tryPress('#cr-lt-share'); await page.waitForTimeout(500);

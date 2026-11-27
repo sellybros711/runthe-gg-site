@@ -1335,6 +1335,9 @@ var CSS = [
 '.cr-lt-job p{margin:0;font:600 14px/1.4 var(--k-f-text);color:var(--k-ink-2);}.cr-lt-job p b{color:var(--k-gold);}',
 '#s-car .cr-lt-figs .down b{color:#ff8a80;text-shadow:none;}',
 '.cr-lt-hp{display:flex;align-items:center;gap:8px;}.cr-lt-hp .k-pips{display:flex;gap:1px;}',
+'.cr-lt-acts{margin:0 0 4px;}',
+'.cr-ltpp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;}.cr-ltpp-h .k-eyebrow{margin:0;}',
+'.cr-ltpp-x{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;font-size:12px;letter-spacing:.08em;}',
 '.cr-lt-dock{position:sticky;bottom:0;z-index:5;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(7,9,18,0),#070912 40%);}',
 '#s-car .k-panel.cr-pgcard{padding:0;overflow:hidden;}',
 '.cr-pgcard .cr-band{display:flex;align-items:center;gap:8px;padding:9px 14px;font:400 10px/1.3 var(--k-f-pixel);letter-spacing:.06em;text-transform:uppercase;color:#120b04;background:var(--k-gold);}',
@@ -2314,27 +2317,34 @@ function roleWord(L, p){
 }
 /* Why an act shows and cannot be taken: the engine says which (`why`: the
    year's time, this person already, or the cash) and this is its sentence. */
+/* What the acts are counted over, in the engine's word (C.bondsPeriod): a
+   year in the career, four years a press in the later life. */
+function bondPer(L){ return C.bondsPeriod ? C.bondsPeriod(L) : 'year'; }
+function bondThis(L){ var p = bondPer(L); return p === 'year' ? 'this year' : 'these ' + p; }
 function bondWhy(L, p, a){
   if (a.ok) return '';
-  if (a.why === 'year') return 'No time left this year';
-  if (a.why === 'person') return 'One act a person each year';
+  if (a.why === 'year') return 'No time left ' + bondThis(L);
+  if (a.why === 'person') return 'One act a person ' + (bondPer(L) === 'year' ? 'each year' : 'every ' + bondPer(L));
   if (a.why === 'cash') return 'Costs ' + money(a.cost) + '. You have ' + money(L.cash) + '.';
   return 'Not open right now';
 }
 function lifeShut(L){ return L.pending.length ? 'A decision is waiting. Answer it first.' : C.isAm && C.isAm(L) ? 'This opens when you reach the league.' : ''; }
-function peopleHtml(L){
+/* `only`: the people C.peopleOpen lists and nobody else (the later life,
+   where the locker room, the press and real men are not his to see). */
+function peopleHtml(L, only){
   /* everybody in the ledger, with the engine's mood word (C.peopleAll) */
   var all = C.peopleAll ? C.peopleAll(L).map(function(p){ return { id: p.id, p: p }; }) : Object.keys(L.people || {}).map(function(k){ return { id: k, p: L.people[k] }; });
   var open = C.peopleOpen ? C.peopleOpen(L) : [], on = {};
   open.forEach(function(p){ on[p.id] = 1; });
   var mingle = C.actsOpen(L).filter(function(a){ return a.id === 'mingle'; })[0];
-  if (!all.length && !mingle) return '<p class="k-small">Nobody yet. Give it a season.</p>';
+  if (only) all = [];
+  else if (!all.length && !mingle) return '<p class="k-small">Nobody yet. Give it a season.</p>';
   var out = '';
   if (open.length || mingle) {
     var left = C.bondsLeft(L), max = C.BOND_MAX, pips = '';
     for (var i = 0; i < max; i++) pips += '<i' + (i < left ? ' class="on"' : '') + '></i>';
     out += '<div class="cr-pp-head" id="cr-pp-head"><span class="cr-pp-pips" aria-hidden="true">' + pips + '</span>'
-      + '<p><b id="cr-pp-left">' + left + ' of ' + max + '</b> left this year. One a person.</p></div>';
+      + '<p><b id="cr-pp-left">' + left + ' of ' + max + '</b> left ' + bondThis(L) + '. One a person.</p></div>';
   } else {
     var shut = lifeShut(L);
     if (shut) out += '<p class="cr-life-shut" id="cr-pp-shut" role="note">' + K.iconHtml('lock', 2) + '<span>' + esc(shut) + '</span></p>';
@@ -2346,7 +2356,7 @@ function peopleHtml(L){
       + '<span class="cr-ava ' + tone + '" aria-hidden="true">' + esc(initials(p.n)) + '</span>'
       + '<span class="cr-ppt"><b>' + esc(p.n) + '</b><small>' + esc(roleWord(L, p)) + ' · since ' + p.met + '</small></span>'
       + '<span class="cr-ppm"><span class="cr-mood ' + tone + '">' + esc(p.mood) + '</span>' + relBar(p.rel, '') + '</span>'
-      + (note || p.used ? '<span class="note">' + (p.used ? '<i class="cr-ppdone">Done this year</i>' : '') + esc(note) + '</span>' : '') + '</button></li>';
+      + (note || p.used ? '<span class="note">' + (p.used ? '<i class="cr-ppdone">Done ' + bondThis(L) + '</i>' : '') + esc(note) + '</span>' : '') + '</button></li>';
   };
   if (mingle && !open.some(function(p){ return p.group === 'partner'; })) {
     var why = moveWhy(L, mingle);
@@ -2372,8 +2382,11 @@ function peopleHtml(L){
   return out;
 }
 /* ONE PERSON: who they are to him, what they remember, and what he can do. */
+/* The life the People screen is showing: the career, or the man behind his
+   Hall card while the rest of his life is played. */
+function lifeNow(){ var st = store(); return st.cur || (view === 'later' && st.last ? restOf(st.last) : null); }
 function openPerson(pid){
-  var L = store().cur, p = L && C.peopleOpen(L).filter(function(x){ return x.id === pid; })[0];
+  var L = lifeNow(), p = L && C.peopleOpen(L).filter(function(x){ return x.id === pid; })[0];
   if (!p) return;
   var tone = PP_TONE[p.mood] || '', left = C.bondsLeft(L);
   var notes = p.notes.slice().reverse().map(function(n){ return '<li><span class="yr">' + n[0] + '</span>' + esc(n[1]) + '</li>'; }).join('');
@@ -2391,7 +2404,7 @@ function openPerson(pid){
     + '<div class="cr-ppm"><span class="cr-mood ' + tone + '" id="cr-pp-mood">' + esc(p.mood) + '</span>' + relBar(p.rel, p.mood) + '</div></div></div>'
     + (notes ? '<h3 class="cr-sub">They remember</h3><ul class="cr-list cr-ppnotes">' + notes + '</ul>' : '')
     + '<h3 class="cr-sub">What you can do</h3>'
-    + '<p class="cash cr-pp-time"><b id="cr-pa-left">' + left + ' of ' + C.BOND_MAX + '</b> left this year.' + (p.used ? ' You already made time for ' + esc(String(p.n).split(' ')[0]) + '.' : '') + '</p>'
+    + '<p class="cash cr-pp-time"><b id="cr-pa-left">' + left + ' of ' + C.BOND_MAX + '</b> left ' + bondThis(L) + '.' + (p.used ? ' You already made time for ' + esc(String(p.n).split(' ')[0]) + '.' : '') + '</p>'
     + '<ul class="cr-mvlist cr-palist" style="--g:#f29ab0">' + acts + '</ul>'
     + '<button class="k-btn k-sec k-block" id="cr-sheet-x" type="button">Close</button>', p.n, 'cr-ppsheet');
   var sh = $('cr-sheet');
@@ -2404,11 +2417,11 @@ function lifeDone(at, res, before){
   stage = { beats: [], result: res, draft: null, delta: before, at: at };
   save();
   render();
-  var el = at === 'people' ? document.querySelector('#s-car .cr-tabsec') : $('cr-money');
+  var el = at === 'people' ? document.querySelector('#s-car .cr-tabsec, #cr-ltpp') : $('cr-money');
   if (el) { var r = el.getBoundingClientRect(); if (r.top < 102 || r.top > window.innerHeight * 0.5) window.scrollTo({ top: Math.max(0, window.scrollY + r.top - 112), behavior: REDUCED ? 'auto' : 'smooth' }); }
 }
 function doBond(pid, aid){
-  var L = store().cur;
+  var L = lifeNow();
   if (!L || !L.people[pid]) return;
   var before = snap(L);
   var res = C.personAct(L, pid, aid);
@@ -4489,6 +4502,7 @@ function openLater(card){
   }
   stage = { beats: [], result: null, draft: null };
   view = 'later';
+  ltSub = null;
   K.wipe();
   render();
   window.scrollTo(0, 0);
@@ -4511,6 +4525,20 @@ function laterView(card){
   var R = restOf(card), LT = R && C.laterOf(R);
   if (!LT || !LT.on) return finalView(card);
   var c = R.pending[0] || null;
+  /* HIS PEOPLE: the career's People screen and person sheet, on the people
+     C.peopleOpen lists now (family, friends, a partner, old rivals). A card
+     that waits comes first, as on Now. The badge is C.bondsLeft, as on Now. */
+  var open = c || !C.peopleOpen ? [] : C.peopleOpen(R);
+  if (ltSub === 'people' && !c) {
+    return laterTop(card, 'After basketball')
+      + '<section class="k-panel cr-sec cr-ltpp" id="cr-ltpp" aria-label="People"><div class="cr-ltpp-h"><h3 class="k-eyebrow">' + K.iconHtml('people', 2) + 'People</h3>'
+      + '<button class="k-btn k-sec cr-ltpp-x" id="cr-ltpp-x" type="button">' + K.iconHtml('back', 2) + '<span>His life</span></button></div>'
+      + peopleHtml(R, true) + '</section>';
+  }
+  ltSub = null;
+  var pl = open.length ? C.bondsLeft(R) : 0;
+  var ppl = open.length ? '<div class="cr-acts cr-life cr-lt-acts"><button class="k-btn k-sec cr-lfbtn" id="cr-lt-people" type="button">' + K.iconHtml('people', 2) + '<span>People</span>'
+    + (pl ? '<i aria-label="' + pl + ' left ' + bondThis(R) + '">' + pl + '</i>' : '') + '</button></div>' : '';
   var feed = stage.beats && stage.beats.length ? '<ul class="k-panel k-tight cr-beats cr-lt-feed k-in" id="cr-lt-feed">' + stage.beats.map(function(b, i){
     return '<li class="' + (b.tone || '') + '" style="animation-delay:' + (REDUCED ? 0 : i * 90) + 'ms">' + esc(b.text) + '</li>'; }).join('') + '</ul>' : '';
   return laterTop(card, 'After basketball')
@@ -4527,7 +4555,7 @@ function laterView(card){
     + '</section><div class="cr-lt-main">'
     + (stage.result ? '<div class="k-panel k-receipt cr-result cr-lt-res k-in" aria-live="polite"><div class="cr-you">You: ' + esc(stage.result.label || '') + '</div><p class="k-what">' + esc(stage.result.text || '') + '</p></div>' : '')
     + feed
-    + (c ? pageCardHtml(c) : '<div class="cr-lt-dock"><button class="k-btn k-block k-big cr-age" id="cr-lt-go" type="button"><span class="cr-age-w">' + K.iconHtml('up', 2) + 'Age up</span>'
+    + (c ? pageCardHtml(c) : ppl + '<div class="cr-lt-dock"><button class="k-btn k-block k-big cr-age" id="cr-lt-go" type="button"><span class="cr-age-w">' + K.iconHtml('up', 2) + 'Age up</span>'
       + '<small class="cr-age-n" id="cr-lt-next">' + esc(LT.next || C.LATER_STEP + ' years go by') + '</small></button></div>')
     + '</div></div>';
 }
@@ -4539,7 +4567,15 @@ function laterEndHtml(card){
     + ribbonHtml(card.ribbon, 'cr-lt-rib') + lifeCardHtml(card.lc, 'cr-lt-lc')
     + '<div class="cr-btnrow"><button class="k-btn" id="cr-lt-share" type="button">Share his life</button><button class="k-btn k-sec" id="cr-lt-card" type="button">Back to his card</button></div></div>';
 }
-function laterBack(){ view = null; stage = { beats: [], result: null, draft: null }; render(); window.scrollTo(0, 0); }
+var ltSub = null;
+function laterPeople(on){
+  ltSub = on ? 'people' : null;
+  if (stage.at === 'people') stage = { beats: [], result: null, draft: null };
+  render();
+  window.scrollTo(0, 0);
+  var f = $(on ? 'cr-ltpp-x' : 'cr-lt-people'); if (f) f.focus({ preventScroll: true });
+}
+function laterBack(){ view = null; ltSub = null; stage = { beats: [], result: null, draft: null }; render(); window.scrollTo(0, 0); }
 function wireLater(card){
   $('cr-home').onclick = goHome;
   $('cr-lt-back').onclick = laterBack;
@@ -4547,6 +4583,9 @@ function wireLater(card){
   var sh = $('cr-lt-share'); if (sh) sh.onclick = function(){ shareLife(card); };
   var go = $('cr-lt-go'); if (go) go.onclick = function(){ doLater(card); };
   $('s-car').querySelectorAll('#cr-pgcard .cr-choice').forEach(function(b){ b.onclick = function(){ doLaterChoose(card, +b.getAttribute('data-i')); }; });
+  var pp = $('cr-lt-people'); if (pp) pp.onclick = function(){ laterPeople(true); };
+  var px = $('cr-ltpp-x'); if (px) px.onclick = function(){ laterPeople(false); };
+  $('s-car').querySelectorAll('#cr-ltpp [data-person]').forEach(function(b){ b.onclick = function(){ openPerson(b.getAttribute('data-person')); }; });
 }
 function laterArm(){
   var els = $('s-car').querySelectorAll('.cr-choice, #cr-lt-go');
@@ -4585,6 +4624,7 @@ function laterDone(card, R){
   card.lc = C.lifeCard(R);
   syncCard(card);
   st.rest = null;
+  ltSub = null;
   stage = { beats: [], result: null, draft: null };
   save();
   K.wipe();
