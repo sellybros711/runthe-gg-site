@@ -12804,6 +12804,8 @@ function peopleAll(L) {
 }
 /* How much of the year is left for people. */
 const bondsLeft = (L) => Math.max(0, BOND_MAX - bondUsed(L).n);
+/* What the acts are counted over, in words: a year in the career, a press in the later life. */
+const bondsPeriod = (L) => inLater(L) ? (NUMWORDS[LATER_STEP] || LATER_STEP).toLowerCase() + ' years' : 'year';
 function personAct(L, pid, aid) {
   const who = peopleOpen(L).find((x) => x.id === pid), open = who && who.acts.find((x) => x.id === aid);
   if (!open || !open.ok) return null;
@@ -13117,7 +13119,7 @@ function kidOf(L) {
 const kidWas = (k, v) => (L) => { const m = recall(L, 'kid.' + k); return !!m && m.v === v; };
 story({
   kid_driveway: { at: 'off', req: { seasons: [1, 6] }, when: kidWas('teacher', 'dad'), w: 6, tag: 'Your phone',
-    t: '{dad} sent you a video', x: 'The old driveway hoop. He shot it on his phone. The net is gone. The backboard still has your handprint.',
+    t: '{dad} sent you a video', x: 'The old driveway hoop, on his phone. The net is gone. Your handprint is still on the backboard.',
     o: [O('Fly home and shoot with him', { morale: 8, sho: 1 }, 'One hundred makes before dinner. He still rebounds like it matters.', { sub: 'Elbow in, follow through', rel: [['dad', 15, 'You came home and shot in the driveway.']] }),
       O('Send him a new hoop', { cash: -0.05, morale: 3 }, 'It goes up on Saturday. He sends a video of the first swish.', { sub: 'He did his part', rel: [['dad', 6, 'You sent him a new hoop.']] })] },
   kid_the_park: { at: 'off', req: { seasons: [2, null] }, when: (L) => kidWas('teacher', 'park')(L) && L.cash >= 1, w: 5, tag: 'Back home', rar: 'uncommon',
@@ -13125,7 +13127,7 @@ story({
     o: [O('Rebuild it yourself', { cash: -0.6, fame: 3, morale: 6 }, 'New rims, new lights, the same cracked court underneath. You leave one crack on purpose.', { sub: 'Give it back' }),
       O('Run a pickup game there', { morale: 5, fame: 2 }, 'Two hundred people on the fence. Nobody calls fouls. Nobody ever did.', { sub: 'Show up' })] },
   kid_other_sport: { at: 'mid', req: { seasons: [1, 8] }, when: (L) => { const m = recall(L, 'kid.sport'); return !!m && /^(soccer|football|chess)$/.test(m.v); }, w: 4, tag: 'A reporter',
-    t: (L) => 'A reporter found your ' + ({ soccer: 'soccer', football: 'football', chess: 'chess club' })[recall(L, 'kid.sport').v] + ' photo', x: 'You are eight in it, with a bowl cut. The story runs Sunday either way.',
+    t: (L) => 'A reporter found your ' + ({ soccer: 'soccer', football: 'football', chess: 'chess club' }[(recall(L, 'kid.sport') || {}).v] || 'old team') + ' photo', x: 'You are eight in it, with a bowl cut. The story runs Sunday either way.',
     o: [O('Tell the whole story', { fame: 4, morale: 3 }, 'You say the other sport made you. The clip goes everywhere.', { sub: 'Own the bowl cut' }),
       O('Laugh it off', { trust: 2 }, 'One line, one laugh, back to the game. The photo runs anyway.', { sub: 'Keep it short' })] },
   kid_only_hoops: { at: 'pre', req: { seasons: [3, null] }, when: (L) => kidWas('sport', 'hoops')(L) && (L.m.health < 85 || L.age >= 29), w: 5, tag: 'The training room',
@@ -13145,8 +13147,8 @@ story({
     o: [O('Pay what you took, and then some', { cash: -0.2, morale: 6, trust: 3 }, 'You hand it to him yourself. He keeps the envelope on the wall.', { sub: 'Make it right' }),
       O('Write back and say sorry', { morale: 3 }, 'He writes back once. "Run that fast on defense," he says.', { sub: 'Just the words' })] },
   kid_last_summer: { at: 'off', req: { seasons: [4, null] }, when: (L) => kidWas('summer', 'kid')(L) && L.m.morale < 75, w: 5, tag: 'A hotel room',
-    t: 'You keep thinking about the last summer you were a kid', x: 'Pool, bikes, nothing. You were fourteen. It has been a long season.',
-    o: [O('Go back to the pool for a week', { morale: 10, health: 3 }, 'Same diving board. Kids lose their minds when you cannonball.', { sub: 'Be fourteen again' }),
+    t: 'You keep thinking about your last summer as a kid', x: 'Pool, bikes, nothing. You were fourteen. It has been a long season.',
+    o: [O('Go back to the pool', { morale: 10, health: 3 }, 'Same diving board. Kids lose their minds when you cannonball.', { sub: 'Be fourteen again' }),
       O('Get back to work', { eth: 2, morale: -2 }, 'You call it a night and set an alarm for the gym.', { sub: 'That summer is over' })] },
 });
 
@@ -14241,7 +14243,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, realMan, personAct, bondsLeft, summerOf, summerPick, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, ageUp, yearSummary, peopleOpen, peopleAll, realMan, personAct, bondsLeft, bondsPeriod, summerOf, summerPick, BONDS, BOND_MAX, RIBBONS, RIBBON_KEYS, ribbonOf, lifeCard, KID, KID_AGES, kidOf, laterStart, laterAge, laterOf, LATER_JOBS, LATER_JOB_KEYS, LATER_EV, LATER_EV_KEYS, LATER_STEP, wildOpen, wildAct, WILD, WILD_KEYS, WILD_MAX, HABITS, HOOKED_AT, JAIL_GAMES, wealthOpen, wealthAct, netWorth, upkeepOf, THINGS, STAFF, INVEST, FIRE_SALE, SELL_FEE, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,

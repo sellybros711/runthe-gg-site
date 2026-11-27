@@ -130,7 +130,9 @@ for (const [name, vp] of [['phone 390x844', { viewport: { width: 390, height: 84
   const card = await page.evaluate(() => ({ on: document.getElementById('place').classList.contains('on'), title: document.getElementById('placeTitle').textContent,
     rows: [...document.querySelectorAll('#placeList h3')].map(x => x.textContent), buttons: [...document.querySelectorAll('#placeList button')].map(b => [b.textContent, b.disabled, Math.round(b.getBoundingClientRect().height)]), spent: window.__course.state().tally.spent }));
   ok(card.on && card.title === 'Clubhouse', name + ': standing on the clubhouse pad did not open its card: ' + JSON.stringify(card));
-  ok(card.rows.length === 3 && card.buttons.every(b => b[1] && b[2] >= 44), name + ': the clubhouse card should hold three levels, none affordable on day 1: ' + JSON.stringify(card));
+  /* three levels and the next chapter (locked on day 1: it wants six holes), nothing affordable, every button a thumb's size */
+  ok(card.rows.length === 4 && card.rows[3] === 'Go Public' && /^Locked/.test(card.buttons[3][0]) && card.buttons.every(b => b[1] && b[2] >= 44),
+    name + ': the clubhouse card should hold three levels and a locked Go Public, none affordable on day 1: ' + JSON.stringify(card));
   ok(card.spent === 0, name + ': standing on a pad spent money');
   await page.click('#closePlace');
   ok(await page.evaluate(() => !document.getElementById('place').classList.contains('on')), name + ': the card did not close');
