@@ -5,7 +5,7 @@
  * script, the tests and the browser check all drive a shift with it, which
  * is how "a new player finishes the first shift guided only by the goal
  * line" is held: if the goal line stops being enough, the bot fails first. */
-import { command, goalOf } from './sim.js?v=6';
+import { command, goalOf } from './sim.js?v=7';
 
 export function makeBot() {
   let key = null, gx = 0, gy = 0;

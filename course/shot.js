@@ -13,13 +13,15 @@
  * Works in yards. Pure: no DOM, no clock, and only the maths rng.js allows. */
 import { rngNext, rngNormal, dist } from './rng.js?v=1';
 
-/* A hole's geometry in yards, from its map line (world units). */
+/* A hole's geometry in yards, from its map line (world units). `hazards`, when given, are in yards;
+   a hole's own (a layout's, MAP.layouts) are in world units like its line. */
 export function holeGeom(hole, cfg, hazards) {
   const k = cfg.shot.yardsPerUnit;
+  if (!hazards && hole.hazards) hazards = hole.hazards.map(z => ({ type: z.type, x: z.x * k, y: z.y * k, r: z.r * k }));
   const pts = hole.line.map(p => ({ x: p.x * k, y: p.y * k }));
   let len = 0;
   for (let i = 1; i < pts.length; i++) len += dist(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y);
-  return { ord: hole.ord, par: hole.par, pts, yards: Math.round(len), hazards: hazards || hole.hazards || [] };
+  return { ord: hole.ord, par: hole.par, pts, yards: Math.round(len), hazards: hazards || [] };
 }
 
 function offLine(pts, x, y) {

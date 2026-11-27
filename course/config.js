@@ -10,7 +10,7 @@
 export const GAME = Object.freeze({ name: 'Run The Course', slug: 'course', logo: '/course/logo.svg' });
 
 export const CONFIG = {
-  version: 5,
+  version: 6,
   schema: 1,
 
   shift: {
@@ -52,7 +52,9 @@ export const CONFIG = {
     types: {
       regular: { name: 'Regulars', patience: 1, pace: 1, tip: 1, spend: 1, weights: null },
       rush:    { name: 'Rush', patience: 0.75, pace: 0.9, tip: 1.5, spend: 0.5, weights: { condition: 0.15, pace: 0.45, service: 0.30, design: 0.10 } },
-      tourist: { name: 'Tourists', patience: 1.35, pace: 1.15, tip: 1, spend: 1.75, weights: { condition: 0.35, pace: 0.15, service: 0.20, design: 0.30 } }
+      tourist: { name: 'Tourists', patience: 1.35, pace: 1.15, tip: 1, spend: 1.75, weights: { condition: 0.35, pace: 0.15, service: 0.20, design: 0.30 } },
+      /* only at a public course (economy.tiers) */
+      league:  { name: 'League', patience: 1, pace: 0.85, tip: 0.8, spend: 1.25, weights: { condition: 0.25, pace: 0.40, service: 0.25, design: 0.10 } }
     }
   },
 
@@ -80,7 +82,27 @@ export const CONFIG = {
       putting_green: { name: 'Putting Green', cost: 90, buildS: 15, kind: 'unlock' },
       snack_shack: { name: 'Snack Shack', cost: 180, buildS: 20, kind: 'unlock' },
       driving_range: { name: 'Driving Range', cost: 450, buildS: 30, kind: 'unlock' },
-      hole_4: { name: 'Hole 4', cost: 1000, buildS: 1800, kind: 'hole', hole: 4 }
+      /* A hole is bought in one of its layouts (MAP.layouts), its plot mown clear, and it opens the
+         next morning. `after` is the hole that must be open first. */
+      hole_4: { name: 'Hole 4', cost: 300, kind: 'hole', hole: 4 },
+      hole_5: { name: 'Hole 5', cost: 500, kind: 'hole', hole: 5, after: 'hole_4' },
+      hole_6: { name: 'Hole 6', cost: 800, kind: 'hole', hole: 6, after: 'hole_5' }
+    },
+    /* THE LAYOUT STYLES. A layout's price is the hole's cost times `cost`, to the nearest $5. `fee` is
+       that share more on the hole's fee; `design` adds to the design part of every review. A shorter
+       hole plays faster (CONFIG.golfers.holeS is by par), so fewer groups back up behind it. */
+    layouts: {
+      short:     { name: 'Short',     cost: 0.8, fee: -0.25, design: -0.02 },
+      classic:   { name: 'Classic',   cost: 1,   fee: 0.1,   design: 0.03 },
+      signature: { name: 'Signature', cost: 1.4, fee: 0.45,  design: 0.08 }
+    },
+    /* THE CHAPTERS. A course steps up from the Clubhouse's card, once it has the holes and the stars.
+       The step takes effect the next morning: every fee times `fee`, that share more groups booked,
+       the goal times `goal`, and the kinds of group drawn by `typeOdds`. */
+    tiers: {
+      muni:   { name: 'Muni', fee: 1, bookings: 0, goal: 1 },
+      public: { name: 'Public', after: 'muni', cost: 1200, holes: 6, stars: 3, fee: 1.5, bookings: 0.25, goal: 1.5,
+                typeOdds: { regular: 0.4, rush: 0.2, tourist: 0.2, league: 0.2 } }
     },
     /* Everything that levels up. Each has its own pad. Everything starts at level 1;
        a level costs `cost` times `growth` for each level already bought, to the
@@ -92,7 +114,7 @@ export const CONFIG = {
     /* THE PLACES. One pad a place. Standing on it opens the place's card: build it, level what it
        holds, hire who runs it. `build` names a pad above; `ups` name upgrades below; `hire` names staff. */
     places: {
-      clubhouse:     { name: 'Clubhouse',     ups: ['clubhouse', 'boots', 'my_cart'] },
+      clubhouse:     { name: 'Clubhouse',     ups: ['clubhouse', 'boots', 'my_cart'], tier: true },
       shop:          { name: 'Pro Shop',      ups: ['shop'], hire: 'clerk' },
       starter:       { name: 'Starter Box',   ups: ['starter'], hire: 'starter' },
       shed:          { name: 'Mower Shed',    ups: ['shed'], hire: 'greenskeeper' },
@@ -105,7 +127,9 @@ export const CONFIG = {
       putting_green: { name: 'Putting Green', build: 'putting_green', ups: ['putting_green'] },
       snack_shack:   { name: 'Snack Shack',   build: 'snack_shack', ups: ['snack_shack'], hire: 'cook' },
       driving_range: { name: 'Driving Range', build: 'driving_range', ups: ['driving_range'], hire: 'range_hand' },
-      hole_4:        { name: 'Hole 4',        build: 'hole_4', ups: [] }
+      hole_4:        { name: 'Hole 4',        build: 'hole_4', ups: ['hole_4'] },
+      hole_5:        { name: 'Hole 5',        build: 'hole_5', ups: ['hole_5'] },
+      hole_6:        { name: 'Hole 6',        build: 'hole_6', ups: ['hole_6'] }
     },
     /* THE HIRES. Each runs one station for you. They work at `staffSpeed` of your own pace, after a
        beat to notice (`staffDelayS`), so doing it yourself is always quicker. Hired once, kept. */
@@ -133,6 +157,9 @@ export const CONFIG = {
       hole_1:    { name: 'Hole 1',      cost: 40, hole: 1, fee: 0.08, decay: 1.5 },  // that hole's fee that share higher; its green wears less a day
       hole_2:    { name: 'Hole 2',      cost: 40, hole: 2, fee: 0.08, decay: 1.5 },
       hole_3:    { name: 'Hole 3',      cost: 40, hole: 3, fee: 0.08, decay: 1.5 },
+      hole_4:    { name: 'Hole 4',      cost: 60, hole: 4, needs: 'hole_4', fee: 0.08, decay: 1.5 },
+      hole_5:    { name: 'Hole 5',      cost: 60, hole: 5, needs: 'hole_5', fee: 0.08, decay: 1.5 },
+      hole_6:    { name: 'Hole 6',      cost: 60, hole: 6, needs: 'hole_6', fee: 0.08, decay: 1.5 },
       cart_barn: { name: 'Cart Barn',   cost: 50, needs: 'cart_barn', rental: 0.5, pace: 0.02 },   // dollars a golfer for the cart; holes play that share faster
       gardens:   { name: 'Gardens',     cost: 45, design: 0.05 },                    // the course looks better: the design part of every review rises
       parking:   { name: 'Parking Lot', cost: 55, bookings: 0.06 },                  // that share more groups booked
@@ -179,7 +206,7 @@ export const CONFIG = {
 
   /* Recorded for later phases. Unused in phase 1. */
   later: {
-    unlocks: { snack_shack: [180, 120], driving_range: [450, 600], hole_5: [2200, 3600], hole_6: [4000, 7200],
+    unlocks: { snack_shack: [180, 120], driving_range: [450, 600],
       beverage_cart: [6500, 3600], putting_green: [9000, 10800], hole_7: [14000, 14400], hole_8: [20000, 21600],
       hole_9: [28000, 28800], bar_grill: [45000, 28800], retail: [70000, 28800], back_nine_first: [100000, 43200],
       back_nine_growth: 1.35, simulator: [1500000, 86400] },
