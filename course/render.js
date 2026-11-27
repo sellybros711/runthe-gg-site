@@ -190,12 +190,15 @@ export function createRenderer(canvas, map, cfg) {
     add('Tee ' + ctx.route.first, map.teeRing.x - 4.6, map.teeRing.y, 4, false, true);
     /* every pad says what it is, its next level and its price (the sim words it) */
     for (const st of stationsOf(S, ctx, [], true)) if (st.pad && st.label) add(st.label, st.x, st.y - 3.6, 7.5, false, false);
-    for (const h of map.holes) {
-      if (S.open.includes(h.ord)) continue;
+    for (const h of S.holes || map.holes) {
+      /* a hole with a place of its own has its pad's label; the rest show their price at the tee */
+      if (S.open.includes(h.ord) || cfg.economy.places['hole_' + h.ord]) continue;
       const pad = pads['hole_' + h.ord], later = cfg.later.unlocks['hole_' + h.ord];
       const price = pad ? pad.cost : later ? later[0] : 0;
       add('Hole ' + h.ord + ' · ' + money(price), h.line[0].x + 2.5, h.line[0].y - 1.5, 6, true, false);
     }
+    /* the course's chapter, on a sign at the gate */
+    add(cfg.economy.tiers[S.tierDay].name === 'Muni' ? 'Municipal course' : cfg.economy.tiers[S.tierDay].name + ' course', map.gate.x - 6.5, map.gate.y + 1.5, 8, true, S.tierDay !== 'muni');
     add('Back nine: coming with', map.backNine.sign.x - 5.5, map.backNine.sign.y + 2.2, 10, true, false);
     add('Semi-Private status', map.backNine.sign.x - 5.5, map.backNine.sign.y, 10, true, false);
     const geo = new THREE.BufferGeometry();
@@ -249,6 +252,7 @@ export function createRenderer(canvas, map, cfg) {
   function car(B, x, y, i) { B.disc(x + 0.3, y - 0.3, 1.5, 0.045, C.shade, 8); if (place(AUTOS[i % AUTOS.length], x, y, 1.15, i % 2 ? Math.PI : 0)) return; const c = CARS[i % CARS.length]; B.box(x, y, 1.5, 2.8, 0.25, 0.6, c); B.box(x, y - 0.15, 1.3, 1.5, 0.85, 0.5, C.glass, c); B.disc(x + 0.3, y - 0.3, 1.5, 0.045, C.shade, 8); }
 
   function rebuild(S, ctx) {
+    const HOLES = S.holes || map.holes;
     lastS = S; lastCtx = ctx; buckets = {};
     if (artGroup) { scene.remove(artGroup); for (const m of artGroup.children) m.geometry.dispose(); artGroup = null; }
     for (let i = 0; i < PLAYER_SLOT; i++) if (chars[i]) { scene.remove(chars[i].root); chars[i].mixer.stopAllAction(); chars[i] = null; }
@@ -282,9 +286,9 @@ export function createRenderer(canvas, map, cfg) {
     if (pt >= 3) { flowers(B, pk.x - pw / 2 - 1.6, pk.y + pd / 2 + 1, 1.2, 7); flowers(B, pk.x + pw / 2 + 1.6, pk.y + pd / 2 + 1, 1.2, 9); B.gable(map.gate.x, map.gate.y + 0.2, 3.6, 0.8, 2.6, 0.9, C.roof); B.cyl(map.gate.x - 1.6, map.gate.y + 0.2, 0.15, 0.15, 0, 2.6, C.wood, 5); B.cyl(map.gate.x + 1.6, map.gate.y + 0.2, 0.15, 0.15, 0, 2.6, C.wood, 5); }
 
     /* paths, each with a darker edge under it */
-    const path = [map.gate, map.shopExit, map.queue, map.waypoints.toTee[0], map.waypoints.toTee[1], map.holes[0].line[0]];
+    const path = [map.gate, map.shopExit, map.queue, map.waypoints.toTee[0], map.waypoints.toTee[1], HOLES[0].line[0]];
     const legs = [path];
-    for (let i = 0; i < map.holes.length; i++) { const a = map.holes[i].line; legs.push([a[a.length - 1], map.holes[(i + 1) % map.holes.length].line[0]]); }
+    for (let i = 0; i < HOLES.length; i++) { const a = HOLES[i].line; legs.push([a[a.length - 1], HOLES[(i + 1) % HOLES.length].line[0]]); }
     legs.push([map.waypoints.toTee[0], map.pads.cart_barn, map.snackShack], [map.waypoints.toTee[1], { x: map.puttingGreen.x - 5, y: map.puttingGreen.y - 1 }], [map.shopExit, { x: map.mowerPark.x + 2, y: map.mowerPark.y - 1 }]);
     for (const l of legs) B.strip(l, 0.85, 0.036, C.pathEdge, C.pathEdge, 1);
     for (const l of legs) B.strip(l, 0.6, 0.044, C.path, C.path, 1);
@@ -294,12 +298,15 @@ export function createRenderer(canvas, map, cfg) {
     for (let i = 0; i < 7; i++) { const rx = 22.5 + Math.cos(i * 0.9) * 6.4, ry = 49.5 + Math.sin(i * 0.9) * 6.4; if (!place(ROCKS[i % 3], rx, ry, 1.6, i)) B.cyl(rx, ry, 0.35 + hash(i) * 0.3, 0.2, 0, 0.35, C.rock, 6); }
 
     /* holes: turf for the open ones, overgrowth and rope for the rest */
-    for (const h of map.holes) {
+    for (const h of HOLES) {
       const open = S.open.includes(h.ord), tee = h.line[0], gr = h.line[h.line.length - 1], ht = T('hole_' + h.ord);
       if (open) {
         B.strip(h.line, d.fairwayHalf + 0.9, 0.046, C.semi, C.semi, 1);
         B.strip(h.line, d.fairwayHalf, 0.052, C.fairA, C.fairB);
         B.disc(gr.x, gr.y, d.greenR + 0.7, 0.056, C.collar, 28);
+        /* a layout's own hazards: water first, sand over it */
+        for (const z of h.hazards || []) if (z.type === 'water') { B.disc(z.x, z.y, z.r + 0.45, 0.06, C.sand, 22); B.disc(z.x, z.y, z.r, 0.064, C.water, 22); B.disc(z.x - z.r * 0.2, z.y + z.r * 0.15, z.r * 0.55, 0.068, C.water2, 14); }
+        for (const z of h.hazards || []) if (z.type === 'bunker') { B.disc(z.x, z.y, z.r + 0.3, 0.062, C.sandEdge, 14); B.disc(z.x, z.y, z.r, 0.068, C.sand, 14); }
         B.rect(tee.x, tee.y, d.teeR * 2.2, d.teeR * 2.2, 0.058, C.tee);
         for (const sx of [-1, 1]) B.cyl(tee.x + sx * 0.9, tee.y + 0.5, 0.16, 0.16, 0.058, 0.22, TEES[ht], 6);
         if (!place(['flag-red', 'flag-red', 'flag-blue', 'flag-green'][ht], gr.x, gr.y, 2.6, Math.PI)) {
@@ -437,7 +444,7 @@ export function createRenderer(canvas, map, cfg) {
     labels = buildLabels(S, ctx); labels.frustumCulled = false; labels.renderOrder = 4; scene.add(labels);
     /* overgrowth tufts on every locked plot; a cleared patch loses its tufts */
     let n = 0;
-    for (const h of map.holes) {
+    for (const h of HOLES) {
       if (S.open.includes(h.ord)) continue;
       for (let i = 1; i < h.line.length; i++) {
         const a = h.line[i - 1], c = h.line[i], l = Math.hypot(c.x - a.x, c.y - a.y), cnt = Math.round(l / 3.2);

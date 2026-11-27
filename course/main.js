@@ -7,14 +7,14 @@
  * NOTHING OPENS A GUIDE BY ITSELF. A first visit goes straight into day 1,
  * and the goal line (part of the HUD) says the next thing to do. How it
  * works is behind a button in the menu. */
-import { CONFIG, GAME } from './config.js?v=6';
-import { MAP } from './map.js?v=5';
-import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations, looksOf, shopList, placeCard, placeAt } from './sim.js?v=6';
-import { makeBot } from './bot.js?v=6';
-import { createStore } from './store.js?v=6';
+import { CONFIG, GAME } from './config.js?v=7';
+import { MAP } from './map.js?v=6';
+import { startShift, step, endShift, makeCtx, command, goalOf, clockOf, sheetOf, stations, looksOf, shopList, placeCard, placeAt } from './sim.js?v=7';
+import { makeBot } from './bot.js?v=7';
+import { createStore } from './store.js?v=7';
 import { createAnalytics } from './analytics.js?v=1';
 import { createInput } from './input.js?v=1';
-import { createRenderer } from './render.js?v=7';
+import { createRenderer } from './render.js?v=8';
 
 const $ = id => document.getElementById(id);
 const money = n => (n < 0 ? '-$' + (-n).toLocaleString('en-US') : '$' + n.toLocaleString('en-US'));
@@ -28,7 +28,7 @@ const analytics = createAnalytics({ token: () => { const a = auth(); return a &&
 let R = null;
 try { R = createRenderer($('view'), map, cfg); } catch (e) { $('fail').style.display = 'flex'; }
 
-let S = null, ctx = null, course = null, courseKey = '', acc = 0, last = 0, scale = 1, paused = false, showRoute = false, bot = null;
+let opened = [], S = null, ctx = null, course = null, courseKey = '', acc = 0, last = 0, scale = 1, paused = false, showRoute = false, bot = null;
 let goal = null, goalKey = '', seenGoals = new Set(), ended = false, saving = null, pin = null, overview = false;
 const keyOf = c => c.seed + ':' + c.shiftsFiled + ':' + c.cash;
 
@@ -42,10 +42,11 @@ function floatText(x, y, text, neg) {
   d.textContent = text; d.style.left = P.x + 'px'; d.style.top = P.y + 'px'; d.className = 'float' + (neg ? ' neg' : '');
   void d.offsetWidth; d.classList.add('go');
 }
-function fx(type, x, y, n) {
+function fx(type, x, y, n, it) {
   if (type === 'cash' || type === 'tip') { if (n > 0) floatText(x, y, '+' + money(n)); if (navigator.vibrate) navigator.vibrate(12); }
   else if (type === 'refund') floatText(x, y, money(-n), true);
-  else if (type === 'pad') { floatText(x, y, money(-cfg.economy.pads[n].cost), true); burst(x, y); pin = null; analytics.track('pad_buy', { id: n }); if (R) R.rebuild(S, ctx); }
+  else if (type === 'pad') { floatText(x, y, money(-(it ? it.cost : cfg.economy.pads[n].cost)), true); burst(x, y); pin = null; analytics.track('pad_buy', it && it.layout ? { id: n, layout: it.layout } : { id: n }); if (it && it.layout) banner('Mow the plot clear. It opens the next morning.', 3200); if (R) R.rebuild(S, ctx); }
+  else if (type === 'tier') { banner(cfg.economy.tiers[n].name + ' from tomorrow. Higher fees. More groups.', 3600); burst(x, y); pin = null; analytics.track('tier', { id: n }); if (navigator.vibrate) navigator.vibrate(30); }
   else if (type === 'hire') { banner(cfg.economy.staff[n].name + ' hired'); burst(x, y); pin = null; analytics.track('hire', { id: n }); if (navigator.vibrate) navigator.vibrate(20); if (R) R.rebuild(S, ctx); }
   else if (type === 'closed') closed();
   else if (type === 'filled') floatText(x, y, 'Balls refilled');
@@ -85,7 +86,9 @@ function begin() {
   if (R) { R.setHelpers(stations, looksOf); R.rebuild(S, ctx); R.snapshot(S); }
   $('dayLabel').textContent = 'Day ' + S.no;
   $('results').classList.remove('on');
-  if (S.event) banner('Day ' + S.no + '. ' + EVENT[S.event][1], 4200); else banner('Day ' + S.no);
+  const news = opened.length ? 'Hole ' + opened.join(' and ') + (opened.length > 1 ? ' are' : ' is') + ' open.' : '';
+  opened = [];
+  if (S.event) banner('Day ' + S.no + '. ' + (news ? news + ' ' : '') + EVENT[S.event][1], 4200); else banner('Day ' + S.no + (news ? '. ' + news : ''), news ? 3200 : 0);
   analytics.track('shift_start', { no: S.no });
   hud(true);
 }
@@ -127,6 +130,7 @@ $('endDay').addEventListener('click', endDay);
 function finish() {
   ended = true; input.release();
   const end = endShift(S, ctx, course), r = end.result, debug = S.debug, open = $('results').classList.contains('on');
+  opened = r.opened.slice();
   $('endDay').style.display = 'none'; $('afterBtn').style.display = 'none'; $('place').classList.remove('on');
   $('resSave').textContent = debug ? 'Debug tools were on. This day was not saved.' : 'Saving.';
   analytics.track('shift_end', { event: r.event || 'none', no: r.no, rounds: r.rounds, cash: r.cash, tips: r.tips, walk_offs: r.walkOffs, goal_met: r.goalMet, stuck: r.stuck, upgrades: r.upgrades, hires: r.hires });
@@ -137,7 +141,7 @@ function finish() {
       refused: 'That day could not be saved. Your account course is loaded.', signedout: 'Saved on this device. Sign in to keep it everywhere.' }[how] || 'Saved on this device.';
     $('resSave').textContent = text;
     /* ended from after hours, with the card already put away: straight on to the next morning */
-    if (!open) { begin(); banner(text); }
+    if (!open) { const news = opened.length; begin(); if (!news) banner(text); }   // a hole opening is the bigger news
     return how;
   });
 }
@@ -269,19 +273,27 @@ $('signIn').addEventListener('click', () => { if (window.RTGAuthUI) window.RTGAu
 const WHAT = { boots: 'You walk faster.', shop: 'Faster check in. Every fee goes up.', starter: 'Faster send off. Groups wait longer on tee 1.', shed: 'Greens cut faster. A faster mower.',
   my_cart: 'Your cart is faster.', hole_1: 'Hole 1 earns more. Its green lasts longer.', hole_2: 'Hole 2 earns more. Its green lasts longer.', hole_3: 'Hole 3 earns more. Its green lasts longer.',
   cart_barn: 'More from cart rentals. Faster rounds.', gardens: 'A prettier course. Better reviews.', parking: 'More groups book a tee time.', clubhouse: 'Bigger tips. Groups wait longer at the counter.',
-  putting_green: 'Golfers pay to warm up. They wait longer on the course.', snack_shack: 'Golfers spend more at the turn.', driving_range: 'Golfers spend more on range balls.' };
+  putting_green: 'Golfers pay to warm up. They wait longer on the course.', snack_shack: 'Golfers spend more at the turn.', driving_range: 'Golfers spend more on range balls.',
+  hole_4: 'Hole 4 earns more. Its green lasts longer.', hole_5: 'Hole 5 earns more. Its green lasts longer.', hole_6: 'Hole 6 earns more. Its green lasts longer.' };
 const BUILD = { cart_barn: 'Golfers ride. Rounds go faster. A rental fee.', putting_green: 'A place to warm up. A small fee a golfer.', snack_shack: 'Food at the turn. Money from every golfer.',
-  driving_range: 'Range balls. Money from every golfer.', hole_4: 'A fourth hole. Mow the plot clear to start it.' };
+  driving_range: 'Range balls. Money from every golfer.' };
+/* a new hole is bought in one of three layouts (MAP.layouts) */
+const LAYOUT = { short: 'Plays fast. Fewer jams. The lowest fee.', classic: 'A fair test. A little more a round.', signature: 'Water and sand. Golfers pay the most. Reviews love it.' };
 function openSheet(id) { $(id).classList.add('on'); paused = true; input.release(); }
 function closeSheet(id) { $(id).classList.remove('on'); paused = document.hidden; last = performance.now(); }
 const WHO = { clerk: 'Checks groups in for you.', starter: 'Sends groups off tee 1 for you.', greenskeeper: 'Cuts the greens at dawn for you.', attendant: 'Hands out cart keys for you.',
   cook: 'Serves at the Snack Shack for you.', range_hand: 'Keeps the range in balls for you.' };
-const titleOf = it => (it.kind === 'build' ? 'Build the ' + it.name : it.kind === 'hire' ? 'Hire a ' + it.name : it.name + ' · Level ' + it.level);
-const whatOf = it => (it.kind === 'build' ? BUILD[it.id] : it.kind === 'hire' ? WHO[it.id] : WHAT[it.id]) || '';
-function row(it, button) {
+const titleOf = (it, here) => (it.layout ? (here ? '' : 'Hole ' + it.hole + ': ') + it.name + ' · ' + it.yards + ' yards' : it.kind === 'build' ? 'Build the ' + it.name : it.kind === 'hire' ? 'Hire a ' + it.name : it.kind === 'tier' ? it.name : it.name + ' · Level ' + it.level);
+const whatOf = it => (it.layout ? LAYOUT[it.layout] : it.kind === 'build' ? BUILD[it.id] : it.kind === 'hire' ? WHO[it.id] : it.kind === 'tier' ? tierWhat(it) : WHAT[it.id]) || '';
+function tierWhat(it) {
+  if (it.done) return 'The new prices start in the morning.';
+  const say = 'Higher fees. More groups. League players. A bigger goal.';
+  return it.locked ? say + ' Needs ' + it.holes + ' holes and ' + it.stars.toFixed(1) + ' stars. You have ' + it.have + ' holes and ' + S.stars.toFixed(2) + ' stars.' : say;
+}
+function row(it, button, here) {
   const el = document.createElement('div'); el.className = 'item' + (it.done ? ' done' : '');
   const h = document.createElement('h3'), p = document.createElement('p');
-  h.textContent = titleOf(it); p.textContent = whatOf(it);
+  h.textContent = titleOf(it, here); p.textContent = whatOf(it);
   el.append(h, button, p);
   if (it.kind === 'up') { const pips = document.createElement('div'); pips.className = 'pips'; for (let i = 1; i <= it.max; i++) { const d = document.createElement('i'); if (i <= it.level) d.className = 'on'; pips.append(d); } el.append(pips); }
   return el;
@@ -291,7 +303,7 @@ function paintBook() {
   $('bookCash').textContent = money(S.cash);
   for (const it of shopList(S, ctx)) {
     const go = document.createElement('button'); go.type = 'button'; go.className = 'go' + (it.can ? ' can' : '');
-    if (it.done) { go.textContent = it.kind === 'hire' ? 'Hired' : 'Max'; go.disabled = true; }
+    if (it.done) { go.textContent = it.kind === 'hire' ? 'Hired' : it.kind === 'tier' ? 'Soon' : 'Max'; go.disabled = true; }
     else { go.textContent = 'Find'; const c = document.createElement('small'); c.textContent = money(it.cost); go.append(c);
       go.addEventListener('click', () => { pin = { id: it.pid, x: it.x, y: it.y }; closeSheet('book'); }); }
     box.append(row(it, go));
@@ -303,16 +315,18 @@ let cardFor = null, standing = null, standT = 0;
 function paintPlace(pid) {
   const card = placeCard(S, ctx, pid), box = $('placeList'); box.textContent = '';
   $('placeTitle').textContent = card.name; $('placeCash').textContent = money(S.cash);
-  $('placeNote').textContent = card.st === 'building' ? 'It is being built.' : card.st === 'clearing' ? 'Mow the plot clear to start the build.' : card.items.every(i => i.done) ? 'Nothing more to buy here.' : '';
+  const hole = cfg.economy.places[pid].build && cfg.economy.pads[cfg.economy.places[pid].build].kind === 'hole';
+  $('placeNote').textContent = card.st === 'locked' ? 'Open ' + card.after + ' first.' : card.st === 'building' ? (hole ? 'It opens tomorrow morning.' : 'It is being built.')
+    : card.st === 'clearing' ? 'Mow the plot clear. It opens the next morning.' : hole && card.st === 'open' ? 'Pick a layout. You cannot change it later.' : card.items.every(i => i.done) ? 'Nothing more to buy here.' : '';
   for (const it of card.items) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'go' + (it.can ? ' can' : '');
-    if (it.done) { b.textContent = it.kind === 'hire' ? 'Hired' : 'Max'; b.disabled = true; }
+    if (it.done) { b.textContent = it.kind === 'hire' ? 'Hired' : it.kind === 'tier' ? 'Soon' : 'Max'; b.disabled = true; }
     else {
-      b.textContent = it.kind === 'build' ? 'Build' : it.kind === 'hire' ? 'Hire' : 'Level up'; const c = document.createElement('small'); c.textContent = money(it.cost); b.append(c);
+      b.textContent = it.kind === 'build' ? 'Build' : it.kind === 'hire' ? 'Hire' : it.kind === 'tier' ? (it.locked ? 'Locked' : 'Step up') : 'Level up'; const c = document.createElement('small'); c.textContent = money(it.cost); b.append(c);
       b.disabled = !it.can;
       b.addEventListener('click', () => { command(S, 'buy', it.kind, it.id); if (R) R.snapshot(S); step(S, ctx); hud(true); paintPlace(pid); });
     }
-    box.append(row(it, b));
+    box.append(row(it, b, true));
   }
 }
 function stand(dt) {
@@ -365,5 +379,5 @@ addEventListener('pagehide', () => analytics.last());
 window.__course = {
   game: GAME, state: () => S, ctx: () => ctx, info: () => (R ? R.info() : null), store, art: R ? R.artReady : Promise.resolve(false),
   auto(on) { bot = on ? makeBot() : null; }, scale(n) { scale = n; },
-  summary: () => ({ event: S.event, notes: S.notes.length, no: S.no, tick: S.tick, phase: S.phase, done: S.done, ended, staff: Object.keys(S.staff), levels: S.levels, cash: S.cash, goal: goal && goal.text, mode: S.player.mode, fps })
+  summary: () => ({ tier: S.tier, open: S.open.slice(), event: S.event, notes: S.notes.length, no: S.no, tick: S.tick, phase: S.phase, done: S.done, ended, staff: Object.keys(S.staff), levels: S.levels, cash: S.cash, goal: goal && goal.text, mode: S.player.mode, fps })
 };
